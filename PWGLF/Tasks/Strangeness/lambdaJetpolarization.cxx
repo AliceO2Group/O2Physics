@@ -2513,7 +2513,7 @@ struct LambdaJetpolarizationMCcount {
       {"hLambdaCount_PtDiff", "hLambdaCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hAntiLambdaCount_PtDiff", "hAntiLambdaCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
 
-      {"hEventSelection", "hEventSelection", {HistType::kTH1F, {{1, 0.0f, 3.0f}}}},
+      {"hEventSelection", "hEventSelection", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
     },
   };
 

@@ -1007,7 +1007,7 @@ struct LightIonsEvSelQa {
         // Ne-Ne
         if (lastRunNumber == 564468)
           meanDiff = -0.51;
-        if (lastRunNumber == 564468)
+        if (lastRunNumber == 564472)
           meanDiff = -0.60;
 
         float stdDev = (multT0M > 10) ? 0.144723 + 13.5345 / sqrt(multT0M) : 1.5; // cm

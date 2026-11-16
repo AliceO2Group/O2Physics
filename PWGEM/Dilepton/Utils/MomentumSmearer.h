@@ -131,14 +131,14 @@ class MomentumSmearer
     }
   }
 
-  void fillVecReso(TH2F* fReso, std::vector<TH1F*>& fVecReso, const char* suffix)
+  void fillVecReso(TH2F* fReso, std::vector<TH1D*>& fVecReso, const char* suffix)
   {
     TAxis* axisPt = fReso->GetXaxis(); // be careful! This works only for variable bin width.
     int nBinsPt = axisPt->GetNbins();
     fVecReso.resize(nBinsPt);
     for (int i = 0; i < nBinsPt; i++) {
-      auto h1 = dynamic_cast<TH1F*>(fReso->ProjectionY(Form("h1reso%s_pt%d", suffix, i), i + 1, i + 1)); // FIXME: invalid cast
-      h1->Scale(1.f, "width");                                                                           // convert ntrack to probability density
+      auto h1 = dynamic_cast<TH1D*>(fReso->ProjectionY(Form("h1reso%s_pt%d", suffix, i), i + 1, i + 1));
+      h1->Scale(1.f, "width"); // convert ntrack to probability density
       fVecReso[i] = h1;
     }
   }
@@ -372,7 +372,7 @@ class MomentumSmearer
     fInitialized = true;
   }
 
-  void applySmearing(const float ptgen, const float vargen, const float multiply, float& varsmeared, TH2F* fReso, std::vector<TH1F*>& fVecReso)
+  void applySmearing(const float ptgen, const float vargen, const float multiply, float& varsmeared, TH2F* fReso, std::vector<TH1D*>& fVecReso)
   {
     float ptgen_tmp = ptgen > fMinPtGen ? ptgen : fMinPtGen;
     TAxis* axisPt = fReso->GetXaxis();
@@ -634,13 +634,13 @@ class MomentumSmearer
   int fNEtaBins = 1;
   int fNPhiBins = 1;
   int fNChBins = 1;
-  std::vector<TH1F*> fVecResoPt;
-  std::vector<TH1F*> fVecResoEta;
-  std::vector<TH1F*> fVecResoPhi_Pos;
-  std::vector<TH1F*> fVecResoPhi_Neg;
+  std::vector<TH1D*> fVecResoPt;
+  std::vector<TH1D*> fVecResoEta;
+  std::vector<TH1D*> fVecResoPhi_Pos;
+  std::vector<TH1D*> fVecResoPhi_Neg;
   TObject* fEff;
   TH2F* fDCA;
-  std::vector<TH1F*> fVecDCA;
+  std::vector<TH1D*> fVecDCA;
   int64_t fTimestamp;
   bool fFromCcdb = false;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> fCcdb;

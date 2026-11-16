@@ -416,7 +416,7 @@ struct HfTaskCorrelationsEfficiencies {
         }
         int assTrkOrigin = mcParticle.isPhysicalPrimary() ? 0 : 1; // 0 for primary, 1 for secondary
 
-        std::vector<double> values = {assTrk.pt(), assTrk.eta(), assTrk.phi(), mcCollision.posZ(), static_cast<double>(matchedSpecie), static_cast<double>(assTrkOrigin)};
+        std::vector<double> values = {mcParticle.pt(), mcParticle.eta(), mcParticle.phi(), mcCollision.posZ(), static_cast<double>(matchedSpecie), static_cast<double>(assTrkOrigin)};
 
         // Fill histograms for associated tracks
         registry.get<THnSparse>(HIST("hAssTrackReco"))->Fill(values.data());
@@ -424,12 +424,13 @@ struct HfTaskCorrelationsEfficiencies {
         if (fillRecoTrees) {
           // Downsample tracks based on pt
           if (downSampleTracks < 1.) {
-            float const pseudoRndm = assTrk.pt() * 1000. - static_cast<int64_t>(assTrk.pt() * 1000);
-            if (assTrk.pt() < ptMaxDownSampleTracks && pseudoRndm >= downSampleTracks) {
+            // Generate a pseudo-random number between 0 and 1
+            float const pseudoRndm = mcParticle.pt() * 1000. - static_cast<int64_t>(mcParticle.pt() * 1000);
+            if (mcParticle.pt() < ptMaxDownSampleTracks && pseudoRndm >= downSampleTracks) {
               continue;
             }
           }
-          rowAssocMc(assTrk.pt(), assTrk.eta(), assTrk.phi(), mcCollision.posZ(), matchedSpecie, assTrkOrigin);
+          rowAssocMc(mcParticle.pt(), mcParticle.eta(), mcParticle.phi(), mcCollision.posZ(), matchedSpecie, assTrkOrigin);
           rowAssocTrkSels(assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
         }
       }

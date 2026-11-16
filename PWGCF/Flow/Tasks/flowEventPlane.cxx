@@ -76,7 +76,7 @@ DECLARE_SOA_COLUMN(ZncEnergyCommon, zncEnergyCommon, float);
 DECLARE_SOA_COLUMN(ZnaEnergy, znaEnergy, std::vector<float>);
 DECLARE_SOA_COLUMN(ZncEnergy, zncEnergy, std::vector<float>);
 } // namespace colspcalib
-DECLARE_SOA_TABLE(ColSpCalib, "AOD", "COLSPCALIB", o2::soa::Index<>,
+DECLARE_SOA_TABLE(ColSpCalibs, "AOD", "COLSPCALIB", o2::soa::Index<>,
                   colspcalib::RunNumber,
                   colspcalib::Timestamp,
                   colspcalib::Cent,
@@ -87,6 +87,18 @@ DECLARE_SOA_TABLE(ColSpCalib, "AOD", "COLSPCALIB", o2::soa::Index<>,
                   colspcalib::ZncEnergyCommon,
                   colspcalib::ZnaEnergy,
                   colspcalib::ZncEnergy);
+
+using ColSpCalib = ColSpCalibs::iterator;
+
+namespace trackspcalib
+{
+DECLARE_SOA_INDEX_COLUMN(ColSpCalib, colSpCalib);
+} // namespace trackspcalib
+DECLARE_SOA_TABLE(TrackSpCalib, "AOD", "TRACKSPCALIB", o2::soa::Index<>,
+                  trackspcalib::ColSpCalibId,
+                  aod::track::Pt,
+                  aod::track::Eta,
+                  aod::track::Phi);
 
 namespace colspext
 {
@@ -159,7 +171,8 @@ enum V0Type {
 
 struct SpCalibTableProducer {
   // Table producer
-  Produces<aod::ColSpCalib> colSpCalibTable;
+  Produces<aod::ColSpCalibs> colSpCalibTable;
+  Produces<aod::TrackSpCalib> trackSPCalibTable;
 
   // Configurables
   // Collisions
@@ -171,12 +184,22 @@ struct SpCalibTableProducer {
   Configurable<bool> cSel8Trig{"cSel8Trig", true, "Sel8 (T0A + T0C) Selection Run3"};
   Configurable<bool> cPileupReject{"cPileupReject", true, "Pileup rejection"};
   Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", true, "z-vtx time diff selection"};
+  Configurable<bool> cNoCollInTimeRangeStd{"cNoCollInTimeRangeStd", true, "No of collision in time range standard"};
+  Configurable<bool> cIsITSTPCVtx{"cIsITSTPCVtx", true, "ITS-TPC Vertex"};
   Configurable<bool> cIsGoodITSLayers{"cIsGoodITSLayers", true, "Good ITS Layers All"};
   Configurable<float> cMinOccupancy{"cMinOccupancy", 0, "Minimum FT0C Occupancy"};
-  Configurable<float> cMaxOccupancy{"cMaxOccupancy", 1e6, "Maximum FT0C Occupancy"};
+  Configurable<float> cMaxOccupancy{"cMaxOccupancy", 1e4, "Maximum FT0C Occupancy"};
   Configurable<bool> capplyTdcCut{"capplyTdcCut", false, "Flag for TDC cut"};
   Configurable<float> ctdcZnMin{"ctdcZnMin", -2.5, "Min ZN TDC cut"};
   Configurable<float> ctdcZnMax{"ctdcZnMax", 2.5, "Max ZN TDC cut"};
+
+  // Tracks
+  Configurable<float> cTrackMinPt{"cTrackMinPt", 0.1, "p_{T} minimum"};
+  Configurable<float> cTrackMaxPt{"cTrackMaxPt", 10.0, "p_{T} maximum"};
+  Configurable<float> cTrackEtaCut{"cTrackEtaCut", 0.8, "Pseudorapidity cut"};
+  Configurable<bool> cTrackGlobal{"cTrackGlobal", true, "Global Track"};
+  Configurable<float> cTrackDcaXYCut{"cTrackDcaXYCut", 0.1, "DcaXY Cut"};
+  Configurable<float> cTrackDcaZCut{"cTrackDcaZCut", 1., "DcaXY Cut"};
 
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -187,9 +210,10 @@ struct SpCalibTableProducer {
 
   void init(InitContext const&)
   {
-    // Histogram collision
+    // Histogram collisions and tracks
     histos.add("hCent", "Centrality", kTH1F, {{cCentBins, 0., 100., "FT0C%"}});
     histos.add("hVz", "V_{z}", kTH1F, {{100, -10., 10., "V_{z}(cm)"}});
+    histos.add("hPt", "pT", kTH1F, {{200, 0, 20, "p_{T}(GeV/#it{c})"}});
   }
 
   template <typename C>
@@ -208,7 +232,7 @@ struct SpCalibTableProducer {
       return false;
     }
 
-    if (col.ft0cOccupancyInTimeRange() < cMinOccupancy || col.ft0cOccupancyInTimeRange() > cMaxOccupancy) { // Occupancy cut
+    if (col.trackOccupancyInTimeRange() < cMinOccupancy || col.trackOccupancyInTimeRange() > cMaxOccupancy) { // Occupancy cut
       return false;
     }
 
@@ -217,6 +241,14 @@ struct SpCalibTableProducer {
     }
 
     if (cZVtxTimeDiff && !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) { // ZvtxFT0 vs PV
+      return false;
+    }
+
+    if (cNoCollInTimeRangeStd && !col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard)) { // No collision in standard time range
+      return false;
+    }
+
+    if (cIsITSTPCVtx && !col.selection_bit(aod::evsel::kIsVertexITSTPC)) { // ITS+TPC vertex
       return false;
     }
 
@@ -244,8 +276,27 @@ struct SpCalibTableProducer {
     return true;
   }
 
-  template <typename B, typename C>
-  void analyzeCollision(B const& bc, C const& collision)
+  // Track Selection
+  template <typename T>
+  bool selectTrack(T const& track)
+  {
+    if (track.pt() <= cTrackMinPt || track.pt() >= cTrackMaxPt || std::abs(track.eta()) >= cTrackEtaCut) {
+      return false;
+    }
+
+    if (cTrackGlobal && !track.isGlobalTrackWoDCA()) {
+      return false;
+    }
+
+    if (std::abs(track.dcaXY()) >= cTrackDcaXYCut || std::abs(track.dcaZ()) >= cTrackDcaZCut) {
+      return false;
+    }
+
+    return true;
+  }
+
+  template <typename B, typename C, typename T>
+  void analyzeCollision(B const& bc, C const& collision, T const& tracks)
   {
     // Check zdc
     if (!bc.has_zdc()) {
@@ -282,22 +333,31 @@ struct SpCalibTableProducer {
     histos.fill(HIST("hCent"), cent);
     histos.fill(HIST("hVz"), posZ);
     colSpCalibTable(runNum, timestamp, cent, posX, posY, posZ, znaEnergyCommon, zncEnergyCommon, znaEnergy, zncEnergy);
+
+    for (auto const& track : tracks) {
+      if (!selectTrack(track)) {
+        continue;
+      }
+      histos.fill(HIST("hPt"), track.pt());
+      trackSPCalibTable(colSpCalibTable.lastIndex(), track.pt(), track.eta(), track.phi());
+    }
   }
 
   using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
   using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::TPCMults, aod::PVMults, aod::MultsGlobal, aod::MultsExtra>;
+  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::TOFSignal, aod::pidTPCEl, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPr, aod::pidTOFPr>;
 
   void processDummy(CollisionsRun3::iterator const&) {}
 
   PROCESS_SWITCH(SpCalibTableProducer, processDummy, "Dummy process", true);
 
-  void processFEP(CollisionsRun3::iterator const& collision, BCsRun3 const&, aod::Zdcs const&)
+  void processFEP(CollisionsRun3::iterator const& collision, BCsRun3 const&, aod::Zdcs const&, Tracks const& tracks)
   {
     // Get bunch crossing
     auto bc = collision.template foundBC_as<BCsRun3>();
     runNum = collision.template foundBC_as<BCsRun3>().runNumber();
     timestamp = collision.template foundBC_as<BCsRun3>().timestamp();
-    analyzeCollision(bc, collision);
+    analyzeCollision(bc, collision, tracks);
   }
 
   PROCESS_SWITCH(SpCalibTableProducer, processFEP, "Flow Event Plane Table Producer", false);
@@ -318,9 +378,11 @@ struct SpectatorPlaneTableProducer {
   Configurable<bool> cSel8Trig{"cSel8Trig", true, "Sel8 (T0A + T0C) Selection Run3"};
   Configurable<bool> cPileupReject{"cPileupReject", true, "Pileup rejection"};
   Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", true, "z-vtx time diff selection"};
+  Configurable<bool> cNoCollInTimeRangeStd{"cNoCollInTimeRangeStd", true, "No of collision in time range standard"};
+  Configurable<bool> cIsITSTPCVtx{"cIsITSTPCVtx", true, "ITS-TPC Vertex"};
   Configurable<bool> cIsGoodITSLayers{"cIsGoodITSLayers", true, "Good ITS Layers All"};
   Configurable<float> cMinOccupancy{"cMinOccupancy", 0, "Minimum FT0C Occupancy"};
-  Configurable<float> cMaxOccupancy{"cMaxOccupancy", 1e6, "Maximum FT0C Occupancy"};
+  Configurable<float> cMaxOccupancy{"cMaxOccupancy", 1e4, "Maximum FT0C Occupancy"};
   Configurable<bool> capplyTdcCut{"capplyTdcCut", false, "Flag for TDC cut"};
   Configurable<float> ctdcZnMin{"ctdcZnMin", -2.5, "Min ZN TDC cut"};
   Configurable<float> ctdcZnMax{"ctdcZnMax", 2.5, "Max ZN TDC cut"};
@@ -516,7 +578,7 @@ struct SpectatorPlaneTableProducer {
       return false;
     }
 
-    if (col.ft0cOccupancyInTimeRange() < cMinOccupancy || col.ft0cOccupancyInTimeRange() > cMaxOccupancy) { // Occupancy cut
+    if (col.trackOccupancyInTimeRange() < cMinOccupancy || col.trackOccupancyInTimeRange() > cMaxOccupancy) { // Occupancy cut
       return false;
     }
 
@@ -525,6 +587,14 @@ struct SpectatorPlaneTableProducer {
     }
 
     if (cZVtxTimeDiff && !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) { // ZvtxFT0 vs PV
+      return false;
+    }
+
+    if (cNoCollInTimeRangeStd && !col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard)) { // No collision in standard time range
+      return false;
+    }
+
+    if (cIsITSTPCVtx && !col.selection_bit(aod::evsel::kIsVertexITSTPC)) { // ITS+TPC vertex
       return false;
     }
 

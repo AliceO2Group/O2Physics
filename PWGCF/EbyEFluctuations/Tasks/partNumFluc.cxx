@@ -53,7 +53,6 @@
 #include <bit>
 #include <cmath>
 #include <concepts>
-#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <functional>
@@ -71,9 +70,6 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
-
-#define C_CS(cs) HIST(cs) // NOLINT(cppcoreguidelines-macro-usage)
-#define C_SV(sv) HIST(sv) // NOLINT(cppcoreguidelines-macro-usage)
 
 using namespace o2;
 using namespace o2::framework;
@@ -160,9 +156,9 @@ constexpr std::int32_t NExponentKeys{OrderMax * (OrderMax + 1) / 2};
 constexpr std::array<std::pair<std::int8_t, std::int8_t>, NExponentKeys> ExponentKeys{[]() consteval noexcept -> std::array<std::pair<std::int8_t, std::int8_t>, NExponentKeys> {
   std::array<std::pair<std::int8_t, std::int8_t>, NExponentKeys> result{};
   std::int32_t index{};
-  for (std::int32_t const& iExponent : std::views::iota(1, OrderMax + 1)) {
-    for (std::int32_t const& jExponent : std::views::iota(1, iExponent + 1)) {
-      result[index++] = {static_cast<std::int8_t>(iExponent), static_cast<std::int8_t>(jExponent)};
+  for (std::int32_t const& exponentCharge : std::views::iota(1, OrderMax + 1)) {
+    for (std::int32_t const& exponentEfficiency : std::views::iota(1, exponentCharge + 1)) {
+      result[index++] = {static_cast<std::int8_t>(exponentCharge), static_cast<std::int8_t>(exponentEfficiency)};
     }
   }
   return result;
@@ -774,7 +770,7 @@ template <typename T>
 constexpr std::int32_t nEnabled(const Configurable<LabeledArray<T>>& cfg) noexcept
 {
   const LabeledArray<T>& la{cfg.value};
-  return std::ranges::count_if(std::span<const T>{la[0], static_cast<std::size_t>(la.rows()) * static_cast<std::size_t>(la.cols())}, [](const T input) constexpr noexcept -> bool { return input != T{}; });
+  return std::ranges::count_if(std::span<const T>{la[0], static_cast<std::uint64_t>(la.rows()) * static_cast<std::uint64_t>(la.cols())}, [](const T input) constexpr noexcept -> bool { return input != T{}; });
 }
 template <typename T>
   requires std::is_arithmetic_v<T>
@@ -848,6 +844,7 @@ struct PartNumFluc {
 
   struct HolderEvent {
     static constexpr std::array<double, NEs<RangeEdge>> RangeCentrality{0., 100.};
+
     static constexpr bool isValidCentrality(const double centrality) noexcept { return RangeCentrality[toI(RangeEdge::Min)] <= centrality && centrality < RangeCentrality[toI(RangeEdge::Max)]; }
 
     std::int32_t runNumber{};
@@ -903,6 +900,7 @@ struct PartNumFluc {
 
   struct HolderTrack {
     static constexpr double TruncationAbsNSigmaPid{999.};
+
     static constexpr double truncateNSigmaPid(const double nSigmaPid, const double shift = {}) noexcept
     {
       const double nSigmaPidShifted{nSigmaPid - shift};
@@ -1036,13 +1034,13 @@ struct PartNumFluc {
     Configurable<LabeledArray<std::int32_t>> cfgCutsMinTpcNCrossedRows{"cfgCutsMinTpcNCrossedRows", {std::array<std::int32_t, NEs<Selection>>{70, 80, 90}.data(), NEs<Selection>, getDisplayNames<Selection>()}, "Minimum numbers of crossed rows TPC"};
     Configurable<double> cfgCutMinTpcNCrossedRowsRatio{"cfgCutMinTpcNCrossedRowsRatio", 0.8, "Minimum ratio of crossed rows over findable clusters TPC"};
     Configurable<bool> cfgFlagRecalibrationDca{"cfgFlagRecalibrationDca", false, "DCA recalibration flag"};
-    Configurable<LabeledArray<double>> cfgCutsMaxAbsNSigmaDca{"cfgCutsMaxAbsNSigmaDca", {std::array<double, static_cast<std::size_t>(NEs<DcaAxis>) * static_cast<std::size_t>(NEs<Selection>)>{3., 2.5, 2., 3., 2.5, 2.}.data(), NEs<DcaAxis>, NEs<Selection>, getDisplayNames<DcaAxis>(), getDisplayNames<Selection>()}, "Maximum absolute nSigma values of DCA (cm)"};
-    Configurable<LabeledArray<double>> cfgCutsRangePt{"cfgCutsRangePt", {std::array<double, static_cast<std::size_t>(NEs<ParticleSpecies>) * static_cast<std::size_t>(NEs<RangeEdge>)>{0.2, 2., 0.3, 2., 0.4, 2.}.data(), NEs<ParticleSpecies>, NEs<RangeEdge>, getDisplayNames<ParticleSpecies>(), getDisplayNames<RangeEdge>()}, "pT ranges (GeV/c)"};
+    Configurable<LabeledArray<double>> cfgCutsMaxAbsNSigmaDca{"cfgCutsMaxAbsNSigmaDca", {std::array<double, static_cast<std::uint64_t>(NEs<DcaAxis>) * static_cast<std::uint64_t>(NEs<Selection>)>{3., 2.5, 2., 3., 2.5, 2.}.data(), NEs<DcaAxis>, NEs<Selection>, getDisplayNames<DcaAxis>(), getDisplayNames<Selection>()}, "Maximum absolute nSigma values of DCA (cm)"};
+    Configurable<LabeledArray<double>> cfgCutsRangePt{"cfgCutsRangePt", {std::array<double, static_cast<std::uint64_t>(NEs<ParticleSpecies>) * static_cast<std::uint64_t>(NEs<RangeEdge>)>{0.2, 2., 0.3, 2., 0.4, 2.}.data(), NEs<ParticleSpecies>, NEs<RangeEdge>, getDisplayNames<ParticleSpecies>(), getDisplayNames<RangeEdge>()}, "pT ranges (GeV/c)"};
     Configurable<double> cfgCutMaxAbsEta{"cfgCutMaxAbsEta", 0.8, "Maximum absolute eta"};
     Configurable<LabeledArray<double>> cfgThresholdsPtTofPid{"cfgThresholdsPtTofPid", {std::array<double, NEs<ParticleSpecies>>{0.4, 0.4, 0.8}.data(), NEs<ParticleSpecies>, getDisplayNames<ParticleSpecies>()}, "pT (GeV/c) thresholds for TOF PID"};
     Configurable<LabeledArray<std::int32_t>> cfgFlagsRecalibrationNSigmaPid{"cfgFlagsRecalibrationNSigmaPid", {std::array<std::int32_t, NEs<ParticleSpecies>>{}.data(), NEs<ParticleSpecies>, getDisplayNames<ParticleSpecies>()}, "nSigma PID recalibration flags"};
     Configurable<bool> cfgFlagRejectionOthers{"cfgFlagRejectionOthers", false, "Other particle species rejection flag"};
-    Configurable<LabeledArray<double>> cfgCutsMaxAbsNSigmaPid{"cfgCutsMaxAbsNSigmaPid", {std::array<double, static_cast<std::size_t>(NEs<ParticleSpecies>) * static_cast<std::size_t>(NEs<Selection>)>{2.5, 2., 1.5, 2.5, 2., 1.5, 2.5, 2., 1.5}.data(), NEs<ParticleSpecies>, NEs<Selection>, getDisplayNames<ParticleSpecies>(), getDisplayNames<Selection>()}, "Maximum absolute nSigma values for PID"};
+    Configurable<LabeledArray<double>> cfgCutsMaxAbsNSigmaPid{"cfgCutsMaxAbsNSigmaPid", {std::array<double, static_cast<std::uint64_t>(NEs<ParticleSpecies>) * static_cast<std::uint64_t>(NEs<Selection>)>{2.5, 2., 1.5, 2.5, 2., 1.5, 2.5, 2., 1.5}.data(), NEs<ParticleSpecies>, NEs<Selection>, getDisplayNames<ParticleSpecies>(), getDisplayNames<Selection>()}, "Maximum absolute nSigma values for PID"};
     Configurable<bool> cfgFlagMcParticlePhysicalPrimary{"cfgFlagMcParticlePhysicalPrimary", true, "Flag of requiring physical primary MC particle"};
     Configurable<bool> cfgFlagMcParticleMomentum{"cfgFlagMcParticleMomentum", true, "Flag of using momentum of MC particle"};
   } cgTrack{};
@@ -1141,7 +1139,7 @@ struct PartNumFluc {
       static constexpr auto ValidateCuts{
         []<RangeEdge RangeEdgeValue>
           requires IsValidEnumValue<RangeEdgeValue>
-        (const std::span<const double, NEs<Selection>>& cuts, const std::string& name) constexpr -> void {
+        (const std::span<const double, NEs<Selection>>& cuts, const std::string_view& name) constexpr -> void {
           for (std::int32_t const& iSelection : std::views::iota(0, NEs<Selection>)) {
             if (std::cmp_equal(iSelection, 0)) {
               continue;
@@ -1766,7 +1764,7 @@ struct PartNumFluc {
 
   template <ParticleSpeciesAll ParticleSpeciesAllValue, ChargeSpecies ChargeSpeciesValue>
     requires IsValidEnumValue<ParticleSpeciesAllValue, ChargeSpeciesValue>
-  bool isPid() const noexcept
+  constexpr bool isPid() const noexcept
   {
     if constexpr (ParticleSpeciesAllValue == ParticleSpeciesAll::All) {
       return ChargeSpeciesValue == ChargeSpecies::Plus ? std::cmp_greater(holderMcParticle.charge, 0) : std::cmp_less(holderMcParticle.charge, 0);
@@ -1836,7 +1834,7 @@ struct PartNumFluc {
   void fillQaRunByTrackByChargeSpecies(const T& track)
   {
     const auto fill{[this](const auto& name, const auto input) -> void {
-      hrQaRun.fill(C_CS("pRunIndex") + name + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.indexRun, input);
+      hrQaRun.fill(HIST("pRunIndex") + name + HIST("_") + HIST(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.indexRun, input);
     }};
     const auto fillNSigmaPidByDetectorParticleSpecies{
       [this, &fill]<Detector DetectorValue, ParticleSpecies ParticleSpeciesValue>
@@ -1844,29 +1842,29 @@ struct PartNumFluc {
       () -> void {
         const double nSigmaPid{holderTrack.nsSigmaPid[toI(DetectorValue)][toI(ParticleSpeciesValue)]};
         if (std::abs(nSigmaPid) < HolderTrack::TruncationAbsNSigmaPid) {
-          fill(C_SV(getName(DetectorValue)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesValue)), nSigmaPid);
+          fill(HIST(getName(DetectorValue)) + HIST("NSigma") + HIST(getName(ParticleSpeciesValue)), nSigmaPid);
         }
       }};
 
-    fill(C_CS("ItsNCls"), track.itsNCls());
-    fill(C_CS("ItsChi2NCls"), track.itsChi2NCl());
-    fill(C_CS("TpcNCls"), track.tpcNClsFound());
-    fill(C_CS("TpcChi2NCls"), track.tpcChi2NCl());
-    fill(C_CS("TpcNClsSharedRatio"), track.tpcFractionSharedCls());
-    fill(C_CS("TpcNClsRatio"), track.tpcFoundOverFindableCls());
-    fill(C_CS("TpcNCrossedRows"), track.tpcNClsCrossedRows());
-    fill(C_CS("TpcNCrossedRowsRatio"), track.tpcCrossedRowsOverFindableCls());
-    fill(C_CS("Pt"), holderTrack.pt);
-    fill(C_CS("Eta"), holderTrack.eta);
-    fill(C_CS("Phi"), holderTrack.phi);
+    fill(HIST("ItsNCls"), track.itsNCls());
+    fill(HIST("ItsChi2NCls"), track.itsChi2NCl());
+    fill(HIST("TpcNCls"), track.tpcNClsFound());
+    fill(HIST("TpcChi2NCls"), track.tpcChi2NCl());
+    fill(HIST("TpcNClsSharedRatio"), track.tpcFractionSharedCls());
+    fill(HIST("TpcNClsRatio"), track.tpcFoundOverFindableCls());
+    fill(HIST("TpcNCrossedRows"), track.tpcNClsCrossedRows());
+    fill(HIST("TpcNCrossedRowsRatio"), track.tpcCrossedRowsOverFindableCls());
+    fill(HIST("Pt"), holderTrack.pt);
+    fill(HIST("Eta"), holderTrack.eta);
+    fill(HIST("Phi"), holderTrack.phi);
     if (holderTrack.havePid[toI(Detector::Tpc)]) {
-      fill(C_SV(getName(Detector::Tpc)) + C_CS("DeDx"), track.tpcSignal());
+      fill(HIST(getName(Detector::Tpc)) + HIST("DeDx"), track.tpcSignal());
       fillNSigmaPidByDetectorParticleSpecies.template operator()<Detector::Tpc, ParticleSpecies::Pion>();
       fillNSigmaPidByDetectorParticleSpecies.template operator()<Detector::Tpc, ParticleSpecies::Kaon>();
       fillNSigmaPidByDetectorParticleSpecies.template operator()<Detector::Tpc, ParticleSpecies::Proton>();
     }
     if (holderTrack.havePid[toI(Detector::Tof)]) {
-      fill(C_SV(getName(Detector::Tof)) + C_CS("InverseBeta"), 1. / track.beta());
+      fill(HIST(getName(Detector::Tof)) + HIST("InverseBeta"), 1. / track.beta());
       fillNSigmaPidByDetectorParticleSpecies.template operator()<Detector::Tof, ParticleSpecies::Pion>();
       fillNSigmaPidByDetectorParticleSpecies.template operator()<Detector::Tof, ParticleSpecies::Kaon>();
       fillNSigmaPidByDetectorParticleSpecies.template operator()<Detector::Tof, ParticleSpecies::Proton>();
@@ -1878,18 +1876,18 @@ struct PartNumFluc {
   void fillQaRunByEventByChargeSpecies()
   {
     const auto fill{[this](const auto& name, const auto input) -> void {
-      hrQaRun.fill(C_CS("pRunIndex") + name + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.indexRun, input);
+      hrQaRun.fill(HIST("pRunIndex") + name + HIST("_") + HIST(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.indexRun, input);
     }};
 
-    fill(C_CS("NGlobalTracks"), holderEvent.nsGlobalTracks[toI(ChargeSpeciesValue)]);
-    fill(C_CS("NPvContributors"), holderEvent.nsPvContributors[toI(ChargeSpeciesValue)]);
+    fill(HIST("NGlobalTracks"), holderEvent.nsGlobalTracks[toI(ChargeSpeciesValue)]);
+    fill(HIST("NPvContributors"), holderEvent.nsPvContributors[toI(ChargeSpeciesValue)]);
     if (std::cmp_greater(holderEvent.nsGlobalTracks[toI(ChargeSpeciesValue)], 0)) {
-      fill(C_SV(getName(DcaMeasure::Mean)) + C_CS("Dca") + C_SV(getName(DcaAxis::Xy)), holderEvent.measuresDca[toI(DcaMeasure::Mean)][toI(DcaAxis::Xy)][toI(ChargeSpeciesValue)]);
-      fill(C_SV(getName(DcaMeasure::Sigma)) + C_CS("Dca") + C_SV(getName(DcaAxis::Xy)), holderEvent.measuresDca[toI(DcaMeasure::Sigma)][toI(DcaAxis::Xy)][toI(ChargeSpeciesValue)]);
-      fill(C_SV(getName(DcaMeasure::Mean)) + C_CS("Dca") + C_SV(getName(DcaAxis::Z)), holderEvent.measuresDca[toI(DcaMeasure::Mean)][toI(DcaAxis::Z)][toI(ChargeSpeciesValue)]);
-      fill(C_SV(getName(DcaMeasure::Sigma)) + C_CS("Dca") + C_SV(getName(DcaAxis::Z)), holderEvent.measuresDca[toI(DcaMeasure::Sigma)][toI(DcaAxis::Z)][toI(ChargeSpeciesValue)]);
+      fill(HIST(getName(DcaMeasure::Mean)) + HIST("Dca") + HIST(getName(DcaAxis::Xy)), holderEvent.measuresDca[toI(DcaMeasure::Mean)][toI(DcaAxis::Xy)][toI(ChargeSpeciesValue)]);
+      fill(HIST(getName(DcaMeasure::Sigma)) + HIST("Dca") + HIST(getName(DcaAxis::Xy)), holderEvent.measuresDca[toI(DcaMeasure::Sigma)][toI(DcaAxis::Xy)][toI(ChargeSpeciesValue)]);
+      fill(HIST(getName(DcaMeasure::Mean)) + HIST("Dca") + HIST(getName(DcaAxis::Z)), holderEvent.measuresDca[toI(DcaMeasure::Mean)][toI(DcaAxis::Z)][toI(ChargeSpeciesValue)]);
+      fill(HIST(getName(DcaMeasure::Sigma)) + HIST("Dca") + HIST(getName(DcaAxis::Z)), holderEvent.measuresDca[toI(DcaMeasure::Sigma)][toI(DcaAxis::Z)][toI(ChargeSpeciesValue)]);
     }
-    fill(C_CS("NTofBeta"), holderEvent.nsTofBeta[toI(ChargeSpeciesValue)]);
+    fill(HIST("NTofBeta"), holderEvent.nsTofBeta[toI(ChargeSpeciesValue)]);
   }
 
   template <ChargeSpecies ChargeSpeciesValue, typename T>
@@ -1897,13 +1895,13 @@ struct PartNumFluc {
   void fillQaTrackByChargeSpecies(const T& track)
   {
     const auto fill{[this](const auto& name, const auto... positionAndWeight) -> void {
-      hrQaTrack.fill(C_CS("h") + name + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), positionAndWeight...);
+      hrQaTrack.fill(HIST("h") + name + HIST("_") + HIST(getName<NameKind::Lower>(ChargeSpeciesValue)), positionAndWeight...);
     }};
 
-    fill(C_CS("ItsNClsChi2NCls"), track.itsNCls(), track.itsChi2NCl());
-    fill(C_CS("TpcNClsChi2NCls"), track.tpcNClsFound(), track.tpcChi2NCl());
-    fill(C_CS("TpcNClsNClsShared"), track.tpcNClsFound(), track.tpcNClsShared());
-    fill(C_CS("TpcNClsNClsFindableNCrossedRows"), track.tpcNClsFound(), track.tpcNClsFindable(), track.tpcNClsCrossedRows());
+    fill(HIST("ItsNClsChi2NCls"), track.itsNCls(), track.itsChi2NCl());
+    fill(HIST("TpcNClsChi2NCls"), track.tpcNClsFound(), track.tpcChi2NCl());
+    fill(HIST("TpcNClsNClsShared"), track.tpcNClsFound(), track.tpcNClsShared());
+    fill(HIST("TpcNClsNClsFindableNCrossedRows"), track.tpcNClsFound(), track.tpcNClsFindable(), track.tpcNClsCrossedRows());
   }
 
   template <ChargeSpecies ChargeSpeciesValue>
@@ -1914,8 +1912,8 @@ struct PartNumFluc {
       [this]<DcaAxis DcaAxisValue>
         requires IsValidEnumValue<DcaAxisValue>
       () -> void {
-        hrQaDca.fill(C_CS("hPtDca") + C_SV(getName(DcaAxisValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderTrack.pt, holderTrack.dcas[toI(DcaAxisValue)]);
-        hrQaDca.fill(C_CS("pCentralityPtEtaDca") + C_SV(getName(DcaAxisValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.dcas[toI(DcaAxisValue)]);
+        hrQaDca.fill(HIST("hPtDca") + HIST(getName(DcaAxisValue)) + HIST("_") + HIST(getName<NameKind::Lower>(ChargeSpeciesValue)), holderTrack.pt, holderTrack.dcas[toI(DcaAxisValue)]);
+        hrQaDca.fill(HIST("pCentralityPtEtaDca") + HIST(getName(DcaAxisValue)) + HIST("_") + HIST(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.dcas[toI(DcaAxisValue)]);
       }};
 
     fillByDcaAxis.template operator()<DcaAxis::Xy>();
@@ -1943,18 +1941,18 @@ struct PartNumFluc {
                 return;
               }
 
-              hrQaAcceptance.fill(C_CS("hEtaMcPtMc_") + C_SV(getName<NameKind::Lower>(PidStrategyValue)) + C_CS("Edge") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderMcParticle.eta, holderMcParticle.pt);
+              hrQaAcceptance.fill(HIST("hEtaMcPtMc_") + HIST(getName<NameKind::Lower>(PidStrategyValue)) + HIST("Edge") + HIST(getName(ParticleSpeciesAllValue)) + HIST(getName(ChargeSpeciesValue)), holderMcParticle.eta, holderMcParticle.pt);
               if constexpr (ParticleSpeciesAllValue != ParticleSpeciesAll::All) {
-                hrQaAcceptance.fill(C_CS("hRapidityMcPtMc_") + C_SV(getName<NameKind::Lower>(PidStrategyValue)) + C_CS("Edge") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), RecoDecayPtEtaPhi::y(holderMcParticle.pt, holderMcParticle.eta, getMass(getValue<ParticleSpecies>(ParticleSpeciesAllValue))), holderMcParticle.pt);
+                hrQaAcceptance.fill(HIST("hRapidityMcPtMc_") + HIST(getName<NameKind::Lower>(PidStrategyValue)) + HIST("Edge") + HIST(getName(ParticleSpeciesAllValue)) + HIST(getName(ChargeSpeciesValue)), RecoDecayPtEtaPhi::y(holderMcParticle.pt, holderMcParticle.eta, getMass(getValue<ParticleSpecies>(ParticleSpeciesAllValue))), holderMcParticle.pt);
               }
             } else { // DataModeValue == DataMode::RawTrack
               if (!isPid<getValue<PidStrategyAll>(PidStrategyValue), ParticleSpeciesAllValue>(false)) {
                 return;
               }
 
-              hrQaAcceptance.fill(C_CS("hEtaPt_") + C_SV(getName<NameKind::Lower>(PidStrategyValue)) + C_CS("Edge") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderTrack.eta, holderTrack.pt);
+              hrQaAcceptance.fill(HIST("hEtaPt_") + HIST(getName<NameKind::Lower>(PidStrategyValue)) + HIST("Edge") + HIST(getName(ParticleSpeciesAllValue)) + HIST(getName(ChargeSpeciesValue)), holderTrack.eta, holderTrack.pt);
               if constexpr (ParticleSpeciesAllValue != ParticleSpeciesAll::All) {
-                hrQaAcceptance.fill(C_CS("hRapidityPt_") + C_SV(getName<NameKind::Lower>(PidStrategyValue)) + C_CS("Edge") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), RecoDecayPtEtaPhi::y(holderTrack.pt, holderTrack.eta, getMass(getValue<ParticleSpecies>(ParticleSpeciesAllValue))), holderTrack.pt);
+                hrQaAcceptance.fill(HIST("hRapidityPt_") + HIST(getName<NameKind::Lower>(PidStrategyValue)) + HIST("Edge") + HIST(getName(ParticleSpeciesAllValue)) + HIST(getName(ChargeSpeciesValue)), RecoDecayPtEtaPhi::y(holderTrack.pt, holderTrack.eta, getMass(getValue<ParticleSpecies>(ParticleSpeciesAllValue))), holderTrack.pt);
               }
             }
           }};
@@ -1988,11 +1986,11 @@ struct PartNumFluc {
           () -> void {
             if constexpr (DataModeValue == DataMode::McTrack) {
               if (isPid<ParticleSpeciesAllValue, ChargeSpeciesValue>() && isPid<getValue<PidStrategyAll>(PidStrategyValue), ParticleSpeciesAllValue>(false)) {
-                hrQaPhi.fill(C_CS("hCentralityPtEtaPhi_mc") + C_SV(getName(PidStrategyValue)) + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.phi);
+                hrQaPhi.fill(HIST("hCentralityPtEtaPhi_mc") + HIST(getName(PidStrategyValue)) + HIST(getName(ParticleSpeciesAllValue)) + HIST(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.phi);
               }
             } else { // DataModeValue == DataMode::RawTrack
               if (isPid<getValue<PidStrategyAll>(PidStrategyValue), ParticleSpeciesAllValue>(false)) {
-                hrQaPhi.fill(C_CS("hCentralityPtEtaPhi_") + C_SV(getName<NameKind::Lower>(PidStrategyValue)) + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.phi);
+                hrQaPhi.fill(HIST("hCentralityPtEtaPhi_") + HIST(getName<NameKind::Lower>(PidStrategyValue)) + HIST(getName(ParticleSpeciesAllValue)) + HIST(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.phi);
               }
             }
           }};
@@ -2018,10 +2016,10 @@ struct PartNumFluc {
 
     if constexpr (ParticleSpeciesAllValue == ParticleSpeciesAll::All) {
       if (isPid<getValue<PidStrategyAll>(PidStrategy::Tpc), ParticleSpeciesAll::All>(false)) {
-        hrQaPid.fill(C_CS("hCentralityPOverQEtaTpcLnDeDx"), holderEvent.centralityCalibration, track.p() / holderTrack.sign, holderTrack.eta, std::log(track.tpcSignal()));
+        hrQaPid.fill(HIST("hCentralityPOverQEtaTpcLnDeDx"), holderEvent.centralityCalibration, track.p() / holderTrack.sign, holderTrack.eta, std::log(track.tpcSignal()));
       }
       if (isPid<getValue<PidStrategyAll>(PidStrategy::TpcTof), ParticleSpeciesAll::All>(false)) {
-        hrQaPid.fill(C_CS("hCentralityPOverQEtaTofInverseBeta"), holderEvent.centralityCalibration, track.p() / holderTrack.sign, holderTrack.eta, 1. / track.beta());
+        hrQaPid.fill(HIST("hCentralityPOverQEtaTofInverseBeta"), holderEvent.centralityCalibration, track.p() / holderTrack.sign, holderTrack.eta, 1. / track.beta());
       }
     } else {
       constexpr std::int32_t IndexParticleSpecies{toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))};
@@ -2031,18 +2029,18 @@ struct PartNumFluc {
         () -> void {
           if constexpr (DataModeValue == DataMode::McTrack) {
             if (isPid<ParticleSpeciesAllValue, ChargeSpeciesValue>()) {
-              hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(Detector::Tpc)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_mc") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nsSigmaPid[toI(Detector::Tpc)][IndexParticleSpecies]);
-              hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(Detector::Tof)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_mc") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nsSigmaPid[toI(Detector::Tof)][IndexParticleSpecies]);
+              hrQaPid.fill(HIST("hCentralityPtEta") + HIST(getName(Detector::Tpc)) + HIST("NSigma") + HIST(getName(ParticleSpeciesAllValue)) + HIST("_mc") + HIST(getName(ParticleSpeciesAllValue)) + HIST(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nsSigmaPid[toI(Detector::Tpc)][IndexParticleSpecies]);
+              hrQaPid.fill(HIST("hCentralityPtEta") + HIST(getName(Detector::Tof)) + HIST("NSigma") + HIST(getName(ParticleSpeciesAllValue)) + HIST("_mc") + HIST(getName(ParticleSpeciesAllValue)) + HIST(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nsSigmaPid[toI(Detector::Tof)][IndexParticleSpecies]);
             }
           } else { // DataModeValue == DataMode::RawTrack
-            hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(Detector::Tpc)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nsSigmaPid[toI(Detector::Tpc)][IndexParticleSpecies]);
+            hrQaPid.fill(HIST("hCentralityPtEta") + HIST(getName(Detector::Tpc)) + HIST("NSigma") + HIST(getName(ParticleSpeciesAllValue)) + HIST("_") + HIST(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nsSigmaPid[toI(Detector::Tpc)][IndexParticleSpecies]);
             if (isPid<PidStrategyAll::Tof, ParticleSpeciesAllValue>(false)) {
-              hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(Detector::Tpc)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(Detector::Tof)) + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nsSigmaPid[toI(Detector::Tpc)][IndexParticleSpecies]);
+              hrQaPid.fill(HIST("hCentralityPtEta") + HIST(getName(Detector::Tpc)) + HIST("NSigma") + HIST(getName(ParticleSpeciesAllValue)) + HIST("_") + HIST(getName<NameKind::Lower>(Detector::Tof)) + HIST(getName(ParticleSpeciesAllValue)) + HIST(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nsSigmaPid[toI(Detector::Tpc)][IndexParticleSpecies]);
             }
             if (isPid<PidStrategyAll::Tpc, ParticleSpeciesAllValue>(false)) {
-              hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(Detector::Tof)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(Detector::Tpc)) + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nsSigmaPid[toI(Detector::Tof)][IndexParticleSpecies]);
+              hrQaPid.fill(HIST("hCentralityPtEta") + HIST(getName(Detector::Tof)) + HIST("NSigma") + HIST(getName(ParticleSpeciesAllValue)) + HIST("_") + HIST(getName<NameKind::Lower>(Detector::Tpc)) + HIST(getName(ParticleSpeciesAllValue)) + HIST(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nsSigmaPid[toI(Detector::Tof)][IndexParticleSpecies]);
             }
-            hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(PidStrategy::TpcTof)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.getNSigmaPidCombined(IndexParticleSpecies));
+            hrQaPid.fill(HIST("hCentralityPtEta") + HIST(getName(PidStrategy::TpcTof)) + HIST("NSigma") + HIST(getName(ParticleSpeciesAllValue)) + HIST("_") + HIST(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.getNSigmaPidCombined(IndexParticleSpecies));
           }
         }};
 
@@ -2076,7 +2074,7 @@ struct PartNumFluc {
       () -> void {
         if constexpr (DataModeValue == DataMode::McMcParticle) {
           if (isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpeciesValue>()) {
-            hrCalculationYield.fill(C_CS("hVzCentralityPtMcEtaMc_mc") + C_SV(getName(ParticleSpeciesValue)) + C_SV(getName(ChargeSpeciesValue)), cgEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
+            hrCalculationYield.fill(HIST("hVzCentralityPtMcEtaMc_mc") + HIST(getName(ParticleSpeciesValue)) + HIST(getName(ChargeSpeciesValue)), cgEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
           }
         } else {
           const auto fillByPidStrategy{
@@ -2086,14 +2084,14 @@ struct PartNumFluc {
               if constexpr (DataModeValue == DataMode::McTrack) {
                 if (isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpeciesValue>() && isPid<getValue<PidStrategyAll>(PidStrategyValue), getValue<ParticleSpeciesAll>(ParticleSpeciesValue)>(cgTrack.cfgFlagRejectionOthers.value)) {
                   if (cgTrack.cfgFlagMcParticleMomentum.value) {
-                    hrCalculationYield.fill(C_CS("hVzCentralityPtMcEtaMc_mc") + C_SV(getName(PidStrategyValue)) + C_SV(getName(ParticleSpeciesValue)) + C_SV(getName(ChargeSpeciesValue)), cgEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
+                    hrCalculationYield.fill(HIST("hVzCentralityPtMcEtaMc_mc") + HIST(getName(PidStrategyValue)) + HIST(getName(ParticleSpeciesValue)) + HIST(getName(ChargeSpeciesValue)), cgEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
                   } else {
-                    hrCalculationYield.fill(C_CS("hVzCentralityPtEta_mc") + C_SV(getName(PidStrategyValue)) + C_SV(getName(ParticleSpeciesValue)) + C_SV(getName(ChargeSpeciesValue)), cgEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
+                    hrCalculationYield.fill(HIST("hVzCentralityPtEta_mc") + HIST(getName(PidStrategyValue)) + HIST(getName(ParticleSpeciesValue)) + HIST(getName(ChargeSpeciesValue)), cgEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
                   }
                 }
               } else { // DataModeValue == DataMode::RawTrack
                 if (isPid<getValue<PidStrategyAll>(PidStrategyValue), getValue<ParticleSpeciesAll>(ParticleSpeciesValue)>(cgTrack.cfgFlagRejectionOthers.value)) {
-                  hrCalculationYield.fill(C_CS("hVzCentralityPtEta_") + C_SV(getName<NameKind::Lower>(PidStrategyValue)) + C_SV(getName(ParticleSpeciesValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
+                  hrCalculationYield.fill(HIST("hVzCentralityPtEta_") + HIST(getName<NameKind::Lower>(PidStrategyValue)) + HIST(getName(ParticleSpeciesValue)) + HIST(getName(ChargeSpeciesValue)), holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
                 }
               }
             }};
@@ -2127,7 +2125,7 @@ struct PartNumFluc {
             requires IsValidEnumValue<PidStrategyValue>
           () -> void {
             if (isPid<getValue<PidStrategyAll>(PidStrategyValue), getValue<ParticleSpeciesAll>(ParticleSpeciesValue)>(cgTrack.cfgFlagRejectionOthers.value)) {
-              hrCalculationPurity.fill(C_CS("pCentralityPtEtaPurity") + C_SV(getName(PidStrategyValue)) + C_SV(getName(ParticleSpeciesValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.centrality, holderTrack.pt, holderTrack.eta, isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpeciesValue>() ? 1. : 0.);
+              hrCalculationPurity.fill(HIST("pCentralityPtEtaPurity") + HIST(getName(PidStrategyValue)) + HIST(getName(ParticleSpeciesValue)) + HIST(getName(ChargeSpeciesValue)), holderEvent.centrality, holderTrack.pt, holderTrack.eta, isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpeciesValue>() ? 1. : 0.);
             }
           }};
 
@@ -2159,7 +2157,7 @@ struct PartNumFluc {
             requires IsValidEnumValue<PidStrategyValue>
           () -> void {
             if (isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpeciesValue>() && isPid<getValue<PidStrategyAll>(PidStrategyValue), getValue<ParticleSpeciesAll>(ParticleSpeciesValue)>(cgTrack.cfgFlagRejectionOthers.value)) {
-              hrCalculationFractionPrimary.fill(C_CS("pCentralityPtEtaFractionPrimary") + C_SV(getName(PidStrategyValue)) + C_SV(getName(ParticleSpeciesValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.centrality, holderTrack.pt, holderTrack.eta, mcParticle.isPhysicalPrimary() ? 1. : 0.);
+              hrCalculationFractionPrimary.fill(HIST("pCentralityPtEtaFractionPrimary") + HIST(getName(PidStrategyValue)) + HIST(getName(ParticleSpeciesValue)) + HIST(getName(ChargeSpeciesValue)), holderEvent.centrality, holderTrack.pt, holderTrack.eta, mcParticle.isPhysicalPrimary() ? 1. : 0.);
             }
           }};
 
@@ -2302,10 +2300,10 @@ struct PartNumFluc {
     }
 
     if (doProcessMc.value) {
-      hrCalculationFluctuation.fill(C_CS("hCentralityN") + C_SV(getName(ParticleNumberValue)) + C_SV(getName(ChargeSpecies::Plus)) + C_CS("N") + C_SV(getName(ParticleNumberValue)) + C_SV(getName(ChargeSpecies::Minus)) + C_CS("_mc"), holderEvent.centrality, holderMcEvent.numbers[toI(ParticleNumberValue)][toI(ChargeSpecies::Plus)], holderMcEvent.numbers[toI(ParticleNumberValue)][toI(ChargeSpecies::Minus)]);
-      hrCalculationFluctuation.fill(C_CS("hCentralityN") + C_SV(getName(ParticleNumberValue)) + C_SV(getName(ChargeSpecies::Plus)) + C_CS("N") + C_SV(getName(ParticleNumberValue)) + C_SV(getName(ChargeSpecies::Minus)) + C_CS("_mcEff"), holderEvent.centrality, holderMcEvent.numbersEff[toI(ParticleNumberValue)][toI(ChargeSpecies::Plus)], holderMcEvent.numbersEff[toI(ParticleNumberValue)][toI(ChargeSpecies::Minus)]);
+      hrCalculationFluctuation.fill(HIST("hCentralityN") + HIST(getName(ParticleNumberValue)) + HIST(getName(ChargeSpecies::Plus)) + HIST("N") + HIST(getName(ParticleNumberValue)) + HIST(getName(ChargeSpecies::Minus)) + HIST("_mc"), holderEvent.centrality, holderMcEvent.numbers[toI(ParticleNumberValue)][toI(ChargeSpecies::Plus)], holderMcEvent.numbers[toI(ParticleNumberValue)][toI(ChargeSpecies::Minus)]);
+      hrCalculationFluctuation.fill(HIST("hCentralityN") + HIST(getName(ParticleNumberValue)) + HIST(getName(ChargeSpecies::Plus)) + HIST("N") + HIST(getName(ParticleNumberValue)) + HIST(getName(ChargeSpecies::Minus)) + HIST("_mcEff"), holderEvent.centrality, holderMcEvent.numbersEff[toI(ParticleNumberValue)][toI(ChargeSpecies::Plus)], holderMcEvent.numbersEff[toI(ParticleNumberValue)][toI(ChargeSpecies::Minus)]);
     }
-    hrCalculationFluctuation.fill(C_CS("hCentralityN") + C_SV(getName(ParticleNumberValue)) + C_SV(getName(ChargeSpecies::Plus)) + C_CS("N") + C_SV(getName(ParticleNumberValue)) + C_SV(getName(ChargeSpecies::Minus)), holderEvent.centrality, holderEvent.numbers[toI(ParticleNumberValue)][toI(ChargeSpecies::Plus)], holderEvent.numbers[toI(ParticleNumberValue)][toI(ChargeSpecies::Minus)]);
+    hrCalculationFluctuation.fill(HIST("hCentralityN") + HIST(getName(ParticleNumberValue)) + HIST(getName(ChargeSpecies::Plus)) + HIST("N") + HIST(getName(ParticleNumberValue)) + HIST(getName(ChargeSpecies::Minus)), holderEvent.centrality, holderEvent.numbers[toI(ParticleNumberValue)][toI(ChargeSpecies::Plus)], holderEvent.numbers[toI(ParticleNumberValue)][toI(ChargeSpecies::Minus)]);
 
     const auto fillByChargeNumber{
       [this]<ChargeNumber ChargeNumberValue>
@@ -2314,13 +2312,13 @@ struct PartNumFluc {
         if (doProcessMc.value) {
           const std::array<double, fluctuation_calculator_base::NOrderKeys> products{holderMember.fluctuationCalculatorsTrackMcParticle[toI(ParticleNumberValue)][toI(ChargeNumberValue)]->getProducts()};
           for (std::int32_t const& iOrderKey : std::views::iota(0, fluctuation_calculator_base::NOrderKeys)) {
-            hrCalculationFluctuation.fill(C_CS("hFluctuationCalculator") + C_SV(getName(ParticleNumberValue)) + C_SV(getName(ChargeNumberValue)) + C_CS("_mc"), holderEvent.centrality, holderEvent.indexSubgroup, iOrderKey, products[iOrderKey]);
+            hrCalculationFluctuation.fill(HIST("hFluctuationCalculator") + HIST(getName(ParticleNumberValue)) + HIST(getName(ChargeNumberValue)) + HIST("_mc"), holderEvent.centrality, holderEvent.indexSubgroup, iOrderKey, products[iOrderKey]);
           }
         }
 
         const std::array<double, fluctuation_calculator_base::NOrderKeys> products{holderMember.fluctuationCalculatorsTrackTrack[toI(ParticleNumberValue)][toI(ChargeNumberValue)]->getProducts()};
         for (std::int32_t const& iOrderKey : std::views::iota(0, fluctuation_calculator_base::NOrderKeys)) {
-          hrCalculationFluctuation.fill(C_CS("hFluctuationCalculator") + C_SV(getName(ParticleNumberValue)) + C_SV(getName(ChargeNumberValue)), holderEvent.centrality, holderEvent.indexSubgroup, iOrderKey, products[iOrderKey]);
+          hrCalculationFluctuation.fill(HIST("hFluctuationCalculator") + HIST(getName(ParticleNumberValue)) + HIST(getName(ChargeNumberValue)), holderEvent.centrality, holderEvent.indexSubgroup, iOrderKey, products[iOrderKey]);
         }
       }};
 
@@ -2449,7 +2447,7 @@ struct PartNumFluc {
 
   template <ParticleNumber ParticleNumberValue, typename MPs, typename Ts>
     requires IsValidEnumValue<ParticleNumberValue>
-  void fillMiniTableMc(const MPs& mcParticles, const Ts& tracks, const bool isGoodNPvContributors)
+  void fillMiniTableMc(const MPs& mcParticles, const Ts& tracksUngrouped, const std::int64_t globalIndexCollision, const bool isGoodNPvContributors)
   {
     if (!static_cast<bool>(cgAnalysis.cfgFlagsStorageMiniTable.value.get(toI(ParticleNumberValue)))) {
       return;
@@ -2493,8 +2491,12 @@ struct PartNumFluc {
       }
 
       if (!cgTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary()) {
-        const auto& tracksMatched{tracks.sliceBy(psg.tracksPerMcParticle, mcParticle.globalIndex())};
+        const auto& tracksMatched{tracksUngrouped.sliceBy(psg.tracksPerMcParticle, mcParticle.globalIndex())};
         for (const auto& track : tracksMatched) {
+          if (std::cmp_not_equal(track.collisionId(), globalIndexCollision)) {
+            continue;
+          }
+
           if (!std::cmp_greater(track.tpcNClsFound(), cgTrack.cfgCutsMinTpcNCls.value.get(toI(Selection::Default))) || !setTrack<true>(track) || !(track.tpcChi2NCl() > cgTrack.cfgCutMinTpcChi2NCls.value) || !(track.tpcFoundOverFindableCls() > cgTrack.cfgCutMinTpcNClsRatio.value) || !(track.tpcCrossedRowsOverFindableCls() > cgTrack.cfgCutMinTpcNCrossedRowsRatio.value)) {
             continue;
           }
@@ -2609,7 +2611,7 @@ struct PartNumFluc {
 
     const auto fillMcEventSelection{
       [this](const McEventSelection selection) -> McEventSelection {
-        hrCounter.fill(C_CS("hNEventsMc"), toI(selection));
+        hrCounter.fill(HIST("hNEventsMc"), toI(selection));
         return selection;
       }};
 
@@ -2624,7 +2626,7 @@ struct PartNumFluc {
     }
 
     if (cgAnalysis.cfgFlagQaMc.value) {
-      hrQaMc.fill(C_CS("hNCollisionsPerMcCollision"), mcCollision.numRecoCollision());
+      hrQaMc.fill(HIST("hNCollisionsPerMcCollision"), mcCollision.numRecoCollision());
     }
 
     if (cgEvent.cfgFlagSingleCollisionMc.value && std::cmp_not_equal(mcCollision.numRecoCollision(), 1)) {
@@ -2656,11 +2658,11 @@ struct PartNumFluc {
       [this](const EventSelection selection, const auto... selectionsAdditional) -> EventSelection
         requires((std::is_arithmetic_v<std::remove_cvref_t<decltype(selectionsAdditional)>> && ...))
       {
-        hrCounter.fill(C_CS("hNEvents"), toI(selection));
-        (hrCounter.fill(C_CS("hNEvents"), selectionsAdditional), ...);
+        hrCounter.fill(HIST("hNEvents"), toI(selection));
+        (hrCounter.fill(HIST("hNEvents"), selectionsAdditional), ...);
         if (cgAnalysis.cfgFlagQaCentrality.value) {
-          hrQaCentrality.fill(C_CS("hCentralitySelection"), holderEvent.centrality, toI(selection));
-          (hrQaCentrality.fill(C_CS("hCentralitySelection"), holderEvent.centrality, selectionsAdditional), ...);
+          hrQaCentrality.fill(HIST("hCentralitySelection"), holderEvent.centrality, toI(selection));
+          (hrQaCentrality.fill(HIST("hCentralitySelection"), holderEvent.centrality, selectionsAdditional), ...);
         }
         return selection;
       }};
@@ -2705,8 +2707,8 @@ struct PartNumFluc {
     }
 
     if (cgAnalysis.cfgFlagQaEvent.value) {
-      hrQaEvent.fill(C_CS("hVxVy"), collision.posX(), collision.posY());
-      hrQaEvent.fill(C_CS("hVz"), holderEvent.vz);
+      hrQaEvent.fill(HIST("hVxVy"), collision.posX(), collision.posY());
+      hrQaEvent.fill(HIST("hVz"), holderEvent.vz);
     }
 
     if (!(std::abs(holderEvent.vz) < cgEvent.cfgCutMaxAbsVz.value)) {
@@ -2721,22 +2723,22 @@ struct PartNumFluc {
     }
 
     if (cgAnalysis.cfgFlagQaRun.value) {
-      hrQaRun.fill(C_CS("pRunIndexVx"), holderEvent.indexRun, collision.posX());
-      hrQaRun.fill(C_CS("pRunIndexVy"), holderEvent.indexRun, collision.posY());
-      hrQaRun.fill(C_CS("pRunIndexVz"), holderEvent.indexRun, holderEvent.vz);
-      hrQaRun.fill(C_CS("pRunIndexMultiplicityFt0a"), holderEvent.indexRun, collision.multZeqFT0A());
-      hrQaRun.fill(C_CS("pRunIndexMultiplicityFt0c"), holderEvent.indexRun, collision.multZeqFT0C());
+      hrQaRun.fill(HIST("pRunIndexVx"), holderEvent.indexRun, collision.posX());
+      hrQaRun.fill(HIST("pRunIndexVy"), holderEvent.indexRun, collision.posY());
+      hrQaRun.fill(HIST("pRunIndexVz"), holderEvent.indexRun, holderEvent.vz);
+      hrQaRun.fill(HIST("pRunIndexMultiplicityFt0a"), holderEvent.indexRun, collision.multZeqFT0A());
+      hrQaRun.fill(HIST("pRunIndexMultiplicityFt0c"), holderEvent.indexRun, collision.multZeqFT0C());
       if (const double centrality{collision.centNTPV()}; HolderEvent::isValidCentrality(centrality)) {
-        hrQaRun.fill(C_CS("pRunIndexCentralityNtpv"), holderEvent.indexRun, centrality);
+        hrQaRun.fill(HIST("pRunIndexCentralityNtpv"), holderEvent.indexRun, centrality);
       }
       if (const double centrality{collision.centFT0A()}; HolderEvent::isValidCentrality(centrality)) {
-        hrQaRun.fill(C_CS("pRunIndexCentralityFt0a"), holderEvent.indexRun, centrality);
+        hrQaRun.fill(HIST("pRunIndexCentralityFt0a"), holderEvent.indexRun, centrality);
       }
       if (const double centrality{collision.centFT0C()}; HolderEvent::isValidCentrality(centrality)) {
-        hrQaRun.fill(C_CS("pRunIndexCentralityFt0c"), holderEvent.indexRun, centrality);
+        hrQaRun.fill(HIST("pRunIndexCentralityFt0c"), holderEvent.indexRun, centrality);
       }
       if (const double centrality{collision.centFT0M()}; HolderEvent::isValidCentrality(centrality)) {
-        hrQaRun.fill(C_CS("pRunIndexCentralityFt0m"), holderEvent.indexRun, centrality);
+        hrQaRun.fill(HIST("pRunIndexCentralityFt0m"), holderEvent.indexRun, centrality);
       }
     }
 
@@ -2758,12 +2760,12 @@ struct PartNumFluc {
     }
 
     if (cgAnalysis.cfgFlagQaEvent.value) {
-      hrQaEvent.fill(C_CS("hNPvContributorsNGlobalTracks"), holderEvent.getNPvContributors(), holderEvent.getNGlobalTracks());
+      hrQaEvent.fill(HIST("hNPvContributorsNGlobalTracks"), holderEvent.getNPvContributors(), holderEvent.getNGlobalTracks());
       if (std::cmp_greater(holderEvent.getNGlobalTracks(), 0)) {
-        hrQaEvent.fill(C_CS("hNGlobalTracks") + C_SV(getName(DcaMeasure::Mean)) + C_CS("Dca") + C_SV(getName(DcaAxis::Xy)), holderEvent.getNGlobalTracks(), holderEvent.getMeasureDca<DcaMeasure::Mean, DcaAxis::Xy>());
-        hrQaEvent.fill(C_CS("hNGlobalTracks") + C_SV(getName(DcaMeasure::Mean)) + C_CS("Dca") + C_SV(getName(DcaAxis::Z)), holderEvent.getNGlobalTracks(), holderEvent.getMeasureDca<DcaMeasure::Mean, DcaAxis::Z>());
+        hrQaEvent.fill(HIST("hNGlobalTracks") + HIST(getName(DcaMeasure::Mean)) + HIST("Dca") + HIST(getName(DcaAxis::Xy)), holderEvent.getNGlobalTracks(), holderEvent.getMeasureDca<DcaMeasure::Mean, DcaAxis::Xy>());
+        hrQaEvent.fill(HIST("hNGlobalTracks") + HIST(getName(DcaMeasure::Mean)) + HIST("Dca") + HIST(getName(DcaAxis::Z)), holderEvent.getNGlobalTracks(), holderEvent.getMeasureDca<DcaMeasure::Mean, DcaAxis::Z>());
       }
-      hrQaEvent.fill(C_CS("hNTofBetaNGlobalTracks"), holderEvent.getNTofBeta(), holderEvent.getNGlobalTracks());
+      hrQaEvent.fill(HIST("hNTofBetaNGlobalTracks"), holderEvent.getNTofBeta(), holderEvent.getNGlobalTracks());
     }
 
     if (!std::cmp_greater(holderEvent.getNPvContributors() - holderEvent.getNGlobalTracks(), cgEvent.cfgCutMinDeviationNPvContributors.value)) {
@@ -2774,14 +2776,14 @@ struct PartNumFluc {
 
     if (cgAnalysis.cfgFlagQaEvent.value) {
       if (std::cmp_greater(holderEvent.getNGlobalTracks(), 0)) {
-        hrQaEvent.fill(C_CS("hNGlobalTracks") + C_SV(getName(DcaMeasure::Mean)) + C_CS("Dca") + C_SV(getName(DcaAxis::Xy)) + C_CS("_nPvContributorsCut"), holderEvent.getNGlobalTracks(), holderEvent.getMeasureDca<DcaMeasure::Mean, DcaAxis::Xy>());
-        hrQaEvent.fill(C_CS("hNGlobalTracks") + C_SV(getName(DcaMeasure::Mean)) + C_CS("Dca") + C_SV(getName(DcaAxis::Z)) + C_CS("_nPvContributorsCut"), holderEvent.getNGlobalTracks(), holderEvent.getMeasureDca<DcaMeasure::Mean, DcaAxis::Z>());
+        hrQaEvent.fill(HIST("hNGlobalTracks") + HIST(getName(DcaMeasure::Mean)) + HIST("Dca") + HIST(getName(DcaAxis::Xy)) + HIST("_nPvContributorsCut"), holderEvent.getNGlobalTracks(), holderEvent.getMeasureDca<DcaMeasure::Mean, DcaAxis::Xy>());
+        hrQaEvent.fill(HIST("hNGlobalTracks") + HIST(getName(DcaMeasure::Mean)) + HIST("Dca") + HIST(getName(DcaAxis::Z)) + HIST("_nPvContributorsCut"), holderEvent.getNGlobalTracks(), holderEvent.getMeasureDca<DcaMeasure::Mean, DcaAxis::Z>());
       }
-      hrQaEvent.fill(C_CS("hNTofBetaNGlobalTracks_nPvContributorsCut"), holderEvent.getNTofBeta(), holderEvent.getNGlobalTracks());
+      hrQaEvent.fill(HIST("hNTofBetaNGlobalTracks_nPvContributorsCut"), holderEvent.getNTofBeta(), holderEvent.getNGlobalTracks());
     }
 
     if (cgAnalysis.cfgFlagQaCentrality.value) {
-      hrQaCentrality.fill(C_CS("hCentralityMultiplicity"), holderEvent.centrality, collision.multNTracksPVeta1());
+      hrQaCentrality.fill(HIST("hCentralityMultiplicity"), holderEvent.centrality, collision.multNTracksPVeta1());
     }
 
     return fillEventSelection(EventSelection::Good);
@@ -2804,16 +2806,16 @@ struct PartNumFluc {
       if ((eventSelection == EventSelection::Good || std::cmp_greater_equal(toI(eventSelection), toI(EventSelection::NPvContributors))) && holderMember.doStorageMiniTable && (std::uniform_real_distribution<double>{}(holderMember.engineRandom)) * cgEvent.cfgFactorStorageMiniTable.value < 1.) {
         const bool isGoodNPvContributors{eventSelection != EventSelection::NPvContributors};
         readCcdb<false>();
-        fillMiniTableMc<ParticleNumber::Charge>(mcParticles, tracks, isGoodNPvContributors);
-        fillMiniTableMc<ParticleNumber::Kaon>(mcParticles, tracks, isGoodNPvContributors);
-        fillMiniTableMc<ParticleNumber::Proton>(mcParticles, tracks, isGoodNPvContributors);
+        fillMiniTableMc<ParticleNumber::Charge>(mcParticles, tracksUngrouped, collision.globalIndex(), isGoodNPvContributors);
+        fillMiniTableMc<ParticleNumber::Kaon>(mcParticles, tracksUngrouped, collision.globalIndex(), isGoodNPvContributors);
+        fillMiniTableMc<ParticleNumber::Proton>(mcParticles, tracksUngrouped, collision.globalIndex(), isGoodNPvContributors);
       }
       if (eventSelection != EventSelection::Good) {
         continue;
       }
 
       if (cgAnalysis.cfgFlagQaMc.value) {
-        hrQaMc.fill(C_CS("hCentralityVzMcDeltaVz"), holderEvent.centralityCalibration, holderMcEvent.vz, holderEvent.vz - holderMcEvent.vz);
+        hrQaMc.fill(HIST("hCentralityVzMcDeltaVz"), holderEvent.centralityCalibration, holderMcEvent.vz, holderEvent.vz - holderMcEvent.vz);
       }
 
       if (cgAnalysis.cfgFlagQaTrack.value || cgAnalysis.cfgFlagQaDca.value || holderMember.doQaAcceptance || holderMember.doQaPhi || holderMember.doQaPid || cgAnalysis.cfgFlagQaMc.value || holderMember.doCalculationYield || holderMember.doCalculationPurity || holderMember.doCalculationFractionPrimary || holderMember.doCalculationFluctuation) {
@@ -2828,12 +2830,24 @@ struct PartNumFluc {
             continue;
           }
 
-          const auto& tracksMatched{tracks.sliceBy(psg.tracksPerMcParticle, mcParticle.globalIndex())};
+          const auto& tracksMatched{tracksUngrouped.sliceBy(psg.tracksPerMcParticle, mcParticle.globalIndex())};
+          std::int64_t nTracksMatched{};
+          if (holderMember.doQaAcceptance || cgAnalysis.cfgFlagQaMc.value) {
+            for (auto const& track : tracksMatched) {
+              if (std::cmp_equal(track.collisionId(), collision.globalIndex())) {
+                ++nTracksMatched;
+              }
+            }
+          }
 
-          if (holderMember.doQaAcceptance && mcParticle.isPhysicalPrimary() && std::cmp_equal(tracksMatched.size(), 1)) {
+          if (holderMember.doQaAcceptance && mcParticle.isPhysicalPrimary() && std::cmp_equal(nTracksMatched, 1)) {
             const double vz{cgEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz};
             if (holderMcParticle.eta * vz > 0. && std::abs(vz) > (cgEvent.cfgFlagMcCollisionVz.value ? cgEvent.cfgCutMaxAbsVzMc.value : cgEvent.cfgCutMaxAbsVz.value) - 1.) {
               for (const auto& track : tracksMatched) {
+                if (std::cmp_not_equal(track.collisionId(), collision.globalIndex())) {
+                  continue;
+                }
+
                 if (!setTrack<false>(track)) {
                   continue;
                 }
@@ -2847,7 +2861,7 @@ struct PartNumFluc {
           }
 
           if (cgAnalysis.cfgFlagQaMc.value && (!cgTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary())) {
-            hrQaMc.fill(C_CS("hCentralityNTracksPerMcParticle"), holderEvent.centralityCalibration, tracksMatched.size());
+            hrQaMc.fill(HIST("hCentralityNTracksPerMcParticle"), holderEvent.centralityCalibration, nTracksMatched);
           }
 
           if (mcParticle.isPhysicalPrimary()) {
@@ -2865,6 +2879,10 @@ struct PartNumFluc {
           }
 
           for (const auto& track : tracksMatched) {
+            if (std::cmp_not_equal(track.collisionId(), collision.globalIndex())) {
+              continue;
+            }
+
             if (!initTrack<false>(track)) {
               continue;
             }
@@ -2884,8 +2902,8 @@ struct PartNumFluc {
             }
 
             if (cgAnalysis.cfgFlagQaMc.value && (!cgTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary())) {
-              hrQaMc.fill(C_CS("hCentralityPtMcEtaMcDeltaPt"), holderEvent.centralityCalibration, holderMcParticle.pt, holderMcParticle.eta, holderTrack.pt - holderMcParticle.pt);
-              hrQaMc.fill(C_CS("hCentralityPtMcEtaMcDeltaEta"), holderEvent.centralityCalibration, holderMcParticle.pt, holderMcParticle.eta, holderTrack.eta - holderMcParticle.eta);
+              hrQaMc.fill(HIST("hCentralityPtMcEtaMcDeltaPt"), holderEvent.centralityCalibration, holderMcParticle.pt, holderMcParticle.eta, holderTrack.pt - holderMcParticle.pt);
+              hrQaMc.fill(HIST("hCentralityPtMcEtaMcDeltaEta"), holderEvent.centralityCalibration, holderMcParticle.pt, holderMcParticle.eta, holderTrack.eta - holderMcParticle.eta);
             }
 
             if (holderMember.doCalculationYield && (!cgTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary())) {

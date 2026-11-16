@@ -17,6 +17,7 @@
 /// \author Tanu Gahlaut <tanu.gahlaut@cern.ch>
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -30,6 +31,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -65,24 +67,31 @@ struct MeanPtFlucId {
     Configurable<float> cfgCutPtMax{"cfgCutPtMax", 2.0, "maximum pT"};
     Configurable<float> cfgCutPtMin{"cfgCutPtMin", 0.2, "minimum pT"};
     Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut"};
-    Configurable<float> cfgCutITSChi2NCl{"cfgCutITSChi2NCl", 36.0, "ITS Chi2/NCl cut"};
-    Configurable<float> cfgCutTPCChi2NCl{"cfgCutTPCChi2NCl", 4.0, "TPC Chi2/NCl cut"};
-    Configurable<float> cfgCutTPCNCls{"cfgCutTPCNCls", 70.0, "TPC NCls cut"};
     Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 0.1, "DCAxy cut"};
     Configurable<float> cfgCutDCAz{"cfgCutDCAz", 0.2, "DCAz cut"};
     Configurable<float> cfgDcaPtDepOffset{"cfgDcaPtDepOffset", 0.004, "Offset of the pT-dependent DCA cut (cm)"};
     Configurable<float> cfgDcaPtDepScale{"cfgDcaPtDepScale", 0.013, "1/pT coefficient of the pT-dependent DCA cut (cm GeV/c)"};
-    Configurable<int> cfgCutNCrossedRowsTPC{"cfgCutNCrossedRowsTPC", 70, "Minimum number of crossed TPC rows"};
     Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", true, "Require the standard global-track selection (includes its DCA cuts)"};
     Configurable<bool> cfgGlobalTrackWoDCA{"cfgGlobalTrackWoDCA", false, "Require global-track quality without built-in DCA cuts; disable cfgGlobalTrack to use only this selection"};
-    Configurable<bool> cfgDcaXYPtDep{"cfgDcaXYPtDep", true, "Apply the pT-dependent absolute DCAxy cut; takes precedence over cfgDcaXY"};
-    Configurable<bool> cfgNTPCCrossedRows{"cfgNTPCCrossedRows", false, "Apply the minimum number of crossed TPC rows"};
-    Configurable<bool> cfgTPCChi2NCl{"cfgTPCChi2NCl", false, "Chi2 per N_{TPC} Clusters Cut "};
-    Configurable<bool> cfgITSChi2NCl{"cfgITSChi2NCl", false, "Chi2 per N_{ITS} Clusters Cut "};
     Configurable<bool> cfgDcaXY{"cfgDcaXY", false, "DCA XY Cut "};
     Configurable<bool> cfgDcaZ{"cfgDcaZ", false, "DCA Z Cut "};
+    Configurable<bool> cfgDcaXYPtDep{"cfgDcaXYPtDep", true, "Apply the pT-dependent absolute DCAxy cut; takes precedence over cfgDcaXY"};
     Configurable<bool> cfgDcaZPtDep{"cfgDcaZPtDep", false, "DCA Z pT dependent Cut "};
   } trackCuts;
+  struct : ConfigurableGroup {
+    Configurable<bool> cfgUseCustomTrackSelection{"cfgUseCustomTrackSelection", false, "Use custom Run 3 quality instead of global flags; shared acceptance and DCA cuts still apply"};
+    Configurable<int> cfgCustomMinTPCClusters{"cfgCustomMinTPCClusters", 0, "Custom minimum TPC found clusters (global default: no additional minimum)"};
+    Configurable<int> cfgCustomMinTPCCrossedRows{"cfgCustomMinTPCCrossedRows", 70, "Custom minimum TPC crossed rows"};
+    Configurable<float> cfgCustomMinTPCCrossedRowsOverFindable{"cfgCustomMinTPCCrossedRowsOverFindable", 0.8f, "Custom minimum crossed rows / findable TPC clusters"};
+    Configurable<float> cfgCustomMaxTPCChi2{"cfgCustomMaxTPCChi2", 4.f, "Custom maximum TPC chi2 per cluster"};
+    Configurable<int> cfgCustomMinITSClusters{"cfgCustomMinITSClusters", 0, "Custom minimum ITS clusters, in addition to the selected hit pattern"};
+    Configurable<float> cfgCustomMaxITSChi2{"cfgCustomMaxITSChi2", 36.f, "Custom maximum ITS chi2 per cluster"};
+    Configurable<int> cfgCustomITSMatching{"cfgCustomITSMatching", 1, "Custom ITS hits: 1=any inner 3, 2=any of 7, 3=all 7, 4=first layer, 5=at least 2 inner"};
+    Configurable<bool> cfgCustomRequireITS{"cfgCustomRequireITS", true, "Require ITS information (Run 3 ITS-refit criterion)"};
+    Configurable<bool> cfgCustomRequireTPC{"cfgCustomRequireTPC", true, "Require TPC information (Run 3 TPC-refit criterion)"};
+  } customTrackCuts;
+
+  TrackSelection mySelection;
   struct : ConfigurableGroup {
     Configurable<float> cfgCutPosZ{"cfgCutPosZ", 7.0, "cut for vertex Z"};
     Configurable<float> cfgP0U{"cfgP0U", 6.36269, "p_{0} for upper cut for N_{TPC} vs N{sim}"};
@@ -281,8 +290,67 @@ struct MeanPtFlucId {
   std::vector<double> matrixWInBin;
   std::vector<double> matrixW2InBin;
 
+  // Run 3 global quality baseline, with each systematic threshold set explicitly.
+  TrackSelection myTrackSelection()
+  {
+    constexpr int MinITSMatchingMode = 1;
+    constexpr int MaxITSMatchingMode = 5;
+    constexpr int NumberOfITSLayers = 7;
+    const auto& cuts = customTrackCuts;
+    auto finiteNonnegative = [](float value) { return std::isfinite(value) && value >= 0.f; };
+    if (cuts.cfgCustomITSMatching.value < MinITSMatchingMode || cuts.cfgCustomITSMatching.value > MaxITSMatchingMode ||
+        cuts.cfgCustomMinTPCClusters.value < 0 || cuts.cfgCustomMinTPCCrossedRows.value < 0 ||
+        cuts.cfgCustomMinITSClusters.value < 0 || cuts.cfgCustomMinITSClusters.value > NumberOfITSLayers ||
+        !finiteNonnegative(cuts.cfgCustomMinTPCCrossedRowsOverFindable.value) ||
+        !finiteNonnegative(cuts.cfgCustomMaxTPCChi2.value) || !finiteNonnegative(cuts.cfgCustomMaxITSChi2.value)) {
+      LOGF(fatal, "Invalid custom track-selection settings: check hit counts, ITS matching and nonnegative finite thresholds");
+    }
+    if (!std::isfinite(trackCuts.cfgCutPtMin.value) || !std::isfinite(trackCuts.cfgCutPtMax.value) ||
+        !std::isfinite(trackCuts.cfgCutEta.value) || trackCuts.cfgCutPtMin.value <= 0.f ||
+        trackCuts.cfgCutPtMin.value >= trackCuts.cfgCutPtMax.value || trackCuts.cfgCutEta.value <= 0.f) {
+      LOGF(fatal, "Custom selection requires finite 0 < pTmin < pTmax and etaMax > 0");
+    }
+    TrackSelection selectedTracks;
+    selectedTracks.SetTrackType(aod::track::TrackTypeEnum::Track); // Run 3 propagated tracks
+    // Run 3 ITS layers: no Run 2 SPD requirement.
+    switch (cuts.cfgCustomITSMatching.value) {
+      case 1:
+        selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2});
+        break;
+      case 2:
+        selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2, 3, 4, 5, 6});
+        break;
+      case 3:
+        selectedTracks.SetRequireHitsInITSLayers(7, {0, 1, 2, 3, 4, 5, 6});
+        break;
+      case 4:
+        selectedTracks.SetRequireHitsInITSLayers(1, {0});
+        break;
+      case 5:
+        selectedTracks.SetRequireHitsInITSLayers(2, {0, 1, 2});
+        break;
+      default:
+        LOGF(fatal, "Invalid custom ITS matching mode: %d", cuts.cfgCustomITSMatching.value);
+        break;
+    }
+    selectedTracks.SetRequireITSRefit(cuts.cfgCustomRequireITS.value);
+    selectedTracks.SetRequireTPCRefit(cuts.cfgCustomRequireTPC.value);
+    selectedTracks.SetMinNClustersTPC(cuts.cfgCustomMinTPCClusters.value);
+    selectedTracks.SetMinNCrossedRowsTPC(cuts.cfgCustomMinTPCCrossedRows.value);
+    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(cuts.cfgCustomMinTPCCrossedRowsOverFindable.value);
+    selectedTracks.SetMaxChi2PerClusterTPC(cuts.cfgCustomMaxTPCChi2.value);
+    selectedTracks.SetMinNClustersITS(cuts.cfgCustomMinITSClusters.value);
+    selectedTracks.SetMaxChi2PerClusterITS(cuts.cfgCustomMaxITSChi2.value);
+    return selectedTracks;
+  }
+
   void init(InitContext const&)
   {
+    if (customTrackCuts.cfgUseCustomTrackSelection) {
+      mySelection = myTrackSelection();
+      LOGF(info, "Custom Run 3 quality replaces global flags; pT, eta and DCA cuts are applied in selTrack");
+      mySelection.print();
+    }
     if (!std::isfinite(pidConfig.cfgTofShiftPi.value) || !std::isfinite(pidConfig.cfgTofShiftKa.value) || !std::isfinite(pidConfig.cfgTofShiftPr.value)) {
       LOGF(fatal, "TOF nSigma shifts must be finite: pion=%g, kaon=%g, proton=%g",
            pidConfig.cfgTofShiftPi.value, pidConfig.cfgTofShiftKa.value, pidConfig.cfgTofShiftPr.value);
@@ -364,7 +432,7 @@ struct MeanPtFlucId {
     const AxisSpec axisMultMC{multMCBins, "N_{Gen} "};
     const AxisSpec axisMultFT0M{multFT0MBins, "N_{FT0M}"};
     // Match the estimator precedence used by getConfiguredCentrality().
-    const std::string centralityLabel = eventCuts.cfgCentFT0C ? "FT0C (%)" : (eventCuts.cfgCentFV0A ? "FV0A (%)" : "FT0M (%)");
+    const std::string centralityLabel = eventCuts.cfgCentFT0C ? std::string{"FT0C (%)"} : (eventCuts.cfgCentFV0A ? std::string{"FV0A (%)"} : std::string{"FT0M (%)"});
     const AxisSpec axisCentFT0M{101, 0, 101, centralityLabel};
     const AxisSpec axisCent{centBins, centralityLabel};
     const AxisSpec axisVtxZ{80, -20., 20., "V_{Z} (cm)"};
@@ -611,7 +679,7 @@ struct MeanPtFlucId {
       if (genConfig.cfgGenCutPosZ && (!std::isfinite(genConfig.cfgGenMaxPosZ.value) || genConfig.cfgGenMaxPosZ <= 0.f)) {
         LOGF(fatal, "cfgGenMaxPosZ must be finite and positive");
       }
-      const std::string estimator = eventCuts.cfgCentFT0C ? "FT0C" : (eventCuts.cfgCentFV0A ? "FV0A" : "FT0M");
+      const std::string estimator = eventCuts.cfgCentFT0C ? std::string{"FT0C"} : (eventCuts.cfgCentFV0A ? std::string{"FV0A"} : std::string{"FT0M"});
       constexpr size_t MinimumCentralityLookupEntries = 2;
       constexpr double MinimumCentralityPercentile = 0.;
       constexpr double MaximumCentralityPercentile = 100.;
@@ -642,6 +710,12 @@ struct MeanPtFlucId {
       hist.get<TH1>(HIST("Model/h_EventCount"))->GetXaxis()->SetBinLabel(2, "Accepted");
       hist.add("Model/h_VtxZ", "Generated vertex Z", kTH1D, {axisVtxZ});
       hist.add("Model/h_Nch", "Accepted events (including zero selected particles)", kTH1D, {axisModelMult});
+      hist.add("Model/h2_Nch_Cent", "Generated charged multiplicity vs centrality (including zero selected particles)", kTH2D, {axisModelCent, axisModelMult});
+      // The profile retains exact integer multiplicities, independent of the
+      // possibly coarse multiplicity bins in h2_Nch_Cent. Use the same event
+      // weights and calibrated event ensemble as the particle matrices.
+      const std::string modelNchProfileTitle = "Mean generated charged physical-primary multiplicity, all pT, |eta| < " + std::to_string(trackCuts.cfgCutEta.value);
+      hist.add("Model/p_Nch_Cent", modelNchProfileTitle.c_str(), kTProfile, {axisModelCent});
       auto addModelSpecies = [&](const std::string& directory, const AxisSpec& axisPtId) {
         hist.add(directory + "h_Pt", "Generated physical primaries", kTH1D, {axisPtId});
         hist.add(directory + "h_Eta", "Generated physical primaries", kTH1D, {axisEta});
@@ -753,27 +827,41 @@ struct MeanPtFlucId {
   template <typename T>
   bool selTrack(T const& track)
   {
-    if (trackCuts.cfgGlobalTrack && !track.isGlobalTrack()) {
+    // Shared analysis acceptance, evaluated once for either selection mode.
+    if (!std::isfinite(track.pt()) || !std::isfinite(track.eta()) || track.pt() <= 0.f ||
+        track.pt() < trackCuts.cfgCutPtMin || track.pt() >= trackCuts.cfgCutPtMax ||
+        std::abs(track.eta()) >= trackCuts.cfgCutEta || track.sign() == 0) {
       return false;
     }
 
-    if (trackCuts.cfgGlobalTrackWoDCA && !track.isGlobalTrackWoDCA()) {
-      return false;
+    if (customTrackCuts.cfgUseCustomTrackSelection) {
+      // Acceptance is checked above with the analysis's exclusive upper bounds.
+      // Only quality cuts belong to the custom selector; DCA is applied below.
+      const bool isRun2 = TrackSelection::IsRun2Track(track);
+      for (int i = 0; i < static_cast<int>(TrackSelection::TrackCuts::kNCuts); ++i) {
+        const auto cut = static_cast<TrackSelection::TrackCuts>(i);
+        if (cut == TrackSelection::TrackCuts::kPtRange || cut == TrackSelection::TrackCuts::kEtaRange ||
+            cut == TrackSelection::TrackCuts::kDCAxy || cut == TrackSelection::TrackCuts::kDCAz) {
+          continue;
+        }
+        if (!mySelection.IsSelected(track, cut, isRun2)) {
+          return false;
+        }
+      }
+    } else if (trackCuts.cfgGlobalTrack) {
+      if (!track.isGlobalTrack()) {
+        return false;
+      }
+    } else if (trackCuts.cfgGlobalTrackWoDCA) {
+      if (!track.isGlobalTrackWoDCA()) {
+        return false;
+      }
     }
 
-    if (track.pt() < trackCuts.cfgCutPtMin) {
-      return false;
-    }
-
-    if (track.pt() >= trackCuts.cfgCutPtMax) {
-      return false;
-    }
-
-    if (track.sign() == 0) {
-      return false;
-    }
-
-    const float maxDca = trackCuts.cfgDcaPtDepOffset + trackCuts.cfgDcaPtDepScale / track.pt();
+    // Shared DCA cuts, applied after either custom or standard quality selection.
+    const float maxDca = (trackCuts.cfgDcaXYPtDep || trackCuts.cfgDcaZPtDep)
+                           ? trackCuts.cfgDcaPtDepOffset + trackCuts.cfgDcaPtDepScale / track.pt()
+                           : 0.f;
 
     if (trackCuts.cfgDcaXYPtDep) {
       if (std::abs(track.dcaXY()) >= maxDca) {
@@ -793,22 +881,6 @@ struct MeanPtFlucId {
       if (std::abs(track.dcaZ()) >= trackCuts.cfgCutDCAz) {
         return false;
       }
-    }
-
-    if (std::abs(track.eta()) >= trackCuts.cfgCutEta) {
-      return false;
-    }
-
-    if (trackCuts.cfgTPCChi2NCl && track.tpcChi2NCl() > trackCuts.cfgCutTPCChi2NCl) {
-      return false;
-    }
-
-    if (trackCuts.cfgITSChi2NCl && track.itsChi2NCl() > trackCuts.cfgCutITSChi2NCl) {
-      return false;
-    }
-
-    if (trackCuts.cfgNTPCCrossedRows && track.tpcNClsCrossedRows() < trackCuts.cfgCutNCrossedRowsTPC) {
-      return false;
     }
 
     return true;
@@ -1498,11 +1570,12 @@ struct MeanPtFlucId {
       eta = mcPart.eta();
       phi = mcPart.phi();
 
-      if (std::abs(eta) < trackCuts.cfgCutEta) {
-        nSim++;
+      if (!(std::abs(eta) < trackCuts.cfgCutEta)) {
+        continue;
       }
+      nSim++;
 
-      if (pt >= trackCuts.cfgCutPtMin && pt < trackCuts.cfgCutPtMax && std::abs(eta) < trackCuts.cfgCutEta) {
+      if (pt >= trackCuts.cfgCutPtMin && pt < trackCuts.cfgCutPtMax) {
         chargedTracksGen.push_back({pt});
         hist.fill(HIST("Gen/Charged/h_PtTruth"), pt);
         hist.fill(HIST("Gen/Charged/h_PtTruth_e"), pt);
@@ -1669,6 +1742,8 @@ struct MeanPtFlucId {
     hist.fill(HIST("Model/h_Centrality"), centrality, eventWeight);
     const int multiplicity = countSimMultiplicity(mcParts);
     hist.fill(HIST("Model/h_Nch"), multiplicity, eventWeight);
+    hist.fill(HIST("Model/h2_Nch_Cent"), centrality, multiplicity, eventWeight);
+    hist.fill(HIST("Model/p_Nch_Cent"), centrality, multiplicity, eventWeight);
 
     std::array<std::vector<TrackInfo>, 4> modelTracks;
     for (auto const& particle : mcParts) {

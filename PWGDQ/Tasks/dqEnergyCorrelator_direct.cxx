@@ -155,8 +155,8 @@ struct AnalysisEnergyCorrelator {
   MixingHandler* fMixHandler = nullptr;
 
   AnalysisCompositeCut* fEventCut = nullptr;
-  std::vector<AnalysisCompositeCut*> fTrackCuts;  // Electron cuts
-  std::vector<AnalysisCompositeCut*> fHadronCuts; // Hadron cuts
+  std::vector<AnalysisCut*> fTrackCuts;  // Electron cuts
+  std::vector<AnalysisCut*> fHadronCuts; // Hadron cuts
 
   std::vector<TString> fTrackCutNames;
   std::vector<TString> fHadronCutNames;
@@ -182,12 +182,12 @@ struct AnalysisEnergyCorrelator {
   using MixingBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
   std::unique_ptr<MixingBinning> fMixingBinning;
 
-  TH2F* hAcceptance_rec;
-  TH2F* hAcceptance_gen;
-  TH2F* hEfficiency_dilepton;
-  TH2F* hEfficiency_hadron;
-  TH1F* hMasswindow;
-  TH2F* hReweighthadron;
+  TH2F* hAcceptance_rec = nullptr;
+  TH2F* hAcceptance_gen = nullptr;
+  TH2F* hEfficiency_dilepton = nullptr;
+  TH2F* hEfficiency_hadron = nullptr;
+  TH1F* hMasswindow = nullptr;
+  TH2F* hReweighthadron = nullptr;
 
   void init(o2::framework::InitContext& context)
   {
@@ -240,7 +240,7 @@ struct AnalysisEnergyCorrelator {
     if (trackCutsJSON != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(trackCutsJSON.Data());
       for (auto& t : addTrackCuts) {
-        fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(t);
         fTrackCutNames.push_back(t->GetName());
         trackCutStr += Form(",%s", t->GetName());
       }
@@ -313,7 +313,7 @@ struct AnalysisEnergyCorrelator {
     if (hadronCutsJSON != "") {
       std::vector<AnalysisCut*> addHadronCuts = dqcuts::GetCutsFromJSON(hadronCutsJSON.Data());
       for (auto& t : addHadronCuts) {
-        fHadronCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fHadronCuts.push_back(t);
         fHadronCutNames.push_back(t->GetName());
         hadronCutStr += Form(",%s", t->GetName());
       }
@@ -651,26 +651,26 @@ struct AnalysisEnergyCorrelator {
     VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
     VarManager::FillPairVertexing<TPairType, gkEventFillMapWithMults, TTrackFillMap>(event, t1, t2, VarManager::fgValues);
 
-    if (sign1 * sign2 < 0) {                                                       // +- pairs
-      fHistMan->FillHistClass(histNames[iEleCut][0].Data(), VarManager::fgValues); // reconstructed, unmatched
-      for (size_t isig = 0; isig < fRecMCSignals.size(); isig++) {                 // loop over MC signals
-        if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
-          fHistMan->FillHistClass(histNamesMC[iEleCut * fRecMCSignals.size() + isig][0].Data(), VarManager::fgValues); // matched signal
+    if (sign1 * sign2 < 0) {                                                            // +- pairs
+      fHistMan->FillHistClass(histNames[iEleCut][0].Data(), VarManager::fgValues);      // reconstructed, unmatched
+      for (size_t mcRecSignal = 0; mcRecSignal < fRecMCSignals.size(); mcRecSignal++) { // loop over MC signals
+        if (mcDecision & (static_cast<uint32_t>(1) << mcRecSignal)) {
+          fHistMan->FillHistClass(histNamesMC[iEleCut * fRecMCSignals.size() + mcRecSignal][0].Data(), VarManager::fgValues); // matched signal
         }
       }
     } else {
       if (sign1 > 0) { // ++ pairs
         fHistMan->FillHistClass(histNames[iEleCut][1].Data(), VarManager::fgValues);
-        for (size_t isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
-          if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
-            fHistMan->FillHistClass(histNamesMC[iEleCut * fRecMCSignals.size() + isig][1].Data(), VarManager::fgValues);
+        for (size_t mcRecSignal = 0; mcRecSignal < fRecMCSignals.size(); mcRecSignal++) { // loop over MC signals
+          if (mcDecision & (static_cast<uint32_t>(1) << mcRecSignal)) {
+            fHistMan->FillHistClass(histNamesMC[iEleCut * fRecMCSignals.size() + mcRecSignal][1].Data(), VarManager::fgValues);
           }
         }
       } else { // -- pairs
         fHistMan->FillHistClass(histNames[iEleCut][2].Data(), VarManager::fgValues);
-        for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
-          if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
-            fHistMan->FillHistClass(histNamesMC[iEleCut * fRecMCSignals.size() + isig][2].Data(), VarManager::fgValues);
+        for (unsigned int mcRecSignal = 0; mcRecSignal < fRecMCSignals.size(); mcRecSignal++) { // loop over MC signals
+          if (mcDecision & (static_cast<uint32_t>(1) << mcRecSignal)) {
+            fHistMan->FillHistClass(histNamesMC[iEleCut * fRecMCSignals.size() + mcRecSignal][2].Data(), VarManager::fgValues);
           }
         }
       }

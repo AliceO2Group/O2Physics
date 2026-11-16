@@ -352,6 +352,9 @@ struct lambdaspincorrderived {
   Configurable<int> cfgV5NeighborEta{"cfgV5NeighborEta", 0, "v5: neighbor bins in eta (use symmetric ±N, edge-safe)"};
   Configurable<int> cfgV5NeighborPhi{"cfgV5NeighborPhi", 0, "v5: neighbor bins in phi (use symmetric ±N, periodic wrap)"};
   Configurable<int> cfgV5MaxMatches{"cfgV5MaxMatches", 50, "v5: max ME replacements per SE pair (after all cuts)"};
+
+  Configurable<int> cfgV6MinMatches{"cfgV6MinMatches", 5, "Minimum accepted ME pairs per replacement branch; <=0 disables threshold"};
+
   Configurable<uint64_t> cfgMixSeed{"cfgMixSeed", 0xdecafbadULL, "RNG seed for downsampling matches (deterministic)"};
   Configurable<bool> cfgV6CarryUnmatched{"cfgV6CarryUnmatched", false, "Carry data and MC V6 replacement branches with zero matches to later data frames"};
   Configurable<int> cfgV6MaxPendingBranches{"cfgV6MaxPendingBranches", 0, "Maximum retained V6 branches per data or MC buffer; <=0 means unlimited"};
@@ -617,6 +620,9 @@ struct lambdaspincorrderived {
       histos.add("etaCent", "etaCent", HistType::kTH2D, {{32, -0.8, 0.8}, {8, 0.0, 80.0}}, true);
       histos.add("hNMEperSE_leg1", "ME replacements per SE pair, leg1", HistType::kTH1D, {{12, -0.5, 11.5}}, true);
       histos.add("hNMEperSE_leg2", "ME replacements per SE pair, leg2", HistType::kTH1D, {{12, -0.5, 11.5}}, true);
+
+      histos.add("hNMEperSE_leg1_aftercut", "ME replacements per SE pair, leg1", HistType::kTH1D, {{12, -0.5, 11.5}}, true);
+      histos.add("hNMEperSE_leg2_aftercut", "ME replacements per SE pair, leg2", HistType::kTH1D, {{12, -0.5, 11.5}}, true);
     }
 
     if (fillHistConfig.fillWeightQAHistos) {
@@ -934,30 +940,25 @@ struct lambdaspincorrderived {
     }
 
     if (v0Configurations.useAdditionalCut) {
-      // additional cuts
-      if (candidate.v0Status() == 0 && (std::abs(candidate.tpcNsigmaPos()) > v0Configurations.maxTpcNsigma || std::abs(candidate.tpcNsigmaNeg()) > v0Configurations.maxTpcNsigma)) {
-        return false;
-      }
-      if (candidate.v0Status() == 1 && (std::abs(candidate.tpcNsigmaNeg()) > v0Configurations.maxTpcNsigma || std::abs(candidate.tpcNsigmaPos()) > v0Configurations.maxTpcNsigma)) {
+
+      if (std::abs(candidate.tpcNsigmaPos()) > v0Configurations.maxTpcNsigma ||
+          std::abs(candidate.tpcNsigmaNeg()) > v0Configurations.maxTpcNsigma) {
         return false;
       }
 
-      if (candidate.tpcPosNClsCrossedRows() < v0Configurations.minTpcNClsCrossedRows) {
+      if (candidate.tpcPosNClsCrossedRows() < v0Configurations.minTpcNClsCrossedRows ||
+          candidate.tpcNegNClsCrossedRows() < v0Configurations.minTpcNClsCrossedRows) {
         return false;
       }
 
-      if (candidate.tpcNegNClsCrossedRows() < v0Configurations.minTpcNClsCrossedRows) {
+      if (std::abs(candidate.ctau()) > v0Configurations.maxCtau) {
         return false;
       }
 
-      if (candidate.ctau() > v0Configurations.maxCtau) {
+      if (v0Configurations.useK0sRejection &&
+          std::abs(candidate.mK0Short() - o2::constants::physics::MassK0Short) <
+            v0Configurations.confK0sMassWindow) {
         return false;
-      }
-
-      if (v0Configurations.useK0sRejection) {
-        if (std::abs(candidate.mK0Short() - o2::constants::physics::MassK0Short) < v0Configurations.confK0sMassWindow) {
-          return false;
-        }
       }
     }
 
@@ -1914,7 +1915,7 @@ struct lambdaspincorrderived {
       }
     }
   }
-  PROCESS_SWITCH(lambdaspincorrderived, processDataSys, "Process Sys analysis", true);
+  PROCESS_SWITCH(lambdaspincorrderived, processDataSys, "Process Sys analysis", false);
 
   template <typename LV>
   void fillReplacementControlMap(int tag1, int tag2, int leg, bool isTarget, LV const& particle, float weight)
@@ -3146,7 +3147,9 @@ struct lambdaspincorrderived {
           ++nAccepted;
         }
 
-        if (nAccepted == 0) {
+        const int minRequired = cfgV6MinMatches.value > 0 ? cfgV6MinMatches.value : 1;
+
+        if (nAccepted < minRequired) {
           ++it;
           continue;
         }
@@ -3282,12 +3285,12 @@ struct lambdaspincorrderived {
           const auto hasPendingSpace = [&]() {
             return cfgV6MaxPendingBranches.value <= 0 || static_cast<int>(v6Pending.data.size()) < cfgV6MaxPendingBranches.value;
           };
-          if (doMixLeg1 && nFill1 == 0 && hasPendingSpace()) {
+          if (doMixLeg1 && nFill1 < (cfgV6MinMatches.value > 0 ? cfgV6MinMatches.value : 1) && hasPendingSpace()) {
             v6Pending.data.push_back({storeV6Candidate(t1, curColIdx), storeV6Candidate(t2, curColIdx), colBin, 1, 0,
                                       static_cast<uint64_t>(t1.globalIndex()) ^ splitmix64(static_cast<uint64_t>(t2.globalIndex())) ^ splitmix64(static_cast<uint64_t>(curColIdx))});
             ++pendingAdded;
           }
-          if (doMixLeg2 && nFill2 == 0 && hasPendingSpace()) {
+          if (doMixLeg2 && nFill2 < (cfgV6MinMatches.value > 0 ? cfgV6MinMatches.value : 1) && hasPendingSpace()) {
             v6Pending.data.push_back({storeV6Candidate(t2, curColIdx), storeV6Candidate(t1, curColIdx), colBin, 2, 0,
                                       static_cast<uint64_t>(t2.globalIndex()) ^ splitmix64(static_cast<uint64_t>(t1.globalIndex())) ^ splitmix64(static_cast<uint64_t>(curColIdx))});
             ++pendingAdded;
@@ -3296,9 +3299,23 @@ struct lambdaspincorrderived {
         histos.fill(HIST("hNMEperSE_leg2"), nFill2);
         histos.fill(HIST("hNMEperSE_leg1"), nFill1);
 
+        // Reject branches with fewer accepted mixed pairs than required.
+        if (cfgV6MinMatches.value > 0) {
+          if (nFill1 < cfgV6MinMatches.value) {
+            nFill1 = 0;
+          }
+          if (nFill2 < cfgV6MinMatches.value) {
+            nFill2 = 0;
+          }
+        }
+
         if (nFill1 <= 0 && nFill2 <= 0) {
           continue;
         }
+
+        histos.fill(HIST("hNMEperSE_leg2_aftercut"), nFill2);
+        histos.fill(HIST("hNMEperSE_leg1_aftercut"), nFill1);
+
         // Residual-weight QA needs a leg-specific normalization:
         // TGT_leg is filled once per same-event target candidate with weight 1.
         // REP_leg is the average replacement distribution for that same target.
@@ -3423,7 +3440,7 @@ struct lambdaspincorrderived {
            pendingAtStart, pendingMatched, pendingExpired, pendingAdded, v6Pending.data.size());
     }
   }
-  PROCESS_SWITCH(lambdaspincorrderived, processMEV6, "Process data ME v6 with radius buffer", false);
+  PROCESS_SWITCH(lambdaspincorrderived, processMEV6, "Process data ME v6 with radius buffer", true);
 
   void processMEV6Sys(EventCandidates const& collisions, AllTrackCandidates const& V0s)
   {

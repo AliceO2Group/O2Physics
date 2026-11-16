@@ -9,45 +9,49 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file TwoPartCorrLinkDef.h
+/// \brief Tow particle correlations core library external interface definition
+/// \author victor.gonzalez.sebastian@gmail.com
+
 // NOLINT(build/header_guard)
 
 #pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
 
-#pragma link C++ class o2::analysis::PWGCF::CutBrick < float> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrick < int> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickLimit < float> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickLimit < int> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickFnLimit < float> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickFnLimit < int> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickThreshold < float> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickThreshold < int> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickFnThreshold < float> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickFnThreshold < int> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickExtToRange < float> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickExtToRange < int> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickFnExtToRange < float> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickFnExtToRange < int> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickRange < float> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickRange < int> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickFnRange < float> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickFnRange < int> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickSelectorMultipleRanges < float> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutBrickSelectorMultipleRanges < int> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutWithVariations < float> + ;
-#pragma link C++ class o2::analysis::PWGCF::CutWithVariations < int> + ;
-#pragma link C++ class o2::analysis::PWGCF::SpecialCutBrick + ;
-#pragma link C++ class o2::analysis::PWGCF::TrackSelectionBrick + ;
-#pragma link C++ class o2::analysis::PWGCF::SelectionFilterAndAnalysis + ;
-#pragma link C++ class o2::analysis::PWGCF::TrackSelectionConfigurable + ;
-#pragma link C++ class o2::analysis::PWGCF::TrackSelectionFilterAndAnalysis + ;
-#pragma link C++ class o2::analysis::PWGCF::PIDSelectionConfigurable + ;
-#pragma link C++ class o2::analysis::PWGCF::PIDSelectionFilterAndAnalysis + ;
-#pragma link C++ class o2::analysis::PWGCF::EventSelectionConfigurable + ;
-#pragma link C++ class o2::analysis::PWGCF::EventSelectionFilterAndAnalysis::ComplexBrickHelper + ;
-#pragma link C++ class o2::analysis::PWGCF::EventSelectionFilterAndAnalysis::MultiplicityBrick + ;
-#pragma link C++ class o2::analysis::PWGCF::EventSelectionFilterAndAnalysis::PileUpRejBrick + ;
-#pragma link C++ class o2::analysis::PWGCF::EventSelectionFilterAndAnalysis + ;
-#pragma link C++ class o2::analysis::PWGCF::FilterAndAnalysisFramework + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrick < float> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrick < int> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickLimit < float> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickLimit < int> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickFnLimit < float> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickFnLimit < int> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickThreshold < float> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickThreshold < int> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickFnThreshold < float> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickFnThreshold < int> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickExtToRange < float> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickExtToRange < int> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickFnExtToRange < float> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickFnExtToRange < int> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickRange < float> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickRange < int> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickFnRange < float> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickFnRange < int> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickSelectorMultipleRanges < float> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutBrickSelectorMultipleRanges < int> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutWithVariations < float> + ;
+#pragma link C++ class o2::analysis::pwgcf::CutWithVariations < int> + ;
+#pragma link C++ class o2::analysis::pwgcf::SpecialCutBrick + ;
+#pragma link C++ class o2::analysis::pwgcf::TrackSelectionBrick + ;
+#pragma link C++ class o2::analysis::pwgcf::SelectionFilterAndAnalysis + ;
+#pragma link C++ class o2::analysis::pwgcf::TrackSelectionConfigurable + ;
+#pragma link C++ class o2::analysis::pwgcf::TrackSelectionFilterAndAnalysis + ;
+#pragma link C++ class o2::analysis::pwgcf::PIDSelectionConfigurable + ;
+#pragma link C++ class o2::analysis::pwgcf::PIDSelectionFilterAndAnalysis + ;
+#pragma link C++ class o2::analysis::pwgcf::EventSelectionConfigurable + ;
+#pragma link C++ class o2::analysis::pwgcf::EventSelectionFilterAndAnalysis::ComplexBrickHelper + ;
+#pragma link C++ class o2::analysis::pwgcf::EventSelectionFilterAndAnalysis::MultiplicityBrick + ;
+#pragma link C++ class o2::analysis::pwgcf::EventSelectionFilterAndAnalysis::PileUpRejBrick + ;
+#pragma link C++ class o2::analysis::pwgcf::EventSelectionFilterAndAnalysis + ;
+#pragma link C++ class o2::analysis::pwgcf::FilterAndAnalysisFramework + ;
 #pragma link C++ class DihadronContainer + ;

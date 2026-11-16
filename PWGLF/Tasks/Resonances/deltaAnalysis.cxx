@@ -113,7 +113,6 @@ struct DeltaAnalysis {
     Configurable<float> cfgMaxY{"cfgMaxY", 0.5f, "Maximum rapidity of reconstructed Delta"};
     Configurable<int> cfgMinITSClusters{"cfgMinITSClusters", 5, "Minimum ITS clusters"};
     Configurable<int> cfgMinTPCClusters{"cfgMinTPCClusters", 70, "Minimum TPC clusters found"};
-    Configurable<int> numberOfInvMassBins{"numberOfInvMassBins", 120, "Number of bins along the invariant mass axis"};
     Configurable<int> cfgMinTPCCrossedRows{"cfgMinTPCCrossedRows", 70, "Minimum TPC crossed pad rows"};
     Configurable<float> cfgMinCrossedRowsOverFindable{"cfgMinCrossedRowsOverFindable", 0.8f, "Minimum ratio crossedRows/findableClusters"};
     Configurable<int> cfgMaxTPCSharedClusters{"cfgMaxTPCSharedClusters", 0, "Maximum TPC shared clusters"};
@@ -198,7 +197,10 @@ struct DeltaAnalysis {
   } rotBkg;
 
   struct : ConfigurableGroup {
-    ConfigurableAxis cfgPtAxis{"cfgPtAxis", {VARIABLE_WIDTH, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4.0, 5.0, 7.0, 10.0}, "#it{p}_{T} (GeV/#it{c})"};
+    // Fixed-width {nBins, min, max} or variable-width {VARIABLE_WIDTH, edge0, edge1, ...}; both can be set from the JSON config.
+    ConfigurableAxis cfgPtAxis{"cfgPtAxis", {50, 0.0, 12.0}, "p_{T} (GeV/c)"};
+    ConfigurableAxis cfgMassAxis{"cfgMassAxis", {120, 1.0, 6.0}, "M_{inv} (GeV/#it{c}^{2})"};
+    ConfigurableAxis cfgMomentumAxis{"cfgMomentumAxis", {50, 0.0, 12.0}, "p (GeV/#it{c})"};
     ConfigurableAxis cfgCentAxis{"cfgCentAxis", {VARIABLE_WIDTH, 0.f, 10.f, 20.f, 30.f, 40.f, 50.f, 60.f, 70.f, 80.f, 90.f, 100.f}, "Centrality (%)"};
     ConfigurableAxis cfgVtxAxis{"cfgVtxAxis", {VARIABLE_WIDTH, -12.f, -10.f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 12.f}, "Vertex z [cm]"};
     ConfigurableAxis cfgRapAxis{"cfgRapAxis", {20, -1.0, 1.0}, "Rapidity y"};
@@ -253,15 +255,15 @@ struct DeltaAnalysis {
     mPionDCAPtEdges = dcaCuts.pionDCAPtBinEdges.value;
     mPionMaxDCAxy = dcaCuts.pionMaxDCAxyPerPtBin.value;
 
-    const AxisSpec ptAxis{50, 0., 12., "p_{T} (GeV/c)"};
-    const AxisSpec massAxis{trackCuts.numberOfInvMassBins, 1.0, 6.0, "M_{inv} (GeV/#it{c}^{2})"};
+    const AxisSpec ptAxis{axes.cfgPtAxis, "p_{T} (GeV/c)"};
+    const AxisSpec massAxis{axes.cfgMassAxis, "M_{inv} (GeV/#it{c}^{2})"};
     const AxisSpec centAxis{axes.cfgCentAxis, "Centrality (%)"};
     const AxisSpec vtxAxis{axes.cfgVtxAxis, "Vertex z [cm]"};
     const AxisSpec rapAxis{axes.cfgRapAxis, "Rapidity y"};
     const AxisSpec nSigmaTPCaxis{100, -5., 5., "n#sigma^{TPC}"};
     const AxisSpec nSigmaTOFaxis{100, -5., 5., "n#sigma^{TOF}"};
-    const AxisSpec momentumAxis{50, 0., 12., "p (GeV/#it{c})"};
-    const AxisSpec ptForPIDAxis{50, 0., 12., "p_{T} (GeV/#it{c})"};
+    const AxisSpec momentumAxis{axes.cfgMomentumAxis, "p (GeV/#it{c})"};
+    const AxisSpec ptForPIDAxis{axes.cfgPtAxis, "p_{T} (GeV/#it{c})"};
     const AxisSpec dcaXYaxis{200, -0.2f, 0.2f, "DCA_{xy} (cm)"};
     const AxisSpec dcaZaxis{200, -1.2f, 1.2f, "DCA_{z} (cm)"};
     const AxisSpec tpcClusAxis{200, 0, 200, "N_{clusters}^{TPC}"};

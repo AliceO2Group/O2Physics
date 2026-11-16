@@ -77,10 +77,11 @@ constexpr uint16_t MCTrackFakeMask = 1u << 15;
 enum MCParticleFlag : uint8_t {
   kNoFlags = 0,
   kPhysicalPrimary = 1u << 0,           // generated physical primary
-  kHasRecoTrack = 1u << 1,              // has at least one non-fake reconstructed track
+  kHasRecoTrack = 1u << 1,              // has at least one non-fake ITS-TPC track passing the configured kinematic cuts
   kHighMultiplicityCollision = 1u << 2, // matched track belongs to a collision with extra contributors
   kHasPVContributor = 1u << 3,          // has a track contributing to the PV
-  kHasAmbiguousTrack = 1u << 4          // has an ambiguous track
+  kHasAmbiguousTrack = 1u << 4,         // has an ambiguous track
+  kHasRecoTrackTOF = 1u << 5            // has a selected ITS-TPC track matched to TOF
 };
 
 using SignalRef = std::pair<int32_t, int16_t>;
@@ -209,6 +210,8 @@ DECLARE_SOA_TABLE(UPCBarrelCands, "AOD", "UPCBARRELCANDS",
 DECLARE_SOA_TABLE(UPCBarrelMcColls, "AOD", "UPCBMCCOLL",
                   upc_cand_prod_bar::TfId,
                   upc_cand_prod_bar::GlobalBC,
+                  upc_cand_prod_bar::Flags,
+                  upc_cand_prod_bar::OccupancyFT0C,
                   upc_cand_prod_bar::PosX,
                   upc_cand_prod_bar::PosY,
                   upc_cand_prod_bar::PosZ,
@@ -343,8 +346,6 @@ struct UpcCandProducerBarrel {
     registry.add("hTF", "TF counts", HistType::kTH1D, {axisTFs});
     registry.add("hTVX", "TVX counts", HistType::kTH2D, {axisBCs, axisTFs});
     registry.add("hTVXRCT", "TVX counts after RCT selection", HistType::kTH2D, {axisBCs, axisTFs});
-    registry.add("hTVXupc", "TVX counts in upc ROFs", HistType::kTH2D, {axisBCs, axisTFs});
-    registry.add("hTVXRCTupc", "TVX counts after RCT selection in upc ROFs", HistType::kTH2D, {axisBCs, axisTFs});
 
     registry.add("hVetoT00", "no RCT selection", HistType::kTH3D, {axisBCs, axisTFs, axisVeto});
     registry.add("hVetoTV0", "no RCT selection", HistType::kTH3D, {axisBCs, axisTFs, axisVeto});
@@ -429,149 +430,10 @@ struct UpcCandProducerBarrel {
     }
     LOGP(info, "Starting new DF. Number of TFs = {}", tfIDs.size());
 
-    std::unordered_map<int64_t, SignalRef> signalParticleRefs;
-    if constexpr (isMC) {
-      std::unordered_set<int64_t> ambiguousTrackIds;
-      ambiguousTrackIds.reserve(ambiguousTracks->size());
-      for (const auto& ambiguousTrack : *ambiguousTracks) {
-        ambiguousTrackIds.insert(ambiguousTrack.trackId());
-      }
-
-      std::vector<int64_t> bcsWithMCCollision;
-      bcsWithMCCollision.reserve(mcCollisions->size());
-      // Use collisions from every source and retain same-BC pile-up
-      for (const auto& mcCollision : *mcCollisions) {
-        bcsWithMCCollision.push_back(static_cast<int64_t>(mcCollision.template bc_as<BCsWithSels>().globalBC()));
-      }
-      const auto minDistanceMC = buildMinimumDistanceMap(tfIDs, bcSOR, nBCsPerTF, bcsWithMCCollision, maxStoredDistance, true);
-
-      for (const auto& mcCollision : *mcCollisions) {
-        const auto bc = mcCollision.template bc_as<BCsWithSels>();
-        const auto globalBC = bc.globalBC();
-        const auto iTF = localTFIndex[bc.globalIndex()];
-        const auto bcInTF = (static_cast<int64_t>(globalBC) - bcSOR) % nBCsPerTF;
-        const auto particles = mcParticles->sliceBy(particlesPerMCCollision, mcCollision.globalIndex());
-        const bool isSignal = mcCollision.getSourceId() == signalSourceId.value;
-
-        std::vector<float> px, py, pz;
-        std::vector<int32_t> pdg, recoCollisionIds;
-        std::vector<uint8_t> recoFlags;
-        int32_t mult = 0;
-        // Output rows follow input MC collisions, making this the compact collision label
-        const auto newMCCollisionId = static_cast<int32_t>(selectedMCCollisions.lastIndex() + 1);
-        for (const auto& particle : particles) {
-          mult += particle.isPhysicalPrimary();
-          // Background rows keep only collision metadata and physical-primary multiplicity
-          if (!isSignal) {
-            continue;
-          }
-          const auto newMCParticleId = static_cast<int16_t>(pdg.size());
-          px.push_back(particle.px());
-          py.push_back(particle.py());
-          pz.push_back(particle.pz());
-          pdg.push_back(particle.pdgCode());
-
-          uint8_t flags = particle.isPhysicalPrimary() ? kPhysicalPrimary : kNoFlags;
-          int32_t recoCollisionId = NoRecoCollision;
-          int nRecoTracks = 0;
-          // Inspect only reconstructed tracks matched to this signal particle
-          for (const auto& track : tracks.sliceBy(tracksPerMCParticle, particle.globalIndex())) {
-            if ((track.mcMask() & MCTrackFakeMask) != 0u) {
-              continue;
-            }
-            ++nRecoTracks;
-            flags |= kHasRecoTrack;
-            flags |= track.isPVContributor() ? kHasPVContributor : kNoFlags;
-            flags |= ambiguousTrackIds.contains(track.globalIndex()) ? kHasAmbiguousTrack : kNoFlags;
-            if (track.has_collision()) {
-              recoCollisionId = track.collisionId();
-              flags |= collisions.iteratorAt(recoCollisionId).numContrib() > nTracks ? kHighMultiplicityCollision : kNoFlags;
-            }
-          }
-          // A single collision label is meaningful only for exactly one reconstructed track
-          if (nRecoTracks > 1) {
-            recoCollisionId = MultipleRecoTracks;
-          }
-          recoFlags.push_back(flags);
-          recoCollisionIds.push_back(recoCollisionId);
-          // Remap original particle IDs to output index for candidate labels
-          signalParticleRefs.emplace(particle.globalIndex(), SignalRef{newMCCollisionId, newMCParticleId});
-        }
-        selectedMCCollisions(tfIDs[iTF], globalBC, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
-                             px, py, pz, pdg, mult, minDistanceMC[iTF][bcInTF],
-                             recoFlags, recoCollisionIds, isSignal);
-      }
-    }
-
-    // collect number of all collisions and upc-mode collisions per ROF
-    LOGP(debug, "Collect number of all collisions and upc-mode collisions per ROF");
-    std::vector<std::map<int32_t, float>> vMultTracks(tfIDs.size(), std::map<int32_t, float>());
-    std::vector<std::vector<int>> vCollisionsPerROF(tfIDs.size(), std::vector<int>(nRofPerTF, 0));
-    std::vector<std::vector<int>> vUpcModePerROF(tfIDs.size(), std::vector<int>(nRofPerTF, 0));
-    for (const auto& collision : collisions) {
-      auto bc = collision.template bc_as<BCsWithSels>();
-      const int64_t globalBC = bc.globalBC();
-      const int32_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
-      const auto iTF = localTFIndex[bc.globalIndex()];
-      const int32_t rofInTF = getRofInTF(bcInTF);
-      vCollisionsPerROF[iTF][rofInTF]++;
-      const bool upcMode = (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0;
-      if (upcMode) {
-        vUpcModePerROF[iTF][rofInTF]++;
-      }
-    }
-
-    auto hTVX = registry.get<TH2>(HIST("hTVX"));
-    auto hTVXRCT = registry.get<TH2>(HIST("hTVXRCT"));
-
-    auto hTVXupc = registry.get<TH2>(HIST("hTVXupc"));
-    auto hTVXRCTupc = registry.get<TH2>(HIST("hTVXRCTupc"));
-
     std::vector<int64_t> bcsWithFT0, bcsWithFV0, bcsWithFDD;
     bcsWithFT0.reserve(ft0s.size());
     bcsWithFV0.reserve(fv0s.size());
     bcsWithFDD.reserve(fdds.size());
-
-    LOGP(debug, "Starting lumi accounting");
-    // lumi accounting
-    std::vector<std::map<int32_t, float>> vMultFT0C(tfIDs.size(), std::map<int32_t, float>());
-    for (const auto& ft0 : ft0s) {
-      const auto bc = ft0.bc_as<BCsWithSels>();
-      const auto globalBC = bc.globalBC();
-      const auto bcInOrbit = globalBC % NBCsPerOrbit;
-      const int32_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
-      const auto iTF = localTFIndex[bc.globalIndex()];
-      const auto tfID = tfIDs[iTF];
-      const int32_t rofInTF = getRofInTF(bcInTF);
-      bool upcMode = vCollisionsPerROF[iTF][rofInTF] == 0 || vUpcModePerROF[iTF][rofInTF] > 0;
-
-      // Multiplicity for FT0C-based occupancy estimates
-      if (ft0.timeC() < MaxFITTime && ft0.sumAmpC() >= minAmpFT0C) {
-        vMultFT0C[iTF][bcInTF] = ft0.sumAmpC();
-      }
-
-      if (!collidingBCs[bcInOrbit] || !TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitVertex)) {
-        continue;
-      }
-
-      if (useTCE && !TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitCen)) {
-        continue;
-      }
-
-      hTVX->Fill(bcInOrbit, tfID);
-      if (upcMode) {
-        hTVXupc->Fill(bcInOrbit, tfID);
-      }
-
-      if (!bc.selection_bit(aod::evsel::kNoTimeFrameBorder) || !rctChecker(bc)) {
-        continue;
-      }
-
-      hTVXRCT->Fill(bcInOrbit, tfID);
-      if (upcMode) {
-        hTVXRCTupc->Fill(bcInOrbit, tfID);
-      }
-    }
 
     LOGP(debug, "Filling FT0 activity arrays");
     for (const auto& ft0 : ft0s) {
@@ -599,6 +461,58 @@ struct UpcCandProducerBarrel {
       }
     }
 
+    LOGP(debug, "Collect number of all collisions and upc-mode collisions per ROF");
+    std::vector<std::map<int32_t, float>> vMultTracks(tfIDs.size(), std::map<int32_t, float>());
+    std::vector<std::vector<int>> vCollisionsPerROF(tfIDs.size(), std::vector<int>(nRofPerTF, 0));
+    std::vector<std::vector<int>> vUpcModePerROF(tfIDs.size(), std::vector<int>(nRofPerTF, 0));
+    for (const auto& collision : collisions) {
+      auto bc = collision.template bc_as<BCsWithSels>();
+      const int64_t globalBC = bc.globalBC();
+      const int32_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
+      const auto iTF = localTFIndex[bc.globalIndex()];
+      const int32_t rofInTF = getRofInTF(bcInTF);
+      vCollisionsPerROF[iTF][rofInTF]++;
+      const bool upcMode = (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0;
+      if (upcMode) {
+        vUpcModePerROF[iTF][rofInTF]++;
+      }
+    }
+
+    auto hTVX = registry.get<TH2>(HIST("hTVX"));
+    auto hTVXRCT = registry.get<TH2>(HIST("hTVXRCT"));
+
+    LOGP(debug, "Starting lumi accounting");
+    std::vector<std::map<int32_t, float>> vMultFT0C(tfIDs.size(), std::map<int32_t, float>());
+    for (const auto& ft0 : ft0s) {
+      const auto bc = ft0.bc_as<BCsWithSels>();
+      const auto globalBC = bc.globalBC();
+      const auto bcInOrbit = globalBC % NBCsPerOrbit;
+      const int32_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
+      const auto iTF = localTFIndex[bc.globalIndex()];
+      const auto tfID = tfIDs[iTF];
+
+      // Multiplicity for FT0C-based occupancy estimates
+      if (ft0.timeC() < MaxFITTime && ft0.sumAmpC() >= minAmpFT0C) {
+        vMultFT0C[iTF][bcInTF] = ft0.sumAmpC();
+      }
+
+      if (!collidingBCs[bcInOrbit] || !TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitVertex)) {
+        continue;
+      }
+
+      if (useTCE && !TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitCen)) {
+        continue;
+      }
+
+      hTVX->Fill(bcInOrbit, tfID);
+
+      if (!bc.selection_bit(aod::evsel::kNoTimeFrameBorder) || !rctChecker(bc)) {
+        continue;
+      }
+
+      hTVXRCT->Fill(bcInOrbit, tfID);
+    }
+
     LOGP(debug, "Starting occupancy calculation");
     std::vector<std::vector<float>> vOccupancyFT0C(tfIDs.size(), std::vector<float>(nBCsPerTF, 0.f));
     int deltaBcPast = 1600;
@@ -617,6 +531,93 @@ struct UpcCandProducerBarrel {
         for (int bcInTF = bcInTFMin; bcInTF <= bcInTFMax; ++bcInTF) {
           vOccupancyFT0C[iTF][bcInTF] += weights[bc - bcInTF + deltaBcPast] * multFT0C;
         }
+      }
+    }
+
+    std::unordered_map<int64_t, SignalRef> signalParticleRefs;
+    if constexpr (isMC) {
+      LOGP(debug, "Collecting MC info. Number of MC collisions = {}", mcCollisions->size());
+      std::unordered_set<int64_t> ambiguousTrackIds;
+      ambiguousTrackIds.reserve(ambiguousTracks->size());
+      for (const auto& ambiguousTrack : *ambiguousTracks) {
+        ambiguousTrackIds.insert(ambiguousTrack.trackId());
+      }
+
+      std::vector<int64_t> bcsWithMCCollision;
+      bcsWithMCCollision.reserve(mcCollisions->size());
+      // Use collisions from every source and retain same-BC pile-up
+      for (const auto& mcCollision : *mcCollisions) {
+        bcsWithMCCollision.push_back(static_cast<int64_t>(mcCollision.template bc_as<BCsWithSels>().globalBC()));
+      }
+      const auto minDistanceMC = buildMinimumDistanceMap(tfIDs, bcSOR, nBCsPerTF, bcsWithMCCollision, maxStoredDistance, true);
+
+      for (const auto& mcCollision : *mcCollisions) {
+        const auto bc = mcCollision.template bc_as<BCsWithSels>();
+        const int64_t globalBC = bc.globalBC();
+        const auto iTF = localTFIndex[bc.globalIndex()];
+        const int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
+        LOGP(debug, "setting flags for MC collision");
+        const int32_t rofInTF = getRofInTF(bcInTF);
+        const bool upcMode = vCollisionsPerROF[iTF][rofInTF] == 0 || vUpcModePerROF[iTF][rofInTF] > 0;
+        const bool noPileupInRof = vCollisionsPerROF[iTF][rofInTF] <= 1;
+        uint8_t bcFlags = 0;
+        bcFlags |= upcMode << 0;
+        bcFlags |= noPileupInRof << 1;
+        const auto occupancyFT0C = vOccupancyFT0C[iTF][bcInTF];
+
+        const auto particles = mcParticles->sliceBy(particlesPerMCCollision, mcCollision.globalIndex());
+        const bool isSignal = mcCollision.getSourceId() == signalSourceId.value;
+        LOGP(debug, "sourceId = {}", mcCollision.getSourceId());
+        std::vector<float> px, py, pz;
+        std::vector<int32_t> pdg, recoCollisionIds;
+        std::vector<uint8_t> recoFlags;
+        int32_t mult = 0;
+        // Output rows follow input MC collisions, making this the compact collision label
+        const auto newMCCollisionId = static_cast<int32_t>(selectedMCCollisions.lastIndex() + 1);
+        for (const auto& particle : particles) {
+          mult += particle.isPhysicalPrimary();
+          // Background rows keep only collision metadata and physical-primary multiplicity
+          if (!isSignal) {
+            continue;
+          }
+          const auto newMCParticleId = static_cast<int16_t>(pdg.size());
+          px.push_back(particle.px());
+          py.push_back(particle.py());
+          pz.push_back(particle.pz());
+          pdg.push_back(particle.pdgCode());
+
+          uint8_t flags = particle.isPhysicalPrimary() ? kPhysicalPrimary : kNoFlags;
+          int32_t recoCollisionId = NoRecoCollision;
+          int nRecoTracks = 0;
+          // Inspect only reconstructed tracks matched to this signal particle
+          for (const auto& track : tracks.sliceBy(tracksPerMCParticle, particle.globalIndex())) {
+            if ((track.mcMask() & MCTrackFakeMask) != 0u) {
+              continue;
+            }
+            ++nRecoTracks;
+            const bool goodRecoTrack = track.hasITS() && track.hasTPC() && std::abs(track.eta()) <= maxAbsEta.value && track.pt() >= minPt.value;
+            flags |= goodRecoTrack ? kHasRecoTrack : kNoFlags;
+            flags |= (goodRecoTrack && track.hasTOF()) ? kHasRecoTrackTOF : kNoFlags;
+            flags |= track.isPVContributor() ? kHasPVContributor : kNoFlags;
+            flags |= ambiguousTrackIds.contains(track.globalIndex()) ? kHasAmbiguousTrack : kNoFlags;
+            if (track.has_collision()) {
+              recoCollisionId = track.collisionId();
+              flags |= collisions.iteratorAt(recoCollisionId).numContrib() > nTracks ? kHighMultiplicityCollision : kNoFlags;
+            }
+          }
+          // A single collision label is meaningful only for exactly one reconstructed track
+          if (nRecoTracks > 1) {
+            recoCollisionId = MultipleRecoTracks;
+          }
+          recoFlags.push_back(flags);
+          recoCollisionIds.push_back(recoCollisionId);
+          // Remap original particle IDs to output index for candidate labels
+          signalParticleRefs.emplace(particle.globalIndex(), SignalRef{newMCCollisionId, newMCParticleId});
+        }
+        selectedMCCollisions(tfIDs[iTF], globalBC, bcFlags, occupancyFT0C,
+                             mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
+                             px, py, pz, pdg, mult, minDistanceMC[iTF][bcInTF],
+                             recoFlags, recoCollisionIds, isSignal);
       }
     }
 
