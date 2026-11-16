@@ -783,8 +783,14 @@ struct ConfCascadeTablesDerivedToDerived : o2::framework::ConfigurableGroup {
 struct CascadeBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::StoredFXis> producedXis;
   o2::framework::Produces<o2::aod::StoredFXiMasks> producedXiMasks;
+  // only actually filled when the input xi row carries FXiFrac (i.e. the WithFitVars process
+  // function) -- see the if constexpr guard in processXis() below
+  o2::framework::Produces<o2::aod::StoredFXiFrac> producedXiFrac;
   o2::framework::Produces<o2::aod::StoredFOmegas> producedOmegas;
   o2::framework::Produces<o2::aod::StoredFOmegaMasks> producedOmegaMasks;
+  // only actually filled when the input omega row carries FOmegaFrac (i.e. the WithFitVars
+  // process function) -- see the if constexpr guard in processOmegas() below
+  o2::framework::Produces<o2::aod::StoredFOmegaFrac> producedOmegaFrac;
 };
 
 class CascadeBuilderDerivedToDerived
@@ -851,6 +857,9 @@ class CascadeBuilderDerivedToDerived
                              posDaughterIndex,
                              negDaughterIndex);
       newXiTable.producedXiMasks(xi.mask());
+      if constexpr (utils::HasCascadeCosPa<decltype(xi)>) {
+        newXiTable.producedXiFrac(xi.cascadeCosPa());
+      }
     }
   }
 
@@ -881,6 +890,9 @@ class CascadeBuilderDerivedToDerived
                                    posDaughterIndex,
                                    negDaughterIndex);
       newOmegaTable.producedOmegaMasks(omega.mask());
+      if constexpr (utils::HasCascadeCosPa<decltype(omega)>) {
+        newOmegaTable.producedOmegaFrac(omega.cascadeCosPa());
+      }
     }
   }
 

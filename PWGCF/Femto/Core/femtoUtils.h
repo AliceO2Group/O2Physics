@@ -50,6 +50,26 @@ inline std::optional<T2> getIndex(const T1& index, const std::unordered_map<T1, 
   return std::nullopt;
 }
 
+/// require a V0 (lambda/k0short) row with a CosPa column -- used to gate derived-to-derived
+/// re-writes of the fraction-extraction tables (FLambdaFrac/FK0shortFrac) to only the input
+/// variants that actually carry them (e.g. the WithFitVars task-level process functions)
+template <typename T>
+concept HasCosPa = requires(T t) { t.cosPa(); };
+
+/// require a cascade (xi/omega) row with a CascadeCosPa column -- same purpose as HasCosPa
+/// above, but for the FXiFrac/FOmegaFrac re-writes
+template <typename T>
+concept HasCascadeCosPa = requires(T t) { t.cascadeCosPa(); };
+
+/// require a track row with DCA (xy and z) columns -- i.e. joined with FTrackDcas
+template <typename T>
+concept HasDca = requires(T t) { t.dcaXY(); t.dcaZ(); };
+
+/// require a track row with ITS PID columns -- checking one species (pion) is enough
+/// since all seven (El/Pi/Ka/Pr/De/Tr/He) always come from the same upstream join
+template <typename T>
+concept HasItsNSigma = requires(T t) { t.itsNSigmaPi(); };
+
 /// Translate a global daughter index into a row of the current track table frame.
 /// Aborts if the index does not fall inside the frame, which would otherwise
 /// silently produce an out-of-range iterator.

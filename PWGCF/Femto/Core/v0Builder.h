@@ -796,6 +796,9 @@ struct ConfV0TablesDerivedToDerived : o2::framework::ConfigurableGroup {
 struct V0BuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::StoredFLambdas> producedLambdas;
   o2::framework::Produces<o2::aod::StoredFLambdaMasks> producedLambdaMasks;
+  // only actually filled when the input lambda row carries FLambdaFrac (i.e. the WithFitVars
+  // process function) -- see the if constexpr guard in processLambdas() below
+  o2::framework::Produces<o2::aod::StoredFLambdaFrac> producedLambdaFrac;
   o2::framework::Produces<o2::aod::StoredFK0shorts> producedK0shorts;
   o2::framework::Produces<o2::aod::StoredFK0shortMasks> producedK0shortMasks;
 };
@@ -861,6 +864,9 @@ class V0BuilderDerivedToDerived
                                      posDaughterIndex,
                                      negDaughterIndex);
       newLambdaTable.producedLambdaMasks(lambda.mask());
+      if constexpr (utils::HasCosPa<decltype(lambda)>) {
+        newLambdaTable.producedLambdaFrac(lambda.cosPa());
+      }
     }
   }
 
