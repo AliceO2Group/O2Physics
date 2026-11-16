@@ -469,7 +469,7 @@ void ChargedParticles::init(InitContext const&)
       }
     }
 
-    histos.add("multPtSpec_prim_gen_notrig", "", kTH2D, {multTrueAxis, ptTrueAxis}); // generated primary charged particles of events that did not fulfil physics selection and trigger condition as function of multiplicity and pt
+    histos.add("multPtSpec_prim_gen_notrig", "", kTH2D, {multTrueAxis, ptTrueAxis}); // generated primary charged particles of events with proper vertex position that did not fulfil the trigger condition (tvx; run 2: v0and, 2010/2011: int1), independent of the event class, as function of multiplicity and pt
   }
 
   auto setBitLabels = [](TAxis* axis) {
