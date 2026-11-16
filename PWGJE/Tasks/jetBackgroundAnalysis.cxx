@@ -16,6 +16,7 @@
 /// \brief This file contains the implementation for the Charged Jet v2 analysis in the ALICE experiment
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"

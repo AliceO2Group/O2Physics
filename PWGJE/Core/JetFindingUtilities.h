@@ -30,6 +30,7 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 
 #include <THn.h>
+#include <TParticlePDG.h>
 
 #include <fastjet/ClusterSequenceArea.hh>
 #include <fastjet/PseudoJet.hh>
@@ -38,10 +39,7 @@
 #include <memory>
 #include <string>
 #include <type_traits>
-#include <utility>
 #include <vector>
-
-#include <math.h>
 
 namespace jetfindingutilities
 {
@@ -296,7 +294,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet> const& input
     std::vector<fastjet::PseudoJet> jets;
     fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
     for (const auto& jet : jets) {
-      if (jet.has_area() && jet.area() < jetAreaFractionMin * M_PI * R * R) {
+      if (jet.has_area() && jet.area() < jetAreaFractionMin * o2::constants::math::PI * R * R) {
         continue;
       }
       if (fillThnSparse) {
@@ -341,8 +339,9 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet> const& input
  * Kinematic acceptance cuts are applied to the input particle table separately.
  */
 template <typename T, typename U>
-bool isParticleSelected(T const& particle, const std::string& particleSelection, int jetTypeParticleLevel, U const& pdgDatabase)
+bool isParticleSelected(T const& particle, const std::string& particleSelection, int jetTypeParticleLevel, U const& pdgDatabase, TParticlePDG const*& pdgParticle)
 {
+  pdgParticle = nullptr;
   if (particleSelection == "PhysicalPrimary" && !particle.isPhysicalPrimary()) {
     return false;
   } else if (particleSelection == "HepMCStatus" && particle.getHepMCStatusCode() != 1) {
@@ -355,7 +354,7 @@ bool isParticleSelected(T const& particle, const std::string& particleSelection,
   if (std::isinf(particle.eta())) {
     return false;
   }
-  auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
+  pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
   auto pdgCharge = pdgParticle ? std::abs(pdgParticle->Charge()) : -1.0;
   if (jetTypeParticleLevel == static_cast<int>(JetType::charged) && pdgCharge < 3.0) {
     return false;
@@ -364,6 +363,16 @@ bool isParticleSelected(T const& particle, const std::string& particleSelection,
     return false;
   }
   return true;
+}
+
+/**
+ * Overload of isParticleSelected without the pdgParticle output parameter.
+ */
+template <typename T, typename U>
+bool isParticleSelected(T const& particle, const std::string& particleSelection, int jetTypeParticleLevel, U const& pdgDatabase)
+{
+  TParticlePDG const* pdgParticle = nullptr;
+  return isParticleSelected(particle, particleSelection, jetTypeParticleLevel, pdgDatabase, pdgParticle);
 }
 
 /**
@@ -380,10 +389,10 @@ template <bool checkIsDaughter, typename T, typename U>
 void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, const std::string& particleSelection, int jetTypeParticleLevel, T const& particles, o2::framework::Service<o2::framework::O2DatabasePDG> pdgDatabase, const U* candidate = nullptr)
 {
   for (auto& particle : particles) {
-    if (!isParticleSelected(particle, particleSelection, jetTypeParticleLevel, pdgDatabase)) {
+    TParticlePDG const* pdgParticle = nullptr;
+    if (!isParticleSelected(particle, particleSelection, jetTypeParticleLevel, pdgDatabase, pdgParticle) || pdgParticle == nullptr) {
       continue;
     }
-    auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
     if constexpr (jetcandidateutilities::isMcCandidate<U>() && !jetv0utilities::isV0McCandidate<U>()) {
       if (candidate != nullptr) {
         if ((*candidate).mcParticleId() == particle.globalIndex()) {
