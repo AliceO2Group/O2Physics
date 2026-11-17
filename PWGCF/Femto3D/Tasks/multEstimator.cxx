@@ -322,7 +322,7 @@ struct multEstimator {
     tmp_histo_per_event->Reset();
     if (tmp_histo_per_event->GetEntries())
       LOGF(fatal, "not cleared");
-    cadidates_counter = 0;
+    // cadidates_counter = 0; // FIXME: unused
   }
 };
 
