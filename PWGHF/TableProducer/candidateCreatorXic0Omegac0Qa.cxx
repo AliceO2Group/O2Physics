@@ -97,12 +97,12 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     // Options for internal cascade building - DCAFitter settings
     // ...Initial vaules taken from PWGLF/Utils/strangenessBuilderHelper
     Configurable<bool> propagateToPCA{"propagateToPCA", true, "Create tracks version propagated to PCA"};
-    Configurable<double> maxR{"maxR", 200., "Reject PCA's above this radius"};
-    Configurable<double> maxDZIni{"maxDZIni", 1e9, "Reject (if>0) PCA candidate if tracks DZ exceeds this threshold"};
-    Configurable<double> maxDXYIni{"maxDXYIni", 4.0f, "Reject (if>0) PCA candidate if tracks DXY exceeds this threshold"};
-    Configurable<double> minParamChange{"minParamChange", 1.e-3, "Stop iteration if largest change of any X is smaller than this"};
-    Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "Stop iteration if Chi2/Chi2old > this"};
-    Configurable<double> maxChi2{"maxChi2", 1e9, "Discard vertices with Chi2/Nprongs > this(or sum {DCAi^2}/Nprongs for abs. distance minimization)"};
+    Configurable<float> maxR{"maxR", 200., "Reject PCA's above this radius"};
+    Configurable<float> maxDZIni{"maxDZIni", 1e9, "Reject (if>0) PCA candidate if tracks DZ exceeds this threshold"};
+    Configurable<float> maxDXYIni{"maxDXYIni", 4.0f, "Reject (if>0) PCA candidate if tracks DXY exceeds this threshold"};
+    Configurable<float> minParamChange{"minParamChange", 1.e-3, "Stop iteration if largest change of any X is smaller than this"};
+    Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "Stop iteration if Chi2/Chi2old > this"};
+    Configurable<float> maxChi2{"maxChi2", 1e9, "Discard vertices with Chi2/Nprongs > this(or sum {DCAi^2}/Nprongs for abs. distance minimization)"};
     Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
     Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariance, effective only if useAbsDCA is true"};
     Configurable<bool> refitWithMaterialCorrection{"refitWithMaterialCorrection", false, "Do refit after material correction applied"};
@@ -112,7 +112,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<int> minCrossedRows{"minCrossedRows", 50, "minimun TPC crossed rows for daughter tracks. Used for internal V0 Building"};
     Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCV Neg to PV"};
     Configurable<float> dcapostopv{"dcapostopv", .1, "DCV Pos To PV"};
-    Configurable<double> v0cospa{"v0cospa", 0.95, "V0 CosPA"};
+    Configurable<float> v0cospa{"v0cospa", 0.95, "V0 CosPA"};
     Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
     Configurable<float> v0radius{"v0radius", 0.9, "v0radius"};
     Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximun daughter eta (in abs value)"};
@@ -126,8 +126,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<float> lambdaMassWindow{"lambdaMassWindow", 0.01, "Distance from Lambda mass(does not apply to KF path)"};
     // Options for internal cascade building - KF Building specifics
     // ...Initial values taken from PWGLF/Utiles/strangenessBuilderModule.h
-    Configurable<bool> kfTuneForOmega{"kfTuneForOmega", false, "if enabled, take main cascade properties from omega fit instread of Xi fit(=default)"};
-    Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "2 : Daughter particle masses stay fixed in construction process"};
+    Configurable<bool> kfTuneForOmega{"kfTuneForOmega", false, "if enabled, take main cascade properties from omega fit instead of Xi fit(=default)"};
+    Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "0: simplifyed fast mathematics ignoring constraint on fixed mass, 2 : daughter particle masses stay fixed in construction process"};
     Configurable<bool> kfUseV0MassConstraint{"kfUseV0MassConstraint", true, "KF : Use Lambda mass constraint"};
     Configurable<bool> kfUseCascadeMassConstraint{"kfUseCascadeMassConstraint", false, "KF : Use Cascade mass constraint - WARNING : Not adequate for inv mass analysis of Xi"};
     Configurable<bool> kfDoDCAFitterPreMinimV0{"kfDoDCAFitterPreMinimV0", true, "KF : do DCAFitter pre-optimization before KF fit to include material correction for V0"};
@@ -149,18 +149,18 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<bool> createOmegaCToOmegaK{"createOmegaCToOmegaK", false, "enable OmegaC0 -> Omega K candidate creation"};
     // Cascade pre selection
     Configurable<bool> doCascadePreselection{"doCascadePreselection", true, "Use invariant mass and dcaXY cuts to preselect cascade candidates"};
-    Configurable<double> massToleranceCascade{"massToleranceCascade", 0.01, "Invariant mass tolerance for cascades"};
+    Configurable<float> massToleranceCascade{"massToleranceCascade", 0.01, "Invariant mass tolerance for cascades"};
     Configurable<float> dcaXYToPVCascadeMax{"dcaXYToPVCascadeMax", 3, "Max cascade DCA to PV in XY plane"};
     Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 1.0, "Max DCA of V0 daughter"};
     Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 1.0, "Max DCA of cascade daughter"};
     // Options for DCAFitter
     Configurable<bool> propagateToPCA{"propagateToPCA", true, "Create tracks version propagated to PCA"};
-    Configurable<double> maxR{"maxR", 200., "Reject PCA's above this radius"};
-    Configurable<double> maxDZIni{"maxDZIni", 4., "Reject (if>0) PCA candidate if tracks DZ exceeds this threshold"};
-    Configurable<double> maxDXYIni{"maxDXYIni", 4., "Reject (if>0) PCA candidate if tracks DXY exceeds this threshold"};
-    Configurable<double> minParamChange{"minParamChange", 1.e-3, "Stop iteration if largest change of any X is smaller than this"};
-    Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "Stop iteration if Chi2/Chi2old > this"};
-    Configurable<double> maxChi2{"maxChi2", 100, "Discard vertices with Chi2/Nprongs > this(or sum {DCAi^2}/Nprongs for abs. distance minimization)"};
+    Configurable<float> maxR{"maxR", 200., "Reject PCA's above this radius"};
+    Configurable<float> maxDZIni{"maxDZIni", 4., "Reject (if>0) PCA candidate if tracks DZ exceeds this threshold"};
+    Configurable<float> maxDXYIni{"maxDXYIni", 4., "Reject (if>0) PCA candidate if tracks DXY exceeds this threshold"};
+    Configurable<float> minParamChange{"minParamChange", 1.e-3, "Stop iteration if largest change of any X is smaller than this"};
+    Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "Stop iteration if Chi2/Chi2old > this"};
+    Configurable<float> maxChi2{"maxChi2", 100, "Discard vertices with Chi2/Nprongs > this(or sum {DCAi^2}/Nprongs for abs. distance minimization)"};
     Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
     Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", true, "Recalculate vertex position using track covariance, effective only if useAbsDCA is true"};
     // Options for KFParticle
@@ -613,7 +613,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     int pdgIdOfCharmBaryon = kXiC0;
     double massOfCascade = o2::constants::physics::MassXiMinus;
 
-    if (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
+    if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
       pdgIdOfBach = kKMinus;
       pdgIdOfBachRej = kPiMinus;
       pdgIdOfCharmBach = kPiPlus;
@@ -622,7 +622,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       massOfCascade = o2::constants::physics::MassOmegaMinus;
     }
 
-    if (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK) {
+    if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK) {
       pdgIdOfBach = kKMinus;
       pdgIdOfBachRej = kPiMinus;
       pdgIdOfCharmBach = kKPlus;
@@ -880,16 +880,13 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     // Calculate normalised decay length using KFParticle
     float dlV0{}, errDlV0{};
     kfV0ToPv.GetDecayLength(dlV0, errDlV0);
-    dlV0 = std::abs(dlV0); // KFParticle returns a signed decay length
 
     float dlCasc{}, errDlCasc{};
     kfCascToPv.GetDecayLength(dlCasc, errDlCasc);
-    dlCasc = std::abs(dlCasc);
 
     float dlCharmBaryon{}, dlXYCharmBaryon{}, errDlCharmBaryon{}, errDlXYCharmBaryon{};
     kfCharmBaryonToPv.GetDecayLength(dlCharmBaryon, errDlCharmBaryon);
     kfCharmBaryonToPv.GetDecayLengthXY(dlXYCharmBaryon, errDlXYCharmBaryon);
-    dlCharmBaryon = std::abs(dlCharmBaryon);
 
     float cosPaCascToPv = RecoDecay::cpa(pvCoord, vertexCasc, pVecCasc);
     float cosPaXYCascToPv = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
