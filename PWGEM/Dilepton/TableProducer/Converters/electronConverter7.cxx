@@ -53,7 +53,7 @@ struct electronConverter7 {
                 track.tpcInnerParam(),
                 track.tpcSignal(),
                 track.tpcNSigmaEl(),
-		-999,
+                -999,
                 track.tpcNSigmaPi(),
                 track.tpcNSigmaKa(),
                 track.tpcNSigmaPr(),
@@ -74,5 +74,5 @@ struct electronConverter7 {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<electronConverter6>(cfgc, TaskName{"electron-converter6"})};
+  return WorkflowSpec{adaptAnalysisTask<electronConverter7>(cfgc, TaskName{"electron-converter7"})};
 }
