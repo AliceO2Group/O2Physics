@@ -9,10 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file   flowTransmutation.cxx
+/// \file   flowSmallSystems.cxx
 /// \author Vojtech Machacek (vojtech.machacek@cern.ch)
 /// \since  Oct/05/2026
-/// \brief  Task to measure flow observables with cumulants method in transmuted events.
+/// \brief  Task to measure flow observables with cumulants method in small collision systems.
 
 #include "PWGCF/GenericFramework/Core/FlowContainer.h"
 #include "PWGCF/GenericFramework/Core/GFW.h"
@@ -83,7 +83,7 @@ auto readMatrix(Array2D<T> const& mat, P& array)
   }
   return;
 }
-struct FlowTransmutation {
+struct FlowSmallSystems {
   struct : ConfigurableGroup{
              O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FV0A; 4:NTPV; 5:NGlobal; 6:MFT")
                O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
@@ -916,5 +916,5 @@ struct FlowTransmutation {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<FlowTransmutation>(cfgc)};
+    adaptAnalysisTask<FlowSmallSystems>(cfgc)};
 }
