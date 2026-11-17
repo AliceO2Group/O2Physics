@@ -27,6 +27,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -42,6 +43,7 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <cstddef>
 #include <cstdint>
 #include <experimental/type_traits>
 #include <iterator>
