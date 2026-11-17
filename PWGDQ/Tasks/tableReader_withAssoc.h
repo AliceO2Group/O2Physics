@@ -2119,7 +2119,6 @@ struct AnalysisSameEventPairing {
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
     // constexpr bool fillFlowReso = eventHasQvector || eventHasQvectorCentr;
     bool isSelectedBDT = false;
-    fNPairPerEvent = 0;
 
     for (auto const& event : events) {
       if (!event.isEventSelected_bit(0)) {
@@ -2154,6 +2153,8 @@ struct AnalysisSameEventPairing {
       if (fConfigRunMixingAcrossTFs) {
         mixingCategory = fMixingHandler.FindEventCategory(dqtablereader_helpers::varValues());
       }
+
+      fNPairPerEvent = 0;
 
       bool isFirst = true;
       for (auto const& [a1, a2] : o2::soa::combinations(groupedAssocs, groupedAssocs)) {
