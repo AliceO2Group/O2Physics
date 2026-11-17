@@ -46,10 +46,12 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <string>
 #include <string_view>
 #include <type_traits>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -417,8 +419,28 @@ void ChargedParticles::init(InitContext const&)
     histos.add("QA/tracks/tpcCrossedRowsOverFindableCls", "", kTH1D, {{90, 0.7, 1.6, "crossed rows / findable clusters TPC"}});
     histos.add("QA/tracks/tpcChi2NCl", "", kTH1D, {{100, 0., 10., "chi2 / cluster TPC"}});
     histos.add("QA/tracks/sigmaPt", "", kTH2D, {ptMeasAxis, {100, 0., 0.3, "#sigma(#it{p}^{ meas}_{T}) / #it{p}^{ meas}_{T}"}});
-    histos.add("QA/tracks/dcaXY", "", kTH2D, {ptMeasAxis, {500, -0.5, 0.5, "dca XY (cm)"}});
-    histos.add("QA/tracks/dcaZ", "", kTH2D, {ptMeasAxis, {500, -2.5, 2.5, "dca Z (cm)"}});
+    // one dca axis for all dca qa: a bin centred at 0, fine in the core (resolution down to ~10 um at high pt), coarse
+    // in the tails; segments of {bin width (cm), bins per side}, each width 5x the previous and every boundary on the
+    // coarser grids, so RebinY(5) and RebinY(25) give the next levels (pure, centred at 0)
+    const std::vector<double> dcaEdges = [](double centralWidth, std::initializer_list<std::pair<double, int>> segments) {
+      std::vector<double> edges{centralWidth / 2.};
+      for (const auto& [width, nBins] : segments) {
+        const double inner = edges.back();
+        for (int j = 1; j <= nBins; ++j) {
+          edges.push_back(inner + j * width);
+        }
+      }
+      std::vector<double> all;
+      for (auto it = edges.rbegin(); it != edges.rend(); ++it) {
+        all.push_back(-*it);
+      }
+      all.insert(all.end(), edges.begin(), edges.end());
+      return all;
+    }(0.00025, {{0.00025, 62}, {0.00125, 75}, {0.00625, 75}, {0.03125, 100}, {0.15625, 50}}); // 2.5 um to 1.5625 mm, 725 bins in +-11.5 cm
+    const AxisSpec dcaXYAxis{dcaEdges, "dca XY (cm)"};
+    const AxisSpec dcaZAxis{dcaEdges, "dca Z (cm)"};
+    histos.add("QA/tracks/dcaXY", "", kTH2D, {ptMeasAxis, dcaXYAxis});
+    histos.add("QA/tracks/dcaZ", "", kTH2D, {ptMeasAxis, dcaZAxis});
     // track cut qa: n-1 and cumulative per single cut of the selection mask, n-1 dca distributions (no dca cut)
     // (nominal only, so the mask does not contain a varied cut yet)
     for (int i = 0; i < static_cast<int>(TrackSelection::TrackCuts::kNCuts); ++i) {
@@ -428,8 +450,8 @@ void ChargedParticles::init(InitContext const&)
     }
     const int nCutBins = 2 * static_cast<int>(trackCutBits.size()) + 3;
     histos.add("QA/tracks/trackCuts", "", kTH2D, {ptMeasAxis, {nCutBins, -0.5, nCutBins - 0.5}});
-    histos.add("QA/tracks/dcaXYnm1", "", kTH2D, {ptMeasAxis, {800, -1., 1., "dca XY (cm)"}});
-    histos.add("QA/tracks/dcaZnm1", "", kTH2D, {ptMeasAxis, {600, -3., 3., "dca Z (cm)"}});
+    histos.add("QA/tracks/dcaXYnm1", "", kTH2D, {ptMeasAxis, dcaXYAxis});
+    histos.add("QA/tracks/dcaZnm1", "", kTH2D, {ptMeasAxis, dcaZAxis});
   }
 
   if (doprocessMC || doprocessMCnoPCC) {
