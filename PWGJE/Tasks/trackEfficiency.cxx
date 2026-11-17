@@ -83,7 +83,7 @@ struct TrackEfficiency {
   Configurable<int> trackOccupancyInTimeRangeMin{"trackOccupancyInTimeRangeMin", -999999, "minimum occupancy of tracks in neighbouring collisions in a given time range; only applied for reconstructed tracks, not mc particles"};
 
   ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0., 10., 50., 70., 100}, "binning of centrality histograms"};
-  ConfigurableAxis intRateBinning{"intRateBinning", {50, 0., 50000.0}, "binning for interaction rate axis"};
+  ConfigurableAxis intRateBinning{"intRateBinning", {100, 0., 10000.0}, "binning for interaction rate axis"};
   ConfigurableAxis phiEffBinning{"phiEffBinning", {200, -1., 7.}, "binning for phi axis in efficiency histograms"};
   ConfigurableAxis etaEffBinning{"etaEffBinning", {200, -1., 1.}, "binning for eta axis in efficiency histograms"};
 
