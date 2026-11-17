@@ -2440,8 +2440,8 @@ struct KaonIsospinFluctuations {
 
   void processSim(MyMcCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    auto finalParticleIdList = (std::vector<int>)cfgFinalParticleIdList;
-    auto nonFinalParticleIdList = (std::vector<int>)cfgNonFinalParticleIdList;
+    auto finalParticleIdList = std::vector<int>(cfgFinalParticleIdList);
+    auto nonFinalParticleIdList = std::vector<int>(cfgNonFinalParticleIdList);
     std::sort(finalParticleIdList.begin(), finalParticleIdList.end());
     std::sort(nonFinalParticleIdList.begin(), nonFinalParticleIdList.end());
 

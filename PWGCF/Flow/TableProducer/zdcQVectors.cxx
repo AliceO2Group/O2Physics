@@ -162,7 +162,7 @@ struct ZdcQVectors {
 
   using UsedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNGlobals>;
   using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
-  Filter trackFilter = nabs(aod::track::eta) < cfgTrackSelsEta && aod::track::pt > cfgTrackSelsPtmin&& aod::track::pt < cfgTrackSelsPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && nabs(aod::track::dcaXY) < cfgTrackSelsDCAxy&& nabs(aod::track::dcaZ) < cfgTrackSelsDCAz;
+  Filter trackFilter = nabs(aod::track::eta) < cfgTrackSelsEta && aod::track::pt > cfgTrackSelsPtmin&& aod::track::pt < cfgTrackSelsPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && nabs(aod::track::dcaXY) < cfgTrackSelsDCAxy&& nabs(aod::track::dcaZ) < cfgTrackSelsDCAz;
   using UnfilteredTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
   using UsedTracks = soa::Filtered<UnfilteredTracks>;
 
@@ -1122,22 +1122,52 @@ struct ZdcQVectors {
       fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], cal.v, cent, rsTimestamp);
     }
 
-      // vector of 4
-      std::vector<double> corrQxA;
-      std::vector<double> corrQyA;
-      std::vector<double> corrQxC;
-      std::vector<double> corrQyC;
+    // vector of 4
+    std::vector<double> corrQxA;
+    std::vector<double> corrQyA;
+    std::vector<double> corrQxC;
+    std::vector<double> corrQyC;
 
-      int pb = 0;
+    int pb = 0;
 
-      int nIterations = 5;
-      int nSteps = 5;
+    int nIterations = 5;
+    int nSteps = 5;
 
-      for (int it = 1; it <= nIterations; it++) {
-        corrQxA.push_back(getCorrection<THnSparse, kRec>(names[0][0].Data(), it, 1));
-        corrQyA.push_back(getCorrection<THnSparse, kRec>(names[0][1].Data(), it, 1));
-        corrQxC.push_back(getCorrection<THnSparse, kRec>(names[0][2].Data(), it, 1));
-        corrQyC.push_back(getCorrection<THnSparse, kRec>(names[0][3].Data(), it, 1));
+    for (int it = 1; it <= nIterations; it++) {
+      corrQxA.push_back(getCorrection<THnSparse, kRec>(names[0][0].Data(), it, 1));
+      corrQyA.push_back(getCorrection<THnSparse, kRec>(names[0][1].Data(), it, 1));
+      corrQxC.push_back(getCorrection<THnSparse, kRec>(names[0][2].Data(), it, 1));
+      corrQyC.push_back(getCorrection<THnSparse, kRec>(names[0][3].Data(), it, 1));
+
+      if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
+        registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
+        registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
+        registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
+        registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, q[3] - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
+      }
+      pb++;
+
+      for (int step = 2; step <= nSteps; step++) {
+        corrQxA.push_back(getCorrection<TProfile, kRec>(names[step - 1][0].Data(), it, step));
+        corrQyA.push_back(getCorrection<TProfile, kRec>(names[step - 1][1].Data(), it, step));
+        corrQxC.push_back(getCorrection<TProfile, kRec>(names[step - 1][2].Data(), it, step));
+        corrQyC.push_back(getCorrection<TProfile, kRec>(names[step - 1][3].Data(), it, step));
+
+        if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
+          registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
+          registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
+          registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
+          registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, q[3] - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
+        }
+
+        pb++;
+      }
+
+      if (extraTS.cfgCCDBDir_RecenterForTimestamp) {
+        corrQxA.push_back(getCorrection<TProfile, kTimestamp>(namesTS[0].Data(), it, 6));
+        corrQyA.push_back(getCorrection<TProfile, kTimestamp>(namesTS[1].Data(), it, 6));
+        corrQxC.push_back(getCorrection<TProfile, kTimestamp>(namesTS[2].Data(), it, 6));
+        corrQyC.push_back(getCorrection<TProfile, kTimestamp>(namesTS[3].Data(), it, 6));
 
         if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
           registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
@@ -1146,225 +1176,195 @@ struct ZdcQVectors {
           registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, q[3] - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
         }
         pb++;
-
-        for (int step = 2; step <= nSteps; step++) {
-          corrQxA.push_back(getCorrection<TProfile, kRec>(names[step - 1][0].Data(), it, step));
-          corrQyA.push_back(getCorrection<TProfile, kRec>(names[step - 1][1].Data(), it, step));
-          corrQxC.push_back(getCorrection<TProfile, kRec>(names[step - 1][2].Data(), it, step));
-          corrQyC.push_back(getCorrection<TProfile, kRec>(names[step - 1][3].Data(), it, step));
-
-          if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
-            registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, q[3] - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
-          }
-
-          pb++;
-        }
-
-        if (extraTS.cfgCCDBDir_RecenterForTimestamp) {
-          corrQxA.push_back(getCorrection<TProfile, kTimestamp>(namesTS[0].Data(), it, 6));
-          corrQyA.push_back(getCorrection<TProfile, kTimestamp>(namesTS[1].Data(), it, 6));
-          corrQxC.push_back(getCorrection<TProfile, kTimestamp>(namesTS[2].Data(), it, 6));
-          corrQyC.push_back(getCorrection<TProfile, kTimestamp>(namesTS[3].Data(), it, 6));
-
-          if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
-            registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, q[3] - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
-          }
-          pb++;
-        }
       }
+    }
 
-      double totalCorrectionQxA = std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0);
-      double totalCorrectionQyA = std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0);
-      double totalCorrectionQxC = std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0);
-      double totalCorrectionQyC = std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0);
+    double totalCorrectionQxA = std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0);
+    double totalCorrectionQyA = std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0);
+    double totalCorrectionQxC = std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0);
+    double totalCorrectionQyC = std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0);
 
-      qRec[0] -= totalCorrectionQxA;
-      qRec[1] -= totalCorrectionQyA;
-      qRec[2] -= totalCorrectionQxC;
-      qRec[3] -= totalCorrectionQyC;
+    qRec[0] -= totalCorrectionQxA;
+    qRec[1] -= totalCorrectionQyA;
+    qRec[2] -= totalCorrectionQxC;
+    qRec[3] -= totalCorrectionQyC;
 
-      // do shift for psi.
-      double psiZDCA = 1.0 * std::atan2(qRec[1], qRec[0]);
-      double psiZDCC = 1.0 * std::atan2(qRec[3], qRec[2]);
+    // do shift for psi.
+    double psiZDCA = 1.0 * std::atan2(qRec[1], qRec[0]);
+    double psiZDCC = 1.0 * std::atan2(qRec[3], qRec[2]);
 
-      int nshift = 10; // no. of iterations
+    int nshift = 10; // no. of iterations
 
-      double psiZDCAshift = psiZDCA;
-      double psiZDCCshift = psiZDCC;
+    double psiZDCAshift = psiZDCA;
+    double psiZDCCshift = psiZDCC;
 
-      double deltaPsiZDCA = 0;
-      double deltaPsiZDCC = 0;
+    double deltaPsiZDCA = 0;
+    double deltaPsiZDCC = 0;
 
-      if (!cfgCCDBdir_Shift.value.empty() && !cal.isShiftProfileFound) {
-        LOGF(info, "Getting shift profile from CCDB for runnumber: %d", runnumber);
-        auto hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir_Shift.value, foundBC.timestamp());
-        auto shiftProfileC = dynamic_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCC"));
-        if (shiftProfileC) {
-          cal.shiftprofileC = shiftProfileC;
-        }
-        auto shiftProfileA = dynamic_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCA"));
-        if (shiftProfileA) {
-          cal.shiftprofileA = shiftProfileA;
-        }
-        if (!cal.shiftprofileC || !cal.shiftprofileA) {
-          LOGF(error, "Shift profile not found in CCDB for runnumber: %d", runnumber);
-          cal.isShiftProfileFound = false;
-        } else {
-          LOGF(info, "Shift profile found in CCDB for runnumber: %d", runnumber);
-          cal.isShiftProfileFound = true;
-        }
+    if (!cfgCCDBdir_Shift.value.empty() && !cal.isShiftProfileFound) {
+      LOGF(info, "Getting shift profile from CCDB for runnumber: %d", runnumber);
+      auto hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir_Shift.value, foundBC.timestamp());
+      auto shiftProfileC = dynamic_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCC"));
+      if (shiftProfileC) {
+        cal.shiftprofileC = shiftProfileC;
       }
+      auto shiftProfileA = dynamic_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCA"));
+      if (shiftProfileA) {
+        cal.shiftprofileA = shiftProfileA;
+      }
+      if (!cal.shiftprofileC || !cal.shiftprofileA) {
+        LOGF(error, "Shift profile not found in CCDB for runnumber: %d", runnumber);
+        cal.isShiftProfileFound = false;
+      } else {
+        LOGF(info, "Shift profile found in CCDB for runnumber: %d", runnumber);
+        cal.isShiftProfileFound = true;
+      }
+    }
 
+    for (int ishift = 1; ishift <= nshift; ishift++) {
+      if (!cfgFillNothing && isEventSelected) {
+        registry.fill(HIST("shift/ShiftZDCC"), cent, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCC));
+        registry.fill(HIST("shift/ShiftZDCC"), cent, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCC));
+        registry.fill(HIST("shift/ShiftZDCA"), cent, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCA));
+        registry.fill(HIST("shift/ShiftZDCA"), cent, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCA));
+      }
+    }
+
+    float coeffshiftxZDCC = 0.0;
+    float coeffshiftyZDCC = 0.0;
+    float coeffshiftxZDCA = 0.0;
+    float coeffshiftyZDCA = 0.0;
+
+    if (cal.isShiftProfileFound) {
       for (int ishift = 1; ishift <= nshift; ishift++) {
-        if (!cfgFillNothing && isEventSelected) {
-          registry.fill(HIST("shift/ShiftZDCC"), cent, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCC));
-          registry.fill(HIST("shift/ShiftZDCC"), cent, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCC));
-          registry.fill(HIST("shift/ShiftZDCA"), cent, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCA));
-          registry.fill(HIST("shift/ShiftZDCA"), cent, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCA));
+        int binshiftxZDCC = cal.shiftprofileC->FindBin(cent, 0.5, ishift - 0.5); // bin 0.5
+        int binshiftyZDCC = cal.shiftprofileC->FindBin(cent, 1.5, ishift - 0.5);
+        int binshiftxZDCA = cal.shiftprofileA->FindBin(cent, 0.5, ishift - 0.5);
+        int binshiftyZDCA = cal.shiftprofileA->FindBin(cent, 1.5, ishift - 0.5);
+
+        if (binshiftxZDCC > 0) {
+          coeffshiftxZDCC = cal.shiftprofileC->GetBinContent(binshiftxZDCC);
         }
-      }
-
-      float coeffshiftxZDCC = 0.0;
-      float coeffshiftyZDCC = 0.0;
-      float coeffshiftxZDCA = 0.0;
-      float coeffshiftyZDCA = 0.0;
-
-      if (cal.isShiftProfileFound) {
-        for (int ishift = 1; ishift <= nshift; ishift++) {
-          int binshiftxZDCC = cal.shiftprofileC->FindBin(cent, 0.5, ishift - 0.5); // bin 0.5
-          int binshiftyZDCC = cal.shiftprofileC->FindBin(cent, 1.5, ishift - 0.5);
-          int binshiftxZDCA = cal.shiftprofileA->FindBin(cent, 0.5, ishift - 0.5);
-          int binshiftyZDCA = cal.shiftprofileA->FindBin(cent, 1.5, ishift - 0.5);
-
-          if (binshiftxZDCC > 0) {
-            coeffshiftxZDCC = cal.shiftprofileC->GetBinContent(binshiftxZDCC);
-          }
-          if (binshiftyZDCC > 0) {
-            coeffshiftyZDCC = cal.shiftprofileC->GetBinContent(binshiftyZDCC);
-          }
-          if (binshiftxZDCA > 0) {
-            coeffshiftxZDCA = cal.shiftprofileA->GetBinContent(binshiftxZDCA);
-          }
-          if (binshiftyZDCA > 0) {
-            coeffshiftyZDCA = cal.shiftprofileA->GetBinContent(binshiftyZDCA);
-          }
-
-          deltaPsiZDCC += ((2 / (1.0 * ishift)) * (-1.0 * coeffshiftxZDCC * std::cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * std::sin(ishift * 1.0 * psiZDCC)));
-          deltaPsiZDCA += ((2 / (1.0 * ishift)) * (-1.0 * coeffshiftxZDCA * std::cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * std::sin(ishift * 1.0 * psiZDCA)));
+        if (binshiftyZDCC > 0) {
+          coeffshiftyZDCC = cal.shiftprofileC->GetBinContent(binshiftyZDCC);
         }
-      }
-
-      psiZDCCshift += deltaPsiZDCC;
-      psiZDCAshift += deltaPsiZDCA;
-
-      // Normalize angles to [-pi, pi]
-      psiZDCCshift = std::atan2(std::sin(psiZDCCshift), std::cos(psiZDCCshift));
-      psiZDCAshift = std::atan2(std::sin(psiZDCAshift), std::cos(psiZDCAshift));
-
-      if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
-        registry.fill(HIST("QA/shift/psiZDCA"), psiZDCA, cent);
-        registry.fill(HIST("QA/shift/psiZDCC"), psiZDCC, cent);
-        registry.fill(HIST("QA/shift/psiZDCAC"), psiZDCA, psiZDCC);
-        registry.fill(HIST("QA/shift/psiZDCA_shift"), psiZDCAshift, cent);
-        registry.fill(HIST("QA/shift/psiZDCC_shift"), psiZDCCshift, cent);
-        registry.fill(HIST("QA/shift/psiZDCAC_shift"), psiZDCAshift, psiZDCCshift);
-        registry.fill(HIST("QA/shift/DeltaPsiZDCA"), psiZDCAshift, psiZDCA);
-        registry.fill(HIST("QA/shift/DeltaPsiZDCC"), psiZDCCshift, psiZDCC);
-        registry.fill(HIST("QA/shift/DeltaPsiZDCAC"), psiZDCAshift - psiZDCA, psiZDCCshift - psiZDCC);
-      }
-
-      double qXaShift = std::hypot(qRec[1], qRec[0]) * std::cos(psiZDCAshift);
-      double qYaShift = std::hypot(qRec[1], qRec[0]) * std::sin(psiZDCAshift);
-      double qXcShift = std::hypot(qRec[2], qRec[3]) * std::cos(psiZDCCshift);
-      double qYcShift = std::hypot(qRec[2], qRec[3]) * std::sin(psiZDCCshift);
-
-      if (!cal.calibfilesLoaded[kRecShift]) {
-        if (cal.isSelected && cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
-          fillCommonRegistry<kAfter>(qXaShift, qYaShift, qXcShift, qYcShift, cal.v, cent, rsTimestamp);
-          registry.fill(HIST("QA/centrality_after"), cent);
-          registry.get<TProfile>(HIST("QA/after/ZNA_Qx"))->Fill(Form("%d", runnumber), qXaShift);
-          registry.get<TProfile>(HIST("QA/after/ZNA_Qy"))->Fill(Form("%d", runnumber), qYaShift);
-          registry.get<TProfile>(HIST("QA/after/ZNC_Qx"))->Fill(Form("%d", runnumber), qXcShift);
-          registry.get<TProfile>(HIST("QA/after/ZNC_Qy"))->Fill(Form("%d", runnumber), qYcShift);
+        if (binshiftxZDCA > 0) {
+          coeffshiftxZDCA = cal.shiftprofileA->GetBinContent(binshiftxZDCA);
+        }
+        if (binshiftyZDCA > 0) {
+          coeffshiftyZDCA = cal.shiftprofileA->GetBinContent(binshiftyZDCA);
         }
 
-        spTableZDC(runnumber, cents, cal.v, foundBC.timestamp(), qXaShift, qYaShift, qXcShift, qYcShift, cal.isSelected, eventSelectionFlags);
-        qRec = {0, 0, 0, 0};
-
-        cal.lastRunNumber = runnumber;
-        return;
+        deltaPsiZDCC += ((2 / (1.0 * ishift)) * (-1.0 * coeffshiftxZDCC * std::cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * std::sin(ishift * 1.0 * psiZDCC)));
+        deltaPsiZDCA += ((2 / (1.0 * ishift)) * (-1.0 * coeffshiftxZDCA * std::cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * std::sin(ishift * 1.0 * psiZDCA)));
       }
-      // vector of 4
-      corrQxA.clear();
-      corrQyA.clear();
-      corrQxC.clear();
-      corrQyC.clear();
+    }
 
+    psiZDCCshift += deltaPsiZDCC;
+    psiZDCAshift += deltaPsiZDCA;
+
+    // Normalize angles to [-pi, pi]
+    psiZDCCshift = std::atan2(std::sin(psiZDCCshift), std::cos(psiZDCCshift));
+    psiZDCAshift = std::atan2(std::sin(psiZDCAshift), std::cos(psiZDCAshift));
+
+    if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
+      registry.fill(HIST("QA/shift/psiZDCA"), psiZDCA, cent);
+      registry.fill(HIST("QA/shift/psiZDCC"), psiZDCC, cent);
+      registry.fill(HIST("QA/shift/psiZDCAC"), psiZDCA, psiZDCC);
+      registry.fill(HIST("QA/shift/psiZDCA_shift"), psiZDCAshift, cent);
+      registry.fill(HIST("QA/shift/psiZDCC_shift"), psiZDCCshift, cent);
+      registry.fill(HIST("QA/shift/psiZDCAC_shift"), psiZDCAshift, psiZDCCshift);
+      registry.fill(HIST("QA/shift/DeltaPsiZDCA"), psiZDCAshift, psiZDCA);
+      registry.fill(HIST("QA/shift/DeltaPsiZDCC"), psiZDCCshift, psiZDCC);
+      registry.fill(HIST("QA/shift/DeltaPsiZDCAC"), psiZDCAshift - psiZDCA, psiZDCCshift - psiZDCC);
+    }
+
+    double qXaShift = std::hypot(qRec[1], qRec[0]) * std::cos(psiZDCAshift);
+    double qYaShift = std::hypot(qRec[1], qRec[0]) * std::sin(psiZDCAshift);
+    double qXcShift = std::hypot(qRec[2], qRec[3]) * std::cos(psiZDCCshift);
+    double qYcShift = std::hypot(qRec[2], qRec[3]) * std::sin(psiZDCCshift);
+
+    if (!cal.calibfilesLoaded[kRecShift]) {
       if (cal.isSelected && cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
         fillCommonRegistry<kAfter>(qXaShift, qYaShift, qXcShift, qYcShift, cal.v, cent, rsTimestamp);
+        registry.fill(HIST("QA/centrality_after"), cent);
+        registry.get<TProfile>(HIST("QA/after/ZNA_Qx"))->Fill(Form("%d", runnumber), qXaShift);
+        registry.get<TProfile>(HIST("QA/after/ZNA_Qy"))->Fill(Form("%d", runnumber), qYaShift);
+        registry.get<TProfile>(HIST("QA/after/ZNC_Qx"))->Fill(Form("%d", runnumber), qXcShift);
+        registry.get<TProfile>(HIST("QA/after/ZNC_Qy"))->Fill(Form("%d", runnumber), qYcShift);
       }
 
-      for (int it = 1; it <= cfgNIterationsAfterShift; it++) {
-        corrQxA.push_back(getCorrection<THnSparse, kRecShift>(names[0][0].Data(), it, 1));
-        corrQyA.push_back(getCorrection<THnSparse, kRecShift>(names[0][1].Data(), it, 1));
-        corrQxC.push_back(getCorrection<THnSparse, kRecShift>(names[0][2].Data(), it, 1));
-        corrQyC.push_back(getCorrection<THnSparse, kRecShift>(names[0][3].Data(), it, 1));
+      spTableZDC(runnumber, cents, cal.v, foundBC.timestamp(), qXaShift, qYaShift, qXcShift, qYcShift, cal.isSelected, eventSelectionFlags);
+      qRec = {0, 0, 0, 0};
+
+      cal.lastRunNumber = runnumber;
+      return;
+    }
+    // vector of 4
+    corrQxA.clear();
+    corrQyA.clear();
+    corrQxC.clear();
+    corrQyC.clear();
+
+    if (cal.isSelected && cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
+      fillCommonRegistry<kAfter>(qXaShift, qYaShift, qXcShift, qYcShift, cal.v, cent, rsTimestamp);
+    }
+
+    for (int it = 1; it <= cfgNIterationsAfterShift; it++) {
+      corrQxA.push_back(getCorrection<THnSparse, kRecShift>(names[0][0].Data(), it, 1));
+      corrQyA.push_back(getCorrection<THnSparse, kRecShift>(names[0][1].Data(), it, 1));
+      corrQxC.push_back(getCorrection<THnSparse, kRecShift>(names[0][2].Data(), it, 1));
+      corrQyC.push_back(getCorrection<THnSparse, kRecShift>(names[0][3].Data(), it, 1));
+
+      if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
+        registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, qXaShift - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
+        registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, qYaShift - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
+        registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, qXcShift - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
+        registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, qYcShift - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
+      }
+      pb++;
+
+      for (int step = 2; step <= nSteps; step++) {
+        corrQxA.push_back(getCorrection<TProfile, kRecShift>(names[step - 1][0].Data(), it, step));
+        corrQyA.push_back(getCorrection<TProfile, kRecShift>(names[step - 1][1].Data(), it, step));
+        corrQxC.push_back(getCorrection<TProfile, kRecShift>(names[step - 1][2].Data(), it, step));
+        corrQyC.push_back(getCorrection<TProfile, kRecShift>(names[step - 1][3].Data(), it, step));
 
         if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
-          registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, qXaShift - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
-          registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, qYaShift - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
-          registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, qXcShift - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
-          registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, qYcShift - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
+          registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
+          registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
+          registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
+          registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, q[3] - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
         }
+
         pb++;
-
-        for (int step = 2; step <= nSteps; step++) {
-          corrQxA.push_back(getCorrection<TProfile, kRecShift>(names[step - 1][0].Data(), it, step));
-          corrQyA.push_back(getCorrection<TProfile, kRecShift>(names[step - 1][1].Data(), it, step));
-          corrQxC.push_back(getCorrection<TProfile, kRecShift>(names[step - 1][2].Data(), it, step));
-          corrQyC.push_back(getCorrection<TProfile, kRecShift>(names[step - 1][3].Data(), it, step));
-
-          if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
-            registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, q[3] - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
-          }
-
-          pb++;
-        }
-
-        double totalCorrectionQxAshift = std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0);
-        double totalCorrectionQyAshift = std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0);
-        double totalCorrectionQxCshift = std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0);
-        double totalCorrectionQyCshift = std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0);
-
-        qXaShift -= totalCorrectionQxAshift;
-        qYaShift -= totalCorrectionQyAshift;
-        qXcShift -= totalCorrectionQxCshift;
-        qYcShift -= totalCorrectionQyCshift;
-
-        if (cal.isSelected && cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
-          fillCommonRegistry<kAfterShift>(qXaShift, qYaShift, qXcShift, qYcShift, cal.v, cent, rsTimestamp);
-          registry.fill(HIST("QA/centrality_after"), cent);
-          registry.get<TProfile>(HIST("QA/after/ZNA_Qx"))->Fill(Form("%d", runnumber), qXaShift);
-          registry.get<TProfile>(HIST("QA/after/ZNA_Qy"))->Fill(Form("%d", runnumber), qYaShift);
-          registry.get<TProfile>(HIST("QA/after/ZNC_Qx"))->Fill(Form("%d", runnumber), qXcShift);
-          registry.get<TProfile>(HIST("QA/after/ZNC_Qy"))->Fill(Form("%d", runnumber), qYcShift);
-        }
-
-        spTableZDC(runnumber, cents, cal.v, foundBC.timestamp(), qXaShift, qYaShift, qXcShift, qYcShift, cal.isSelected, eventSelectionFlags);
-        qRec = {0, 0, 0, 0};
-
-        cal.lastRunNumber = runnumber;
-        return;
       }
+
+      double totalCorrectionQxAshift = std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0);
+      double totalCorrectionQyAshift = std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0);
+      double totalCorrectionQxCshift = std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0);
+      double totalCorrectionQyCshift = std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0);
+
+      qXaShift -= totalCorrectionQxAshift;
+      qYaShift -= totalCorrectionQyAshift;
+      qXcShift -= totalCorrectionQxCshift;
+      qYcShift -= totalCorrectionQyCshift;
+
+      if (cal.isSelected && cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
+        fillCommonRegistry<kAfterShift>(qXaShift, qYaShift, qXcShift, qYcShift, cal.v, cent, rsTimestamp);
+        registry.fill(HIST("QA/centrality_after"), cent);
+        registry.get<TProfile>(HIST("QA/after/ZNA_Qx"))->Fill(Form("%d", runnumber), qXaShift);
+        registry.get<TProfile>(HIST("QA/after/ZNA_Qy"))->Fill(Form("%d", runnumber), qYaShift);
+        registry.get<TProfile>(HIST("QA/after/ZNC_Qx"))->Fill(Form("%d", runnumber), qXcShift);
+        registry.get<TProfile>(HIST("QA/after/ZNC_Qy"))->Fill(Form("%d", runnumber), qYcShift);
+      }
+
+      spTableZDC(runnumber, cents, cal.v, foundBC.timestamp(), qXaShift, qYaShift, qXcShift, qYcShift, cal.isSelected, eventSelectionFlags);
+      qRec = {0, 0, 0, 0};
+
+      cal.lastRunNumber = runnumber;
+      return;
+    }
 
     LOGF(warning, "We return without saving table... -> THis is a problem");
     cal.lastRunNumber = runnumber;
