@@ -72,6 +72,17 @@ DECLARE_SOA_TABLE(BinnedGenPts, "AOD", "BINNEDGENPT", // To be joined with EMMCE
 );
 using BinnedGenPt = BinnedGenPts::iterator;
 
+namespace emmcbinnedgendalitz
+{
+DECLARE_SOA_COLUMN(GeneratedPi0Dalitz, generatedPi0Dalitz, std::vector<uint16_t>); //! pi0 -> e+e-gamma binned generated data (pT, |y|, m_ee)
+DECLARE_SOA_COLUMN(GeneratedEtaDalitz, generatedEtaDalitz, std::vector<uint16_t>); //! eta -> e+e-gamma binned generated data (pT, |y|, m_ee)
+} // namespace emmcbinnedgendalitz
+
+DECLARE_SOA_TABLE(BinnedGenDalitzs, "AOD", "BINNEDGENDAL", // To be joined with EMMCEvents table at analysis level.
+                  emmcbinnedgendalitz::GeneratedPi0Dalitz,
+                  emmcbinnedgendalitz::GeneratedEtaDalitz);
+using BinnedGenDalitz = BinnedGenDalitzs::iterator;
+
 // DECLARE_SOA_TABLE(BinnedGenPtAccs, "AOD", "BINNEDGENPTACC", // To be joined with EMMCEvents table at analysis level.
 //                   emmcbinnedgen::GeneratedPi0_Acc_gg,
 //                   emmcbinnedgen::GeneratedPi0_Acc_eeg,
