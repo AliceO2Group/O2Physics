@@ -8,18 +8,20 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \author Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
+/// \brief Implementation of AnalysisCut
+/// \file AnalysisCut.cxx
 
 #include "PWGDQ/Core/AnalysisCut.h"
+
+#include <Framework/Logger.h>
 
 #include <TNamed.h>
 
 #include <Rtypes.h>
 
-#include <iostream>
 #include <vector>
-
-using std::cout;
-using std::endl;
 
 std::vector<int> AnalysisCut::fgUsedVars = {};
 
@@ -60,7 +62,7 @@ AnalysisCut::AnalysisCut(const AnalysisCut& c) : TNamed(c)
 AnalysisCut::~AnalysisCut() = default;
 
 //____________________________________________________________________________
-void AnalysisCut::PrintCuts()
+void AnalysisCut::printCuts()
 {
-  cout << "**************** AnalysisCut::PrintCuts" << endl;
+  LOGF(info, "**************** AnalysisCut::printCuts");
 }

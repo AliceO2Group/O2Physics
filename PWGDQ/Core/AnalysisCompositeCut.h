@@ -9,10 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
-//
-// Cut class manipulating groups of cuts
-//
+/// \author Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
+/// \brief Implementation of AnalysisCompositeCut
+/// \file AnalysisCompositeCut.h
 
 #ifndef PWGDQ_CORE_ANALYSISCOMPOSITECUT_H_
 #define PWGDQ_CORE_ANALYSISCOMPOSITECUT_H_
@@ -33,7 +32,7 @@ class AnalysisCompositeCut : public AnalysisCut
   AnalysisCompositeCut& operator=(const AnalysisCompositeCut& c);
   ~AnalysisCompositeCut() override;
 
-  void AddCut(AnalysisCut* cut)
+  void addCut(AnalysisCut* cut)
   {
     if (auto* composite = dynamic_cast<AnalysisCompositeCut*>(cut)) {
       fCompositeCutList.push_back(*composite);
@@ -42,10 +41,10 @@ class AnalysisCompositeCut : public AnalysisCut
     }
   };
 
-  bool GetUseAND() const { return fOptionUseAND; }
-  int GetNCuts() const { return fCutList.size() + fCompositeCutList.size(); }
+  bool getUseAND() const { return fOptionUseAND; }
+  int getNCuts() const { return fCutList.size() + fCompositeCutList.size(); }
 
-  bool IsSelected(float* values) override;
+  bool isSelected(float* values) override;
 
  protected:
   bool fOptionUseAND;                                  // true (default): apply AND on all cuts; false: use OR
