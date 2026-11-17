@@ -151,6 +151,15 @@ void PccQa::init(InitContext const&)
 
   if (doprocessMC) {
     histos.add("DCAxyVsPtVsMult_weighted", "", kTH3D, {nchAxis, ptAxis, dcaAxis});
+    histos.add("globalTracks", "", kTH1D, {ptAxis});
+    histos.add("globalTracks_weighted", "", kTH1D, {ptAxis});
+    histos.add("globalTracksSec", "", kTH1D, {ptAxis});
+    histos.add("globalTracksSec_weighted", "", kTH1D, {ptAxis});
+
+    histos.add("globalTracksVsMult", "", kTH2D, {nchAxis, ptAxis});
+    histos.add("globalTracksVsMult_weighted", "", kTH2D, {nchAxis, ptAxis});
+    histos.add("globalTracksVsMultSec", "", kTH2D, {nchAxis, ptAxis});
+    histos.add("globalTracksVsMultSec_weighted", "", kTH2D, {nchAxis, ptAxis});
 
     histos.add("prim/DCAxyVsPtVsMult", "", kTH3D, {nchAxis, ptAxis, dcaAxis});
     histos.add("prim/DCAxyVsPtVsMult_weighted", "", kTH3D, {nchAxis, ptAxis, dcaAxis});
@@ -265,6 +274,13 @@ void PccQa::processMeas(const C& collision, const T& tracks)
 
       histos.fill(HIST("DCAxyVsPtVsMult_weighted"), MultCounterMeas, track.pt(), track.dcaXY(), particle.pccWeight());
 
+      if (TrackSelectionFlags::kGlobalTrack) {
+        histos.fill(HIST("globalTracks"), track.pt());
+        histos.fill(HIST("globalTracks_weighted"), track.pt(), particle.pccWeight());
+        histos.fill(HIST("globalTracksVsMult"), MultCounterMeas, track.pt());
+        histos.fill(HIST("globalTracksVsMult_weighted"), MultCounterMeas, track.pt(), particle.pccWeight());
+      }
+
       if (particle.isPhysicalPrimary()) {
 
         histos.fill(HIST("prim/weights"), particle.pt(), particle.pccWeight());
@@ -281,6 +297,13 @@ void PccQa::processMeas(const C& collision, const T& tracks)
 
         histos.fill(HIST("sec/DCAxyVsPtVsMult"), MultCounterMeas, track.pt(), track.dcaXY());
         histos.fill(HIST("sec/DCAxyVsPtVsMult_weighted"), MultCounterMeas, track.pt(), track.dcaXY(), particle.pccWeight());
+
+        if (TrackSelectionFlags::kGlobalTrack) {
+          histos.fill(HIST("globalTracksSec"), track.pt());
+          histos.fill(HIST("globalTracksSec_weighted"), track.pt(), particle.pccWeight());
+          histos.fill(HIST("globalTracksVsMultSec"), MultCounterMeas, track.pt());
+          histos.fill(HIST("globalTracksVsMultSec_weighted"), MultCounterMeas, track.pt(), particle.pccWeight());
+        }
 
         if (particle.getProcess() == TMCProcess::kPDecay || particle.getProcess() == TMCProcess::kPPrimary) {
 
