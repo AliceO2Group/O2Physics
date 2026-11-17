@@ -100,8 +100,9 @@ struct StrangenessDerivedV0Step1 {
                         nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv &&
                         nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv);
 
+  // V0CollRefs carries the index to the collision: without it the V0s are not grouped per collision
   void process(soa::Filtered<soa::Join<aod::StraCollisions, aod::StraEvSels>>::iterator const& collision,
-               soa::Filtered<aod::V0Cores> const& V0s)
+               soa::Filtered<soa::Join<aod::V0CollRefs, aod::V0Cores>> const& V0s)
   {
     // Fill the event counter
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());

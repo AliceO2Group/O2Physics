@@ -74,8 +74,9 @@ struct StrangenessDerivedV0Step0 {
   Filter eventFilter = (o2::aod::evsel::sel8 == true);
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
 
+  // V0CollRefs carries the index to the collision: without it the V0s are not grouped per collision
   void process(soa::Filtered<soa::Join<aod::StraCollisions, aod::StraEvSels>>::iterator const& collision,
-               aod::V0Cores const& V0s)
+               soa::Join<aod::V0CollRefs, aod::V0Cores> const& V0s)
   {
     // Fill the event counter
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
