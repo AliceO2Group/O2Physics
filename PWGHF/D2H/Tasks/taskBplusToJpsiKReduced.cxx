@@ -117,6 +117,7 @@ DECLARE_SOA_COLUMN(ImpactParameterProductJpsi, impactParameterProductJpsi, float
 DECLARE_SOA_COLUMN(ImpactParameterJpsiDauPos, impactParameterJpsiDauPos, float);     //! Impact parameter of Jpsi daughter candidate
 DECLARE_SOA_COLUMN(ImpactParameterJpsiDauNeg, impactParameterJpsiDauNeg, float);     //! Impact parameter of Jpsi daughter candidate
 DECLARE_SOA_COLUMN(ImpactParameterLfTrack0, impactParameterLfTrack0, float);         //! Impact parameter of Phi daughter candidate
+DECLARE_SOA_COLUMN(AbsCos3MuKBpToMuMuK, absCos3MuKBpToMuMuK, float);                 //! Absolute value of the cosine of the angle between one of the muons and the kaon in the J/Psi rest frame
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                                                 //! Cosine pointing angle of candidate
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                             //! Cosine pointing angle of candidate in transverse plane
 DECLARE_SOA_COLUMN(CpaJpsi, cpaJpsi, float);                                         //! Cosine pointing angle of Jpsi daughter candidate
@@ -144,6 +145,7 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_bplustojpsik_lite::ImpactParameterProduct,
                   hf_cand_bplustojpsik_lite::ImpactParameterProductJpsi,
                   hf_cand_bplustojpsik_lite::MaxNormalisedDeltaIP,
+                  hf_cand_bplustojpsik_lite::AbsCos3MuKBpToMuMuK,
                   hf_cand_bplustojpsik_lite::MlScoreSig,
                   // hf_sel_candidate_bplus::IsSelBplusToJpsiPi,
                   //  Jpsi meson features
@@ -461,6 +463,7 @@ struct HfTaskBplusToJpsiKReduced {
         candidate.impactParameterProduct(),
         candidate.impactParameterProductJpsi(),
         candidate.maxNormalisedDeltaIP(),
+        HfHelper::absCos3MuKBpToMuMuK(candidate),
         candidateMlScoreSig,
         // J/Psi features
         invMassJpsi,
