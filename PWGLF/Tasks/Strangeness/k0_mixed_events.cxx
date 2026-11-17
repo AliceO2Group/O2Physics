@@ -206,7 +206,7 @@ struct K0MixedEvents {
 
   Filter pFilter = o2::aod::singletrackselector::p > momentumCut.value.first&& o2::aod::singletrackselector::p < momentumCut.value.second;
   Filter etaFilter = nabs(o2::aod::singletrackselector::eta) < _eta;
-  Filter tpcTrkFilter = o2::aod::singletrackselector::tpcNClsFound >= _tpcNClsFound && o2::aod::singletrackselector::tpcNClsShared <= (uint8_t)_tpcNClsShared;
+  Filter tpcTrkFilter = o2::aod::singletrackselector::tpcNClsFound >= _tpcNClsFound && o2::aod::singletrackselector::tpcNClsShared <= static_cast<uint8_t>(_tpcNClsShared);
 
   // Filter itsNClsFilter = o2::aod::singletrackselector::itsNCls >= (uint8_t)_itsNCls;
 

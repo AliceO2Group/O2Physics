@@ -111,10 +111,9 @@ struct PidLongRange {
     O2_DEFINE_CONFIGURABLE(cfgGlobalPtMin, float, 0.2f, "minimum accepted track pT")
     O2_DEFINE_CONFIGURABLE(cfgGlobalPtMax, float, 10.0f, "maximum accepted track pT")
     O2_DEFINE_CONFIGURABLE(cfgGlobalEta, float, 0.8f, "Eta cut")
-    O2_DEFINE_CONFIGURABLE(cfgGlobalChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
-    O2_DEFINE_CONFIGURABLE(cfgGlobalDCAz, float, 2.0f, "DCAz range for tracks")
-    O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
-    Configurable<std::vector<std::string>> cfgTrackCutsDCAxy{"cfgTrackCutsDCAxy", std::vector<std::string>{"(0.0026+0.005/(x^1.01))", "(0.0026+0.005/(x^1.01))"}, "Functional form of pt-dependent DCAxy cut"};
+    O2_DEFINE_CONFIGURABLE(cfgGlobalChi2prTPCcls, float, 2.5f, "Maximum chi2 per TPC clusters")
+    O2_DEFINE_CONFIGURABLE(cfgGlobalDCAz, float, 2.0f, "Maximum DCA to vertex z")
+    Configurable<std::vector<std::string>> cfgTrackCutsDCAxy{"cfgTrackCutsDCAxy", std::vector<std::string>{"[0]*(0.0026+0.005/(x^1.01))", "[0]*(0.0026+0.005/(x^1.01))"}, "Functional form of pt-dependent DCAxy cut"};
     Configurable<std::vector<std::string>> cfgTrackCutsDCAz{"cfgTrackCutsDCAz", std::vector<std::string>{"", ""}, "Functional form of pt-dependent DCAz cut"};
     Configurable<LabeledArray<float>> cfgTrackCuts{"cfgTrackCuts", {LongArrayFloat.front().data(), 10, 2, {"PtMin", "PtMax", "EtaCut", "Chi2PrTpcCls", "TpcCluster", "TpcCrossedRows", "ItsCluster", "DCAz", "DCAzNsigma", "DCAxyNsigma"}, {"General", "SelNch"}}, "Labeled array for track selections"};
   } cfgTrkSel;
@@ -127,8 +126,10 @@ struct PidLongRange {
     O2_DEFINE_CONFIGURABLE(cfgMinMultForCorrelations, int, 0, "minimum multiplicity for correlations")
     O2_DEFINE_CONFIGURABLE(cfgMaxMultForCorrelations, int, 20, "maximum multiplicity for correlations")
     O2_DEFINE_CONFIGURABLE(cfgSelCollByNch, bool, true, "Select collisions by Nch or centrality")
+    O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
     O2_DEFINE_CONFIGURABLE(cfgMinCentForCorrelations, int, 0, "minimum centrality for correlations")
     O2_DEFINE_CONFIGURABLE(cfgMaxCentForCorrelations, int, 20, "maximum centrality for correlations")
+    O2_DEFINE_CONFIGURABLE(cfgUseCol2ForMixedEvSel, bool, true, "Use Mult/Cent cut on collision 2 during mixed event");
     O2_DEFINE_CONFIGURABLE(cfgEvSelRCTflags, std::string, "", "keep empty to disable, usage: 'CentralBarrelTracking (CBT)', 'CBT_hadronPID' ")
     Configurable<LabeledArray<int>> cfgUseEventCuts{"cfgUseEventCuts", {LongArrayInt.front().data(), 14, 1, {"Filtered Events", "Sel8", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "kNoCollInTimeRangeStandard", "kIsGoodITSLayersAll", "kIsGoodITSLayer0123", "kNoCollInRofStandard", "kNoHighMultCollInPrevRof", "Occupancy", "Multcorrelation", "T0AV0ACut"}, {"EvCuts"}}, "Labeled array (int) for various cuts on resonances"};
   } cfgEvSel;
@@ -204,7 +205,7 @@ struct PidLongRange {
   ConfigurableAxis axisTpcNcls{"axisTpcNcls", {500, 0, 500}, "number of TPC clusters used for PID"};
 
   // Axes for long-range correlations QA
-  ConfigurableAxis axisAmplitudeFt0{"axisAmplitudeFt0a", {5000, 0, 1000}, "FT0A amplitude"};
+  ConfigurableAxis axisAmplitudeFt0{"axisAmplitudeFt0", {5000, 0, 1000}, "FT0A amplitude"};
   ConfigurableAxis axisChannelFt0aAxis{"axisChannelFt0aAxis", {96, 0.0, 96.0}, "FT0A channel"};
   ConfigurableAxis axisChannelFt0cAxis{"axisChannelFt0cAxis", {96, 0.0, 96.0}, "FT0C channel"};
   ConfigurableAxis cfgFITamp{"cfgFITamp", {1000, 0, 5000}, "FT0 amplitude"};
@@ -217,7 +218,7 @@ struct PidLongRange {
   ConfigurableAxis axisSigma{"axisSigma", {200, 0, 20}, "sigma axis for TPC"};
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgEvSel.cfgGlobalCutVertex);
-  Filter trackFilter = (nabs(aod::track::eta) < cfgTrkSel.cfgGlobalEta) && (aod::track::pt > cfgTrkSel.cfgGlobalPtMin) && (aod::track::pt < cfgTrkSel.cfgGlobalPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (nabs(aod::track::dcaZ) < cfgTrkSel.cfgGlobalDCAz) && (aod::track::tpcChi2NCl < cfgTrkSel.cfgGlobalChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgTrkSel.cfgGlobalEta) && (aod::track::pt > cfgTrkSel.cfgGlobalPtMin) && (aod::track::pt < cfgTrkSel.cfgGlobalPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (nabs(aod::track::dcaZ) < cfgTrkSel.cfgGlobalDCAz) && (aod::track::tpcChi2NCl < cfgTrkSel.cfgGlobalChi2prTPCcls);
 
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
@@ -281,7 +282,7 @@ struct PidLongRange {
   };
   enum DetectorType {
     UseTPC = 0,
-    UseTof,
+    UseTOF,
     UseITS
   };
   enum Stage {
@@ -488,8 +489,6 @@ struct PidLongRange {
       histos.add("h_centFT0M_centFT0C", "after cut;Centrality T0C;Centrality T0M", {HistType::kTH2D, {axisCent, axisCent}});
       histos.add("h_centFV0A_centFT0C", "after cut;Centrality T0C;Centrality V0A", {HistType::kTH2D, {axisCent, axisCent}});
 
-      histos.add("hTrackCorrection2d", "Correlation table for number of tracks table; uncorrected track; corrected track", {HistType::kTH2D, {axisMult, axisMult}});
-
       // Add track cuts table
       histos.add("hDCAz_before", "DCAz before cuts; DCAz (cm); Pt", {HistType::kTH2D, {axisDCAz, axisPtFiner}});
       histos.add("hDCAxy_before", "DCAxy before cuts; DCAxy (cm); Pt", {HistType::kTH2D, {axisDCAxy, axisPtFiner}});
@@ -583,28 +582,27 @@ struct PidLongRange {
       histos.add("FT0AmpCorrect", "", {HistType::kTH2F, {axisChID, cfgFITamp}});
     }
 
-    if (!doprocessQA) {
-      histos.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
-    }
+    histos.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
+    histos.add("hTrackCorrection2d", "Correlation table for number of tracks table; uncorrected track; corrected track", {HistType::kTH2D, {axisMult, axisMult}});
 
     LOGF(info, "Initializing correlation container");
 
-    // Initialize Nch-related histograms and containers
+    // Initialize containers
     std::vector<AxisSpec> corrAxisTpcFt0a = {{axisSample},
                                              {axisVertex, "z-vtx (cm)"},
                                              {axisEventClass},
-                                             {axisDeltaPhi, "#Delta#varphi (rad)"},
-                                             {axisDeltaEtaTpcFt0a, "#Delta#eta"},
                                              {axisPtTrigger, "p_{T} (GeV/c)"},
-                                             {axisParticle, "Particle, 0 = charged, 1 = pion, 2 = kaon, 3 = proton"}};
+                                             {axisParticle, "Particle, 0 = charged, 1 = pion, 2 = kaon, 3 = proton"},
+                                             {axisDeltaPhi, "#Delta#varphi (rad)"},
+                                             {axisDeltaEtaTpcFt0a, "#Delta#eta"}};
 
     std::vector<AxisSpec> corrAxisTpcFt0c = {{axisSample},
                                              {axisVertex, "z-vtx (cm)"},
                                              {axisEventClass},
-                                             {axisDeltaPhi, "#Delta#varphi (rad)"},
-                                             {axisDeltaEtaTpcFt0c, "#Delta#eta"},
                                              {axisPtTrigger, "p_{T} (GeV/c)"},
-                                             {axisParticle, "Particle, 0 = charged, 1 = pion, 2 = kaon, 3 = proton"}};
+                                             {axisParticle, "Particle, 0 = charged, 1 = pion, 2 = kaon, 3 = proton"},
+                                             {axisDeltaPhi, "#Delta#varphi (rad)"},
+                                             {axisDeltaEtaTpcFt0c, "#Delta#eta"}};
 
     std::vector<AxisSpec> corrAxisFt0aFt0c = {{axisSample},
                                               {axisVertex, "z-vtx (cm)"},
@@ -639,7 +637,7 @@ struct PidLongRange {
   double getCentrality(TCollision const& collision)
   {
     double cent = 0.0;
-    switch (cfgTrkSel.cfgCentEstimator) {
+    switch (cfgEvSel.cfgCentEstimator) {
       case UseCentFT0C:
         cent = collision.centFT0C();
         break;
@@ -869,7 +867,7 @@ struct PidLongRange {
     }
 
     auto occupancy = collision.trackOccupancyInTimeRange();
-    if (eventCuts[UseOccupancy][EvCut1] && (occupancy > cfgEvSel.cfgCutOccupancyLow || occupancy < cfgEvSel.cfgCutOccupancyHigh)) {
+    if (eventCuts[UseOccupancy][EvCut1] && (occupancy > cfgEvSel.cfgCutOccupancyLow && occupancy < cfgEvSel.cfgCutOccupancyHigh)) {
       histos.fill(HIST("hPassedEventSelection"), UseOccupancy);
     }
   }
@@ -1032,9 +1030,9 @@ struct PidLongRange {
     isDetectedKaon = nSigmaToUse[IndexKaonUp] < nSigmaVals[IndexKaonUp][useIndexDetector] && nSigmaToUse[IndexKaonUp] > nSigmaVals[IndexKaonLow][useIndexDetector];
     isDetectedProton = nSigmaToUse[IndexProtonUp] < nSigmaVals[IndexProtonUp][useIndexDetector] && nSigmaToUse[IndexProtonUp] > nSigmaVals[IndexProtonLow][useIndexDetector];
 
-    isTofPion = nSigmaTOF[IndexPionUp] < nSigmaVals[IndexPionUp][UseTof] && nSigmaTOF[IndexPionUp] > nSigmaVals[IndexPionLow][UseTof];
-    isTofKaon = nSigmaTOF[IndexKaonUp] < nSigmaVals[IndexKaonUp][UseTof] && nSigmaTOF[IndexKaonUp] > nSigmaVals[IndexKaonLow][UseTof];
-    isTofProton = nSigmaTOF[IndexProtonUp] < nSigmaVals[IndexProtonUp][UseTof] && nSigmaTOF[IndexProtonUp] > nSigmaVals[IndexProtonLow][UseTof];
+    isTofPion = nSigmaTOF[IndexPionUp] < nSigmaVals[IndexPionUp][UseTOF] && nSigmaTOF[IndexPionUp] > nSigmaVals[IndexPionLow][UseTOF];
+    isTofKaon = nSigmaTOF[IndexKaonUp] < nSigmaVals[IndexKaonUp][UseTOF] && nSigmaTOF[IndexKaonUp] > nSigmaVals[IndexKaonLow][UseTOF];
+    isTofProton = nSigmaTOF[IndexProtonUp] < nSigmaVals[IndexProtonUp][UseTOF] && nSigmaTOF[IndexProtonUp] > nSigmaVals[IndexProtonLow][UseTOF];
 
     if (track.pt() > cfgPIDConfigs.cfgTofPtCut && !track.hasTOF()) {
       return -1;
@@ -1159,7 +1157,7 @@ struct PidLongRange {
   }
 
   template <typename TTracks>
-  void nchCounter(const TTracks& tracks, double& multiplicity) // function to count the number of tracks in the event and fill the histogram
+  void nchCounter(const TTracks& tracks, double& multiplicity, bool fillHistogram) // function to count the number of tracks in the event and fill the histogram
   {
     double nTracksCorrected = 0;
     double nTracksUncorrected = 0;
@@ -1176,7 +1174,9 @@ struct PidLongRange {
       nTracksUncorrected += 1.0;
       nTracksCorrected += weightNch;
     }
-    histos.fill(HIST("hTrackCorrection2d"), nTracksUncorrected, nTracksCorrected);
+    if (fillHistogram) {
+      histos.fill(HIST("hTrackCorrection2d"), nTracksUncorrected, nTracksCorrected);
+    }
     multiplicity = nTracksCorrected;
   }
 
@@ -1306,22 +1306,23 @@ struct PidLongRange {
       if (!trackSelected(track1)) {
         continue;
       }
-      if (!getEfficiencyCorrection(triggerWeight, track1.pt(), track1.eta(), posZ)) {
+      if (!getEfficiencyCorrection(triggerWeight, track1.pt(), track1.eta(), posZ)) { // Keep efficiency string empty to disable, efficiency is not used for tpc-ft0 correlations
         continue;
       }
 
-      fillTrackQA(track1, UseCharged, eventClass, Before, triggerWeight);
-      fillTrackQA(track1, UsePions, eventClass, Before, triggerWeight);
-      fillTrackQA(track1, UseKaons, eventClass, Before, triggerWeight);
-      fillTrackQA(track1, UseProtons, eventClass, Before, triggerWeight);
+      if (system == SameEvent) {
+        fillTrackQA(track1, UseCharged, eventClass, Before, triggerWeight);
+        fillTrackQA(track1, UsePions, eventClass, Before, triggerWeight);
+        fillTrackQA(track1, UseKaons, eventClass, Before, triggerWeight);
+        fillTrackQA(track1, UseProtons, eventClass, Before, triggerWeight);
+      }
 
       int pidIndex = getNsigmaPID(track1);
 
-      if (pidIndex > UseCharged) {
-        fillTrackQA(track1, pidIndex, eventClass, After, triggerWeight);
-      }
-
       if (system == SameEvent) {
+        if (pidIndex > UseCharged) {
+          fillTrackQA(track1, pidIndex, eventClass, After, triggerWeight);
+        }
         if (corType == IndexFT0C) {
           histos.fill(HIST("Trig_hist_TPC_FT0C"), fSampleIndex, posZ, eventClass, track1.pt(), UseCharged, eventWeight * triggerWeight);
           if (pidIndex > UseCharged) {
@@ -1360,18 +1361,18 @@ struct PidLongRange {
               histos.fill(HIST("Assoc_amp_same_TPC_FT0A"), chanelid, ampl);
               histos.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             }
-            sameTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), UseCharged, ampl * eventWeight * triggerWeight);
+            sameTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, track1.pt(), UseCharged, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             if (pidIndex > UseCharged) {
-              sameTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), pidIndex, ampl * eventWeight * triggerWeight);
+              sameTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, track1.pt(), pidIndex, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             }
           } else if (corType == IndexFT0C) {
             if (cfgGeneral.cfgQABasic) {
               histos.fill(HIST("Assoc_amp_same_TPC_FT0C"), chanelid, ampl);
               histos.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             }
-            sameTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), UseCharged, ampl * eventWeight * triggerWeight);
+            sameTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, track1.pt(), UseCharged, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             if (pidIndex > UseCharged) {
-              sameTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), pidIndex, ampl * eventWeight * triggerWeight);
+              sameTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, track1.pt(), pidIndex, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             }
           }
         } else if (system == MixedEvent) {
@@ -1380,18 +1381,18 @@ struct PidLongRange {
               histos.fill(HIST("Assoc_amp_mixed_TPC_FT0A"), chanelid, ampl);
               histos.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             }
-            mixedTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), UseCharged, ampl * eventWeight * triggerWeight);
+            mixedTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, track1.pt(), UseCharged, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             if (pidIndex > UseCharged) {
-              mixedTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), pidIndex, ampl * eventWeight * triggerWeight);
+              mixedTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, track1.pt(), pidIndex, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             }
           } else if (corType == IndexFT0C) {
             if (cfgGeneral.cfgQABasic) {
               histos.fill(HIST("Assoc_amp_mixed_TPC_FT0C"), chanelid, ampl);
               histos.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             }
-            mixedTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), UseCharged, ampl * eventWeight * triggerWeight);
+            mixedTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, track1.pt(), UseCharged, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             if (pidIndex > UseCharged) {
-              mixedTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), pidIndex, ampl * eventWeight * triggerWeight);
+              mixedTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, track1.pt(), pidIndex, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             }
           }
         }
@@ -1500,8 +1501,6 @@ struct PidLongRange {
 
     histos.fill(HIST("zVtx"), collision.posZ());
 
-    histos.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
-
     auto multiplicity = static_cast<double>(tracks.size());
 
     if (cfgGeneral.cfgQABasic) {
@@ -1509,7 +1508,7 @@ struct PidLongRange {
     }
 
     if (cfgGeneral.cfgStrictTrackCounter) {
-      nchCounter(tracks, multiplicity);
+      nchCounter(tracks, multiplicity, false);
     }
 
     if (cfgGeneral.cfgQABasic) {
@@ -1522,6 +1521,8 @@ struct PidLongRange {
     if (!cfgEvSel.cfgSelCollByNch && (cent > cfgEvSel.cfgMaxCentForCorrelations || cent < cfgEvSel.cfgMinCentForCorrelations)) {
       return;
     }
+
+    histos.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
 
     auto eventClass = (cfgEvSel.cfgSelCollByNch) ? multiplicity : cent;
 
@@ -1537,7 +1538,6 @@ struct PidLongRange {
 
   void processMixedTpcFt0(FilteredCollisions const& collisions, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
   {
-
     auto getTracksSize = [&tracks, this](FilteredCollisions::iterator const& collision) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
       auto mult = associatedTracks.size();
@@ -1546,7 +1546,7 @@ struct PidLongRange {
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
 
-    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}, true};
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}};
 
     auto tracksTuple = std::make_tuple(tracks, tracks);
     Pair<FilteredCollisions, FilteredTracks, FilteredTracks, MixedBinning> pairs{binningOnVtxAndMult, cfgGeneral.cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
@@ -1575,8 +1575,6 @@ struct PidLongRange {
         continue;
       }
 
-      histos.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
-
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       int currentRunNumber = bc.runNumber();
       if (!cfgGeneral.cfgRunRemoveList.value.empty()) {
@@ -1588,23 +1586,31 @@ struct PidLongRange {
       loadAlignParam(bc.timestamp());
       loadCorrection(bc.timestamp());
 
-      auto multiplicity = static_cast<double>(tracks1.size());
+      auto multiplicity1 = static_cast<double>(tracks1.size());
+      auto multiplicity2 = static_cast<double>(tracks2.size());
 
       if (cfgGeneral.cfgStrictTrackCounter) {
-        nchCounter(tracks1, multiplicity);
+        nchCounter(tracks1, multiplicity1, false);
+        if (cfgEvSel.cfgUseCol2ForMixedEvSel) {
+          nchCounter(tracks2, multiplicity2, false);
+        }
       }
 
-      if (cfgEvSel.cfgSelCollByNch && (multiplicity > cfgEvSel.cfgMaxMultForCorrelations || multiplicity < cfgEvSel.cfgMinMultForCorrelations)) {
+      if (cfgEvSel.cfgSelCollByNch && (multiplicity1 > cfgEvSel.cfgMaxMultForCorrelations || multiplicity1 < cfgEvSel.cfgMinMultForCorrelations)) {
+        continue;
+      }
+      if (cfgEvSel.cfgSelCollByNch && cfgEvSel.cfgUseCol2ForMixedEvSel && (multiplicity2 > cfgEvSel.cfgMaxMultForCorrelations || multiplicity2 < cfgEvSel.cfgMinMultForCorrelations)) {
         continue;
       }
       if (!cfgEvSel.cfgSelCollByNch && (cent1 > cfgEvSel.cfgMaxCentForCorrelations || cent1 < cfgEvSel.cfgMinCentForCorrelations)) {
         continue;
       }
-      if (!cfgEvSel.cfgSelCollByNch && (cent2 > cfgEvSel.cfgMaxCentForCorrelations || cent2 < cfgEvSel.cfgMinCentForCorrelations)) {
+      if (!cfgEvSel.cfgSelCollByNch && cfgEvSel.cfgUseCol2ForMixedEvSel && (cent2 > cfgEvSel.cfgMaxCentForCorrelations || cent2 < cfgEvSel.cfgMinCentForCorrelations)) {
         continue;
       }
 
-      auto eventClass = (cfgEvSel.cfgSelCollByNch) ? multiplicity : cent1;
+      histos.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
+      auto eventClass = (cfgEvSel.cfgSelCollByNch) ? multiplicity1 : cent1;
 
       float eventWeight = 1.0f;
 
@@ -1664,7 +1670,6 @@ struct PidLongRange {
     histos.fill(HIST("CentralityWeighted"), cent, weightCent);
 
     histos.fill(HIST("zVtx"), collision.posZ());
-    histos.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
 
     fillYieldFt0aFt0c(collision, tracks);
 
@@ -1675,7 +1680,7 @@ struct PidLongRange {
     }
 
     if (cfgGeneral.cfgStrictTrackCounter) {
-      nchCounter(tracks, multiplicity);
+      nchCounter(tracks, multiplicity, false);
     }
 
     if (cfgGeneral.cfgQABasic) {
@@ -1688,6 +1693,8 @@ struct PidLongRange {
     if (!cfgEvSel.cfgSelCollByNch && (cent > cfgEvSel.cfgMaxCentForCorrelations || cent < cfgEvSel.cfgMinCentForCorrelations)) {
       return;
     }
+
+    histos.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
 
     auto eventClass = (cfgEvSel.cfgSelCollByNch) ? multiplicity : cent;
 
@@ -1708,7 +1715,7 @@ struct PidLongRange {
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
 
-    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}, true};
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}};
 
     auto tracksTuple = std::make_tuple(tracks, tracks);
     Pair<FilteredCollisions, FilteredTracks, FilteredTracks, MixedBinning> pairs{binningOnVtxAndMult, cfgGeneral.cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
@@ -1738,8 +1745,6 @@ struct PidLongRange {
         continue;
       }
 
-      histos.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
-
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       int currentRunNumber = bc.runNumber();
       if (!cfgGeneral.cfgRunRemoveList.value.empty()) {
@@ -1750,23 +1755,32 @@ struct PidLongRange {
       loadAlignParam(bc.timestamp());
       loadCorrection(bc.timestamp());
 
-      auto multiplicity = static_cast<double>(tracks1.size());
+      auto multiplicity1 = static_cast<double>(tracks1.size());
+      auto multiplicity2 = static_cast<double>(tracks2.size());
 
       if (cfgGeneral.cfgStrictTrackCounter) {
-        nchCounter(tracks1, multiplicity);
+        nchCounter(tracks1, multiplicity1, false);
+        if (cfgEvSel.cfgUseCol2ForMixedEvSel) {
+          nchCounter(tracks2, multiplicity2, false);
+        }
       }
 
-      if (cfgEvSel.cfgSelCollByNch && (multiplicity > cfgEvSel.cfgMaxMultForCorrelations || multiplicity < cfgEvSel.cfgMinMultForCorrelations)) {
+      if (cfgEvSel.cfgSelCollByNch && (multiplicity1 > cfgEvSel.cfgMaxMultForCorrelations || multiplicity1 < cfgEvSel.cfgMinMultForCorrelations)) {
+        continue;
+      }
+      if (cfgEvSel.cfgSelCollByNch && cfgEvSel.cfgUseCol2ForMixedEvSel && (multiplicity2 > cfgEvSel.cfgMaxMultForCorrelations || multiplicity2 < cfgEvSel.cfgMinMultForCorrelations)) {
         continue;
       }
       if (!cfgEvSel.cfgSelCollByNch && (cent1 > cfgEvSel.cfgMaxCentForCorrelations || cent1 < cfgEvSel.cfgMinCentForCorrelations)) {
         continue;
       }
-      if (!cfgEvSel.cfgSelCollByNch && (cent2 > cfgEvSel.cfgMaxCentForCorrelations || cent2 < cfgEvSel.cfgMinCentForCorrelations)) {
+      if (!cfgEvSel.cfgSelCollByNch && cfgEvSel.cfgUseCol2ForMixedEvSel && (cent2 > cfgEvSel.cfgMaxCentForCorrelations || cent2 < cfgEvSel.cfgMinCentForCorrelations)) {
         continue;
       }
 
-      auto eventClass = (cfgEvSel.cfgSelCollByNch) ? multiplicity : cent1;
+      histos.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
+
+      auto eventClass = (cfgEvSel.cfgSelCollByNch) ? multiplicity1 : cent1;
 
       float eventWeight = 1.0f;
 
@@ -1844,7 +1858,7 @@ struct PidLongRange {
     histos.fill(HIST("Nch"), multiplicity);
 
     if (cfgGeneral.cfgStrictTrackCounter) {
-      nchCounter(tracks, multiplicity);
+      nchCounter(tracks, multiplicity, true);
     }
 
     histos.fill(HIST("Nch_corrected"), multiplicity);

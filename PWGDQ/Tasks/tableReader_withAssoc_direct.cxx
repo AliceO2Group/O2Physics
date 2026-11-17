@@ -225,8 +225,10 @@ DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS",
 // Using definitions (data-only)
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra>;
 using MyEventsQvectorCentr = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls>;
+using MyEventsGlobalMult = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::GlobalTrackMultiplicity>;
 using MyEventsSelected = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::EventCuts>;
 using MyEventsQvectorCentrSelected = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls, aod::EventCuts>;
+using MyEventsGlobalMultSelected = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::GlobalTrackMultiplicity, aod::EventCuts>;
 using MyEventsHashSelected = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::EventCuts, aod::MixingHashes>;
 using MyEventsHashSelectedQvectorCentr = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls, aod::EventCuts, aod::MixingHashes>;
 
@@ -287,7 +289,7 @@ struct AnalysisEventSelection {
     Configurable<std::string> fConfigZorroTrigMask{"cfgZorroTriggerMask", "fDiMuon", "DQ Trigger masks: fSingleE,fLMeeIMR,fLMeeHMR,fDiElectron,fSingleMuLow,fSingleMuHigh,fDiMuon"};
     Configurable<bool> fConfigRunZorroSel{"cfgRunZorroSel", false, "Select events with trigger mask"};
     Configurable<uint64_t> fBcTolerance{"cfgBcTolerance", 100, "Number of BCs of margin for software triggers"};
-    Configurable<std::string> fConfigCcdbPathZorro{"ccdb-path-zorro", "/Users/m/mpuccio/EventFiltering/OTS/Chunked/", "base path to the ccdb object for zorro"};
+    Configurable<std::string> fConfigCcdbPathZorro{"ccdb-path-zorro", "EventFiltering/Zorro/", "base path to the ccdb object for zorro"};
   } fConfigZorro;
 
   // RCT selection
@@ -637,10 +639,17 @@ struct AnalysisEventSelection {
     publishSelections<gkEventFillMapWithQvectorCentr>(events);
   }
 
+  void processDirectGlobalMult(MyEventsGlobalMult const& events, BCsWithTimestamps const& bcs)
+  {
+    runEventSelection<gkEventFillMapWithMults>(events, bcs);
+    publishSelections<gkEventFillMapWithMults>(events);
+  }
+
   void processDummy(aod::Collisions&) {}
 
   PROCESS_SWITCH(AnalysisEventSelection, processDirect, "Run event selection on framework AO2Ds", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDirectWithQvectorCentr, "Run event selection on skimmed data with Q-vector and centrality", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processDirectGlobalMult, "Run event selection with global track estimation on framework AO2Ds", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", true);
 };
 
@@ -666,7 +675,7 @@ struct AnalysisTrackSelection {
   Service<o2::pid::tof::TOFResponse> fTofResponse{};
 
   HistogramManager* fHistMan = nullptr;
-  std::vector<AnalysisCompositeCut*> fTrackCuts;
+  std::vector<AnalysisCut*> fTrackCuts;
   std::vector<TString> fHistNamesReco;
 
   int fCurrentRun = 0; // current run (needed to detect run changes for loading CCDB parameters)
@@ -697,7 +706,7 @@ struct AnalysisTrackSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (auto& t : addTrackCuts) {
-        fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(t);
       }
     }
 
@@ -1110,7 +1119,7 @@ struct AnalysisMuonSelection {
   Service<o2::ccdb::BasicCCDBManager> fCCDB{};
 
   HistogramManager* fHistMan = nullptr;
-  std::vector<AnalysisCompositeCut*> fMuonCuts;
+  std::vector<AnalysisCut*> fMuonCuts;
 
   int fCurrentRun = 0;
 
@@ -1137,7 +1146,7 @@ struct AnalysisMuonSelection {
     if (addCutsStr != "") {
       std::vector<AnalysisCut*> addCuts = dqcuts::GetCutsFromJSON(addCutsStr.Data());
       for (auto& t : addCuts) {
-        fMuonCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fMuonCuts.push_back(t);
       }
     }
 
@@ -1362,7 +1371,7 @@ struct AnalysisSameEventPairing {
   std::map<int, std::vector<TString>> fTrackMuonHistNames; // for electron-muon pairs: key = iTrack * fNCutsMuon + iMuon
 
   std::vector<AnalysisCompositeCut> fPairCuts;
-  AnalysisCompositeCut fMCGenAccCut;
+  AnalysisCompositeCut fMCGenAccCut{};
   // bool fUseMCGenAccCut = false;
 
   uint32_t fTrackFilterMask = 0; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
@@ -1389,7 +1398,8 @@ struct AnalysisSameEventPairing {
     }
     VarManager::SetDefaultVarNames();
 
-    fEnableBarrelHistos = context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentr");
+    fEnableBarrelHistos = context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentr") || context.mOptions.get<bool>("processBarrelOnlyWithGlobalMults");
+    ;
     fEnableBarrelMuonHistos = context.mOptions.get<bool>("processElectronMuonDirect");
 
     // Keep track of all the histogram class names to avoid composing strings in the pairing loop
@@ -1551,7 +1561,7 @@ struct AnalysisSameEventPairing {
     fHistMan->SetUseDefaultVariableNames(kTRUE);
     fHistMan->SetDefaultVarNames(static_cast<TString*>(VarManager::fgVariableNames), static_cast<TString*>(VarManager::fgVariableUnits));
 
-    VarManager::SetCollisionSystem((TString)fConfigOptions.collisionSystem, fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
+    VarManager::SetCollisionSystem(TString(fConfigOptions.collisionSystem), fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
 
     DefineHistograms(fHistMan, histNames.Data(), fConfigOptions.fConfigAddSEPHistogram.value.data());     // define all histograms
     dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigOptions.fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
@@ -1861,7 +1871,7 @@ struct AnalysisSameEventPairing {
             for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++) {
               AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
               if (!cut.IsSelected(static_cast<float*>(VarManager::fgValues))) {
-                continue;              // apply pair cuts
+                continue; // apply pair cuts
               }
               if (sign1 * sign2 < 0) { // opposite sign pairs
                 fHistMan->FillHistClass(histNames[ncuts + icut * fPairCuts.size() + iPairCut][0].Data(), static_cast<float*>(VarManager::fgValues));
@@ -2004,6 +2014,13 @@ struct AnalysisSameEventPairing {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithMults, gkTrackFillMapWithCov>(events, bcs, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
+  void processBarrelOnlyWithGlobalMults(MyEventsGlobalMultSelected const& events, BCsWithTimestamps const& bcs,
+                                        soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                        MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
+  {
+    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithMults, gkTrackFillMapWithCov>(events, bcs, trackAssocsPerCollision, barrelAssocs, barrelTracks);
+  }
+
   void processElectronMuonDirect(
     MyEventsSelected const& events, BCsWithTimestamps const& bcs,
     soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
@@ -2030,6 +2047,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnly, "Run barrel only pairing", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processElectronMuonDirect, "Run electron-muon pairing on AO2D tracks/fwd-tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithQvectorCentr, "Run barrel only pairing with Q-vector and centrality", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithGlobalMults, "Run barrel only pairing with global track estimation", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function", true);
 };
 

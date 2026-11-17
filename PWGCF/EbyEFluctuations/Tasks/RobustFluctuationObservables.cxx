@@ -1157,7 +1157,7 @@ struct RobustFluctuationObservables {
       orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF; // - 1;
       bcSOR = orbitSOR * nBCsPerOrbit;
 
-      magneticField = 1;
+      // magneticField = 1; // FIXME: unused
       static o2::parameters::GRPMagField* grpo = nullptr;
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", ts);
       if (grpo == nullptr) {
@@ -1699,7 +1699,7 @@ struct RobustFluctuationObservables {
     histosEvent.fill(HIST("h2D_diffFoundBC_vs_BC"), collBC, diffFoundBC_vs_BC);
 
     if (collision.has_foundBC())
-      histosEvent.fill(HIST("h2D_diffFoundBC_vs_BC_inTF"), collBC, static_cast<int64_t>(foundBcInTF) - static_cast<int64_t>(bcInTF));
+      histosEvent.fill(HIST("h2D_diffFoundBC_vs_BC_inTF"), collBC, foundBcInTF - bcInTF);
 
     // with FT0 conditions
     if (isFT0) {

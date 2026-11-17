@@ -239,6 +239,9 @@ bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, f
   int nSelectedV0s = 0;
   for (auto const& v0 : v0s) {
     if constexpr (jetv0utilities::isV0McTable<T>()) {
+      if (!v0.isPhysicalPrimary()) {
+        continue;
+      }
       v0Mass = v0.m();
       v0Y = v0.y();
     } else {
@@ -284,12 +287,11 @@ bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, f
  * @param doHFJetFinding set whether only jets containing a HF candidate are saved
  */
 template <typename T, typename U, typename V>
-void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputParticles, float jetPtMin, float jetPtMax, std::vector<double> jetRadius, float jetAreaFractionMin, T const& collision, U& jetsTable, V& constituentsTable, const std::shared_ptr<THn>& thnSparseJet, bool fillThnSparse, bool doCandidateJetFinding = false)
+void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet> const& inputParticles, float jetPtMin, float jetPtMax, std::vector<double> const& jetRadius, float jetAreaFractionMin, T const& collision, U& jetsTable, V& constituentsTable, const std::shared_ptr<THn>& thnSparseJet, bool fillThnSparse, bool doCandidateJetFinding = false)
 {
-  auto jetRValues = static_cast<std::vector<double>>(std::move(jetRadius));
   jetFinder.jetPtMin = jetPtMin;
   jetFinder.jetPtMax = jetPtMax;
-  for (auto R : jetRValues) {
+  for (auto R : jetRadius) {
     jetFinder.jetR = R;
     std::vector<fastjet::PseudoJet> jets;
     fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));

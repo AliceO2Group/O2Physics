@@ -63,14 +63,15 @@ DECLARE_SOA_COLUMN(K1Charge, k1Charge, int8_t);
 // 16 = candidate cuts.
 // Candidates written at the "selected" export stage carry 31.
 DECLARE_SOA_COLUMN(K1BaselinePassBits, k1BaselinePassBits, uint16_t);
+// NOLINTNEXTLINE(modernize-avoid-c-arrays) -- persistent fixed-size AOD column
 DECLARE_SOA_COLUMN(K1MasterFeatures, k1MasterFeatures, float[125]); //! 125 master features of the K1 ML feature contract (PWGLF/Core/K1MlFeatures.h)
 DECLARE_SOA_COLUMN(K1FeatureStatus, k1FeatureStatus, uint8_t);      //! o2::analysis::k1ml::BuildStatus; only Ok (0) rows are written
 DECLARE_SOA_COLUMN(K1TruthStatus, k1TruthStatus, uint8_t);          //! 0 data, 1 matched, 2 unmatched
 DECLARE_SOA_COLUMN(K1TruthChannel, k1TruthChannel, uint8_t);        //! 0 none, 1 rho K, 2 K* pi
 DECLARE_SOA_COLUMN(K1MotherPdg, k1MotherPdg, int32_t);
 DECLARE_SOA_COLUMN(K1MotherId, k1MotherId, int64_t);
-DECLARE_SOA_COLUMN(K1GeneratedPt, k1GeneratedPt, float); //! NaN in K1MlTruth: not filled for reconstructed candidates
-DECLARE_SOA_COLUMN(K1GeneratedY, k1GeneratedY, float);   //! NaN in K1MlTruth: not filled for reconstructed candidates
+DECLARE_SOA_COLUMN(K1GeneratedPt, k1GeneratedPt, float); //! Parent-table pT for a validated reconstructed MC match; NaN otherwise
+DECLARE_SOA_COLUMN(K1GeneratedY, k1GeneratedY, float);   //! Parent-table y for a validated reconstructed MC match; NaN otherwise
 DECLARE_SOA_COLUMN(K1OriginalMcParticleId, k1OriginalMcParticleId, int64_t);
 DECLARE_SOA_COLUMN(K1DaughterPdg1, k1DaughterPdg1, int32_t);
 DECLARE_SOA_COLUMN(K1DaughterPdg2, k1DaughterPdg2, int32_t);
@@ -82,7 +83,7 @@ DECLARE_SOA_TABLE(K1MlEvents, "AOD", "K1MLEVENT",
                   k1ml::K1Centrality, k1ml::K1Multiplicity, k1ml::K1RecINELgt0);
 namespace k1ml
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(K1MlEvent, k1MlEvent, int, K1MlEvents, "");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(K1MlEvent, k1MlEvent, int, K1MlEvents, "K1mlEvents", "");
 } // namespace k1ml
 DECLARE_SOA_TABLE(K1MlTracks, "AOD", "K1MLTRACK",
                   o2::soa::Index<>, k1ml::K1MlEventId, k1ml::K1SourceTrackId,
@@ -92,9 +93,9 @@ DECLARE_SOA_TABLE(K1MlTracks, "AOD", "K1MLTRACK",
                   k1ml::K1CrossedRows, k1ml::K1ItsClusterMap);
 namespace k1ml
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(K1MlKaonTrack, k1MlKaonTrack, int, K1MlTracks, "_Kaon");
-DECLARE_SOA_INDEX_COLUMN_FULL(K1MlSamePionTrack, k1MlSamePionTrack, int, K1MlTracks, "_Same");
-DECLARE_SOA_INDEX_COLUMN_FULL(K1MlOppPionTrack, k1MlOppPionTrack, int, K1MlTracks, "_Opp");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(K1MlKaonTrack, k1MlKaonTrack, int, K1MlTracks, "K1mlTracks", "_Kaon");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(K1MlSamePionTrack, k1MlSamePionTrack, int, K1MlTracks, "K1mlTracks", "_Same");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(K1MlOppPionTrack, k1MlOppPionTrack, int, K1MlTracks, "K1mlTracks", "_Opp");
 } // namespace k1ml
 DECLARE_SOA_TABLE(K1MlCandidates, "AOD", "K1MLCANDIDATE",
                   o2::soa::Index<>, k1ml::K1MlEventId,
@@ -105,7 +106,7 @@ DECLARE_SOA_TABLE(K1MlCandidates, "AOD", "K1MLCANDIDATE",
                   k1ml::K1BaselinePassBits);
 namespace k1ml
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(K1MlCandidate, k1MlCandidate, int, K1MlCandidates, "");
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(K1MlCandidate, k1MlCandidate, int, K1MlCandidates, "K1mlCandidates", "");
 } // namespace k1ml
 DECLARE_SOA_TABLE(K1MlInputs, "AOD", "K1MLINPUT",
                   o2::soa::Index<>, k1ml::K1MlCandidateId,

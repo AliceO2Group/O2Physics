@@ -231,7 +231,8 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_mc_flag::FlagMcDecayChanRec,
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_b0tojpsik0star_lite::FlagWrongCollision,
-                  hf_cand_b0tojpsik0star_lite::PtGen);
+                  hf_cand_b0tojpsik0star_lite::PtGen,
+                  hf_cand_mc_flag::IsHadronLeptonSwapped);
 
 } // namespace o2::aod
 
@@ -342,7 +343,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
     const AxisSpec axisImpactPar{200, -0.05, 0.05};
     const AxisSpec axisPtJpsi{100, 0., 50.};
     const AxisSpec axisRapidity{100, -2., 2.};
-    const AxisSpec axisPtB{(std::vector<double>)binsPt, "#it{p}_{T}^{B^{0}} (GeV/#it{c})"};
+    const AxisSpec axisPtB{500, 0., 50., "#it{p}_{T}^{B^{0}} (GeV/#it{c})"};
     const AxisSpec axisPtK0Star{100, 0.f, 10.f};
 
     registry.add("hMass", b0CandTitle + "inv. mass J/#Psi K*^{0} (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMassB0, axisPtB}});
@@ -353,7 +354,8 @@ struct HfTaskB0ToJpsiK0StarReduced {
     if (doprocessMc || doprocessMcWithB0Ml) {
       registry.add("hPtJpsiGen", mcParticleMatched + "J/#Psi #it{p}_{T}^{gen} (GeV/#it{c}); B^{0} " + stringPt, {HistType::kTH2F, {axisPtProng, axisPtB}});
       registry.add("hPtK0StarGen", mcParticleMatched + "K*^{0} #it{p}_{T}^{gen} (GeV/#it{c}); B^{0} " + stringPt, {HistType::kTH2F, {axisPtK0Star, axisPtB}});
-      registry.add("hYGenWithProngsInAcceptance", mcParticleMatched + "B^{0} #it{p}_{T}^{gen} (GeV/#it{c}); B^{0} #it{y}", {HistType::kTH2F, {axisPtProng, axisRapidity}});
+      registry.add("hPtYGenSig", mcParticleMatched + "B^{0} #it{p}_{T}^{gen} (GeV/#it{c}); B^{0} #it{y}", {HistType::kTH2F, {axisPtB, axisRapidity}});
+      registry.add("hPtYWithProngsInAccepanceGenSig", mcParticleMatched + "B^{0} #it{p}_{T}^{gen} (GeV/#it{c}); B^{0} #it{y}", {HistType::kTH2F, {axisPtB, axisRapidity}});
       registry.add("hMassRecSig", b0CandMatch + "inv. mass J/#Psi K*^{0} (GeV/#it{c}^{2}); B^{0} " + stringPt, {HistType::kTH2F, {axisMassB0, axisPtB}});
       registry.add("hMassJpsiRecSig", b0CandMatch + "inv. mass #mu^{+}#mu^{#minus} (GeV/#it{c}^{2}); J/#Psi " + stringPt, {HistType::kTH2F, {axisMassJpsi, axisPtJpsi}});
       registry.add("hMassK0StarRecSig", b0CandMatch + "inv. mass K^{+}#pi^{#minus} (GeV/#it{c}^{2}); K*^{0} " + stringPt, {HistType::kTH2F, {axisMassK0Star, axisPtK0Star}});
@@ -424,10 +426,12 @@ struct HfTaskB0ToJpsiK0StarReduced {
 
     int8_t flagMcMatchRec{0}, flagMcDecayChanRec{0}, flagWrongCollision{0};
     bool isSignal = false;
+    bool swapped{false};
     if constexpr (DoMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagMcDecayChanRec = candidate.flagMcDecayChanRec();
       flagWrongCollision = candidate.flagWrongCollision();
+      swapped = candidate.isHadronLeptonSwapped();
       isSignal = std::abs(flagMcMatchRec) == o2::hf_decay::hf_cand_beauty::B0ToJpsiPiKToMuMuPiK &&
                  flagMcDecayChanRec == o2::hf_decay::hf_cand_beauty::B0ToJpsiKstar0;
     }
@@ -653,7 +657,8 @@ struct HfTaskB0ToJpsiK0StarReduced {
         flagMcDecayChanRec,
         isSignal,
         flagWrongCollision,
-        ptMother);
+        ptMother,
+        swapped);
     };
 
     if (statusB0KPi >= selectionFlagB0) {
@@ -679,9 +684,10 @@ struct HfTaskB0ToJpsiK0StarReduced {
     registry.fill(HIST("hPtJpsiGen"), ptProngs[0], ptParticle);
     registry.fill(HIST("hPtK0StarGen"), ptProngs[1], ptParticle);
 
+    registry.fill(HIST("hPtYGenSig"), ptParticle, yParticle);
     // generated B0 with daughters in geometrical acceptance
     if (prongsInAcc) {
-      registry.fill(HIST("hYGenWithProngsInAcceptance"), ptParticle, yParticle);
+      registry.fill(HIST("hPtYWithProngsInAccepanceGenSig"), ptParticle, yParticle);
     }
   }
 
@@ -714,7 +720,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
   } // processDataWithB0Ml
   PROCESS_SWITCH(HfTaskB0ToJpsiK0StarReduced, processDataWithB0Ml, "Process data with ML for B0", false);
 
-  void processMc(soa::Join<aod::HfRedCandB0ToJpsiK0Star, aod::HfMcRecRedB0s> const& candidates,
+  void processMc(soa::Join<aod::HfRedCandB0ToJpsiK0Star, aod::HfMcRecRedB0s, aod::HfMcRecBJpSwaps> const& candidates,
                  aod::HfMcGenRedB0s const& mcParticles,
                  JPsis const& candidatesJpsi,
                  aod::HfRedBach0Tracks const& kaon0Tracks,
@@ -735,7 +741,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
   } // processMc
   PROCESS_SWITCH(HfTaskB0ToJpsiK0StarReduced, processMc, "Process MC without ML for B0", false);
 
-  void processMcWithB0Ml(soa::Join<aod::HfRedCandB0ToJpsiK0Star, aod::HfMcRecRedB0s> const& candidates,
+  void processMcWithB0Ml(soa::Join<aod::HfRedCandB0ToJpsiK0Star, aod::HfMcRecRedB0s, aod::HfMcRecBJpSwaps> const& candidates,
                          aod::HfMcGenRedB0s const& mcParticles,
                          JPsis const& candidatesJpsi,
                          aod::HfRedBach0Tracks const& kaon0Tracks,

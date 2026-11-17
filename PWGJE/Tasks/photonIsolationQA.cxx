@@ -104,8 +104,8 @@ struct PhotonIsolationQA {
   int trackSelection = -1;
   void init(o2::framework::InitContext&)
   {
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
 
     mGeometry = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
     auto nCells = mGeometry->GetNCells();

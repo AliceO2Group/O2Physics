@@ -17,6 +17,7 @@
 #define PWGCF_FEMTO_CORE_CLOSEPAIRREJECTION_H_
 
 #include "PWGCF/Femto/Core/histManager.h"
+#include "PWGCF/Femto/Core/modes.h"
 
 #include "Common/Core/RecoDecay.h"
 
@@ -61,7 +62,8 @@ enum CprHist {
 
 // template configurable group for Cpr
 // DefaultCutAverage: default of cutAverage (e.g. false for pairs of generated particles, where no detector effects are present)
-template <auto& Prefix, bool DefaultCutAverage = true>
+// DefaultKinematicVariable: default of kinematicVariable (e.g. Q3 for triplets, kstar for pairs)
+template <auto& Prefix, bool DefaultCutAverage = true, modes::KinematicVariable DefaultKinematicVariable = modes::KinematicVariable::kKstar>
 struct ConfCpr : o2::framework::ConfigurableGroup {
   std::string prefix = std::string(Prefix);
   o2::framework::Configurable<bool> cutAverage{"cutAverage", DefaultCutAverage, "Apply CPR if the average deta-dphistar is below the configured values"};
@@ -71,6 +73,7 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plotAverage{"plotAverage", true, "Plot average deta dphi distribution"};
   o2::framework::Configurable<bool> plotAngularCorrelation{"plotAngularCorrelation", false, "Plot angular correlation of particles (eta1 vs eta2 & phi1 vs phi2)"};
   o2::framework::Configurable<bool> plotKinematic{"plotKinematic", true, "Plot kinematic (kstar/Q3) distribution of blocked pairs/triplets"};
+  o2::framework::Configurable<int> kinematicVariable{"kinematicVariable", static_cast<int>(DefaultKinematicVariable), "Type of kinematic variable (0->kstar, 1->kT, 2->mT, 3->Q3) reported by the kinematic plot"};
   o2::framework::Configurable<float> detaMax{"detaMax", 0.01f, "Maximium deta"};
   o2::framework::Configurable<float> dphistarMax{"dphistarMax", 0.01f, "Maximum dphistar"};
   o2::framework::Configurable<float> detaCenter{"detaCenter", 0.f, "Center of deta cut"};
@@ -95,6 +98,7 @@ constexpr const char PrefixCprTrackLcPion[] = "CprTrackLcPion";
 constexpr const char PrefixCprD0DaughterD0DaughterPos[] = "CprD0DaughterD0DaughterPos";
 constexpr const char PrefixCprD0DaughterD0DaughterNeg[] = "CprD0DaughterD0DaughterNeg";
 constexpr const char PrefixCprTrackResonanceDaughter[] = "CprTrackResonanceDaughter";
+constexpr const char PrefixCprTrackTwoPhotonResonanceDaughter[] = "CprTrackTwoPhotonResonanceDaughter";
 constexpr const char PrefixCprTrackKinkDaughter[] = "CprTrackKinkDaughter";
 constexpr const char PrefixCprV0DaughterV0DaughterPos[] = "CprV0DaughterV0DaughterPos";
 constexpr const char PrefixCprV0DaughterV0DaughterNeg[] = "CprV0DaughterV0DaughterNeg";
@@ -113,6 +117,8 @@ using ConfCprTrackLcPion = ConfCpr<PrefixCprTrackLcPion>;
 using ConfCprD0DaugherD0DaughterPos = ConfCpr<PrefixCprD0DaughterD0DaughterPos>;
 using ConfCprD0DaugherD0DaughterNeg = ConfCpr<PrefixCprD0DaughterD0DaughterNeg>;
 using ConfCprTrackResonanceDaughter = ConfCpr<PrefixCprTrackResonanceDaughter>;
+// no cut by default: CPR is a no-op for two-photon resonances (see ClosePairRejectionTrackTwoPhotonResonance)
+using ConfCprTrackTwoPhotonResonanceDaughter = ConfCpr<PrefixCprTrackTwoPhotonResonanceDaughter, false>;
 using ConfCprTrackKinkDaughter = ConfCpr<PrefixCprTrackKinkDaughter>;
 using ConfCprV0DaugherV0DaughterPos = ConfCpr<PrefixCprV0DaughterV0DaughterPos>;
 using ConfCprV0DaugherV0DaughterNeg = ConfCpr<PrefixCprV0DaughterV0DaughterNeg>;
@@ -152,6 +158,8 @@ constexpr char PrefixV0TwoTrackResonancePosMe[] = "CPR_V0Resonance_PosDau/ME/";
 constexpr char PrefixV0TwoTrackResonanceNegMe[] = "CPR_V0Resonance_NegDau/ME/";
 constexpr char PrefixTrackTwoTrackResonanceSe[] = "CPR_TrackResonanceDau/SE/";
 constexpr char PrefixTrackTwoTrackResonanceMe[] = "CPR_TrackResonanceDau/ME/";
+constexpr char PrefixTrackTwoPhotonResonanceSe[] = "CPR_TrackTwoPhotonResonanceDau/SE/";
+constexpr char PrefixTrackTwoPhotonResonanceMe[] = "CPR_TrackTwoPhotonResonanceDau/ME/";
 constexpr char PrefixTrackCascadeBachelorSe[] = "CPR_TrackCascadeBachelor/SE/";
 constexpr char PrefixTrackCascadeBachelorMe[] = "CPR_TrackCascadeBachelor/ME/";
 constexpr char PrefixTrackKinkSe[] = "CPR_TrackKink/SE/";
@@ -236,6 +244,7 @@ class CloseTrackRejection
 
     mPlotAngularCorrelation = confCpr.plotAngularCorrelation.value;
     mPlotKinematic = confCpr.plotKinematic.value;
+    mKinematicVariable = static_cast<modes::KinematicVariable>(confCpr.kinematicVariable.value);
 
     if (confCpr.seed.value >= 0) {
       uint64_t randomSeed = 0;
@@ -254,7 +263,8 @@ class CloseTrackRejection
     mHistogramRegistry = registry;
 
     if (mPlotKinematic) {
-      mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kKinematic, HistTable), getHistDesc(kKinematic, HistTable), getHistType(kKinematic, HistTable), {specs.at(kKinematic)});
+      std::string kinematicDesc = histmanager::replaceFirstAxisTitle(getHistDesc(kKinematic, HistTable), modes::kinematicVariableToAxisTitle(mKinematicVariable));
+      mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kKinematic, HistTable), kinematicDesc.c_str(), getHistType(kKinematic, HistTable), {specs.at(kKinematic)});
     }
 
     if (mPlotAverage) {
@@ -296,9 +306,9 @@ class CloseTrackRejection
     bool isClose = mUseEpisoidalCut ? isClosePairEpisoidalCut() : isClosePairRectengularCut();
 
     if (isClose) {
-      fillBlocked(pairHistManager.getKinematic());
+      fillBlocked(pairHistManager.getKinematic(mKinematicVariable));
     } else {
-      fillPassed(pairHistManager.getKinematic());
+      fillPassed(pairHistManager.getKinematic(mKinematicVariable));
     }
 
     return isClose;
@@ -320,14 +330,22 @@ class CloseTrackRejection
       swapTracks = (mSwapDist(mRng) == 1);
     }
 
-    auto t1 = swapTracks ? track2 : track1;
-    auto t2 = swapTracks ? track1 : track2;
+    // get kinematics of the particles
+    // if configured, randomly swap particle 1 and particle 2
+    float eta1 = swapTracks ? track2.eta() : track1.eta();
+    float eta2 = swapTracks ? track1.eta() : track2.eta();
+    float phi1 = swapTracks ? track2.phi() : track1.phi();
+    float phi2 = swapTracks ? track1.phi() : track2.phi();
+    float signedPt1 = swapTracks ? track2.signedPt() : track1.signedPt();
+    float signedPt2 = swapTracks ? track1.signedPt() : track2.signedPt();
+    int chargeAbs1 = swapTracks ? mChargeAbsTrack2 : mChargeAbsTrack1;
+    int chargeAbs2 = swapTracks ? mChargeAbsTrack1 : mChargeAbsTrack2;
 
-    mDeta = t1.eta() - t2.eta();
+    mDeta = eta1 - eta2;
 
     for (size_t i = 0; i < TpcRadii.size(); i++) {
-      auto phistar1 = phistar(mMagField, TpcRadii.at(i), mChargeAbsTrack1 * t1.signedPt(), t1.phi());
-      auto phistar2 = phistar(mMagField, TpcRadii.at(i), mChargeAbsTrack2 * t2.signedPt(), t2.phi());
+      auto phistar1 = phistar(mMagField, TpcRadii.at(i), chargeAbs1 * signedPt1, phi1);
+      auto phistar2 = phistar(mMagField, TpcRadii.at(i), chargeAbs2 * signedPt2, phi2);
       if (phistar1 && phistar2) {
         mDphistar.at(i) = RecoDecay::constrainAngle(phistar1.value() - phistar2.value(), -o2::constants::math::PI); // constrain angular difference between -pi and pi
         mDphistarMask.at(i) = true;
@@ -338,14 +356,14 @@ class CloseTrackRejection
     if (count > 0) {
       mAverageDphistar = std::accumulate(mDphistar.begin(), mDphistar.end(), 0.f) / count; // only average values if phistar could be computed
     } else {
-      mAverageDphistar = 0.f; // if computation at all radii fail, set it 0
+      mAverageDphistar = 0.f; // if computation at all radii failed, set it 0
     }
 
     if (mPlotAngularCorrelation) {
-      mPhi1 = t1.phi();
-      mPhi2 = t2.phi();
-      mEta1 = t1.eta();
-      mEta2 = t2.eta();
+      mPhi1 = phi1;
+      mPhi2 = phi2;
+      mEta1 = eta1;
+      mEta2 = eta2;
     }
   }
 
@@ -480,6 +498,7 @@ class CloseTrackRejection
   bool mPlotAverage = false;
   bool mPlotAngularCorrelation = false;
   bool mPlotKinematic = false;
+  modes::KinematicVariable mKinematicVariable = modes::KinematicVariable::kKstar;
 
   float mKinematicMin = -1.f;
   float mKinematicMax = -1.f;
@@ -518,10 +537,10 @@ template <auto& prefix>
 class ClosePairRejectionTrackTrack
 {
  public:
-  template <typename T>
+  template <typename T1>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
-            T const& confCpr,
+            T1 const& confCpr,
             int absChargeTrack1,
             int absChargeTrack2)
   {
@@ -584,10 +603,10 @@ template <auto& prefixTrackV0>
 class ClosePairRejectionTrackV0 // can also be used for any particle type that has pos/neg daughters, like resonances
 {
  public:
-  template <typename T>
+  template <typename T1>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
-            T const& confCpr,
+            T1 const& confCpr,
             int absChargeTrack)
   {
     mCtr.init(registry, specs, confCpr, absChargeTrack, 1);
@@ -706,10 +725,10 @@ template <auto& prefix>
 class ClosePairRejectionTrackKink
 {
  public:
-  template <typename T>
+  template <typename T1>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
-            T const& confCpr,
+            T1 const& confCpr,
             int absChargeTrack)
   {
     mCtr.init(registry, specs, confCpr, absChargeTrack, 1);
@@ -731,14 +750,40 @@ class ClosePairRejectionTrackKink
   CloseTrackRejection<prefix> mCtr;
 };
 
+// PCM photon daughters are, for now, not indexed into the track table (see photonBuilder.h):
+// they are TPC-only tracks, so they cannot be confused for a global track the way two V0
+// daughters or a track and a V0 daughter can -- there is no detector-overlap effect to correct
+// for. This is a no-op placeholder so Track-TwoPhotonResonance pairs can use the same generic
+// pair-building code path.
+template <auto& prefix>
+class ClosePairRejectionTrackTwoPhotonResonance
+{
+ public:
+  template <typename T1>
+  void init(o2::framework::HistogramRegistry* /*registry*/,
+            std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& /*specs*/,
+            T1 const& /*confCpr*/,
+            int /*absChargeTrack*/)
+  {
+  }
+
+  void setMagField(float /*magField*/) {}
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  [[nodiscard]] bool isClosePair(T1 const& /*track*/, T2 const& /*resonance*/, T3 const& /*photonTable*/, T4 const& /*pairHistManager*/)
+  {
+    return false;
+  }
+};
+
 template <auto& prefix>
 class ClosePairRejectionMcParticleMcParticle
 {
  public:
-  template <typename T>
+  template <typename T1>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
-            T const& confCpr)
+            T1 const& confCpr)
   {
     mCtr.init(registry, specs, confCpr, 1, 1);
     mCtr.setMagField(confCpr.magField.value);

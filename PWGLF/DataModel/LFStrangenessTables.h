@@ -58,8 +58,8 @@ enum EventSelectionFlags {
   kNsel                  // counter
 };
 
-DECLARE_SOA_COLUMN(TotalNbrOfCollisions, totalNbrOfCollisions, int);       //! total number of analysed collisions
-DECLARE_SOA_COLUMN(TotalNbrOfSelCollisions, totalNbrOfSelCollisions, int); //! total number of selected collisions
+DECLARE_SOA_COLUMN(TotalNbrOfCollisions, totalNbrOfCollisions, int);                   //! total number of analysed collisions
+DECLARE_SOA_COLUMN(TotalNbrOfSelCollisions, totalNbrOfSelCollisions, int);             //! total number of selected collisions
 DECLARE_SOA_COLUMN(TotalIsTriggerTVXCollisions, totalIsTriggerTVXCollisions, int);     //! N selected collisions after applying IsTriggerTVX
 DECLARE_SOA_COLUMN(TotalNoITSROFBorderCollisions, totalNoITSROFBorderCollisions, int); //! N selected collisions after applying IsTriggerTVX, NoITSROF
 DECLARE_SOA_COLUMN(TotalNoTFBorderCollisions, totalNoTFBorderCollisions, int);         //! N selected collisions after applying IsTriggerTVX, NoITSROF, NoTF
@@ -585,7 +585,7 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_003, "AOD", "DAUTRACKEXTRA", 3, //! d
                             track::v001::ITSClsSizeInLayer<track::ITSClusterSizes>,
                             track::v001::ITSClusterMap<track::ITSClusterSizes>,
                             track::v001::ITSNCls<track::ITSClusterSizes>,
-                            track::v001::IsITSAfterburner<track::v001::DetectorMap, track::ITSChi2NCl>,
+                            track::v001::IsITSAfterburner<dautrack::DetectorMap, track::ITSChi2NCl>,
                             /*compatibility*/ dautrack::HasITSTracker<dautrack::DetectorMap, track::ITSChi2NCl>,
                             /*compatibility*/ dautrack::HasITSAfterburner<dautrack::DetectorMap, track::ITSChi2NCl>,
 

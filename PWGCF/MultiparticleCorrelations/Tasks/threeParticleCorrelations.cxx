@@ -403,22 +403,22 @@ struct ThreeParticleCorrelations {
     ccdb->setCaching(true);
     TList* effListChargedParticles = ccdb->getForTimeStamp<TList>("Users/j/jstaa/Efficiency/ChargedParticles", 1);
     TList* effListLambdas = ccdb->getForTimeStamp<TList>("Users/j/jstaa/Efficiency/Lambdas", 1);
-    hEffPions[0] = static_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyPionP"));
-    hEffPions[1] = static_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyPionN"));
-    hEffKaons[0] = static_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyKaonP"));
-    hEffKaons[1] = static_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyKaonN"));
-    hEffProtons[0] = static_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyProtonP"));
-    hEffProtons[1] = static_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyProtonN"));
-    hEffLambdas[0] = static_cast<TH3D*>(effListLambdas->FindObject("hEfficiencyLambdaP"));
-    hEffLambdas[1] = static_cast<TH3D*>(effListLambdas->FindObject("hEfficiencyLambdaN"));
+    hEffPions[0] = dynamic_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyPionP"));
+    hEffPions[1] = dynamic_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyPionN"));
+    hEffKaons[0] = dynamic_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyKaonP"));
+    hEffKaons[1] = dynamic_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyKaonN"));
+    hEffProtons[0] = dynamic_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyProtonP"));
+    hEffProtons[1] = dynamic_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyProtonN"));
+    hEffLambdas[0] = dynamic_cast<TH3D*>(effListLambdas->FindObject("hEfficiencyLambdaP"));
+    hEffLambdas[1] = dynamic_cast<TH3D*>(effListLambdas->FindObject("hEfficiencyLambdaN"));
 
     TList* correctionListChargedParticles = ccdb->getForTimeStamp<TList>("Users/j/jstaa/SpectraRatios/ChargedParticles", 1);
-    hCorrectionPions[0] = static_cast<TH2D*>(correctionListChargedParticles->FindObject("h2DRatioPionP"));
-    hCorrectionPions[1] = static_cast<TH2D*>(correctionListChargedParticles->FindObject("h2DRatioPionN"));
-    hCorrectionKaons[0] = static_cast<TH2D*>(correctionListChargedParticles->FindObject("h2DRatioKaonP"));
-    hCorrectionKaons[1] = static_cast<TH2D*>(correctionListChargedParticles->FindObject("h2DRatioKaonN"));
-    hCorrectionProtons[0] = static_cast<TH2D*>(correctionListChargedParticles->FindObject("h2DRatioProtonP"));
-    hCorrectionProtons[1] = static_cast<TH2D*>(correctionListChargedParticles->FindObject("h2DRatioProtonN"));
+    hCorrectionPions[0] = dynamic_cast<TH2D*>(correctionListChargedParticles->FindObject("h2DRatioPionP"));
+    hCorrectionPions[1] = dynamic_cast<TH2D*>(correctionListChargedParticles->FindObject("h2DRatioPionN"));
+    hCorrectionKaons[0] = dynamic_cast<TH2D*>(correctionListChargedParticles->FindObject("h2DRatioKaonP"));
+    hCorrectionKaons[1] = dynamic_cast<TH2D*>(correctionListChargedParticles->FindObject("h2DRatioKaonN"));
+    hCorrectionProtons[0] = dynamic_cast<TH2D*>(correctionListChargedParticles->FindObject("h2DRatioProtonP"));
+    hCorrectionProtons[1] = dynamic_cast<TH2D*>(correctionListChargedParticles->FindObject("h2DRatioProtonN"));
   }
 
   //==========================================================================================================================================================================================================================================================================

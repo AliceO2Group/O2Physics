@@ -2004,7 +2004,7 @@ inline void HfFilterHelper::setTpcRecalibMaps(o2::framework::Service<o2::ccdb::B
 
   for (size_t iMap = 0; iMap < mapNames.size(); iMap++) {
 
-    mHistMapPiPrKaDe[iMap] = reinterpret_cast<TH3F*>(calibList->FindObject(mapNames[iMap].data()));
+    mHistMapPiPrKaDe[iMap] = dynamic_cast<TH3F*>(calibList->FindObject(mapNames[iMap].data()));
     if (!mHistMapPiPrKaDe[iMap]) {
       LOG(fatal) << "Cannot find histogram: " << mapNames[iMap].data();
       return;

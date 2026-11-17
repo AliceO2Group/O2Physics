@@ -47,9 +47,9 @@ class BootstrapProfile : public TProfile
   void PresetWeights(BootstrapProfile* targetBS) { fPresetWeights = targetBS; }
   void ResetBin(Int_t nbin)
   {
-    ResetBin(reinterpret_cast<TProfile*>(this), nbin);
+    ResetBin(static_cast<TProfile*>(this), nbin);
     for (Int_t i = 0; i < fListOfEntries->GetEntries(); i++)
-      ResetBin(reinterpret_cast<TProfile*>(fListOfEntries->At(i)), nbin);
+      ResetBin(dynamic_cast<TProfile*>(fListOfEntries->At(i)), nbin);
   };
   ClassDef(BootstrapProfile, 2);
 

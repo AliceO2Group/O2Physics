@@ -192,7 +192,7 @@ struct PhosElId {
          dcazfilter = nabs(aod::track::dcaZ) < DCAzMax,
          itschi2filter = aod::track::itsChi2NCl < ITSchi2Max,
          tpcchi2filter = aod::track::tpcChi2NCl < TPCchi2Max,
-         mapfilter = (aod::track::itsClusterMap & uint8_t(1)) > 0;
+         mapfilter = (aod::track::itsClusterMap & static_cast<uint8_t>(1)) > 0;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   std::unique_ptr<o2::phos::Geometry> geomPHOS;
@@ -346,10 +346,10 @@ struct PhosElId {
     geomPHOS = std::make_unique<o2::phos::Geometry>("PHOS");
 
     fSigma_dz = new TF1("fSigma_dz", "[0]/(x+[1])^[2]+pol1(3)", 0.3, 10);
-    fSigma_dz->SetParameters(((std::vector<float>)pSigmadZ).at(0), ((std::vector<float>)pSigmadZ).at(1), ((std::vector<float>)pSigmadZ).at(2), ((std::vector<float>)pSigmadZ).at(3), ((std::vector<float>)pSigmadZ).at(4));
+    fSigma_dz->SetParameters((std::vector<float>(pSigmadZ)).at(0), (std::vector<float>(pSigmadZ)).at(1), (std::vector<float>(pSigmadZ)).at(2), (std::vector<float>(pSigmadZ)).at(3), (std::vector<float>(pSigmadZ)).at(4));
 
     fSigma_dx = new TF1("fSigma_dx", "[0]/x^[1]+[2]", 0.1, 10);
-    fSigma_dx->SetParameters(((std::vector<float>)pSigmadX).at(0), ((std::vector<float>)pSigmadX).at(1), ((std::vector<float>)pSigmadX).at(2));
+    fSigma_dx->SetParameters((std::vector<float>(pSigmadX)).at(0), (std::vector<float>(pSigmadX)).at(1), (std::vector<float>(pSigmadX)).at(2));
 
     for (int i = 0; i < mAmountOfModules; i++) {
       fMeandXPosMod[i] = new TF1(Form("funcMeandx_pos_mod%i", i + 1), "[0]/(x+[1])^[2]", 0.1, 10);
@@ -398,7 +398,7 @@ struct PhosElId {
 
       if (!track.has_collision() || !track.hasTPC())
         continue;
-      if (track.itsNCls() < ITSnclsMin || track.itsNCls() > ITSnclsMax || !((track.itsClusterMap() & uint8_t(1)) > 0))
+      if (track.itsNCls() < ITSnclsMin || track.itsNCls() > ITSnclsMax || !((track.itsClusterMap() & static_cast<uint8_t>(1)) > 0))
         continue;
       if (track.tpcNClsFound() < TPCnclsMin || track.tpcNClsFound() > TPCnclsMax)
         continue;
@@ -648,7 +648,7 @@ struct PhosElId {
         if (!matchedTrack.has_collision() || !matchedTrack.hasTPC())
           continue;
 
-        if (matchedTrack.itsNCls() < ITSnclsMin || matchedTrack.itsNCls() > ITSnclsMax || !((matchedTrack.itsClusterMap() & uint8_t(1)) > 0))
+        if (matchedTrack.itsNCls() < ITSnclsMin || matchedTrack.itsNCls() > ITSnclsMax || !((matchedTrack.itsClusterMap() & static_cast<uint8_t>(1)) > 0))
           continue;
         if (matchedTrack.tpcNClsFound() < TPCnclsMin || matchedTrack.tpcNClsFound() > TPCnclsMax)
           continue;
@@ -735,7 +735,7 @@ struct PhosElId {
 
       if (!track.has_collision() || !track.hasTPC())
         continue;
-      if (track.itsNCls() < ITSnclsMin || track.itsNCls() > ITSnclsMax || !((track.itsClusterMap() & uint8_t(1)) > 0))
+      if (track.itsNCls() < ITSnclsMin || track.itsNCls() > ITSnclsMax || !((track.itsClusterMap() & static_cast<uint8_t>(1)) > 0))
         continue;
       if (track.tpcNClsFound() < TPCnclsMin || track.tpcNClsFound() > TPCnclsMax)
         continue;
@@ -1117,7 +1117,7 @@ struct PhosElId {
         if (!matchedTrack.has_collision() || !matchedTrack.hasTPC())
           continue;
 
-        if (matchedTrack.itsNCls() < ITSnclsMin || matchedTrack.itsNCls() > ITSnclsMax || !((matchedTrack.itsClusterMap() & uint8_t(1)) > 0))
+        if (matchedTrack.itsNCls() < ITSnclsMin || matchedTrack.itsNCls() > ITSnclsMax || !((matchedTrack.itsClusterMap() & static_cast<uint8_t>(1)) > 0))
           continue;
         if (matchedTrack.tpcNClsFound() < TPCnclsMin || matchedTrack.tpcNClsFound() > TPCnclsMax)
           continue;
@@ -1170,13 +1170,13 @@ struct PhosElId {
   bool isWithinNSigma(int16_t& mod, float p, float deltaZ, float deltaX, bool positiveCharge)
   {
     int modMinus1 = mod - 1;
-    if (std::fabs(deltaZ - ((std::vector<float>)pPhosShiftZ).at(modMinus1)) > NsigmaTrackMatch * fSigma_dz->Eval(p))
+    if (std::fabs(deltaZ - (std::vector<float>(pPhosShiftZ)).at(modMinus1)) > NsigmaTrackMatch * fSigma_dz->Eval(p))
       return false;
     if (positiveCharge) {
-      if (std::fabs(deltaX - fMeandXPosMod[modMinus1]->Eval(p) - ((std::vector<float>)pPhosShiftX).at(modMinus1)) > NsigmaTrackMatch * fSigma_dx->Eval(p))
+      if (std::fabs(deltaX - fMeandXPosMod[modMinus1]->Eval(p) - (std::vector<float>(pPhosShiftX)).at(modMinus1)) > NsigmaTrackMatch * fSigma_dx->Eval(p))
         return false;
     } else {
-      if (std::fabs(deltaX - fMeandXNegMod[modMinus1]->Eval(p) - ((std::vector<float>)pPhosShiftX).at(modMinus1)) > NsigmaTrackMatch * fSigma_dx->Eval(p))
+      if (std::fabs(deltaX - fMeandXNegMod[modMinus1]->Eval(p) - (std::vector<float>(pPhosShiftX)).at(modMinus1)) > NsigmaTrackMatch * fSigma_dx->Eval(p))
         return false;
     }
     return true;
@@ -1407,7 +1407,7 @@ struct MassSpectra {
         continue;
       if (TPCel.itsChi2NCl() > fITSchi2Max)
         continue;
-      if (TPCel.itsNCls() < fITSnclsMin || TPCel.itsNCls() > fITSnclsMax || !((TPCel.itsClusterMap() & uint8_t(1)) > 0))
+      if (TPCel.itsNCls() < fITSnclsMin || TPCel.itsNCls() > fITSnclsMax || !((TPCel.itsClusterMap() & static_cast<uint8_t>(1)) > 0))
         continue;
       if (TPCel.tpcChi2NCl() > fTPCchi2Max)
         continue;
@@ -1751,7 +1751,7 @@ struct TpcElIdMassSpectrum {
         return false;
       if (track.tpcChi2NCl() >= TPCchi2Max)
         return false;
-      if (!((track.itsClusterMap() & uint8_t(1)) > 0))
+      if (!((track.itsClusterMap() & static_cast<uint8_t>(1)) > 0))
         return false;
       if (track.itsNCls() < ITSnclsMin || track.itsNCls() > ITSnclsMax)
         return false;
@@ -1831,7 +1831,7 @@ struct TpcElIdMassSpectrum {
         return false;
       if (track.tpcChi2NCl() >= TPCchi2Max)
         return false;
-      if (!((track.itsClusterMap() & uint8_t(1)) > 0))
+      if (!((track.itsClusterMap() & static_cast<uint8_t>(1)) > 0))
         return false;
       if (track.itsNCls() < ITSnclsMin || track.itsNCls() > ITSnclsMax)
         return false;
@@ -1856,7 +1856,7 @@ struct TpcElIdMassSpectrum {
     auto isGoodTagElectron = [&](const MyTracks::iterator& track) -> bool {
       if (!track.has_collision() || !track.hasTPC())
         return false;
-      if (!((track.itsClusterMap() & uint8_t(1)) > 0))
+      if (!((track.itsClusterMap() & static_cast<uint8_t>(1)) > 0))
         return false;
       if (track.itsChi2NCl() > ITSchi2Max || track.tpcChi2NCl() > TPCchi2Max)
         return false;
@@ -1889,7 +1889,7 @@ struct TpcElIdMassSpectrum {
     auto isGoodProbeBaseTrack = [&](const MyTracks::iterator& track) -> bool {
       if (!track.has_collision() || !track.hasTPC())
         return false;
-      if (!((track.itsClusterMap() & uint8_t(1)) > 0))
+      if (!((track.itsClusterMap() & static_cast<uint8_t>(1)) > 0))
         return false;
       if (track.itsChi2NCl() > ITSchi2Max || track.tpcChi2NCl() > TPCchi2Max)
         return false;
@@ -2219,7 +2219,7 @@ struct TpcElIdMassSpectrum {
         return false;
       if (track.tpcChi2NCl() >= TPCchi2Max)
         return false;
-      if (!((track.itsClusterMap() & uint8_t(1)) > 0))
+      if (!((track.itsClusterMap() & static_cast<uint8_t>(1)) > 0))
         return false;
       if (track.itsNCls() < ITSnclsMin || track.itsNCls() > ITSnclsMax)
         return false;
@@ -2258,7 +2258,7 @@ struct TpcElIdMassSpectrum {
     auto isGoodTagElectron = [&](auto const& track) -> bool {
       if (!track.has_collision() || !track.hasTPC())
         return false;
-      if (!((track.itsClusterMap() & uint8_t(1)) > 0))
+      if (!((track.itsClusterMap() & static_cast<uint8_t>(1)) > 0))
         return false;
       if (track.itsChi2NCl() > ITSchi2Max || track.tpcChi2NCl() > TPCchi2Max)
         return false;
@@ -2291,7 +2291,7 @@ struct TpcElIdMassSpectrum {
     auto isGoodProbeBaseTrack = [&](auto const& track) -> bool {
       if (!track.has_collision() || !track.hasTPC())
         return false;
-      if (!((track.itsClusterMap() & uint8_t(1)) > 0))
+      if (!((track.itsClusterMap() & static_cast<uint8_t>(1)) > 0))
         return false;
       if (track.itsChi2NCl() > ITSchi2Max || track.tpcChi2NCl() > TPCchi2Max)
         return false;

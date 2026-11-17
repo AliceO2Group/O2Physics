@@ -57,7 +57,7 @@ struct ConfCollisionFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> sphericityMax{"sphericityMax", 1.f, "Maximum sphericity"};
   o2::framework::Configurable<int> magFieldMin{"magFieldMin", -5, "Minimum magnetic field strength (kG)"};
   o2::framework::Configurable<int> magFieldMax{"magFieldMax", 5, "Maximum magnetic field strength (kG)"};
-  o2::framework::Configurable<int> subGeneratorId{"subGeneratorId", 0, "MC ONLY: Sub-generator ID to keep (0 = MB). Only applied if >= 0; set to -1 (default) to disable and keep all sub-generators"};
+  o2::framework::Configurable<int> subGeneratorId{"subGeneratorId", -1, "MC ONLY: Sub-generator ID to keep (0 = MB). Only applied if >= 0; set to -1 (default) to disable and keep all sub-generators"};
 };
 
 struct ConfCollisionBits : o2::framework::ConfigurableGroup {
@@ -82,6 +82,7 @@ struct ConfCollisionBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> sphericityMin{"sphericityMin", {}, "Minimum sphericity"};
   o2::framework::Configurable<std::vector<float>> sphericityMax{"sphericityMax", {}, "Maximum sphericity"};
   o2::framework::Configurable<std::vector<std::string>> triggers{"triggers", {}, "List of all triggers to be used"};
+  o2::framework::Configurable<int> triggerBcTolerance{"triggerBcTolerance", 100, "Tolerance for +-(bc range) around triggered collisions"};
   o2::framework::Configurable<int> eventPlaneAngleDetector{"eventPlaneAngleDetector", 0, "Detector used to estimate the event plane angle: 0 -> FT0C, 1 -> FT0A"};
   o2::framework::Configurable<int> qvecDetector{"qvecDetector", 0, "Detector used to estimate the Q-vector: 0 -> FT0C, 1 -> FT0A"};
   o2::framework::Configurable<int> qvecHarmonic{"qvecHarmonic", 2, "Harmonic n of the Q-vector and event plane angle Psi_n: 2 -> elliptic, 3 -> triangular"};
@@ -235,6 +236,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     // trigger (Zorro) setup
     if (!config.triggers.value.empty()) {
       mUseTrigger = true;
+      mTriggerBcTolerance = config.triggerBcTolerance.value;
       for (size_t i = 0; i < config.triggers.value.size(); ++i) {
         mTriggerNames += config.triggers.value[i];
         if (i != config.triggers.value.size() - 1) {
@@ -309,7 +311,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
       return;
     }
     LOG(info) << "Init Zorro with Run Number: " << runNumber << "; timestamp: " << timestamp << "; Trigger Names: " << mTriggerNames;
-    mZorro.initCCDB(ccdb.service, runNumber, timestamp, mTriggerNames);
+    mZorro.initCCDB(ccdb.service, runNumber, timestamp, mTriggerNames, mTriggerBcTolerance);
     mZorro.populateHistRegistry(histRegistry, runNumber);
   }
 
@@ -320,7 +322,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     if (!mUseTrigger) {
       return {};
     }
-    return mZorro.getTriggerOfInterestResults(globalBC);
+    return mZorro.getTriggerOfInterestResults(globalBC, mTriggerBcTolerance);
   }
 
   void setMagneticField(int MagField)
@@ -334,7 +336,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   }
 
   template <typename T>
-  void setSphericity(T tracks)
+  void setSphericity(T const& tracks)
   {
     mSphericity = computeSphericity(tracks);
   }
@@ -587,6 +589,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   // trigger (Zorro)
   Zorro mZorro;
   bool mUseTrigger = false;
+  int mTriggerBcTolerance = 100;
   std::string mTriggerNames = std::string("");
 };
 

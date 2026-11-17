@@ -60,7 +60,7 @@ void JetFinder::setParams()
 /// \param inputParticles vector of input particles/tracks
 /// \param jets veector of jets to be filled
 /// \return ClusterSequenceArea object needed to access constituents
-fastjet::ClusterSequenceArea JetFinder::findJets(std::vector<fastjet::PseudoJet>& inputParticles, std::vector<fastjet::PseudoJet>& jets) // ideally find a way of passing the cluster sequence as a reeference
+fastjet::ClusterSequenceArea JetFinder::findJets(std::vector<fastjet::PseudoJet> const& inputParticles, std::vector<fastjet::PseudoJet>& jets) // ideally find a way of passing the cluster sequence as a reference
 {
   setParams();
   jets.clear();

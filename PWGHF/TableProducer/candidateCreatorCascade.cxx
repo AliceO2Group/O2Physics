@@ -439,7 +439,7 @@ struct HfCandidateCreatorCascadeMc {
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Ms>;
-  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>;
 
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
@@ -605,7 +605,7 @@ struct HfCandidateCreatorCascadeMc {
   void processMc(MyTracksWMc const& tracks,
                  aod::McParticles const& mcParticles,
                  McCollisionsNoCents const& collInfos,
-                 aod::McCollisions const& mcCollisions,
+                 soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
                  BCsInfo const& bcsInfo)
   {
     runCreatorCascMc<CentralityEstimator::None>(tracks, mcParticles, collInfos, mcCollisions, bcsInfo);
@@ -615,7 +615,7 @@ struct HfCandidateCreatorCascadeMc {
   void processMcCentFT0C(MyTracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
                          McCollisionsFT0Cs const& collInfos,
-                         aod::McCollisions const& mcCollisions,
+                         soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
                          BCsInfo const& bcsInfo)
   {
     runCreatorCascMc<CentralityEstimator::FT0C>(tracks, mcParticles, collInfos, mcCollisions, bcsInfo);

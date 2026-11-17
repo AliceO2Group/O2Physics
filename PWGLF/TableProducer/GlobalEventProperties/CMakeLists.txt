@@ -11,5 +11,5 @@
 
 o2physics_add_dpl_workflow(event-shape-coex
     SOURCES eventShapeCoex.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)

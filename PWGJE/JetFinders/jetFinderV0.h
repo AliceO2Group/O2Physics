@@ -116,10 +116,10 @@ struct JetFinderV0Task {
 
   void init(o2::framework::InitContext const&)
   {
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    particleSelection = static_cast<std::string>(particleSelections);
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    particleSelection = particleSelections;
 
     jetFinder.etaMin = trackEtaMin;
     jetFinder.etaMax = trackEtaMax;
@@ -149,8 +149,8 @@ struct JetFinderV0Task {
     if (jetEtaMin < -98.0) {
       jetFinder.jetEtaDefault = true;
     }
-    jetFinder.algorithm = static_cast<fastjet::JetAlgorithm>(static_cast<int>(jetAlgorithm));
-    jetFinder.recombScheme = static_cast<fastjet::RecombinationScheme>(static_cast<int>(jetRecombScheme));
+    jetFinder.algorithm = static_cast<fastjet::JetAlgorithm>(jetAlgorithm.value);
+    jetFinder.recombScheme = static_cast<fastjet::RecombinationScheme>(jetRecombScheme.value);
     jetFinder.ghostArea = jetGhostArea;
     jetFinder.ghostRepeatN = ghostRepeat;
     if (DoTriggering) {
@@ -165,7 +165,7 @@ struct JetFinderV0Task {
       candIndex = 1;
     }
 
-    auto jetRadiiBins = (std::vector<double>)jetRadius;
+    auto jetRadiiBins = jetRadius.value;
     if (jetRadiiBins.size() > 1) {
       jetRadiiBins.push_back(jetRadiiBins[jetRadiiBins.size() - 1] + (TMath::Abs(jetRadiiBins[jetRadiiBins.size() - 1] - jetRadiiBins[jetRadiiBins.size() - 2])));
     } else {

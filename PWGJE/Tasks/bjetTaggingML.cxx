@@ -89,9 +89,9 @@ struct BJetTaggingML {
     // Seed the random number generator using current time
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
-    jetRadiiValues = (std::vector<double>)jetRadii;
+    jetRadiiValues = jetRadii;
 
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
 
     const AxisSpec axisDb{300, -10., 20., "#it{D}_{b}"};
     const AxisSpec axisScore{120, -0.1, 1.1, "Score"};

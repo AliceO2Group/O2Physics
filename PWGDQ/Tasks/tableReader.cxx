@@ -1308,7 +1308,7 @@ struct AnalysisSameEventPairing {
     // ccdb->setLocalObjectValidityChecking();
     // ccdb->setCreatedNotAfter(nolaterthan.value);
 
-    VarManager::SetCollisionSystem((TString)fCollisionSystem, fCenterMassEnergy); // set collision system and center of mass energy
+    VarManager::SetCollisionSystem(TString(fCollisionSystem), fCenterMassEnergy); // set collision system and center of mass energy
 
     DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram);                  // define all histograms
     dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
@@ -2117,7 +2117,7 @@ struct AnalysisDileptonTrackTrack {
   TString fTrackCutName1;
   TString fTrackCutName2;
   bool fIsSameTrackCut = false;
-  AnalysisCompositeCut fDileptonCut;
+  AnalysisCompositeCut fDileptonCut{};
   std::vector<TString> fQuadrupletCutNames;
   std::vector<AnalysisCompositeCut> fQuadrupletCuts;
 

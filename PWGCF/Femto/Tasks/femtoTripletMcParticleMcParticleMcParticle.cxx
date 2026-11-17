@@ -75,6 +75,7 @@ struct FemtoTripletMcParticleMcParticleMcParticle {
   o2::framework::Partition<FemtoMcParticles> mcParticlesPartition1 = MAKE_MC_PARTICLE_PARTITION(confMcParticleSelection1);
   o2::framework::Partition<FemtoMcParticles> mcParticlesPartition2 = MAKE_MC_PARTICLE_PARTITION(confMcParticleSelection2);
   o2::framework::Partition<FemtoMcParticles> mcParticlesPartition3 = MAKE_MC_PARTICLE_PARTITION(confMcParticleSelection3);
+  o2::framework::PresliceUnsorted<FemtoMcParticles> perColParticles = o2::aod::femtomcparticle::fMcColId;
 
   // setup triplets
   triplethistmanager::ConfTripletBinning confTripletBinning;
@@ -84,9 +85,12 @@ struct FemtoTripletMcParticleMcParticleMcParticle {
   closetripletrejection::ConfCtrMcParticleMcParticleMcParticle confCtr;
 
   tripletbuilder::TripletMcParticleMcParticleMcParticleBuilder<
-    mcparticlehistmanager::PrefixMcParticle1,
-    mcparticlehistmanager::PrefixMcParticle2,
-    mcparticlehistmanager::PrefixMcParticle3,
+    mcparticlehistmanager::PrefixMcParticle1Se,
+    mcparticlehistmanager::PrefixMcParticle2Se,
+    mcparticlehistmanager::PrefixMcParticle3Se,
+    mcparticlehistmanager::PrefixMcParticle1Me,
+    mcparticlehistmanager::PrefixMcParticle2Me,
+    mcparticlehistmanager::PrefixMcParticle3Me,
     triplethistmanager::PrefixMcParticleMcParticleMcParticleSe,
     triplethistmanager::PrefixMcParticleMcParticleMcParticleMe,
     closetripletrejection::PrefixMcParticle1McParticle2Se,
@@ -130,9 +134,16 @@ struct FemtoTripletMcParticleMcParticleMcParticle {
     hRegistry.print();
   };
 
-  void processSameEvent(FilteredFemtoMcCollision const& col, FemtoMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  // deliberately takes the full (ungrouped) FilteredFemtoMcCollisions table rather than its ::iterator:
+  // pairing an ::iterator first argument with FemtoMcParticles as a second table argument would make
+  // DPL auto-register a sorted per-collision slicing cache for fMcColId, which then collides with the
+  // manual sliceByCachedUnsorted() used inside the builder (see the same workaround in
+  // femtoDndetaPair.cxx/femtoDndetaTriplet.cxx); we run the per-collision loop ourselves instead
+  void processSameEvent(FilteredFemtoMcCollisions const& cols, FemtoMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    tripletMcParticleMcParticleMcParticleBuilder.processSameEvent<modes::Mode::kSe_Mc>(col, mcParticles, mcMothers, mcPartonicMothers, mcParticlesPartition1, mcParticlesPartition2, mcParticlesPartition3, cache);
+    for (auto const& col : cols) {
+      tripletMcParticleMcParticleMcParticleBuilder.processSameEvent<modes::Mode::kSe_Mc>(col, mcParticles, mcMothers, mcPartonicMothers, mcParticlesPartition1, mcParticlesPartition2, mcParticlesPartition3, cache);
+    }
   }
   PROCESS_SWITCH(FemtoTripletMcParticleMcParticleMcParticle, processSameEvent, "Enable processing same event processing", true);
 

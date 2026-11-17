@@ -206,7 +206,7 @@ void DielectronCut::ApplyPhiV(bool flag)
 void DielectronCut::SetPIDScheme(int scheme)
 {
   mPIDScheme = scheme;
-  LOG(info) << "Dielectron Cut, PID scheme: " << static_cast<int>(mPIDScheme);
+  LOG(info) << "Dielectron Cut, PID scheme: " << mPIDScheme;
 }
 void DielectronCut::SetMinPinTOF(float min)
 {

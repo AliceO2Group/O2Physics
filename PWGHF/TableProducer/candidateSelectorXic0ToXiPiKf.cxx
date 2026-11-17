@@ -120,15 +120,23 @@ struct HfCandidateSelectorXic0ToXiPiKf {
 
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_xi_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xic_to_xi_pi::Cuts[0], hf_cuts_xic_to_xi_pi::NBinsPt, hf_cuts_xic_to_xi_pi::NCutVars, hf_cuts_xic_to_xi_pi::labelsPt, hf_cuts_xic_to_xi_pi::labelsCutVar}, "Xic0 candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {&hf_cuts_xic_to_xi_pi::Cuts[0][0], hf_cuts_xic_to_xi_pi::NBinsPt, hf_cuts_xic_to_xi_pi::NCutVars, hf_cuts_xic_to_xi_pi::labelsPt, hf_cuts_xic_to_xi_pi::labelsCutVar}, "Xic0 candidate selection per pT bin"};
 
   // ML inference
   Configurable<bool> applyMl{"applyMl", true, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {&hf_cuts_ml::Cuts[0][0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
-  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures",
+                                                            std::vector<std::string>{"fDecayLenXYXic", "fXicChi2OverNdf", "fChi2TopoXicToPv", "fDcaCharmBaryonDau",
+                                                                                     "fKfDcaXYPiFromXic", "fChi2TopoPiFromXicToPv", "fKfptPiFromXic", "fDecayLenXYCasc",
+                                                                                     "fCascChi2OverNdf", "fChi2TopoCascToPv", "fChi2TopoCascToXic", "fCosPaCascToPv",
+                                                                                     "fCosPaCascToXic", "fDcaCascDau", "fKfDcaXYCascToPv", "fTpcNSigmaPiFromCasc",
+                                                                                     "fDcaXYToPvCascDau", "fDecayLenXYLambda", "fV0Chi2OverNdf", "fChi2TopoV0ToPv",
+                                                                                     "fChi2TopoV0ToCasc", "fCosPaV0ToPv", "fCosPaV0ToCasc", "fDcaV0Dau",
+                                                                                     "fDcaXYToPvV0Dau0", "fDcaXYToPvV0Dau1", "fTpcNSigmaPrFromLambda", "fTpcNSigmaPiFromLambda"},
+                                                            "Names of ML model input features"};
 
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -224,14 +232,11 @@ struct HfCandidateSelectorXic0ToXiPiKf {
       auto trackPiFromCasc = lfTracks.rawIteratorAt(trackPiFromCascId);
       auto trackPiFromCharm = tracks.rawIteratorAt(trackPiFromCharmId);
 
-      auto trackPiFromLam = trackV0NegDau;
-      auto trackPrFromLam = trackV0PosDau;
-
       int8_t const signDecay = candidate.signDecay(); // sign of pi <- cascade
+      auto const trackPiFromLam = signDecay > 0 ? trackV0PosDau : trackV0NegDau;
+      auto const trackPrFromLam = signDecay > 0 ? trackV0NegDau : trackV0PosDau;
 
       if (signDecay > 0) {
-        trackPiFromLam = trackV0PosDau;
-        trackPrFromLam = trackV0NegDau;
         registry.fill(HIST("hSelSignDec"), 1); // anti-particle decay
       } else if (signDecay < 0) {
         registry.fill(HIST("hSelSignDec"), 0); // particle decay
@@ -418,7 +423,7 @@ struct HfCandidateSelectorXic0ToXiPiKf {
       // ML selections
       if (applyMl) {
         bool isSelectedMlXic0 = false;
-        std::vector<float> inputFeaturesXic0 = hfMlResponse.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
+        std::vector<float> inputFeaturesXic0 = hfMlResponse.getInputFeatures(candidate, trackPiFromLam, trackPrFromLam, trackPiFromCasc, trackPiFromCharm);
         if (!resultSelections) {
           hfMlToXiPi(outputMlXic0ToXiPiKf);
         } else {
@@ -526,7 +531,7 @@ struct HfCandidateSelectorXic0ToXiPiKf {
     }
 
     // dcaXY v0 daughters to PV cut
-    if (std::abs(candidate.dcaXYToPvV0Dau0()) < cuts->get(pTBin, "dcaXYToPvV0Dau0") || std::abs(candidate.dcaXYToPvV0Dau1()) < cuts->get(pTBin, "dcaXYToPvV0Dau0")) {
+    if (std::abs(candidate.dcaXYToPvV0Dau0()) < cuts->get(pTBin, "dcaXYToPvV0Dau0") || std::abs(candidate.dcaXYToPvV0Dau1()) < cuts->get(pTBin, "dcaXYToPvV0Dau1")) {
       return false;
     }
 
@@ -597,8 +602,8 @@ struct HfCandidateSelectorXic0ToXiPiKf {
 
 }; // end struct
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorXic0ToXiPiKf>(cfgc)};
+    adaptAnalysisTask<HfCandidateSelectorXic0ToXiPiKf>(context)};
 }

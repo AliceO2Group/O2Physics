@@ -344,13 +344,13 @@ struct Phik0shortanalysis {
     AxisSpec deltaphiAxis = {72, -o2::constants::math::PIHalf, o2::constants::math::PIHalf * 3, "#Delta#varphi"};
     AxisSpec phiAxis = {629, 0, o2::constants::math::TwoPI, "#phi"};
     AxisSpec multAxis = {120, 0.0f, 120.0f, "centFT0M"};
-    AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
+    AxisSpec binnedmultAxis{std::vector<double>(binsMult), "centFT0M"};
     AxisSpec pTPhiAxis = {120, 0.0f, 12.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec binnedpTPhiAxis{(std::vector<double>)binspTPhi, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTPhiAxis{std::vector<double>(binspTPhi), "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec pTK0SAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec binnedpTK0SAxis{(std::vector<double>)binspTK0S, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTK0SAxis{std::vector<double>(binspTK0S), "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec pTPiAxis = {50, 0.0f, 5.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec binnedpTPiAxis{(std::vector<double>)binspTPi, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTPiAxis{std::vector<double>(binspTPi), "#it{p}_{T} (GeV/#it{c})"};
 
     // Histograms
     // Number of events per selection
@@ -425,13 +425,13 @@ struct Phik0shortanalysis {
       // Phi invariant mass for computing purities and normalisation
       dataPhiHist.add("h3PhipurData", "Invariant mass of Phi for Purity (no K0S/Pi) in Data", kTH3F, {binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
 
-      dataPhiHist.add("h4PhipurK0SData", "Invariant mass of Phi for Purity (K0S) in Data", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
+      dataPhiHist.add("h4PhipurK0SData", "Invariant mass of Phi for Purity (K0S) in Data", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, (deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
       dataPhiHist.get<THnSparse>(HIST("h4PhipurK0SData"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
       for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
         dataPhiHist.get<THnSparse>(HIST("h4PhipurK0SData"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
-      dataPhiHist.add("h4PhipurPiData", "Invariant mass of Phi for Purity (Pi) in Data", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
+      dataPhiHist.add("h4PhipurPiData", "Invariant mass of Phi for Purity (Pi) in Data", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, (deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
       dataPhiHist.get<THnSparse>(HIST("h4PhipurPiData"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
       for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
         dataPhiHist.get<THnSparse>(HIST("h4PhipurPiData"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
@@ -448,13 +448,13 @@ struct Phik0shortanalysis {
       // MCPhi invariant mass for computing purities
       closureMCPhiHist.add("h3PhipurMCClosure", "Invariant mass of Phi for Purity (no K0S/Pi)", kTH3F, {binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
 
-      closureMCPhiHist.add("h4PhipurK0SMCClosure", "Invariant mass of Phi for Purity (K0S) in MCClosure", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
+      closureMCPhiHist.add("h4PhipurK0SMCClosure", "Invariant mass of Phi for Purity (K0S) in MCClosure", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, (deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
       closureMCPhiHist.get<THnSparse>(HIST("h4PhipurK0SMCClosure"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
       for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
         closureMCPhiHist.get<THnSparse>(HIST("h4PhipurK0SMCClosure"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
-      closureMCPhiHist.add("h4PhipurPiMCClosure", "Invariant mass of Phi for Purity (Pi) in MCClosure", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
+      closureMCPhiHist.add("h4PhipurPiMCClosure", "Invariant mass of Phi for Purity (Pi) in MCClosure", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, (deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
       closureMCPhiHist.get<THnSparse>(HIST("h4PhipurPiMCClosure"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
       for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
         closureMCPhiHist.get<THnSparse>(HIST("h4PhipurPiMCClosure"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
@@ -469,7 +469,7 @@ struct Phik0shortanalysis {
 
     if (analysisModeConfigs.isData) {
       // 2D mass of Phi and K0S for Data
-      dataPhiK0SHist.add("h5PhiK0SData", "2D Invariant mass of Phi and K0Short for Data", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis, massK0SAxis, sigmassPhiAxis});
+      dataPhiK0SHist.add("h5PhiK0SData", "2D Invariant mass of Phi and K0Short for Data", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, (deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis, massK0SAxis, sigmassPhiAxis});
       dataPhiK0SHist.get<THnSparse>(HIST("h5PhiK0SData"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
       for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
         dataPhiK0SHist.get<THnSparse>(HIST("h5PhiK0SData"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
@@ -486,20 +486,20 @@ struct Phik0shortanalysis {
 
     if (analysisModeConfigs.isMC) {
       // RecMC K0S coupled to Phi
-      mcPhiK0SHist.add("h4PhiK0SMCReco", "K0S coupled to Phi in MCReco", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis, massK0SAxis});
+      mcPhiK0SHist.add("h4PhiK0SMCReco", "K0S coupled to Phi in MCReco", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, (deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis, massK0SAxis});
       mcPhiK0SHist.get<THnSparse>(HIST("h4PhiK0SMCReco"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
       for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
         mcPhiK0SHist.get<THnSparse>(HIST("h4PhiK0SMCReco"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
       // GenMC K0S coupled to Phi
-      mcPhiK0SHist.add("h3PhiK0SMCGen", "K0S coupled toPhi in MCGen", kTH3F, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis});
+      mcPhiK0SHist.add("h3PhiK0SMCGen", "K0S coupled toPhi in MCGen", kTH3F, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, (deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis});
       mcPhiK0SHist.get<TH3>(HIST("h3PhiK0SMCGen"))->GetXaxis()->SetBinLabel(1, "Inclusive");
       for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
         mcPhiK0SHist.get<TH3>(HIST("h3PhiK0SMCGen"))->GetXaxis()->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
-      mcPhiK0SHist.add("h3PhiK0SMCGenAssocReco", "K0S coupled toPhi in MCGen Associated MCReco Collision", kTH3F, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis});
+      mcPhiK0SHist.add("h3PhiK0SMCGenAssocReco", "K0S coupled toPhi in MCGen Associated MCReco Collision", kTH3F, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, (deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis});
       mcPhiK0SHist.get<TH3>(HIST("h3PhiK0SMCGenAssocReco"))->GetXaxis()->SetBinLabel(1, "Inclusive");
       for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
         mcPhiK0SHist.get<TH3>(HIST("h3PhiK0SMCGenAssocReco"))->GetXaxis()->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
@@ -508,7 +508,7 @@ struct Phik0shortanalysis {
 
     if (analysisModeConfigs.isClosure) {
       // 2D mass of Phi and K0S for Closure Test
-      closureMCPhiK0SHist.add("h5PhiK0SMCClosure", "2D Invariant mass of Phi and K0Short for MC Closure Test", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis, massK0SAxis, sigmassPhiAxis});
+      closureMCPhiK0SHist.add("h5PhiK0SMCClosure", "2D Invariant mass of Phi and K0Short for MC Closure Test", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, (deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis, massK0SAxis, sigmassPhiAxis});
       closureMCPhiK0SHist.get<THnSparse>(HIST("h5PhiK0SMCClosure"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
       for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
         closureMCPhiK0SHist.get<THnSparse>(HIST("h5PhiK0SMCClosure"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
@@ -522,7 +522,7 @@ struct Phik0shortanalysis {
 
     if (analysisModeConfigs.isData) {
       // Phi mass vs Pion NSigma dE/dx for Data
-      dataPhiPionHist.add("h6PhiPiData", "Phi Invariant mass vs Pion nSigma TPC/TOF for Data", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
+      dataPhiPionHist.add("h6PhiPiData", "Phi Invariant mass vs Pion nSigma TPC/TOF for Data", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, (deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
       dataPhiPionHist.get<THnSparse>(HIST("h6PhiPiData"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
       for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
         dataPhiPionHist.get<THnSparse>(HIST("h6PhiPiData"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
@@ -556,26 +556,26 @@ struct Phik0shortanalysis {
 
     if (analysisModeConfigs.isMC) {
       // RecMC Pion coupled to Phi with TPC
-      mcPhiPionHist.add("h4PhiPiTPCMCReco", "Pion coupled to Phi in MCReco (TPC)", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis, {100, -10.0f, 10.0f}});
+      mcPhiPionHist.add("h4PhiPiTPCMCReco", "Pion coupled to Phi in MCReco (TPC)", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, (deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis, {100, -10.0f, 10.0f}});
       mcPhiPionHist.get<THnSparse>(HIST("h4PhiPiTPCMCReco"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
       for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
         mcPhiPionHist.get<THnSparse>(HIST("h4PhiPiTPCMCReco"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
       // RecMC Pion coupled to Phi with TPC and TOF
-      mcPhiPionHist.add("h5PhiPiTPCTOFMCReco", "Pion coupled to Phi in MCReco (TPC and TOF)", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
+      mcPhiPionHist.add("h5PhiPiTPCTOFMCReco", "Pion coupled to Phi in MCReco (TPC and TOF)", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, (deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
       mcPhiPionHist.get<THnSparse>(HIST("h5PhiPiTPCTOFMCReco"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
       for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
         mcPhiPionHist.get<THnSparse>(HIST("h5PhiPiTPCTOFMCReco"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
-      mcPhiPionHist.add("h3PhiPiMCGen", "Pion coupled to Phi in MCGen", kTH3F, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis});
+      mcPhiPionHist.add("h3PhiPiMCGen", "Pion coupled to Phi in MCGen", kTH3F, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, (deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis});
       mcPhiPionHist.get<TH3>(HIST("h3PhiPiMCGen"))->GetXaxis()->SetBinLabel(1, "Inclusive");
       for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
         mcPhiPionHist.get<TH3>(HIST("h3PhiPiMCGen"))->GetXaxis()->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
-      mcPhiPionHist.add("h3PhiPiMCGenAssocReco", "Pion coupled to Phi in MCGen Associated Reco Collision", kTH3F, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis});
+      mcPhiPionHist.add("h3PhiPiMCGenAssocReco", "Pion coupled to Phi in MCGen Associated Reco Collision", kTH3F, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, (deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis});
       mcPhiPionHist.get<TH3>(HIST("h3PhiPiMCGenAssocReco"))->GetXaxis()->SetBinLabel(1, "Inclusive");
       for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
         mcPhiPionHist.get<TH3>(HIST("h3PhiPiMCGenAssocReco"))->GetXaxis()->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
@@ -584,7 +584,7 @@ struct Phik0shortanalysis {
 
     if (analysisModeConfigs.isClosure) {
       // Phi mass vs Pion NSigma dE/dx for Closure Test
-      closureMCPhiPionHist.add("h6PhiPiMCClosure", "Phi Invariant mass vs Pion nSigma TPC/TOF for MC Closure Test", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
+      closureMCPhiPionHist.add("h6PhiPiMCClosure", "Phi Invariant mass vs Pion nSigma TPC/TOF for MC Closure Test", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, (deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
       closureMCPhiPionHist.get<THnSparse>(HIST("h6PhiPiMCClosure"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
       for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
         closureMCPhiPionHist.get<THnSparse>(HIST("h6PhiPiMCClosure"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
@@ -1160,7 +1160,7 @@ struct Phik0shortanalysis {
 
     for (size_t multIdx = 0; multIdx < binsMult->size() - 1; multIdx++) {
       for (size_t ptIdx = 0; ptIdx < binspTPhi->size() - 1; ptIdx++) {
-        phiPurityFunctions[multIdx][ptIdx] = static_cast<TF1*>(listPhiPurityFunctions->FindObject(Form("funcFitPhiPur_%zu_%zu", multIdx, ptIdx)));
+        phiPurityFunctions[multIdx][ptIdx] = dynamic_cast<TF1*>(listPhiPurityFunctions->FindObject(Form("funcFitPhiPur_%zu_%zu", multIdx, ptIdx)));
       }
     }
   }
@@ -1199,22 +1199,22 @@ struct Phik0shortanalysis {
     if (!listEfficiencyMaps)
       LOG(error) << "Problem getting TList object with efficiency maps!";
 
-    effMapPhi = static_cast<TH3F*>(listEfficiencyMaps->FindObject("h3EfficiencyPhi"));
+    effMapPhi = dynamic_cast<TH3F*>(listEfficiencyMaps->FindObject("h3EfficiencyPhi"));
     if (!effMapPhi) {
       LOG(error) << "Problem getting efficiency map for Phi!";
       return;
     }
-    effMapK0S = static_cast<TH3F*>(listEfficiencyMaps->FindObject("h3EfficiencyK0S"));
+    effMapK0S = dynamic_cast<TH3F*>(listEfficiencyMaps->FindObject("h3EfficiencyK0S"));
     if (!effMapK0S) {
       LOG(error) << "Problem getting efficiency map for K0S!";
       return;
     }
-    effMapPionTPC = static_cast<TH3F*>(listEfficiencyMaps->FindObject("h3EfficiencyPionTPC"));
+    effMapPionTPC = dynamic_cast<TH3F*>(listEfficiencyMaps->FindObject("h3EfficiencyPionTPC"));
     if (!effMapPionTPC) {
       LOG(error) << "Problem getting efficiency map for Pion with TPC!";
       return;
     }
-    effMapPionTPCTOF = static_cast<TH3F*>(listEfficiencyMaps->FindObject("h3EfficiencyPionTPCTOF"));
+    effMapPionTPCTOF = dynamic_cast<TH3F*>(listEfficiencyMaps->FindObject("h3EfficiencyPionTPCTOF"));
     if (!effMapPionTPCTOF) {
       LOG(error) << "Problem getting efficiency map for Pion with TPC and TOF!";
       return;

@@ -32,11 +32,15 @@
 #include <cstdlib>
 #include <iterator>
 #include <ranges>
+#include <span>
 #include <vector>
 
 //_______________________________________________________________________
 namespace o2::aod::pwgem::photonmeson::utils::mcutil
 {
+
+template <typename T>
+concept is_unfiltered_iterator = o2::soa::is_iterator<T> && !o2::soa::has_filtered_policy<T>;
 
 constexpr float kVertexEps = 1e-4f; // cm
 
@@ -1010,6 +1014,66 @@ float trueOpeningAngle(TMCParticles const& mcParticles, const int id1, const int
   }
   const float c = (pa.px() * pb.px() + pa.py() * pb.py() + pa.pz() * pb.pz()) / (n1 * n2);
   return std::acos(std::clamp(c, -1.f, 1.f));
+}
+
+//_______________________________________________________________________
+/// \brief Whether the PDG code is a quark, gluon, diquark or string/cluster, i.e. where the decay chain ends
+[[nodiscard]] inline bool isPartonLike(int pdg)
+{
+  const int absPdg = std::abs(pdg);
+  const bool isDiquark = absPdg > 1000 && absPdg < 6000 && (absPdg / 10) % 10 == 0;                                                 // o2-linter: disable=magic-number
+  return (absPdg >= PDG_t::kDown && absPdg <= PDG_t::kTop) || absPdg == PDG_t::kGluon || absPdg == 91 || absPdg == 92 || isDiquark; // o2-linter: disable=magic-number
+}
+
+//_______________________________________________________________________
+/// \brief Whether the PDG code is a nucleus (10LZZZAAAI), e.g. one of the colliding beam nuclei
+[[nodiscard]] inline bool isNucleus(int pdg)
+{
+  constexpr int NucleusOffset = 1000000000;
+  return std::abs(pdg) >= NucleusOffset;
+}
+
+//_______________________________________________________________________
+/// \brief Fill the ancestor chain of a particle, starting with the particle itself.
+///        Ends with the first parton-like ancestor (included), a particle without mothers, or when chain is full.
+///        A nucleus (the colliding beam nuclei) is never part of the chain, otherwise all particles of an event would share it.
+///        Unused entries of chain are set to -1.
+/// \param mcParticle iterator of the full (unsliced) MC particle table. !WILL BE CHANGED!
+///        Afterwards it points to the last chain element, or to the nucleus that ended the chain.
+/// \param startId global index of the particle of interest
+/// \param chain output, global indices, closest first
+/// \return number of filled entries
+template <is_unfiltered_iterator TMCParticle>
+int getAncestorChain(TMCParticle& mcParticle, int startId, std::span<int> chain)
+{
+  int length = 0;
+  int id = startId;
+  while (id >= 0 && length < std::ssize(chain)) {
+    mcParticle.setCursor(id);
+    if (isNucleus(mcParticle.pdgCode())) {
+      break; // colliding nuclei are not an ancestor
+    }
+    chain[length++] = id;
+    if (isPartonLike(mcParticle.pdgCode()) || !mcParticle.has_mothers()) {
+      break;
+    }
+    id = mcParticle.mothersIds()[0];
+  }
+  std::ranges::fill(chain.subspan(length), -1);
+  return length;
+}
+
+//_______________________________________________________________________
+/// \brief Find the closest common ancestor of two ancestor chains
+/// \param chain1 ancestor chain of first particle (particle itself first, may be padded with -1)
+/// \param chain2 ancestor chain of second particle (particle itself first, may be padded with -1)
+/// \return global index of the closest common ancestor, -1 if none found
+[[nodiscard]] inline int getFirstCommonAncestor(std::span<const int> chain1, std::span<const int> chain2)
+{
+  chain1 = chain1.first(std::ranges::distance(chain1.begin(), std::ranges::find(chain1, -1)));
+  chain2 = chain2.first(std::ranges::distance(chain2.begin(), std::ranges::find(chain2, -1)));
+  const auto it = std::ranges::find_first_of(chain1, chain2);
+  return it != chain1.end() ? *it : -1;
 }
 
 } // namespace o2::aod::pwgem::photonmeson::utils::mcutil

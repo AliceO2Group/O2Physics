@@ -304,9 +304,11 @@ struct ConfPhotonTables : o2::framework::ConfigurableGroup {
 
 /// \brief Builder for PCM photons (V0PhotonsKF + V0Legs, from PWGEM/PhotonMeson)
 ///
-/// Unlike the strangeness V0 builder, daughter tracks are not indexed into FTracks: the
-/// conversion legs (V0Legs) carry a reduced set of columns and are not meant to be paired
-/// individually in femtoscopy, so only photon-level kinematics plus daughter PID/quality
+/// Unlike the strangeness V0 builder, daughter (conversion electron) tracks are, for now, not
+/// indexed into FTracks: the legs (V0Legs) are TPC-only tracks, so they cannot be confused for
+/// (i.e. share hits with/be the same reconstructed object as) a global track the way two V0
+/// daughters or a track and a V0 daughter can -- there is no detector-overlap effect for close
+/// pair rejection to correct for. Only photon-level kinematics plus daughter PID/quality
 /// diagnostics (FPhotonExtras) are stored.
 class PhotonBuilder
 {

@@ -110,7 +110,7 @@ struct HfCandidateSelectorCd {
       labels[1 + aod::SelectionStep::RecoTopol] = "Skims & Topological selections";
       labels[1 + aod::SelectionStep::RecoPID] = "Skims & Topological & PID selections";
       static const AxisSpec axisSelections = {NBinsSelections, 0.5, NBinsSelections + 0.5, ""};
-      registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+      registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {std::vector<double>(binsPt), "#it{p}_{T} (GeV/#it{c})"}}});
       for (int iBin = 0; iBin < NBinsSelections; ++iBin) {
         registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }

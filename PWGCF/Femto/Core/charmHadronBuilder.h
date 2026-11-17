@@ -289,7 +289,7 @@ class CharmHadronSelection : public baseselection::BaseSelection<float, o2::anal
       this->evaluateObservable(kImpactParameterProngSqSumMin, candidate.impactParameterProngSqSum());
     } else {
       this->evaluateObservable(kImpactParameterProductMax, candidate.impactParameter0() * candidate.impactParameter1());
-      this->evaluateObservable(kCosThetaStarMax, mHfHelper.cosThetaStarD0(candidate));
+      this->evaluateObservable(kCosThetaStarMax, HfHelper::cosThetaStarD0(candidate));
     }
     this->template assembleBitmask<SelectionHistName>();
   }
@@ -359,9 +359,9 @@ class CharmHadronSelection : public baseselection::BaseSelection<float, o2::anal
     if (mUseYCut) {
       float y = 0.f;
       if constexpr (isThreeProng<hadronType>()) {
-        y = mHfHelper.yLc(candidate);
+        y = HfHelper::yLc(candidate);
       } else {
-        y = mHfHelper.yD0(candidate);
+        y = HfHelper::yD0(candidate);
       }
       p = y > mYMin;
       this->template fillFilter<FilterHistName>(kYMin, p);
@@ -387,7 +387,6 @@ class CharmHadronSelection : public baseselection::BaseSelection<float, o2::anal
   }
 
  private:
-  HfHelper mHfHelper;
   float mPtMin = 0.f;
   float mPtMax = 24.f;
   float mEtaMin = -0.8f;
@@ -491,7 +490,7 @@ class CharmHadronBuilder
         candidate.decayLength(),
         candidate.decayLengthXY(),
         candidate.impactParameter0() * candidate.impactParameter1(),
-        mHfHelper.cosThetaStarD0(candidate),
+        HfHelper::cosThetaStarD0(candidate),
         candidate.mlProbD0().size() < NSizeMLScore ? -1.f : candidate.mlProbD0()[0],
         candidate.mlProbD0().size() < NSizeMLScore ? -1.f : candidate.mlProbD0()[1],
         candidate.mlProbD0().size() < NSizeMLScore ? -1.f : candidate.mlProbD0()[2],
@@ -567,8 +566,8 @@ class CharmHadronBuilder
     // remap the prongs onto the accepted hypothesis so that the proton is always first
     auto const& protonProng = isPKPi ? prong0 : prong2;
     auto const& pionProng = isPKPi ? prong2 : prong0;
-    float const mass = isPKPi ? mHfHelper.invMassLcToPKPi(candidate) : mHfHelper.invMassLcToPiKP(candidate);
-    float const massCompeting = isPKPi ? mHfHelper.invMassLcToPiKP(candidate) : mHfHelper.invMassLcToPKPi(candidate);
+    float const mass = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
+    float const massCompeting = isPKPi ? HfHelper::invMassLcToPiKP(candidate) : HfHelper::invMassLcToPKPi(candidate);
 
     collisionBuilder.template fillCollision<system>(collisionProducts, col);
     int64_t const protonDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(protonProng, trackProducts, collisionBuilder);
@@ -594,8 +593,8 @@ class CharmHadronBuilder
     // remap the prongs onto the accepted hypothesis so that the proton is always first
     auto const& protonProng = isPKPi ? prong0 : prong2;
     auto const& pionProng = isPKPi ? prong2 : prong0;
-    float const mass = isPKPi ? mHfHelper.invMassLcToPKPi(candidate) : mHfHelper.invMassLcToPiKP(candidate);
-    float const massCompeting = isPKPi ? mHfHelper.invMassLcToPiKP(candidate) : mHfHelper.invMassLcToPKPi(candidate);
+    float const mass = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
+    float const massCompeting = isPKPi ? HfHelper::invMassLcToPiKP(candidate) : HfHelper::invMassLcToPKPi(candidate);
 
     collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
 
@@ -634,9 +633,9 @@ class CharmHadronBuilder
         int64_t negDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong1, trackProducts, collisionBuilder);
 
         if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
-          this->fillD0Tables(collisionProducts, charmHadronProducts, candidate, candidate.pt(), mHfHelper.invMassD0ToPiK(candidate), posDauIndex, negDauIndex);
+          this->fillD0Tables(collisionProducts, charmHadronProducts, candidate, candidate.pt(), HfHelper::invMassD0ToPiK(candidate), posDauIndex, negDauIndex);
         } else {
-          this->fillD0Tables(collisionProducts, charmHadronProducts, candidate, -candidate.pt(), mHfHelper.invMassD0barToKPi(candidate), posDauIndex, negDauIndex);
+          this->fillD0Tables(collisionProducts, charmHadronProducts, candidate, -candidate.pt(), HfHelper::invMassD0barToKPi(candidate), posDauIndex, negDauIndex);
         }
       }
 
@@ -683,9 +682,9 @@ class CharmHadronBuilder
         int64_t negDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(prong1, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
 
         if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
-          this->fillD0Tables(collisionProducts, charmHadronProducts, candidate, candidate.pt(), mHfHelper.invMassD0ToPiK(candidate), posDauIndex, negDauIndex);
+          this->fillD0Tables(collisionProducts, charmHadronProducts, candidate, candidate.pt(), HfHelper::invMassD0ToPiK(candidate), posDauIndex, negDauIndex);
         } else {
-          this->fillD0Tables(collisionProducts, charmHadronProducts, candidate, -candidate.pt(), mHfHelper.invMassD0barToKPi(candidate), posDauIndex, negDauIndex);
+          this->fillD0Tables(collisionProducts, charmHadronProducts, candidate, -candidate.pt(), HfHelper::invMassD0barToKPi(candidate), posDauIndex, negDauIndex);
         }
         mcBuilder.template fillMcD0WithLabel<system>(candidate, tracks, mcParticles, mcCols, mcProducts);
       }
@@ -711,7 +710,6 @@ class CharmHadronBuilder
 
  private:
   CharmHadronSelection<hadronType, SelectionHistName, FilterHistName> mCharmHadronSelection;
-  HfHelper mHfHelper;
 
   bool mProduceD0s = false;
   bool mProduceD0Masks = false;

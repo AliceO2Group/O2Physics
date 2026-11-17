@@ -133,7 +133,6 @@ struct EmcalCorrectionTask {
   Configurable<bool> useWeightExotic{"useWeightExotic", false, "States if weights should be used for exotic cell cut"};
   Configurable<bool> isMC{"isMC", false, "States if run over MC"};
   Configurable<bool> applyCellTimeCorrection{"applyCellTimeCorrection", true, "apply a correction to the cell time for data and MC: Shift both average cell times to 0 and smear MC time distribution to fit data better. For MC requires isMC to be true"};
-  Configurable<float> trackMinPt{"trackMinPt", 0.3, "Minimum pT for tracks to perform track matching, to reduce computing time. Tracks below a certain pT will be loopers anyway."};
   Configurable<bool> fillQA{"fillQA", false, "Switch to turn on QA histograms."};
   Configurable<bool> useCCDBAlignment{"useCCDBAlignment", false, "EXPERTS ONLY! Switch to use the alignment object stored in CCDB instead of using the default alignment from the global geometry object."};
   Configurable<bool> applyTempCalib{"applyTempCalib", false, "Switch to turn on Temperature calibration."};
@@ -147,6 +146,12 @@ struct EmcalCorrectionTask {
   Configurable<bool> storePerDFInfo{"storePerDFInfo", false, "store addition information per DF."};
   ConfigurableAxis thConfigAxisClusters{"thConfigAxisClusters", {1000, 0.5f, 1000.5f}, ""};
   ConfigurableAxis thConfigAxisCells{"thConfigAxisCells", {1000, 0.5f, 1000.5f}, ""};
+  // Track matching config
+  struct : ConfigurableGroup {
+    std::string prefix = "trackmatching";
+    Configurable<float> trackMinPt{"trackMinPt", 0.3, "Minimum pT (GeV) for tracks to perform track matching, to reduce computing time. Tracks below a certain pT will be loopers anyway."};
+    Configurable<bool> useAllTracks{"useAllTracks", false, "Flag to use all tracks instead of just global tracks."};
+  } trackmatching;
   // cross talk emulation configs
   EmcCrossTalkConf emcCrossTalkConf;
 
@@ -386,7 +391,7 @@ struct EmcalCorrectionTask {
       emcCrossTalk.initObjects(emcCrossTalkConf);
       if (emcCrossTalkConf.createHistograms.value) {
         mHistManager.add<TH1>("hCellEnergyDistBefore", "Cell energy before cross-talk emulation", {o2::framework::HistType::kTH1D, {energyDenseAxis}});
-        mHistManager.add<TH1>("hCellEnergyDistAfter", "Cell energy after cross-talk emulation", {o2::framework::HistType::kTH1D, {energyDenseAxis}});
+        mHistManager.add<TH1>("hCellEnergyDistAfter", "Cell energy after cross-talk emulation and corrections", {o2::framework::HistType::kTH1D, {energyDenseAxis}});
       }
     }
 
@@ -820,19 +825,9 @@ struct EmcalCorrectionTask {
           }
           mHistManager.fill(HIST("hMCParticleEnergy"), cellparticle.e());
         }
-        auto amplitude = cell.amplitude();
-        if (static_cast<bool>(hasShaperCorrection) && emcal::intToChannelType(cell.cellType()) == emcal::ChannelType_t::LOW_GAIN) { // Apply shaper correction to LG cells
-          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
-        }
-        if (mcCellEnergyShift != 1.) {
-          amplitude *= mcCellEnergyShift; // Fine tune the MC cell energy
-        }
-        if (mcCellEnergyResolutionBroadening != 0.) {
-          amplitude *= (1. + normalgaus(rdgen) * mcCellEnergyResolutionBroadening); // Fine tune the MC cell energy resolution
-        }
         cellsBC.emplace_back(cell.cellNumber(),
-                             amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), mRunNumber),
+                             cell.amplitude(),
+                             cell.time(),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
         cellLabels.emplace_back(std::vector<int>{cell.mcParticleIds().begin(), cell.mcParticleIds().end()}, std::vector<float>{cell.amplitudeA().begin(), cell.amplitudeA().end()});
@@ -864,9 +859,18 @@ struct EmcalCorrectionTask {
       } // if (isMC.value && emcCrossTalkConf.enableCrossTalk.value)
       // shaper correction has to come AFTER cross talk
       for (auto& cell : cellsBC) { // o2-linter: disable=const-ref-in-for-loop (we are changing a value here)
-        if (cell.getLowGain()) {
-          cell.setAmplitude(o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(cell.getAmplitude()));
+        auto amplitude = cell.getAmplitude();
+        if (static_cast<bool>(hasShaperCorrection) && cell.getLowGain()) { // Apply shaper correction to LG cells
+          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
         }
+        if (mcCellEnergyShift != 1.) {
+          amplitude *= mcCellEnergyShift; // Fine tune the MC cell energy
+        }
+        if (mcCellEnergyResolutionBroadening != 0.) {
+          amplitude *= (1. + normalgaus(rdgen) * mcCellEnergyResolutionBroadening); // Fine tune the MC cell energy resolution
+        }
+        cell.setAmplitude(amplitude);
+        cell.setTimeStamp(cell.getTimeStamp() + getCellTimeShift(cell.getTower(), amplitude, cell.getType(), mRunNumber));
       }
       LOG(detail) << "Number of cells for BC (CF): " << cellsBC.size();
       nCellsProcessed += cellsBC.size();
@@ -1015,19 +1019,9 @@ struct EmcalCorrectionTask {
           }
           mHistManager.fill(HIST("hMCParticleEnergy"), cellparticle.e());
         }
-        auto amplitude = cell.amplitude();
-        if (static_cast<bool>(hasShaperCorrection) && emcal::intToChannelType(cell.cellType()) == emcal::ChannelType_t::LOW_GAIN) { // Apply shaper correction to LG cells
-          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
-        }
-        if (mcCellEnergyShift != 1.) {
-          amplitude *= mcCellEnergyShift; // Fine tune the MC cell energy
-        }
-        if (mcCellEnergyResolutionBroadening != 0.) {
-          amplitude *= (1. + normalgaus(rdgen) * mcCellEnergyResolutionBroadening); // Fine tune the MC cell energy resolution
-        }
         cellsBC.emplace_back(cell.cellNumber(),
-                             amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), mRunNumber),
+                             cell.amplitude(),
+                             cell.time(),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
         cellLabels.emplace_back(std::vector<int>{cell.mcParticleIds().begin(), cell.mcParticleIds().end()}, std::vector<float>{cell.amplitudeA().begin(), cell.amplitudeA().end()});
@@ -1059,9 +1053,18 @@ struct EmcalCorrectionTask {
       } // if (isMC.value && emcCrossTalkConf.enableCrossTalk.value)
       // shaper correction has to come AFTER cross talk
       for (auto& cell : cellsBC) { // o2-linter: disable=const-ref-in-for-loop (we are changing a value here)
-        if (cell.getLowGain()) {
-          cell.setAmplitude(o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(cell.getAmplitude()));
+        auto amplitude = cell.getAmplitude();
+        if (static_cast<bool>(hasShaperCorrection) && cell.getLowGain()) { // Apply shaper correction to LG cells
+          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
         }
+        if (mcCellEnergyShift != 1.) {
+          amplitude *= mcCellEnergyShift; // Fine tune the MC cell energy
+        }
+        if (mcCellEnergyResolutionBroadening != 0.) {
+          amplitude *= (1. + normalgaus(rdgen) * mcCellEnergyResolutionBroadening); // Fine tune the MC cell energy resolution
+        }
+        cell.setAmplitude(amplitude);
+        cell.setTimeStamp(cell.getTimeStamp() + getCellTimeShift(cell.getTower(), amplitude, cell.getType(), mRunNumber));
       }
       LOG(detail) << "Number of cells for BC (CF): " << cellsBC.size();
       nCellsProcessed += cellsBC.size();
@@ -1494,7 +1497,7 @@ struct EmcalCorrectionTask {
       if (trackEtaEmcal < TrackNotOnEMCal || trackPhiEmcal < TrackNotOnEMCal) {
         continue;
       }
-      if (trackMinPt > 0 && track.pt() < trackMinPt) {
+      if (trackmatching.trackMinPt > 0 && track.pt() < trackmatching.trackMinPt) {
         continue;
       }
       trackPhi.emplace_back(RecoDecay::constrainAngle(trackPhiEmcal));
@@ -1508,7 +1511,7 @@ struct EmcalCorrectionTask {
   void fillTrackInfo(Tracks const& tracks, std::vector<float>& trackPhi, std::vector<float>& trackEta, std::vector<int64_t>& trackGlobalIndex)
   {
     for (const auto& track : tracks) {
-      if (!track.isGlobalTrack()) { // only global tracks
+      if (!trackmatching.useAllTracks && !track.isGlobalTrack()) { // only global tracks depending on trackmatching.useAllTracks flag
         continue;
       }
       // Tracks that do not point to the EMCal/DCal/PHOS get default values of -999
@@ -1516,7 +1519,7 @@ struct EmcalCorrectionTask {
       if (track.trackEtaEmcal() < TrackNotOnEMCal || track.trackPhiEmcal() < TrackNotOnEMCal) {
         continue;
       }
-      if (trackMinPt > 0 && track.pt() < trackMinPt) {
+      if (trackmatching.trackMinPt > 0 && track.pt() < trackmatching.trackMinPt) {
         continue;
       }
       trackPhi.emplace_back(RecoDecay::constrainAngle(track.trackPhiEmcal()));

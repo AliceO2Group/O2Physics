@@ -162,7 +162,7 @@ struct HfTaskCorrelationLcHadrons {
   Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen. cand. rapidity"};
   Configurable<float> ptDaughterMin{"ptDaughterMin", 0.1, "min. daughter pT"};
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable debug histogram"};
-  Configurable<int> nTpcCrossedRaws{"nTpcCrossedRaws", 70, "Number of crossed TPC Rows"};
+  Configurable<int> nTpcCrossedRows{"nTpcCrossedRows", 70, "Number of crossed TPC Rows"};
   Configurable<bool> useCentrality{"useCentrality", false, "Flag for centrality dependent analyses"};
   // sign and invMasss
   Configurable<bool> fillSignAndMass{"fillSignAndMass", false, "flag to select Lc-h corr with Lc invarient mass and sign of pairs"};
@@ -215,12 +215,12 @@ struct HfTaskCorrelationLcHadrons {
   {
     // Axis definition
     AxisSpec axisMassLc = {binsMassLc, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
-    AxisSpec axisPtCorr = {(std::vector<double>)binsPtCorrelations, "#it{p}_{T}^{#Lambda_c} (GeV/#it{c})"};
-    AxisSpec axisPtLc = {(std::vector<double>)binsPtEfficiencyLc, "#it{p}_{T}^{#Lambda_c} (GeV/#it{c})"};
+    AxisSpec axisPtCorr = {std::vector<double>(binsPtCorrelations), "#it{p}_{T}^{#Lambda_c} (GeV/#it{c})"};
+    AxisSpec axisPtLc = {std::vector<double>(binsPtEfficiencyLc), "#it{p}_{T}^{#Lambda_c} (GeV/#it{c})"};
     AxisSpec const axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
     AxisSpec axisDeltaEta = {binsEta, "#it{#eta}^{Hadron}-#it{#eta}^{#Lambda_c}"};
     AxisSpec axisDeltaPhi = {binsPhi, "#it{#varphi}^{Hadron}-#it{#varphi}^{#Lambda_c} (rad)"};
-    AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T}^{Hadron} (GeV/#it{c})"};
+    AxisSpec axisPtHadron = {std::vector<double>(binsPtHadron), "#it{p}_{T}^{Hadron} (GeV/#it{c})"};
     AxisSpec axisPoolBin = {binsPoolBin, "poolBin"};
     AxisSpec axisLcPrompt = {2, -0.5, 1.5, "Prompt #Lambda_c"};
     AxisSpec const axisBdtScore = {binsBdtScore, "Bdt score"};
@@ -431,7 +431,7 @@ struct HfTaskCorrelationLcHadrons {
         "Right SB Low",
         "Right SB Up"};
       static const AxisSpec axisSidebandLimits = {regionLimits, 0.5, 6.5, ""};
-      auto hSigSidebandLimits = registry.add<TH2>("Inputs/hSigSidebandLimits", "Signal and Sideband Limits;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSidebandLimits, {(std::vector<double>)binsPtCorrelations, "#it{p}_{T} (GeV/#it{c})"}}});
+      auto hSigSidebandLimits = registry.add<TH2>("Inputs/hSigSidebandLimits", "Signal and Sideband Limits;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSidebandLimits, {std::vector<double>(binsPtCorrelations), "#it{p}_{T} (GeV/#it{c})"}}});
       for (int iLim = 0; iLim < regionLimits; iLim++) {
         hSigSidebandLimits->GetXaxis()->SetBinLabel(iLim + 1, labels[iLim].data());
       }
@@ -505,7 +505,7 @@ struct HfTaskCorrelationLcHadrons {
       if (bdtScorePrompt < mlOutputPrompt->at(effBinLc) || bdtScoreBkg > mlOutputBkg->at(effBinLc)) {
         continue;
       }
-      if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
+      if (std::abs(trackDcaXY) >= dcaXYTrackMax || std::abs(trackDcaZ) >= dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRows) {
         continue;
       }
 
@@ -673,7 +673,7 @@ struct HfTaskCorrelationLcHadrons {
       if (bdtScorePrompt < mlOutputPrompt->at(effBinLc) || bdtScoreBkg > mlOutputBkg->at(effBinLc)) {
         continue;
       }
-      if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
+      if (std::abs(trackDcaXY) > dcaXYTrackMax || std::abs(trackDcaZ) > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRows) {
         continue;
       }
       double efficiencyWeight = 1.;

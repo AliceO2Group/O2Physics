@@ -58,6 +58,17 @@ using o2::analysis::resonance::ResoAnalysisSelectionCore;
 using o2::analysis::resonance::TrackCuts;
 using o2::analysis::resonance::TrackStage;
 
+// Omega(2012) analysis and ML export share these event-level selection defaults.
+// Keep the generic EventCuts defaults unchanged for other resonance tasks.
+inline EventCuts makeOmega2012EventCuts()
+{
+  EventCuts cuts;
+  cuts.cRecoINELgt0.value = true;
+  cuts.cMCINELgt0.value = true;
+  cuts.cMCVtxIn10.value = true;
+  return cuts;
+}
+
 enum class DecayMode : uint8_t {
   XiK0s = 0,  // Omega(2012)- -> Xi- K0S
   Xi1530K = 1 // Omega(2012)- -> Xi(1530)0 K- -> Xi- pi+ K-
@@ -932,11 +943,12 @@ class Omega2012AnalysisCore
     }
   }
 
-  // Generated Omega(2012) parents of a selected reconstructed MC collision (ResoMCParents_001). The optional callback
-  // receives (parent, immediate channel) for the parents inside the rapidity window. Split reconstructed collisions
-  // repeat parent sets: this is not an unconditional generated denominator.
+  // Generated Omega(2012) parents of a selected reconstructed MC collision (ResoMCParents_001). The caller supplies
+  // the denominator rapidity limit so it can remain independent of a wider candidate-export window. The optional
+  // callback receives (parent, immediate channel) for the parents inside that rapidity window. Split reconstructed
+  // collisions repeat parent sets: this is not an unconditional generated denominator.
   template <typename ParentsType, typename Callback = std::nullptr_t>
-  void forEachGeneratedOmega2012(o2::framework::HistogramRegistry& histos, const ParentsType& resoParents, Callback callback = nullptr)
+  void forEachGeneratedOmega2012(o2::framework::HistogramRegistry& histos, const ParentsType& resoParents, float rapidityMax, Callback callback = nullptr)
   {
     for (const auto& part : resoParents) {
       if (std::abs(part.pdgCode()) != o2::constants::physics::Pdg::kOmega2012Minus) {
@@ -944,7 +956,7 @@ class Omega2012AnalysisCore
       }
       const GeneratedChannel channel = classifyGeneratedOmega2012(part.pdgCode(), part.daughterPDG1(), part.daughterPDG2());
       histos.fill(HIST("CutFlow/generated"), 0, static_cast<int>(channel));
-      if (!(std::abs(part.y()) < mCandidateCuts.cfgRapidityCut.value)) {
+      if (!(std::abs(part.y()) < rapidityMax)) {
         continue;
       }
       histos.fill(HIST("CutFlow/generated"), 1, static_cast<int>(channel));

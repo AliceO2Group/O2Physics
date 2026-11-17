@@ -254,7 +254,7 @@ struct JetCorrelationD0 {
   }
   void init(InitContext const&)
   {
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
     // General Axes
     AxisSpec axisEta = {100, -1.0, 1.0, "#eta"};
     AxisSpec axisPhi = {100, 0.0, o2::constants::math::TwoPI, "#phi"};

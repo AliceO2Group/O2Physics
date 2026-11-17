@@ -113,7 +113,7 @@ struct FemtoDreamPairCascadeCascade {
   } Cascade1;
 
   /// Partition for particle 1
-  Partition<FDParticles> partitionCascade1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kCascade)) &&
+  Partition<FDParticles> partitionCascade1 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kCascade)) &&
                                              ((aod::femtodreamparticle::cut & Cascade1.cutBit) == Cascade1.cutBit) &&
                                              (aod::femtodreamparticle::pt > Cascade1.ptMin) &&
                                              (aod::femtodreamparticle::pt < Cascade1.ptMax) &&
@@ -153,7 +153,7 @@ struct FemtoDreamPairCascadeCascade {
   } Cascade2;
 
   /// Partition for particle 2
-  Partition<FDParticles> partitionCascade2 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kCascade)) &&
+  Partition<FDParticles> partitionCascade2 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kCascade)) &&
                                              ((aod::femtodreamparticle::cut & Cascade2.cutBit) == Cascade2.cutBit) &&
                                              (aod::femtodreamparticle::pt > Cascade2.ptMin) &&
                                              (aod::femtodreamparticle::pt < Cascade2.ptMax) &&

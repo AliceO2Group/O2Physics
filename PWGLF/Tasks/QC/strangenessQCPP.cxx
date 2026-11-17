@@ -94,7 +94,7 @@ struct strangenessQCPP {
   ConfigurableAxis binCosPA{"binCosPA", {200, 0.8f, 1.0f}, ""};
   ConfigurableAxis binEtaSmall{"binEtaSmall", {2, -1.0f, 1.0f}, ""};
   ConfigurableAxis binEta{"binEta", {100, -1.0f, 1.0f}, ""};
-  ConfigurableAxis binPhi{"binPhi", {(int)TMath::Pi() * 10 / 2, 0.0f, 2. * TMath::Pi()}, ""};
+  ConfigurableAxis binPhi{"binPhi", {static_cast<int>(TMath::Pi()) * 10 / 2, 0.0f, 2. * TMath::Pi()}, ""};
   ConfigurableAxis binRadius{"binRadius", {100, 0.0f, 50.0f}, ""};
   ConfigurableAxis binRadiussmall{"binRadiussmall", {30, 0.0f, 30.0f}, ""};
   ConfigurableAxis binITSMapDaughters{"binITSMapDaughters", {8, -0.5f, 7.5f}, ""};

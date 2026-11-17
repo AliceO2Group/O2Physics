@@ -67,7 +67,10 @@ enum MyRecoProblem {
   TOO_MANY_DAUGHTERS = 2, // more than 6 daughters from 2 taus
   TWO_TRACKS = 3,         // more than 1 associated track to MC particle (tau daughter)
   NO_TRACK = 4,           // No associated track to MC particle (tau daughter)
-  MIXED_TRACKS = 5        // 4 (or 6) tracks reconstructed but from 2 collisions
+  MIXED_TRACKS = 5,       // 4 (or 6) tracks reconstructed but from 2 collisions
+  BAD_GAP = 6,            // rapidity gap out of range 0-2
+  GAP_NE_2 = 7,           // rapidity gap != 2
+  FIT_VETO = 8            // FIT not empty (with thresholds)
 };
 
 enum MyParticle {
@@ -185,7 +188,7 @@ struct TauThreeProngEventTableProducer {
   //  Configurable<float> maxNsigmaPrVetocut{"maxNsigmaPrVetocut", 3., "max Nsigma for Proton veto cut"};
   //  Configurable<float> maxNsigmaKaVetocut{"maxNsigmaKaVetocut", 3., "max Nsigma for Kaon veto cut"};
   //  Configurable<float> minPtEtrkcut{"minPtEtrkcut", 0.25, "min Pt for El track cut"};
-  Configurable<float> minTrkPtcut{"minTrkPtcut", 0.1, "min Pt for each charged track cut, default=100MeV/c"};
+  Configurable<float> minTrkPtcut{"minTrkPtcut", 0.10, "min Pt for each charged track cut, default=100MeV/c"};
   Configurable<int> nPVtrackscut{"nPVtrackscut", 4, "number of PV contributors, default=4"};
   Configurable<bool> mFITvetoFlag{"mFITvetoFlag", true, "To apply FIT veto"};
   Configurable<int> mFITvetoWindow{"mFITvetoWindow", 2, "FIT veto window"};
@@ -219,7 +222,7 @@ struct TauThreeProngEventTableProducer {
   ////using FullSGUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDZdcsReduced>;
   ////using FullSGUDCollision = FullSGUDCollisions::iterator;
   using FullMCUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags, aod::UDMcTrackLabels>;
-  using FullMCSGUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDMcCollsLabels>;
+  using FullMCSGUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDMcCollsLabels, aod::UDZdcsReduced>;
   // using FullMCSGUDCollision = FullMCSGUDCollisions::iterator;
 
   // init
@@ -257,9 +260,6 @@ struct TauThreeProngEventTableProducer {
 
       registrySkim.add("skim/gapSide", ";Gap;events", {HistType::kTH1D, {{10, -1., 9.}}});
       registrySkim.add("skim/trueGapSide", ";TrueGap;events", {HistType::kTH1D, {{10, -1., 9.}}});
-      registrySkim.add("skim/etaTrk", ";#eta^{trk};events", {HistType::kTH1F, {{100, -1.5, 1.5}}});
-      registrySkim.add("skim/ptTrk", ";p_{T}^{trk};events", {HistType::kTH1F, {{100, 0., 5.}}});
-      registrySkim.add("skim/phiTrk", ";#phi^{trk};events", {HistType::kTH1F, {{128, -3.2, 3.2}}});
       registrySkim.add("skim/nTof", ";N_{TOFtrk};events", {HistType::kTH1F, {{10, -1., 9.}}});
     }
     if (doprocessMonteCarlo) {
@@ -295,6 +295,23 @@ struct TauThreeProngEventTableProducer {
       registrySkim.add("skim/daughterEtaMC", ";#eta^{daughter};events", {HistType::kTH1F, {{100, -4., 4.}}});
       registrySkim.add("skim/daughterPtMC", ";p_{T}^{daughter};events", {HistType::kTH1F, {{100, 0, 5.0}}});
     }
+    // common histos for doprocessDoSkim and doprocessMonteCarlo
+    if (doprocessDoSkim || doprocessMonteCarlo) {
+      registrySkim.add("rec/zvertex_SGP", ";#it{V}_{z};events", {HistType::kTH1D, {{100, -15., 15.}}});
+      registrySkim.add("rec/nPVtrack_SGP", ";#it{N}_{PVtrack};events", {HistType::kTH1D, {{100, 0., 100.}}});
+      registrySkim.add("rec/qtot_SGP", ";#it{Q}_{tot};events", {HistType::kTH1D, {{30, -15., 15.}}});
+      // registrySkim.add("skim/etaTrk", ";#eta^{trk};events", {HistType::kTH1F, {{100, -1.5, 1.5}}});
+      // registrySkim.add("skim/ptTrk", ";p_{T}^{trk};events", {HistType::kTH1F, {{100, 0., 5.}}});
+      // registrySkim.add("skim/phiTrk", ";#phi^{trk};events", {HistType::kTH1F, {{128, -3.2, 3.2}}});
+      registrySkim.add("rec/phiPVtrack_SGP", ";#phi^{PVtrack};events", {HistType::kTH1F, {{128, -3.2, 3.2}}});
+      registrySkim.add("rec/etaPVtrack_SGP", ";#eta^{PVtrack};events", {HistType::kTH1F, {{100, -1.5, 1.5}}});
+      registrySkim.add("rec/ptPVtrack_SGP", ";#it{p}_{T}^{PVtrack};events", {HistType::kTH1F, {{100, 0, 5.0}}});
+      registrySkim.add("rec/nTOFtrack_SGP", ";#it{N}_{TOFtrack};events", {HistType::kTH1F, {{50, 0, 50}}});
+      registrySkim.add("rec/FT0A_SGP", ";#it{E}_{FT0A};events", {HistType::kTH1F, {{100, 0, 500}}});
+      registrySkim.add("rec/FT0C_SGP", ";#it{E}_{FT0C};events", {HistType::kTH1F, {{100, 0, 500}}});
+      registrySkim.add("rec/FV0A_SGP", ";#it{E}_{FV0A};events", {HistType::kTH1F, {{100, 0, 500}}});
+    }
+
     if (doprocessGenerated) {
       registrySkim.add("gen/efficiencyMC", ";efficiency;events", {HistType::kTH1D, {{16, -1., 15.}}});
       registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(1, "All");
@@ -755,44 +772,19 @@ struct TauThreeProngEventTableProducer {
 
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(0., 1.);
 
-    int gapSide = dgcand.gapSide();
-    registrySkim.get<TH1>(HIST("skim/gapSide"))->Fill(gapSide);
-    //    if (gapSide < 0 || gapSide > 2)
-    if (gapSide < o2::aod::sgselector::SingleGapA || gapSide > o2::aod::sgselector::DoubleGap)
-      return;
-    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(1., 1.);
-
-    int truegapSide = sgSelector.trueGap(dgcand, cutFV0, cutFT0A, cutFT0C, cutZDC);
-    gapSide = truegapSide;
-    registrySkim.get<TH1>(HIST("skim/trueGapSide"))->Fill(gapSide);
-    if (gapSide != mGapSide)
-      return;
-    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(2., 1.);
-
-    // zdc information
-    float energyZNA = dgcand.energyCommonZNA();
-    float energyZNC = dgcand.energyCommonZNC();
-    if (energyZNA < 0)
-      energyZNA = -1.;
-    if (energyZNC < 0)
-      energyZNC = -1.;
-    float timeZNA = dgcand.timeZNA();
-    float timeZNC = dgcand.timeZNC();
-
+    // set up PV track features
     int nTofTrk = 0;
     int nEtaIn15 = 0;
     int npT100 = 0;
-    // //   int qtot = 0;
-    // int8_t qtot = 0;
-    // TLorentzVector p;
+    int qtot = 0;
     ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p;
     for (const auto& trk : PVContributors) {
-      // qtot += trk.sign();
+      qtot += trk.sign();
       // p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
       p.SetXYZT(trk.px(), trk.py(), trk.pz(), RecoDecay::e(trk.px(), trk.py(), trk.pz(), MassPiPlus));
-      registrySkim.get<TH1>(HIST("skim/etaTrk"))->Fill(p.Eta());
-      registrySkim.get<TH1>(HIST("skim/ptTrk"))->Fill(trk.pt());
-      registrySkim.get<TH1>(HIST("skim/phiTrk"))->Fill(p.Phi());
+      registrySkim.get<TH1>(HIST("rec/etaPVtrack_SGP"))->Fill(p.Eta());
+      registrySkim.get<TH1>(HIST("rec/ptPVtrack_SGP"))->Fill(trk.pt());
+      registrySkim.get<TH1>(HIST("rec/phiPVtrack_SGP"))->Fill(p.Phi());
 
       if (std::abs(p.Eta()) < trkEtacut)
         nEtaIn15++;               // 0.9 is a default
@@ -802,7 +794,38 @@ struct TauThreeProngEventTableProducer {
         nTofTrk++;
     } // end of loop over PV tracks
 
+    //
+    // plots after Single Gap producer without any further cuts
+    //
+    registrySkim.get<TH1>(HIST("rec/zvertex_SGP"))->Fill(dgcand.posZ());
+    registrySkim.get<TH1>(HIST("rec/nPVtrack_SGP"))->Fill(PVContributors.size());
+    registrySkim.get<TH1>(HIST("rec/qtot_SGP"))->Fill(qtot);
+    registrySkim.get<TH1>(HIST("rec/nTOFtrack_SGP"))->Fill(nTofTrk);
+    registrySkim.get<TH1>(HIST("rec/FT0A_SGP"))->Fill(dgcand.totalFT0AmplitudeA());
+    registrySkim.get<TH1>(HIST("rec/FT0C_SGP"))->Fill(dgcand.totalFT0AmplitudeC());
+    registrySkim.get<TH1>(HIST("rec/FV0A_SGP"))->Fill(dgcand.totalFV0AmplitudeA());
+    //
+    // end of plots after Single Gap producer
+    //
+
+    // check number of PV tracks
     if (PVContributors.size() != nPVtrackscut) // 4 or 6
+      return;
+    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(1., 1.);
+
+    // check gap side
+    int gapSide = dgcand.gapSide();
+    registrySkim.get<TH1>(HIST("skim/gapSide"))->Fill(gapSide);
+    //    if (gapSide < 0 || gapSide > 2)
+    if (gapSide < o2::aod::sgselector::SingleGapA || gapSide > o2::aod::sgselector::DoubleGap)
+      return;
+    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(2., 1.);
+
+    // check true gap side
+    int truegapSide = sgSelector.trueGap(dgcand, cutFV0, cutFT0A, cutFT0C, cutZDC);
+    gapSide = truegapSide;
+    registrySkim.get<TH1>(HIST("skim/trueGapSide"))->Fill(gapSide);
+    if (gapSide != mGapSide)
       return;
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(3., 1.);
 
@@ -842,6 +865,16 @@ struct TauThreeProngEventTableProducer {
     if (mFITvetoFlag && flagFITveto)
       return;
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(7., 1.);
+
+    // zdc information
+    float energyZNA = dgcand.energyCommonZNA();
+    float energyZNC = dgcand.energyCommonZNC();
+    if (energyZNA < 0)
+      energyZNA = -1.;
+    if (energyZNC < 0)
+      energyZNC = -1.;
+    float timeZNA = dgcand.timeZNA();
+    float timeZNC = dgcand.timeZNC();
 
     // RCT variable
     int rct = 0;
@@ -1136,6 +1169,11 @@ struct TauThreeProngEventTableProducer {
     if (verbose)
       LOGF(info, "<MC> UDMcCollision size %d, Collisions size %d, UDtracks %d, UDMcParticles %d", mcCollisions.size(), collisions.size(), tracks.size(), mcParticles.size());
 
+    // temporary variables needed for reconstruction
+    int gapSide = -10;
+    int truegapSide = -10;
+    bool isFITveto = false;
+
     // temporary variables
     //    float tmpRapidity = -999.;
     float trueTauRapidity[2] = {-999., -999.};
@@ -1388,7 +1426,9 @@ struct TauThreeProngEventTableProducer {
       float trueDaugZ[6] = {-998., -998., -998., -998., -998., -998.};
       int trueDaugPdgCode[6] = {-999, -999, -999, -999, -999, -999};
 
-      MyRecoProblem problem = NO_PROBLEM;
+      bool problemBits[8] = {false, false, false, false, false, false, false, false};
+      uint8_t problemBitsFlag = 0;
+      // MyRecoProblem problem = NO_PROBLEM;
       registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(NO_PROBLEM);
 
       // tau tau event type
@@ -1445,7 +1485,8 @@ struct TauThreeProngEventTableProducer {
           // LOGF(info, "Truth collision has more than 1 reco collision. Skipping this event.");
           //  histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(1);
           //   problem = true;
-          problem = MANY_RECO;
+          problemBits[MANY_RECO - 1] = true;
+          // problem = MANY_RECO;
           registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(MANY_RECO);
           // continue;
         } else {
@@ -1453,12 +1494,77 @@ struct TauThreeProngEventTableProducer {
             LOGF(info, "---- Truth collision has 1 reco collision. Record event.");
         }
 
+        // To fill bcFlags and problemFlags
+        const int offset = 1;
+
         // grab reco-level collision
         for (const auto& collFromMcColl : collFromMcColls) {
           if (verbose) {
             LOGF(info, "---- ###### Collision %d #########", collFromMcColl.index());
             LOGF(info, "---- Coll GID %d, Vertex (%f,%f,%f)", collFromMcColl.globalIndex(), collFromMcColl.posX(), collFromMcColl.posY(), collFromMcColl.posZ());
           }
+
+          //
+          // part neede to mimic reconstruction selection criteria
+          //
+          gapSide = collFromMcColl.gapSide();
+          // registrySkim.get<TH1>(HIST("skim/gapSide"))->Fill(gapSide);
+          if (gapSide < o2::aod::sgselector::SingleGapA || gapSide > o2::aod::sgselector::DoubleGap) { //    if (gapSide < 0 || gapSide > 2)
+            problemBits[BAD_GAP - 1] = true;
+          }
+          //  return;
+          // registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(1., 1.);
+
+          truegapSide = sgSelector.trueGap(collFromMcColl, cutFV0, cutFT0A, cutFT0C, cutZDC);
+          gapSide = truegapSide;
+          // registrySkim.get<TH1>(HIST("skim/trueGapSide"))->Fill(gapSide);
+          if (gapSide != mGapSide) {
+            problemBits[GAP_NE_2 - 1] = true;
+          }
+          //  return;
+          // registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(2., 1.);
+
+          // n PV contributors
+          // if (PVContributors.size() != nPVtrackscut) // 4 or 6
+          // return;
+          // if (nEtaIn15 != nPVtrackscut) // 4 or 6
+          //      return;
+          //    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(4., 1.);
+          //
+          //    if (npT100 != nPVtrackscut) // 4 or 6
+          //      return;
+          //    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(5., 1.);
+          //
+          //    registrySkim.get<TH1>(HIST("skim/nTof"))->Fill(nTofTrk);
+          //    if (nTofTrk < nTofTrkMinCut)
+          //      return;
+          //    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(6., 1.);
+
+          //
+          // FIT informaton
+          //
+          auto bitMin = 16 - mFITvetoWindow; // default is +- 2 bc (2 bit)
+          auto bitMax = 16 + mFITvetoWindow;
+          isFITveto = false;
+          // check FIT information
+          for (auto bit = bitMin; bit <= bitMax; bit++) {
+            if (TESTBIT(collFromMcColl.bbFT0Apf(), bit))
+              isFITveto = true;
+            if (TESTBIT(collFromMcColl.bbFT0Cpf(), bit))
+              isFITveto = true;
+            if (useFV0ForVeto && TESTBIT(collFromMcColl.bbFV0Apf(), bit))
+              isFITveto = true;
+            if (useFDDAForVeto && TESTBIT(collFromMcColl.bbFDDApf(), bit))
+              isFITveto = true;
+            if (useFDDCForVeto && TESTBIT(collFromMcColl.bbFDDCpf(), bit))
+              isFITveto = true;
+          } // end of loop over FIT bits
+          if (mFITvetoFlag && isFITveto) {
+            problemBits[FIT_VETO - 1] = true;
+          }
+          //      return;
+          //    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(7., 1.);
+
           // auto const& collFromMcColl = collFromMcColls.iteratorAt(0);
           //  grab tracks from the reco-level collision to get info to match measured data tables (processDataSG function)
           auto const& trksFromColl = tracks.sliceBy(trackPerCollision, collFromMcColl.globalIndex());
@@ -1498,7 +1604,7 @@ struct TauThreeProngEventTableProducer {
           bcSels[6] = collFromMcColl.zVtxFT0vPV();
           bcSels[7] = collFromMcColl.vtxITSTPC();
 
-          const int offset = 1;
+          // const int offset = 1;
           bcSelBits = bcSels[0]; // initialization
           for (int ibit = 1; ibit < nBitsMax; ibit++) {
             bcSelBits = (bcSelBits << offset); // shift by 1 position towards left
@@ -1518,6 +1624,20 @@ struct TauThreeProngEventTableProducer {
           // timesFIT[0] = collFromMcColl.timeFT0A();
           // timesFIT[1] = collFromMcColl.timeFT0C();
           // timesFIT[2] = collFromMcColl.timeFV0A();
+
+          //
+          // plots after Single Gap producer without any further cuts
+          //
+          registrySkim.get<TH1>(HIST("rec/zvertex_SGP"))->Fill(zVertex);
+          registrySkim.get<TH1>(HIST("rec/nPVtrack_SGP"))->Fill(nPVcontrib);
+          // registrySkim.get<TH1>(HIST("rec/qtot_SGP"))->Fill(qtot);
+          // registrySkim.get<TH1>(HIST("rec/nTOFtrack_SGP"))->Fill(nTofTrk);
+          registrySkim.get<TH1>(HIST("rec/FT0A_SG"))->Fill(amplitudesFIT[0]);
+          registrySkim.get<TH1>(HIST("rec/FT0C_SGP"))->Fill(amplitudesFIT[1]);
+          registrySkim.get<TH1>(HIST("rec/FV0A_SGP"))->Fill(amplitudesFIT[2]);
+          //
+          // end of plots after Single Gap producer
+          //
 
           // get particles associated to generated collision
           auto const& partsFromMcColl = mcParticles.sliceBy(partPerMcCollision, mccoll.globalIndex());
@@ -1556,7 +1676,9 @@ struct TauThreeProngEventTableProducer {
                   LOGF(info, "------ Truth collision has more than 6 charged daughters from 2 taus. Breaking the daughter loop.");
                 //               histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(3);
                 //               problem = true;
-                problem = TOO_MANY_DAUGHTERS;
+
+                problemBits[TOO_MANY_DAUGHTERS - 1] = true;
+                // problem = TOO_MANY_DAUGHTERS;
                 registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(TOO_MANY_DAUGHTERS);
 
                 break;
@@ -1602,7 +1724,9 @@ struct TauThreeProngEventTableProducer {
                 if (counter > 1) {
                   if (verbose)
                     LOGF(info, "------ Daughter has more than 1 associated track. Ntracks = %d. Skipping this daughter.", counter);
-                  problem = TWO_TRACKS;
+
+                  problemBits[TWO_TRACKS - 1] = true;
+                  // problem = TWO_TRACKS;
                   registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(TWO_TRACKS);
                   continue;
                 }
@@ -1610,7 +1734,8 @@ struct TauThreeProngEventTableProducer {
                 // what if no track is associated to mc particle???
                 if (verbose)
                   LOGF(info, "----- Daughter has no associated track. Ntracks = %d. Skipping this daughter.", tracksFromDaughter.size());
-                problem = NO_TRACK;
+                problemBits[NO_TRACK - 1] = true;
+                // problem = NO_TRACK;
                 registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(NO_TRACK);
                 continue;
               }
@@ -1659,6 +1784,13 @@ struct TauThreeProngEventTableProducer {
           } // end of loop over MC particles
         } // end of loop over collisions associated to MC collision
 
+        // set up problem bits
+        problemBitsFlag = static_cast<uint8_t>(problemBits[0]); // initialization
+        for (int ibit = 1; ibit < nBitsMax; ibit++) {
+          problemBitsFlag = (problemBitsFlag << offset);              // shift by 1 position towards left
+          problemBitsFlag += static_cast<uint8_t>(problemBits[ibit]); // add next bit to the pool
+        }
+
         // decide the channel and set the variable.
         trueChannel = trueChannel + countPi0 * 10 + zerothTau * 100;
 
@@ -1695,7 +1827,7 @@ struct TauThreeProngEventTableProducer {
                             mccoll.posZ(),
                             // trueTauX, trueTauY, trueTauZ,
                             trueDaugX, trueDaugY, trueDaugZ,
-                            trueDaugPdgCode, problem);
+                            trueDaugPdgCode, problemBitsFlag);
         } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == sixTracks) { // 6
           trueTauSixTracks(runNumber,
                            bc, // is it necessary
@@ -1727,7 +1859,7 @@ struct TauThreeProngEventTableProducer {
                            mccoll.posZ(),
                            // trueTauX, trueTauY, trueTauZ,
                            trueDaugX, trueDaugY, trueDaugZ,
-                           trueDaugPdgCode, problem);
+                           trueDaugPdgCode, problemBitsFlag);
         } // end of saving the output
 
       } else { // get only the truth information. The reco-level info is left on default

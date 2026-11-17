@@ -311,6 +311,8 @@ struct UpcVmRof {
   Configurable<float> maxTrkDcaZ{"maxTrkDcaZ", 2.0, "max DCA in z of track to vtx (cm)"};
   Configurable<int> tfPerBin{"tfPerBin", 10000, "timeframes per bin 1e4 means some 28 s"};
   Configurable<int> genId{"genId", -1, "generator ID; -1 = no filter"};
+  Configurable<bool> requireVtxItsTpc{"requireVtxItsTpc", false, "require kIsVertexITSTPC"};
+  Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", false, "require kNoSameBunchPileup"};
 
   //--------------------------------------------------------------------------------
   // get ITS ROF info
@@ -320,7 +322,7 @@ struct UpcVmRof {
     auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", sor);
     rofShift = alppar->roFrameBiasInBC;
     rofLength = alppar->roFrameLengthInBC;
-    rofPerOrbit = static_cast<int>(o2::constants::lhc::LHCMaxBunches / rofLength);
+    rofPerOrbit = (o2::constants::lhc::LHCMaxBunches / rofLength);
   }
 
   //--------------------------------------------------------------------------------
@@ -492,11 +494,11 @@ struct UpcVmRof {
       return false;
     }
     colTH1Pointers[Form("col/%d/colSel_H", run)]->Fill(3);
-    if (!col.selection_bit(aod::evsel::kIsVertexITSTPC)) {
+    if (requireVtxItsTpc && !col.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
     colTH1Pointers[Form("col/%d/colSel_H", run)]->Fill(4);
-    if (!col.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+    if (requireNoSameBunchPileup && !col.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     colTH1Pointers[Form("col/%d/colSel_H", run)]->Fill(5);

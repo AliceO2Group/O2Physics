@@ -122,7 +122,7 @@ struct FlowZdcTask {
   using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, o2::aod::CentFT0Cs, aod::TPCMults, o2::aod::BarrelMults, aod::FT0MultZeqs>;
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
-  Partition<AodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Partition<AodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > static_cast<uint8_t>(0));
   using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using TracksSel = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCovIU, aod::TrackSelection, aod::TracksDCA>;
   using CollisionDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms>;
@@ -220,8 +220,6 @@ struct FlowZdcTask {
       histos.add("ZNAVsFT0M", ";T0A+T0C (#times 1/100);ZNA Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZNCVsFT0C", ";T0C (#times 1/100);ZNC Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZNCVsFT0M", ";T0A+T0C (#times 1/100);ZNC Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZn}}});
-      histos.add("ZPAZNAVsFT0M", ";T0A+T0C (#times 1/100);ZPA Amplitude;ZNA Amplitude;", kTH3F, {{{nBinsAmpFT0M, 0., maxAmpFT0M}, {nBinsZP, -0.5, maxZp}, {nBinsZN, -0.5, maxZn}}});
-      histos.add("ZPCZNCVsFT0M", ";T0A+T0C (#times 1/100);ZPC Amplitude;ZNC Amplitude;", kTH3F, {{{nBinsAmpFT0M, 0., maxAmpFT0M}, {nBinsZP, -0.5, maxZp}, {nBinsZN, -0.5, maxZn}}});
       histos.add("ZPAVsFT0C", ";T0C (#times 1/100);ZPA Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("ZPAVsFT0M", ";T0A+T0C (#times 1/100);ZPA Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("ZPCVsFT0C", ";T0C (#times 1/100);ZPC Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZp}}});

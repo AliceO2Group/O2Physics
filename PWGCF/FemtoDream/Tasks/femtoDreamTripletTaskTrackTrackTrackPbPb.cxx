@@ -93,7 +93,7 @@ struct femtoDreamTripletTaskTrackTrackTrackPbPb {
   Configurable<o2::aod::femtodreamparticle::cutContainerType> ConfCutPart{"ConfCutPart", 5542474, "Track - Selection bit from cutCulator"};
 
   /// Partition for selected particles
-  Partition<aod::FDParticles> SelectedParts = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+  Partition<aod::FDParticles> SelectedParts = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                               ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfPIDthrMom, ncheckbit(aod::femtodreamparticle::pidcut, ConfTPCPIDBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTPCTOFPIDBit)) &&
                                               (ncheckbit(aod::femtodreamparticle::cut, ConfCutPart)) &&
                                               (aod::femtodreamparticle::pt < ConfMaxpT) &&
@@ -103,7 +103,7 @@ struct femtoDreamTripletTaskTrackTrackTrackPbPb {
                                                       (aod::femtodreamparticle::tempFitVar <= ConfMaxDCAxy)));
   ;
 
-  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> SelectedPartsMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> SelectedPartsMC = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                                             ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfPIDthrMom, ncheckbit(aod::femtodreamparticle::pidcut, ConfTPCPIDBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTPCTOFPIDBit)) &&
                                                                             (ncheckbit(aod::femtodreamparticle::cut, ConfCutPart)) &&
                                                                             (aod::femtodreamparticle::pt < ConfMaxpT) &&

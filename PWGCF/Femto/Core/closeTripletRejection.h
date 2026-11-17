@@ -17,6 +17,7 @@
 #define PWGCF_FEMTO_CORE_CLOSETRIPLETREJECTION_H_
 
 #include "PWGCF/Femto/Core/closePairRejection.h"
+#include "PWGCF/Femto/Core/modes.h"
 
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -31,11 +32,12 @@ constexpr const char PrefixCtrTrackTrackV0[] = "CtrTrackTrackV0";
 constexpr const char PrefixCtrTrackTrackCascade[] = "CtrTrackTrackCascade";
 constexpr const char PrefixCtrMcParticleMcParticleMcParticle[] = "CtrMcParticleMcParticleMcParticle";
 
-using ConfCtrTrackTrackTrack = closepairrejection::ConfCpr<PrefixCtrTrackTrackTrack>;
-using ConfCtrTrackTrackV0 = closepairrejection::ConfCpr<PrefixCtrTrackTrackV0>;
-using ConfCtrTrackTrackCascade = closepairrejection::ConfCpr<PrefixCtrTrackTrackCascade>;
+// Q3 (not kstar) is the natural kinematic variable for triplets, so it is the default here
+using ConfCtrTrackTrackTrack = closepairrejection::ConfCpr<PrefixCtrTrackTrackTrack, true, modes::KinematicVariable::kQ3>;
+using ConfCtrTrackTrackV0 = closepairrejection::ConfCpr<PrefixCtrTrackTrackV0, true, modes::KinematicVariable::kQ3>;
+using ConfCtrTrackTrackCascade = closepairrejection::ConfCpr<PrefixCtrTrackTrackCascade, true, modes::KinematicVariable::kQ3>;
 // generated particles, no cut by default (close triplet rejection corrects a detector effect)
-using ConfCtrMcParticleMcParticleMcParticle = closepairrejection::ConfCpr<PrefixCtrMcParticleMcParticleMcParticle, false>;
+using ConfCtrMcParticleMcParticleMcParticle = closepairrejection::ConfCpr<PrefixCtrMcParticleMcParticleMcParticle, false, modes::KinematicVariable::kQ3>;
 
 // directory names
 constexpr char PrefixTrack1Track2Se[] = "CPR_Track1Track2/SE/";
@@ -81,10 +83,10 @@ class CloseTripletRejectionTrackTrackTrack
   CloseTripletRejectionTrackTrackTrack() = default;
   ~CloseTripletRejectionTrackTrackTrack() = default;
 
-  template <typename T>
+  template <typename T1>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
-            T const& confCpr,
+            T1 const& confCpr,
             int absChargeTrack1,
             int absChargeTrack2,
             int absChargeTrack3)
@@ -128,10 +130,10 @@ class CloseTripletRejectionTrackTrackV0
   CloseTripletRejectionTrackTrackV0() = default;
   ~CloseTripletRejectionTrackTrackV0() = default;
 
-  template <typename T>
+  template <typename T1>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
-            T const& confCpr,
+            T1 const& confCpr,
             int absChargeTrack1,
             int absChargeTrack2)
   {
@@ -225,10 +227,10 @@ class CloseTripletRejectionMcParticleMcParticleMcParticle
   CloseTripletRejectionMcParticleMcParticleMcParticle() = default;
   ~CloseTripletRejectionMcParticleMcParticleMcParticle() = default;
 
-  template <typename T>
+  template <typename T1>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
-            T const& confCpr)
+            T1 const& confCpr)
   {
     mCtr12.init(registry, specs, confCpr);
     mCtr23.init(registry, specs, confCpr);

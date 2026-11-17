@@ -426,6 +426,7 @@ struct HfCandidateSigmac0plusplusMc {
   using LambdacMc = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
   using McParticlesLcGenMatch = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>; // including response of particle matching to MC from candidate-creator-3-prong
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>;
+  using McCollisionsWMult = soa::Join<aod::McCollisions, aod::MultsExtraMC>;
 
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
@@ -478,7 +479,7 @@ struct HfCandidateSigmac0plusplusMc {
                  aod::TracksWMc const& tracks,
                  LambdacMc const& candsLc,
                  McCollisionsNoCents const& collInfos,
-                 aod::McCollisions const&,
+                 McCollisionsWMult const&,
                  BCsInfo const&)
   {
 
@@ -589,7 +590,7 @@ struct HfCandidateSigmac0plusplusMc {
 
       /// MC ev. selection done w/o centrality estimator
       /// In case of need, readapt the code templetizing the function
-      auto mcCollision = particle.mcCollision();
+      auto mcCollision = particle.mcCollision_as<McCollisionsWMult>();
       float centrality{-1.f};
       const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
       const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centrality);
