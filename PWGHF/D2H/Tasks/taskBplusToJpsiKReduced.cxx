@@ -117,6 +117,7 @@ DECLARE_SOA_COLUMN(ImpactParameterProductJpsi, impactParameterProductJpsi, float
 DECLARE_SOA_COLUMN(ImpactParameterJpsiDauPos, impactParameterJpsiDauPos, float);     //! Impact parameter of Jpsi daughter candidate
 DECLARE_SOA_COLUMN(ImpactParameterJpsiDauNeg, impactParameterJpsiDauNeg, float);     //! Impact parameter of Jpsi daughter candidate
 DECLARE_SOA_COLUMN(ImpactParameterLfTrack0, impactParameterLfTrack0, float);         //! Impact parameter of Phi daughter candidate
+DECLARE_SOA_COLUMN(AbsCos3MuKBpToMuMuK, absCos3MuKBpToMuMuK, float);                 //! Absolute value of the cosine of the angle between one of the muons and the kaon in the J/Psi rest frame
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                                                 //! Cosine pointing angle of candidate
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                             //! Cosine pointing angle of candidate in transverse plane
 DECLARE_SOA_COLUMN(CpaJpsi, cpaJpsi, float);                                         //! Cosine pointing angle of Jpsi daughter candidate
@@ -144,6 +145,7 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_bplustojpsik_lite::ImpactParameterProduct,
                   hf_cand_bplustojpsik_lite::ImpactParameterProductJpsi,
                   hf_cand_bplustojpsik_lite::MaxNormalisedDeltaIP,
+                  hf_cand_bplustojpsik_lite::AbsCos3MuKBpToMuMuK,
                   hf_cand_bplustojpsik_lite::MlScoreSig,
                   // hf_sel_candidate_bplus::IsSelBplusToJpsiPi,
                   //  Jpsi meson features
@@ -192,7 +194,8 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_mc_flag::FlagMcDecayChanRec,
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_bplustojpsik_lite::FlagWrongCollision,
-                  hf_cand_bplustojpsik_lite::PtGen);
+                  hf_cand_bplustojpsik_lite::PtGen,
+                  hf_cand_mc_flag::IsHadronLeptonSwapped);
 
 // DECLARE_SOA_TABLE(HfRedBpMcCheck, "AOD", "HFREDBPMCCHECK", //! Table with MC decay type check
 //                   hf_cand_mc_flag::FlagMcMatchRec,
@@ -378,11 +381,13 @@ struct HfTaskBplusToJpsiKReduced {
     uint8_t statusBplus = 0;
 
     int8_t flagMcMatchRec{0}, flagMcDecayChanRec{0}, flagWrongCollision{0};
+    bool swapped{false};
     bool isSignal = false;
     if constexpr (DoMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagMcDecayChanRec = candidate.flagMcDecayChanRec();
       flagWrongCollision = candidate.flagWrongCollision();
+      swapped = candidate.isHadronLeptonSwapped();
       isSignal = std::abs(flagMcMatchRec) == o2::hf_decay::hf_cand_beauty::BplusToJpsiKToMuMuK;
     }
 
@@ -462,6 +467,7 @@ struct HfTaskBplusToJpsiKReduced {
         candidate.impactParameterProduct(),
         candidate.impactParameterProductJpsi(),
         candidate.maxNormalisedDeltaIP(),
+        HfHelper::absCos3MuKBpToMuMuK(candidate),
         candidateMlScoreSig,
         // J/Psi features
         invMassJpsi,
@@ -508,7 +514,8 @@ struct HfTaskBplusToJpsiKReduced {
         flagMcDecayChanRec,
         isSignal,
         flagWrongCollision,
-        ptMother);
+        ptMother,
+        swapped);
     }
   }
 
@@ -561,7 +568,7 @@ struct HfTaskBplusToJpsiKReduced {
   } // processDataWithBplusMl
   PROCESS_SWITCH(HfTaskBplusToJpsiKReduced, processDataWithBplusMl, "Process data with ML for B+", false);
 
-  void processMc(soa::Join<aod::HfRedCandBplusToJpsiK, aod::HfMcRecRedBps> const& candidates,
+  void processMc(soa::Join<aod::HfRedCandBplusToJpsiK, aod::HfMcRecRedBps, aod::HfMcRecBJpSwaps> const& candidates,
                  aod::HfMcGenRedBps const& mcParticles,
                  JPsis const& candidatesJpsi,
                  aod::HfRedBach0Tracks const& kaonTracks)
@@ -581,7 +588,7 @@ struct HfTaskBplusToJpsiKReduced {
   } // processMc
   PROCESS_SWITCH(HfTaskBplusToJpsiKReduced, processMc, "Process MC without ML for B+", false);
 
-  void processMcWithBplusMl(soa::Join<aod::HfRedCandBplusToJpsiK, aod::HfMcRecRedBps> const& candidates,
+  void processMcWithBplusMl(soa::Join<aod::HfRedCandBplusToJpsiK, aod::HfMcRecRedBps, aod::HfMcRecBJpSwaps> const& candidates,
                             aod::HfMcGenRedBps const& mcParticles,
                             JPsis const& candidatesJpsi,
                             aod::HfRedBach0Tracks const& kaonTracks)

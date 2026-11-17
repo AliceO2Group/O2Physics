@@ -58,8 +58,8 @@ enum EventSelectionFlags {
   kNsel                  // counter
 };
 
-DECLARE_SOA_COLUMN(TotalNbrOfCollisions, totalNbrOfCollisions, int);       //! total number of analysed collisions
-DECLARE_SOA_COLUMN(TotalNbrOfSelCollisions, totalNbrOfSelCollisions, int); //! total number of selected collisions
+DECLARE_SOA_COLUMN(TotalNbrOfCollisions, totalNbrOfCollisions, int);                   //! total number of analysed collisions
+DECLARE_SOA_COLUMN(TotalNbrOfSelCollisions, totalNbrOfSelCollisions, int);             //! total number of selected collisions
 DECLARE_SOA_COLUMN(TotalIsTriggerTVXCollisions, totalIsTriggerTVXCollisions, int);     //! N selected collisions after applying IsTriggerTVX
 DECLARE_SOA_COLUMN(TotalNoITSROFBorderCollisions, totalNoITSROFBorderCollisions, int); //! N selected collisions after applying IsTriggerTVX, NoITSROF
 DECLARE_SOA_COLUMN(TotalNoTFBorderCollisions, totalNoTFBorderCollisions, int);         //! N selected collisions after applying IsTriggerTVX, NoITSROF, NoTF

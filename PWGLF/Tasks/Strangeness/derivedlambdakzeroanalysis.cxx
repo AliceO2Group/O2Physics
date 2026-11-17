@@ -1760,68 +1760,68 @@ struct derivedlambdakzeroanalysis {
   {
     int bitMap = 0;
 
-    if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+    if (verifyMask(itsClusMap, ((static_cast<uint8_t>(1) << 0) | (static_cast<uint8_t>(1) << 1) | (static_cast<uint8_t>(1) << 2) | (static_cast<uint8_t>(1) << 3) | (static_cast<uint8_t>(1) << 4) | (static_cast<uint8_t>(1) << 5) | (static_cast<uint8_t>(1) << 6)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS : x  x  x  x  x  x  x
       bitMap = 12;
-    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+    } else if (verifyMask(itsClusMap, ((static_cast<uint8_t>(1) << 1) | (static_cast<uint8_t>(1) << 2) | (static_cast<uint8_t>(1) << 3) | (static_cast<uint8_t>(1) << 4) | (static_cast<uint8_t>(1) << 5) | (static_cast<uint8_t>(1) << 6)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :    x  x  x  x  x  x
       bitMap = 11;
-    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+    } else if (verifyMask(itsClusMap, ((static_cast<uint8_t>(1) << 2) | (static_cast<uint8_t>(1) << 3) | (static_cast<uint8_t>(1) << 4) | (static_cast<uint8_t>(1) << 5) | (static_cast<uint8_t>(1) << 6)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :       x  x  x  x  x
       bitMap = 10;
-    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+    } else if (verifyMask(itsClusMap, ((static_cast<uint8_t>(1) << 3) | (static_cast<uint8_t>(1) << 4) | (static_cast<uint8_t>(1) << 5) | (static_cast<uint8_t>(1) << 6)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :          x  x  x  x
       bitMap = 9;
       if (fromAfterburner)
         bitMap = -3;
-    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+    } else if (verifyMask(itsClusMap, ((static_cast<uint8_t>(1) << 4) | (static_cast<uint8_t>(1) << 5) | (static_cast<uint8_t>(1) << 6)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :             x  x  x
       bitMap = 8;
       if (fromAfterburner)
         bitMap = -2;
-    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+    } else if (verifyMask(itsClusMap, ((static_cast<uint8_t>(1) << 5) | (static_cast<uint8_t>(1) << 6)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :                x  x
       bitMap = 7;
       if (fromAfterburner)
         bitMap = -1;
-    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
+    } else if (verifyMask(itsClusMap, ((static_cast<uint8_t>(1) << 0) | (static_cast<uint8_t>(1) << 1) | (static_cast<uint8_t>(1) << 2) | (static_cast<uint8_t>(1) << 3) | (static_cast<uint8_t>(1) << 4) | (static_cast<uint8_t>(1) << 5)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS : x  x  x  x  x  x
       bitMap = 6;
-    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
+    } else if (verifyMask(itsClusMap, ((static_cast<uint8_t>(1) << 1) | (static_cast<uint8_t>(1) << 2) | (static_cast<uint8_t>(1) << 3) | (static_cast<uint8_t>(1) << 4) | (static_cast<uint8_t>(1) << 5)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :    x  x  x  x  x
       bitMap = 5;
-    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
+    } else if (verifyMask(itsClusMap, ((static_cast<uint8_t>(1) << 2) | (static_cast<uint8_t>(1) << 3) | (static_cast<uint8_t>(1) << 4) | (static_cast<uint8_t>(1) << 5)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :       x  x  x  x
       bitMap = 4;
-    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4)))) {
+    } else if (verifyMask(itsClusMap, ((static_cast<uint8_t>(1) << 0) | (static_cast<uint8_t>(1) << 1) | (static_cast<uint8_t>(1) << 2) | (static_cast<uint8_t>(1) << 3) | (static_cast<uint8_t>(1) << 4)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS : x  x  x  x  x
       bitMap = 3;
-    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4)))) {
+    } else if (verifyMask(itsClusMap, ((static_cast<uint8_t>(1) << 1) | (static_cast<uint8_t>(1) << 2) | (static_cast<uint8_t>(1) << 3) | (static_cast<uint8_t>(1) << 4)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :    x  x  x  x
       bitMap = 2;
-    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3)))) {
+    } else if (verifyMask(itsClusMap, ((static_cast<uint8_t>(1) << 0) | (static_cast<uint8_t>(1) << 1) | (static_cast<uint8_t>(1) << 2) | (static_cast<uint8_t>(1) << 3)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS : x  x  x  x

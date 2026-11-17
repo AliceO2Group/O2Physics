@@ -126,8 +126,9 @@ struct StrangenessDerivedV0Step3 {
   // Defining the type of the daughter tracks
   using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
+  // V0CollRefs carries the index to the collision: without it the V0s are not grouped per collision
   void process(soa::Filtered<soa::Join<aod::StraCollisions, aod::StraEvSels>>::iterator const& collision,
-               soa::Filtered<soa::Join<aod::V0Cores, aod::V0Extras, aod::V0TOFNSigmas>> const& V0s,
+               soa::Filtered<soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFNSigmas>> const& V0s,
                dauTracks const&)
   {
     // Fill the event counter

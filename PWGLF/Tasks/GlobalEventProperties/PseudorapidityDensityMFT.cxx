@@ -1374,13 +1374,13 @@ struct PseudorapidityDensityMFT {
                     {HistType::kTH1F, {{100000, -50000.0, 50000.0}}}}); //
       registry.add({"collisionIDamb", " ; Collision ID amb",
                     //  {HistType::kTH1F,{{100000, 0.5, 100000.0}}}}); //
-                    {HistType::kTH1F, {{100000, -50000.0, 50000.0}}}});                                                                                        //
-      registry.add({"NonambEventCounts", " ; EventCounts Nonamb", {HistType::kTH1F, {{1, 0.5, 1.5}}}});                                                        //
+                    {HistType::kTH1F, {{100000, -50000.0, 50000.0}}}});                                 //
+      registry.add({"NonambEventCounts", " ; EventCounts Nonamb", {HistType::kTH1F, {{1, 0.5, 1.5}}}}); //
       registry.add({"hNumCollisionsNonAmb_InelMFT", ";Selected collisions with nonambiguous tracks;Count", {HistType::kTH1D, {{1, 0.5, 1.5}}}});
       registry.add({"hNumCollisionsAmb_InelMFT", ";Selected collisions with ambiguous tracks;Count", {HistType::kTH1D, {{1, 0.5, 1.5}}}});
-      registry.add({"hNumCollisions_InelMFT", " ; Number of selected events with Inel>0 and MFT>0;Count;Frequency", {HistType::kTH1F, {{1, 0.5, 1.5}}}});      //
-      registry.add({"hNumCollisions_Inel", " ; Number of selected events with Inel>0;Count;Frequency", {HistType::kTH1F, {{1, 0.5, 1.5}}}});                   //
-      registry.add({"ambEventCounts", " ; EventCounts Nonamb", {HistType::kTH1F, {{1, 0.5, 1.5}}}});                                                           //
+      registry.add({"hNumCollisions_InelMFT", " ; Number of selected events with Inel>0 and MFT>0;Count;Frequency", {HistType::kTH1F, {{1, 0.5, 1.5}}}}); //
+      registry.add({"hNumCollisions_Inel", " ; Number of selected events with Inel>0;Count;Frequency", {HistType::kTH1F, {{1, 0.5, 1.5}}}});              //
+      registry.add({"ambEventCounts", " ; EventCounts Nonamb", {HistType::kTH1F, {{1, 0.5, 1.5}}}});                                                      //
     }
 
     if (doprocessCountingCentrality) {
@@ -1541,8 +1541,8 @@ struct PseudorapidityDensityMFT {
 
   expressions::Filter trackSelectionCentral =
     ((aod::track::trackCutFlag & TrackSelectionIts) == TrackSelectionIts) &&
-    ifnode((aod::track::v001::detectorMap & (uint8_t)o2::aod::track::TPC) ==
-             (uint8_t)o2::aod::track::TPC,
+    ifnode((aod::track::v001::detectorMap & static_cast<uint8_t>(o2::aod::track::TPC)) ==
+             static_cast<uint8_t>(o2::aod::track::TPC),
            (aod::track::trackCutFlag & TrackSelectionTpc) ==
              TrackSelectionTpc,
            true) &&
@@ -1976,8 +1976,8 @@ struct PseudorapidityDensityMFT {
   using ParticlesGenReco = aod::McParticles;
   expressions::Filter primaries =
     (aod::mcparticle::flags &
-     (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) ==
-    (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
+     static_cast<uint8_t>(o2::aod::mcparticle::enums::PhysicalPrimary)) ==
+    static_cast<uint8_t>(o2::aod::mcparticle::enums::PhysicalPrimary);
   static constexpr float McSampleEtaMax = 1.1f;
   Partition<Particles> mcSample = nabs(aod::mcparticle::eta) < McSampleEtaMax;
   Partition<Particles> mcSampleCentral =

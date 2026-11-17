@@ -86,6 +86,11 @@ o2physics_add_dpl_workflow(pi0eta-to-gammagamma-pcmdalitzee
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(pi0eta-meson-dalitz-form-factor
+                    SOURCES Pi0EtaMesonDalitzFormFactor.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(pi0eta-to-gammagamma-emcemc
                     SOURCES Pi0EtaToGammaGammaEMCEMC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
