@@ -88,6 +88,7 @@ struct PhotonCopy {
   float px = 0.f, py = 0.f, pz = 0.f, vx = 0.f, vy = 0.f, vz = 0.f;
   float pvX = 0.f, pvY = 0.f, pvZ = 0.f, pvCovXX = 0.f, pvCovXY = 0.f, pvCovXZ = 0.f, pvCovYY = 0.f, pvCovYZ = 0.f, pvCovZZ = 0.f, pvChi2 = 0.f; // primary vertex of its event
   uint16_t pvNContrib = 0;
+  float alignDx = 0.f, alignDy = 0.f, alignDz = 0.f; // translation applied by translated() (cfgAlignToVertex)
   std::vector<LegCopy> legs;
   int timesUsed = 0; // in mixed artificial events
 };
@@ -95,8 +96,15 @@ struct PhotonCopy {
 struct EventCopy {
   int64_t eventUid = -1;
   float x = 0.f, y = 0.f, z = 0.f, occupancy = 0.f, cent = 0.f;
+  uint64_t timestamp = 0; // ms, pool time span and partner time difference
   std::vector<PhotonCopy> photons;
   std::vector<PhotonCopy> freeLegs;
+  int nOwnFreeLegs = 0; // free legs of the event itself, also if they are dropped (not a donor)
+};
+
+// partner minus current event, written with every artificial event (photonhbt: mixed event split by partner distance)
+struct PartnerDiff {
+  float dz = 0.f, dcent = 0.f, docc = 0.f, dt = 0.f; // cm, %, occupancy, s (dt always >= 0)
 };
 
 // vertex and centralities of the event whose vertex an artificial event gets
@@ -109,6 +117,10 @@ struct VertexCopy {
   uint64_t timestamp = 0; // CCDB timestamp
 };
 } // namespace
+
+// a leg row with an MC label into EMMCParticles (derived MC: V0LegMCLabels, PCMFreeLegMCLabels)
+template <typename T>
+concept HasEMMCLabel = requires(T const& t) { t.has_emmcparticle(); };
 
 struct PhotonMixedEventProducer {
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::PMEvSels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMults, aod::FT0Mults>;
@@ -137,6 +149,10 @@ struct PhotonMixedEventProducer {
   Configurable<bool> cfgPhotonWeighted{"cfgPhotonWeighted", true, "partner events drawn with probability proportional to their photon number (each pooled photon equally likely, still N distinct events); false: events equally likely"};
   Configurable<int> cfgInject{"cfgInject", 0, "injection mixed event: instead of N photons from N partner events, K mixed artificial events per event, each = the COMPLETE current event (its photons and, with cfgPoolFreeLegs, its free legs) + ONE photon of a distinct partner event (translated with cfgAlignToVertex). K = cfgInject, -1: K = N (mixed pairs = 2 x same-event pairs), -2: K = N/2 rounded up (mixed pairs = same-event pairs, half the CPU); the pool needs K partner events. Run 2 with mixed_group.skipSameSourceCrossed: the current event's pairings stay as run 1 decided them, only the injected legs form new candidates (also with the free legs, which the N-photon mixed event cannot offer)"};
   Configurable<int> cfgOverlay{"cfgOverlay", 1, "two-event leg overlay: K mixed artificial events per event, each = the COMPLETE current event + the COMPLETE partner event k (all its photons and, with cfgPoolFreeLegs, all its free legs, translated with cfgAlignToVertex). Every leg configuration of the same event exists across the two events, incl. true pairings that failed a run-1 cut. Run 2 with mixed_group.skipSameSourceCrossed: pairings inside one source event stay as run 1 decided them, only cross-event pairings are new. 0 = off (not with cfgInject)"};
+  Configurable<int> cfgDonorEvery{"cfgDonorEvery", 0, "donor events (emulates storing free legs only for some events): > 1 = only every N-th accepted event joins the pool and can be a partner; every event is still mixed as the current event. 0, 1 = all events are donors"};
+  Configurable<bool> cfgFreeLegsOneEvent{"cfgFreeLegsOneEvent", false, "N-photon (co-reco) mixed event with cfgPoolFreeLegs: the free legs are ALL free legs of ONE random pool event (a donor with cfgDonorEvery > 1), aligned to the current vertex, instead of M legs drawn one by one from the N partner events: the legs of one photon stay together and the leg density is that of one event"};
+  Configurable<bool> cfgFreeLegsMatchCount{"cfgFreeLegsMatchCount", false, "with cfgFreeLegsOneEvent: the mixed event gets as many free legs as the CURRENT event has (counted before cfgDonorDropHostLegs drops them; a production stores this integer per event), drawn from the donor events of the pool in random order, instead of all free legs of one donor"};
+  Configurable<bool> cfgDonorDropHostLegs{"cfgDonorDropHostLegs", true, "with cfgDonorEvery > 1: events that are not donors carry no free legs of their own (as if PCMFreeLegs were written only for donors), in their same and mixed artificial events"};
   Configurable<bool> cfgPoolFreeLegs{"cfgPoolFreeLegs", true, "pool the free legs of run 1 (PCMFreeLegs, builder fillFreeLegs) with the photons: the same artificial event gets all M free legs of the event, the mixed one M free legs drawn from the N partner events, so that run 2 pairs free legs identically in both"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
@@ -181,9 +197,19 @@ struct PhotonMixedEventProducer {
     registry.add("Pool/hNPools", "filled pools, per event;pools", kTH1D, {{1000, 0.f, 10000.f}});
     registry.add("Pool/hResets", "pool resets (run change);resets", kTH1D, {{1, -0.5f, 0.5f}});
     registry.add("Pool/hTimesUsed", "pooled photons leaving the pool;times used in a mixed event", kTH1D, {{51, -0.5f, 50.5f}});
-    registry.add("Mix/hDz", "mixed photons;z_{vtx}^{partner} - z_{vtx}^{current} (cm)", kTH1D, {{200, -0.5f, 0.5f}});
-    registry.add("Mix/hDOccupancy", "mixed photons;occupancy^{partner} - occupancy^{current}", kTH1D, {{200, -5000.f, 5000.f}});
-    registry.add("Mix/hDCent", "mixed photons;centrality^{partner} - centrality^{current} (%)", kTH1D, {{200, -10.f, 10.f}});
+    const float centRange = cfgCentBinWidth.value > 0.f ? cfgCentBinWidth.value : (cfgCentMax.value - cfgCentMin.value);
+    registry.add("Mix/hDz", "partner events;z_{vtx}^{partner} - z_{vtx}^{current} (cm)", kTH1D, {{200, -cfgZBinWidth.value, cfgZBinWidth.value}});
+    registry.add("Mix/hDOccupancy", "partner events;occupancy^{partner} - occupancy^{current}", kTH1D, {{200, -5000.f, 5000.f}});
+    registry.add("Mix/hDCent", "partner events;centrality^{partner} - centrality^{current} (%)", kTH1D, {{200, -centRange, centRange}});
+    registry.add("Mix/hDt", "partner events;|t^{partner} - t^{current}| (s)", kTH1D, {{300, 0.f, 300.f}});
+    registry.add("Mix/hNPartnerVsNCurrent", "partner events (overlay: overlay density of the mixed event);N of the current event;N of the partner event", kTH2D, {axN, axN});
+    registry.add("Mix/hMPartnerVsMCurrent", "partner events (cfgPoolFreeLegs);free legs M of the current event;free legs M of the partner event", kTH2D, {{300, -0.5f, 299.5f}, {300, -0.5f, 299.5f}});
+    registry.add("Pool/hTimeSpan", "pool when used;t^{newest} - t^{oldest} of the pool (s)", kTH1D, {{300, 0.f, 300.f}});
+    registry.add("Pool/hTooSmallVsZCent", "events skipped or written without a mixed event (pool too small);z_{vtx} (cm);centrality bin", kTH2D, {{nZ, -cfgZMax, cfgZMax}, {std::max(1, nCentBins()), -0.5f, std::max(1, nCentBins()) - 0.5f}});
+    // matching of the partner event to the current one (are the pools fine enough?): diagonal = perfect matching
+    registry.add("Mix/hOccPartnerVsCurrent", "partners (overlay: per partner event, else per mixed photon);occupancy^{current};occupancy^{partner}", kTH2F, {{200, 0.f, 20000.f}, {200, 0.f, 20000.f}});
+    const int nCentFine = std::max(1, static_cast<int>(std::lround(2.f * (cfgCentMax.value - cfgCentMin.value)))); // 0.5 % bins
+    registry.add("Mix/hCentPartnerVsCurrent", "partners (overlay: per partner event, else per mixed photon);centrality^{current} (%);centrality^{partner} (%)", kTH2F, {{nCentFine, cfgCentMin.value, cfgCentMax.value}, {nCentFine, cfgCentMin.value, cfgCentMax.value}});
     registry.add("Mix/hPartnerAge", "mixed photons;position of the partner event in the pool (0 = newest)", kTH1D, {{cfgPoolDepth, -0.5f, cfgPoolDepth - 0.5f}});
     registry.add("Mix/hDistinctSourcesMinusN", "mixed artificial events (must be 0);distinct source events - N", kTH1D, {{21, -10.5f, 10.5f}});
     registry.add("Mix/hSourceIsCurrent", "mixed photons from the current event (must be 0);0 other event, 1 current event", kTH1D, {{2, -0.5f, 1.5f}});
@@ -194,8 +220,8 @@ struct PhotonMixedEventProducer {
     registry.add("Mix/hLegTypes", "legs of the artificial events;artificial event;0 ITS-TPC, 1 TPC-only, 2 ITS-only, 3 other", kTH2D, {axType, {4, -0.5f, 3.5f}});
     // AO2D input: leg pT and phi of the track vs the values computed from V0LegsCov (what the derived-data mode uses), must be 0
     registry.add("Leg/hPtPhiFromCov", "legs (AO2D input);(p_{T}^{track} - p_{T}^{cov}) / p_{T}^{track};#varphi^{track} - #varphi^{cov} (rad)", kTH2D, {{100, -1.e-4f, 1.e-4f}, {100, -1.e-4f, 1.e-4f}});
-    if (static_cast<int>(doprocessRec.value) + static_cast<int>(doprocessMC.value) + static_cast<int>(doprocessDerived.value) + static_cast<int>(doprocessDerivedMC.value) != 1) {
-      LOG(fatal) << "enable exactly one of processRec, processMC (AO2D input) and processDerived, processDerivedMC (derived data)";
+    if (static_cast<int>(doprocessRec.value) + static_cast<int>(doprocessMC.value) + static_cast<int>(doprocessDerived.value) + static_cast<int>(doprocessDerivedMC.value) + static_cast<int>(doprocessDerivedFreeLegs.value) + static_cast<int>(doprocessDerivedFreeLegsMC.value) != 1) {
+      LOG(fatal) << "enable exactly one of processRec, processMC (AO2D input) and processDerived, processDerivedMC, processDerivedFreeLegs, processDerivedFreeLegsMC (derived data)";
     }
     if (cfgOverlay != 0 && cfgInject != 0) {
       LOG(fatal) << "cfgOverlay and cfgInject are two different mixed events, enable one";
@@ -204,7 +230,7 @@ struct PhotonMixedEventProducer {
       LOG(warning) << "cfgOverlay without cfgPoolFreeLegs: the partner event brings its stored photons only, not its free legs";
     }
     if (cfgPoolFreeLegs && (doprocessDerived || doprocessDerivedMC)) {
-      LOG(fatal) << "cfgPoolFreeLegs needs PCMFreeLegs, which are not in the derived data";
+      LOG(fatal) << "cfgPoolFreeLegs on derived data: use processDerivedFreeLegs / processDerivedFreeLegsMC (PCMFreeLegs + PCMFreeLegEMEventIds in the derived data)";
     }
   }
 
@@ -370,6 +396,7 @@ struct PhotonMixedEventProducer {
             l.itsClusterSizes, l.itsChi2NCl, l.detectorMap,
             p.eventUid, p.photonUid, p.v0Id, p.px, p.py, p.pz, p.vx, p.vy, p.vz,
             p.pvX, p.pvY, p.pvZ, p.pvCovXX, p.pvCovXY, p.pvCovXZ, p.pvCovYY, p.pvCovYZ, p.pvCovZZ, p.pvChi2, p.pvNContrib,
+            p.alignDx, p.alignDy, p.alignDz,
             l.origTrackId, l.mcParticleId, l.mcMotherId, l.mcPdg, l.mcMotherPdg, l.mcMotherPx, l.mcMotherPy, l.mcMotherPz, l.mcGrandMotherId, l.mcGrandMotherPdg, l.mcAncestorId,
             l.mcGGMotherId, l.mcGGMotherPdg, l.mcRootId, l.mcRootPdg, l.mcRootDepth, l.mcVx, l.mcVy, l.mcVz);
   }
@@ -383,6 +410,9 @@ struct PhotonMixedEventProducer {
     t.pvX += dx; // its own vertex moves with it
     t.pvY += dy;
     t.pvZ += dz;
+    t.alignDx += dx;
+    t.alignDy += dy;
+    t.alignDz += dz;
     for (auto& l : t.legs) {
       const float ca = std::cos(l.alpha), sa = std::sin(l.alpha);
       l.x += dx * ca + dy * sa;
@@ -396,13 +426,14 @@ struct PhotonMixedEventProducer {
   }
 
   void writeArtificialEvent(VertexCopy const& v, EventCopy const& current, const bool isMixed, const int zBin, const int occBin,
-                            std::vector<PhotonCopy const*> const& photons, const int currentCollisionId)
+                            std::vector<PhotonCopy const*> const& photons, const int currentCollisionId, PartnerDiff const& d = {})
   {
     const float type = isMixed ? 1.f : 0.f;
     const int firstLeg = mixLegs.lastIndex() + 1;
     mixCollisions(v.x, v.y, v.z, v.covXX, v.covXY, v.covXZ, v.covYY, v.covYZ, v.covZZ, v.chi2, v.numContrib,
                   v.centFT0M, v.centFT0A, v.centFT0C, isMixed, currentCollisionId, current.eventUid,
-                  zBin, occBin, current.occupancy, firstLeg, nLegsOf(photons), v.runNumber, v.multNTracksPVeta1, v.multFT0M, v.timestamp);
+                  zBin, occBin, current.occupancy, firstLeg, nLegsOf(photons), v.runNumber, v.multNTracksPVeta1, v.multFT0M, v.timestamp,
+                  d.dz, d.dcent, d.docc, d.dt);
     for (const auto* p : photons) {
       if (p->legs.size() > 1) { // not a free-leg stub
         registry.fill(HIST("Mix/hPhotonPtEta"), type, std::hypot(p->px, p->py), std::asinh(p->pz / std::hypot(p->px, p->py)));
@@ -464,15 +495,21 @@ struct PhotonMixedEventProducer {
     return out;
   }
 
-  template <bool isMC, bool isDerived, typename TCollisions, typename TPhotons, typename TLegs, typename TTracks, typename TMCParticles>
+  template <bool isMC, bool isDerived, typename TCollisions, typename TPhotons, typename TLegs, typename TFreeLegs, typename TTracks, typename TMCParticles>
   void runMixer(TCollisions const& collisions, TPhotons const& photons, TLegs const& legs, aod::V0LegsCov const& legsCov,
-                aod::PCMFreeLegs const* freeLegs, TTracks const* tracks, TMCParticles const* mcParticles)
+                TFreeLegs const* freeLegs, TTracks const* tracks, TMCParticles const* mcParticles, aod::PCMFreeLegEMEventIds const* freeLegEvents = nullptr)
   {
     if (legs.size() != 2 * photons.size() || legsCov.size() != legs.size()) {
       LOG(fatal) << "V0LegsCov (" << legsCov.size() << ") / V0Legs (" << legs.size() << ") / V0PhotonsKF (" << photons.size() << ") do not match: run builder run 1 with fillLegCov = true";
     }
-    if (cfgPoolFreeLegs && (freeLegs == nullptr || (freeLegs->size() == 0 && photons.size() > 0))) {
-      LOG(fatal) << "cfgPoolFreeLegs: PCMFreeLegs is empty, run builder run 1 with fillFreeLegs = true";
+    if (cfgPoolFreeLegs && freeLegs == nullptr) {
+      LOG(fatal) << "cfgPoolFreeLegs: no PCMFreeLegs table, run builder run 1 with fillFreeLegs = true";
+    }
+    if (cfgPoolFreeLegs && freeLegs->size() == 0 && photons.size() > 0) { // legitimate with donors (fillFreeLegsDonorEvery): a time frame without donor collision
+      static int nEmpty = 0;
+      if (nEmpty++ < 3) {
+        LOG(warning) << "cfgPoolFreeLegs: PCMFreeLegs empty in this time frame (no donor collision, or run 1 without fillFreeLegs)";
+      }
     }
     std::unordered_map<int, std::vector<int64_t>> photonsOfCollision, freeLegsOfCollision;
     for (const auto& photon : photons) {
@@ -483,8 +520,20 @@ struct PhotonMixedEventProducer {
       }
     }
     if (cfgPoolFreeLegs) {
-      for (const auto& leg : *freeLegs) {
-        freeLegsOfCollision[leg.collisionId()].push_back(leg.globalIndex());
+      if constexpr (isDerived) { // derived data: event row from PCMFreeLegEMEventIds (-1: collision without derived event)
+        if (freeLegEvents == nullptr || freeLegEvents->size() != freeLegs->size()) {
+          LOG(fatal) << "processDerivedFreeLegs: PCMFreeLegEMEventIds missing or not matching PCMFreeLegs (associate-photon-to-emevent processPCMFreeLegsFull)";
+        }
+        for (const auto& leg : *freeLegs) {
+          const int ev = freeLegEvents->rawIteratorAt(leg.globalIndex()).pmeventId();
+          if (ev >= 0) {
+            freeLegsOfCollision[ev].push_back(leg.globalIndex());
+          }
+        }
+      } else {
+        for (const auto& leg : *freeLegs) {
+          freeLegsOfCollision[leg.collisionId()].push_back(leg.globalIndex());
+        }
       }
     }
 
@@ -546,6 +595,7 @@ struct PhotonMixedEventProducer {
       current.z = collision.posZ();
       current.occupancy = occ;
       current.cent = cent;
+      current.timestamp = timestamp;
       for (const auto& photonId : it->second) {
         const auto photon = photons.rawIteratorAt(photonId);
         PhotonCopy p;
@@ -577,7 +627,7 @@ struct PhotonMixedEventProducer {
         registry.fill(HIST("Event/hNCandidates"), static_cast<float>(current.photons.size()));
         current.photons = toGroups(current.photons);
       }
-      if constexpr (!isDerived) {
+      {
         if (cfgPoolFreeLegs) { // one-leg stubs: event and vertex of this event, no photon momentum, v0Id -2
           if (const auto itF = freeLegsOfCollision.find(collision.globalIndex()); itF != freeLegsOfCollision.end()) {
             for (const auto& legId : itF->second) {
@@ -597,12 +647,18 @@ struct PhotonMixedEventProducer {
               f.pvCovZZ = collision.covZZ();
               f.pvChi2 = collision.chi2();
               f.pvNContrib = collision.numContrib();
-              f.legs.push_back(copyLeg<isMC, false>(leg, leg, tracks, mcParticles));
+              constexpr bool legMC = isMC && (!isDerived || HasEMMCLabel<decltype(leg)>); // derived MC: label only if PCMFreeLegMCLabels is joined
+              f.legs.push_back(copyLeg<legMC, isDerived>(leg, leg, tracks, mcParticles));
               current.freeLegs.push_back(f);
             }
           }
           registry.fill(HIST("Event/hNFreeLegs"), static_cast<float>(current.freeLegs.size()));
         }
+      }
+      const bool isDonor = cfgDonorEvery <= 1 || current.eventUid % cfgDonorEvery == 0;
+      current.nOwnFreeLegs = static_cast<int>(current.freeLegs.size());
+      if (!isDonor && cfgDonorDropHostLegs) {
+        current.freeLegs.clear();
       }
       const int nPhotons = static_cast<int>(current.photons.size());
       registry.fill(HIST("Event/hNPhotons"), nPhotons);
@@ -622,6 +678,10 @@ struct PhotonMixedEventProducer {
       const bool poolFull = depth >= nPartnersNeeded;
       if (!poolFull) {
         registry.fill(HIST("Event/hCutFlow"), kPoolTooSmall);
+        registry.fill(HIST("Pool/hTooSmallVsZCent"), collision.posZ(), centBin);
+      }
+      if (depth > 0) { // pool deque: front newest, back oldest
+        registry.fill(HIST("Pool/hTimeSpan"), 1.e-3 * static_cast<double>(pool.front().timestamp - pool.back().timestamp));
       }
       if (poolFull || !cfgRequireFullPool) {
         registry.fill(HIST("Event/hCutFlow"), kWritten);
@@ -652,19 +712,29 @@ struct PhotonMixedEventProducer {
             std::shuffle(order.begin(), order.end(), mRandom);
           }
         };
-        auto fillPartnerQA = [&](EventCopy const& partner, int age) {
-          registry.fill(HIST("Mix/hDz"), partner.z - current.z);
-          registry.fill(HIST("Mix/hDOccupancy"), partner.occupancy - current.occupancy);
-          registry.fill(HIST("Mix/hDCent"), partner.cent - current.cent);
+        auto fillPartnerQA = [&](EventCopy const& partner, int age) { // returns partner minus current
+          const PartnerDiff d{partner.z - current.z, partner.cent - current.cent, partner.occupancy - current.occupancy,
+                              1.e-3f * static_cast<float>(partner.timestamp > current.timestamp ? partner.timestamp - current.timestamp : current.timestamp - partner.timestamp)};
+          registry.fill(HIST("Mix/hDz"), d.dz);
+          registry.fill(HIST("Mix/hDOccupancy"), d.docc);
+          registry.fill(HIST("Mix/hDCent"), d.dcent);
+          registry.fill(HIST("Mix/hDt"), d.dt);
+          registry.fill(HIST("Mix/hNPartnerVsNCurrent"), nPhotons, static_cast<float>(partner.photons.size()));
+          if (cfgPoolFreeLegs) {
+            registry.fill(HIST("Mix/hMPartnerVsMCurrent"), static_cast<float>(current.freeLegs.size()), static_cast<float>(partner.freeLegs.size()));
+          }
+          registry.fill(HIST("Mix/hOccPartnerVsCurrent"), current.occupancy, partner.occupancy);
+          registry.fill(HIST("Mix/hCentPartnerVsCurrent"), current.cent, partner.cent);
           registry.fill(HIST("Mix/hPartnerAge"), age);
           registry.fill(HIST("Mix/hSourceIsCurrent"), partner.eventUid == current.eventUid ? 1.f : 0.f);
+          return d;
         };
         if (cfgOverlay > 0) { // overlay: K artificial events = the complete current event + the complete partner event k
           for (int iMix = 0; iMix < cfgNMixPerEvent; ++iMix) {
             drawOrder();
             for (int k = 0; k < std::min(nPartnersNeeded, depth); ++k) {
               auto& partner = pool[order[k]];
-              fillPartnerQA(partner, order[k]);
+              const PartnerDiff diff = fillPartnerQA(partner, order[k]);
               std::vector<PhotonCopy const*> overlay(host);
               std::vector<std::unique_ptr<PhotonCopy>> aligned; // translated copies; reserved, so the pointers stay valid
               aligned.reserve(partner.photons.size() + partner.freeLegs.size());
@@ -683,7 +753,7 @@ struct PhotonMixedEventProducer {
               }
               registry.fill(HIST("Mix/hDistinctSourcesMinusN"), 2 - nPhotons); // overlay: the current event + one partner
               registry.fill(HIST("Event/hNPhotonsMixedVsCurrent"), nPhotons, nPhotons + static_cast<int>(partner.photons.size()));
-              writeArtificialEvent(v, current, true, zBin, occBin, overlay, collision.globalIndex());
+              writeArtificialEvent(v, current, true, zBin, occBin, overlay, collision.globalIndex(), diff);
             }
           }
         }
@@ -695,7 +765,7 @@ struct PhotonMixedEventProducer {
               std::uniform_int_distribution<size_t> pick(0, partner.photons.size() - 1);
               auto& p = partner.photons[pick(mRandom)];
               p.timesUsed++;
-              fillPartnerQA(partner, order[k]);
+              const PartnerDiff diff = fillPartnerQA(partner, order[k]);
               std::vector<PhotonCopy const*> injected(host);
               PhotonCopy alignedCopy;
               if (cfgAlignToVertex) {
@@ -706,7 +776,7 @@ struct PhotonMixedEventProducer {
               }
               registry.fill(HIST("Mix/hDistinctSourcesMinusN"), 2 - nPhotons);
               registry.fill(HIST("Event/hNPhotonsMixedVsCurrent"), nPhotons, nPhotons + 1);
-              writeArtificialEvent(v, current, true, zBin, occBin, injected, collision.globalIndex());
+              writeArtificialEvent(v, current, true, zBin, occBin, injected, collision.globalIndex(), diff);
             }
           }
         }
@@ -716,6 +786,7 @@ struct PhotonMixedEventProducer {
           std::vector<std::unique_ptr<PhotonCopy>> aligned; // translated copies (cfgAlignToVertex); reserved, so the pointers stay valid
           aligned.reserve(nPhotons + (cfgPoolFreeLegs ? static_cast<int>(current.freeLegs.size()) : 0));
           std::set<int64_t> sources;
+          PartnerDiff meanDiff;                // N partners: mean |partner - current|
           for (int k = 0; k < nPhotons; ++k) { // N partner events, one random photon each
             auto& partner = pool[order[k]];
             std::uniform_int_distribution<size_t> pick(0, partner.photons.size() - 1);
@@ -729,11 +800,64 @@ struct PhotonMixedEventProducer {
               mixedPhotons.push_back(&p);
             }
             sources.insert(partner.eventUid);
-            fillPartnerQA(partner, order[k]);
+            const PartnerDiff d = fillPartnerQA(partner, order[k]);
+            meanDiff.dz += std::fabs(d.dz) / nPhotons;
+            meanDiff.dcent += std::fabs(d.dcent) / nPhotons;
+            meanDiff.docc += std::fabs(d.docc) / nPhotons;
+            meanDiff.dt += d.dt / nPhotons;
           }
           registry.fill(HIST("Mix/hDistinctSourcesMinusN"), static_cast<int>(sources.size()) - nPhotons);
           registry.fill(HIST("Event/hNPhotonsMixedVsCurrent"), nPhotons, mixedPhotons.size());
-          if (cfgPoolFreeLegs) { // M free legs of the current event -> M drawn without replacement from the free legs of the N partner events
+          if (cfgPoolFreeLegs && cfgFreeLegsOneEvent) { // all free legs of one random donor event of the pool, aligned
+            std::vector<int> donors;
+            for (int k = 0; k < depth; ++k) {
+              if (!pool[k].freeLegs.empty() && (cfgDonorEvery <= 1 || pool[k].eventUid % cfgDonorEvery == 0)) {
+                donors.push_back(k);
+              }
+            }
+            size_t nTake = 0;
+            if (!donors.empty() && cfgFreeLegsMatchCount) { // M = free legs of the current event, from the donors in random order
+              std::shuffle(donors.begin(), donors.end(), mRandom);
+              const size_t nWant = static_cast<size_t>(std::max(current.nOwnFreeLegs, 0));
+              for (const auto k : donors) {
+                if (nTake >= nWant) {
+                  break;
+                }
+                std::vector<PhotonCopy const*> legsOfDonor;
+                for (const auto& f : pool[k].freeLegs) {
+                  legsOfDonor.push_back(&f);
+                }
+                std::shuffle(legsOfDonor.begin(), legsOfDonor.end(), mRandom);
+                for (const auto* f : legsOfDonor) {
+                  if (nTake >= nWant) {
+                    break;
+                  }
+                  if (cfgAlignToVertex) {
+                    aligned.push_back(std::make_unique<PhotonCopy>(translated(*f, current.x - f->pvX, current.y - f->pvY, current.z - f->pvZ)));
+                    // cppcheck-suppress invalidContainer
+                    mixedPhotons.push_back(aligned.back().get());
+                  } else {
+                    mixedPhotons.push_back(f);
+                  }
+                  ++nTake;
+                }
+              }
+            } else if (!donors.empty()) {
+              std::uniform_int_distribution<size_t> pickDonor(0, donors.size() - 1);
+              const auto& donor = pool[donors[pickDonor(mRandom)]];
+              for (const auto& f : donor.freeLegs) {
+                if (cfgAlignToVertex) {
+                  aligned.push_back(std::make_unique<PhotonCopy>(translated(f, current.x - f.pvX, current.y - f.pvY, current.z - f.pvZ)));
+                  // cppcheck-suppress invalidContainer
+                  mixedPhotons.push_back(aligned.back().get());
+                } else {
+                  mixedPhotons.push_back(&f);
+                }
+              }
+              nTake = donor.freeLegs.size();
+            }
+            registry.fill(HIST("Mix/hFreeLegsMixedVsCurrent"), static_cast<float>(current.nOwnFreeLegs), static_cast<float>(nTake));
+          } else if (cfgPoolFreeLegs) { // M free legs of the current event -> M drawn without replacement from the free legs of the N partner events
             std::vector<PhotonCopy const*> pooledFree;
             for (int k = 0; k < nPhotons; ++k) {
               for (const auto& f : pool[order[k]].freeLegs) {
@@ -754,19 +878,21 @@ struct PhotonMixedEventProducer {
             }
             registry.fill(HIST("Mix/hFreeLegsMixedVsCurrent"), static_cast<float>(current.freeLegs.size()), static_cast<float>(nTake));
           }
-          writeArtificialEvent(v, current, true, zBin, occBin, mixedPhotons, collision.globalIndex());
+          writeArtificialEvent(v, current, true, zBin, occBin, mixedPhotons, collision.globalIndex(), meanDiff);
         }
       }
 
-      // this event joins its pool after it was mixed (never mixed with itself)
-      mNPooledPhotons += nPhotons;
-      pool.push_front(std::move(current));
-      if (static_cast<int>(pool.size()) > cfgPoolDepth) {
-        for (const auto& p : pool.back().photons) {
-          registry.fill(HIST("Pool/hTimesUsed"), p.timesUsed);
+      // this event joins its pool after it was mixed (never mixed with itself); cfgDonorEvery: donors only
+      if (isDonor || cfgOverlay == 0) {
+        mNPooledPhotons += nPhotons;
+        pool.push_front(std::move(current));
+        if (static_cast<int>(pool.size()) > cfgPoolDepth) {
+          for (const auto& p : pool.back().photons) {
+            registry.fill(HIST("Pool/hTimesUsed"), p.timesUsed);
+          }
+          mNPooledPhotons -= static_cast<int64_t>(pool.back().photons.size());
+          pool.pop_back();
         }
-        mNPooledPhotons -= static_cast<int64_t>(pool.back().photons.size());
-        pool.pop_back();
       }
       registry.fill(HIST("Pool/hNPooledPhotons"), mNPooledPhotons);
       registry.fill(HIST("Pool/hNPools"), mPools.size());
@@ -789,15 +915,31 @@ struct PhotonMixedEventProducer {
   // derived data (EM skim with V0LegsCov and, from create-emevent-photon fillVertex, EMEventsXY + EMEventsCov)
   void processDerived(MyEvents const& collisions, MyPhotonsDerived const& photons, aod::V0Legs const& legs, aod::V0LegsCov const& legsCov)
   {
-    runMixer<false, true>(collisions, photons, legs, legsCov, nullptr, static_cast<aod::TracksIU const*>(nullptr), static_cast<aod::EMMCParticles const*>(nullptr));
+    runMixer<false, true>(collisions, photons, legs, legsCov, static_cast<aod::PCMFreeLegs const*>(nullptr), static_cast<aod::TracksIU const*>(nullptr), static_cast<aod::EMMCParticles const*>(nullptr));
   }
   PROCESS_SWITCH(PhotonMixedEventProducer, processDerived, "data, derived-data input", false);
 
   void processDerivedMC(MyEvents const& collisions, MyPhotonsDerived const& photons, MyLegsMCDerived const& legs, aod::V0LegsCov const& legsCov, aod::EMMCParticles const& mcParticles)
   {
-    runMixer<true, true>(collisions, photons, legs, legsCov, nullptr, static_cast<aod::TracksIU const*>(nullptr), &mcParticles);
+    runMixer<true, true>(collisions, photons, legs, legsCov, static_cast<aod::PCMFreeLegs const*>(nullptr), static_cast<aod::TracksIU const*>(nullptr), &mcParticles);
   }
   PROCESS_SWITCH(PhotonMixedEventProducer, processDerivedMC, "MC, derived-data input (leg truth from V0LegMCLabels / EMMCParticles)", false);
+
+  // derived data with the free legs of run 1 (PCMFreeLegs of the donor events + PCMFreeLegEMEventIds), data
+  void processDerivedFreeLegs(MyEvents const& collisions, MyPhotonsDerived const& photons, aod::V0Legs const& legs, aod::V0LegsCov const& legsCov,
+                              aod::PCMFreeLegs const& freeLegs, aod::PCMFreeLegEMEventIds const& freeLegEvents)
+  {
+    runMixer<false, true>(collisions, photons, legs, legsCov, &freeLegs, static_cast<aod::TracksIU const*>(nullptr), static_cast<aod::EMMCParticles const*>(nullptr), &freeLegEvents);
+  }
+  PROCESS_SWITCH(PhotonMixedEventProducer, processDerivedFreeLegs, "data, derived-data input with free legs (PCMFreeLegs, PCMFreeLegEMEventIds)", false);
+
+  // derived MC with the free legs of run 1 and their MC labels (associate-mc-info-photon processMC_PCM_FreeLegs)
+  void processDerivedFreeLegsMC(MyEvents const& collisions, MyPhotonsDerived const& photons, MyLegsMCDerived const& legs, aod::V0LegsCov const& legsCov,
+                                soa::Join<aod::PCMFreeLegs, aod::PCMFreeLegMCLabels> const& freeLegs, aod::PCMFreeLegEMEventIds const& freeLegEvents, aod::EMMCParticles const& mcParticles)
+  {
+    runMixer<true, true>(collisions, photons, legs, legsCov, &freeLegs, static_cast<aod::TracksIU const*>(nullptr), &mcParticles, &freeLegEvents);
+  }
+  PROCESS_SWITCH(PhotonMixedEventProducer, processDerivedFreeLegsMC, "MC, derived-data input with free legs and their MC labels (PCMFreeLegs, PCMFreeLegMCLabels, PCMFreeLegEMEventIds)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
