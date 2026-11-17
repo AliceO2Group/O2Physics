@@ -25,7 +25,6 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
@@ -222,17 +221,7 @@ struct SlimTablesProducer {
     }
     histos.fill(HIST("h_mcCollMCP_counts_weight"), 2.5, eventWeightMC);
 
-    // --- TEST pT hat (a retirer une fois la formule validee) ---
-    // Ce log est place APRES le rejet des events min bias gap :
-    // il n'affiche donc que les events qui sont vraiment gardes dans l'analyse.
     float ptHardTrue = mccollision.ptHard();
-    float ptHardFromW = 10.f * std::pow(eventWeightMC, -0.25f);
-    static int nPrint = 0;
-    if (nPrint < 50) {
-      LOG(info) << "ptHard vrai = " << ptHardTrue << "   |   ptHard formule = " << ptHardFromW;
-      ++nPrint;
-    }
-    // --- fin du test ---
 
     for (auto const& collision : collisions) {
       float eventWeight = collision.weight();
