@@ -595,11 +595,11 @@ struct HfTaskDstarToD0Pi {
           double deltaMDstar = -999.;
           double invD0Mass = -999.;
           if (candDstarMcRec.signSoftPi() < 0) {
-          deltaMDstar = candDstarMcRec.invMassAntiDstar() - candDstarMcRec.invMassD0Bar();
-          invD0Mass = candDstarMcRec.invMassD0Bar();
+            deltaMDstar = candDstarMcRec.invMassAntiDstar() - candDstarMcRec.invMassD0Bar();
+            invD0Mass = candDstarMcRec.invMassD0Bar();
           } else {
-          deltaMDstar = candDstarMcRec.invMassDstar() - candDstarMcRec.invMassD0();
-          invD0Mass = candDstarMcRec.invMassD0();
+            deltaMDstar = candDstarMcRec.invMassDstar() - candDstarMcRec.invMassD0();
+            invD0Mass = candDstarMcRec.invMassD0();
           }
 
           if constexpr (ApplyMl) { // All efficiency histograms at reconstruction level w/ ml
