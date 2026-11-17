@@ -151,6 +151,7 @@ struct FlowEseTask {
   Configurable<std::string> cfgAccCorPath{"cfgAccCorPath", "", "path for pseudo acceptance correction"};
 
   struct : ConfigurableGroup {
+    Configurable<double> cfgGfwEtaGap{"cfgGfwEtaGap", 0.3, "Full eta gap between the GFW subevents for v2 and v3"};
     Configurable<bool> cfgGfwEffCor{"cfgGfwEffCor", false, "flag to apply charged-track efficiency correction for EP and GFW"};
     Configurable<std::string> cfgGfwEffCorPath{"cfgGfwEffCorPath", "", "CCDB path to charged-track efficiency correction for EP and GFW"};
     Configurable<bool> cfgGfwAccCor{"cfgGfwAccCor", false, "flag to apply charged-track acceptance correction for EP and GFW"};
@@ -595,10 +596,11 @@ struct FlowEseTask {
     fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
 
     const int nPtBins = histos.get<TProfile2D>(HIST("psi2/h_PoiN03Gap22"))->GetXaxis()->GetNbins();
-    gfwState.fGFW->AddRegion("refN03", -0.8, -0.15, 1, GFWRefMask);
-    gfwState.fGFW->AddRegion("refP03", 0.15, 0.8, 1, GFWRefMask);
-    gfwState.fGFW->AddRegion("poiN03", -0.8, -0.15, nPtBins + 1, GFWPoiMask);
-    gfwState.fGFW->AddRegion("poiP03", 0.15, 0.8, nPtBins + 1, GFWPoiMask);
+    const double halfEtaGap = cfgGfwParam.cfgGfwEtaGap.value / 2.0;
+    gfwState.fGFW->AddRegion("refN03", -0.8, -halfEtaGap, 1, GFWRefMask);
+    gfwState.fGFW->AddRegion("refP03", halfEtaGap, 0.8, 1, GFWRefMask);
+    gfwState.fGFW->AddRegion("poiN03", -0.8, -halfEtaGap, nPtBins + 1, GFWPoiMask);
+    gfwState.fGFW->AddRegion("poiP03", halfEtaGap, 0.8, nPtBins + 1, GFWPoiMask);
 
     gfwState.corrRef22 = gfwState.fGFW->GetCorrelatorConfig("refN03 {2} refP03 {-2}", "Ref03Gap22", false);
     gfwState.corrPoiN22 = gfwState.fGFW->GetCorrelatorConfig("poiN03 {2} refP03 {-2}", "PoiN03Gap22", true);

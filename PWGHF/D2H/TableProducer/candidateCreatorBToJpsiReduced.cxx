@@ -554,6 +554,7 @@ struct HfCandidateCreatorBToJpsiReducedExpressions {
   Produces<aod::HfMcRecRedBps> rowBplusMcRec;
   Produces<aod::HfMcRecRedB0s> rowB0McRec;
   Produces<aod::HfMcRecRedBss> rowBsMcRec;
+  Produces<aod::HfMcRecBJpSwaps> rowBToJPsiSwap;
 
   /// Fill candidate information at MC reconstruction level
   /// \param rowsJpsiHadMcRec MC reco information on Jpsi hadron pairs
@@ -569,11 +570,13 @@ struct HfCandidateCreatorBToJpsiReducedExpressions {
             continue;
           }
           rowBplusMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.flagMcDecayChanRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
+          rowBToJPsiSwap(rowJpsiHadMcRec.isHadronLeptonSwapped());
           filledMcInfo = true;
           break;
         }
         if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the Jpsi-K creator
           rowBplusMcRec(0, -1, -1, -1, -1.f);
+          rowBToJPsiSwap(false);
         }
       } else if constexpr (DecChannel == DecayChannel::B0ToJpsiK0Star) {
         for (const auto& rowJpsiHadMcRec : rowsJpsiHadMcRec) {
@@ -581,11 +584,13 @@ struct HfCandidateCreatorBToJpsiReducedExpressions {
             continue;
           }
           rowB0McRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.flagMcDecayChanRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
+          rowBToJPsiSwap(rowJpsiHadMcRec.isHadronLeptonSwapped());
           filledMcInfo = true;
           break;
         }
         if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the Jpsi-K creator
           rowB0McRec(0, -1, -1, -1, -1.f);
+          rowBToJPsiSwap(false);
         }
       } else if constexpr (DecChannel == DecayChannel::BsToJpsiPhi) {
         for (const auto& rowJpsiHadMcRec : rowsJpsiHadMcRec) {
@@ -593,11 +598,13 @@ struct HfCandidateCreatorBToJpsiReducedExpressions {
             continue;
           }
           rowBsMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.flagMcDecayChanRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
+          rowBToJPsiSwap(rowJpsiHadMcRec.isHadronLeptonSwapped());
           filledMcInfo = true;
           break;
         }
         if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the Jpsi-K creator
           rowBsMcRec(0, -1, -1, -1, -1.f);
+          rowBToJPsiSwap(false);
         }
       }
     }

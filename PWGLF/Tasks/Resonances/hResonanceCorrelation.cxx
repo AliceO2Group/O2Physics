@@ -430,29 +430,29 @@ struct HResonanceCorrelation {
       LOG(fatal) << "Problem getting TList object with efficiencies!";
     }
 
-    hEfficiencyTrigger = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyTrigger"));
-    hEfficiencyTriggerMult = static_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyTriggerMult"));
-    hEfficiencyTriggerMultVsPhi = static_cast<THnF*>(listEfficiencies->FindObject("hEfficiencyTriggerMultVsPhi"));
-    hEfficiencyPhi = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyPhi"));
-    hEfficiencyPhiMultVsPhi = static_cast<THnF*>(listEfficiencies->FindObject("hEfficiencyPhiMultVsPhi"));
-    hEfficiencyKstar = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyKstar"));
-    hEfficiencyKstarMultVsPhi = static_cast<THnF*>(listEfficiencies->FindObject("hEfficiencyKstarMultVsPhi"));
-    hEfficiencyHadron = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyHadron"));
-    hEfficiencyHadronMult = static_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyHadronMult"));
-    hEfficiencyPion = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyPion"));
-    hEfficiencyKaon = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyKaon"));
-    hPurityHadron = static_cast<TH1F*>(listEfficiencies->FindObject("hPurityHadron"));
-    hPurityHadronMult = static_cast<TH2F*>(listEfficiencies->FindObject("hPurityHadronMult"));
-    hEfficiencyUncertaintyTrigger = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyTrigger"));
-    hEfficiencyUncertaintyTriggerMult = static_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyTriggerMult"));
-    hEfficiencyUncertaintyPhi = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyPhi"));
-    hEfficiencyUncertaintyKstar = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyKstar"));
-    hEfficiencyUncertaintyPion = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyPion"));
-    hEfficiencyUncertaintyKaon = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyKaon"));
-    hEfficiencyUncertaintyHadron = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyHadron"));
-    hEfficiencyUncertaintyHadronMult = static_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyHadronMult"));
-    hPurityUncertaintyHadron = static_cast<TH1F*>(listEfficiencies->FindObject("hPurityUncertaintyHadron"));
-    hPurityUncertaintyHadronMult = static_cast<TH2F*>(listEfficiencies->FindObject("hPurityUncertaintyHadronMult"));
+    hEfficiencyTrigger = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyTrigger"));
+    hEfficiencyTriggerMult = dynamic_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyTriggerMult"));
+    hEfficiencyTriggerMultVsPhi = dynamic_cast<THnF*>(listEfficiencies->FindObject("hEfficiencyTriggerMultVsPhi"));
+    hEfficiencyPhi = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyPhi"));
+    hEfficiencyPhiMultVsPhi = dynamic_cast<THnF*>(listEfficiencies->FindObject("hEfficiencyPhiMultVsPhi"));
+    hEfficiencyKstar = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyKstar"));
+    hEfficiencyKstarMultVsPhi = dynamic_cast<THnF*>(listEfficiencies->FindObject("hEfficiencyKstarMultVsPhi"));
+    hEfficiencyHadron = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyHadron"));
+    hEfficiencyHadronMult = dynamic_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyHadronMult"));
+    hEfficiencyPion = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyPion"));
+    hEfficiencyKaon = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyKaon"));
+    hPurityHadron = dynamic_cast<TH1F*>(listEfficiencies->FindObject("hPurityHadron"));
+    hPurityHadronMult = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hPurityHadronMult"));
+    hEfficiencyUncertaintyTrigger = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyTrigger"));
+    hEfficiencyUncertaintyTriggerMult = dynamic_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyTriggerMult"));
+    hEfficiencyUncertaintyPhi = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyPhi"));
+    hEfficiencyUncertaintyKstar = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyKstar"));
+    hEfficiencyUncertaintyPion = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyPion"));
+    hEfficiencyUncertaintyKaon = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyKaon"));
+    hEfficiencyUncertaintyHadron = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyHadron"));
+    hEfficiencyUncertaintyHadronMult = dynamic_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyHadronMult"));
+    hPurityUncertaintyHadron = dynamic_cast<TH1F*>(listEfficiencies->FindObject("hPurityUncertaintyHadron"));
+    hPurityUncertaintyHadronMult = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hPurityUncertaintyHadronMult"));
     if (efficiencyFlags.applyEfficiencyPropagation && !efficiencyFlags.applyEffAsFunctionOfMultAndPhi && !hEfficiencyUncertaintyTrigger)
       LOG(fatal) << "Problem getting hEfficiencyUncertaintyTrigger!";
     if (efficiencyFlags.applyEffAsFunctionOfMult && !hEfficiencyTriggerMult)

@@ -372,8 +372,13 @@ struct lambdaspincorrelation {
           tpcNegNClsCrossedRows.push_back(negtrack1.tpcNClsCrossedRows());
           ctau.push_back(ctauLambda);
 
-          tpcNsigmaPos.push_back(std::abs(postrack1.tpcNSigmaPr()));
-          tpcNsigmaNeg.push_back(std::abs(negtrack1.tpcNSigmaPi()));
+          if (lambdaTag) {
+            tpcNsigmaPos.push_back(std::abs(postrack1.tpcNSigmaPr()));
+            tpcNsigmaNeg.push_back(std::abs(negtrack1.tpcNSigmaPi()));
+          } else if (aLambdaTag) {
+            tpcNsigmaPos.push_back(std::abs(postrack1.tpcNSigmaPi()));
+            tpcNsigmaNeg.push_back(std::abs(negtrack1.tpcNSigmaPr()));
+          }
 
           mK0Short.push_back(v0.mK0Short());
 
