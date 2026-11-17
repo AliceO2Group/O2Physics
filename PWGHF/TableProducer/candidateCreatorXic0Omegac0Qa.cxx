@@ -164,44 +164,10 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
     Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", true, "Recalculate vertex position using track covariance, effective only if useAbsDCA is true"};
     // Options for KFParticle
-    // V0 cuts
     Configurable<float> lambdaMassWindow{"lambdaMassWindow", 0.0075, "Distance from LambdaMass"};
-    // For KF Particle operation
     Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct method"};
     Configurable<bool> kfUseV0MassConstraint{"kfUseV0MassConstraint", false, "KF: Use lambda mass constraint"};
     Configurable<bool> kfUseCascadeMassConstraint{"kfUseCascadeMassConstraint", false, "KF: Use lambda mass constraint"};
-    // Options for QA histogram binning
-    // For Cascade
-    Configurable<int> nBinMassCasc{"nBinMassCasc", 1000, "nBinCascMass"};
-    Configurable<float> minMassCasc{"minMassCasc", 1.0, "xiMassMin"};
-    Configurable<float> maxMassCasc{"maxMassCasc", 2.0, "xiMassMax"};
-    Configurable<int> nBinPtCasc{"nBinPtCasc", 100, "nBinPtXi"};
-    Configurable<float> minPtCasc{"minPtCasc", 0.0, "minimun value of cascade"};
-    Configurable<float> maxPtCasc{"maxPtCasc", 20.0, "maximum value of cascade"};
-    // For Prong0
-    Configurable<int> nBinMassProng0{"nBinMassProng0", 100, "nBinMassPi"};
-    Configurable<float> minMassProng0{"minMassProng0", 0.0, "ptPiMin"};
-    Configurable<float> maxMassProng0{"maxMassProng0", 20.0, "ptPiMax"};
-    Configurable<int> nBinPtProng0{"nBinPtProng0", 100, "nBinPtProng0"};
-    Configurable<float> minPtProng0{"minPtProng0", 0.0, "ptPiMin"};
-    Configurable<float> maxPtProng0{"maxPtProng0", 20.0, "ptPiMax"};
-    // For Charm Baryon
-    Configurable<int> nBinMassCharmBaryon{"nBinMassCharmBaryon", 3000, "nBinXic0Mass"};
-    Configurable<float> minMassCharmBaryon{"minMassCharmBaryon", 1.0, "xic0MassMin"};
-    Configurable<float> maxMassCharmBaryon{"maxMassCharmBaryon", 4.0, "xic0MassMax"};
-    Configurable<int> nBinPtCharmBaryon{"nBinPtCharmBaryon", 100, "nBinXic0Pt"};
-    Configurable<float> minPtCharmBaryon{"minPtCharmBaryon", 0.0, "xic0PtMin"};
-    Configurable<float> maxPtCharmBaryon{"maxPtCharmBaryon", 20.0, "xic0PtMax"};
-    // Etc
-    Configurable<int> nBinCpa2Prong{"nBinCpa2Prong", 240, "nBinCpa2Prong"};
-    Configurable<float> cpa2ProngMin{"cpa2ProngMin", -1.2, "cpa2ProngMin"};
-    Configurable<float> cpa2ProngMax{"cpa2ProngMax", 1.2, "cpa2ProngMax"};
-    Configurable<int> nBinImpParXYXi{"nBinImpParXYXi", 30, "nBinImpParXYXi"};
-    Configurable<float> impParXYXiMin{"impParXYXiMin", -1.5, "impParXYXiMin"};
-    Configurable<float> impParXYXiMax{"impParXYXiMax", 1.5, "impParXYXiMax"};
-    Configurable<int> nBinImpParXYPi{"nBinImpParXYPi", 30, "nBinImpParXYPi"};
-    Configurable<float> impParXYPiMin{"impParXYPiMin", -1.5, "impParXYPiMin"};
-    Configurable<float> impParXYPiMax{"impParXYPiMax", 1.5, "impParXYPiMax"};
   } configs;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
@@ -354,7 +320,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     registry.get<TH1>(HIST("ReconstructedDecayChannel"))->GetXaxis()->SetBinLabel(1 + hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi, "To #Omega #pi");
     registry.get<TH1>(HIST("ReconstructedDecayChannel"))->GetXaxis()->SetBinLabel(1 + hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK, "To #Omega K");
 
-    hInvMassCharmBaryonToXiPi = registry.add<TH1>("hInvMassCharmBaryonToXiPi", "Charm baryon invariant mass - #Xi #pi decay;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{configs.nBinMassCharmBaryon, configs.minMassCharmBaryon, configs.maxMassCharmBaryon}}});
+    hInvMassCharmBaryonToXiPi = registry.add<TH1>("hInvMassCharmBaryonToXiPi", "Charm baryon invariant mass - #Xi #pi decay;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{1800, 1.8, 3.6}}});
     hCandidateCounterToXiPi = registry.add<TH1>("hCandidateCounterToXiPi", "Candidate counter wrt derived data - #Xi #pi decay;status;entries", {HistType::kTH1D, {{4, -0.5, 3.5}}});
     registry.get<TH1>(HIST("hCandidateCounterToXiPi"))->GetXaxis()->SetBinLabel(1 + All, "Total");
     registry.get<TH1>(HIST("hCandidateCounterToXiPi"))->GetXaxis()->SetBinLabel(1 + HfFlagPass, "HfFlagPass");
@@ -364,7 +330,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       registry.get<TH1>(HIST("ReconstructedDecayChannel"))->Fill(hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi);
     }
 
-    hInvMassCharmBaryonToOmegaPi = registry.add<TH1>("hInvMassCharmBaryonToOmegaPi", "Charm baryon invariant mass - #Omega #pi decay;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{configs.nBinMassCharmBaryon, configs.minMassCharmBaryon, configs.maxMassCharmBaryon}}});
+    hInvMassCharmBaryonToOmegaPi = registry.add<TH1>("hInvMassCharmBaryonToOmegaPi", "Charm baryon invariant mass - #Omega #pi decay;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{1800, 1.8, 3.6}}});
     hCandidateCounterToOmegaPi = registry.add<TH1>("hCandidateCounterToOmegaPi", "Candidate counter wrt derived data - #Omega #pi decay;status;entries", {HistType::kTH1D, {{4, -0.5, 3.5}}});
     registry.get<TH1>(HIST("hCandidateCounterToOmegaPi"))->GetXaxis()->SetBinLabel(1 + All, "Total");
     registry.get<TH1>(HIST("hCandidateCounterToOmegaPi"))->GetXaxis()->SetBinLabel(1 + HfFlagPass, "HfFlagPass");
@@ -374,7 +340,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       registry.get<TH1>(HIST("ReconstructedDecayChannel"))->Fill(hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi);
     }
 
-    hInvMassCharmBaryonToOmegaKa = registry.add<TH1>("hInvMassCharmBaryonToOmegaKa", "Charm baryon invariant mass - #Omega K decay;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{configs.nBinMassCharmBaryon, configs.minMassCharmBaryon, configs.maxMassCharmBaryon}}});
+    hInvMassCharmBaryonToOmegaKa = registry.add<TH1>("hInvMassCharmBaryonToOmegaKa", "Charm baryon invariant mass - #Omega K decay;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{1800, 1.8, 3.6}}});
     hCandidateCounterToOmegaKa = registry.add<TH1>("hCandidateCounterToOmegaKa", "Candidate counter wrt derived data - #Omega K decay;status;entries", {HistType::kTH1D, {{4, -0.5, 3.5}}});
     registry.get<TH1>(HIST("hCandidateCounterToOmegaKa"))->GetXaxis()->SetBinLabel(1 + All, "Total");
     registry.get<TH1>(HIST("hCandidateCounterToOmegaKa"))->GetXaxis()->SetBinLabel(1 + HfFlagPass, "HfFlagPass");
@@ -384,8 +350,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       registry.get<TH1>(HIST("ReconstructedDecayChannel"))->Fill(hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK);
     }
 
-    registry.add("hCascMass", "Inv mass of reconstructed cascade;Inv mass;Entries", {HistType::kTH1F, {{configs.nBinMassCasc, configs.minMassCasc, configs.maxMassCasc}}});
-    registry.add("hCascPt", "Pt of reconstructed cascade;pT;Entries", {HistType::kTH1F, {{configs.nBinPtCasc, configs.minPtCasc, configs.maxPtCasc}}});
+    registry.add("hCascMass", "Inv mass of reconstructed cascade;Inv mass;Entries", {HistType::kTH1F, {{1000, 1.0, 2.0}}});
+    registry.add("hCascPt", "Pt of reconstructed cascade;pT;Entries", {HistType::kTH1F, {{100, 0., 20.0}}});
 
   } // end of initialization
 
