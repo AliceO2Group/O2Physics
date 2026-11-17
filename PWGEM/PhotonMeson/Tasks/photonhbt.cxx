@@ -45,8 +45,10 @@
 #include <Framework/Logger.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <MathUtils/Primitive2D.h>
 #include <MathUtils/Utils.h>
 #include <ReconstructionDataFormats/HelixHelper.h>
+#include <ReconstructionDataFormats/Track.h>
 
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector3D.h> // IWYU pragma: keep
@@ -292,6 +294,7 @@ struct Photonhbt {
     int id = -1, posId = -1, negId = -1;
     float eta = 0.f, phi = 0.f, pt = 0.f;
     float rTrue = -1.f;
+    std::array<float, 3> conv{}; // true conversion point (production vertex of the e+)
     float legDRtrue = -1.f;
     float legDEta = 0.f;
     float legDPhi = 0.f;
@@ -380,6 +383,9 @@ struct Photonhbt {
     Configurable<float> cfgPairClassMixZBinWidth{"cfgPairClassMixZBinWidth", 2.f, "pair-class QA, standard mixed event: pool z-vertex bin width (cm)"};
     Configurable<float> cfgPairClassMixCentBinWidth{"cfgPairClassMixCentBinWidth", 10.f, "pair-class QA, standard mixed event: pool centrality (FT0C) bin width (%)"};
     Configurable<float> cfgPairClassMaxSharedFrac{"cfgPairClassMaxSharedFrac", 0.4f, "pair-class QA, clean flag: all four legs with TPC shared-cluster fraction below this"};
+    Configurable<float> cfgNoteMaxQinv{"cfgNoteMaxQinv", 0.3f, "cfgFillNoteQA in processCoReco: pairs with reconstructed q_inv above this value (GeV/c) are skipped before anything is computed for them (CPU); 0.3 is the range of the CoReco/MC/Note histograms. The true-pair histogram is in true q_inv: its last bins lose the pairs reconstructed above the limit"};
+    Configurable<bool> cfgFillNoteQA{"cfgFillNoteQA", false, "book/fill the analysis-note QA, every histogram with a before/after-cut axis: PairClass/Note (processPairClassMix: classes vs centrality and occupancy, duplicate cluster counts, shared-cluster scan, photon kinematics per class), CoReco/Note and CoReco/MC/Note (processCoReco: classes before/after the pair cuts, q-component response, true pairs vs true q), MC/TruthAO2D/Note (processMC: fiducial true pairs per stage)"};
+    Configurable<bool> cfgFillHalfSwapQA{"cfgFillHalfSwapQA", false, "book/fill the half-swap QA PairClass/HalfSwap (processPairClassMix, MC): hStray = MC relation of the two stray legs of a half swap (class 4) to the shared true photon; hCrossBoth = photon-likeness of BOTH leg-swapped combinations of a pair per pair class (design of an asymmetric crossed veto: one combination a good photon, the other not)"};
   } qaflags;
 
   // ─── HBT analysis mode ───────────────────────────────────────────────────────────
@@ -443,6 +449,7 @@ struct Photonhbt {
     Configurable<int> cfgCoRecoMixMode{"cfgCoRecoMixMode", 0, "processCoReco: 0 co-reconstructed mixed event (pairs inside the mixed artificial events), 1 standard mixed event built here from the same-event artificial events (pools as for processAnalysis, no BC gap), for old vs new on the same photons"};
     Configurable<bool> cfgCoRecoSkipOneSource{"cfgCoRecoSkipOneSource", true, "processCoReco: skip pairs of a mixed artificial event whose four legs all come from one source event (same-event pairs by construction)"};
     Configurable<bool> cfgCoRecoMC{"cfgCoRecoMC", false, "processCoReco: MC diagnostics from the leg labels carried in PCMMixLegs (truth-type CFs as processMC, pair-class decomposition)"};
+    Configurable<int> cfgCoRecoPartnerPairing{"cfgCoRecoPartnerPairing", 0, "partner pairing of the run-2 crossed photons (processCoReco and processPairClassMix, every artificial event): a pair containing a crossed photon X (built in run 2 from legs of two run-1 photons) is kept only if the other photon is a partner of X. 0 off (all pairs kept), 1 partner = the two photons share a run-1 source photon through their legs (PCMMixLegs sourcePhotonUid: the other half of a run-1 photon that X took apart, e.g. the complementary crossed photon of a full swap or the second piece of a half swap), 2 as 1 plus: both photons hold a pooled free leg of the same source event with opposite charge (possible legs of one photon that run 1 did not pair). The same event has no crossed photons, so the rule only acts on the mixed event; diagnostics PairClass/Pairs/hPartner, CoReco/hPartner"};
   } mixing;
 
   // ─── Centrality slection ─────────────────────────────────────────────────
@@ -1010,6 +1017,11 @@ struct Photonhbt {
 
     fRegistryTruthMC.add("MCAOD/hDeltaS2x2_vs_Qinv", "2x2 score ambiguity;#DeltaS;q_{inv}^{true} (GeV/c)", kTH2F, {{100, 0.f, 10.f}, {60, 0.f, 0.3f}}, true);
     fRegistryTruthMC.add("MCAOD/hDeltaS2x2_CrossWins", "2x2 groups where CROSS scores better;#DeltaS;q_{inv}^{true} (GeV/c)", kTH2F, {{100, 0.f, 10.f}, {60, 0.f, 0.3f}}, true);
+
+    const AxisSpec axLossCause{5, -0.5f, 4.5f, "0=pair kept, 1=leg taken by a crossed candidate with the partner photon, 2=leg taken by a candidate with a third track, 3=leg taken by the same photon in another collision, 4=removed without a survivor on its legs"};
+    const AxisSpec axCrossAvail{2, -0.5f, 1.5f, "crossed candidate e^{+}_{1}e^{-}_{2} or e^{+}_{2}e^{-}_{1} found by the SVertexer in the pair collision (0=no, 1=yes)"};
+    const AxisSpec axLegAngle{50, 0.f, 0.25f, "min. opening angle of the crossed legs e^{+}_{1}e^{-}_{2}, e^{+}_{2}e^{-}_{1} (rad)"};
+    fRegistryTruthMC.add("MCAOD/hSparsePairLoss", "true pairs with both V0s in one collision (stage 3): fate per dedup scenario", kTHnSparseF, {axDedup, axLossCause, axCrossAvail, axLegAngle, axisDeltaEta, axisDeltaPhi, axisQinv}, true);
   }
 
   // ─── Event histograms (fRegistry) ─────────────────────────────────────────
@@ -1060,6 +1072,7 @@ struct Photonhbt {
     fRegistryCF.addClone("Pair/same/", "Pair/mix/");
 
     fRegistryCF.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current}-BC_{mixed}|", kTH1D, {{10001, -0.5, 10000.5}}, true);
+    fRegistryCF.add("Pair/mix/hPoolDepth", "standard mixing, pool when used (events with photons after pair cuts);centrality (%);events in the pool", kTH2D, {{20, 0.f, 100.f}, {mixing.ndepth.value + 1, -0.5f, mixing.ndepth.value + 0.5f}}, true);
   }
   // ─── CF: PairSep  ────────────────────────
   void addPairSepHistograms()
@@ -1163,9 +1176,7 @@ struct Photonhbt {
       fRegistryCF.add((sm + "hSparse_MeeRatio_dR_Qinv").c_str(),
                       "crossed-hypothesis QA;min(m_{ee}^{cross})/q_{inv};|R_{1}-R_{2}| (cm);q_{inv} (GeV/c)",
                       kTHnSparseF, {{100, 0.f, 2.f}, {80, 0.f, 80.f}, {60, 0.f, 0.3f}}, true);
-      fRegistryCF.add((sm + "hSparse_CrossGeom_Qinv").c_str(),
-                      "geometry of the more photon-like leg-swapped combination;circle gap (cm);|z_{+} - z_{-}| at the touching point (cm);|tgl_{+} - tgl_{-}|;q_{inv} (GeV/c)",
-                      kTHnSparseF, {{100, -5.f, 5.f}, {60, 0.f, 6.f}, {50, 0.f, 0.5f}, {30, 0.f, 0.15f}}, true);
+      fRegistryCF.add((sm + "hSparse_CrossGeom_Qinv").c_str(), "geometry of the more photon-like leg-swapped combination;circle gap (cm);|z_{+} - z_{-}| at the touching point (cm);|tgl_{+} - tgl_{-}|;q_{inv} (GeV/c)", kTHnSparseF, {{100, -5.f, 5.f}, {60, 0.f, 6.f}, {50, 0.f, 0.5f}, {30, 0.f, 0.15f}}, true);
       fRegistryCF.add((sm + "hSwapTemplate").c_str(), "swap template: q_inv the pair would have with swapped legs;q_{inv} of the pair (GeV/c);q_{inv} of the leg-swapped pairing (GeV/c);0 swapped combination not photon-like, 1 photon-like (in the geometric window)", kTH3F, {{60, 0.f, 0.3f}, {60, 0.f, 0.3f}, {2, -0.5f, 1.5f}}, true);
       auto h = fRegistryCF.add<TH1>((sm + "hVetoCounter").c_str(), "crossed-pair veto;;pairs", kTH1D, {{2, -0.5f, 1.5f}}, true);
       h->GetXaxis()->SetBinLabel(1, "evaluated");
@@ -1327,13 +1338,13 @@ struct Photonhbt {
       fRegistryPairMC.add((spBase + "hEtaPt").c_str(), "#eta vs p_{T};#eta;p_{T} (GeV/c)", kTH2F, {axisEta, axisPt}, true);
       fRegistryPairMC.add((spBase + "hLegOriginMatrix").c_str(), "pos-leg origin vs neg-leg origin;pos leg;neg leg", kTH2F, {axisLegOrigin, axisLegOrigin}, true);
     }
+
     fRegistryPairMC.add("SinglePhotonMC/Response/hResponse", "true reconstructed photons: response (MC)", kTHnSparseF, {{40, 0.f, 4.f, "#it{p}_{T}^{true} (GeV/#it{c})"}, {60, 0.3f, 1.5f, "#it{E}^{rec} / #it{E}^{true}"}, {40, 0.f, 0.04f, "angle(rec, true) (rad)"}, {18, 0.f, 90.f, "#it{R}_{conv} (cm)"}, {21, -0.05f, 1.f, "hardest photon radiated by a leg: #it{E} / #it{E}^{true} (first bin: none)"}, {2, -0.5f, 1.5f, "that radiated photon reconstructed in this event"}, {3, -0.5f, 2.5f, "this photon radiated by a conversion e^{#pm}: 0 no, 1 yes and parent #gamma lost, 2 yes and parent reconstructed"}, {21, -0.05f, 1.f, "#it{E}^{true} / #it{E}(parent #gamma) (first bin: n/a)"}, {51, -0.005f, 0.25f, "angle(this, parent #gamma) MC (rad) (first bin: n/a)"}}, true);
     fRegistryPairMC.add("SinglePhotonMC/Response/hGenPt", "generated primary photons of the selected collisions, |#eta| < cfgMaxEtaV0;#it{p}_{T} (GeV/#it{c})", kTH1F, {{80, 0.f, 4.f}}, true);
 
     const AxisSpec axisFakeSubtype{3, -0.5f, 2.5f, "0=ordinary, 1=swap doublet, 2=partial swap"};
     fRegistryPairMC.add("Pair/same/MC/hFakeSubtypeVsQinv", "fake pair subtype vs q_{inv};q_{inv} (GeV/c);subtype", kTH2D, {axisQinv, axisFakeSubtype}, true);
-    fRegistryPairMC.add("Pair/same/MC/hQrecVsQtrueVsKt", "distinct true photons;q_{inv}^{true} (GeV/c);q_{inv}^{rec} (GeV/c);k_{T}^{rec} (GeV/c)", kTH3F,
-                        {{300, 0.f, 0.3f}, {300, 0.f, 0.3f}, {std::vector<double>{0.1, 0.2, 0.3, 0.4, 0.6, 1.0, 2.0}}}, false);
+    fRegistryPairMC.add("Pair/same/MC/hQrecVsQtrueVsKt", "distinct true photons;q_{inv}^{true} (GeV/c);q_{inv}^{rec} (GeV/c);k_{T}^{rec} (GeV/c)", kTH3F, {{300, 0.f, 0.3f}, {300, 0.f, 0.3f}, {std::vector<double>{0.1, 0.2, 0.3, 0.4, 0.6, 1.0, 2.0}}}, false);
     fRegistryPairMC.add("Pair/same/MC/hDEtaDPhi_truePairs",
                         "true reco pairs (TrueTrueDistinct+SamePhoton+Pi0);"
                         "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad)",
@@ -1439,6 +1450,9 @@ struct Photonhbt {
     // ─── Stage summary
     fRegistryTruthMC.add("MC/TruthAO2D/hStage_vs_kT", "efficiency waterfall;k_{T} (GeV/c);stage (0=converted,1=all4legs,2=bothBuilt,3=bothSel)", kTH2D, {axisKt, AxisSpec{4, -0.5f, 3.5f, "stage"}}, true);
     fRegistryTruthMC.add("MC/TruthAO2D/hStageConsistency", "stage consistency (expect all at 0);N(V0 built but legs not found);counts", kTH1D, {AxisSpec{20, -0.5f, 19.5f, "N_{bad}"}}, true);
+    if (qaflags.cfgFillNoteQA.value) {
+      fRegistryTruthMC.add("MC/TruthAO2D/Note/hTruePairs", "fiducial true pairs of converted photons per stage", kTHnSparseF, {{4, -0.5f, 3.5f, "stage: 0 converted, 1 all four legs tracked in this collision, 2 both photons built, 3 both photons selected"}, {60, 0.f, 0.3f, "#it{q}_{inv}^{true} (GeV/#it{c})"}, {std::vector<double>{0., 0.2, 0.4, 0.6, 1.0, 2.0}, "#it{k}_{T}^{true} (GeV/#it{c})"}, {std::vector<double>{0., 10., 20., 30., 40., 50., 60., 80., 100.}, "centrality (%)"}, {std::vector<double>{0., 0.5, 1., 2., 3., 5., 7.5, 10., 15., 20., 30., 50., 100., 1000.}, "distance of the two true conversion points (cm)"}}, true);
+    }
 
     // ─── Single-leg diagnostics ──────────────────────────────────────────
     fRegistryTruthMC.add("MC/LegDiag/hLegDRtrue_vs_pt_legFound", "leg found: #Delta R^{true} vs p_{T};p_{T,#gamma}^{true} (GeV/c);#Delta R_{e^{+}e^{-}}^{true}", kTH2D, {axisPt, axLegDR}, true);
@@ -2905,6 +2919,7 @@ struct Photonhbt {
       }
       const auto& selectedPhotons = emh1->GetTracksPerCollision(keyDFCollision);
       const auto& poolIDs = emh1->GetCollisionIdsFromEventPool(keyBin);
+      fRegistryCF.fill(HIST("Pair/mix/hPoolDepth"), centForQA, static_cast<float>(poolIDs.size()));
       for (const auto& mixID : poolIDs) {
         if (mixID.second == collision.globalIndex() && mixID.first == ndf) {
           continue;
@@ -3319,6 +3334,7 @@ struct Photonhbt {
       }
       const auto& selectedPhotons = emh1->GetTracksPerCollision(keyDFCollision);
       const auto& poolIDs = emh1->GetCollisionIdsFromEventPool(keyBin);
+      fRegistryCF.fill(HIST("Pair/mix/hPoolDepth"), centForQA, static_cast<float>(poolIDs.size()));
       for (const auto& mixID : poolIDs) {
         if (mixID.second == collision.globalIndex() && mixID.first == ndf) {
           continue;
@@ -3594,6 +3610,7 @@ struct Photonhbt {
         tg.phi = static_cast<float>(g.phi());
         tg.pt = static_cast<float>(g.pt());
         tg.rTrue = rTrue;
+        tg.conv = {static_cast<float>(mcPosE.vx()), static_cast<float>(mcPosE.vy()), static_cast<float>(mcPosE.vz())};
         tg.legDRtrue = legDRt;
         tg.legDEta = deTrE;
         tg.legDPhi = dpTrE;
@@ -3738,6 +3755,21 @@ struct Photonhbt {
           }
 
           fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hStage_vs_kT"), kt, 0.f);
+          if (qaflags.cfgFillNoteQA.value) {
+            const float centNote = cent[mixing.cfgCentEstimator];
+            const float dConv = std::min(std::hypot(g1.conv[0] - g2.conv[0], g1.conv[1] - g2.conv[1], g1.conv[2] - g2.conv[2]), 999.f);
+            const float ktNote = std::min(kt, 1.99f);
+            fRegistryTruthMC.fill(HIST("MC/TruthAO2D/Note/hTruePairs"), 0.f, qinv_true, ktNote, centNote, dConv);
+            if (pairAll4LegsThisColl) {
+              fRegistryTruthMC.fill(HIST("MC/TruthAO2D/Note/hTruePairs"), 1.f, qinv_true, ktNote, centNote, dConv);
+            }
+            if (g1Built && g2Built) {
+              fRegistryTruthMC.fill(HIST("MC/TruthAO2D/Note/hTruePairs"), 2.f, qinv_true, ktNote, centNote, dConv);
+            }
+            if (g1Sel && g2Sel && pairClassSel) {
+              fRegistryTruthMC.fill(HIST("MC/TruthAO2D/Note/hTruePairs"), 3.f, qinv_true, ktNote, centNote, dConv);
+            }
+          }
           if (pairAll4LegsThisColl) {
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hStage_vs_kT"), kt, 1.f);
           }
@@ -3972,6 +4004,7 @@ struct Photonhbt {
     std::vector<V0Lite> allCands;
     allCands.reserve(v0s.size());
     std::unordered_map<int, std::vector<int>> v0sByPosTrack;
+    std::unordered_map<int, std::vector<int>> v0sByNegTrack;
     for (const auto& v0 : v0s) {
       if (v0.v0Type() == 0) {
         continue;
@@ -3989,6 +4022,7 @@ struct Photonhbt {
       v.typeRaw = v0.v0Type();
       v.score = anaV0(v.posTrackId, v.negTrackId, v.collisionId, v.pca, v.cospa, v.convR);
       v0sByPosTrack[v.posTrackId].push_back(static_cast<int>(allCands.size()));
+      v0sByNegTrack[v.negTrackId].push_back(static_cast<int>(allCands.size()));
       allCands.push_back(v);
     }
 
@@ -4002,7 +4036,9 @@ struct Photonhbt {
       float eta = 0.f, phi = 0.f;
       float px = 0.f, py = 0.f, pz = 0.f;
       float rConv = 0.f;
-      bool tracked = false; // both legs have tracks (anywhere)
+      std::array<float, 3> posP{}; // true e+ momentum
+      std::array<float, 3> negP{}; // true e- momentum
+      bool tracked = false;        // both legs have tracks (anywhere)
       std::vector<int> trackedColls;
       std::vector<MatchInfo> matches;
     };
@@ -4060,6 +4096,8 @@ struct Photonhbt {
       g.py = mc.py();
       g.pz = mc.pz();
       g.rConv = rConv;
+      g.posP = {dPos.px(), dPos.py(), dPos.pz()};
+      g.negP = {dNeg.px(), dNeg.py(), dNeg.pz()};
 
       const auto itPos = tracksOfMc.find(posId);
       const auto itNeg = tracksOfMc.find(negId);
@@ -4137,6 +4175,8 @@ struct Photonhbt {
     const int nC = static_cast<int>(allCands.size());
     std::vector<int64_t> candMother(nC, -1);
     std::vector<uint8_t> candClass(nC, 2);
+    std::vector<int64_t> candPosMother(nC, -1); // photon mother of the e+ leg (-1: none)
+    std::vector<int64_t> candNegMother(nC, -1); // photon mother of the e- leg (-1: none)
     {
       auto photonMotherOf = [&](int trackId) -> int64_t {
         const auto t = tracks.rawIteratorAt(trackId);
@@ -4157,6 +4197,8 @@ struct Photonhbt {
       for (int i = 0; i < nC; ++i) {
         const int64_t mp = photonMotherOf(allCands[i].posTrackId);
         const int64_t me = photonMotherOf(allCands[i].negTrackId);
+        candPosMother[i] = mp;
+        candNegMother[i] = me;
         if (mp >= 0 && mp == me) {
           candClass[i] = 0;
           candMother[i] = mp;
@@ -4331,6 +4373,61 @@ struct Photonhbt {
       }
     }
 
+    std::map<std::pair<int64_t, int64_t>, std::vector<int>> crossByMothers;
+    for (int i = 0; i < nC; ++i) {
+      if (candClass[i] == 1) {
+        crossByMothers[std::minmax(candPosMother[i], candNegMother[i])].push_back(i);
+      }
+    }
+    auto candIndex = [&](int pos, int neg, int coll) -> int {
+      const auto it = v0sByPosTrack.find(pos);
+      if (it == v0sByPosTrack.end()) {
+        return -1;
+      }
+      for (const int& idx : it->second) {
+        if (allCands[idx].negTrackId == neg && allCands[idx].collisionId == coll) {
+          return idx;
+        }
+      }
+      return -1;
+    };
+
+    auto lossCause = [&](int p, int i, int64_t self, int64_t partner) -> int {
+      if (i < 0) {
+        return 4;
+      }
+      if (dedupAlive[p][i] != 0) {
+        return 0;
+      }
+      const bool perColl = (p == 1 || p == 2 || p == 5); // o2-linter: disable=magic-number (per-collision scenarios)
+      int cause = 4;
+      auto check = [&](int j) {
+        if (j == i || dedupAlive[p][j] == 0 || (perColl && allCands[j].collisionId != allCands[i].collisionId)) {
+          return;
+        }
+        int c = 2;
+        if (candPosMother[j] == partner || candNegMother[j] == partner) {
+          c = 1;
+        } else if (candClass[j] == 0 && candMother[j] == self) {
+          c = 3;
+        }
+        cause = std::min(cause, c);
+      };
+      for (const auto* m : {&v0sByPosTrack, &v0sByNegTrack}) {
+        const auto it = m->find(m == &v0sByPosTrack ? allCands[i].posTrackId : allCands[i].negTrackId);
+        if (it != m->end()) {
+          for (const int& j : it->second) {
+            check(j);
+          }
+        }
+      }
+      return cause;
+    };
+    auto openAngle = [](std::array<float, 3> const& u, std::array<float, 3> const& v) -> float {
+      const float n = std::sqrt((u[0] * u[0] + u[1] * u[1] + u[2] * u[2]) * (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]));
+      return n > 0.f ? std::acos(std::clamp((u[0] * v[0] + u[1] * v[1] + u[2] * v[2]) / n, -1.f, 1.f)) : 0.f;
+    };
+
     const float maxQ = mctruth.cfgMCMaxQinv.value > 0.f ? mctruth.cfgMCMaxQinv.value : 0.3f;
     for (const auto& [mcCol, gammas] : gammasByMcColl) {
       for (size_t i = 0; i < gammas.size(); ++i) {
@@ -4359,20 +4456,20 @@ struct Photonhbt {
           };
 
           fillStage(0.f);
+          std::array<bool, kNDedup> together{};
           {
             const auto itA = motherColls.find(a.mcId);
             const auto itB = motherColls.find(b.mcId);
             if (itA != motherColls.end() && itB != motherColls.end()) {
               for (int p = 0; p < kNDedup; ++p) {
-                bool together = false;
                 for (const int& ca : itA->second[p]) {
                   for (const int& cb : itB->second[p]) {
                     if (ca == cb) {
-                      together = true;
+                      together[p] = true;
                     }
                   }
                 }
-                if (together) {
+                if (together[p]) {
                   fRegistryTruthMC.fill(HIST("MCAOD/hSparsePairDedup"), static_cast<float>(p), dEta, dPhi, qinv);
                 }
               }
@@ -4426,6 +4523,31 @@ struct Photonhbt {
           const auto t1 = static_cast<float>(std::min(ma->typeRaw, mb->typeRaw));
           const auto t2 = static_cast<float>(std::max(ma->typeRaw, mb->typeRaw));
           fRegistryTruthMC.fill(HIST("MCAOD/hSparsePairV0Type"), dEta, dPhi, qinv, t1, t2);
+
+          // fate of this SVertexer pair under each dedup scenario
+          const int coll = ma->collisionId;
+          const int iA = candIndex(ma->posTrackId, ma->negTrackId, coll);
+          const int iB = candIndex(mb->posTrackId, mb->negTrackId, coll);
+          bool crossAvail = false;
+          if (const auto itX = crossByMothers.find(std::minmax(a.mcId, b.mcId)); itX != crossByMothers.end()) {
+            for (const int& x : itX->second) {
+              crossAvail = crossAvail || allCands[x].collisionId == coll;
+            }
+          }
+          const float legAngle = std::min(openAngle(a.posP, b.negP), openAngle(b.posP, a.negP));
+          for (int p = 0; p < kNDedup; ++p) {
+            int cause = 0;
+            if (!together[p]) {
+              const int cA = lossCause(p, iA, a.mcId, b.mcId);
+              const int cB = lossCause(p, iB, b.mcId, a.mcId);
+              cause = (cA == 0) ? cB : ((cB == 0) ? cA : std::min(cA, cB));
+              if (cause == 0) {
+                cause = 4; // both kept, but never in one common collision
+              }
+            }
+            fRegistryTruthMC.fill(HIST("MCAOD/hSparsePairLoss"), static_cast<float>(p), static_cast<float>(cause), crossAvail ? 1.f : 0.f,
+                                  std::min(legAngle, 0.2499f), dEta, dPhi, qinv);
+          }
         }
       }
     }
@@ -4438,6 +4560,7 @@ struct Photonhbt {
     int64_t evt = -1;
     int pid = -1, mid = -1, gmid = -1, pdg = 0, mpdg = 0, gpdg = 0, trk = -1, anc = -1, ggid = -1, root = -1, ggpdg = 0, rootPdg = 0;
     float sharedFrac = 0.f;
+    float nCls = 0.f, nSharedCls = 0.f;    // TPC clusters found / shared (PCMMixLegs; analysis-note QA)
     float vx = 0.f, vy = 0.f, vz = 0.f;    // MC production vertex = true conversion point (valid for pid >= 0)
     float px = 0.f, py = 0.f, pz = 0.f;    // reconstructed leg momentum at the fitted vertex, before the mass constraint (V0LegsMix)
     float mpx = 0.f, mpy = 0.f, mpz = 0.f; // MC momentum of the mother (the true photon for a conversion leg)
@@ -4453,12 +4576,21 @@ struct Photonhbt {
     float chi2 = 0.f, dcaxy = 0.f, dcaz = 0.f, cospa = 1.f; // KF chi2/ndf, DCA to the PV (cm), cos of the pointing angle to the PV
     float chi2Vtx = -1.f, chi2PV = -1.f, psipair = 0.f;     // KF chi2/ndf of the vertex fit alone, chi2 to the PV, psi_pair (processPairClassMix)
     int nFree = 0;                                          // legs that were pooled free legs (PCMMixLegs sourceV0Id -2, overlay): 0, 1, 2
+    bool pass = true;                                       // passes the analysis photon cut fV0PhotonCut (processPairClassMix; set as in processCoReco)
+    int64_t posMix = -1, eleMix = -1;                       // PCMMixLegs rows of the legs (track parameters for the bremsstrahlung pointing tag)
     PcLeg pos, ele;
   };
   static inline std::map<int, std::deque<std::vector<PcPhoton>>> mPcPools; // standard mixed event: (z bin, centrality bin) -> last cfgMixDepth same-event artificial events
+  static inline float mPcCent = -1.f;                                      //
+  static inline float mPcNLegs = -1.f;                                     //  legs (PCMMixLegs rows) of the current artificial event (processPairClassMix; hPairDens)
+  static inline float mPcOcc = -1.f, mPcVtxZ = 0.f;                        //  occupancy and z vertex of the current artificial event (analysis-note QA)
+  static inline const aod::PCMMixLegs* mPcMixLegs = nullptr;               //  PCMMixLegs of the current DF for the pointing tag (processPairClassMix)
 
   void addPairClassMixHistograms()
   {
+    if (qaflags.cfgFillNoteQA.value) {
+      addNotePairClassHistograms();
+    }
     const int nq = std::max(1, static_cast<int>(std::lround(qaflags.cfgPairClassMaxQ.value * 1000.f)));
     const AxisSpec axSample{4, -0.5f, 3.5f, "0 same event, 1 standard mixed event, 2 co-reconstructed mixed event, 3 co-reco ME, one source event"};
     const AxisSpec axClass{21, -0.5f, 20.5f, "pair class: 13 true distinct, 14 full swap, 4 half swap, 1-3 duplicates, 16 bremsstrahlung (both true), 5 bremsstrahlung with a fake, 18 photons of the same mother (pi0/eta, both true), 19 swap of two such photons, 20 same mother with a fake, 17 related swap, 15 no label, 6-12 other fakes"};
@@ -4466,19 +4598,34 @@ struct Photonhbt {
     const AxisSpec axOrigin{4, -0.5f, 3.5f, "stored photons: 0 both SVertexer originals, 1 one finder original, 2 both finder, 3 a crossed pairing"};
     const AxisSpec axClean{2, -0.5f, 1.5f, "all four legs below the TPC shared-cluster cut"};
     fRegistryPairMC.add("PairClass/Pairs/hPairClass", "photon pairs by MC class", kTHnSparseF, {axSample, axClass, axQ, axOrigin, axClean});
-    fRegistryPairMC.add("PairClass/Pairs/hDEQinv", "photon pairs: |#Delta E| vs q_{inv} by MC class", kTHnSparseF, {axSample, axClass, {100, 0.f, 0.5f, "#it{q}_{inv} (GeV/#it{c})"}, {100, 0.f, 0.5f, "|#it{E}_{1} #minus #it{E}_{2}| (GeV)"}, {std::vector<double>{0., 0.2, 0.4, 0.6, 0.9, 1.5, 3.}, "#it{k}_{T} (GeV/#it{c})"}, {std::vector<double>{0., 0.02, 0.04, 0.3}, "|#it{q}_{out}| (LCMS) (GeV/#it{c})"}});
+    const AxisSpec axPass{3, -0.5f, 2.5f, "photons of the pair passing the analysis photon cut (0, 1, 2)"};
+    fRegistryPairMC.add("PairClass/Pairs/hPairClassCut", "photon pairs by MC class vs the analysis photon cut", kTHnSparseF, {axSample, axClass, axQ, axPass});
+    fRegistryPairMC.add("PairClass/Pairs/hPairTag", "photon pairs with q_{inv} < 100 MeV: bremsstrahlung pointing tag vs the analysis cuts", kTHnSparseF, {axSample, axClass, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {std::vector<double>{0., 0.01, 0.02, 0.03, 0.05, 0.075, 0.1, 0.15, 0.2, 0.3, 0.5, 10.}, "|#Delta#it{E}| (GeV)"}, {std::vector<double>{0., 0.3, 0.6, 1., 10.}, "#it{k}_{T} (GeV/#it{c})"}, {std::vector<double>{0., 10., 20., 40., 60., 80., 100.}, "centrality FT0C (%)"}, {5, -0.5f, 4.5f, "pointing d_{min}: 0 < 0.1, 1 0.1-0.3, 2 0.3-1, 3 > 1 cm, 4 no allowed point"}, axPass, {2, -0.5f, 1.5f, "same-sign leg separation d_{min} > cfgDPairCut"}});
+    fRegistryPairMC.add("PairClass/Pairs/hBremsFake", "bremsstrahlung with a fake photon (class 5): the fake photon and its foreign leg", kTHnSparseF, {axSample, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {4, -0.5f, 3.5f, "fake photon: 0 the radiated photon (one of its legs + a foreign leg), 1 the parent photon (radiating e^{#pm} + a foreign leg), 2 both, 3 no radiated-photon leg (leg is the daughter of a leg)"}, {6, -0.5f, 5.5f, "foreign leg of the fake: 0 conversion e^{#pm} of an unrelated photon, 1 from the same cascade, 2 e^{#pm} not from a conversion, 3 not an electron, 4 no MC label, 5 n/a"}, {std::vector<double>{0., 10., 20., 40., 60., 80., 100.}, "centrality FT0C (%)"}, {5, -0.5f, 4.5f, "pointing d_{min}: 0 < 0.1, 1 0.1-0.3, 2 0.3-1, 3 > 1 cm, 4 no allowed point"}, axPass, {2, -0.5f, 1.5f, "same-sign leg separation d_{min} > cfgDPairCut"}, {3, -0.5f, 2.5f, "the fake photon is: 0 an SVertexer photon, 1 a finder photon, 2 a crossed pairing (run 2)"}});
+    fRegistryPairMC.add("PairClass/Pairs/hPartner", "pairs with a run-2 crossed photon: partner relation (photonhbt cfgCoRecoPartnerPairing) before the rule", kTHnSparseF, {axSample, axClass, axQ, {3, 0.5f, 3.5f, "1 shared run-1 source photon, 2 free legs of one source event with opposite charge, 3 unrelated"}, {2, -0.5f, 1.5f, "0 removed, 1 kept"}});
+    fRegistryPairMC.add("PairClass/Pairs/hDEQinv", "photon pairs: |#Delta E| vs q_{inv} by MC class", kTHnSparseF, {axSample, axClass, {100, 0.f, 0.5f, "#it{q}_{inv} (GeV/#it{c})"}, {100, 0.f, 0.5f, "|#it{E}_{1} #minus #it{E}_{2}| (GeV)"}, {std::vector<double>{0., 0.2, 0.4, 0.6, 0.9, 1.5, 3.}, "#it{k}_{T} (GeV/#it{c})"}});
     fRegistryPairMC.add("PairClass/Pairs/hFreeLegPair", "photon pairs by MC class: photons built with a pooled free leg", kTHnSparseF, {axSample, axClass, axQ, {3, -0.5f, 2.5f, "photons of the pair with a free leg: 0, 1, 2"}, {3, -0.5f, 2.5f, "crossed photons (run-2 pairings) in the pair: 0, 1, 2"}});
     fRegistryPairMC.add("PairClass/Pairs/hHalfSwapLegs", "half swaps: run-1 origin of the two legs of the shared true photon", kTHnSparseF, {axSample, axQ, {4, -0.5f, 3.5f, "legs of the shared photon: 0 both free legs, 1 one stored photon (taken apart), 2 two different stored photons, 3 one free one stored"}, {3, -0.5f, 2.5f, "photons of the pair with a free leg: 0, 1, 2"}});
+    if (qaflags.cfgFillHalfSwapQA.value) {
+      const AxisSpec axQ100{20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"};
+      const AxisSpec axStrayA{7, -0.5f, 6.5f, "stray leg of photon 1: 0 conversion e^{#pm} of an unrelated photon, 1 other unrelated e^{#pm}, 2 same cascade as the shared photon, 3 same mother as the shared photon, 4 same physical primary otherwise, 5 not an electron, 6 no MC label"};
+      const AxisSpec axStrayB{7, -0.5f, 6.5f, "stray leg of photon 2 (categories as photon 1)"};
+      const AxisSpec axCent6{std::vector<double>{0., 10., 20., 40., 60., 80., 100.}, "centrality FT0C (%)"};
+      fRegistryPairMC.add("PairClass/HalfSwap/hStray", "half swaps (class 4): MC relation of the two stray legs to the shared true photon", kTHnSparseF, {axSample, axQ100, axStrayA, axStrayB, {3, -0.5f, 2.5f, "the two stray legs: 0 unrelated, 1 same mother, 2 same physical primary"}, axCent6, axPass, {3, -0.5f, 2.5f, "stray legs that are pooled free legs (0, 1, 2)"}});
+      const std::vector<double> sBins{0., 0.25, 0.5, 0.75, 1., 1.5, 2., 3., 5., 10., 1000.};
+      fRegistryPairMC.add("PairClass/HalfSwap/hCrossBoth", "photon pairs with q_{inv} < 100 MeV: photon-likeness s of both leg-swapped combinations by MC class (s = max of |circle gap|, |#Delta z|, |#Delta tan#lambda| in units of cfgCrossMaxGap / Dz / DTgl; s < 1 = inside the geometric crossed veto window)", kTHnSparseF, {axSample, axClass, axQ100, {sBins, "s of the more photon-like leg-swapped combination"}, {sBins, "s of the other leg-swapped combination"}, axPass, {2, -0.5f, 1.5f, "same-sign leg separation d_{min} > cfgDPairCut"}});
+    }
     fRegistryPairMC.add("PairClass/Pairs/hKtQ", "photon pairs: k_{T} vs q_{inv} by MC class", kTHnSparseF, {axSample, axClass, axQ, {100, 0.f, 2.f, "#it{k}_{T} (GeV/#it{c})"}});
     fRegistryPairMC.add("PairClass/Pairs/hQinvQout", "photon pairs: q_{inv} vs |q_{out}| (LCMS) by MC class", kTHnSparseF, {axSample, axClass, axQ, {60, 0.f, 0.3f, "|#it{q}_{out}| (LCMS) (GeV/#it{c})"}, {std::vector<double>{0., 0.2, 0.4, 0.6, 0.9, 1.5, 3.}, "#it{k}_{T} (GeV/#it{c})"}});
     fRegistryPairMC.add("PairClass/Pairs/hPairOpening", "photon pairs with q_{inv} < 50 MeV: orientation of the opening by MC class", kTHnSparseF, {axSample, axClass, {10, 0.f, 0.05f, "#it{q}_{inv} (GeV/#it{c})"}, {30, 0.f, 0.15f, "|#it{q}_{side}| (LCMS) (GeV/#it{c})"}, {30, 0.f, 0.15f, "|#it{q}_{long}| (LCMS) (GeV/#it{c})"}, {18, 0.f, 1.5708f, "#psi = atan(|#Delta#eta| / |#Delta#varphi|) (rad)"}});
     fRegistryPairMC.add("PairClass/Pairs/hSoftHard", "photon pairs with q_{inv} < 100 MeV: soft vs hard photon (reconstructed) by MC class", kTHnSparseF, {axSample, axClass, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {20, 0.f, 1.f, "#it{E}_{soft} / #it{E}_{hard}"}, {60, -60.f, 60.f, "#it{R}_{xy}(soft) #minus #it{R}_{xy}(hard) (cm)"}, {18, 0.f, 90.f, "#it{R}_{xy}(hard) (cm)"}, {18, 0.f, 1.5708f, "#psi (rad)"}});
-    fRegistryPairMC.add("PairClass/Pairs/hPairRes", "pairs of two true photons, q_{inv} < 100 MeV: resolution by MC class", kTHnSparseF, {axSample, axClass, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {40, -0.02f, 0.02f, "#it{q}_{inv}^{rec} #minus #it{q}_{inv}^{true} (GeV/#it{c})"}, {40, -0.1f, 0.1f, "#Delta#it{E}^{rec} #minus #Delta#it{E}^{true} (GeV)"}});
+    fRegistryPairMC.add("PairClass/Pairs/hPairRes", "pairs of two true photons, q_{inv} < 100 MeV: resolution by MC class", kTHnSparseF, {axSample, axClass, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {40, -0.02f, 0.02f, "#it{q}_{inv}^{rec} #minus #it{q}_{inv}^{true} (GeV/#it{c})"}, {40, -0.1f, 0.1f, "#Delta#it{E}^{rec} #minus #Delta#it{E}^{true} (GeV)"}, {std::vector<double>{0., 10., 20., 40., 80., 100.}, "centrality FT0C (%)"}});
+    fRegistryPairMC.add("PairClass/Pairs/hPairDens", "photon pairs by MC class vs the number of legs in the artificial event", kTHnSparseF, {axSample, axClass, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {std::vector<double>{0., 25., 50., 75., 100., 125., 150., 200., 250., 300., 400., 500., 600., 800., 1000., 1500.}, "legs in the artificial event"}, {std::vector<double>{0., 10., 20., 30., 40., 50., 60., 80., 100.}, "centrality FT0C (%)"}});
     fRegistryPairMC.add("PairClass/Pairs/hPairDist", "photon pairs: conversion-point distances by MC class", kTHnSparseF, {axSample, axClass, {50, 0.f, 0.5f, "#it{q}_{inv} (GeV/#it{c})"}, {100, 0.f, 50.f, "reconstructed: distance of the two conversion points (cm)"}, {104, -2.f, 50.f, "true: largest distance of the legs' production vertices (cm)"}});
     fRegistryPairMC.add("PairClass/Pairs/hPairQ", "photon pairs: fitted q, four-leg invariant mass, true q by MC class", kTHnSparseF, {axSample, axClass, {100, 0.f, 0.2f, "#it{q}_{inv} of the fitted photons (GeV/#it{c})"}, {100, 0.f, 0.2f, "#it{M} of the four legs (GeV/#it{c}^{2})"}, {100, 0.f, 0.2f, "#it{q}_{inv} of the two true photons (GeV/#it{c})"}, {6, 0.f, 1.5f, "#it{k}_{T} (GeV/#it{c})"}});
     fRegistryPairMC.add("PairClass/Pairs/hPairAlpha", "photon pairs: signed energy sharing of the two photons by MC class", kTHnSparseF, {axSample, axClass, {50, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {20, -1.f, 1.f, "#alpha_{1}"}, {20, -1.f, 1.f, "#alpha_{2}"}, {10, 0.f, 1.f, "|#it{E}_{1} #minus #it{E}_{2}| / (#it{E}_{1} + #it{E}_{2}) of the mother photons"}});
     fRegistryPairMC.add("PairClass/Pairs/hPairLegs", "photon pairs: leg diagnostics by MC class", kTHnSparseF, {axSample, axClass, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {15, 0.f, 0.3f, "max over the two photons of |tan#lambda_{+} #minus tan#lambda_{#minus}|"}, {10, 0.f, 1.f, "softest leg #it{p} (GeV/#it{c})"}, {5, -0.5f, 4.5f, "legs with ITS (of 4)"}, axOrigin});
-    fRegistryPairMC.add("PairClass/Pairs/hDupPieces", "duplicates (classes 1, 2, 3, 12): the two pieces of the shared MC particle", kTHnSparseF, {axSample, {4, -0.5f, 3.5f, "class: 0 = 1 (same photon twice), 1 = 2, 2 = 3, 3 = 12 (same track)"}, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {40, 0.f, 0.2f, "|tan#lambda_{1} #minus tan#lambda_{2}| of the two pieces"}, {20, 0.f, 1.f, "|#it{p}_{T,1} #minus #it{p}_{T,2}| / max(#it{p}_{T}) of the two pieces"}, {3, -0.5f, 2.5f, "charge slots: 0 same (both +/both #minus), 1 opposite, 2 no shared particle found"}, axOrigin, {3, -0.5f, 2.5f, "pieces with ITS (of 2)"}});
+    fRegistryPairMC.add("PairClass/Pairs/hDupPieces", "duplicates (classes 1, 2, 3, 12): the two pieces of the shared MC particle", kTHnSparseF, {axSample, {4, -0.5f, 3.5f, "class: 0 = 1 (same photon twice), 1 = 2, 2 = 3, 3 = 12 (same track)"}, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {40, 0.f, 0.2f, "|tan#lambda_{1} #minus tan#lambda_{2}| of the two pieces"}, {20, 0.f, 1.f, "|#it{p}_{T,1} #minus #it{p}_{T,2}| / max(#it{p}_{T}) of the two pieces"}, {3, -0.5f, 2.5f, "charge slots: 0 same (both +/both #minus), 1 opposite, 2 no shared particle found"}, axOrigin, {3, -0.5f, 2.5f, "pieces with ITS (of 2)"}, {3, -0.5f, 2.5f, "photons of the pair passing the analysis photon cut (0, 1, 2)"}});
     fRegistryPairMC.add("PairClass/Pairs/hPairCE", "photon pairs: central-electrode variables by MC class", kTHnSparseF, {axSample, axClass, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {std::vector<double>{0., 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.9, 2.}, "min |#eta| of the two photons"}, {std::vector<double>{0., 1., 2., 5., 10., 20., 50., 300.}, "min |z_{conv}^{true}| (cm)"}, {5, -0.5f, 4.5f, "legs crossing the central electrode in the TPC (of 4)"}, {5, -0.5f, 4.5f, "legs with ITS (of 4)"}});
     fRegistryPairMC.add("PairClass/Pairs/hPairR", "photon pairs: conversion radii by MC class", kTHnSparseF, {axSample, axClass, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {90, 0.f, 90.f, "#it{R}_{xy} of the inner photon (cm)"}, {90, 0.f, 90.f, "#it{R}_{xy} of the outer photon (cm)"}, {91, -1.f, 90.f, "true #it{R}_{xy} of the inner photon (cm), -1 without MC"}});
     fRegistryPairMC.add("PairClass/Pairs/hBrems", "bremsstrahlung pairs (classes 16 and 5, MC)", kTHnSparseF, {axSample, {2, -0.5f, 1.5f, "0 class 16 (both true), 1 class 5 (with a fake)"}, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {5, -0.5f, 4.5f, "radiating electron from: 0 photon conversion, 1 #pi^{0} Dalitz, 2 #eta Dalitz, 3 other, 4 not found"}, {6, -0.5f, 5.5f, "mother of the parent photon: 0 #pi^{0}, 1 #eta, 2 #omega, 3 e^{#pm} (bremsstrahlung), 4 other, 5 none / not a photon"}, {50, 0.f, 0.25f, "#theta(#gamma_{brems}, radiating e^{#pm} rec.) (rad)"}, {50, 0.f, 0.25f, "#theta(#gamma_{brems}, parent #gamma) (rad), MC"}, {60, -40.f, 80.f, "true #it{R}_{xy}(#gamma_{brems}) #minus #it{R}_{xy}(parent) (cm)"}, {20, 0.f, 1.f, "#it{E}(#gamma_{brems}) / #it{E}(parent), MC"}});
@@ -4489,7 +4636,7 @@ struct Photonhbt {
     }
     fRegistryPairMC.add("PairClass/Pairs/hPhotonKF", "photons of the pairs by MC class (each photon once per pair)", kTHnSparseF, {axSample, axClass, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {2, -0.5f, 1.5f, "0 photon radiated by an e^{#pm} (MC mother e^{#pm}), 1 other"}, {50, 0.f, 25.f, "KF #chi^{2}/ndf of the conversion-vertex fit"}, {60, 0.f, 300.f, "KF #chi^{2} to the primary vertex"}, {40, -0.2f, 0.2f, "#psi_{pair} (rad)"}});
     fRegistryPairMC.add("PairClass/Pairs/hHiddenBrems", "true distinct pairs (class 13) with a photon radiated by an e^{#pm} (MC)", kTHnSparseF, {axSample, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {3, -0.5f, 2.5f, "photons of the pair radiated by an e^{#pm}"}, {4, -0.5f, 3.5f, "partner vs the radiating e^{#pm}: 0 unrelated, 1 same mother (e.g. Dalitz #gamma), 2 same root ancestor, 3 partner is itself radiated"}, {6, -0.5f, 5.5f, "radiating e^{#pm} from: 0 photon conversion, 1 #pi^{0} Dalitz, 2 #eta Dalitz, 3 heavy flavour (D, B), 4 other hadron, 5 none / unknown"}, {3, -0.5f, 2.5f, "partner vs the radiating e^{#pm}: 0 different first physical primary, 1 same first physical primary, 2 n/a"}});
-    fRegistryPairMC.add("PairClass/Pairs/hPairSep", "photon pairs with q_{inv} < 100 MeV: minimum same-sign leg distance in the TPC by MC class", kTHnSparseF, {axSample, axClass, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {50, 0.f, 10.f, "min #sqrt{#Delta(r#varphi)^{2} + #Delta z^{2}} of the same-sign legs (cm)"}, {25, 0.f, 5.f, "min #Delta(r#varphi) of the same-sign legs (cm)"}, {10, 0.f, 0.5f, "|#it{E}_{1} #minus #it{E}_{2}| (GeV)"}});
+    fRegistryPairMC.add("PairClass/Pairs/hPairSep", "photon pairs with q_{inv} < 100 MeV: minimum same-sign leg distance in the TPC by MC class", kTHnSparseF, {axSample, axClass, {20, 0.f, 0.1f, "#it{q}_{inv} (GeV/#it{c})"}, {50, 0.f, 10.f, "min #sqrt{#Delta(r#varphi)^{2} + #Delta z^{2}} of the same-sign legs (cm)"}, {25, 0.f, 5.f, "min #Delta(r#varphi) of the same-sign legs (cm)"}, {10, 0.f, 0.5f, "|#it{E}_{1} #minus #it{E}_{2}| (GeV)"}, {3, -0.5f, 2.5f, "conversion radius R_{xy}: 0 both < 70 cm, 1 one #geq 70 cm, 2 both #geq 70 cm"}, {2, -0.5f, 1.5f, "all four legs below the TPC shared-cluster cut"}, {3, -0.5f, 2.5f, "photons of the pair passing the analysis photon cut (0, 1, 2)"}});
     fRegistryPairMC.add("PairClass/Photons/hLegTrueDist", "stored photons: distance of the true production vertices of the two legs;0 same event, 1 mixed event;0 SVertexer original, 1 finder original, 2 crossed pairing;distance (cm)", kTH3F, {{2, -0.5f, 1.5f}, {3, -0.5f, 2.5f}, {104, -2.f, 50.f}});
     auto hEv = fRegistryPairMC.add<TH1>("PairClass/Events/hArtificialEvents", "artificial events;;events", kTH1F, {{4, -0.5f, 3.5f}});
     hEv->GetXaxis()->SetBinLabel(1, "same event");
@@ -4519,6 +4666,7 @@ struct Photonhbt {
     }
     return false;
   }
+  // photons of the same mother (pi0 / eta -> gamma gamma): the legs share the grandmother but not the mother
   static bool pcSiblingPair(PcPhoton const& a, PcPhoton const& b)
   {
     for (const auto* x : {&a.pos, &a.ele}) {
@@ -4547,7 +4695,9 @@ struct Photonhbt {
     }
     return 3;
   }
-
+  // class of a pair with a fake: 12 shared AO2D track, 1 same MC photon twice, 2/3 shared MC particle under two track ids, 4 shared
+  // photon mother (half swap), 5 related by MC history (brems, siblings, leg daughter of a leg), 6 shared non-photon mother,
+  // 7 both fake, 8 fake from one non-photon mother, 9 fake with a non-electron leg, 10 fake from two photons, 11 other
   static int pcFakeClass(PcPhoton const& a, PcPhoton const& b)
   {
     const std::array<const PcLeg*, 2> la{&a.pos, &a.ele}, lb{&b.pos, &b.ele};
@@ -4636,6 +4786,43 @@ struct Photonhbt {
     }
     return (a.svertexer ? 0 : 1) + (b.svertexer ? 0 : 1);
   }
+
+  static int pcPartner(PcPhoton const& a, PcPhoton const& b)
+  {
+    if (a.original && b.original) {
+      return 0;
+    }
+    const std::array<const PcLeg*, 2> la{&a.pos, &a.ele}, lb{&b.pos, &b.ele};
+    for (const auto* x : la) {
+      for (const auto* y : lb) {
+        if (x->srcPhoton >= 0 && x->srcPhoton == y->srcPhoton) {
+          return 1;
+        }
+      }
+    }
+    if ((a.pos.free && b.ele.free && a.pos.evt == b.ele.evt) || (a.ele.free && b.pos.free && a.ele.evt == b.pos.evt)) {
+      return 2; // o2-linter: disable=magic-number (partner category)
+    }
+    return 3; // o2-linter: disable=magic-number (partner category)
+  }
+  [[nodiscard]] bool pcPartnerKept(const int partner) const
+  {
+    const int mode = mixing.cfgCoRecoPartnerPairing.value;
+    return mode <= 0 || partner <= 1 || (mode >= 2 && partner == 2); // o2-linter: disable=magic-number (partner category)
+  }
+  // partner rule on one pair of processPairClassMix (all MC classes, q < cfgPairClassMaxQ in the diagnostic); returns whether the pair is kept
+  bool pcApplyPartnerRule(const float sample, PcPhoton const& a, PcPhoton const& b)
+  {
+    const int partner = pcPartner(a, b);
+    const bool kept = pcPartnerKept(partner);
+    if (partner > 0) {
+      const float q = o2::pwgem::photonmeson::qInv(a.px, a.py, a.pz, b.px, b.py, b.pz);
+      if (q < qaflags.cfgPairClassMaxQ.value) {
+        fRegistryPairMC.fill(HIST("PairClass/Pairs/hPartner"), sample, static_cast<float>(pcPairClass(a, b)), q, static_cast<float>(partner), kept ? 1.f : 0.f);
+      }
+    }
+    return kept;
+  }
   struct PcPairSep {
     float dMin = 999.f, dRPhiMin = 999.f;
   };
@@ -4676,6 +4863,159 @@ struct Photonhbt {
     return s;
   }
 
+  float pcBremsPointingDMin(PcPhoton const& a, PcPhoton const& b) const
+  {
+    constexpr float StepCm = 0.25f, MaxArcCm = 100.f, MarginCm = 2.f;
+    float best = 999.f;
+    if (mPcMixLegs == nullptr) {
+      return best;
+    }
+    const float bzKG = 10.f * mBzT;
+    for (int order = 0; order < 2; ++order) {
+      PcPhoton const& emitter = order == 0 ? a : b;
+      PcPhoton const& brems = order == 0 ? b : a;
+      const float pB = std::hypot(brems.px, brems.py, brems.pz);
+      if (pB <= 0.f) {
+        continue;
+      }
+      const std::array<float, 3> u{brems.px / pB, brems.py / pB, brems.pz / pB};
+      const float rA = std::hypot(emitter.vx, emitter.vy), rB = std::hypot(brems.vx, brems.vy);
+      for (const int64_t row : {emitter.posMix, emitter.eleMix}) {
+        if (row < 0 || row >= mPcMixLegs->size()) {
+          continue;
+        }
+        const auto leg = mPcMixLegs->rawIteratorAt(row);
+        const o2::track::TrackPar par(leg.x(), leg.alpha(), std::array<float, 5>{leg.y(), leg.z(), leg.snp(), leg.tgl(), leg.signed1Pt()});
+        o2::math_utils::CircleXYf_t circle;
+        float sna = 0.f, csa = 0.f;
+        par.getCircleParams(bzKG, circle, sna, csa);
+        std::array<float, 3> x0{}, p0{};
+        par.getXYZGlo(x0);
+        par.getPxPyPzGlo(p0);
+        if (circle.rC <= 0.f) {
+          continue;
+        }
+        const float psi0 = std::atan2(x0[1] - circle.yC, x0[0] - circle.xC);
+        const float sense = ((x0[0] - circle.xC) * p0[1] - (x0[1] - circle.yC) * p0[0]) > 0.f ? 1.f : -1.f;
+        const float tgl = par.getTgl();
+        const int nArcSteps = static_cast<int>(std::lround(2.f * MaxArcCm / StepCm));
+        for (int iArc = 0; iArc <= nArcSteps; ++iArc) {
+          const float sArc = -MaxArcCm + static_cast<float>(iArc) * StepCm;
+          const float psi = psi0 + sense * sArc / circle.rC;
+          const std::array<float, 3> h{circle.xC + circle.rC * std::cos(psi), circle.yC + circle.rC * std::sin(psi), x0[2] + tgl * sArc};
+          const float rH = std::hypot(h[0], h[1]);
+          if (rH < rA - MarginCm || rH > rB + MarginCm) {
+            continue; // emission between the two conversions
+          }
+          const std::array<float, 3> d{h[0] - brems.vx, h[1] - brems.vy, h[2] - brems.vz};
+          const float t = d[0] * u[0] + d[1] * u[1] + d[2] * u[2];
+          if (t > 0.f) {
+            continue; // in front of B's conversion point
+          }
+          best = std::min(best, std::hypot(d[0] - t * u[0], d[1] - t * u[1], d[2] - t * u[2]));
+        }
+      }
+    }
+    return best;
+  }
+
+  static int pcStrayRelation(PcLeg const& f, PcLeg const& g1, PcLeg const& g2)
+  {
+    constexpr int NoLabel = 6, NotElectron = 5, SamePrimary = 4, SameMother = 3, Cascade = 2, OtherElectron = 1, UnrelatedConversion = 0;
+    if (f.pid < 0) {
+      return NoLabel;
+    }
+    if (std::abs(f.pdg) != kPcElectron) {
+      return NotElectron;
+    }
+    for (const auto* g : {&g1, &g2}) {
+      if (pcSameMother(f, *g) || pcDaughterOf(f, *g) || pcRadiatedBy(f, *g) || pcRadiatedBy(*g, f)) {
+        return Cascade;
+      }
+    }
+    if (f.evt == g1.evt && g1.gmid >= 0 && (f.gmid == g1.gmid || f.mid == g1.gmid)) {
+      return SameMother;
+    }
+    if (f.evt == g1.evt && g1.anc >= 0 && f.anc == g1.anc) {
+      return SamePrimary;
+    }
+    return f.mpdg == kPcGamma ? UnrelatedConversion : OtherElectron;
+  }
+  void fillPcHalfSwapStray(const float sample, const float q, PcPhoton const& a, PcPhoton const& b, const float nPass)
+  {
+    const std::array<std::pair<const PcLeg*, const PcLeg*>, 2> legsA{{{&a.pos, &a.ele}, {&a.ele, &a.pos}}};
+    const std::array<std::pair<const PcLeg*, const PcLeg*>, 2> legsB{{{&b.pos, &b.ele}, {&b.ele, &b.pos}}};
+    for (const auto& [x, xo] : legsA) {
+      for (const auto& [y, yo] : legsB) {
+        if (x->mpdg == kPcGamma && pcSameMother(*x, *y)) { // x, y = the two legs of the shared photon; xo, yo = the stray legs
+          const bool sameEvt = xo->evt == yo->evt && xo->pid >= 0 && yo->pid >= 0;
+          const float strays = (sameEvt && pcSameMother(*xo, *yo)) ? 1.f : ((sameEvt && xo->anc >= 0 && xo->anc == yo->anc) ? 2.f : 0.f);
+          fRegistryPairMC.fill(HIST("PairClass/HalfSwap/hStray"), sample, q, static_cast<float>(pcStrayRelation(*xo, *x, *y)), static_cast<float>(pcStrayRelation(*yo, *x, *y)), strays, mPcCent, nPass, static_cast<float>(static_cast<int>(xo->free) + static_cast<int>(yo->free)));
+          return;
+        }
+      }
+    }
+  }
+
+  std::array<float, 2> pcCrossScores(PcPhoton const& a, PcPhoton const& b) const
+  {
+    std::array<float, 2> s{999.f, 999.f};
+    if (mPcMixLegs == nullptr || std::fabs(mBzT) < kMinSigma) {
+      return s;
+    }
+    struct Helix {
+      bool ok = false;
+      float xC = 0.f, yC = 0.f, rC = 0.f, psi0 = 0.f, sense = 1.f, z0 = 0.f, tgl = 0.f;
+    };
+    const float bzKG = 10.f * mBzT;
+    auto helix = [&](const int64_t row) {
+      Helix h;
+      if (row < 0 || row >= mPcMixLegs->size()) {
+        return h;
+      }
+      const auto leg = mPcMixLegs->rawIteratorAt(row);
+      const o2::track::TrackPar par(leg.x(), leg.alpha(), std::array<float, 5>{leg.y(), leg.z(), leg.snp(), leg.tgl(), leg.signed1Pt()});
+      o2::math_utils::CircleXYf_t circle;
+      float sna = 0.f, csa = 0.f;
+      par.getCircleParams(bzKG, circle, sna, csa);
+      if (circle.rC <= 0.f) {
+        return h;
+      }
+      std::array<float, 3> x0{}, p0{};
+      par.getXYZGlo(x0);
+      par.getPxPyPzGlo(p0);
+      h.xC = circle.xC;
+      h.yC = circle.yC;
+      h.rC = circle.rC;
+      h.psi0 = std::atan2(x0[1] - circle.yC, x0[0] - circle.xC);
+      h.sense = ((x0[0] - circle.xC) * p0[1] - (x0[1] - circle.yC) * p0[0]) > 0.f ? 1.f : -1.f;
+      h.z0 = x0[2];
+      h.tgl = par.getTgl();
+      h.ok = true;
+      return h;
+    };
+    const float gapMax = std::max(crosspair.cfgCrossMaxGap.value, kMinSigma), dzMax = std::max(crosspair.cfgCrossMaxDz.value, kMinSigma), dTglMax = std::max(crosspair.cfgCrossMaxDTgl.value, kMinSigma);
+    const std::array<std::pair<int64_t, int64_t>, 2> combos{{{a.posMix, b.eleMix}, {b.posMix, a.eleMix}}};
+    for (size_t c = 0; c < combos.size(); ++c) {
+      const Helix hP = helix(combos[c].first), hE = helix(combos[c].second);
+      const float dC = std::hypot(hE.xC - hP.xC, hE.yC - hP.yC);
+      if (!hP.ok || !hE.ok || !(dC > kMinSigma)) {
+        continue;
+      }
+      const float w = hP.rC / (hP.rC + hE.rC);
+      const float xT = hP.xC + w * (hE.xC - hP.xC), yT = hP.yC + w * (hE.yC - hP.yC); // touching point of the two circles
+      auto zAt = [&](Helix const& h) {
+        const float dpsi = RecoDecay::constrainAngle(std::atan2(yT - h.yC, xT - h.xC) - h.psi0, -o2::constants::math::PI);
+        return h.z0 + h.tgl * h.sense * dpsi * h.rC;
+      };
+      s[c] = std::max({std::fabs(dC - (hP.rC + hE.rC)) / gapMax, std::fabs(zAt(hP) - zAt(hE)) / dzMax, std::fabs(hP.tgl - hE.tgl) / dTglMax});
+    }
+    if (s[1] < s[0]) {
+      std::swap(s[0], s[1]);
+    }
+    return s;
+  }
+
   void fillPcPair(const float sample, PcPhoton const& a, PcPhoton const& b)
   {
     const float q = o2::pwgem::photonmeson::qInv(a.px, a.py, a.pz, b.px, b.py, b.pz);
@@ -4685,11 +5025,87 @@ struct Photonhbt {
     const float clean = std::max({a.pos.sharedFrac, a.ele.sharedFrac, b.pos.sharedFrac, b.ele.sharedFrac}) < qaflags.cfgPairClassMaxSharedFrac.value ? 1.f : 0.f;
     const auto cls = static_cast<float>(pcPairClass(a, b));
     fRegistryPairMC.fill(HIST("PairClass/Pairs/hPairClass"), sample, cls, q, static_cast<float>(pcPairOrigin(a, b)), clean);
+    const auto nPass = static_cast<float>(static_cast<int>(a.pass) + static_cast<int>(b.pass));
+    fRegistryPairMC.fill(HIST("PairClass/Pairs/hPairClassCut"), sample, cls, q, nPass);
+    if (q < 0.1f) { // o2-linter: disable=magic-number (diagnostic range)
+      fRegistryPairMC.fill(HIST("PairClass/Pairs/hPairDens"), sample, cls, q, mPcNLegs, mPcCent);
+    }
     fRegistryPairMC.fill(HIST("PairClass/Pairs/hKtQ"), sample, cls, q, 0.5f * std::hypot(a.px + b.px, a.py + b.py));
     if (q < 0.1f) { // o2-linter: disable=magic-number (diagnostic range)
       const auto sep = pcPairSep(a, b);
       const float eAs = std::hypot(a.px, a.py, a.pz), eBs = std::hypot(b.px, b.py, b.pz);
-      fRegistryPairMC.fill(HIST("PairClass/Pairs/hPairSep"), sample, cls, q, std::min(sep.dMin, 9.99f), std::min(sep.dRPhiMin, 4.99f), std::min(std::fabs(eAs - eBs), 0.499f));
+      constexpr float kRTpcEntranceCm = 70.f; // conversions in front of the TPC (inner vessel / field cage): swaps the overlay misses
+      const auto rRegion = static_cast<float>((std::hypot(a.vx, a.vy) >= kRTpcEntranceCm ? 1 : 0) + (std::hypot(b.vx, b.vy) >= kRTpcEntranceCm ? 1 : 0));
+      fRegistryPairMC.fill(HIST("PairClass/Pairs/hPairSep"), sample, cls, q, std::min(sep.dMin, 9.99f), std::min(sep.dRPhiMin, 4.99f), std::min(std::fabs(eAs - eBs), 0.499f), rRegion, clean, nPass);
+      fillPcNote(sample, cls, q, a, b, nPass, sep.dMin > pairsep.cfgDPairCut.value ? 1.f : 0.f);
+      if (sample != 1.f) { // not the standard ME: its pool photons can come from earlier DFs (leg rows of another PCMMixLegs table)
+        constexpr float DVTight = 0.1f, DTight = 0.3f, DLoose = 1.f, DNone = 100.f;
+        const float dPoint = pcBremsPointingDMin(a, b);
+        const float dCat = dPoint < DVTight ? 0.f : (dPoint < DTight ? 1.f : (dPoint < DLoose ? 2.f : (dPoint < DNone ? 3.f : 4.f)));
+        const float kTt = 0.5f * std::hypot(a.px + b.px, a.py + b.py);
+        const float sepPass = sep.dMin > pairsep.cfgDPairCut.value ? 1.f : 0.f;
+        fRegistryPairMC.fill(HIST("PairClass/Pairs/hPairTag"), sample, cls, q, std::min(std::fabs(eAs - eBs), 9.99f), std::min(kTt, 9.99f), mPcCent, dCat, nPass, sepPass);
+        if (qaflags.cfgFillHalfSwapQA.value) {
+          const auto sCross = pcCrossScores(a, b);
+          fRegistryPairMC.fill(HIST("PairClass/HalfSwap/hCrossBoth"), sample, cls, q, std::min(sCross[0], 999.f), std::min(sCross[1], 999.f), nPass, sepPass);
+        }
+        if (cls == 5.f) { // o2-linter: disable=magic-number (bremsstrahlung with a fake photon)
+          // x = leg of the radiated photon, y = the radiating e+- (x's grandmother); xo, yo = the other legs of the two photons
+          const PcLeg *x = nullptr, *y = nullptr, *xo = nullptr, *yo = nullptr;
+          const PcPhoton *pB = nullptr, *pA = nullptr; // pB holds x (radiated side), pA holds y (parent side)
+          const std::array<std::pair<const PcPhoton*, const PcPhoton*>, 2> orders{{{&a, &b}, {&b, &a}}};
+          for (const auto& [p1, p2] : orders) {
+            const std::array<std::pair<const PcLeg*, const PcLeg*>, 2> legs1{{{&p1->pos, &p1->ele}, {&p1->ele, &p1->pos}}};
+            const std::array<std::pair<const PcLeg*, const PcLeg*>, 2> legs2{{{&p2->pos, &p2->ele}, {&p2->ele, &p2->pos}}};
+            for (const auto& [l1, l1o] : legs1) {
+              for (const auto& [l2, l2o] : legs2) {
+                if (!x && pcRadiatedBy(*l1, *l2)) {
+                  x = l1;
+                  xo = l1o;
+                  y = l2;
+                  yo = l2o;
+                  pB = p1;
+                  pA = p2;
+                }
+              }
+            }
+          }
+          float side = 3.f, foreign = 5.f, fakeOrigin = 0.f;
+          if (x) {
+            const bool bTrue = pcTruePhoton(*pB), aTrue = pcTruePhoton(*pA);
+            side = (bTrue == aTrue) ? 2.f : (bTrue ? 1.f : 0.f);
+            const PcLeg* f = !bTrue ? xo : yo; // foreign leg of the fake photon (of the radiated side if both are fakes)
+            const PcPhoton* pf = !bTrue ? pB : pA;
+            fakeOrigin = pf->original ? (pf->svertexer ? 0.f : 1.f) : 2.f;
+            const std::array<const PcLeg*, 3> others{!bTrue ? x : y, !bTrue ? y : x, !bTrue ? yo : xo};
+            bool cascade = false;
+            for (const auto* l : others) {
+              if (f->evt != l->evt || f->pid < 0 || l->pid < 0) {
+                continue;
+              }
+              cascade = cascade || (f->gmid >= 0 && f->gmid == l->pid) || (f->mid >= 0 && f->mid == l->pid) || f->pid == l->gmid || f->pid == l->mid || (f->mid >= 0 && f->mid == l->mid);
+            }
+            if (f->pid < 0) {
+              foreign = 4.f;
+            } else if (std::abs(f->pdg) != kPcElectron) {
+              foreign = 3.f;
+            } else if (cascade) {
+              foreign = 1.f;
+            } else if (f->mpdg == kPcGamma) {
+              foreign = 0.f;
+            } else {
+              foreign = 2.f;
+            }
+          } else {
+            const PcPhoton& pf = !pcTruePhoton(a) ? a : b;
+            fakeOrigin = pf.original ? (pf.svertexer ? 0.f : 1.f) : 2.f;
+          }
+          fRegistryPairMC.fill(HIST("PairClass/Pairs/hBremsFake"), sample, q, side, foreign, mPcCent, dCat, nPass, sepPass, fakeOrigin);
+        }
+      }
+    }
+    if (cls == 4.f && q < 0.1f && qaflags.cfgFillHalfSwapQA.value) { // o2-linter: disable=magic-number (half swap, diagnostic range)
+      fillPcHalfSwapStray(sample, q, a, b, nPass);
     }
     if (cls == 4.f) { // o2-linter: disable=magic-number (half swap)
       for (const auto* x : {&a.pos, &a.ele}) {
@@ -4702,6 +5118,10 @@ struct Photonhbt {
         }
       }
     }
+    {
+      const float eA = std::sqrt(a.px * a.px + a.py * a.py + a.pz * a.pz), eB = std::sqrt(b.px * b.px + b.py * b.py + b.pz * b.pz);
+      fRegistryPairMC.fill(HIST("PairClass/Pairs/hDEQinv"), sample, cls, q, std::fabs(eA - eB), 0.5f * std::hypot(a.px + b.px, a.py + b.py));
+    }
     fRegistryPairMC.fill(HIST("PairClass/Pairs/hFreeLegPair"), sample, cls, q, static_cast<float>((a.nFree > 0 ? 1 : 0) + (b.nFree > 0 ? 1 : 0)), static_cast<float>((a.original ? 0 : 1) + (b.original ? 0 : 1)));
     {
       const ROOT::Math::PxPyPzMVector v1(a.px, a.py, a.pz, 0.f), v2(b.px, b.py, b.pz, 0.f);
@@ -4711,8 +5131,6 @@ struct Photonhbt {
       const float qout = std::fabs(q3.Dot(ROOT::Math::XYZVector(sum.Px(), sum.Py(), 0.).Unit()));
       const float kt = 0.5f * std::hypot(a.px + b.px, a.py + b.py);
       fRegistryPairMC.fill(HIST("PairClass/Pairs/hQinvQout"), sample, cls, q, qout, std::min(kt, 2.99f));
-      const float eA = std::sqrt(a.px * a.px + a.py * a.py + a.pz * a.pz), eB = std::sqrt(b.px * b.px + b.py * b.py + b.pz * b.pz);
-      fRegistryPairMC.fill(HIST("PairClass/Pairs/hDEQinv"), sample, cls, q, std::fabs(eA - eB), kt, std::min(qout, 0.299f));
       const auto ktUnit = ROOT::Math::XYZVector(sum.Px(), sum.Py(), 0.).Unit();
       const float qside = std::fabs(q3.Dot(ROOT::Math::XYZVector(-ktUnit.Y(), ktUnit.X(), 0.)));
       const float qlong = std::fabs(q3.Z());
@@ -4724,6 +5142,7 @@ struct Photonhbt {
         fRegistryPairMC.fill(HIST("PairClass/Pairs/hPairOpening"), sample, cls, q, std::min(qside, 0.149f), std::min(qlong, 0.149f), std::min(psi, 1.57f));
       }
       if (q < 0.1f) { // o2-linter: disable=magic-number (diagnostic range)
+        const float eA = std::hypot(a.px, a.py, a.pz), eB = std::hypot(b.px, b.py, b.pz);
         PcPhoton const& soft = eA <= eB ? a : b;
         PcPhoton const& hard = eA <= eB ? b : a;
         const float rSoft = std::hypot(soft.vx, soft.vy), rHard = std::hypot(hard.vx, hard.vy);
@@ -4733,11 +5152,12 @@ struct Photonhbt {
           const float qT = o2::pwgem::photonmeson::qInv(a.pos.mpx, a.pos.mpy, a.pos.mpz, b.pos.mpx, b.pos.mpy, b.pos.mpz);
           const float dERec = eA >= eB ? eA - eB : eB - eA;
           const float dETrue = eA >= eB ? tA - tB : tB - tA; // same photon order as the reconstructed one
-          fRegistryPairMC.fill(HIST("PairClass/Pairs/hPairRes"), sample, cls, q, std::clamp(q - qT, -0.0199f, 0.0199f), std::clamp(dERec - dETrue, -0.0999f, 0.0999f));
+          fRegistryPairMC.fill(HIST("PairClass/Pairs/hPairRes"), sample, cls, q, std::clamp(q - qT, -0.0199f, 0.0199f), std::clamp(dERec - dETrue, -0.0999f, 0.0999f), mPcCent);
         }
       }
     }
     fRegistryPairMC.fill(HIST("PairClass/Pairs/hPairDist"), sample, cls, q, std::hypot(a.vx - b.vx, a.vy - b.vy, a.vz - b.vz), pcTrueDist({&a.pos, &a.ele, &b.pos, &b.ele}));
+    // four-leg invariant mass (pairing invariant) and the true q of the two mother photons
     ROOT::Math::PxPyPzMVector sum4;
     const std::array<const PcLeg*, 4> legs4{&a.pos, &a.ele, &b.pos, &b.ele};
     for (const auto* l : legs4) {
@@ -4797,7 +5217,7 @@ struct Photonhbt {
           nItsPieces = static_cast<float>((x->its ? 1 : 0) + (y->its ? 1 : 0));
         }
         const float clsBin = icls == 12 ? 3.f : static_cast<float>(icls - 1); // o2-linter: disable=magic-number (class 12)
-        fRegistryPairMC.fill(HIST("PairClass/Pairs/hDupPieces"), sample, clsBin, q, dTglPieces, dPtPieces, static_cast<float>(slots), static_cast<float>(pcPairOrigin(a, b)), nItsPieces);
+        fRegistryPairMC.fill(HIST("PairClass/Pairs/hDupPieces"), sample, clsBin, q, dTglPieces, dPtPieces, static_cast<float>(slots), static_cast<float>(pcPairOrigin(a, b)), nItsPieces, nPass);
       }
       constexpr float kTpcRin = 85.f, kTpcRout = 247.f; // o2-linter: disable=magic-number (TPC drift volume, diagnostic)
       auto crossesCE = [&](PcLeg const& l) {
@@ -4836,6 +5256,7 @@ struct Photonhbt {
           } else if (o.pos.evt == r.pos.evt && o.pos.root >= 0 && o.pos.root == r.pos.root) {
             rel = 2.f;
           }
+          // where the radiating electron comes from: the mother of the photon's mother (the electron) = ggpdg of the photon's leg
           const int em = std::abs(r.pos.ggpdg);
           float radFrom = 5.f; // o2-linter: disable=magic-number (category codes)
           if (em == kPcGamma) {
@@ -4849,7 +5270,7 @@ struct Photonhbt {
           } else if (em > 100) { // o2-linter: disable=magic-number (hadrons)
             radFrom = 4.f;
           }
-          // first physical primary of the brems photon
+          // first physical primary of the brems photon (via its mother electron) vs that of the partner photon
           const float sameAnc = (r.pos.anc < 0 || o.pos.anc < 0 || r.pos.evt != o.pos.evt) ? 2.f : (r.pos.anc == o.pos.anc ? 1.f : 0.f);
           fRegistryPairMC.fill(HIST("PairClass/Pairs/hHiddenBrems"), sample, q, static_cast<float>((radiated(a) ? 1 : 0) + (radiated(b) ? 1 : 0)), rel, radFrom, sameAnc);
         }
@@ -4857,7 +5278,7 @@ struct Photonhbt {
       if (cls == 16.f || cls == 5.f) { // o2-linter: disable=magic-number (bremsstrahlung classes)
         // x = leg of the bremsstrahlung photon, y = the radiating electron (a leg of the partner photon): x's grandmother is y
         const PcLeg *x = nullptr, *y = nullptr;
-        const std::array<std::pair<const PcPhoton*, const PcPhoton*>, 2> orders{{{&a, &b}, {&b, &a}}};
+        const std::array<std::pair<const PcPhoton*, const PcPhoton*>, 2> orders{{{&a, &b}, {&b, &a}}}; // both photon orders
         for (const auto& [p1, p2] : orders) {
           for (const auto* l1 : {&p1->pos, &p1->ele}) {
             for (const auto* l2 : {&p2->pos, &p2->ele}) {
@@ -4956,6 +5377,7 @@ struct Photonhbt {
       fRegistryPairMC.fill(HIST("PairClass/Pairs/hPairAlpha"), sample, cls, q, alphaOf(a), alphaOf(b), asym);
     }
   }
+  // largest distance between the MC production vertices of the given legs, -1 if one has no MC particle
   static float pcTrueDist(std::initializer_list<const PcLeg*> legs)
   {
     float d = 0.f;
@@ -4970,9 +5392,10 @@ struct Photonhbt {
     return d;
   }
 
-  void processPairClassMix(aod::PCMMixCollisions const& collisions, aod::V0PhotonsKFMix const& photons, aod::V0LegsMix const& legs, aod::PCMMixLegs const& mixLegs,
-                           aod::V0PhotonsKFChi2Mix const& kfChi2, aod::V0PhotonsPhiVPsiMix const& phiVPsi)
+  void processPairClassMix(aod::PCMMixCollisions const& collisions, MyV0PhotonsMix const& photons, aod::V0LegsMix const& legs, aod::PCMMixLegs const& mixLegs,
+                           aod::V0PhotonsKFChi2Mix const& kfChi2)
   {
+    mPcMixLegs = &mixLegs;
     std::map<int, std::vector<PcPhoton>> perCollision;
     std::map<int, bool> collisionIsMixed;
     for (const auto& collision : collisions) {
@@ -5008,18 +5431,26 @@ struct Photonhbt {
       p.dcaxy = photon.dcaXYtopv();
       p.dcaz = photon.dcaZtopv();
       p.cospa = photon.cospa();
-      if (photon.globalIndex() < kfChi2.size()) {
+      if (photon.globalIndex() < kfChi2.size()) { // row-by-row extensions of the photon table
         const auto kc = kfChi2.rawIteratorAt(photon.globalIndex());
         p.chi2Vtx = kc.chi2NDFVtx();
         p.chi2PV = kc.chi2PV();
       }
-      if (photon.globalIndex() < phiVPsi.size()) {
-        p.psipair = phiVPsi.rawIteratorAt(photon.globalIndex()).psipair();
-      }
+      p.psipair = photon.psipair();
+      p.pass = fV0PhotonCut.IsSelected<decltype(photon), aod::V0LegsMix>(photon); // the analysis photon cut, as in processCoReco
+      p.posMix = legs.rawIteratorAt(photon.posTrackId()).trackId();
+      p.eleMix = legs.rawIteratorAt(photon.negTrackId()).trackId();
       perCollision[photon.collisionId()].push_back(p);
     }
     for (const auto& collision : collisions) {
-      initCCDB(collision); // magnetic field for the leg helices of hPairSep (cached per run)
+      initCCDB(collision);            // magnetic field for the leg helices of hPairSep (cached per run)
+      mPcCent = collision.centFT0C(); // standard ME: centrality of the current event (pool partners are in the same centrality bin)
+      mPcNLegs = static_cast<float>(collision.nLegs());
+      mPcOcc = collision.occupancy();
+      mPcVtxZ = collision.posZ();
+      if (qaflags.cfgFillNoteQA.value) {
+        fRegistryPairMC.fill(HIST("PairClass/Note/hEvents"), collision.isMixed() ? 1.f : 0.f, mPcCent, mPcOcc);
+      }
       const auto it = perCollision.find(collision.globalIndex());
       const std::vector<PcPhoton> empty;
       const auto& list = it == perCollision.end() ? empty : it->second;
@@ -5039,6 +5470,9 @@ struct Photonhbt {
           if (collision.isMixed()) {
             const bool oneSource = a.pos.evt == a.ele.evt && a.pos.evt == b.pos.evt && a.pos.evt == b.ele.evt;
             sample = oneSource ? 3.f : 2.f;
+          }
+          if (!pcApplyPartnerRule(sample, a, b)) {
+            continue;
           }
           fillPcPair(sample, a, b);
         }
@@ -5069,6 +5503,165 @@ struct Photonhbt {
   }
   PROCESS_SWITCH(Photonhbt, processPairClassMix, "pair classes vs q_inv on the output of builder run 2 (artificial events): same event, standard mixed event, co-reconstructed mixed event", false);
 
+  static constexpr float kNoteMaxQ = 0.1f;
+  static std::vector<double> noteCentEdges() { return {0., 10., 20., 30., 40., 50., 60., 80., 100.}; }
+  static std::vector<double> noteOccEdges() { return {0., 500., 1000., 2000., 3000., 4500., 6000., 8000., 10000., 15000., 1.e6}; }
+  static std::vector<double> noteConvDistEdges() { return {0., 0.5, 1., 2., 3., 5., 7.5, 10., 15., 20., 30., 50., 100., 1000.}; }
+
+  void addNotePairClassHistograms()
+  {
+    const AxisSpec axSample{4, -0.5f, 3.5f, "0 same event, 1 standard mixed event, 2 co-reconstructed mixed event, 3 co-reco ME, one source event"};
+    const AxisSpec axClass{21, -0.5f, 20.5f, "pair class (as PairClass/Pairs/hPairClass)"};
+    const AxisSpec axQ{20, 0.f, kNoteMaxQ, "#it{q}_{inv} (GeV/#it{c})"};
+    const AxisSpec axQCoarse{std::vector<double>{0., 0.02, 0.05, 0.1}, "#it{q}_{inv} (GeV/#it{c})"};
+    const AxisSpec axCent{noteCentEdges(), "centrality FT0C (%)"};
+    const AxisSpec axOcc{noteOccEdges(), "occupancy"};
+    const AxisSpec axPass{3, -0.5f, 2.5f, "photons of the pair passing the analysis photon cut (0, 1, 2)"};
+    const AxisSpec axSep{2, -0.5f, 1.5f, "same-sign leg separation d_{min} > cfgDPairCut"};
+    fRegistryPairMC.add("PairClass/Note/hEvents", "artificial events;0 same event, 1 mixed event;centrality FT0C (%);occupancy", kTH3F, {{2, -0.5f, 1.5f}, axCent, axOcc});
+    fRegistryPairMC.add("PairClass/Note/hClassCentOcc", "photon pairs by MC class vs centrality and occupancy", kTHnSparseF, {axSample, axClass, axQ, axCent, axOcc, axPass, axSep});
+    fRegistryPairMC.add("PairClass/Note/hDupCls", "duplicates (classes 1, 2, 3, 12): TPC clusters of the two pieces of the shared MC particle", kTHnSparseF, {axSample, {4, -0.5f, 3.5f, "class: 0 = 1 (same photon twice), 1 = 2, 2 = 3, 3 = 12 (same track)"}, axQ, {32, 0.f, 160.f, "TPC clusters of the shorter piece"}, {32, 0.f, 160.f, "TPC clusters of the longer piece"}, {20, 0.f, 1.f, "larger TPC shared-cluster fraction of the two pieces"}, {3, -0.5f, 2.5f, "charge slots: 0 same, 1 opposite, 2 no shared particle found"}, axPass, axSep});
+    fRegistryPairMC.add("PairClass/Note/hLegCls", "photon pairs by MC class: TPC clusters of the four legs (threshold scan)", kTHnSparseF, {axSample, axClass, axQ, {20, 0.f, 1.f, "largest TPC shared-cluster fraction of the four legs"}, {16, 0.f, 160.f, "smallest TPC cluster count of the four legs"}, axPass, axSep});
+    fRegistryPairMC.add("PairClass/Note/hPhotonKine", "photons of the pairs by MC class (each photon once per pair)", kTHnSparseF, {axSample, axClass, axQCoarse, {20, -1.f, 1.f, "#eta"}, {36, 0.f, o2::constants::math::TwoPI, "#varphi (rad)"}, {std::vector<double>{0., 0.1, 0.2, 0.3, 0.4, 0.6, 0.8, 1., 1.5, 2., 3., 10.}, "#it{p}_{T} (GeV/#it{c})"}, axPass, axSep});
+    fRegistryPairMC.add("PairClass/Note/hPhotonConv", "photons of the pairs by MC class (each photon once per pair): conversion point and vertex", kTHnSparseF, {axSample, axClass, axQCoarse, {18, 0.f, 90.f, "#it{R}_{conv} (cm)"}, {24, -120.f, 120.f, "#it{z}_{conv} (cm)"}, {10, -10.f, 10.f, "#it{z}_{vtx} (cm)"}, axPass, axSep});
+  }
+
+  static std::tuple<const PcLeg*, const PcLeg*, int> pcSharedPieces(PcPhoton const& a, PcPhoton const& b, const bool sameTrack)
+  {
+    const std::array<const PcLeg*, 2> la{&a.pos, &a.ele}, lb{&b.pos, &b.ele};
+    for (int i = 0; i < 2; ++i) {   // o2-linter: disable=magic-number (two legs)
+      for (int j = 0; j < 2; ++j) { // o2-linter: disable=magic-number (two legs)
+        const bool shares = sameTrack ? (la[i]->evt == lb[j]->evt && la[i]->trk >= 0 && la[i]->trk == lb[j]->trk) : pcSamePart(*la[i], *lb[j]);
+        if (shares) {
+          return {la[i], lb[j], i == j ? 0 : 1};
+        }
+      }
+    }
+    return {nullptr, nullptr, 2};
+  }
+
+  void fillPcNote(const float sample, const float cls, const float q, PcPhoton const& a, PcPhoton const& b, const float nPass, const float sepPass)
+  {
+    if (!qaflags.cfgFillNoteQA.value || q >= kNoteMaxQ) {
+      return;
+    }
+    fRegistryPairMC.fill(HIST("PairClass/Note/hClassCentOcc"), sample, cls, q, mPcCent, mPcOcc, nPass, sepPass);
+    const float sharedMax = std::max({a.pos.sharedFrac, a.ele.sharedFrac, b.pos.sharedFrac, b.ele.sharedFrac});
+    const float nClsMin = std::min({a.pos.nCls, a.ele.nCls, b.pos.nCls, b.ele.nCls});
+    fRegistryPairMC.fill(HIST("PairClass/Note/hLegCls"), sample, cls, q, std::min(sharedMax, 0.999f), std::min(nClsMin, 159.f), nPass, sepPass);
+    const int icls = static_cast<int>(cls);
+    if (icls == 1 || icls == 2 || icls == 3 || icls == 12) {       // o2-linter: disable=magic-number (duplicate classes)
+      const auto [x, y, slots] = pcSharedPieces(a, b, icls == 12); // o2-linter: disable=magic-number (class 12)
+      if (x != nullptr) {
+        const float clsBin = icls == 12 ? 3.f : static_cast<float>(icls - 1); // o2-linter: disable=magic-number (class 12)
+        fRegistryPairMC.fill(HIST("PairClass/Note/hDupCls"), sample, clsBin, q, std::min(std::min(x->nCls, y->nCls), 159.f), std::min(std::max(x->nCls, y->nCls), 159.f),
+                             std::min(std::max(x->sharedFrac, y->sharedFrac), 0.999f), static_cast<float>(slots), nPass, sepPass);
+      }
+    }
+    for (const auto* p : {&a, &b}) {
+      const float pt = std::hypot(p->px, p->py);
+      const float eta = std::asinh(p->pz / std::max(pt, 1.e-6f));
+      const float phi = RecoDecay::constrainAngle(std::atan2(p->py, p->px), 0.f);
+      fRegistryPairMC.fill(HIST("PairClass/Note/hPhotonKine"), sample, cls, q, std::clamp(eta, -0.999f, 0.999f), phi, std::min(pt, 9.99f), nPass, sepPass);
+      fRegistryPairMC.fill(HIST("PairClass/Note/hPhotonConv"), sample, cls, q, std::min(std::hypot(p->vx, p->vy), 89.9f), std::clamp(p->vz, -119.9f, 119.9f), std::clamp(mPcVtxZ, -9.99f, 9.99f), nPass, sepPass);
+    }
+  }
+
+  void addNoteCoRecoHistograms()
+  {
+    const AxisSpec axSample{2, -0.5f, 1.5f, "0 same event, 1 mixed event"};
+    const AxisSpec axCent{noteCentEdges(), "centrality (%)"};
+    const AxisSpec axOcc{noteOccEdges(), "occupancy"};
+    fRegistry.add("CoReco/Note/hEvents", "artificial events in the centrality window;0 same event, 1 mixed event;centrality (%);occupancy", kTH3F, {axSample, axCent, axOcc});
+    if (!isMC) {
+      return;
+    }
+    const AxisSpec axClass{21, -0.5f, 20.5f, "pair class (as PairClass/Pairs/hPairClass)"};
+    const AxisSpec axStage{2, -0.5f, 1.5f, "0 two selected photons, before the pair cuts, 1 after all pair cuts"};
+    const AxisSpec axKtCoarse{std::vector<double>{0., 0.2, 0.4, 0.6, 1.0, 2.0}, "#it{k}_{T} (GeV/#it{c})"};
+    fRegistryPairMC.add("CoReco/MC/Note/hClassStage", "pairs by MC class vs centrality and occupancy, before / after the pair cuts", kTHnSparseF, {axSample, axClass, {60, 0.f, 0.3f, "#it{q}_{inv} (GeV/#it{c})"}, axCent, axOcc, axStage});
+    fRegistryPairMC.add("CoReco/MC/Note/hClassQinvQout", "pairs by MC class: q_{inv} vs |q_{out}| (LCMS)", kTHnSparseF, {axSample, axClass, axisQinv, axisQout, axKtCoarse, axStage});
+    fRegistryPairMC.add("CoReco/MC/Note/hClassQinvQside", "pairs by MC class: q_{inv} vs |q_{side}| (LCMS)", kTHnSparseF, {axSample, axClass, axisQinv, axisQside, axKtCoarse, axStage});
+    fRegistryPairMC.add("CoReco/MC/Note/hClassQinvQlong", "pairs by MC class: q_{inv} vs |q_{long}| (LCMS)", kTHnSparseF, {axSample, axClass, axisQinv, axisQlong, axKtCoarse, axStage});
+    const AxisSpec axRec{150, 0.f, 0.3f, "reconstructed (GeV/#it{c})"};
+    const AxisSpec axTrue{151, -0.002f, 0.3f, "of the two MC photons (GeV/#it{c}), < 0 if not two photons"};
+    fRegistryPairMC.add("CoReco/MC/Note/hRespQout", "response |q_{out}| (LCMS) by MC class", kTHnSparseF, {axSample, axClass, axRec, axTrue, axKtCoarse, axStage});
+    fRegistryPairMC.add("CoReco/MC/Note/hRespQside", "response |q_{side}| (LCMS) by MC class", kTHnSparseF, {axSample, axClass, axRec, axTrue, axKtCoarse, axStage});
+    fRegistryPairMC.add("CoReco/MC/Note/hRespQlong", "response |q_{long}| (LCMS) by MC class", kTHnSparseF, {axSample, axClass, axRec, axTrue, axKtCoarse, axStage});
+    fRegistryPairMC.add("CoReco/MC/Note/hRespDE", "response |#Delta E| by MC class", kTHnSparseF, {axSample, axClass, {100, 0.f, 0.5f, "|#Delta#it{E}| reconstructed (GeV)"}, {101, -0.005f, 0.5f, "|#Delta#it{E}| of the two MC photons (GeV), < 0 if not two photons"}, {std::vector<double>{0., 0.01, 0.02, 0.03, 0.05, 0.1, 0.3}, "#it{q}_{inv} (GeV/#it{c})"}, axStage});
+    fRegistryPairMC.add("CoReco/MC/Note/hTruePairs", "reconstructed pairs of two MC photons vs the true pair variables", kTHnSparseF, {axSample, {3, -0.5f, 2.5f, "0 true distinct (class 13), 1 full swap (class 14), 2 other class"}, {60, 0.f, 0.3f, "#it{q}_{inv}^{true} (GeV/#it{c})"}, {std::vector<double>{0., 0.2, 0.4, 0.6, 1.0, 2.0}, "#it{k}_{T}^{true} (GeV/#it{c})"}, axCent, {noteConvDistEdges(), "distance of the two true conversion points (cm)"}, axStage});
+  }
+
+  // one leg per MC photon behind the four legs (mother momentum = the photon, production vertex = its conversion point); nullptr unless exactly two
+  static std::array<const PcLeg*, 2> pcTrueMothers(PcPhoton const& a, PcPhoton const& b)
+  {
+    std::vector<const PcLeg*> mothers;
+    for (const auto* l : {&a.pos, &a.ele, &b.pos, &b.ele}) {
+      if (l->mid < 0 || l->mpdg != kPcGamma) {
+        continue;
+      }
+      bool seen = false;
+      for (const auto* m : mothers) {
+        seen = seen || pcSameMother(*l, *m);
+      }
+      if (!seen) {
+        mothers.push_back(l);
+      }
+    }
+    if (mothers.size() != 2) { // o2-linter: disable=magic-number (two photons)
+      return {nullptr, nullptr};
+    }
+    return {mothers[0], mothers[1]};
+  }
+
+  // stage 0: two selected photons, before the pair cuts; 1: after all pair cuts
+  void fillCoRecoNote(const float sample, const float stage, PcPhoton const& a, PcPhoton const& b, PairQAObservables const& obs, const float cent, const float occupancy)
+  {
+    if (obs.qinv >= qaflags.cfgNoteMaxQinv.value) {
+      return;
+    }
+    const auto cls = static_cast<float>(pcPairClass(a, b));
+    constexpr float kMaxQ = 0.3f, kMaxDE = 0.5f;
+    const auto q3 = lcmsQ(obs.v1, obs.v2);
+    const float dERec = std::fabs(static_cast<float>(obs.v1.E() - obs.v2.E()));
+    if (obs.qinv < kMaxQ) {
+      fRegistryPairMC.fill(HIST("CoReco/MC/Note/hClassStage"), sample, cls, obs.qinv, cent, occupancy, stage);
+    }
+    fRegistryPairMC.fill(HIST("CoReco/MC/Note/hClassQinvQout"), sample, cls, obs.qinv, q3[0], obs.kt, stage);
+    fRegistryPairMC.fill(HIST("CoReco/MC/Note/hClassQinvQside"), sample, cls, obs.qinv, q3[1], obs.kt, stage);
+    fRegistryPairMC.fill(HIST("CoReco/MC/Note/hClassQinvQlong"), sample, cls, obs.qinv, q3[2], obs.kt, stage);
+    std::array<float, 3> q3True = {-0.001f, -0.001f, -0.001f};
+    float dETrue = -0.001f;
+    const auto mothers = pcTrueMothers(a, b);
+    if (mothers[0] != nullptr) {
+      const ROOT::Math::PxPyPzMVector m1(mothers[0]->mpx, mothers[0]->mpy, mothers[0]->mpz, 0.f), m2(mothers[1]->mpx, mothers[1]->mpy, mothers[1]->mpz, 0.f);
+      q3True = lcmsQ(ROOT::Math::PtEtaPhiMVector(m1), ROOT::Math::PtEtaPhiMVector(m2));
+      dETrue = std::fabs(static_cast<float>(m1.E() - m2.E()));
+      const float qTrue = o2::pwgem::photonmeson::qInv(mothers[0]->mpx, mothers[0]->mpy, mothers[0]->mpz, mothers[1]->mpx, mothers[1]->mpy, mothers[1]->mpz);
+      // fiducial true photons as in runTruthEfficiency: physical primary (the leg's first physical-primary ancestor is its mother), |eta|, pT
+      const float ptMin = mctruth.cfgMCMinV0Pt.value > 0.f ? mctruth.cfgMCMinV0Pt.value : pcmcuts.cfgMinPtV0.value;
+      auto fiducial = [&](PcLeg const& l, ROOT::Math::PxPyPzMVector const& m) { return l.anc >= 0 && l.anc == l.mid && std::fabs(m.Eta()) <= pcmcuts.cfgMaxEtaV0.value && m.Pt() >= ptMin; };
+      if (qTrue < kMaxQ && fiducial(*mothers[0], m1) && fiducial(*mothers[1], m2)) {
+        const float ktTrue = 0.5f * static_cast<float>((m1 + m2).Pt());
+        const float dConv = std::hypot(mothers[0]->vx - mothers[1]->vx, mothers[0]->vy - mothers[1]->vy, mothers[0]->vz - mothers[1]->vz);
+        const float kind = cls == 13.f ? 0.f : (cls == 14.f ? 1.f : 2.f); // o2-linter: disable=magic-number (pair classes)
+        fRegistryPairMC.fill(HIST("CoReco/MC/Note/hTruePairs"), sample, kind, qTrue, std::min(ktTrue, 1.99f), cent, std::min(dConv, 999.f), stage);
+      }
+    }
+    if (q3[0] < kMaxQ) {
+      fRegistryPairMC.fill(HIST("CoReco/MC/Note/hRespQout"), sample, cls, q3[0], std::min(q3True[0], 0.2999f), obs.kt, stage);
+    }
+    if (q3[1] < kMaxQ) {
+      fRegistryPairMC.fill(HIST("CoReco/MC/Note/hRespQside"), sample, cls, q3[1], std::min(q3True[1], 0.2999f), obs.kt, stage);
+    }
+    if (q3[2] < kMaxQ) {
+      fRegistryPairMC.fill(HIST("CoReco/MC/Note/hRespQlong"), sample, cls, q3[2], std::min(q3True[2], 0.2999f), obs.kt, stage);
+    }
+    if (dERec < kMaxDE && obs.qinv < kMaxQ) {
+      fRegistryPairMC.fill(HIST("CoReco/MC/Note/hRespDE"), sample, cls, dERec, std::min(dETrue, 0.4999f), obs.qinv, stage);
+    }
+  }
+
   template <typename TLeg, typename TMixLeg>
   static PcLeg pcLegFrom(TLeg const& l, TMixLeg const& m)
   {
@@ -5087,6 +5680,8 @@ struct Photonhbt {
     out.ggpdg = m.mcGGMotherPdg();
     out.rootPdg = m.mcRootPdg();
     out.sharedFrac = l.tpcFractionSharedCls();
+    out.nCls = static_cast<float>(m.tpcNClsFound());
+    out.nSharedCls = static_cast<float>(m.tpcNClsShared());
     out.vx = m.mcVx();
     out.vy = m.mcVy();
     out.vz = m.mcVz();
@@ -5214,6 +5809,9 @@ struct Photonhbt {
 
   void addCoRecoHistograms()
   {
+    if (qaflags.cfgFillNoteQA.value) {
+      addNoteCoRecoHistograms();
+    }
     const AxisSpec axSample{2, -0.5f, 1.5f, "0 same event, 1 mixed event"};
     const AxisSpec axOrigin{4, -0.5f, 3.5f, "stored photons: 0 both SVertexer originals, 1 one finder original, 2 both finder, 3 a crossed pairing"};
     const AxisSpec axSign{2, -0.5f, 1.5f, "#alpha_{1}#alpha_{2} > 0 (same charge carries more momentum)"};
@@ -5225,16 +5823,22 @@ struct Photonhbt {
     fRegistry.add("CoReco/hNPhotons", "photons per artificial event (before the photon cut);0 same event, 1 mixed event;photons", kTH2F, {axSample, {100, -0.5f, 99.5f}});
     fRegistry.add("CoReco/hOneSourcePairs", "mixed artificial events: pairs with all four legs from one source event;q_{inv} (GeV/c);pairs", kTH1F, {axisQinv});
     fRegistry.add("CoReco/hPairOrigin", "accepted pairs by origin of the stored photons", kTHnSparseF, {axSample, axOrigin, axisQinv, axisKt, axSign});
+    fRegistry.add("CoReco/hPartner", "accepted pairs with a run-2 crossed photon: partner relation (cfgCoRecoPartnerPairing), filled before the rule", kTHnSparseF, {axSample, {3, 0.5f, 3.5f, "1 shared run-1 source photon, 2 free legs of one source event with opposite charge, 3 unrelated"}, axisQinv, axisKt, {2, -0.5f, 1.5f, "0 removed, 1 kept"}});
+    // mixed event split by the distance of the partner event (mixer PartnerD* columns; same event: all 0): C(q) must not change
+    // between the slices, else the pools are too wide in that variable
+    fRegistry.add("CoReco/hQPartner", "accepted pairs by partner-event distance (same event: 0)", kTHnSparseF,
+                  {axSample, {100, 0.f, 0.5f, "#it{q}_{inv} (GeV/#it{c})"}, {std::vector<double>{0., 0.2, 0.4, 0.6, 1.0, 2.0}, "#it{k}_{T} (GeV/#it{c})"}, {std::vector<double>{0., 0.25, 0.5, 1., 2., 20.}, "|#Delta z_{vtx}| partner (cm)"}, {std::vector<double>{0., 1., 2., 5., 10., 100.}, "|#Delta centrality| partner (%)"}, {std::vector<double>{0., 250., 500., 1000., 2000., 1.e6}, "|#Delta occupancy| partner"}, {std::vector<double>{0., 1., 10., 60., 600., 1.e7}, "|#Delta t| partner (s)"}});
     if (!isMC) {
       return;
     }
     const AxisSpec axClass{21, -0.5f, 20.5f, "pair class: 13 true distinct, 14 full swap, 4 half swap, 1-3 duplicates, 16 bremsstrahlung (both true), 5 bremsstrahlung with a fake, 18 photons of the same mother (pi0/eta, both true), 19 swap of two such photons, 20 same mother with a fake, 17 related swap, 15 no label, 6-12 other fakes"};
-    const AxisSpec axQFine{200, 0.f, 0.2f, "#it{q}_{inv} (GeV/#it{c})"};
-    const AxisSpec axQTrue{201, -0.001f, 0.2f, "#it{q}_{inv} of the two MC photons (GeV/#it{c}), -1 if not two photons"};
+    const AxisSpec axQFine{300, 0.f, 0.3f, "#it{q}_{inv} (GeV/#it{c})"};
+    const AxisSpec axQTrue{301, -0.001f, 0.3f, "#it{q}_{inv} of the two MC photons (GeV/#it{c}), -1 if not two photons"};
     const AxisSpec axKtCoarse{std::vector<double>{0., 0.2, 0.4, 0.6, 1.0, 2.0}, "#it{k}_{T} (GeV/#it{c})"};
     fRegistryPairMC.add("CoReco/MC/hClass3D", "accepted pairs by MC class: LCMS q components (CF binning)", kTHnSparseF, {axSample, axClass, axisQout, axisQside, axisQlong, axisKt});
     fRegistryPairMC.add("CoReco/MC/hClassQ", "accepted pairs by MC class: reconstructed vs true q", kTHnSparseF, {axSample, axClass, axQFine, axQTrue, axKtCoarse});
     fRegistryPairMC.add("CoReco/MC/hClassTag", "accepted pairs by MC class: photon origin and energy-sharing sign", kTHnSparseF, {axSample, axClass, axQFine, axOrigin, axSign});
+    fRegistryPairMC.add("CoReco/MC/hClassQinvQout", "accepted pairs by MC class: q_{inv} vs |q_{out}| (LCMS); standard mixed event: class 13 both true, class 0 with a fake", kTHnSparseF, {axSample, axClass, axisQinv, axisQout, axKtCoarse});
   }
 
   // processMC's mixed-event truth fill (both photons labelled): both true / one fake / both fake
@@ -5398,6 +6002,9 @@ struct Photonhbt {
         if (isMC) {
           pwl1.fIsTruePhoton = pcHasLabels(a) ? (pcTruePhoton(a) ? 1 : 0) : -1;
           pwl2.fIsTruePhoton = pcHasLabels(b) ? (pcTruePhoton(b) ? 1 : 0) : -1;
+          if (qaflags.cfgFillNoteQA.value) {
+            fillCoRecoNote(kSample, 0.f, a, b, obs, centForQA, occupancy);
+          }
         }
         const auto sep = computePairSep(pwl1, pwl2);
 
@@ -5444,6 +6051,15 @@ struct Photonhbt {
           }
         }
 
+        // ─── partner pairing of the run-2 crossed photons (cfgCoRecoPartnerPairing) ───
+        if (const int partner = pcPartner(a, b); partner > 0) {
+          const bool kept = pcPartnerKept(partner);
+          fRegistry.fill(HIST("CoReco/hPartner"), kSample, static_cast<float>(partner), obs.qinv, obs.kt, kept ? 1.f : 0.f);
+          if (!kept) {
+            continue;
+          }
+        }
+
         // ─── after pair cuts ──────────────────────────────────────
         fillPairSep<ev_id, true>(sep, obs);
         idsAfterPairCuts.insert(ids[i]);
@@ -5464,6 +6080,8 @@ struct Photonhbt {
           fRegistryCF.fill(HIST("Pair/mix/hPhi_lowerPtV0"), (g1.pt() < g2.pt()) ? g1.phi() : g2.phi());
         }
         ndiphoton++;
+        fRegistry.fill(HIST("CoReco/hQPartner"), kSample, obs.qinv, obs.kt, std::fabs(collision.partnerDz()), std::fabs(collision.partnerDCent()),
+                       std::fabs(collision.partnerDOcc()), collision.partnerDt());
         const auto origin = static_cast<float>(pcPairOrigin(a, b));
         const float sameSign = pcAlpha(a) * pcAlpha(b) > 0.f ? 1.f : 0.f;
         fRegistry.fill(HIST("CoReco/hPairOrigin"), kSample, origin, obs.qinv, obs.kt, sameSign);
@@ -5479,6 +6097,10 @@ struct Photonhbt {
           fRegistryPairMC.fill(HIST("CoReco/MC/hClass3D"), kSample, cls, q3[0], q3[1], q3[2], obs.kt);
           fRegistryPairMC.fill(HIST("CoReco/MC/hClassQ"), kSample, cls, obs.qinv, pcTrueQ(a, b), obs.kt);
           fRegistryPairMC.fill(HIST("CoReco/MC/hClassTag"), kSample, cls, obs.qinv, origin, sameSign);
+          fRegistryPairMC.fill(HIST("CoReco/MC/hClassQinvQout"), kSample, cls, obs.qinv, std::fabs(q3[0]), obs.kt);
+          if (qaflags.cfgFillNoteQA.value) {
+            fillCoRecoNote(kSample, 1.f, a, b, obs, centForQA, occupancy);
+          }
         }
         if (pool) {
           if (usedPhotonIdsPerCol.insert(static_cast<int>(ids[i])).second) {
@@ -5501,12 +6123,15 @@ struct Photonhbt {
     return ndiphoton;
   }
 
+  // cfgCoRecoMixMode 1: the mixed-event block of runPairing on the pools of same-event artificial events (no BC gap: the mixer
+  // already gives one artificial event per collision)
   template <typename TCollision>
   void mixStandardCoReco(TCollision const& collision, std::tuple<int, int, int, int> const& keyBin, const float centForQA, const float occupancy)
   {
     const auto keyDFCollision = std::make_pair(ndf, static_cast<int>(collision.globalIndex()));
     const auto& selectedPhotons = emh1->GetTracksPerCollision(keyDFCollision);
     const auto& poolIDs = emh1->GetCollisionIdsFromEventPool(keyBin);
+    fRegistryCF.fill(HIST("Pair/mix/hPoolDepth"), centForQA, static_cast<float>(poolIDs.size()));
     for (const auto& mixID : poolIDs) {
       if (mixID == keyDFCollision) {
         continue;
@@ -5567,6 +6192,7 @@ struct Photonhbt {
           fillPairHistogram<1>(collision, obs.v1, obs.v2, 1.f);
           if (isMC) {
             fillMixTruth(collision, g1.fIsTruePhoton, g2.fIsTruePhoton, obs);
+            fRegistryPairMC.fill(HIST("CoReco/MC/hClassQinvQout"), 1.f, (g1.fIsTruePhoton == 1 && g2.fIsTruePhoton == 1) ? 13.f : 0.f, obs.qinv, std::fabs(lcmsQ(obs.v1, obs.v2)[0]), obs.kt);
           }
           fRegistryCF.fill(HIST("Pair/mix/hPhi_lowerPtV0"), (g1.pt() < g2.pt()) ? g1.phi() : g2.phi());
         }
@@ -5598,6 +6224,9 @@ struct Photonhbt {
         continue;
       }
       fRegistry.fill(HIST("CoReco/hArtificialEvents"), mixedEvent ? 3.f : 1.f);
+      if (qaflags.cfgFillNoteQA.value) {
+        fRegistry.fill(HIST("CoReco/Note/hEvents"), mixedEvent ? 1.f : 0.f, centForQA, collision.occupancy());
+      }
       if (mixedEvent && standardMix) {
         continue;
       }
