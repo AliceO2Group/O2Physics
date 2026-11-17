@@ -58,8 +58,9 @@ enum JCollisionSel {
 };
 
 enum JCollisionSubGeneratorId {
-  none = -1,
-  mbGap = 0
+  none = -1,      // for MC events in general purpose MC
+  mbGap = 0,      // for MB gap events in gap-triggered MCs (like jet-jet and gamma-jet)
+  hardProcess = 1 // for hard process / signal events in jet-jet and gamma-jet MCs
 };
 
 template <typename T>
