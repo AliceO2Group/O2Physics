@@ -166,7 +166,7 @@ struct nucleiInJets {
   Configurable<int> cfgnTPCPIDHeTOF{"cfgnTPCPIDHeTOF", 3, "nTPC PID He"};
   Configurable<int> cfgnTPCPIDTrTOF{"cfgnTPCPIDTrTOF", 3, "nTPC PID Tr"};
 
-  // Enable an ITS nSigma veto on inclusive TPC PID selections; disabled by default.
+  // Enable an ITS nSigma veto on inclusive TPC PID selections; disabled by default
   struct ItsPid : ConfigurableGroup {
     std::string prefix = "itsPid";
     Configurable<bool> applyItsPidInc{"applyItsPidInc", false, "apply ITS PID veto to inclusive TPC selections"};
