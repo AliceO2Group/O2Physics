@@ -630,7 +630,7 @@ struct FemtoUniversePairTaskTrackPhi {
       float mMassOne = o2::constants::physics::MassKPlus;
       float mMassTwo = o2::constants::physics::MassKMinus;
 
-      for (auto const& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(partsPhiChild, partsPhiChild))) {
+      for (auto const& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(partsPhiDaugh, partsPhiDaugh))) {
         if ((confFillMinvBackgroundKpKp) && (kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
           part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
           part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassOne);
