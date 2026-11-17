@@ -204,7 +204,10 @@ struct SlimTablesProducer {
                  soa::Filtered<aod::JetParticles> const& particles)
   {
     float eventWeightMC = mccollision.weight();
-    histos.fill(HIST("p_xSection"), 0.5, mccollision.xsectGen());
+    if (skipMBGapEvents && mccollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return; // gap events: not part of the jet-jet sample
+    }
+    histos.fill(HIST("p_xSection"), 0.5, mccollision.xsectGen(), mccollision.accepted()); // running estimate: weight late (converged) values more
 
     if (collisions.size() != 1) { // skip the mccollision if it has mre than 1 associated rec collision
       return;
