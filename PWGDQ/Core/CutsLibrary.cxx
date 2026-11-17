@@ -492,7 +492,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
     cut->addCut(getAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->addCut(getAnalysisCut("pidCut_lowP_Corr"));
 
-    auto* pidCutHighP = new AnalysisCompositeCut("pidCut_highP", "pidCut_highP", kFALSE);
+    auto* pidCutHighP = new AnalysisCompositeCut("pidCut_highP", "pidCut_highP", false);
     pidCutHighP->addCut(getAnalysisCut("EleInclusion_highP_Corr"));
     pidCutHighP->addCut(getAnalysisCut("PionExclusion_highP_Corr"));
     cut->addCut(pidCutHighP);
@@ -504,7 +504,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
     cut->addCut(getAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->addCut(getAnalysisCut("pidCut_lowP"));
 
-    auto* pidCutHighP = new AnalysisCompositeCut("pidCut_highP", "pidCut_highP", kFALSE);
+    auto* pidCutHighP = new AnalysisCompositeCut("pidCut_highP", "pidCut_highP", false);
     pidCutHighP->addCut(getAnalysisCut("EleInclusion_highP"));
     pidCutHighP->addCut(getAnalysisCut("PionExclusion_highP"));
     cut->addCut(pidCutHighP);
@@ -515,7 +515,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
     cut->addCut(getAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->addCut(getAnalysisCut("pidCut_lowP_Corr"));
 
-    auto* pidCutHighP = new AnalysisCompositeCut("pidCut_highP", "pidCut_highP", kFALSE);
+    auto* pidCutHighP = new AnalysisCompositeCut("pidCut_highP", "pidCut_highP", false);
     pidCutHighP->addCut(getAnalysisCut("EleInclusion_highP2_Corr"));
     pidCutHighP->addCut(getAnalysisCut("PionExclusion_highP_Corr"));
     cut->addCut(pidCutHighP);
@@ -527,7 +527,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
     cut->addCut(getAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->addCut(getAnalysisCut("pidCut_lowP"));
 
-    auto* pidCutHighP = new AnalysisCompositeCut("pidCut_highP", "pidCut_highP", kFALSE);
+    auto* pidCutHighP = new AnalysisCompositeCut("pidCut_highP", "pidCut_highP", false);
     pidCutHighP->addCut(getAnalysisCut("EleInclusion_highP2"));
     pidCutHighP->addCut(getAnalysisCut("PionExclusion_highP"));
     cut->addCut(pidCutHighP);
@@ -777,13 +777,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
     cut->addCut(getAnalysisCut("PIDStandardKine2"));
     cut->addCut(getAnalysisCut("SPDany"));
 
-    auto* cutNoTPC = new AnalysisCompositeCut("NoTPC", "NoTPC", kTRUE);
+    auto* cutNoTPC = new AnalysisCompositeCut("NoTPC", "NoTPC", true);
     cutNoTPC->addCut(getAnalysisCut("noTPC"));
 
-    auto* cutTPCPID = new AnalysisCompositeCut("pid_TPC", "pid_TPC", kTRUE);
+    auto* cutTPCPID = new AnalysisCompositeCut("pid_TPC", "pid_TPC", true);
     cutTPCPID->addCut(getAnalysisCut("pionQuality"));
 
-    auto* cutOR = new AnalysisCompositeCut("OR", "OR", kFALSE);
+    auto* cutOR = new AnalysisCompositeCut("OR", "OR", false);
     cutOR->addCut(cutNoTPC);
     cutOR->addCut(cutTPCPID);
     cut->addCut(cutOR);
@@ -794,13 +794,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
     cut->addCut(getAnalysisCut("PIDStandardKine2"));
     cut->addCut(getAnalysisCut("ITSibany"));
 
-    auto* cutNoTPC = new AnalysisCompositeCut("NoTPC", "NoTPC", kTRUE);
+    auto* cutNoTPC = new AnalysisCompositeCut("NoTPC", "NoTPC", true);
     cutNoTPC->addCut(getAnalysisCut("noTPC"));
 
-    auto* cutTPCPID = new AnalysisCompositeCut("pid_TPC", "pid_TPC", kTRUE);
+    auto* cutTPCPID = new AnalysisCompositeCut("pid_TPC", "pid_TPC", true);
     cutTPCPID->addCut(getAnalysisCut("pionQuality"));
 
-    auto* cutOR = new AnalysisCompositeCut("OR", "OR", kFALSE);
+    auto* cutOR = new AnalysisCompositeCut("OR", "OR", false);
     cutOR->addCut(cutNoTPC);
     cutOR->addCut(cutTPCPID);
     cut->addCut(cutOR);
@@ -882,15 +882,15 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
   }
 
   if (nameStr == "kaonPIDTPCTOForTPC") {
-    auto* cutTPCTOFnSigma = new AnalysisCompositeCut("pid_TPCTOFnSigma", "pid_TPCTOFnSigma", kTRUE);
+    auto* cutTPCTOFnSigma = new AnalysisCompositeCut("pid_TPCTOFnSigma", "pid_TPCTOFnSigma", true);
     cutTPCTOFnSigma->addCut(getAnalysisCut("hasTOF"));
     cutTPCTOFnSigma->addCut(getAnalysisCut("kaonPID_TPCnTOF"));
 
-    auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
     cutTPCnSigma->addCut(getAnalysisCut("noTOF"));
     cutTPCnSigma->addCut(getAnalysisCut("kaonPIDnsigma"));
 
-    auto* cutPIDOR = new AnalysisCompositeCut("kaon_nsigma", "kaon_nsigma", kFALSE);
+    auto* cutPIDOR = new AnalysisCompositeCut("kaon_nsigma", "kaon_nsigma", false);
     cutPIDOR->addCut(cutTPCTOFnSigma);
     cutPIDOR->addCut(cutTPCnSigma);
     cut->addCut(cutPIDOR);
@@ -898,15 +898,15 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
   }
 
   if (nameStr == "kaonPIDTPCTOForTPC700") {
-    auto* cutTPCTOFnSigma = new AnalysisCompositeCut("pid_TPCTOFnSigma", "pid_TPCTOFnSigma", kTRUE);
+    auto* cutTPCTOFnSigma = new AnalysisCompositeCut("pid_TPCTOFnSigma", "pid_TPCTOFnSigma", true);
     cutTPCTOFnSigma->addCut(getAnalysisCut("hasTOF"));
     cutTPCTOFnSigma->addCut(getAnalysisCut("kaonPID_TPCnTOF"));
 
-    auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
     cutTPCnSigma->addCut(getAnalysisCut("noTOF"));
     cutTPCnSigma->addCut(getAnalysisCut("kaonPIDnsigma700"));
 
-    auto* cutPIDOR = new AnalysisCompositeCut("kaon_nsigma", "kaon_nsigma", kFALSE);
+    auto* cutPIDOR = new AnalysisCompositeCut("kaon_nsigma", "kaon_nsigma", false);
     cutPIDOR->addCut(cutTPCTOFnSigma);
     cutPIDOR->addCut(cutTPCnSigma);
     cut->addCut(cutPIDOR);
@@ -950,13 +950,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
   }
 
   if (nameStr == "pionPIDTPCTOForTPC") {
-    auto* cutTPCTOFnSigma = new AnalysisCompositeCut("pid_TPCTOFnSigma", "pid_TPCTOFnSigma", kTRUE);
+    auto* cutTPCTOFnSigma = new AnalysisCompositeCut("pid_TPCTOFnSigma", "pid_TPCTOFnSigma", true);
     cutTPCTOFnSigma->addCut(getAnalysisCut("pionPID_TPCnTOF"));
 
-    auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
     cutTPCnSigma->addCut(getAnalysisCut("pionPIDnsigma"));
 
-    auto* cutPIDOR = new AnalysisCompositeCut("pion_nsigma", "pion_nsigma", kFALSE);
+    auto* cutPIDOR = new AnalysisCompositeCut("pion_nsigma", "pion_nsigma", false);
     cutPIDOR->addCut(cutTPCTOFnSigma);
     cutPIDOR->addCut(cutTPCnSigma);
     cut->addCut(cutPIDOR);
@@ -1479,13 +1479,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
     cut->addCut(getAnalysisCut("electronStandardQualityTPCOnly"));
     cut->addCut(getAnalysisCut("SPDfirst"));
 
-    auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
     cutTPCnSigma->addCut(getAnalysisCut("electronPIDPrKaPiRejLoose"));
 
-    auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+    auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
     cutTOFnSigma->addCut(getAnalysisCut("electronPID_TOFnsigma"));
 
-    auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+    auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
     cutPIDOR->addCut(cutTPCnSigma);
     cutPIDOR->addCut(cutTOFnSigma);
     cut->addCut(cutPIDOR);
@@ -1498,13 +1498,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
     cut->addCut(getAnalysisCut("electronStandardQualityTPCOnly"));
     cut->addCut(getAnalysisCut("SPDfirst"));
 
-    auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
     cutTPCnSigma->addCut(getAnalysisCut("electronPIDPrKaPiRejLoose_Corr"));
 
-    auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+    auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
     cutTOFnSigma->addCut(getAnalysisCut("electronPID_TOFnsigma_Corr"));
 
-    auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+    auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
     cutPIDOR->addCut(cutTPCnSigma);
     cutPIDOR->addCut(cutTOFnSigma);
     cut->addCut(cutPIDOR);
@@ -1632,17 +1632,17 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
     cut->addCut(getAnalysisCut("TightGlobalTrack"));
     cut->addCut(getAnalysisCut("standardPrimaryTrack"));
 
-    auto* cutTPCHadRej = new AnalysisCompositeCut("pid_TPChadrej", "pid_TPChadrej", kTRUE);
+    auto* cutTPCHadRej = new AnalysisCompositeCut("pid_TPChadrej", "pid_TPChadrej", true);
     cutTPCHadRej->addCut(getAnalysisCut("tpc_electron"));
     cutTPCHadRej->addCut(getAnalysisCut("tpc_pion_rejection"));
     cutTPCHadRej->addCut(getAnalysisCut("tpc_kaon_rejection"));
     cutTPCHadRej->addCut(getAnalysisCut("tpc_proton_rejection"));
 
-    auto* cutTOFRec = new AnalysisCompositeCut("pid_tof_rec", "pid_tof_rec", kTRUE);
+    auto* cutTOFRec = new AnalysisCompositeCut("pid_tof_rec", "pid_tof_rec", true);
     cutTOFRec->addCut(getAnalysisCut("tpc_electron"));
     cutTOFRec->addCut(getAnalysisCut("tof_electron"));
 
-    auto* cutPIDOR = new AnalysisCompositeCut("pid_TPChadrejTOFrec", "pid_TPChadrejTOFrec", kFALSE);
+    auto* cutPIDOR = new AnalysisCompositeCut("pid_TPChadrejTOFrec", "pid_TPChadrejTOFrec", false);
     cutPIDOR->addCut(cutTPCHadRej);
     cutPIDOR->addCut(cutTOFRec);
     cut->addCut(cutPIDOR);
@@ -1654,7 +1654,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
     cut->addCut(getAnalysisCut("TightGlobalTrack"));
     cut->addCut(getAnalysisCut("standardPrimaryTrack"));
 
-    auto* cutTPCHadRej = new AnalysisCompositeCut("pid_TPChadrej", "pid_TPChadrej", kTRUE);
+    auto* cutTPCHadRej = new AnalysisCompositeCut("pid_TPChadrej", "pid_TPChadrej", true);
     cutTPCHadRej->addCut(getAnalysisCut("tpc_electron"));
     cutTPCHadRej->addCut(getAnalysisCut("tpc_pion_rejection"));
     cutTPCHadRej->addCut(getAnalysisCut("tpc_kaon_rejection"));
@@ -1668,13 +1668,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
     cut->addCut(getAnalysisCut("TightGlobalTrack"));
     cut->addCut(getAnalysisCut("standardPrimaryTrack"));
 
-    auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
     cutTPCnSigma->addCut(getAnalysisCut("electronPID_TPCnsigma"));
 
-    auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+    auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
     cutTOFnSigma->addCut(getAnalysisCut("electronPID_TOFnsigma"));
 
-    auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+    auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
     cutPIDOR->addCut(cutTPCnSigma);
     cutPIDOR->addCut(cutTOFnSigma);
     cut->addCut(cutPIDOR);
@@ -1686,7 +1686,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
     cut->addCut(getAnalysisCut("TightGlobalTrack"));
     cut->addCut(getAnalysisCut("standardPrimaryTrack"));
 
-    auto* cutTOFRec = new AnalysisCompositeCut("pid_tof_rec", "pid_tof_rec", kTRUE);
+    auto* cutTOFRec = new AnalysisCompositeCut("pid_tof_rec", "pid_tof_rec", true);
     cutTOFRec->addCut(getAnalysisCut("tpc_electron"));
     cutTOFRec->addCut(getAnalysisCut("tof_electron"));
 
@@ -1729,19 +1729,19 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
     cut->addCut(getAnalysisCut("TightGlobalTrackRun3"));
     cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-    auto* cutTPCHadRej = new AnalysisCompositeCut("pid_TPChadrej", "pid_TPChadrej", kTRUE);
+    auto* cutTPCHadRej = new AnalysisCompositeCut("pid_TPChadrej", "pid_TPChadrej", true);
     cutTPCHadRej->addCut(getAnalysisCut("tpc_electron"));
     cutTPCHadRej->addCut(getAnalysisCut("tpc_pion_muon_band_rejection"));
     cutTPCHadRej->addCut(getAnalysisCut("tpc_pion_rejection_highp"));
     cutTPCHadRej->addCut(getAnalysisCut("tpc_kaon_rejection"));
     cutTPCHadRej->addCut(getAnalysisCut("tpc_proton_rejection"));
 
-    auto* cutTOFRec = new AnalysisCompositeCut("pid_tof_rec", "pid_tof_rec", kTRUE);
+    auto* cutTOFRec = new AnalysisCompositeCut("pid_tof_rec", "pid_tof_rec", true);
     cutTOFRec->addCut(getAnalysisCut("tpc_electron"));
     cutTOFRec->addCut(getAnalysisCut("tof_electron_loose"));
     cutTOFRec->addCut(getAnalysisCut("tpc_pion_rejection_highp"));
 
-    auto* cutPIDOR = new AnalysisCompositeCut("pid_TPChadrejTOFrec", "pid_TPChadrejTOFrec", kFALSE);
+    auto* cutPIDOR = new AnalysisCompositeCut("pid_TPChadrejTOFrec", "pid_TPChadrejTOFrec", false);
     cutPIDOR->addCut(cutTPCHadRej);
     cutPIDOR->addCut(cutTOFRec);
     cut->addCut(cutPIDOR);
@@ -1970,14 +1970,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
       cut->addCut(getAnalysisCut("electronStandardQualityITSOnly"));
       cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-      auto* cutNoTPC = new AnalysisCompositeCut("NoTPC", "NoTPC", kTRUE);
+      auto* cutNoTPC = new AnalysisCompositeCut("NoTPC", "NoTPC", true);
       cutNoTPC->addCut(getAnalysisCut("noTPC"));
 
-      auto* cutTPCPID = new AnalysisCompositeCut("pid_TPC", "pid_TPC", kTRUE);
+      auto* cutTPCPID = new AnalysisCompositeCut("pid_TPC", "pid_TPC", true);
       cutTPCPID->addCut(getAnalysisCut("electronStandardQualityTPCOnly"));
       cutTPCPID->addCut(getAnalysisCut(Form("electronPIDOnly%s", vecPIDcase.at(icase).Data())));
 
-      auto* cutOR = new AnalysisCompositeCut("OR", "OR", kFALSE);
+      auto* cutOR = new AnalysisCompositeCut("OR", "OR", false);
       cutOR->addCut(cutNoTPC);
       cutOR->addCut(cutTPCPID);
       cut->addCut(cutOR);
@@ -1989,14 +1989,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
       cut->addCut(getAnalysisCut("electronStandardQualityITSOnly"));
       cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-      auto* cutNoTPCStandard = new AnalysisCompositeCut("NoTPCstandard", "NoTPCstandard", kTRUE);
+      auto* cutNoTPCStandard = new AnalysisCompositeCut("NoTPCstandard", "NoTPCstandard", true);
       cutNoTPCStandard->addCut(getAnalysisCut("NoelectronStandardQualityTPCOnly"));
 
-      auto* cutTPCPID = new AnalysisCompositeCut("pid_TPC", "pid_TPC", kTRUE);
+      auto* cutTPCPID = new AnalysisCompositeCut("pid_TPC", "pid_TPC", true);
       cutTPCPID->addCut(getAnalysisCut("electronStandardQualityTPCOnly"));
       cutTPCPID->addCut(getAnalysisCut(Form("electronPIDOnly%s", vecPIDcase.at(icase).Data())));
 
-      auto* cutOR = new AnalysisCompositeCut("OR", "OR", kFALSE);
+      auto* cutOR = new AnalysisCompositeCut("OR", "OR", false);
       cutOR->addCut(cutNoTPCStandard);
       cutOR->addCut(cutTPCPID);
       cut->addCut(cutOR);
@@ -2017,14 +2017,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
       cut->addCut(getAnalysisCut("electronStandardQualitybAnyITSOnly"));
       cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-      auto* cutNoTPC = new AnalysisCompositeCut("NoTPC", "NoTPC", kTRUE);
+      auto* cutNoTPC = new AnalysisCompositeCut("NoTPC", "NoTPC", true);
       cutNoTPC->addCut(getAnalysisCut("noTPC"));
 
-      auto* cutTPCPID = new AnalysisCompositeCut("pid_TPC", "pid_TPC", kTRUE);
+      auto* cutTPCPID = new AnalysisCompositeCut("pid_TPC", "pid_TPC", true);
       cutTPCPID->addCut(getAnalysisCut("electronStandardQualityTPCOnly"));
       cutTPCPID->addCut(getAnalysisCut(Form("electronPIDOnly%s", vecPIDcase.at(icase).Data())));
 
-      auto* cutOR = new AnalysisCompositeCut("OR", "OR", kFALSE);
+      auto* cutOR = new AnalysisCompositeCut("OR", "OR", false);
       cutOR->addCut(cutNoTPC);
       cutOR->addCut(cutTPCPID);
       cut->addCut(cutOR);
@@ -2036,14 +2036,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
       cut->addCut(getAnalysisCut("electronStandardQualitybAnyITSOnly"));
       cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-      auto* cutNoTPCStandard = new AnalysisCompositeCut("NoTPCstandard", "NoTPCstandard", kTRUE);
+      auto* cutNoTPCStandard = new AnalysisCompositeCut("NoTPCstandard", "NoTPCstandard", true);
       cutNoTPCStandard->addCut(getAnalysisCut("NoelectronStandardQualityTPCOnly"));
 
-      auto* cutTPCPID = new AnalysisCompositeCut("pid_TPC", "pid_TPC", kTRUE);
+      auto* cutTPCPID = new AnalysisCompositeCut("pid_TPC", "pid_TPC", true);
       cutTPCPID->addCut(getAnalysisCut("electronStandardQualityTPCOnly"));
       cutTPCPID->addCut(getAnalysisCut(Form("electronPIDOnly%s", vecPIDcase.at(icase).Data())));
 
-      auto* cutOR = new AnalysisCompositeCut("OR", "OR", kFALSE);
+      auto* cutOR = new AnalysisCompositeCut("OR", "OR", false);
       cutOR->addCut(cutNoTPCStandard);
       cutOR->addCut(cutTPCPID);
       cut->addCut(cutOR);
@@ -2056,13 +2056,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeCutVarTrackCuts%i", i)));
         cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma_cutVar%s%i", vecPIDcase.at(icase).Data(), i)));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma_cutVar%s%i", vecPIDcase.at(icase).Data(), i)));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2085,13 +2085,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_loose", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_loose", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2103,13 +2103,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2121,13 +2121,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongHadRej", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongHadRej", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2139,13 +2139,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2157,13 +2157,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2183,13 +2183,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2201,13 +2201,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_tightNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_tightNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2219,13 +2219,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2237,13 +2237,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_tightNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_tightNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2255,13 +2255,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2273,13 +2273,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz")); // to reject looper using DCAz
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TPCnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TOFnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2291,13 +2291,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz")); // to reject looper using DCAz
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TPCnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TOFnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2327,13 +2327,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2346,13 +2346,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2365,13 +2365,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2384,13 +2384,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2403,13 +2403,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2422,13 +2422,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2441,13 +2441,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2460,13 +2460,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2533,7 +2533,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
         cut->addCut(cutTPCnSigma);
@@ -2545,7 +2545,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
         cut->addCut(cutTOFnSigma);
@@ -2557,13 +2557,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("PrimaryTrack_DCA05"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2577,13 +2577,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2596,13 +2596,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2615,13 +2615,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2634,13 +2634,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2654,13 +2654,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TPCnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TOFnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2673,13 +2673,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TPCnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TOFnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2692,13 +2692,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TPCnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TOFnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2711,13 +2711,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TPCnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TOFnsigma%s_strongNSigE", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2731,13 +2731,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TPCnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TOFnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2750,13 +2750,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TPCnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TOFnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2769,13 +2769,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TPCnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TOFnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2788,13 +2788,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TPCnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_lowB_TOFnsigma%s_strongNSigE_rejBadTOF", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2807,13 +2807,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("lmee_pp_502TeV_TPC%s", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("lmee_pp_502TeV_TOF%s", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2827,13 +2827,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
           cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
           cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-          auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+          auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
           cutTPCnSigma->addCut(getAnalysisCut(Form("lmee_pp_502TeV_TPC%s", vecPIDcase.at(icase).Data())));
 
-          auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+          auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
           cutTOFnSigma->addCut(getAnalysisCut(Form("lmee_pp_502TeV_TOF%s", vecPIDcase.at(icase).Data())));
 
-          auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+          auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
           cutPIDOR->addCut(cutTPCnSigma);
           cutPIDOR->addCut(cutTOFnSigma);
           cut->addCut(cutPIDOR);
@@ -2846,13 +2846,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("standardPrimaryTrackDCAz")); // DCAz to reject loopers
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("lmee_pp_502TeV_lowB_TPC%s", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("lmee_pp_502TeV_lowB_TOF%s", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2864,13 +2864,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
         cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
         cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+        auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
         cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s", vecPIDcase.at(icase).Data())));
 
-        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+        auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
         cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s", vecPIDcase.at(icase).Data())));
 
-        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+        auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
         cutPIDOR->addCut(cutTPCnSigma);
         cutPIDOR->addCut(cutTOFnSigma);
         cut->addCut(cutPIDOR);
@@ -2884,13 +2884,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
           cut->addCut(getAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrackWithPID.at(jcase).Data())));
           cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-          auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+          auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
           cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s", vecPIDcase.at(icase).Data())));
 
-          auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+          auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
           cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s", vecPIDcase.at(icase).Data())));
 
-          auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+          auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
           cutPIDOR->addCut(cutTPCnSigma);
           cutPIDOR->addCut(cutTOFnSigma);
           cut->addCut(cutPIDOR);
@@ -2904,13 +2904,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
       cut->addCut(getAnalysisCut("TightGlobalTrackRun3_strongTPC"));
       cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-      auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+      auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
       cutTPCnSigma->addCut(getAnalysisCut(Form("electronPID_TPCnsigma%s", vecPIDcase.at(icase).Data())));
 
-      auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+      auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
       cutTOFnSigma->addCut(getAnalysisCut(Form("electronPID_TOFnsigma%s", vecPIDcase.at(icase).Data())));
 
-      auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+      auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
       cutPIDOR->addCut(cutTPCnSigma);
       cutPIDOR->addCut(cutTOFnSigma);
       cut->addCut(cutPIDOR);
@@ -2922,13 +2922,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
       cut->addCut(getAnalysisCut("LooseGlobalTrackRun3"));
       cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-      auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+      auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
       cutTPCnSigma->addCut(getAnalysisCut(Form("lmee_pp_502TeV_TPCloose%s", vecPIDcase.at(icase).Data())));
 
-      auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+      auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
       cutTOFnSigma->addCut(getAnalysisCut(Form("lmee_pp_502TeV_TOFloose%s", vecPIDcase.at(icase).Data())));
 
-      auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+      auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
       cutPIDOR->addCut(cutTPCnSigma);
       cutPIDOR->addCut(cutTOFnSigma);
       cut->addCut(cutPIDOR);
@@ -2940,7 +2940,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
       cut->addCut(getAnalysisCut("LooseGlobalTrackRun3"));
       cut->addCut(getAnalysisCut("PrimaryTrack_looseDCA"));
 
-      auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+      auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
       cutTPCnSigma->addCut(getAnalysisCut(Form("lmee_pp_502TeV_TPCloosenopkrej%s", vecPIDcase.at(icase).Data())));
 
       cut->addCut(cutTPCnSigma);
@@ -3010,13 +3010,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
     cut->addCut(getAnalysisCut("lmeeStandardKine"));
     cut->addCut(getAnalysisCut("trackQuality_compareDQEMframework"));
     cut->addCut(getAnalysisCut("trackDCA1cm"));
-    auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    auto* cutTPCnSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", true);
     cutTPCnSigma->addCut(getAnalysisCut("lmee_commonDQEM_PID_TPC"));
 
-    auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+    auto* cutTOFnSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", true);
     cutTOFnSigma->addCut(getAnalysisCut("lmee_commonDQEM_PID_TOF"));
 
-    auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+    auto* cutPIDOR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", false);
     cutPIDOR->addCut(cutTPCnSigma);
     cutPIDOR->addCut(cutTOFnSigma);
     return cut;
@@ -3037,7 +3037,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
   // lmee pair cuts
 
   if (nameStr == "pairPhiV") {
-    auto* cutPairPhiV = new AnalysisCompositeCut("cutPairPhiV", "cutPairPhiV", kTRUE);
+    auto* cutPairPhiV = new AnalysisCompositeCut("cut_pairPhiV", "cut_pairPhiV", true);
     cutPairPhiV->addCut(getAnalysisCut("pairLowMass"));
     cutPairPhiV->addCut(getAnalysisCut("pairPhiV"));
     cut->addCut(cutPairPhiV);
@@ -3045,7 +3045,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
   }
 
   if (nameStr == "excludePairPhiV") {
-    auto* cutPairLowPhiV = new AnalysisCompositeCut("cutPairLowPhiV", "cutPairLowPhiV", kFALSE);
+    auto* cutPairLowPhiV = new AnalysisCompositeCut("cut_pairlowPhiV", "cut_pairlowPhiV", false);
     cutPairLowPhiV->addCut(getAnalysisCut("excludePairLowMass"));
     cutPairLowPhiV->addCut(getAnalysisCut("excludePairPhiV"));
     cut->addCut(cutPairLowPhiV);
@@ -4054,7 +4054,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
     auto* pidCut = new AnalysisCompositeCut(
       "alice3EitherTOFPIDPi",
       "iTOF OR oTOF pion PID",
-      kFALSE);
+      false);
 
     pidCut->addCut(getAnalysisCut("alice3iTOFPIDPi"));
     pidCut->addCut(getAnalysisCut("alice3oTOFPIDPi"));
@@ -4067,7 +4067,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName)
     auto* pidCut = new AnalysisCompositeCut(
       "alice3EitherTOFPIDKa",
       "iTOF OR oTOF kaon PID",
-      kFALSE);
+      false);
 
     pidCut->addCut(getAnalysisCut("alice3iTOFPIDKa"));
     pidCut->addCut(getAnalysisCut("alice3oTOFPIDKa"));
@@ -4622,13 +4622,13 @@ AnalysisCut* o2::aod::dqcuts::getAnalysisCut(const char* cutName)
   }
 
   if (nameStr == "eventSingleGapACZDC") {
-    auto* cutA = new AnalysisCompositeCut("singleGapAZDC", "singleGapAZDC", kTRUE);
+    auto* cutA = new AnalysisCompositeCut("singleGapAZDC", "singleGapAZDC", true);
     cutA->addCut(getAnalysisCut("eventSingleGapAZDC"));
 
-    auto* cutC = new AnalysisCompositeCut("singleGapCZDC", "singleGapCZDC", kTRUE);
+    auto* cutC = new AnalysisCompositeCut("singleGapCZDC", "singleGapCZDC", true);
     cutC->addCut(getAnalysisCut("eventSingleGapCZDC"));
 
-    auto* cutAorC = new AnalysisCompositeCut("singleGapACZDC", "singleGapACZDC", kFALSE);
+    auto* cutAorC = new AnalysisCompositeCut("singleGapACZDC", "singleGapACZDC", false);
     cutAorC->addCut(cutA);
     cutAorC->addCut(cutC);
     return cutAorC;
@@ -4640,15 +4640,15 @@ AnalysisCut* o2::aod::dqcuts::getAnalysisCut(const char* cutName)
   }
 
   if (nameStr == "eventSingleGapACZDC_UPCMode") {
-    auto* cutA = new AnalysisCompositeCut("singleGapAZDC", "singleGapAZDC", kTRUE);
+    auto* cutA = new AnalysisCompositeCut("singleGapAZDC", "singleGapAZDC", true);
     cutA->addCut(getAnalysisCut("eventSingleGapAZDC"));
     cutA->addCut(getAnalysisCut("eventUPCMode"));
 
-    auto* cutC = new AnalysisCompositeCut("singleGapCZDC", "singleGapCZDC", kTRUE);
+    auto* cutC = new AnalysisCompositeCut("singleGapCZDC", "singleGapCZDC", true);
     cutC->addCut(getAnalysisCut("eventSingleGapCZDC"));
     cutC->addCut(getAnalysisCut("eventUPCMode"));
 
-    auto* cutAorC = new AnalysisCompositeCut("singleGapACZDC", "singleGapACZDC", kFALSE);
+    auto* cutAorC = new AnalysisCompositeCut("singleGapACZDC", "singleGapACZDC", false);
     cutAorC->addCut(cutA);
     cutAorC->addCut(cutC);
     return cutAorC;
@@ -8026,12 +8026,12 @@ AnalysisCut* o2::aod::dqcuts::parseJSONAnalysisCut(T cut, const char* cutName)
 
     TString itName = it->name.GetString();
 
-    if (itName.Contains("addCut")) {
+    if (itName.Contains("AddCut")) {
 
       LOG(debug) << "Parsing " << itName.Data();
       const auto& addcut = it->value;
       if (!validateJSONaddCut(&addcut, true)) {
-        LOG(fatal) << "addCut statement not properly defined";
+        LOG(fatal) << "AddCut statement not properly defined";
         return nullptr;
       }
 
@@ -8157,12 +8157,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::parseJSONAnalysisCompositeCut(T cut, cons
 
     TString itName = it->name.GetString();
 
-    if (itName.Contains("addCut")) {
+    if (itName.Contains("AddCut")) {
 
       LOG(debug) << "Parsing " << itName.Data();
       const auto& addcut = it->value;
       if (!validateJSONaddCut(&addcut, false)) {
-        LOG(fatal) << "addCut statement not properly defined";
+        LOG(fatal) << "AddCut statement not properly defined";
         return nullptr;
       }
 
