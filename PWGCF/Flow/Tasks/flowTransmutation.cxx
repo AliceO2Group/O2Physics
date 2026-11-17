@@ -47,9 +47,10 @@
 #include <TNamed.h>
 #include <TRandom3.h>
 #include <TString.h>
-#inlcude < RtypesCore.h>
 
 #include <sys/types.h>
+
+#include <RtypesCore.h>
 
 #include <algorithm>
 #include <chrono>
@@ -821,7 +822,7 @@ struct FlowTransmutation {
     if (!isRef && !isPOI) {
       return;
     }
-    double wNUE = (weight.hEfficiency != nullptr) ? 1. / weight.hEfficiency->GetBinContent(weight.hEfficiency)->FindBin(track.pt()) : 1.0;
+    double wNUE = (weight.hEfficiency != nullptr) ? 1. / weight.hEfficiency->GetBinContent(weight.hEfficiency->FindBin(track.pt())) : 1.0;
     double wNUA = (weight.hAcceptance != nullptr) ? weight.hAcceptance->getNUA(track.phi(), track.eta(), vtxZ) : 1.0;
     if (weight.hAcceptance != nullptr) {
       registryQA.fill(HIST("cutObs/hPhiCorrected"), track.phi(), wNUA);
