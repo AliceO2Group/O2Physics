@@ -913,7 +913,6 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_006, "AOD", "EMPRIMARYEL", 6, //!
                             emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
                             emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
 
-
 DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_007, "AOD", "EMPRIMARYEL", 7, //!
                             o2::soa::Index<>, emprimaryelectron::CollisionId,
                             emprimaryelectron::TrackId, emprimaryelectron::Sign,
@@ -948,8 +947,6 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_007, "AOD", "EMPRIMARYEL", 7, //!
                             emprimaryelectron::MeanClusterSizeITS<track::ITSClusterSizes>,
                             emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
                             emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
-
-
 
 using EMPrimaryElectrons = EMPrimaryElectrons_007;
 // iterators
