@@ -169,7 +169,7 @@ class FemtoUniversePairCleaner
   }
 
  private:
-  framework::HistogramRegistry* mHistogramRegistry;                                     ///< For QA output
+  framework::HistogramRegistry* mHistogramRegistry = nullptr;                           ///< For QA output
   static constexpr o2::aod::femtouniverseparticle::ParticleType kPartOneType = partOne; ///< Type of particle 1
   static constexpr o2::aod::femtouniverseparticle::ParticleType kPartTwoType = partTwo; ///< Type of particle 2
 };
