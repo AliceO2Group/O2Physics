@@ -150,8 +150,9 @@ struct StrangenessDerivedV0Step4 {
   // Defining the type of the daughter tracks
   using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
+  // V0CollRefs carries the index to the collision: without it the V0s are not grouped per collision
   void processRecMC(soa::Filtered<soa::Join<aod::StraCollisions, aod::StraEvSels>>::iterator const& collision,
-                    soa::Filtered<soa::Join<aod::V0Cores, aod::V0Extras, aod::V0TOFNSigmas, aod::V0CoreMCLabels>> const& V0s,
+                    soa::Filtered<soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFNSigmas, aod::V0CoreMCLabels>> const& V0s,
                     dauTracks const&,
                     aod::V0MCCores const& /*v0mccores*/)
   {
@@ -272,28 +273,29 @@ struct StrangenessDerivedV0Step4 {
       }
 
       // Checking that the V0 is a true K0S / Lambda / AntiLambda
+      // The generated pT is used, consistently with the denominator of the efficiency
       if (v0mccore.pdgCode() == PDG_t::kK0Short && isK0Short) {
         rK0Short.fill(HIST("hMassK0ShortTrueRec"), v0.mK0Short());
-        rK0Short.fill(HIST("hPtK0ShortTrueRec"), v0.pt());
+        rK0Short.fill(HIST("hPtK0ShortTrueRec"), v0mccore.ptMC());
         if (k0ShortPassTOFSelection) {
           rK0Short.fill(HIST("hMassK0ShortTrueRecWithTOF"), v0.mK0Short());
-          rK0Short.fill(HIST("hPtK0ShortTrueRecWithTOF"), v0.pt());
+          rK0Short.fill(HIST("hPtK0ShortTrueRecWithTOF"), v0mccore.ptMC());
         }
       }
       if (v0mccore.pdgCode() == PDG_t::kLambda0 && isLambda) {
         rLambda.fill(HIST("hMassLambdaTrueRec"), v0.mLambda());
-        rLambda.fill(HIST("hPtLambdaTrueRec"), v0.pt());
+        rLambda.fill(HIST("hPtLambdaTrueRec"), v0mccore.ptMC());
         if (lambdaPassTOFSelection) {
           rLambda.fill(HIST("hMassLambdaTrueRecWithTOF"), v0.mLambda());
-          rLambda.fill(HIST("hPtLambdaTrueRecWithTOF"), v0.pt());
+          rLambda.fill(HIST("hPtLambdaTrueRecWithTOF"), v0mccore.ptMC());
         }
       }
       if (v0mccore.pdgCode() == PDG_t::kLambda0Bar && isAntiLambda) {
         rLambda.fill(HIST("hMassAntiLambdaTrueRec"), v0.mAntiLambda());
-        rLambda.fill(HIST("hPtAntiLambdaTrueRec"), v0.pt());
+        rLambda.fill(HIST("hPtAntiLambdaTrueRec"), v0mccore.ptMC());
         if (antiLambdaPassTOFSelection) {
           rLambda.fill(HIST("hMassAntiLambdaTrueRecWithTOF"), v0.mAntiLambda());
-          rLambda.fill(HIST("hPtAntiLambdaTrueRecWithTOF"), v0.pt());
+          rLambda.fill(HIST("hPtAntiLambdaTrueRecWithTOF"), v0mccore.ptMC());
         }
       }
     }
@@ -303,7 +305,16 @@ struct StrangenessDerivedV0Step4 {
                     const soa::SmallGroups<soa::Join<aod::StraCollisions, o2::aod::StraEvSels, aod::StraCollLabels>>& collisions,
                     const soa::SmallGroups<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>& v0MC)
   {
-    if (collisions.size() < 1) { // to process generated collisions that've been reconstructed at least once
+    // Process only generated collisions reconstructed at least once by a collision
+    // passing the same event selection as in processRecMC (sel8 and z-vertex cut)
+    bool hasSelectedCollision = false;
+    for (const auto& collision : collisions) {
+      if (collision.sel8() && std::abs(collision.posZ()) < cutzvertex) {
+        hasSelectedCollision = true;
+        break;
+      }
+    }
+    if (!hasSelectedCollision) {
       return;
     }
     rEventSelection.fill(HIST("hVertexZGen"), mcCollision.posZ());
