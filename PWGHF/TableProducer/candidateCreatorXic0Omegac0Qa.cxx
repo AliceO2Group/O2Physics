@@ -1061,9 +1061,9 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
 
   // Configurables
   struct : ConfigurableGroup {
-    Configurable<bool> rejectBackground{"rejectBackground", false, "Reject particles from background events"}; // -> Used for only Xic0
-    Configurable<bool> acceptTrackInteractionWithMaterial{"acceptTrackInteractionWithMaterial", false, "Accept candidates with final daughters interacting with materials"};
-    // Configurable<bool> matchDecayedPions{"matchedDecayedPions", true, "Match also candidates with daughter pion tracks that decay with kinked toploogy"};
+    Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
+    Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", true, "Match also candidates with tracks that decay with kinked topology"};
+    Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", true, "Match also candidates with tracks that interact with material"};
   } configs;
 
   std::array<int, nMcDecayChannels> pdgOfCharmBaryon{+kXiC0, +kXiC0, +kOmegaC0, +kOmegaC0, +kOmegaC0};
@@ -1105,6 +1105,22 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
     }
   }
 
+  template <typename Track, std::size_t N>
+  int matchDecay(aod::McParticles const& mcParticles, std::array<Track, N> const& daughters, int pdgMother, std::array<int, N> const& pdgDaughters,
+                 int8_t* matchSign, int depth, int8_t* nPiToMu = nullptr, int8_t* nKaToPi = nullptr, int8_t* nMaterial = nullptr)
+  {
+    if (configs.matchKinkedDecayTopology && configs.matchInteractionsWithMaterial) {
+      return RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles, daughters, pdgMother, pdgDaughters, true, matchSign, depth, nPiToMu, nKaToPi, nMaterial);
+    }
+    if (configs.matchKinkedDecayTopology) {
+      return RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles, daughters, pdgMother, pdgDaughters, true, matchSign, depth, nPiToMu, nKaToPi);
+    }
+    if (configs.matchInteractionsWithMaterial) {
+      return RecoDecay::getMatchedMCRec<false, true, false, false, true>(mcParticles, daughters, pdgMother, pdgDaughters, true, matchSign, depth, nullptr, nullptr, nMaterial);
+    }
+    return RecoDecay::getMatchedMCRec<false, true>(mcParticles, daughters, pdgMother, pdgDaughters, true, matchSign, depth);
+  }
+
   template <o2::hf_centrality::CentralityEstimator centEstimator, typename Colls, typename McCollisions>
   void runXic0Omegac0Mc(TracksWMcIU const& tracks,
                         aod::McParticles const& mcParticles,
@@ -1125,8 +1141,8 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
       int8_t flagChannelMain = 0;
       int8_t flagChannelResonant = 0; // TODO: Implement resonant channel matching
       int8_t origin = 0;
-      int8_t nKinkedTracks = 0;             // TODO: Implement kinked track matching
-      int8_t nInteractionsWithMaterial = 0; // TODO: Implement interaction with material matching
+      int8_t nKinkedTracks = 0;
+      int8_t nInteractionsWithMaterial = 0;
 
       std::vector<int> idxBhadMothers{};
 
@@ -1159,19 +1175,24 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
       }
 
       for (int decayChannel = 0; decayChannel < nMcDecayChannels; ++decayChannel) {
+        int8_t nPiToMu = 0;
+        int8_t nKaToPi = 0;
+        int8_t nMaterial = 0;
         // CharmBaryon -> Charm bachelor + Cascade
-        indexRecCharmBaryon = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgOfCharmBaryon[decayChannel], std::array{pdgOfCharmBachelor[decayChannel], pdgOfBachelor[decayChannel], +kProton, +kPiMinus}, true, &sign, 3);
+        indexRecCharmBaryon = matchDecay(mcParticles, arrayDaughters, pdgOfCharmBaryon[decayChannel], std::array{pdgOfCharmBachelor[decayChannel], pdgOfBachelor[decayChannel], +kProton, +kPiMinus}, &sign, 3, &nPiToMu, &nKaToPi, &nMaterial);
 
         if (indexRecCharmBaryon > -1) {
           // Cascade -> Bachelor + V0
-          indexRecCascade = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersCasc, pdgOfCascade[decayChannel], std::array{pdgOfBachelor[decayChannel], +kProton, +kPiMinus}, true, &signCasc, 2);
+          indexRecCascade = matchDecay(mcParticles, arrayDaughtersCasc, pdgOfCascade[decayChannel], std::array{pdgOfBachelor[decayChannel], +kProton, +kPiMinus}, &signCasc, 2);
 
           if (indexRecCascade > -1) {
             // V0 -> Pos + Neg
-            indexRecV0 = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1);
+            indexRecV0 = matchDecay(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, &signV0, 1);
 
             if (indexRecV0 > -1) {
               flagChannelMain = sign * decayChannelFlags[decayChannel];
+              nKinkedTracks = nPiToMu + nKaToPi;
+              nInteractionsWithMaterial = nMaterial;
               break;
             }
           }
