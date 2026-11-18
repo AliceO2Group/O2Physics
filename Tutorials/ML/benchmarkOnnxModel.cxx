@@ -16,7 +16,6 @@
 #include <Framework/ProcessingContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <ML/3rdparty/GPUORTFloat16.h>
 #include <onnxruntime_c_api.h>
 #include <onnxruntime_cxx_api.h>
 
@@ -196,15 +195,15 @@ struct BenchmarkOnnxModel {
     // File loading and FP16 conversion are outside the timing loop. Without a
     // file, retain deterministic synthetic inputs for performance-only runs.
     std::vector<float> floats(fp16.value ? 0 : count);
-    std::vector<o2::OrtDataType::Float16_t> halves(fp16.value ? count : 0);
-    static_assert(sizeof(o2::OrtDataType::Float16_t) == 2);
+    std::vector<_Float16> halves(fp16.value ? count : 0);
+    static_assert(sizeof(_Float16) == 2);
     auto store = [&](size_t i, float value) {
       if (!std::isfinite(value)) {
         throw std::runtime_error("Input features must be finite");
       }
       if (fp16.value) {
-        halves[i] = o2::OrtDataType::Float16_t(value);
-        if (!std::isfinite(halves[i].ToFloat())) {
+        halves[i] = _Float16(value);
+        if (!std::isfinite((float)halves[i])) {
           throw std::runtime_error("Input feature overflows FP16");
         }
       } else {
@@ -295,11 +294,11 @@ struct BenchmarkOnnxModel {
         throw std::runtime_error("Prediction export requires an FP32 or FP16 first output [batch-size, classes]");
       }
       const float* fp32 = outputType == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT ? output.GetTensorData<float>() : nullptr;
-      const auto* fp16Data = outputType == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16 ? output.GetTensorData<o2::OrtDataType::Float16_t>() : nullptr;
+      const auto* fp16Data = outputType == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16 ? output.GetTensorData<_Float16>() : nullptr;
       const size_t columns = static_cast<size_t>(outputShape[1]);
       // Validate before opening the destination, so invalid predictions do not
       // replace an existing file with a partial matrix.
-      auto valueAt = [&](size_t i) { return fp32 ? fp32[i] : fp16Data[i].ToFloat(); };
+      auto valueAt = [&](size_t i) { return fp32 ? fp32[i] : (float)fp16Data[i]; };
       for (size_t i = 0; i < info.GetElementCount(); ++i) {
         if (!std::isfinite(valueAt(i))) {
           throw std::runtime_error("Prediction export found a nonfinite value");
