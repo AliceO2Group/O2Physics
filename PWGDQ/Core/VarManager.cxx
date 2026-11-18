@@ -1722,6 +1722,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kR3EP] = "";
   fgVariableNames[kNPairsPerEvent] = "number of pairs per event";
   fgVariableUnits[kNPairsPerEvent] = "";
+  fgVariableNames[kNSelTracksForPairing] = "number of selected tracks for pairing";
+  fgVariableUnits[kNSelTracksForPairing] = "";
   fgVariableNames[kPairMass] = "mass";
   fgVariableUnits[kPairMass] = "GeV/c2";
   fgVariableNames[kPairMassDau] = "mass dilepton";
@@ -2402,6 +2404,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kTwoR2EP1"] = kTwoR2EP1;
   fgVarNamesMap["kTwoR2EP2"] = kTwoR2EP2;
   fgVarNamesMap["kNPairsPerEvent"] = kNPairsPerEvent;
+  fgVarNamesMap["kNSelTracksForPairing"] = kNSelTracksForPairing;
   fgVarNamesMap["kInteractionRate"] = kInteractionRate;
   fgVarNamesMap["kMuPerBc"] = kMuPerBc;
   fgVarNamesMap["kNEventWiseVariables"] = kNEventWiseVariables;
