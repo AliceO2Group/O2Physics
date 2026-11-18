@@ -3007,7 +3007,7 @@ struct AnalysisSameEventPairing {
       if (!fMixNSelEdges.empty()) {
         // mix only events in the same class of cfgMixingNSelEdges
         const int nNSelClasses = static_cast<int>(fMixNSelEdges.size()) - 1;
-        std::map<int, std::vector<std::decay_t<decltype(events.begin())>>> nSelPools;
+        std::map<int, std::vector<decltype(events.begin())>> nSelPools;
         // fill the pools with events
         for (auto const& event : events) {
           int nSel = 0;
