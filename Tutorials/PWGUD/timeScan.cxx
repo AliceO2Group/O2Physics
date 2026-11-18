@@ -32,6 +32,14 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <TH2.h>
+#include <TString.h>
+
+#include <cstdint>
+#include <bitset>
+#include <map>
+#include <memory>
+#include <numeric>
 
 using namespace o2;
 using namespace o2::framework;
@@ -125,7 +133,7 @@ struct TimeScan {
         LOGP(debug, "Fill maps of 1D histograms for new TF");
         const AxisSpec axisBCinTF{nBCsPerTF, 0., static_cast<double>(nBCsPerTF), "BC in TF"};
         mapHistoCollidingBCs[tfID] = histosCollidingBCs.add<TH1>(Form("%d/hCollidingBCs", tfID), "Colliding BCs", HistType::kTH1D, {axisBCinTF});
-        if (fill1D) {
+        if (fill1D>0) {
           mapHistoBCs[tfID] = histosBCs.add<TH1>(Form("%d/hBCs", tfID), "Non-empty BCs", HistType::kTH1D, {axisBCinTF});
           mapHistoCols[tfID] = histosCols.add<TH1>(Form("%d/hCols", tfID), "Number of contributors", HistType::kTH1D, {axisBCinTF});
           mapHistoFT0A[tfID] = histosFT0A.add<TH1>(Form("%d/hFT0A", tfID), "FT0A amplitude", HistType::kTH1D, {axisBCinTF});
@@ -154,7 +162,7 @@ struct TimeScan {
       const int32_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
       LOGP(debug, "globalBC={} tfID={} bcInTF={}", globalBC, tfID, bcInTF);
       histos.get<TH2>(HIST("hBCs"))->Fill(Form("%d", tfID), bcInTF, 1.);
-      if (fill1D) {
+      if (fill1D>0) {
         mapHistoBCs[tfID]->Fill(bcInTF);
       }
     }
@@ -168,7 +176,7 @@ struct TimeScan {
       LOGP(debug, "globalBC={} nContributors={}", globalBC, nContributors);
       histos.get<TH2>(HIST("hCols"))->Fill(Form("%d", tfID), bcInTF, nContributors);
       histos.get<TH1>(HIST("hNumContrib"))->Fill(nContributors);
-      if (fill1D) {
+      if (fill1D>0) {
         mapHistoCols[tfID]->Fill(bcInTF, nContributors);
       }
     }
@@ -185,7 +193,7 @@ struct TimeScan {
       histos.get<TH2>(HIST("hFT0C"))->Fill(Form("%d", tfID), bcInTF, sumAmpFT0C);
       histos.get<TH1>(HIST("hSumAmpFT0A"))->Fill(sumAmpFT0A);
       histos.get<TH1>(HIST("hSumAmpFT0C"))->Fill(sumAmpFT0C);
-      if (fill1D) {
+      if (fill1D>0) {
         mapHistoFT0A[tfID]->Fill(bcInTF, sumAmpFT0A);
         mapHistoFT0C[tfID]->Fill(bcInTF, sumAmpFT0C);
       }
@@ -200,7 +208,7 @@ struct TimeScan {
       LOGP(debug, "globalBC={} sumAmpFV0A={}", globalBC, sumAmpFV0A);
       histos.get<TH2>(HIST("hFV0A"))->Fill(Form("%d", tfID), bcInTF, sumAmpFV0A);
       histos.get<TH1>(HIST("hSumAmpFV0A"))->Fill(sumAmpFV0A);
-      if (fill1D) {
+      if (fill1D>0) {
         mapHistoFV0A[tfID]->Fill(bcInTF, sumAmpFV0A);
       }
     }
@@ -217,7 +225,7 @@ struct TimeScan {
       histos.get<TH2>(HIST("hFDDC"))->Fill(Form("%d", tfID), bcInTF, sumAmpFDDC);
       histos.get<TH1>(HIST("hSumAmpFDDA"))->Fill(sumAmpFDDA);
       histos.get<TH1>(HIST("hSumAmpFDDC"))->Fill(sumAmpFDDC);
-      if (fill1D) {
+      if (fill1D>0) {
         mapHistoFDDA[tfID]->Fill(bcInTF, sumAmpFDDA);
         mapHistoFDDC[tfID]->Fill(bcInTF, sumAmpFDDC);
       }
@@ -235,7 +243,7 @@ struct TimeScan {
       histos.get<TH2>(HIST("hZNC"))->Fill(Form("%d", tfID), bcInTF, sumAmpZNC);
       histos.get<TH1>(HIST("hSumAmpZNA"))->Fill(sumAmpZNA);
       histos.get<TH1>(HIST("hSumAmpZNC"))->Fill(sumAmpZNC);
-      if (fill1D) {
+      if (fill1D>0) {
         mapHistoZNA[tfID]->Fill(bcInTF, sumAmpZNA);
         mapHistoZNC[tfID]->Fill(bcInTF, sumAmpZNC);
       }
