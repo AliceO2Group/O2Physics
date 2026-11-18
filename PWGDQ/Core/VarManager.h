@@ -525,6 +525,7 @@ class VarManager : public TObject
     kA2EPME_FT0C,         // A2 of VM to FT0C event plane for ME technique
     kA2EPME_FT0A,         // A2 of VM to FT0A event plane for ME technique
     kNPairsPerEvent,      // number of pairs per event in same-event or mixed-event pairing
+    kNSelTracksForPairing,// number of tracks in the event passing the pairing track filter (barrel); in ME = that of the first event
     kInteractionRate,
     kMuPerBc,
 
@@ -4822,6 +4823,15 @@ void VarManager::FillPairMEAcrossTFs(T const& t1, T const& t2, float* values)
   values[kEta] = v12.Eta();
   values[kPhi] = RecoDecay::constrainAngle(v12.Phi());
   values[kRap] = -v12.Rapidity();
+  values[kPt1] = t1.pt;
+  values[kEta1] = t1.eta;
+  values[kPhi1] = t1.phi;
+  values[kPt2] = t2.pt;
+  values[kEta2] = t2.eta;
+  values[kPhi2] = t2.phi;
+  if (fgUsedVars[kDeltaPhiPair2]) {
+    values[kDeltaPhiPair2] = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), -o2::constants::math::PIHalf);
+  }
 
   if (fgUsedVars[kCosThetaStarRandom] || fgUsedVars[kCosThetaStarFT0C]) {
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
