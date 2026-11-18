@@ -68,6 +68,7 @@
 #include <RtypesCore.h>
 
 #include <algorithm>
+#include <charconv>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -78,6 +79,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <system_error>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -1511,7 +1513,7 @@ struct AnalysisSameEventPairing {
   o2::framework::Configurable<std::string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
   o2::framework::Configurable<std::string> fConfigMixingVariablesJson{"cfgMixingVarsJSON", "", "Mixing configs in JSON format"};
   o2::framework::Configurable<bool> fConfigRunMixingAcrossTFs{"cfgRunMixingAcrossTFs", false, "If true, run event mixing using the MixingHandler which accumulates events across multiple TFs"};
-  o2::framework::Configurable<std::string> fConfigMixingNSelEdges{"cfgMixingNSelEdges", "", "Comma separated class edges in the number of selected pairing tracks per event"};
+  o2::framework::Configurable<std::string> fConfigMixingNSelEdges{"cfgMixingNSelEdges", "", "Comma separated class edges in the number of selected pairing tracks per event, (e.g. 2,3,4,1000)"};
   // o2::framework::Configurable<std::string> fConfigAddEventMixingHistogram{"cfgAddEventMixingHistogram", "", "Comma separated list of histograms"};
   o2::framework::Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
   o2::framework::Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
@@ -1865,7 +1867,16 @@ struct AnalysisSameEventPairing {
     if (!fConfigMixingNSelEdges.value.empty()) {
       std::unique_ptr<TObjArray> edgeArr(TString(fConfigMixingNSelEdges.value).Tokenize(","));
       for (int ie = 0; ie < edgeArr->GetEntries(); ++ie) {
-        fMixNSelEdges.push_back(static_cast<TObjString*>(edgeArr->At(ie))->GetString().Atoi());
+        const std::string edgeStr = dynamic_cast<TObjString*>(edgeArr->At(ie))->GetString().Data();
+        int edge = 0;
+        const auto [ptr, ec] = std::from_chars(edgeStr.data(), edgeStr.data() + edgeStr.size(), edge);
+        if (ec != std::errc() || ptr != edgeStr.data() + edgeStr.size()) {
+          LOG(fatal) << "Edges must be integers: '" << fConfigMixingNSelEdges.value << "'";
+        }
+        fMixNSelEdges.push_back(edge);
+      }
+      if (fMixNSelEdges.size() < 2 || !std::is_sorted(fMixNSelEdges.begin(), fMixNSelEdges.end()) || std::adjacent_find(fMixNSelEdges.begin(), fMixNSelEdges.end()) != fMixNSelEdges.end()) {
+        LOG(fatal) << "cfgMixingNSelEdges needs at least two edges in strictly increasing order: '" << fConfigMixingNSelEdges.value << "'";
       }
       LOGF(info, "Event mixing restricted to classes of selected pairing tracks per event: %s", fConfigMixingNSelEdges.value.c_str());
     }
