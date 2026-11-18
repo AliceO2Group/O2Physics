@@ -67,9 +67,11 @@
 
 #include <Rtypes.h>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstdlib>
+#include <iterator>
 #include <memory>
 #include <numeric>
 #include <stdexcept>
@@ -421,23 +423,14 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       hCandCounter->Fill(CascReconstructed);
     }
 
-    //------------------------------Info of V0 and cascade------------------------------
-    // Cascade quantities from LF strangeness builder
-    // TODO: check if this is necessary or the covariance matrix can be directly used from straHelper.cascade.covariance
-    std::array<float, 21> covCasc = {0.};
-    constexpr int NumCovElement = 6;
-    constexpr std::array<int, NumCovElement> MomInd = {9, 13, 14, 18, 19, 20};
-    for (int i = 0; i < NumCovElement; i++) {
-      covCasc[MomInd[i]] = straHelper.cascade.covariance[MomInd[i]];
-      covCasc[i] = straHelper.cascade.covariance[i];
-    }
-
     //------------------------------Create cascade track------------------------------
     if (bachTrack.sign() == 0) {
       return;
     }
     const int bachTrackSign = bachTrack.sign() < 0 ? -1 : 1;
 
+    std::array<float, 21> covCasc = {0.};
+    std::copy(std::begin(straHelper.cascade.covariance), std::end(straHelper.cascade.covariance), covCasc.begin());
     o2::track::TrackParCov trackCasc = o2::track::TrackParCov(straHelper.cascade.cascadePosition, straHelper.cascade.cascadeMomentum, covCasc, bachTrackSign, true);
     trackCasc.setAbsCharge(1);
     trackCasc.setPID(trackPidOfCascade);
@@ -751,7 +744,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     trackParCovCharmBach.setAbsCharge(1);
     trackParCovCasc.setAbsCharge(1);
 
-    // TODO: check if the impact parameter can be calculated from KFParticle directly
     auto primaryVertex = getPrimaryVertex(collision);
     o2::dataformats::DCA impactParameterV0DauPos, impactParameterV0DauNeg, impactParameterCascBach;
     o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovV0DauPos, 2.f, matCorr, &impactParameterV0DauPos);
