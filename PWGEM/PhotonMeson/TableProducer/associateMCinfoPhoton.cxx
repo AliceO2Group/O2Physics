@@ -84,6 +84,7 @@ struct AssociateMCInfoPhoton {
   Produces<o2::aod::EMMCEventLabels> mceventlabels;
   Produces<o2::aod::EMMCParticles> emmcparticles;
   Produces<o2::aod::V0LegMCLabels> v0legmclabels;
+  Produces<o2::aod::PCMFreeLegMCLabels> pcmfreelegmclabels;
   Produces<o2::aod::EMPrimaryElectronMCLabels> emprimaryelectronmclabels;
   Produces<o2::aod::EMEMCClusterMCLabels_001> ememcclustermclabels;
 
@@ -401,7 +402,7 @@ struct AssociateMCInfoPhoton {
   }
 
   template <uint8_t system, typename TTracks, typename TFwdTracks, typename TPCMs, typename TPCMLegs, typename TPHOSs, typename TEMCs, typename TEMPrimaryElectrons>
-  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles, TTracks const& o2tracks, TFwdTracks const&, TPCMs const& v0photons, TPCMLegs const& legs, TPHOSs const&, TEMCs const& emcclusters, TEMPrimaryElectrons const& emprimaryelectrons)
+  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles, TTracks const& o2tracks, TFwdTracks const&, TPCMs const& v0photons, TPCMLegs const& legs, TPHOSs const&, TEMCs const& emcclusters, TEMPrimaryElectrons const& emprimaryelectrons, aod::PCMFreeLegs const* freeLegs = nullptr)
   {
     // temporary variables used for the indexing of the skimmed MC stack
     std::unordered_map<uint64_t, int> fNewLabels;
@@ -637,6 +638,40 @@ struct AssociateMCInfoPhoton {
           }
         } // end of loop over legs {pos, ele}
       } // end of v0 loop
+
+      // for each free leg, check if it has a valid MC particle. If yes, store it in the skimmed MC stack and also store its mother chain. If not, just store a row with -1 and kNoMcParticleMask.
+      if (freeLegs != nullptr) {
+        for (const auto& freeLeg : *freeLegs) {
+          collisionIter.setCursor(freeLeg.collisionId());
+          bool validMc = false;
+          if (passesCollisionGate(collisionIter)) {
+            mcCollisionIter.setCursor(collisionIter.mcCollisionId());
+            o2TrackIter.setCursor(freeLeg.trackId());
+            validMc = o2TrackIter.has_mcParticle();
+          }
+          if (!validMc) {
+            pcmfreelegmclabels(-1, kNoMcParticleMask); // the row must exist
+            continue;
+          }
+          mcParticleIter.setCursor(o2TrackIter.mcParticleId());
+          auto [iter, isNew] = fNewLabels.try_emplace(mcParticleIter.globalIndex(), fCounter.particles);
+          if (isNew) {
+            fNewLabelsReversed[fCounter.particles] = mcParticleIter.globalIndex();
+            auto evIt = fEventLabels.find(mcCollisionIter.globalIndex());
+            if (evIt != fEventLabels.end()) {
+              fEventIdx[mcParticleIter.globalIndex()] = evIt->second;
+            }
+            fCounter.particles++;
+          }
+          pcmfreelegmclabels(iter->second, o2TrackIter.mcMask());
+          int motherid = -999;
+          if (mcParticleIter.has_mothers()) {
+            motherid = mcParticleIter.mothersIds()[0];
+          }
+          selectMothersToStore(motherid, mcParticles.size(), motherParticle, daughterIter, mcCollisionIter,
+                               fNewLabels, fNewLabelsReversed, fEventIdx, fEventLabels, fCounter);
+        }
+      }
     }
 
     if constexpr (static_cast<bool>(system & kElectron)) {
@@ -807,6 +842,12 @@ struct AssociateMCInfoPhoton {
     skimmingMC<kPCM>(collisions, bcs, mccollisions, mcParticles, o2tracks, nullptr, v0photons, v0legs, nullptr, nullptr, nullptr);
   }
   PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM, "create em mc event table for PCM", false);
+
+  void processMC_PCM_FreeLegs(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::PCMFreeLegs const& freeLegs)
+  {
+    skimmingMC<kPCM>(collisions, bcs, mccollisions, mcParticles, o2tracks, nullptr, v0photons, v0legs, nullptr, nullptr, nullptr, &freeLegs);
+  }
+  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM_FreeLegs, "create em mc event table for PCM incl. the free legs of run 1 (PCMFreeLegs -> PCMFreeLegMCLabels)", false);
 
   void processMC_PCM_Electron(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::EMPrimaryElectronsFromDalitz const& emprimaryelectrons)
   {
