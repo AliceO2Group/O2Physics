@@ -620,7 +620,9 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
     // Require lambda pre-selection before mass constraint
     float massLam{}, sigMassLam{};
-    kfV0.GetMass(massLam, sigMassLam);
+    if (kfV0.GetMass(massLam, sigMassLam)) {
+      return;
+    }
     if (std::abs(massLam - massOfV0) > lfConfigs.lambdaMassWindow) {
       return;
     }
@@ -645,7 +647,9 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     kfCasc.Construct(cascDaughters, 2);
 
     float massCasc{}, sigMassCasc{};
-    kfCasc.GetMass(massCasc, sigMassCasc);
+    if (kfCasc.GetMass(massCasc, sigMassCasc)) {
+      return;
+    }
     if (std::abs(massCasc - massOfCascade) > configs.cascadeMassWindow) {
       return;
     }
@@ -679,7 +683,9 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     kfCharmBaryon.Construct(charmBaryonDaughters, 2);
 
     float massCharmBaryon{}, sigMassCharmBaryon{};
-    kfCharmBaryon.GetMass(massCharmBaryon, sigMassCharmBaryon);
+    if (kfCharmBaryon.GetMass(massCharmBaryon, sigMassCharmBaryon)) {
+      return;
+    }
     if (sigMassCharmBaryon <= 0) {
       return;
     }
