@@ -17,7 +17,6 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/LHCConstants.h>
-#include <CommonDataFormat/TimeStamp.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/ASoA.h>
