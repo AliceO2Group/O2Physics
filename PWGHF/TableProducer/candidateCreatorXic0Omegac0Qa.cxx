@@ -444,12 +444,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
     //------------------------------Fit SV & Create Charm Baryon track------------------------------
     auto trackParCovCharmBachelor = getTrackParCov(trackCharmBachelor);
-    try {
-      if (df.process(trackCasc, trackParCovCharmBachelor) == 0) {
-        return;
-      }
-    } catch (const std::runtime_error& error) {
-      LOG(info) << "Run time error found: " << error.what() << ". DCAFitter cannot work. Skipping this candidate";
+    if (df.process(trackCasc, trackParCovCharmBachelor) == 0) {
       return;
     }
 
@@ -621,12 +616,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     const KFParticle* v0Daughters[2] = {&kfPos, &kfNeg};
     KFParticle kfV0;
     kfV0.SetConstructMethod(lfConfigs.kfConstructMethod);
-    try {
-      kfV0.Construct(v0Daughters, 2);
-    } catch (std::runtime_error& e) {
-      LOG(debug) << "Failed to construct v0" << e.what();
-      return;
-    }
+    kfV0.Construct(v0Daughters, 2);
 
     // Require lambda pre-selection before mass constraint
     float massLam{}, sigMassLam{};
@@ -652,12 +642,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     const KFParticle* cascDaughters[2] = {&kfBach, &kfV0};
     KFParticle kfCasc;
     kfCasc.SetConstructMethod(lfConfigs.kfConstructMethod);
-    try {
-      kfCasc.Construct(cascDaughters, 2);
-    } catch (std::runtime_error& e) {
-      LOG(debug) << "Failed to construct Cascade: " << e.what();
-      return;
-    }
+    kfCasc.Construct(cascDaughters, 2);
 
     float massCasc{}, sigMassCasc{};
     kfCasc.GetMass(massCasc, sigMassCasc);
@@ -691,12 +676,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
     KFParticle kfCharmBaryon;
     kfCharmBaryon.SetConstructMethod(lfConfigs.kfConstructMethod);
-    try {
-      kfCharmBaryon.Construct(charmBaryonDaughters, 2);
-    } catch (std::runtime_error& e) {
-      LOG(debug) << "Failed to construct Charm baryon: " << e.what();
-      return;
-    }
+    kfCharmBaryon.Construct(charmBaryonDaughters, 2);
 
     float massCharmBaryon{}, sigMassCharmBaryon{};
     kfCharmBaryon.GetMass(massCharmBaryon, sigMassCharmBaryon);
