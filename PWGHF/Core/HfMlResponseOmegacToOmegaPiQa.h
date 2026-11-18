@@ -126,8 +126,8 @@ class HfMlResponseOmegacToOmegaPiQa : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, impactParameterZCharmBachelor, impactParameterZ1);
         CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, impactParameterXYCascade, impactParameter0);
         CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, impactParameterZCascade, impactParameterZ0);
-        CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, impactParameterXYNormalisedCharmBachelor, impactParameter1Normalised);
-        CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, impactParameterXYNormalisedCascade, impactParameter0Normalised);
+        CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, impactParameterXYNormalisedCharmBachelor, impactParameterNormalised1);
+        CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, impactParameterXYNormalisedCascade, impactParameterNormalised0);
         CHECK_AND_FILL_VEC_OMEGAC0(dcaDaughters);
         CHECK_AND_FILL_VEC_OMEGAC0(dcaCascadeDaughters);
         CHECK_AND_FILL_VEC_OMEGAC0(cpa);
@@ -136,7 +136,7 @@ class HfMlResponseOmegacToOmegaPiQa : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_OMEGAC0_HFHELPER(candidate, cosThetaStarPiFromOmegac, cosThetaStarOmegaczeroToOmegaPi);
         CHECK_AND_FILL_VEC_OMEGAC0(decayLength);
         CHECK_AND_FILL_VEC_OMEGAC0(decayLengthXY);
-        CHEck_AND_FILL_VEC_OMEGAC0(decayLengthNormalised);
+        CHECK_AND_FILL_VEC_OMEGAC0(decayLengthNormalised);
         CHECK_AND_FILL_VEC_OMEGAC0(decayLengthXYNormalised);
         CHECK_AND_FILL_VEC_OMEGAC0(decayLengthXYCascade);
         CHECK_AND_FILL_VEC_OMEGAC0(massCascade);
