@@ -4250,7 +4250,6 @@ struct AnalysisDileptonTrack {
     bool isBarrel = context.mOptions.get<bool>("processBarrelSkimmed") || context.mOptions.get<bool>("processDsToKKPi");
     bool isBarrelME = context.mOptions.get<bool>("processBarrelMixedEvent");
     bool isBarrelAsymmetric = context.mOptions.get<bool>("processDstarToD0Pi");
-    bool isDsToKKPi = context.mOptions.get<bool>("processDsToKKPi");
     bool isMuon = context.mOptions.get<bool>("processMuonSkimmed");
     bool isMuonME = context.mOptions.get<bool>("processMuonMixedEvent");
 
