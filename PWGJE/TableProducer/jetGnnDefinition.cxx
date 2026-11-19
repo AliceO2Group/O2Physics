@@ -222,7 +222,7 @@ struct JetGnnDefinitionTask {
   }
   PROCESS_SWITCH(JetGnnDefinitionTask, processData, "Produce GNN track indices for data jets", false);
 
-  void processMcd(CollisionsMcd::iterator const& collision, AnalysisJets const& jets, JetTracksExt const& tracks, McCollisions const&, JetParticlesWithIds const& particles, aod::McParticles const& originalParticles)
+  void processMcd(CollisionsMcd::iterator const& collision, AnalysisJets const& jets, JetTracksExt const& tracks, McCollisions const&, JetParticlesWithIds const& particles)
   {
     if constexpr (isMCD) {
       bool acceptedCollision = isAcceptedCollision(collision);
@@ -231,7 +231,7 @@ struct JetGnnDefinitionTask {
         // tree creator. Project these labels onto the selected GNN nodes.
         std::unordered_map<std::string, std::vector<int>> trackLabels{{"trkVtxIndex", {}}, {"trkOrigin", {}}};
         if (collision.has_mcCollision()) {
-          jettaggingutilities::vertexClustering(collision.template mcCollision_as<McCollisions>(), jet, tracks, particles, originalParticles, trackLabels, searchUpToQuark, vtxRes, trackPtMin);
+          jettaggingutilities::vertexClustering(collision.template mcCollision_as<McCollisions>(), jet, tracks, particles, trackLabels, searchUpToQuark, vtxRes, trackPtMin);
           origins = std::move(trackLabels.at("trkOrigin"));
           vertexIndices = std::move(trackLabels.at("trkVtxIndex"));
         } else {
