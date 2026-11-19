@@ -74,7 +74,6 @@
 #include <iterator>
 #include <memory>
 #include <numeric>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -548,7 +547,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     double massOfV0 = o2::constants::physics::MassLambda;
 
     int pdgIdOfBach = kPiMinus;
-    int pdgIdOfBachRej = kKMinus; // -> Not used in XiPi channel
     int pdgIdOfCharmBach = kPiPlus;
     int pdgIdOfCascade = kXiMinus;
     int pdgIdOfCharmBaryon = kXiC0;
@@ -557,7 +555,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
     if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
       pdgIdOfBach = kKMinus;
-      pdgIdOfBachRej = kPiMinus;
       pdgIdOfCharmBach = kPiPlus;
       pdgIdOfCascade = kOmegaMinus;
       pdgIdOfCharmBaryon = kOmegaC0;
@@ -567,7 +564,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
     if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK) {
       pdgIdOfBach = kKMinus;
-      pdgIdOfBachRej = kPiMinus;
       pdgIdOfCharmBach = kKPlus;
       pdgIdOfCascade = kOmegaMinus;
       pdgIdOfCharmBaryon = kOmegaC0;
