@@ -114,6 +114,9 @@ struct TreeWriterTpcV0 {
   Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
   // Configurable for the path of CCDB General Run Parameters LHC Interface information
   Configurable<std::string> ccdbPathGrpLhcIf{"ccdbPathGrpLhcIf", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
+  // Configurables flagging saving trees and/or HistogramSpec
+  Configurable<bool> saveTrees{"saveTrees", true, "Flag to save trees"};
+  Configurable<bool> saveMomentumHistograms{"saveMomentumHistograms", false, "Flag to save momentum histograms"};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -185,6 +188,10 @@ struct TreeWriterTpcV0 {
       LOGP(fatal, "One and only one process function should be enabled");
     }
 
+    if (!(saveTrees || saveMomentumHistograms)) {
+      LOGP(fatal, "At least one out of trees or momentum histograms should be saved");
+    }
+
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
@@ -194,6 +201,11 @@ struct TreeWriterTpcV0 {
     if (saveReserveQaHisto) {
       registry.add("hV0OutputRatio", "V0 out/in ratio;V0 out/in ratio;Entries", {HistType::kTH1F, {{100, 0, reserveV0Ratio}}});
       registry.add("hCascOutputRatio", "Casc out/in ratio;Casc out/in ratio;Entries", {HistType::kTH1F, {{100, 0, reserveCascRatio}}});
+    }
+
+    if (saveMomentumHistograms) {
+      registry.add("hMomentumPos", "hMomentumPos;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2F, {{200, std::log10(0.1), std::log10(20.)}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
+      registry.add("hMomentumNeg", "hMomentumNeg;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2F, {{200, std::log10(0.1), std::log10(20.)}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
     }
   }
 
@@ -509,13 +521,23 @@ struct TreeWriterTpcV0 {
         const bool passDownsamplig = downsampleTsalisCharged(fRndm, dauTrack.pt(), daughter.downsamplingTsalis, daughter.mass, sqrtSNN, daughter.maxPt4dwnsmplTsalis);
         const bool passNSigmaTofCut = std::fabs(daughter.tofNSigma) < daughter.nSigmaTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) < nSigmaTofUnmatchedEqualityTolerance;
         const bool passMatchTofRequirement = !daughter.rejectNoTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) > nSigmaTofUnmatchedEqualityTolerance;
-        if (passTrackSelection && passDownsamplig && passNSigmaTofCut && passMatchTofRequirement) {
-          OccupancyValues occValues{};
-          if constexpr (ModeId == ModeWithTrkQA) {
-            evaluateOccupancyVariables(dauTrack, occValues);
+        if (passTrackSelection && passNSigmaTofCut && passMatchTofRequirement) {
+          if (saveMomentumHistograms) {
+            const double log10p = std::log10(dauTrack.tpcInnerParam());
+            if (isPositive) {
+              registry.fill(HIST("hMomentumPos"), log10p, daughterId);
+            } else {
+              registry.fill(HIST("hMomentumNeg"), log10p, daughterId);
+            }
           }
-          fillSkimmedV0Table<IsCorrectedDeDx, ModeId>(mother, dauTrack, trackQAInstance, existTrkQA, collision, daughter.tpcNSigma, daughter.tofNSigma, daughter.itsNSigma, daughter.tpcExpSignal, daughter.id, runnumber, daughter.dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame, occValues, isGoodRctEvent);
-          return true;
+          if (saveTrees && passDownsamplig) {
+            OccupancyValues occValues{};
+            if constexpr (ModeId == ModeWithTrkQA) {
+              evaluateOccupancyVariables(dauTrack, occValues);
+            }
+            fillSkimmedV0Table<IsCorrectedDeDx, ModeId>(mother, dauTrack, trackQAInstance, existTrkQA, collision, daughter.tpcNSigma, daughter.tofNSigma, daughter.itsNSigma, daughter.tpcExpSignal, daughter.id, runnumber, daughter.dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame, occValues, isGoodRctEvent);
+            return true;
+          }
         }
         return false;
       };
@@ -694,6 +716,9 @@ struct TreeWriterTpcTof {
   Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
   // Configurable for the path of CCDB General Run Parameters LHC Interface information
   Configurable<std::string> ccdbPathGrpLhcIf{"ccdbPathGrpLhcIf", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
+  // Configurables flagging saving trees and/or HistogramSpec
+  Configurable<bool> saveTrees{"saveTrees", true, "Flag to save trees"};
+  Configurable<bool> saveMomentumHistograms{"saveMomentumHistograms", false, "Flag to save momentum histograms"};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -754,6 +779,11 @@ struct TreeWriterTpcTof {
 
     if (saveReserveQaHisto) {
       registry.add("hTrackOutputRatio", "Track out/in ratio;Track out/in ratio;Entries", {HistType::kTH1F, {{100, 0, reserveTrackRatio}}});
+    }
+
+    if (saveMomentumHistograms) {
+      registry.add("hMomentumPos", "hMomentumPos;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2F, {{200, std::log10(0.1), std::log10(20.)}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
+      registry.add("hMomentumNeg", "hMomentumNeg;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2F, {{200, std::log10(0.1), std::log10(20.)}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
     }
   }
 
@@ -951,8 +981,19 @@ struct TreeWriterTpcTof {
           const bool passMomTpcOnly = trk.tpcInnerParam() <= tofTrack->maxMomTPCOnly && std::fabs(tofTrack->tpcNSigma) < tofTrack->nSigmaTPCOnly;
           const bool passMomTpcTof = trk.tpcInnerParam() > tofTrack->maxMomTPCOnly && std::fabs(tofTrack->tofNSigma) < tofTrack->nSigmaTofTpctof && std::fabs(tofTrack->tpcNSigma) < tofTrack->nSigmaTpcTpctof;
           const bool passDownsamplig = downsampleTsalisCharged(fRndm, trk.pt(), tofTrack->downsamplingTsalis, tofTrack->mass, sqrtSNN);
-          if (passMomHardCut && (passMomTpcOnly || passMomTpcTof) && passDownsamplig) {
-            fillSkimmedTpcTofTable<IsCorrectedDeDx, ModeId>(trk, trackQA, existTrkQA, collision, tofTrack->tpcNSigma, tofTrack->tofNSigma, tofTrack->itsNSigma, tofTrack->tpcExpSignal, tofTrack->pid, runnumber, tofTrack->dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame, occValues, isGoodRctEvent);
+          if (passMomHardCut && (passMomTpcOnly || passMomTpcTof)) {
+            if (saveMomentumHistograms) {
+              const double log10p = std::log10(trk.tpcInnerParam());
+              const bool isPositive = (trk.signed1Pt() > 0);
+              if (isPositive) {
+                registry.fill(HIST("hMomentumPos"), log10p, tofTrack->pid);
+              } else {
+                registry.fill(HIST("hMomentumNeg"), log10p, tofTrack->pid);
+              }
+            }
+            if (saveTrees && passDownsamplig) {
+              fillSkimmedTpcTofTable<IsCorrectedDeDx, ModeId>(trk, trackQA, existTrkQA, collision, tofTrack->tpcNSigma, tofTrack->tofNSigma, tofTrack->itsNSigma, tofTrack->tpcExpSignal, tofTrack->pid, runnumber, tofTrack->dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame, occValues, isGoodRctEvent);
+            }
           }
         }
       } /// Loop tracks
