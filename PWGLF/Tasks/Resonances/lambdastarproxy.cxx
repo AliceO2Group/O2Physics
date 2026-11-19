@@ -174,6 +174,12 @@ struct Lambdastarproxy {
   struct : ConfigurableGroup {
     Configurable<int> lstarEnableITSPIDDe{"lstarEnableITSPIDDe", 0, "Apply one-sided ITS cluster-size PID to deuteron candidates"};
     Configurable<float> lstarCutNsigmaITSDeMin{"lstarCutNsigmaITSDeMin", -3.f, "Require nSigmaITS_d greater than this lower bound (not an absolute-value cut)"};
+    Configurable<float> lstarITSPIDDePtMin{"lstarITSPIDDePtMin", 0.f, "Inclusive lower measured track pT for deuteron ITS PID (GeV/c)"};
+    Configurable<float> lstarITSPIDDePtMax{"lstarITSPIDDePtMax", -1.f, "Exclusive upper measured track pT for deuteron ITS PID; negative means no upper limit"};
+    Configurable<int> lstarEnableTPCVetoDe{"lstarEnableTPCVetoDe", 0, "Reject deuteron candidates compatible with enabled competing TPC hypotheses; does not require TOF"};
+    Configurable<float> lstarTPCVetoPiDe{"lstarTPCVetoPiDe", 3.f, "Require |TPC nSigma_pi| above this value for deuteron candidates; zero disables this veto"};
+    Configurable<float> lstarTPCVetoKaDe{"lstarTPCVetoKaDe", 3.f, "Require |TPC nSigma_K| above this value for deuteron candidates; zero disables this veto"};
+    Configurable<float> lstarTPCVetoPrDe{"lstarTPCVetoPrDe", 3.f, "Require |TPC nSigma_p| above this value for deuteron candidates; zero disables this veto"};
     Configurable<int> lstarITSNClustersDe{"lstarITSNClustersDe", 0, "Additional deuteron-only minimum ITS clusters; 0 disables"};
     Configurable<int> lstarTPCNClsFoundDeMin{"lstarTPCNClsFoundDeMin", 0, "Additional deuteron-only minimum TPC found clusters (not crossed rows); 0 disables"};
     Configurable<float> lstarRequireTOFAbovePDe{"lstarRequireTOFAbovePDe", -1.f, "Strategy 2: require TOF match and TOF-d nSigma cut at full track p >= threshold in GeV/c; negative disables"};
@@ -1296,8 +1302,39 @@ struct Lambdastarproxy {
     std::shared_ptr<TH3> dePurityMCSpecies;
   } dePurity;
 
+  void validateDeuteronITSPIDRange() const
+  {
+    if (deuteronPID.lstarEnableITSPIDDe.value == 0) {
+      return;
+    }
+    if (!std::isfinite(deuteronPID.lstarITSPIDDePtMin.value) || deuteronPID.lstarITSPIDDePtMin.value < 0.f ||
+        !std::isfinite(deuteronPID.lstarITSPIDDePtMax.value) ||
+        (deuteronPID.lstarITSPIDDePtMax.value >= 0.f && deuteronPID.lstarITSPIDDePtMax.value <= deuteronPID.lstarITSPIDDePtMin.value)) {
+      LOGF(fatal, "Deuteron ITS PID requires a finite nonnegative lower pT and an ordered upper pT; negative maximum means no upper limit");
+    }
+  }
+
+  void validateDeuteronTPCVeto() const
+  {
+    if (deuteronPID.lstarEnableTPCVetoDe.value == 0) {
+      return;
+    }
+    bool anyEnabled = false;
+    for (auto const& cut : {deuteronPID.lstarTPCVetoPiDe.value, deuteronPID.lstarTPCVetoKaDe.value, deuteronPID.lstarTPCVetoPrDe.value}) {
+      if (!std::isfinite(cut) || cut < 0.f) {
+        LOGF(fatal, "Deuteron competing TPC veto thresholds must be finite and nonnegative; zero disables a species");
+      }
+      anyEnabled = anyEnabled || cut > 0.f;
+    }
+    if (!anyEnabled) {
+      LOGF(fatal, "Enabled deuteron TPC veto requires at least one positive competing-species threshold");
+    }
+  }
+
   void validateDeuteronRefinements() const
   {
+    validateDeuteronITSPIDRange();
+    validateDeuteronTPCVeto();
     if (deuteronPID.lstarITSNClustersDe.value < 0 || deuteronPID.lstarITSNClustersDe.value > ITSClusterLayers || deuteronPID.lstarTPCNClsFoundDeMin.value < 0) {
       LOGF(fatal, "Deuteron-only ITS minimum must be 0..7; TPC-found minimum must be nonnegative");
     }
@@ -1362,6 +1399,29 @@ struct Lambdastarproxy {
   }
 
   template <typename TTrack>
+  bool passDeuteronTPCVeto(TTrack const& track) const
+  {
+    if (deuteronPID.lstarEnableTPCVetoDe.value == 0) {
+      return true;
+    }
+    // A missing full-PID response has an invalid expected resolution and must
+    // not be accepted merely because its stored nSigma lies far from zero.
+    const auto passes = [](float nsigma, float expectedSigma, float cut) {
+      return std::isfinite(nsigma) && std::isfinite(expectedSigma) && expectedSigma > 0.f && std::abs(nsigma) > cut;
+    };
+    if (deuteronPID.lstarTPCVetoPiDe.value > 0.f && !passes(track.tpcNSigmaPi(), track.tpcExpSigmaPi(), deuteronPID.lstarTPCVetoPiDe.value)) {
+      return false;
+    }
+    if (deuteronPID.lstarTPCVetoKaDe.value > 0.f && !passes(track.tpcNSigmaKa(), track.tpcExpSigmaKa(), deuteronPID.lstarTPCVetoKaDe.value)) {
+      return false;
+    }
+    if (deuteronPID.lstarTPCVetoPrDe.value > 0.f && !passes(track.tpcNSigmaPr(), track.tpcExpSigmaPr(), deuteronPID.lstarTPCVetoPrDe.value)) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename TTrack>
   bool passDeuteronRefinements(TTrack const& track) const
   {
     if (deuteronPID.lstarITSNClustersDe.value > 0 && track.itsNCls() < deuteronPID.lstarITSNClustersDe.value) {
@@ -1371,9 +1431,19 @@ struct Lambdastarproxy {
       return false;
     }
     if (deuteronPID.lstarEnableITSPIDDe.value != 0) {
-      const double response = deuteronITSNSigma(track);
-      if (!std::isfinite(response) || response <= deuteronPID.lstarCutNsigmaITSDeMin.value) {
+      const bool restrictedRange = deuteronPID.lstarITSPIDDePtMin.value > 0.f || deuteronPID.lstarITSPIDDePtMax.value >= 0.f;
+      const float pt = track.pt();
+      if (restrictedRange && (!std::isfinite(pt) || pt < 0.f)) {
         return false;
+      }
+      // The default open range keeps the existing unconditional ITS decision.
+      // Range limits use measured single-track pT before proxy momentum scaling.
+      if (!restrictedRange || (pt >= deuteronPID.lstarITSPIDDePtMin.value &&
+                               (deuteronPID.lstarITSPIDDePtMax.value < 0.f || pt < deuteronPID.lstarITSPIDDePtMax.value))) {
+        const double response = deuteronITSNSigma(track);
+        if (!std::isfinite(response) || response <= deuteronPID.lstarCutNsigmaITSDeMin.value) {
+          return false;
+        }
       }
     }
     if (deuteronPID.lstarRequireTOFAbovePDe.value >= 0.f) {
@@ -1388,7 +1458,7 @@ struct Lambdastarproxy {
         return false;
       }
     }
-    return true;
+    return passDeuteronTPCVeto(track);
   }
 
   void bookDeuteronPurityQA()
