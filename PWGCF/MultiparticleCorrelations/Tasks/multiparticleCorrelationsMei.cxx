@@ -305,7 +305,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   Configurable<bool> cfInternalValidationSwitch{"cfInternalValidationSwitch", false, "internal validation switch"};
   Configurable<std::vector<float>> cfIvHarmonics{"cfIvHarmonics", {0.06, 0.07, 0.08}, "harmonics for internal validation: {v_2, v_3, v_4, ...}"};
   Configurable<int> cfRngSeed{"cfRngSeed", 0, "seed for random number generator"};
-  Configurable<std::vector<float>> cfQaSelTrackCentRange{"cfQaSelTrackCentRange", {50., 80.}, "centrality range for hist of selected tracks for QA"};
   Configurable<int> cfChooseCharge{"cfChooseCharge", 0, "choose what charge to keep. 0 = +1 and -1, 1 = +1, -1 = -1"};
 
   // *) Define and initialize all data members to be called in the main process* functions:
@@ -333,7 +332,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     std::vector<float> fDcaZCutRange = {-2.4, 2.4};
 
     std::vector<float> fIvHarmonics;
-    std::vector<float> fQaSelTrackCentRange;
 
     std::string fFileWithWeights = "/alice-ccdb.cern.ch/Users/m/mei/thesis-";
 
@@ -1022,7 +1020,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       if constexpr (cuts == eBefore) {
         qa.fHistMultNContrib[eBefore]->Fill(thisRefMult, collision.numContrib());
         qa.fHistCorrCent[eBefore]->Fill(cent1, cent2);
-        if (thisCent > tc.fQaSelTrackCentRange[0] && thisCent < tc.fQaSelTrackCentRange[1]) {
+        if (thisCent >= 50. && thisCent <= 80.) {
           qa.fHistSelectedTrack[eBefore]->Fill(tracks.size(), thisCent);
         }
       }
@@ -1167,7 +1165,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         }
       } // end of if constexpr (rs == eRecAndSim) {
     } // end of for (auto const& track : tracks) {
-    if (tc.fMasterCutSwitch && passEventCutsReal && tc.fQualityAssuranceSwitch && (thisCollCentReal > tc.fQaSelTrackCentRange[0] && thisCollCentReal < tc.fQaSelTrackCentRange[1])) {
+    if (tc.fMasterCutSwitch && passEventCutsReal && tc.fQualityAssuranceSwitch && (thisCollCentReal >= 50. && thisCollCentReal <= 80.)) {
       qa.fHistSelectedTrack[eAfter]->Fill(nPassedTrack, thisCollCentReal);
     }
 
@@ -1282,7 +1280,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     tc.fRunMessageSwitch = cfRunMessageSwitch;
     tc.fInternalValidationSwitch = cfInternalValidationSwitch;
     tc.fIvHarmonics = cfIvHarmonics.value;
-    tc.fQaSelTrackCentRange = cfQaSelTrackCentRange.value;
     tc.fChooseCharge = cfChooseCharge;
 
     for (const auto& cutSwitch : tc.fEventCutSwitch) {
@@ -1570,7 +1567,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         const int nQaSelTrackCentBins = qaSelTrackCentBoundaries.size() - 1;
         std::vector<float> lQASelTrackBins = cfQASelTrackBins.value;
         for (int i = 0; i < eBeforeAfterCuts_N; ++i) {
-          qa.fHistSelectedTrack[i] = new TH2F(Form("fHistSelectedTrack[%s]", CutsNames[i]), Form("Selected Tracks in %.1f-%.1f%% %s cuts", tc.fQaSelTrackCentRange[0], tc.fQaSelTrackCentRange[1], CutsNames[i]), static_cast<int>(lQASelTrackBins[0 + i * 3]), lQASelTrackBins[1 + i * 3], lQASelTrackBins[2 + i * 3], nQaSelTrackCentBins, qaSelTrackCentBoundaries.data());
+          qa.fHistSelectedTrack[i] = new TH2F(Form("fHistSelectedTrack[%s]", CutsNames[i]), Form("Selected Tracks in 50-80%% %s cuts", CutsNames[i]), static_cast<int>(lQASelTrackBins[0 + i * 3]), lQASelTrackBins[1 + i * 3], lQASelTrackBins[2 + i * 3], nQaSelTrackCentBins, qaSelTrackCentBoundaries.data());
           qa.fHistSelectedTrack[i]->GetXaxis()->SetTitle("Number of selected tracks");
           qa.fHistSelectedTrack[i]->GetYaxis()->SetTitle(Form("Centrality (%s)", CentralityEstimatorNames[tc.fCentralityEstimator]));
           qa.fHistSelectedTrack[i]->SetStats(false);
