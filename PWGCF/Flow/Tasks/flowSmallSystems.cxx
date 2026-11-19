@@ -256,7 +256,7 @@ struct FlowSmallSystems {
   } weight;
   static constexpr std::array<std::string_view, 2> FillTimeName = {"beforeEventSelQA/", "afterEventSelQA/"};
   static constexpr std::array<std::string_view, 2> FillTrackName = {"cutNch/", "cutObs/"};
-  static constexpr std::array<std::string, TriggerMenuCounter> triggerName = {"fHighTrackMult", "HighMultFv0", "fHighFt0Mult", "fHighFt0cFv0Mult", "fHighFt0Flat", "fHighFt0cFv0Flat"};
+  std::array<std::string, TriggerMenuCounter> triggerName = {"fHighTrackMult", "HighMultFv0", "fHighFt0Mult", "fHighFt0cFv0Mult", "fHighFt0Flat", "fHighFt0cFv0Flat"};
 
   std::array<EventCut, 8> eventSelectionCuts{};
   std::array<std::array<float, 2>, 7> trackSel{};
