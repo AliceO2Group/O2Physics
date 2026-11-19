@@ -771,6 +771,10 @@ struct TreeWriterTpcTof {
       LOGP(fatal, "One and only one process function should be enabled");
     }
 
+    if (!(saveTrees || saveMomentumHistograms)) {
+      LOGP(fatal, "At least one out of trees or momentum histograms should be saved");
+    }
+
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
