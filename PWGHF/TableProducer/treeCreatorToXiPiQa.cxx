@@ -17,7 +17,9 @@
 /// \author Krista Smith <krista.lizbeth.smith@cern.ch>, Pusan National University
 
 #include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Core/DecayChannelsLegacy.h"
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
@@ -37,8 +39,7 @@
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Rtypes.h>
-
+#include <cmath>
 #include <cstdint>
 
 using namespace o2;
@@ -79,9 +80,6 @@ DECLARE_SOA_COLUMN(XDecayVtxV0, xDecayVtxV0, float);
 DECLARE_SOA_COLUMN(YDecayVtxV0, yDecayVtxV0, float);
 DECLARE_SOA_COLUMN(ZDecayVtxV0, zDecayVtxV0, float);
 DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t); // sign of pi <- xi
-DECLARE_SOA_COLUMN(CovVtxCharmBaryonXX, covVtxCharmBaryonXX, float);
-DECLARE_SOA_COLUMN(CovVtxCharmBaryonYY, covVtxCharmBaryonYY, float);
-DECLARE_SOA_COLUMN(CovVtxCharmBaryonZZ, covVtxCharmBaryonZZ, float);
 DECLARE_SOA_COLUMN(PxCharmBaryon, pxCharmBaryon, float);
 DECLARE_SOA_COLUMN(PyCharmBaryon, pyCharmBaryon, float);
 DECLARE_SOA_COLUMN(PzCharmBaryon, pzCharmBaryon, float);
@@ -158,19 +156,7 @@ DECLARE_SOA_COLUMN(NTpcRowsPosV0Dau, nTpcRowsPosV0Dau, int16_t);
 DECLARE_SOA_COLUMN(NTpcRowsNegV0Dau, nTpcRowsNegV0Dau, int16_t);
 // from creator - MC
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
-DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
 DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
-DECLARE_SOA_COLUMN(CollisionMatched, collisionMatched, bool);
-// from selector
-DECLARE_SOA_COLUMN(StatusPidLambda, statusPidLambda, bool);
-DECLARE_SOA_COLUMN(StatusPidCascade, statusPidCascade, bool);
-DECLARE_SOA_COLUMN(StatusPidCharmBaryon, statusPidCharmBaryon, bool);
-DECLARE_SOA_COLUMN(StatusInvMassLambda, statusInvMassLambda, bool);
-DECLARE_SOA_COLUMN(StatusInvMassCascade, statusInvMassCascade, bool);
-DECLARE_SOA_COLUMN(StatusInvMassCharmBaryon, statusInvMassCharmBaryon, bool);
-DECLARE_SOA_COLUMN(ResultSelections, resultSelections, bool);
-DECLARE_SOA_COLUMN(PidTpcInfoStored, pidTpcInfoStored, int);
-DECLARE_SOA_COLUMN(PidTofInfoStored, pidTofInfoStored, int);
 DECLARE_SOA_COLUMN(TpcNSigmaPiFromCharmBaryon, tpcNSigmaPiFromCharmBaryon, float);
 DECLARE_SOA_COLUMN(TpcNSigmaPiFromCasc, tpcNSigmaPiFromCasc, float);
 DECLARE_SOA_COLUMN(TpcNSigmaPiFromLambda, tpcNSigmaPiFromLambda, float);
@@ -239,12 +225,10 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
                   full::SignDecay,
-                  full::CovVtxCharmBaryonXX, full::CovVtxCharmBaryonYY, full::CovVtxCharmBaryonZZ,
                   full::PtCharmBaryon, full::PtPiFromCharmBaryon,
                   full::PxCharmBaryon, full::PyCharmBaryon, full::PzCharmBaryon,
                   full::PxCasc, full::PyCasc, full::PzCasc,
                   full::PxPiFromCharmBaryon, full::PyPiFromCharmBaryon, full::PzPiFromCharmBaryon,
-                  full::PxLambda, full::PyLambda, full::PzLambda,
                   full::PxPiFromCasc, full::PyPiFromCasc, full::PzPiFromCasc,
                   full::PxPosV0Dau, full::PyPosV0Dau, full::PzPosV0Dau,
                   full::PxNegV0Dau, full::PyNegV0Dau, full::PzNegV0Dau,
@@ -253,7 +237,7 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::ErrImpactParCascXY, full::ErrImpactParPiFromCharmBaryonXY,
                   full::InvMassLambda, full::InvMassCascade, full::InvMassCharmBaryon,
                   full::CosPAV0, full::CosPACharmBaryon, full::CosPACasc, full::CosPAXYV0, full::CosPAXYCharmBaryon, full::CosPAXYCasc,
-                  full::CTauOmegac, full::CTauCascade, full::CTauV0, full::CTauXic,
+                  full::CTauOmegac,
                   full::EtaV0PosDau, full::EtaV0NegDau, full::EtaPiFromCasc, full::EtaPiFromCharmBaryon,
                   full::EtaCharmBaryon, full::EtaCascade, full::EtaV0,
                   full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau,
@@ -262,12 +246,9 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::DecLenCharmBaryon, full::DecLenCascade, full::DecLenV0, full::ErrorDecayLengthCharmBaryon, full::ErrorDecayLengthXYCharmBaryon,
                   full::NormImpParCascade, full::NormImpParPiFromCharmBar, full::NormDecayLenCharmBar, full::IsPionGlbTrkWoDca, full::PionItsNCls,
                   full::NTpcRowsPion, full::NTpcRowsPiFromCasc, full::NTpcRowsPosV0Dau, full::NTpcRowsNegV0Dau,
-                  full::StatusPidLambda, full::StatusPidCascade, full::StatusPidCharmBaryon,
-                  full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassCharmBaryon, full::ResultSelections,
-                  full::PidTpcInfoStored, full::PidTofInfoStored,
                   full::TpcNSigmaPiFromCharmBaryon, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
                   full::TofNSigmaPiFromCharmBaryon, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
-                  full::FlagMcMatchRec, full::DebugMcRec, full::OriginRec, full::CollisionMatched);
+                  full::FlagMcMatchRec, full::OriginRec);
 
 DECLARE_SOA_TABLE(HfToXiPiLites, "AOD", "HFTOXIPILITE",
                   full::XPv, full::YPv, full::ZPv, full::Centrality, collision::NumContrib, collision::Chi2,
@@ -291,10 +272,9 @@ DECLARE_SOA_TABLE(HfToXiPiLites, "AOD", "HFTOXIPILITE",
                   full::ErrorDecayLengthCharmBaryon, full::NormImpParCascade, full::NormImpParPiFromCharmBar,
                   full::IsPionGlbTrkWoDca, full::PionItsNCls,
                   full::NTpcRowsPion, full::NTpcRowsPiFromCasc, full::NTpcRowsPosV0Dau, full::NTpcRowsNegV0Dau,
-                  full::PidTpcInfoStored, full::PidTofInfoStored,
                   full::TpcNSigmaPiFromCharmBaryon, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
                   full::TofNSigmaPiFromCharmBaryon, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
-                  full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched);
+                  full::FlagMcMatchRec, full::OriginRec);
 
 DECLARE_SOA_TABLE(HfKfXicFulls, "AOD", "HFKFXICFULL",
                   full::Centrality,
@@ -303,9 +283,8 @@ DECLARE_SOA_TABLE(HfKfXicFulls, "AOD", "HFKFXICFULL",
                   full::KfDcaXYPiFromXic, full::DcaCascDau, full::DcaV0Dau, full::DcaCharmBaryonDau, full::KfDcaXYCascToPv,
                   full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau,
                   full::Chi2GeoV0, full::Chi2GeoCasc, full::Chi2GeoXic,
-                  full::Chi2MassV0, full::Chi2MassCasc,
                   full::V0ldl, full::Cascldl,
-                  full::Chi2TopoV0ToPv, full::Chi2TopoCascToPv, full::Chi2TopoPiFromXicToPv, full::Chi2TopoXicToPv,
+                  full::Chi2TopoV0ToPv, full::Chi2TopoCascToPv, full::Chi2TopoXicToPv,
                   full::Chi2TopoV0ToCasc, full::Chi2TopoCascToXic,
                   full::DecayLenXYLambda, full::DecayLenXYCasc, full::DecayLenXYXic,
                   full::CosPaV0ToCasc, full::CosPaV0ToPv, full::CosPaCascToXic, full::CosPaCascToPv, // full::CosPaXicToPv,
@@ -313,11 +292,8 @@ DECLARE_SOA_TABLE(HfKfXicFulls, "AOD", "HFKFXICFULL",
                   full::KfRapXic, full::KfptPiFromXic, full::KfptXic,
                   full::CosThetaStarPiFromXic, full::CtXic, full::EtaXic,
                   full::V0Ndf, full::CascNdf, full::XicNdf,
-                  full::MassV0Ndf, full::MassCascNdf,
                   full::V0Chi2OverNdf, full::CascChi2OverNdf, full::XicChi2OverNdf,
-                  full::MassV0Chi2OverNdf, full::MassCascChi2OverNdf,
-                  full::ResultSelections,
-                  full::FlagMcMatchRec, full::DebugMcRec, full::OriginRec, full::CollisionMatched);
+                  full::FlagMcMatchRec, full::OriginRec);
 
 DECLARE_SOA_TABLE(HfCandToXiPiGen, "AOD", "HFCANDTOXIPIGEN",
                   full::InvMassCharmBaryon,
@@ -346,28 +322,35 @@ struct HfTreeCreatorToXiPiQa {
   Produces<o2::aod::HfCandToXiPiGen> rowCandidateParticles;
   Produces<o2::aod::HfToXiPiEvs> rowEv;
 
+  Configurable<int> selectionFlag{"selectionFlag", 7, "Selection threshold: 1 skims, 3 topology, 7 PID, 15 ML"};
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
-  Configurable<int8_t> genSelection{"genSelection", o2::aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi, "Decay channel to be used to match particle information"};
+  Configurable<int8_t> decayChannelSelection{"decayChannelSelection", hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Xic0ToXiPi, "Decay channel used to match particle information"};
   Configurable<bool> fillGenTable{"fillGenTable", true, "Fill generated MC information if requested"};
 
-  using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
-  using MyCandTableDca = soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi>;
-  using MyCandTableKf = soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf>;
-  using MyCandTableXic0McDca = soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec>;
-  using MyCandTableXic0McKf = soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec>;
-  using MyCandTableOmegac0McDca = soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfOmegacToXiPiMCRec>;
+  using MyTrackTable = soa::Join<aod::TracksWExtra, aod::TrackSelection, aod::TracksPidPi, aod::TracksPidPr>;
+  using MyTrackTableLf = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr>;
+  using MyCandTableDca = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelToXiPiQa>>;
+  using MyCandTableKf = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfCandCascBachKfQa, aod::HfSelToXiPiQa>>;
+  using MyCandTableXic0McDca = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfSelToXiPiQa, aod::HfCandCascBachMCRecQa>>;
+  using MyCandTableXic0McKf = soa::Filtered<soa::Join<aod::HfCandCascBachQa, aod::HfCandCascBachKfQa, aod::HfSelToXiPiQa, aod::HfCandCascBachMCRecQa>>;
+  using MyCandTableOmegac0McDca = MyCandTableXic0McDca;
   using MyEventTable = soa::Join<aod::Collisions, aod::EvSels>;
   using MyEventTableWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
   using MyEventTableWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using MyEventTableWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::CentNTPVs>;
   using MyEventTableWithMcLabels = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+  using MyEventTableWithMcLabelsFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
+  using MyEventTableWithMcLabelsFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  using MyEventTableWithMcLabelsNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentNTPVs>;
 
-  using MatchedGenXiPi = soa::Filtered<soa::Join<aod::McParticles, aod::HfXicToXiPiMCGen>>;
+  using MatchedGenXiPi = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandCascBachMCGenQa>>;
 
   using McCollisionsCentFT0Cs = soa::Join<aod::McCollisions, aod::McCentFT0Cs>;
   using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
-  Filter filterGenXiPi = nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(BIT(genSelection));
+  Filter filterSelectCandidates = aod::hf_sel_candidate_to_xi_pi_qa::isSelToXiPi >= selectionFlag;
+  Filter filterRecXiPi = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(decayChannelSelection);
+  Filter filterGenXiPi = nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(decayChannelSelection);
 
   PresliceUnsorted<MyEventTableWithMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
@@ -391,272 +374,250 @@ struct HfTreeCreatorToXiPiQa {
   }
 
   template <int svReco, int tableSize, bool useCentrality, typename MyEventTableType, typename T>
-  void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
+  void fillCandidate(const T& candidate, MyTrackTable const& tracks, MyTrackTableLf const& lfTracks, int8_t flagMc, int8_t originMc)
   {
-    // save all candidate information
     float centrality = -999.f;
     if constexpr (useCentrality) {
       const auto& collision = candidate.template collision_as<MyEventTableType>();
       centrality = o2::hf_centrality::getCentralityColl(collision);
     }
 
+    auto trackV0PosDau = lfTracks.rawIteratorAt(candidate.posTrackId());
+    auto trackV0NegDau = lfTracks.rawIteratorAt(candidate.negTrackId());
+    auto trackPiFromCasc = lfTracks.rawIteratorAt(candidate.bachelorId());
+    auto trackPiFromCharm = tracks.rawIteratorAt(candidate.prong1Id());
+
+    auto trackPiFromLam = trackV0NegDau;
+    auto trackPrFromLam = trackV0PosDau;
+    if (trackPiFromCharm.sign() < 0) {
+      trackPiFromLam = trackV0PosDau;
+      trackPrFromLam = trackV0NegDau;
+    }
+
     if constexpr (svReco == DCAFITTER) {
       if constexpr (tableSize == LITE) {
-        rowCandidateLite(candidate.xPv(),
-                         candidate.yPv(),
-                         candidate.zPv(),
+        rowCandidateLite(candidate.posX(),
+                         candidate.posY(),
+                         candidate.posZ(),
                          centrality,
                          candidate.template collision_as<MyEventTableType>().numContrib(),
                          candidate.template collision_as<MyEventTableType>().chi2(),
-                         candidate.xDecayVtxCharmBaryon(),
-                         candidate.yDecayVtxCharmBaryon(),
-                         candidate.zDecayVtxCharmBaryon(),
-                         candidate.xDecayVtxCascade(),
-                         candidate.yDecayVtxCascade(),
-                         candidate.zDecayVtxCascade(),
-                         candidate.xDecayVtxV0(),
-                         candidate.yDecayVtxV0(),
-                         candidate.zDecayVtxV0(),
-                         candidate.signDecay(),
-                         RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon()),
-                         RecoDecay::pt(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon()),
-                         candidate.pxCharmBaryon(),
-                         candidate.pyCharmBaryon(),
-                         candidate.pzCharmBaryon(),
-                         candidate.pxBachFromCharmBaryon(),
-                         candidate.pyBachFromCharmBaryon(),
-                         candidate.pzBachFromCharmBaryon(),
-                         candidate.pxBachFromCasc(),
-                         candidate.pyBachFromCasc(),
-                         candidate.pzBachFromCasc(),
-                         candidate.pxPosV0Dau(),
-                         candidate.pyPosV0Dau(),
-                         candidate.pzPosV0Dau(),
-                         candidate.pxNegV0Dau(),
-                         candidate.pyNegV0Dau(),
-                         candidate.pzNegV0Dau(),
-                         candidate.impactParCascXY(),
-                         candidate.impactParBachFromCharmBaryonXY(),
-                         candidate.errImpactParCascXY(),
-                         candidate.errImpactParBachFromCharmBaryonXY(),
-                         candidate.invMassLambda(),
-                         candidate.invMassCascade(),
-                         candidate.invMassCharmBaryon(),
-                         candidate.cosPAV0(),
-                         candidate.cosPACharmBaryon(),
-                         candidate.cosPACasc(),
-                         candidate.etaV0PosDau(),
-                         candidate.etaV0NegDau(),
-                         candidate.etaBachFromCasc(),
-                         candidate.etaBachFromCharmBaryon(),
-                         candidate.etaCharmBaryon(),
-                         candidate.dcaXYToPvV0Dau0(),
-                         candidate.dcaXYToPvV0Dau1(),
-                         candidate.dcaXYToPvCascDau(),
-                         candidate.dcaCascDau(),
-                         candidate.dcaV0Dau(),
-                         candidate.dcaCharmBaryonDau(),
-                         candidate.errorDecayLengthCharmBaryon(),
-                         candidate.impactParCascXY() / candidate.errImpactParCascXY(),
-                         candidate.impactParBachFromCharmBaryonXY() / candidate.errImpactParBachFromCharmBaryonXY(),
-                         candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().isGlobalTrackWoDCA(),
-                         candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().itsNCls(),
-                         candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().tpcNClsCrossedRows(),
-                         candidate.template bachelor_as<MyTrackTable>().tpcNClsCrossedRows(),
-                         candidate.template posTrack_as<MyTrackTable>().tpcNClsCrossedRows(),
-                         candidate.template negTrack_as<MyTrackTable>().tpcNClsCrossedRows(),
-                         candidate.pidTpcInfoStored(),
-                         candidate.pidTofInfoStored(),
-                         candidate.tpcNSigmaPiFromCharmBaryon(),
-                         candidate.tpcNSigmaPiFromCasc(),
-                         candidate.tpcNSigmaPiFromLambda(),
-                         candidate.tpcNSigmaPrFromLambda(),
-                         candidate.tofNSigmaPiFromCharmBaryon(),
-                         candidate.tofNSigmaPiFromCasc(),
-                         candidate.tofNSigmaPiFromLambda(),
-                         candidate.tofNSigmaPrFromLambda(),
+                         candidate.xSecondaryVertex(),
+                         candidate.ySecondaryVertex(),
+                         candidate.zSecondaryVertex(),
+                         candidate.xCascadeVertex(),
+                         candidate.yCascadeVertex(),
+                         candidate.zCascadeVertex(),
+                         candidate.xV0Vertex(),
+                         candidate.yV0Vertex(),
+                         candidate.zV0Vertex(),
+                         trackPiFromCasc.sign(),
+                         candidate.pt(),
+                         RecoDecay::pt(candidate.pxProng1(), candidate.pyProng1()),
+                         candidate.px(),
+                         candidate.py(),
+                         candidate.pz(),
+                         candidate.pxProng1(),
+                         candidate.pyProng1(),
+                         candidate.pzProng1(),
+                         trackPiFromCasc.px(),
+                         trackPiFromCasc.py(),
+                         trackPiFromCasc.pz(),
+                         trackV0PosDau.px(),
+                         trackV0PosDau.py(),
+                         trackV0PosDau.pz(),
+                         trackV0NegDau.px(),
+                         trackV0NegDau.py(),
+                         trackV0NegDau.pz(),
+                         candidate.impactParameter0(),
+                         candidate.impactParameter1(),
+                         candidate.errorImpactParameter0(),
+                         candidate.errorImpactParameter1(),
+                         candidate.massLambda(),
+                         candidate.massCascade(),
+                         HfHelper::invMassXiczeroToXiPi(candidate),
+                         candidate.cpaV0(),
+                         candidate.cpa(),
+                         candidate.cpaCascade(),
+                         trackV0PosDau.eta(),
+                         trackV0NegDau.eta(),
+                         trackPiFromCasc.eta(),
+                         trackPiFromCharm.eta(),
+                         candidate.eta(),
+                         candidate.impactParameterXYV0PosDau(),
+                         candidate.impactParameterXYV0NegDau(),
+                         candidate.impactParameterXYCascadeBach(),
+                         candidate.dcaCascadeDaughters(),
+                         candidate.dcaV0Daughters(),
+                         candidate.dcaDaughters(),
+                         candidate.errorDecayLength(),
+                         candidate.impactParameterNormalised0(),
+                         candidate.impactParameterNormalised1(),
+                         trackPiFromCharm.isGlobalTrackWoDCA(),
+                         trackPiFromCharm.itsNCls(),
+                         trackPiFromCharm.tpcNClsCrossedRows(),
+                         trackPiFromCasc.tpcNClsCrossedRows(),
+                         trackV0PosDau.tpcNClsCrossedRows(),
+                         trackV0NegDau.tpcNClsCrossedRows(),
+                         trackPiFromCharm.tpcNSigmaPi(),
+                         trackPiFromCasc.tpcNSigmaPi(),
+                         trackPiFromLam.tpcNSigmaPi(),
+                         trackPrFromLam.tpcNSigmaPr(),
+                         trackPiFromCharm.tofNSigmaPi(),
+                         trackPiFromCasc.tofNSigmaPi(),
+                         trackPiFromLam.tofNSigmaPi(),
+                         trackPrFromLam.tofNSigmaPr(),
                          flagMc,
-                         originMc,
-                         collisionMatched);
+                         originMc);
       } else {
-        rowCandidateFull(candidate.xPv(),
-                         candidate.yPv(),
-                         candidate.zPv(),
+        rowCandidateFull(candidate.posX(),
+                         candidate.posY(),
+                         candidate.posZ(),
                          centrality,
                          candidate.template collision_as<MyEventTableType>().numContrib(),
                          candidate.template collision_as<MyEventTableType>().chi2(),
-                         candidate.xDecayVtxCharmBaryon(),
-                         candidate.yDecayVtxCharmBaryon(),
-                         candidate.zDecayVtxCharmBaryon(),
-                         candidate.xDecayVtxCascade(),
-                         candidate.yDecayVtxCascade(),
-                         candidate.zDecayVtxCascade(),
-                         candidate.xDecayVtxV0(),
-                         candidate.yDecayVtxV0(),
-                         candidate.zDecayVtxV0(),
-                         candidate.signDecay(),
-                         candidate.covVtxCharmBaryon0(),
-                         candidate.covVtxCharmBaryon3(),
-                         candidate.covVtxCharmBaryon5(),
-                         RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon()),
-                         RecoDecay::pt(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon()),
-                         candidate.pxCharmBaryon(),
-                         candidate.pyCharmBaryon(),
-                         candidate.pzCharmBaryon(),
-                         candidate.pxCasc(),
-                         candidate.pyCasc(),
-                         candidate.pzCasc(),
-                         candidate.pxBachFromCharmBaryon(),
-                         candidate.pyBachFromCharmBaryon(),
-                         candidate.pzBachFromCharmBaryon(),
-                         candidate.pxLambda(),
-                         candidate.pyLambda(),
-                         candidate.pzLambda(),
-                         candidate.pxBachFromCasc(),
-                         candidate.pyBachFromCasc(),
-                         candidate.pzBachFromCasc(),
-                         candidate.pxPosV0Dau(),
-                         candidate.pyPosV0Dau(),
-                         candidate.pzPosV0Dau(),
-                         candidate.pxNegV0Dau(),
-                         candidate.pyNegV0Dau(),
-                         candidate.pzNegV0Dau(),
-                         candidate.impactParCascXY(),
-                         candidate.impactParBachFromCharmBaryonXY(),
-                         candidate.impactParCascZ(),
-                         candidate.impactParBachFromCharmBaryonZ(),
-                         candidate.errImpactParCascXY(),
-                         candidate.errImpactParBachFromCharmBaryonXY(),
-                         candidate.invMassLambda(),
-                         candidate.invMassCascade(),
-                         candidate.invMassCharmBaryon(),
-                         candidate.cosPAV0(),
-                         candidate.cosPACharmBaryon(),
-                         candidate.cosPACasc(),
-                         candidate.cosPAXYV0(),
-                         candidate.cosPAXYCharmBaryon(),
-                         candidate.cosPAXYCasc(),
-                         candidate.cTauOmegac(),
-                         candidate.cTauCascade(),
-                         candidate.cTauV0(),
-                         candidate.cTauXic(),
-                         candidate.etaV0PosDau(),
-                         candidate.etaV0NegDau(),
-                         candidate.etaBachFromCasc(),
-                         candidate.etaBachFromCharmBaryon(),
-                         candidate.etaCharmBaryon(),
+                         candidate.xSecondaryVertex(),
+                         candidate.ySecondaryVertex(),
+                         candidate.zSecondaryVertex(),
+                         candidate.xCascadeVertex(),
+                         candidate.yCascadeVertex(),
+                         candidate.zCascadeVertex(),
+                         candidate.xV0Vertex(),
+                         candidate.yV0Vertex(),
+                         candidate.zV0Vertex(),
+                         trackPiFromCasc.sign(),
+                         candidate.pt(),
+                         RecoDecay::pt(candidate.pxProng1(), candidate.pyProng1()),
+                         candidate.px(),
+                         candidate.py(),
+                         candidate.pz(),
+                         candidate.pxProng0(),
+                         candidate.pyProng0(),
+                         candidate.pzProng0(),
+                         candidate.pxProng1(),
+                         candidate.pyProng1(),
+                         candidate.pzProng1(),
+                         trackPiFromCasc.px(),
+                         trackPiFromCasc.py(),
+                         trackPiFromCasc.pz(),
+                         trackV0PosDau.px(),
+                         trackV0PosDau.py(),
+                         trackV0PosDau.pz(),
+                         trackV0NegDau.px(),
+                         trackV0NegDau.py(),
+                         trackV0NegDau.pz(),
+                         candidate.impactParameter0(),
+                         candidate.impactParameter1(),
+                         candidate.impactParameterZ0(),
+                         candidate.impactParameterZ1(),
+                         candidate.errorImpactParameter0(),
+                         candidate.errorImpactParameter1(),
+                         candidate.massLambda(),
+                         candidate.massCascade(),
+                         HfHelper::invMassXiczeroToXiPi(candidate),
+                         candidate.cpaV0(),
+                         candidate.cpa(),
+                         candidate.cpaCascade(),
+                         candidate.cpaXYV0(),
+                         candidate.cpaXY(),
+                         candidate.cpaXYCascade(),
+                         HfHelper::ctXiczero(candidate),
+                         trackV0PosDau.eta(),
+                         trackV0NegDau.eta(),
+                         trackPiFromCasc.eta(),
+                         trackPiFromCharm.eta(),
+                         candidate.eta(),
                          candidate.etaCascade(),
                          candidate.etaV0(),
-                         candidate.dcaXYToPvV0Dau0(),
-                         candidate.dcaXYToPvV0Dau1(),
-                         candidate.dcaXYToPvCascDau(),
-                         candidate.dcaZToPvV0Dau0(),
-                         candidate.dcaZToPvV0Dau1(),
-                         candidate.dcaZToPvCascDau(),
-                         candidate.dcaCascDau(),
-                         candidate.dcaV0Dau(),
-                         candidate.dcaCharmBaryonDau(),
-                         candidate.decLenCharmBaryon(),
-                         candidate.decLenCascade(),
-                         candidate.decLenV0(),
-                         candidate.errorDecayLengthCharmBaryon(),
-                         candidate.errorDecayLengthXYCharmBaryon(),
-                         candidate.impactParCascXY() / candidate.errImpactParCascXY(),
-                         candidate.impactParBachFromCharmBaryonXY() / candidate.errImpactParBachFromCharmBaryonXY(),
-                         candidate.decLenCharmBaryon() / candidate.errorDecayLengthCharmBaryon(),
-                         candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().isGlobalTrackWoDCA(),
-                         candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().itsNCls(),
-                         candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().tpcNClsCrossedRows(),
-                         candidate.template bachelor_as<MyTrackTable>().tpcNClsCrossedRows(),
-                         candidate.template posTrack_as<MyTrackTable>().tpcNClsCrossedRows(),
-                         candidate.template negTrack_as<MyTrackTable>().tpcNClsCrossedRows(),
-                         candidate.statusPidLambda(),
-                         candidate.statusPidCascade(),
-                         candidate.statusPidCharmBaryon(),
-                         candidate.statusInvMassLambda(),
-                         candidate.statusInvMassCascade(),
-                         candidate.statusInvMassCharmBaryon(),
-                         candidate.resultSelections(),
-                         candidate.pidTpcInfoStored(),
-                         candidate.pidTofInfoStored(),
-                         candidate.tpcNSigmaPiFromCharmBaryon(),
-                         candidate.tpcNSigmaPiFromCasc(),
-                         candidate.tpcNSigmaPiFromLambda(),
-                         candidate.tpcNSigmaPrFromLambda(),
-                         candidate.tofNSigmaPiFromCharmBaryon(),
-                         candidate.tofNSigmaPiFromCasc(),
-                         candidate.tofNSigmaPiFromLambda(),
-                         candidate.tofNSigmaPrFromLambda(),
+                         candidate.impactParameterXYV0PosDau(),
+                         candidate.impactParameterXYV0NegDau(),
+                         candidate.impactParameterXYCascadeBach(),
+                         candidate.impactParameterZV0PosDau(),
+                         candidate.impactParameterZV0NegDau(),
+                         candidate.impactParameterZCascadeBach(),
+                         candidate.dcaCascadeDaughters(),
+                         candidate.dcaV0Daughters(),
+                         candidate.dcaDaughters(),
+                         candidate.decayLength(),
+                         candidate.decayLengthCascade(),
+                         candidate.decayLengthV0(),
+                         candidate.errorDecayLength(),
+                         candidate.errorDecayLengthXY(),
+                         candidate.impactParameterNormalised0(),
+                         candidate.impactParameterNormalised1(),
+                         candidate.decayLengthNormalised(),
+                         trackPiFromCharm.isGlobalTrackWoDCA(),
+                         trackPiFromCharm.itsNCls(),
+                         trackPiFromCharm.tpcNClsCrossedRows(),
+                         trackPiFromCasc.tpcNClsCrossedRows(),
+                         trackV0PosDau.tpcNClsCrossedRows(),
+                         trackV0NegDau.tpcNClsCrossedRows(),
+                         trackPiFromCharm.tpcNSigmaPi(),
+                         trackPiFromCasc.tpcNSigmaPi(),
+                         trackPiFromLam.tpcNSigmaPi(),
+                         trackPrFromLam.tpcNSigmaPr(),
+                         trackPiFromCharm.tofNSigmaPi(),
+                         trackPiFromCasc.tofNSigmaPi(),
+                         trackPiFromLam.tofNSigmaPi(),
+                         trackPrFromLam.tofNSigmaPr(),
                          flagMc,
-                         debugMc,
-                         originMc,
-                         collisionMatched);
+                         originMc);
       }
     } else {
       if constexpr (tableSize == LITE) {
         // currently, no lite sized table for KFParticle
       } else {
         rowKfCandidate(centrality,
-                       candidate.tpcNSigmaPiFromCharmBaryon(),
-                       candidate.tofNSigmaPiFromCharmBaryon(),
-                       candidate.tpcNSigmaPiFromCasc(),
-                       candidate.tofNSigmaPiFromCasc(),
-                       candidate.tpcNSigmaPiFromLambda(),
-                       candidate.tofNSigmaPiFromLambda(),
-                       candidate.tpcNSigmaPrFromLambda(),
-                       candidate.tofNSigmaPrFromLambda(),
-                       candidate.kfDcaXYPiFromXic(),
-                       candidate.dcaCascDau(),
-                       candidate.dcaV0Dau(),
-                       candidate.dcaCharmBaryonDau(),
-                       candidate.kfDcaXYCascToPv(),
-                       candidate.dcaXYToPvV0Dau0(),
-                       candidate.dcaXYToPvV0Dau1(),
-                       candidate.dcaXYToPvCascDau(),
+                       trackPiFromCharm.tpcNSigmaPi(),
+                       trackPiFromCharm.tofNSigmaPi(),
+                       trackPiFromCasc.tpcNSigmaPi(),
+                       trackPiFromCasc.tofNSigmaPi(),
+                       trackPiFromLam.tpcNSigmaPi(),
+                       trackPiFromLam.tofNSigmaPi(),
+                       trackPrFromLam.tpcNSigmaPr(),
+                       trackPrFromLam.tofNSigmaPr(),
+                       candidate.impactParameter1(),
+                       candidate.dcaCascadeDaughters(),
+                       candidate.dcaV0Daughters(),
+                       candidate.dcaDaughters(),
+                       candidate.impactParameter0(),
+                       candidate.impactParameterXYV0PosDau(),
+                       candidate.impactParameterXYV0NegDau(),
+                       candidate.impactParameterXYCascadeBach(),
                        candidate.chi2GeoV0(),
-                       candidate.chi2GeoCasc(),
-                       candidate.chi2GeoXic(),
-                       candidate.chi2MassV0(),
-                       candidate.chi2MassCasc(),
-                       candidate.v0ldl(),
-                       candidate.cascldl(),
-                       candidate.chi2TopoV0ToPv(),
-                       candidate.chi2TopoCascToPv(),
-                       candidate.chi2TopoPiFromXicToPv(),
-                       candidate.chi2TopoXicToPv(),
-                       candidate.chi2TopoV0ToCasc(),
-                       candidate.chi2TopoCascToXic(),
-                       candidate.decayLenXYLambda(),
-                       candidate.decayLenXYCasc(),
-                       candidate.decayLenXYXic(),
-                       candidate.cosPaV0ToCasc(),
-                       candidate.cosPAV0(),
-                       candidate.cosPaCascToXic(),
-                       candidate.cosPACasc(),
-                       candidate.invMassLambda(),
-                       candidate.invMassCascade(),
-                       candidate.invMassCharmBaryon(),
-                       candidate.kfRapXic(),
-                       RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon()),
-                       RecoDecay::sqrtSumOfSquares(candidate.pxCharmBaryon(), candidate.pyCharmBaryon()),
-                       candidate.cosThetaStarPiFromXic(),
-                       candidate.cTauXic(),
-                       candidate.etaCharmBaryon(),
-                       candidate.v0Ndf(),
-                       candidate.cascNdf(),
-                       candidate.xicNdf(),
-                       candidate.massV0Ndf(),
-                       candidate.massCascNdf(),
-                       candidate.v0Chi2OverNdf(),
-                       candidate.cascChi2OverNdf(),
-                       candidate.xicChi2OverNdf(),
-                       candidate.massV0Chi2OverNdf(),
-                       candidate.massCascChi2OverNdf(),
-                       candidate.resultSelections(),
+                       candidate.chi2GeoCascade(),
+                       candidate.chi2Geo(),
+                       candidate.decayLengthNormKfV0(),
+                       candidate.decayLengthNormKfCascade(),
+                       candidate.chi2TopoOverNdfV0ToPv(),
+                       candidate.chi2TopoOverNdfCascadeToPv(),
+                       candidate.chi2TopoOverNdfToPv(),
+                       candidate.chi2TopoOverNdfV0ToCascade(),
+                       candidate.chi2TopoOverNdfCascadeToCharmHadron(),
+                       candidate.decayLengthXYV0(),
+                       candidate.decayLengthXYCascade(),
+                       candidate.decayLengthXY(),
+                       candidate.cpaV0ToCascade(),
+                       candidate.cpaV0(),
+                       candidate.cpaCascadeToCharmHadron(),
+                       candidate.cpaCascade(),
+                       candidate.massLambda(),
+                       candidate.massCascade(),
+                       HfHelper::invMassXiczeroToXiPi(candidate),
+                       HfHelper::yXiczero(candidate),
+                       RecoDecay::sqrtSumOfSquares(candidate.pxProng1(), candidate.pyProng1()),
+                       candidate.pt(),
+                       HfHelper::cosThetaStarXiczeroToXiPi(candidate),
+                       HfHelper::ctXiczero(candidate),
+                       candidate.eta(),
+                       candidate.ndfGeoV0(),
+                       candidate.ndfGeoCascade(),
+                       candidate.ndfGeo(),
+                       candidate.chi2GeoOverNdfV0(),
+                       candidate.chi2GeoOverNdfCascade(),
+                       candidate.chi2GeoOverNdf(),
                        flagMc,
-                       debugMc,
-                       originMc,
-                       collisionMatched);
+                       originMc);
       }
     }
   }
@@ -667,7 +628,7 @@ struct HfTreeCreatorToXiPiQa {
     for (const auto& particle : mcParticles) {
 
       auto ptGen = particle.pt();
-      auto yGen = particle.rapidityCharmBaryonGen();
+      auto yGen = particle.y();
 
       int nContribMax = 0;
       bool recoCollPassedTvx = false;
@@ -721,7 +682,8 @@ struct HfTreeCreatorToXiPiQa {
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
 
   void processDataFull(MyEventTable const& collisions,
-                       MyTrackTable const&,
+                       MyTrackTable const& tracks,
+                       MyTrackTableLf const& lfTracks,
                        MyCandTableDca const& candidates)
   {
     // Filling event properties
@@ -733,12 +695,13 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<DCAFITTER, FULL, false, MyEventTable>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+      fillCandidate<DCAFITTER, FULL, false, MyEventTable>(candidate, tracks, lfTracks, -7, RecoDecay::OriginType::None);
     }
   }
 
   void processDataLite(MyEventTable const& collisions,
-                       MyTrackTable const&,
+                       MyTrackTable const& tracks,
+                       MyTrackTableLf const& lfTracks,
                        MyCandTableDca const& candidates)
   {
     // Filling event properties
@@ -750,12 +713,13 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<DCAFITTER, LITE, false, MyEventTable>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+      fillCandidate<DCAFITTER, LITE, false, MyEventTable>(candidate, tracks, lfTracks, -7, RecoDecay::OriginType::None);
     }
   }
 
   void processDataLiteWithFT0M(MyEventTableWithFT0M const& collisions,
-                               MyTrackTable const&,
+                               MyTrackTable const& tracks,
+                               MyTrackTableLf const& lfTracks,
                                MyCandTableDca const& candidates)
   {
     // Filling event properties
@@ -767,12 +731,13 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<DCAFITTER, LITE, true, MyEventTableWithFT0M>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+      fillCandidate<DCAFITTER, LITE, true, MyEventTableWithFT0M>(candidate, tracks, lfTracks, -7, RecoDecay::OriginType::None);
     }
   }
 
   void processDataLiteWithFT0C(MyEventTableWithFT0C const& collisions,
-                               MyTrackTable const&,
+                               MyTrackTable const& tracks,
+                               MyTrackTableLf const& lfTracks,
                                MyCandTableDca const& candidates)
   {
     // Filling event properties
@@ -784,12 +749,13 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<DCAFITTER, LITE, true, MyEventTableWithFT0C>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+      fillCandidate<DCAFITTER, LITE, true, MyEventTableWithFT0C>(candidate, tracks, lfTracks, -7, RecoDecay::OriginType::None);
     }
   }
 
   void processDataLiteWithNTracksPV(MyEventTableWithNTracksPV const& collisions,
-                                    MyTrackTable const&,
+                                    MyTrackTable const& tracks,
+                                    MyTrackTableLf const& lfTracks,
                                     MyCandTableDca const& candidates)
   {
     // Filling event properties
@@ -801,7 +767,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<DCAFITTER, LITE, true, MyEventTableWithNTracksPV>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+      fillCandidate<DCAFITTER, LITE, true, MyEventTableWithNTracksPV>(candidate, tracks, lfTracks, -7, RecoDecay::OriginType::None);
     }
   }
 
@@ -815,7 +781,8 @@ struct HfTreeCreatorToXiPiQa {
   //*~~~~~~~Data with KFParticle~~~~~~~~*//
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
   void processKfData(MyEventTable const& collisions,
-                     MyTrackTable const&,
+                     MyTrackTable const& tracks,
+                     MyTrackTableLf const& lfTracks,
                      MyCandTableKf const& candidates)
   {
     // Filling event properties
@@ -827,12 +794,13 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<KFPARTICLE, FULL, false, MyEventTable>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+      fillCandidate<KFPARTICLE, FULL, false, MyEventTable>(candidate, tracks, lfTracks, -7, RecoDecay::OriginType::None);
     }
   }
 
   void processKfDataWithFT0M(MyEventTableWithFT0M const& collisions,
-                             MyTrackTable const&,
+                             MyTrackTable const& tracks,
+                             MyTrackTableLf const& lfTracks,
                              MyCandTableKf const& candidates)
   {
     // Filling event properties
@@ -844,12 +812,13 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<KFPARTICLE, FULL, false, MyEventTableWithFT0M>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+      fillCandidate<KFPARTICLE, FULL, true, MyEventTableWithFT0M>(candidate, tracks, lfTracks, -7, RecoDecay::OriginType::None);
     }
   }
 
   void processKfDataWithFT0C(MyEventTableWithFT0C const& collisions,
-                             MyTrackTable const&,
+                             MyTrackTable const& tracks,
+                             MyTrackTableLf const& lfTracks,
                              MyCandTableKf const& candidates)
   {
     // Filling event properties
@@ -861,12 +830,13 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<KFPARTICLE, FULL, true, MyEventTableWithFT0C>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+      fillCandidate<KFPARTICLE, FULL, true, MyEventTableWithFT0C>(candidate, tracks, lfTracks, -7, RecoDecay::OriginType::None);
     }
   }
 
   void processKfDataWithNTracksPV(MyEventTableWithNTracksPV const& collisions,
-                                  MyTrackTable const&,
+                                  MyTrackTable const& tracks,
+                                  MyTrackTableLf const& lfTracks,
                                   MyCandTableKf const& candidates)
   {
     // Filling event properties
@@ -878,7 +848,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<KFPARTICLE, FULL, true, MyEventTableWithNTracksPV>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+      fillCandidate<KFPARTICLE, FULL, true, MyEventTableWithNTracksPV>(candidate, tracks, lfTracks, -7, RecoDecay::OriginType::None);
     }
   }
 
@@ -893,7 +863,8 @@ struct HfTreeCreatorToXiPiQa {
 
   void processMcFullXic0(MyEventTableWithMcLabels const& collsWithMcLable,
                          aod::McCollisions const&,
-                         MyTrackTable const&,
+                         MyTrackTable const& tracks,
+                         MyTrackTableLf const& lfTracks,
                          MyCandTableXic0McDca const& candidates,
                          MatchedGenXiPi const& mcParticles)
   {
@@ -906,7 +877,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<DCAFITTER, FULL, false, MyEventTableWithMcLabels>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
+      fillCandidate<DCAFITTER, FULL, false, MyEventTableWithMcLabels>(candidate, tracks, lfTracks, candidate.flagMcMatchRec(), candidate.originMcRec());
     }
 
     // Filling particle properties if requested
@@ -918,7 +889,8 @@ struct HfTreeCreatorToXiPiQa {
 
   void processMcFullOmegac0(MyEventTableWithMcLabels const& collsWithMcLable,
                             aod::McCollisions const&,
-                            MyTrackTable const&,
+                            MyTrackTable const& tracks,
+                            MyTrackTableLf const& lfTracks,
                             MyCandTableOmegac0McDca const& candidates,
                             MatchedGenXiPi const& mcParticles)
   {
@@ -931,7 +903,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<DCAFITTER, FULL, false, MyEventTableWithMcLabels>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
+      fillCandidate<DCAFITTER, FULL, false, MyEventTableWithMcLabels>(candidate, tracks, lfTracks, candidate.flagMcMatchRec(), candidate.originMcRec());
     }
 
     // Filling particle properties if requested
@@ -943,7 +915,8 @@ struct HfTreeCreatorToXiPiQa {
 
   void processMcLiteXic0(MyEventTableWithMcLabels const& collsWithMcLable,
                          aod::McCollisions const&,
-                         MyTrackTable const&,
+                         MyTrackTable const& tracks,
+                         MyTrackTableLf const& lfTracks,
                          MyCandTableXic0McDca const& candidates,
                          MatchedGenXiPi const& mcParticles)
   {
@@ -956,7 +929,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<DCAFITTER, LITE, false, MyEventTable>(candidate, candidate.flagMcMatchRec(), -7, candidate.originMcRec(), candidate.collisionMatched());
+      fillCandidate<DCAFITTER, LITE, false, MyEventTableWithMcLabels>(candidate, tracks, lfTracks, candidate.flagMcMatchRec(), candidate.originMcRec());
     }
 
     // Filling particle properties if requested
@@ -966,9 +939,10 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processMcLiteXic0WithFT0C(MyEventTableWithMcLabels const& collsWithMcLable,
+  void processMcLiteXic0WithFT0C(MyEventTableWithMcLabelsFT0C const& collsWithMcLable,
                                  McCollisionsCentFT0Cs const&,
-                                 MyTrackTable const&,
+                                 MyTrackTable const& tracks,
+                                 MyTrackTableLf const& lfTracks,
                                  MyCandTableXic0McDca const& candidates,
                                  MatchedGenXiPi const& mcParticles)
   {
@@ -981,7 +955,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<DCAFITTER, LITE, true, MyEventTableWithFT0C>(candidate, candidate.flagMcMatchRec(), -7, candidate.originMcRec(), candidate.collisionMatched());
+      fillCandidate<DCAFITTER, LITE, true, MyEventTableWithMcLabelsFT0C>(candidate, tracks, lfTracks, candidate.flagMcMatchRec(), candidate.originMcRec());
     }
 
     // Filling particle properties if requested
@@ -991,9 +965,10 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processMcLiteXic0WithFT0M(MyEventTableWithMcLabels const& collsWithMcLable,
+  void processMcLiteXic0WithFT0M(MyEventTableWithMcLabelsFT0M const& collsWithMcLable,
                                  McCollisionsCentFT0Ms const&,
-                                 MyTrackTable const&,
+                                 MyTrackTable const& tracks,
+                                 MyTrackTableLf const& lfTracks,
                                  MyCandTableXic0McDca const& candidates,
                                  MatchedGenXiPi const& mcParticles)
   {
@@ -1006,7 +981,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<DCAFITTER, LITE, true, MyEventTableWithFT0M>(candidate, candidate.flagMcMatchRec(), -7, candidate.originMcRec(), candidate.collisionMatched());
+      fillCandidate<DCAFITTER, LITE, true, MyEventTableWithMcLabelsFT0M>(candidate, tracks, lfTracks, candidate.flagMcMatchRec(), candidate.originMcRec());
     }
 
     // Filling particle properties if requested
@@ -1016,9 +991,10 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processMcLiteXic0WithNTracksPV(MyEventTableWithMcLabels const& collsWithMcLable,
+  void processMcLiteXic0WithNTracksPV(MyEventTableWithMcLabelsNTracksPV const& collsWithMcLable,
                                       aod::McCollisions const&,
-                                      MyTrackTable const&,
+                                      MyTrackTable const& tracks,
+                                      MyTrackTableLf const& lfTracks,
                                       MyCandTableXic0McDca const& candidates,
                                       MatchedGenXiPi const& mcParticles)
   {
@@ -1031,7 +1007,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<DCAFITTER, LITE, true, MyEventTableWithNTracksPV>(candidate, candidate.flagMcMatchRec(), -7, candidate.originMcRec(), candidate.collisionMatched());
+      fillCandidate<DCAFITTER, LITE, true, MyEventTableWithMcLabelsNTracksPV>(candidate, tracks, lfTracks, candidate.flagMcMatchRec(), candidate.originMcRec());
     }
 
     // Filling particle properties if requested
@@ -1043,7 +1019,8 @@ struct HfTreeCreatorToXiPiQa {
 
   void processMcLiteOmegac0(MyEventTableWithMcLabels const& collsWithMcLable,
                             aod::McCollisions const&,
-                            MyTrackTable const&,
+                            MyTrackTable const& tracks,
+                            MyTrackTableLf const& lfTracks,
                             MyCandTableOmegac0McDca const& candidates,
                             MatchedGenXiPi const& mcParticles)
   {
@@ -1056,7 +1033,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<DCAFITTER, LITE, false, MyEventTable>(candidate, candidate.flagMcMatchRec(), -7, candidate.originMcRec(), candidate.collisionMatched());
+      fillCandidate<DCAFITTER, LITE, false, MyEventTableWithMcLabels>(candidate, tracks, lfTracks, candidate.flagMcMatchRec(), candidate.originMcRec());
     }
 
     // Filling particle properties if requested
@@ -1079,7 +1056,8 @@ struct HfTreeCreatorToXiPiQa {
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
   void processKfMcXic0(MyEventTableWithMcLabels const& collsWithMcLable,
                        aod::McCollisions const&,
-                       MyTrackTable const&,
+                       MyTrackTable const& tracks,
+                       MyTrackTableLf const& lfTracks,
                        MyCandTableXic0McKf const& candidates,
                        MatchedGenXiPi const& mcParticles)
   {
@@ -1092,7 +1070,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<KFPARTICLE, FULL, false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
+      fillCandidate<KFPARTICLE, FULL, false, MyEventTableWithMcLabels>(candidate, tracks, lfTracks, candidate.flagMcMatchRec(), candidate.originMcRec());
     }
 
     // Filling particle properties if requested
@@ -1102,9 +1080,10 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processKfMcXic0WithFT0C(MyEventTableWithMcLabels const& collsWithMcLable,
+  void processKfMcXic0WithFT0C(MyEventTableWithMcLabelsFT0C const& collsWithMcLable,
                                McCollisionsCentFT0Cs const&,
-                               MyTrackTable const&,
+                               MyTrackTable const& tracks,
+                               MyTrackTableLf const& lfTracks,
                                MyCandTableXic0McKf const& candidates,
                                MatchedGenXiPi const& mcParticles)
   {
@@ -1117,7 +1096,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<KFPARTICLE, FULL, true, MyEventTableWithFT0C>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
+      fillCandidate<KFPARTICLE, FULL, true, MyEventTableWithMcLabelsFT0C>(candidate, tracks, lfTracks, candidate.flagMcMatchRec(), candidate.originMcRec());
     }
 
     // Filling particle properties if requested
@@ -1127,9 +1106,10 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processKfMcXic0WithFT0M(MyEventTableWithMcLabels const& collsWithMcLable,
+  void processKfMcXic0WithFT0M(MyEventTableWithMcLabelsFT0M const& collsWithMcLable,
                                McCollisionsCentFT0Ms const&,
-                               MyTrackTable const&,
+                               MyTrackTable const& tracks,
+                               MyTrackTableLf const& lfTracks,
                                MyCandTableXic0McKf const& candidates,
                                MatchedGenXiPi const& mcParticles)
   {
@@ -1142,7 +1122,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate properties
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<KFPARTICLE, FULL, true, MyEventTableWithFT0M>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
+      fillCandidate<KFPARTICLE, FULL, true, MyEventTableWithMcLabelsFT0M>(candidate, tracks, lfTracks, candidate.flagMcMatchRec(), candidate.originMcRec());
     }
 
     // Filling particle properties if requested
@@ -1152,9 +1132,10 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processKfMcXic0WithNTracksPV(MyEventTableWithMcLabels const& collsWithMcLable,
+  void processKfMcXic0WithNTracksPV(MyEventTableWithMcLabelsNTracksPV const& collsWithMcLable,
                                     aod::McCollisions const&,
-                                    MyTrackTable const&,
+                                    MyTrackTable const& tracks,
+                                    MyTrackTableLf const& lfTracks,
                                     MyCandTableXic0McKf const& candidates,
                                     MatchedGenXiPi const& mcParticles)
   {
@@ -1167,7 +1148,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling candidate table
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<KFPARTICLE, FULL, true, MyEventTableWithNTracksPV>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
+      fillCandidate<KFPARTICLE, FULL, true, MyEventTableWithMcLabelsNTracksPV>(candidate, tracks, lfTracks, candidate.flagMcMatchRec(), candidate.originMcRec());
     }
 
     // Filling particle properties if requested
