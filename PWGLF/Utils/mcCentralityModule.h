@@ -439,7 +439,7 @@ struct BuilderModule {
           // start from the end (from the high multiplicity collisions)
           int irev = i;
           TH1* projData = h2dMultVsCent_Data->ProjectionY(Form("projData_%d", i), h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev] + 1e-5),
-                                                           h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev + 1] - 1e-5));
+                                                          h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev + 1] - 1e-5));
 
           double meanMult_Data = projData->GetMean();
 
@@ -512,7 +512,7 @@ struct BuilderModule {
           // start from the end (from the low multiplicity collisions)
           int irev = nCentBins - i;
           TH1* projData = h2dMultVsCent_Data->ProjectionY(Form("projData_%d", i), h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev - 1] + 1e-5),
-                                                           h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev] - 1e-5));
+                                                          h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev] - 1e-5));
 
           double meanMult_Data = projData->GetMean();
 
