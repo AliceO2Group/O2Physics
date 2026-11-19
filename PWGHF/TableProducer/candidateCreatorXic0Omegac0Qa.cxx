@@ -97,7 +97,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     std::string prefix = "lfBuilding";
     // Options for internal cascade building - DCAFitter settings
     // ...Initial vaules taken from PWGLF/Utils/strangenessBuilderHelper
-    Configurable<bool> propagateToPCA{"propagateToPCA", true, "Create tracks version propagated to PCA"};
     Configurable<float> maxR{"maxR", 200., "Reject PCA's above this radius"};
     Configurable<float> maxDZIni{"maxDZIni", 1e9, "Reject (if>0) PCA candidate if tracks DZ exceeds this threshold"};
     Configurable<float> maxDXYIni{"maxDXYIni", 4.0f, "Reject (if>0) PCA candidate if tracks DXY exceeds this threshold"};
@@ -148,7 +147,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     // Cascade pre selection
     Configurable<float> cascadeMassWindow{"cascadeMassWindow", 0.01, "Invariant mass tolerance for cascades"};
     // Options for DCAFitter
-    Configurable<bool> propagateToPCA{"propagateToPCA", true, "Create tracks version propagated to PCA"};
     Configurable<float> maxR{"maxR", 200., "Reject PCA's above this radius"};
     Configurable<float> maxDZIni{"maxDZIni", 4., "Reject (if>0) PCA candidate if tracks DZ exceeds this threshold"};
     Configurable<float> maxDXYIni{"maxDXYIni", 4., "Reject (if>0) PCA candidate if tracks DXY exceeds this threshold"};
@@ -270,7 +268,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     straHelper.cascadeselections.maxDaughterEta = lfConfigs.maxDaughterEta;
 
     // Fitter setting
-    straHelper.fitter.setPropagateToPCA(lfConfigs.propagateToPCA);
+    straHelper.fitter.setPropagateToPCA(true);
     straHelper.fitter.setMaxR(lfConfigs.maxR);
     straHelper.fitter.setMaxDZIni(lfConfigs.maxDZIni);
     straHelper.fitter.setMaxDXYIni(lfConfigs.maxDXYIni);
@@ -284,7 +282,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     // Extra initialization for DCAFitter
     if (nProcessesDCA == 1) {
       registry.get<TH1>(HIST("hVertexerType"))->Fill(aod::hf_cand::VertexerType::DCAFitter);
-      df.setPropagateToPCA(configs.propagateToPCA);
+      df.setPropagateToPCA(true);
       df.setMaxR(configs.maxR);
       df.setMaxDZIni(configs.maxDZIni);
       df.setMaxDXYIni(configs.maxDXYIni);
