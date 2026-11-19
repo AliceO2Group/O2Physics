@@ -382,8 +382,8 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     std::array<TH2F*, eBeforeAfterCuts_N> fHistMultNContrib{};
     std::array<TH2F*, eBeforeAfterCuts_N> fHistCorrCent{};
     std::array<TH2F*, eBeforeAfterCuts_N> fHistSelectedTrack{};
-    const float fSelTrackInf = 50.;
-    const float fSelTrackSup = 80.;
+    static constexpr float SelTrackCentInf = 50.f;
+    static constexpr float SelTrackCentSup = 80.f;
   } qa;
 
   struct MiscHistograms {
@@ -1022,7 +1022,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       if constexpr (cuts == eBefore) {
         qa.fHistMultNContrib[eBefore]->Fill(thisRefMult, collision.numContrib());
         qa.fHistCorrCent[eBefore]->Fill(cent1, cent2);
-        if (thisCent >= qa.fSelTrackInf && thisCent <= qa.fSelTrackSup) {
+        if (thisCent >= qa.SelTrackCentInf && thisCent <= qa.SelTrackCentSup) {
           qa.fHistSelectedTrack[eBefore]->Fill(tracks.size(), thisCent);
         }
       }
@@ -1167,7 +1167,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         }
       } // end of if constexpr (rs == eRecAndSim) {
     } // end of for (auto const& track : tracks) {
-    if (tc.fMasterCutSwitch && passEventCutsReal && tc.fQualityAssuranceSwitch && (thisCollCentReal >= qa.fSelTrackInf && thisCollCentReal <= qa.fSelTrackSup)) {
+    if (tc.fMasterCutSwitch && passEventCutsReal && tc.fQualityAssuranceSwitch && (thisCollCentReal >= qa.SelTrackCentInf && thisCollCentReal <= qa.SelTrackCentSup)) {
       qa.fHistSelectedTrack[eAfter]->Fill(nPassedTrack, thisCollCentReal);
     }
 
