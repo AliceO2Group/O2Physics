@@ -58,6 +58,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <ios>
 #include <locale>
 #include <memory>
 #include <sstream>
@@ -631,7 +632,9 @@ struct LambdaProtonBalanceFunction {
       const double minPt = species < LambdaSpeciesCount ? lambdaV0MinPt.value : pProtonMinPt.value;
       const double maxPt = species < LambdaSpeciesCount ? lambdaV0MaxPt.value : pProtonMaxPt.value;
       const double maxY = species < LambdaSpeciesCount ? lambdaV0MaxY.value : pProtonMaxY.value;
-      if (!(minPt < maxPt && maxY > 0.) || h->GetYaxis()->GetXmin() > minPt ||
+      // Keep rejecting NaN bounds when simplifying the ordered comparisons.
+      if (std::isnan(minPt) || std::isnan(maxPt) || std::isnan(maxY) ||
+          minPt >= maxPt || maxY <= 0. || h->GetYaxis()->GetXmin() > minPt ||
           h->GetYaxis()->GetXmax() < maxPt || h->GetZaxis()->GetXmin() > -maxY ||
           h->GetZaxis()->GetXmax() < maxY ||
           (species >= LambdaSpeciesCount && (h->GetYaxis()->GetXmax() <= maxPt || h->GetZaxis()->GetXmax() <= maxY))) {
@@ -645,7 +648,10 @@ struct LambdaProtonBalanceFunction {
     const auto contract = correctionContract();
     for (const auto& species : state.correctionInputs) {
       for (const auto& h : species) {
-        h->SetTitle((std::string(h->GetName()) + "|" + contract).c_str());
+        std::string title = h->GetName();
+        title += '|';
+        title += contract;
+        h->SetTitle(title.c_str());
       }
     }
     // A count plus the individual bits of the exact contract, not a hash or an
@@ -719,7 +725,7 @@ struct LambdaProtonBalanceFunction {
     }
     for (size_t character = 0; character < contract.size(); ++character) {
       for (int bit = 0; bit < MetadataBitsPerByte; ++bit) {
-        const bool set = (static_cast<unsigned char>(contract[character]) >> bit) & 1U;
+        const bool set = ((static_cast<unsigned char>(contract[character]) >> bit) & 1U) != 0U;
         if (metadata->GetBinContent(2 + MetadataBitsPerByte * character + bit) != (set ? workers : 0.)) {
           LOGF(fatal, "Combined-correction inputs mix incompatible worker selections/axes or metadata was modified");
           return;
@@ -753,7 +759,10 @@ struct LambdaProtonBalanceFunction {
         const std::string name = std::string(kCorrectionInputs[stage]) + kCorrectionSpecies[species];
         raw[stage] = dynamic_cast<TH3D*>(list.FindObject(name.c_str()));
         auto* h = raw[stage];
-        if (!h || std::string(h->GetTitle()) != name + "|" + contract ||
+        std::string expectedTitle = name;
+        expectedTitle += '|';
+        expectedTitle += contract;
+        if (h == nullptr || std::string(h->GetTitle()) != expectedTitle ||
             !correctionAxisMatches(*h->GetXaxis(), *expected->GetXaxis()) ||
             !correctionAxisMatches(*h->GetYaxis(), *expected->GetYaxis()) ||
             !correctionAxisMatches(*h->GetZaxis(), *expected->GetZaxis()) || h->GetSumw2N() != h->GetNcells()) {
@@ -773,7 +782,14 @@ struct LambdaProtonBalanceFunction {
       const std::array<const char*, 5> mapNames = {"hPurity_", "hPrimaryFraction_", "hEfficiency_", "hCombinedWeight_", "hCombinedValid_"};
       for (size_t kind = 0; kind < mapNames.size(); ++kind) {
         const std::string name = std::string(mapNames[kind]) + kCorrectionSpecies[species];
-        state.correctionMaps[species][kind].reset(static_cast<TH3D*>(raw[0]->Clone(name.c_str())));
+        auto* clonedObject = raw[0]->Clone(name.c_str());
+        auto* map = dynamic_cast<TH3D*>(clonedObject);
+        if (map == nullptr) {
+          delete clonedObject;
+          LOGF(fatal, "Cannot clone combined correction map %s as TH3D", name.c_str());
+          return;
+        }
+        state.correctionMaps[species][kind].reset(map);
         state.correctionMaps[species][kind]->SetDirectory(nullptr);
         state.correctionMaps[species][kind]->Reset();
       }
@@ -821,7 +837,9 @@ struct LambdaProtonBalanceFunction {
         maps[3]->SetBinContent(bin, weight);
         maps[4]->SetBinContent(bin, 1.);
         ++validBins;
-        efficiencyAboveOne += efficiency > 1.;
+        if (efficiency > 1.) {
+          ++efficiencyAboveOne;
+        }
       }
       if (validBins == 0) {
         LOGF(fatal, "No valid combined-correction bins for %s", kCorrectionSpecies[species]);
@@ -3511,7 +3529,7 @@ struct LambdaProtonBalanceFunction {
     state.correctionMetadata->Fill(1.);
     for (size_t character = 0; character < contract.size(); ++character) {
       for (int bit = 0; bit < MetadataBitsPerByte; ++bit) {
-        if ((static_cast<unsigned char>(contract[character]) >> bit) & 1U) {
+        if (((static_cast<unsigned char>(contract[character]) >> bit) & 1U) != 0U) {
           state.correctionMetadata->Fill(2 + MetadataBitsPerByte * character + bit);
         }
       }
@@ -3668,9 +3686,8 @@ struct LambdaProtonBalanceFunction {
               a.negDaughter == b.posDaughter || a.negDaughter == b.negDaughter) {
             continue;
           }
-        } else if (a.isV0 && (a.posDaughter == b.info.gid || a.negDaughter == b.info.gid)) {
-          continue;
-        } else if (b.isV0 && (b.posDaughter == a.info.gid || b.negDaughter == a.info.gid)) {
+        } else if ((a.isV0 && (a.posDaughter == b.info.gid || a.negDaughter == b.info.gid)) ||
+                   (b.isV0 && (b.posDaughter == a.info.gid || b.negDaughter == a.info.gid))) {
           continue;
         }
         const auto& p = a.info;
@@ -3699,9 +3716,9 @@ struct LambdaProtonBalanceFunction {
   {
     const auto selected = selectCorrectionCandidates(collision, v0s, tracks);
     std::array<std::vector<CombinedParticle>, 4> particles;
-    const auto append = [&](CombinedParticle particle, size_t species) {
+    const auto append = [&](CombinedParticle const& particle, size_t species) {
       if (particle.weight > 0.) {
-        particles[species].push_back(std::move(particle));
+        particles[species].push_back(particle);
       }
     };
     for (const auto& v0 : selected.lambdas) {
@@ -5216,7 +5233,7 @@ struct LambdaProtonBalanceFunction {
   // ─────────────────────────────────────────────────────────────────────
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<LambdaProtonBalanceFunction>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<LambdaProtonBalanceFunction>(context)};
 }
