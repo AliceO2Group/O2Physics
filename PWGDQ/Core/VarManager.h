@@ -511,20 +511,21 @@ class VarManager : public TObject
     kV2ME_EP,
     kWV2ME_SP,
     kWV2ME_EP,
-    kTwoR2SP1,            // Scalar product resolution of event1 for ME technique
-    kTwoR2SP2,            // Scalar product resolution of event2 for ME technique
-    kTwoR2EP1,            // Event plane resolution of event2 for ME technique
-    kTwoR2EP2,            // Event plane resolution of event2 for ME technique
-    kDeltaPhiME_TPC,      // Delta phi of VM to TPC event plane for ME technique
-    kDeltaPhiME_FT0C,     // Delta phi of VM to FT0C event plane for ME technique
-    kDeltaPhiME_FT0A,     // Delta phi of VM to FT0A event plane for ME technique
-    kCos2DeltaPhiME_TPC,  // Cos(2*Delta phi) of VM to TPC event plane for ME technique
-    kCos2DeltaPhiME_FT0C, // Cos(2*Delta phi) of VM to FT0C event plane for ME technique
-    kCos2DeltaPhiME_FT0A, // Cos(2*Delta phi) of VM to FT0A event plane for ME technique
-    kA2EPME_TPC,          // A2 of VM to TPC event plane for ME technique
-    kA2EPME_FT0C,         // A2 of VM to FT0C event plane for ME technique
-    kA2EPME_FT0A,         // A2 of VM to FT0A event plane for ME technique
-    kNPairsPerEvent,      // number of pairs per event in same-event or mixed-event pairing
+    kTwoR2SP1,             // Scalar product resolution of event1 for ME technique
+    kTwoR2SP2,             // Scalar product resolution of event2 for ME technique
+    kTwoR2EP1,             // Event plane resolution of event2 for ME technique
+    kTwoR2EP2,             // Event plane resolution of event2 for ME technique
+    kDeltaPhiME_TPC,       // Delta phi of VM to TPC event plane for ME technique
+    kDeltaPhiME_FT0C,      // Delta phi of VM to FT0C event plane for ME technique
+    kDeltaPhiME_FT0A,      // Delta phi of VM to FT0A event plane for ME technique
+    kCos2DeltaPhiME_TPC,   // Cos(2*Delta phi) of VM to TPC event plane for ME technique
+    kCos2DeltaPhiME_FT0C,  // Cos(2*Delta phi) of VM to FT0C event plane for ME technique
+    kCos2DeltaPhiME_FT0A,  // Cos(2*Delta phi) of VM to FT0A event plane for ME technique
+    kA2EPME_TPC,           // A2 of VM to TPC event plane for ME technique
+    kA2EPME_FT0C,          // A2 of VM to FT0C event plane for ME technique
+    kA2EPME_FT0A,          // A2 of VM to FT0A event plane for ME technique
+    kNPairsPerEvent,       // number of pairs per event in same-event or mixed-event pairing
+    kNSelTracksForPairing, // number of tracks in the event passing the pairing track filter (barrel); in ME = that of the first event
     kInteractionRate,
     kMuPerBc,
 
@@ -4822,6 +4823,15 @@ void VarManager::FillPairMEAcrossTFs(T const& t1, T const& t2, float* values)
   values[kEta] = v12.Eta();
   values[kPhi] = RecoDecay::constrainAngle(v12.Phi());
   values[kRap] = -v12.Rapidity();
+  values[kPt1] = t1.pt;
+  values[kEta1] = t1.eta;
+  values[kPhi1] = t1.phi;
+  values[kPt2] = t2.pt;
+  values[kEta2] = t2.eta;
+  values[kPhi2] = t2.phi;
+  if (fgUsedVars[kDeltaPhiPair2]) {
+    values[kDeltaPhiPair2] = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), -o2::constants::math::PIHalf);
+  }
 
   if (fgUsedVars[kCosThetaStarRandom] || fgUsedVars[kCosThetaStarFT0C]) {
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
