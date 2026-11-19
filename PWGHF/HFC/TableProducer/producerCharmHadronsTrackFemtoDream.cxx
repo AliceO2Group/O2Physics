@@ -117,6 +117,8 @@ enum class D0CandFlag : uint8_t {
 
 struct HfProducerCharmHadronsTrackFemtoDream {
 
+  static constexpr float SigmacDeltaMassMin = 0.135f; // Broad retention threshold below the physical DeltaM limit.
+
   struct : ProducesGroup {
     Produces<aod::FDCollisions> outputCollision;
     Produces<aod::FDColMasks> rowMasks;
@@ -207,7 +209,6 @@ struct HfProducerCharmHadronsTrackFemtoDream {
 
   struct : ConfigurableGroup {
     std::string prefix = "sigmac";
-    Configurable<float> deltaMassMin{"deltaMassMin", static_cast<float>(o2::constants::physics::MassPiPlus), "Minimum retained DeltaM, including sidebands (GeV/c2)"};
     Configurable<float> deltaMassMax{"deltaMassMax", 0.190f, "Maximum retained DeltaM, including sidebands (GeV/c2)"};
     Configurable<float> lcMassWindow{"lcMassWindow", 0.03f, "Maximum |M(Lc)-PDG|, also limited by the HF creator (GeV/c2)"};
     Configurable<float> yMax{"yMax", 0.8f, "Maximum |y| using the SigmaC(2455) mass"};
@@ -287,7 +288,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     }
 
     if ((doprocessDataScToLcPi || doprocessDataScToLcPiWithML || doprocessMcScToLcPi || doprocessMcScToLcPiWithML) &&
-        (sigmacCfg.deltaMassMin.value >= sigmacCfg.deltaMassMax.value || sigmacCfg.lcMassWindow.value <= 0.f || sigmacCfg.yMax.value <= 0.f)) {
+        (SigmacDeltaMassMin >= sigmacCfg.deltaMassMax.value || sigmacCfg.lcMassWindow.value <= 0.f || sigmacCfg.yMax.value <= 0.f)) {
       LOG(fatal) << "Invalid SigmaC mass or rapidity window.";
     }
     if (doprocessDataScToLcPi || doprocessDataScToLcPiWithML || doprocessMcScToLcPi || doprocessMcScToLcPiWithML) {
@@ -1449,27 +1450,17 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     int nSelectedSc = 0;
     constexpr std::size_t NumMlScores = 3;
     constexpr int NumHypotheses = 2;
-    constexpr int ChargeDoublyCharged = 2;
     auto bc = col.template bc_as<aod::BCsWithTimestamps>();
     for (auto const& sc : candidates) {
-      if (sc.charge() != 0 && std::abs(sc.charge()) != ChargeDoublyCharged) {
-        continue;
-      }
       auto const rapidity = sc.charge() == 0 ? HfHelper::ySc0(sc) : HfHelper::yScPlusPlus(sc);
       if (!std::isfinite(rapidity) || std::abs(rapidity) > sigmacCfg.yMax.value) {
         continue;
       }
       auto lc = sc.template prongLc_as<LcType>();
-      if (lc.collisionId() != sc.collisionId()) {
-        continue;
-      }
       auto p0 = lc.template prong0_as<DaughterTracks>();
       auto p1 = lc.template prong1_as<DaughterTracks>();
       auto p2 = lc.template prong2_as<DaughterTracks>();
       auto softPi = sc.template prong1_as<DaughterTracks>();
-      if (softPi.globalIndex() == p0.globalIndex() || softPi.globalIndex() == p1.globalIndex() || softPi.globalIndex() == p2.globalIndex()) {
-        continue;
-      }
       std::array<double, NumHypotheses> const lcMass{HfHelper::invMassLcToPKPi(lc), HfHelper::invMassLcToPiKP(lc)};
       std::array<double, NumHypotheses> const scMass{HfHelper::invMassScRecoLcToPKPi(sc, lc), HfHelper::invMassScRecoLcToPiKP(sc, lc)};
       auto const decayMask = o2::hf_sigmac_utils::isDecayToPKPiToPiKP(lc, sc);
@@ -1503,7 +1494,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
       }
       for (int h = 0; h < NumHypotheses; ++h) {
         double const deltaMass = scMass[h] - lcMass[h];
-        if (!accepted[h] || !std::isfinite(deltaMass) || deltaMass < sigmacCfg.deltaMassMin.value || deltaMass > sigmacCfg.deltaMassMax.value) {
+        if (!accepted[h] || !std::isfinite(deltaMass) || deltaMass < SigmacDeltaMassMin || deltaMass > sigmacCfg.deltaMassMax.value) {
           continue;
         }
         tables.rowCandCharmSc(tables.outputCollision.lastIndex(), bc.timestamp(), sc.charge(),
