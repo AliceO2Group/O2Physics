@@ -9,12 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief 
-/// \author everyone
+/// \brief Task to measure charged particles spectra in ultracentral collisions
+/// \author Diana Rosales Herrera (diana.rosales.herrera@cern.ch)
+/// \author Chiara De Martin (chiara.de.martin@cern.ch)
 
 #include <Framework/AnalysisDataModel.h> // tpcNClsCrossedRows
-#include <Framework/AnalysisTask.h> // 
-#include <Framework/runDataProcessing.h> // 
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -24,7 +25,7 @@
 
 #include <Common/DataModel/TrackSelectionTables.h> // TracksDCA
 #include <Common/DataModel/EventSelection.h> // ft0cOccupancyInTimeRange,trackOccupancyInTimeRange
-#include <Common/DataModel/Centrality.h> // 
+#include <Common/DataModel/Centrality.h>
 #include <Common/DataModel/Multiplicity.h> // multNTracksPVeta1, multNTracksGlobal
 
 #include "Common/CCDB/EventSelectionParams.h" //kIsTriggerTVX, kNoSameBunchPileup, kIsGoodZvtxFT0vsPV
@@ -36,10 +37,10 @@
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::framework::expressions; 
+using namespace o2::framework::expressions;
 
-using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::PVMults, aod::MultsGlobal, aod::Mults>; 
-using TrackCandidates = soa::Join<aod::Tracks, aod::TracksDCA, aod::TracksExtra>; 
+using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::PVMults, aod::MultsGlobal, aod::Mults>;
+using TrackCandidates = soa::Join<aod::Tracks, aod::TracksDCA, aod::TracksExtra>;
 
 struct CentralityClassificationPbPb
 {
@@ -57,14 +58,11 @@ struct CentralityClassificationPbPb
     Configurable<float> maxOccupancy{"maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
     Configurable<float> maxCent{"maxCent", 100.0f, "max centrality percentil"};
     Configurable<float> minCent{"minCent", 0.0f, "min centrality percentil"};
-    
   } eventSelections;
-
   
   struct TrackSelections : ConfigurableGroup {
     std::string prefix = "TrackSelections-Configurations"; // JSON group name
     Configurable<int> minTPCrows{"minTPCrows", 70, "minimum TPC crossed rows"};
-  
     Configurable<bool> requireTPCRefit{"RequireTPCRefit", true, "Require TPC Refit"};
     Configurable<bool> requireITSRefit{"RequireITSRefit", true, "Require ITS Refit"};
     Configurable<bool> requireITSibAny{"requireITSibAny", true, "Require ITS inner barrel (ib) any hits"};
@@ -83,7 +81,6 @@ struct CentralityClassificationPbPb
     Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
   } trackSelections;
   
-
   struct AxisConfigurations : ConfigurableGroup {
     std::string prefix = "axis-Configurations"; // JSON group name
     //ConfigurableAxis axisPt{"axispT", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p}_{T} (GeV/#it{c})"};
@@ -99,7 +96,7 @@ struct CentralityClassificationPbPb
     ConfigurableAxis axisMult{"axisMult",{500, 0.0f, 5000.0f}, "Multiplicity"};
     //ConfigurableAxis axisAmplitude{"axisAmplitude", {VARIABLE_WIDTH, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 140,160, 180, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000,2500, 3000, 3500,4000, 4500, 5000, 6000, 7000, 8000, 9000, 10000, 12000, 14000, 16000, 18000, 20000, 25000, 30000, 35000, 40000, 45000, 50000,60000, 70000}, "FT0C Amplitude"};
     ConfigurableAxis axisAmplitude{"axisAmplitude",{1400, 0.0f, 70000.0f},"FT0C Amplitude"};
-    ConfigurableAxis axisVz{"axisVz", {200, -10.0f, 10.0f}, "V_{z} (cm)"}; //nuevo
+    ConfigurableAxis axisVz{"axisVz", {200, -10.0f, 10.0f}, "V_{z} (cm)"};
   } axisConfigurations;
 
 
