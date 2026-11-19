@@ -40,6 +40,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
@@ -103,11 +104,12 @@ struct Sigmaplusbuilder {
   Configurable<float> photonDauMinTpcNCls{"photonDauMinTpcNCls", 30, "Min number of found TPC clusters for the photon daughter tracks"};
 
   // photon daughters paired by this task instead of taken from V0Datas (V0Datas assumes photons from primary vertex)
-  Configurable<bool> useCustomVertexer{"useCustomVertexer", false, "Pair the photon's e+/e- daughter tracks in this task instead of reading V0Datas"};
   Configurable<bool> photonSkipAmbiTracks{"photonSkipAmbiTracks", false, "Skip ambiguous tracks when pairing photon daughters"};
   Configurable<float> photonPoolTimeMarginNS{"photonPoolTimeMarginNS", 800., "Time margin (ns) added to a daughter track's time range when matching it to collisions"};
   Configurable<float> photonMaxDXYIni{"photonMaxDXYIni", 4., "Max xy distance (cm) between the two daughter tracks at the start of the photon vertex fit"};
   Configurable<float> photonMaxCircleTouchDist{"photonMaxCircleTouchDist", 4., "Max |circle centre distance - (R1 + R2)| (cm) of the two daughter tracks, applied before the fit"};
+  Configurable<bool> photonPrefitWithoutMatCorr{"photonPrefitWithoutMatCorr", true, "Before the photon vertex fit with material correction, fit without it and reject the pair if that DCA is above photonPrefitMaxDca"};
+  Configurable<float> photonPrefitMaxDca{"photonPrefitMaxDca", 3., "Max daughter DCA (cm) of the fit without material correction (photonPrefitWithoutMatCorr)"};
 
   // proton selection
   Configurable<float> protonMinPt{"protonMinPt", 0.4, "Minimum proton pT (GeV/c)"};
@@ -383,10 +385,11 @@ struct Sigmaplusbuilder {
     histos.add("Candidate/Inclusive/hPhotonPointingAngle", "hPhotonPointingAngle", kTH1F, {axisPhotonOpeningAngle});
     histos.add("Candidate/Inclusive/hPhotonDcaToPV", "hPhotonDcaToPV", kTH1F, {axisCandPhotonDcaToPV});
 
-    if (doprocessMc || doprocessFindable) {
+    const bool doMc = doprocessMc || doprocessMcCustomVertexer;
+    if (doMc || doprocessFindable) {
       histos.addClone("Photon/Inclusive/", "Photon/True/");
     }
-    if (doprocessMc) {
+    if (doMc) {
       histos.addClone("Proton/Inclusive/", "Proton/True/");
       histos.addClone("Candidate/Inclusive/", "Candidate/True/");
     }
@@ -394,7 +397,7 @@ struct Sigmaplusbuilder {
     histos.add("Photon/Inclusive/hTpcTimeRangeNColl", "hTpcTimeRangeNColl", kTH1F, {axisTpcTimeRangeNColl});
     histos.add("Candidate/Inclusive/hCandidatesPerPhoton", "hCandidatesPerPhoton", kTH1F, {axisCandidatesPerPhoton});
 
-    if (doprocessMc) {
+    if (doMc) {
       histos.add("MC/hGenSigmaPlusPt", "MC/hGenSigmaPlusPt", kTH1F, {axisSigmaPt});
       setBinLabels(histos.add<TH1>("MC/hSigmaPlusCounter", "MC/hSigmaPlusCounter", kTH1D, {axisSigmaSel})->GetXaxis(), sigmaSteps);
     }
@@ -701,8 +704,11 @@ struct Sigmaplusbuilder {
     return TrackCand{.Idxtr = static_cast<int>(track.globalIndex()), .collBracket = {firstCollIdx, lastCollIdx}};
   }
 
-  // electron-positron pairs with |theta+ - theta-| <= photonMaxDeltaTheta that share at least one collision (theta should be similar)
-  std::vector<SVCand> findPairsByPolarAngle(const std::vector<float>& thetaOfTrack, int nCollisions)
+  // Finds electron-positron pairs with similar polar angles (|theta+ - theta-| <= photonMaxDeltaTheta) that are compatible with
+  // at least one common collision. Only pairs accepted by acceptPair (the cut before the fit) are returned.
+  // nPairsInWindow counts all pairs in the theta window, also the ones acceptPair rejects.
+  template <typename TAccept>
+  std::vector<SVCand> findPairsByPolarAngle(const std::vector<float>& thetaOfTrack, int nCollisions, const TAccept& acceptPair, uint64_t& nPairsInWindow)
   {
     // electrons of each collision sorted by polar angle, so a positron only looks at those inside its theta window
     std::vector<std::vector<std::pair<float, int>>> electronsByCollision(nCollisions);
@@ -732,6 +738,10 @@ struct Sigmaplusbuilder {
           }
           lastPositronPaired[iElectron] = iPositron;
           const auto& electron = mElectronPool[iElectron];
+          ++nPairsInWindow;
+          if (!acceptPair(electron.Idxtr, positron.Idxtr)) {
+            continue;
+          }
           pairs.push_back(SVCand{.tr0Idx = electron.Idxtr, .tr1Idx = positron.Idxtr, .collBracket = electron.collBracket.getOverlap(positron.collBracket)});
         }
       }
@@ -739,22 +749,12 @@ struct Sigmaplusbuilder {
     return pairs;
   }
 
-  // cuts before the fit (similar polar angles, and the circles of the two tracks in xy touching at the conversion point)
-  template <typename TTrack>
-  bool passesPreFitCuts(const TTrack& posTrack, const TTrack& negTrack, float deltaTheta, bool isSignal)
+  // Cut before the fit: in the transverse plane the circles of the two daughter tracks must touch at the conversion point.
+  // The circles are computed once per track. Similar polar angles are already required by the pairing.
+  bool passesCircleTouch(const o2::math_utils::CircleXYf_t& posCircle, const o2::math_utils::CircleXYf_t& negCircle) const
   {
-    fillPhotonHist(HIST("hDeltaTheta"), isSignal, deltaTheta);
-    if (std::abs(deltaTheta) > photonMaxDeltaTheta) {
-      return false;
-    }
-    float sna = 0.f;
-    float csa = 0.f;
-    o2::math_utils::CircleXYf_t posCircle;
-    o2::math_utils::CircleXYf_t negCircle;
-    getTrackParCov(posTrack).getCircleParams(mBz, posCircle, sna, csa);
-    getTrackParCov(negTrack).getCircleParams(mBz, negCircle, sna, csa);
     float circleTouchDist = std::abs(std::hypot(posCircle.xC - negCircle.xC, posCircle.yC - negCircle.yC) - (posCircle.rC + negCircle.rC));
-    return circleTouchDist <= photonMaxCircleTouchDist;
+    return circleTouchDist <= photonMaxCircleTouchDist.value;
   }
 
   static constexpr int LastDaughterCutStep = 4;
@@ -785,10 +785,24 @@ struct Sigmaplusbuilder {
     negTrackParCov.setPID(o2::track::PID::Electron);
 
     // photon fit settings, reset afterwards since the fitter is shared with the Sigma+ vertex fit
-    fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrLUT);
     fitter.setMaxDXYIni(photonMaxDXYIni);
     fitter.setCollinear(collinear);
     int nCand = 0;
+    if (photonPrefitWithoutMatCorr) {
+      // Quick fit without material correction. Pairs that are clearly too far apart are rejected before the full fit.
+      fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE);
+      try {
+        nCand = fitter.process(posTrackParCov, negTrackParCov);
+      } catch (...) {
+        nCand = 0;
+      }
+      if (nCand == 0 || std::sqrt(fitter.getChi2AtPCACandidate()) > photonPrefitMaxDca) {
+        fitter.setMaxDXYIni(1e9);
+        fitter.setCollinear(false);
+        return false;
+      }
+    }
+    fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrLUT);
     try {
       nCand = fitter.process(posTrackParCov, negTrackParCov);
     } catch (...) {
@@ -832,8 +846,9 @@ struct Sigmaplusbuilder {
 
     // select the daughter tracks and find the collisions each is compatible with
     std::vector<float> thetaOfTrack(tracks.size(), 0.f);
-    std::vector<int> mcPhotonOfTrack(tracks.size(), -1); // MC: Sigma+ photon the track comes from
-    std::vector<int> mcSigmaOfTrack(tracks.size(), -1);  // MC: Sigma+ the track comes from
+    std::vector<int> mcPhotonOfTrack(tracks.size(), -1);                   // MC: Sigma+ photon the track comes from
+    std::vector<int> mcSigmaOfTrack(tracks.size(), -1);                    // MC: Sigma+ the track comes from
+    std::vector<o2::math_utils::CircleXYf_t> circleOfTrack(tracks.size()); // xy circle of each selected daughter, for the pre-fit cut
     for (const auto& track : tracks) {
       int mcPhoton = -1;
       int mcSigma = -1;
@@ -846,6 +861,9 @@ struct Sigmaplusbuilder {
         continue;
       }
       thetaOfTrack[track.globalIndex()] = 2.f * std::atan(std::exp(-track.eta()));
+      float sna = 0.f;
+      float csa = 0.f;
+      getTrackParCov(track).getCircleParams(mBz, circleOfTrack[track.globalIndex()], sna, csa);
       mcPhotonOfTrack[track.globalIndex()] = mcPhoton;
       mcSigmaOfTrack[track.globalIndex()] = mcSigma;
 
@@ -870,27 +888,36 @@ struct Sigmaplusbuilder {
     mElectronPool.insert(mElectronPool.end(), timeMatchedPools[1].begin(), timeMatchedPools[1].end());
     mPositronPool.insert(mPositronPool.end(), timeMatchedPools[2].begin(), timeMatchedPools[2].end());
 
-    auto pairs = findPairsByPolarAngle(thetaOfTrack, collisions.size());
+    // MC: Sigma+ of a pair whose two tracks come from the same Sigma+ photon, -1 otherwise
+    auto sigmaOfPair = [&](int electronIdx, int positronIdx) {
+      if constexpr (IsMC) {
+        if (mcPhotonOfTrack[electronIdx] >= 0 && mcPhotonOfTrack[electronIdx] == mcPhotonOfTrack[positronIdx]) {
+          return mcSigmaOfTrack[electronIdx];
+        }
+      }
+      return -1;
+    };
+    uint64_t nTruePairs = 0;
+    uint64_t nPairsInWindow = 0;
+    auto acceptPair = [&](int electronIdx, int positronIdx) {
+      bool isSignal = sigmaOfPair(electronIdx, positronIdx) >= 0;
+      if (isSignal) {
+        nTruePairs++;
+      }
+      fillPhotonHist(HIST("hDeltaTheta"), isSignal, thetaOfTrack[positronIdx] - thetaOfTrack[electronIdx]);
+      return passesCircleTouch(circleOfTrack[positronIdx], circleOfTrack[electronIdx]);
+    };
+    auto pairs = findPairsByPolarAngle(thetaOfTrack, collisions.size(), acceptPair, nPairsInWindow);
 
     // fit and select each pair in every good collision it is compatible with
-    uint64_t nTruePairs = 0;
     for (const auto& pair : pairs) {
       int electronIdx = pair.tr0Idx;
       int positronIdx = pair.tr1Idx;
-      int sigmaId = -1;
-      if constexpr (IsMC) {
-        if (mcPhotonOfTrack[electronIdx] >= 0 && mcPhotonOfTrack[electronIdx] == mcPhotonOfTrack[positronIdx]) {
-          sigmaId = mcSigmaOfTrack[electronIdx];
-          nTruePairs++;
-        }
-      }
+      int sigmaId = sigmaOfPair(electronIdx, positronIdx);
       bool isSignal = sigmaId >= 0;
 
       auto negTrack = tracks.rawIteratorAt(electronIdx);
       auto posTrack = tracks.rawIteratorAt(positronIdx);
-      if (!passesPreFitCuts(posTrack, negTrack, thetaOfTrack[positronIdx] - thetaOfTrack[electronIdx], isSignal)) {
-        continue;
-      }
 
       // both daughters with only a TPC time on the same TPC side: moving to another collision shifts both by the same z,
       // so the pair is fitted once and the vertex is only shifted in z for the other collisions
@@ -1014,9 +1041,9 @@ struct Sigmaplusbuilder {
       }
     }
 
-    // steps 0-4 are the daughter-track cuts applied before the pairing, so they count all pairs
+    // steps 0-4 are the daughter-track cuts applied before the pairing, so they count all pairs in the theta window
     for (int step = 0; step <= LastDaughterCutStep; ++step) {
-      histos.fill(HIST("Photon/Inclusive/hSelectionCounter"), step, static_cast<double>(pairs.size()));
+      histos.fill(HIST("Photon/Inclusive/hSelectionCounter"), step, static_cast<double>(nPairsInWindow));
       if constexpr (IsMC) {
         histos.fill(HIST("Photon/True/hSelectionCounter"), step, static_cast<double>(nTruePairs));
       }
@@ -1785,53 +1812,9 @@ struct Sigmaplusbuilder {
     LOG(info) << "Task initialized for run " << mRunNumber << " with magnetic field " << mBz << " kZG";
   }
 
-  void processData(CollisionsFull const& collisions, aod::V0Datas const& v0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiguousTracks, aod::BCsWithTimestamps const& bcs)
-  {
-    markGoodCollisions(collisions);
-    std::vector<std::vector<PhotonCand<TracksFull::iterator>>> photonsByCollision;
-    if (useCustomVertexer && collisions.size() > 0) {
-      auto firstBC = collisions.begin().bc_as<aod::BCsWithTimestamps>();
-      initCCDB(firstBC);
-      mVDriftMgr.update(firstBC.timestamp());
-      photonsByCollision = findPhotonsSelfPaired<false>(collisions, tracks, ambiguousTracks, bcs);
-    }
-
-    for (const auto& collision : collisions) {
-      if (std::abs(collision.posZ()) > cutZVertex || !collision.sel8()) {
-        continue;
-      }
-      initCCDB(collision.bc_as<aod::BCsWithTimestamps>());
-      histos.fill(HIST("hVertexZ"), collision.posZ());
-      std::array<float, 3> pv{collision.posX(), collision.posY(), collision.posZ()};
-
-      auto tracksThisCollision = tracks.sliceBy(tracksPerCollision, collision.globalIndex());
-
-      std::vector<PhotonCand<TracksFull::iterator>> acceptedPhotons;
-      if (useCustomVertexer) {
-        acceptedPhotons = photonsByCollision[collision.globalIndex()];
-      } else {
-        auto v0sThisCollision = v0s.sliceBy(v0PerCollision, collision.globalIndex());
-        acceptedPhotons = findPhotonsFromV0s<false>(v0sThisCollision, tracksThisCollision, pv);
-      }
-
-      std::vector<TracksFull::iterator> acceptedProtons;
-      for (const auto& track : tracksThisCollision) {
-        if (selectProton<false>(track)) {
-          acceptedProtons.push_back(track);
-        }
-      }
-
-      for (const auto& photon : acceptedPhotons) {
-        for (const auto& proton : acceptedProtons) {
-          buildSigmaPlusCandidate<false>(proton, photon, collision.globalIndex(), pv);
-        }
-      }
-    }
-    deduplicateAndWriteCandidates<false>();
-  }
-  PROCESS_SWITCH(Sigmaplusbuilder, processData, "Process data", true);
-
-  void processMc(CollisionsFullMC const& collisions, aod::V0Datas const& v0s, TracksFullMC const& tracks, aod::AmbiguousTracks const& ambiguousTracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles, aod::McCollisions const&)
+  // MC: generated Sigma+ -> p pi0 in acceptance and reconstructed daughters, for the Sigma+ counter
+  template <typename TTracks>
+  void countGeneratedMc(TTracks const& tracks, aod::McParticles const& mcParticles)
   {
     // generated Sigma+ -> p pi0 in acceptance
     mGenSigmaWritten.clear();
@@ -1870,53 +1853,11 @@ struct Sigmaplusbuilder {
         fillSigmaCounter(legs.first, 3);
       }
     }
+  }
 
-    markGoodCollisions(collisions);
-    std::vector<std::vector<PhotonCand<TracksFullMC::iterator>>> photonsByCollision;
-    if (useCustomVertexer && collisions.size() > 0) {
-      auto firstBC = collisions.begin().bc_as<aod::BCsWithTimestamps>();
-      initCCDB(firstBC);
-      mVDriftMgr.update(firstBC.timestamp());
-      photonsByCollision = findPhotonsSelfPaired<true>(collisions, tracks, ambiguousTracks, bcs);
-    }
-
-    for (const auto& collision : collisions) {
-      if (std::abs(collision.posZ()) > cutZVertex || !collision.sel8()) {
-        continue;
-      }
-      initCCDB(collision.bc_as<aod::BCsWithTimestamps>());
-      histos.fill(HIST("hVertexZ"), collision.posZ());
-      std::array<float, 3> pv{collision.posX(), collision.posY(), collision.posZ()};
-
-      auto tracksThisCollision = tracks.sliceBy(tracksPerCollisionMC, collision.globalIndex());
-
-      std::vector<PhotonCand<TracksFullMC::iterator>> acceptedPhotons;
-      if (useCustomVertexer) {
-        acceptedPhotons = photonsByCollision[collision.globalIndex()];
-      } else {
-        auto v0sThisCollision = v0s.sliceBy(v0PerCollision, collision.globalIndex());
-        acceptedPhotons = findPhotonsFromV0s<true>(v0sThisCollision, tracksThisCollision, pv);
-      }
-
-      std::vector<TracksFullMC::iterator> acceptedProtons;
-      for (const auto& track : tracksThisCollision) {
-        if (selectProton<true>(track)) {
-          acceptedProtons.push_back(track);
-          if (track.has_mcParticle()) {
-            fillSigmaCounter(findSigmaPlusMotherOfProton(track.template mcParticle_as<aod::McParticles>()), 2);
-          }
-        }
-      }
-
-      for (const auto& photon : acceptedPhotons) {
-        for (const auto& proton : acceptedProtons) {
-          buildSigmaPlusCandidate<true>(proton, photon, collision.globalIndex(), pv);
-        }
-      }
-    }
-    deduplicateAndWriteCandidates<true>();
-
-    // a table row with the true values for each generated Sigma+ in acceptance without a written candidate
+  // MC: a table row with the true values for each generated Sigma+ in acceptance without a written candidate
+  void writeGeneratedOnlyMc(aod::McParticles const& mcParticles)
+  {
     for (const auto& mcPart : mcParticles) {
       auto genIt = mGenSigmaWritten.find(mcPart.globalIndex());
       if (genIt == mGenSigmaWritten.end() || genIt->second) {
@@ -1988,7 +1929,96 @@ struct Sigmaplusbuilder {
                        genDecayRadiusMC, genMassMC);
     }
   }
-  PROCESS_SWITCH(Sigmaplusbuilder, processMc, "Process MC", false);
+
+  // Collision loop shared by all process functions. With UseV0Datas the photons come from V0Datas, otherwise from pairing
+  // the daughter tracks in this task.
+  template <bool IsMC, bool UseV0Datas, typename TCollisions, typename TV0s, typename TTracks>
+  void runCollisions(TCollisions const& collisions, TV0s const& v0s, TTracks const& tracks, aod::AmbiguousTracks const& ambiguousTracks, aod::BCsWithTimestamps const& bcs)
+  {
+    using TTrack = typename TTracks::iterator;
+    markGoodCollisions(collisions);
+    std::vector<std::vector<PhotonCand<TTrack>>> photonsByCollision;
+    if constexpr (!UseV0Datas) {
+      if (collisions.size() > 0) {
+        auto firstBC = collisions.begin().template bc_as<aod::BCsWithTimestamps>();
+        initCCDB(firstBC);
+        mVDriftMgr.update(firstBC.timestamp());
+        photonsByCollision = findPhotonsSelfPaired<IsMC>(collisions, tracks, ambiguousTracks, bcs);
+      }
+    }
+
+    for (const auto& collision : collisions) {
+      if (std::abs(collision.posZ()) > cutZVertex || !collision.sel8()) {
+        continue;
+      }
+      initCCDB(collision.template bc_as<aod::BCsWithTimestamps>());
+      histos.fill(HIST("hVertexZ"), collision.posZ());
+      std::array<float, 3> pv{collision.posX(), collision.posY(), collision.posZ()};
+
+      auto tracksThisCollision = [&]() {
+        if constexpr (IsMC) {
+          return tracks.sliceBy(tracksPerCollisionMC, collision.globalIndex());
+        } else {
+          return tracks.sliceBy(tracksPerCollision, collision.globalIndex());
+        }
+      }();
+
+      std::vector<PhotonCand<TTrack>> acceptedPhotons;
+      if constexpr (UseV0Datas) {
+        auto v0sThisCollision = v0s.sliceBy(v0PerCollision, collision.globalIndex());
+        acceptedPhotons = findPhotonsFromV0s<IsMC>(v0sThisCollision, tracksThisCollision, pv);
+      } else {
+        acceptedPhotons = photonsByCollision[collision.globalIndex()];
+      }
+
+      std::vector<TTrack> acceptedProtons;
+      for (const auto& track : tracksThisCollision) {
+        if (selectProton<IsMC>(track)) {
+          acceptedProtons.push_back(track);
+          if constexpr (IsMC) {
+            if (track.has_mcParticle()) {
+              fillSigmaCounter(findSigmaPlusMotherOfProton(track.template mcParticle_as<aod::McParticles>()), 2);
+            }
+          }
+        }
+      }
+
+      for (const auto& photon : acceptedPhotons) {
+        for (const auto& proton : acceptedProtons) {
+          buildSigmaPlusCandidate<IsMC>(proton, photon, collision.globalIndex(), pv);
+        }
+      }
+    }
+    deduplicateAndWriteCandidates<IsMC>();
+  }
+
+  void processData(CollisionsFull const& collisions, aod::V0Datas const& v0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiguousTracks, aod::BCsWithTimestamps const& bcs)
+  {
+    runCollisions<false, true>(collisions, v0s, tracks, ambiguousTracks, bcs);
+  }
+  PROCESS_SWITCH(Sigmaplusbuilder, processData, "Process data, photons from V0Datas", false);
+
+  void processDataCustomVertexer(CollisionsFull const& collisions, TracksFull const& tracks, aod::AmbiguousTracks const& ambiguousTracks, aod::BCsWithTimestamps const& bcs)
+  {
+    runCollisions<false, false>(collisions, nullptr, tracks, ambiguousTracks, bcs);
+  }
+  PROCESS_SWITCH(Sigmaplusbuilder, processDataCustomVertexer, "Process data, photons from pairing the daughter tracks in this task (no V0Datas)", true);
+
+  void processMc(CollisionsFullMC const& collisions, aod::V0Datas const& v0s, TracksFullMC const& tracks, aod::AmbiguousTracks const& ambiguousTracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles, aod::McCollisions const&)
+  {
+    countGeneratedMc(tracks, mcParticles);
+    runCollisions<true, true>(collisions, v0s, tracks, ambiguousTracks, bcs);
+    writeGeneratedOnlyMc(mcParticles);
+  }
+  PROCESS_SWITCH(Sigmaplusbuilder, processMc, "Process MC, photons from V0Datas", false);
+
+  void processMcCustomVertexer(CollisionsFullMC const& collisions, TracksFullMC const& tracks, aod::AmbiguousTracks const& ambiguousTracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles, aod::McCollisions const&)
+  {
+    countGeneratedMc(tracks, mcParticles);
+    runCollisions<true, false>(collisions, nullptr, tracks, ambiguousTracks, bcs);
+    writeGeneratedOnlyMc(mcParticles);
+  }
+  PROCESS_SWITCH(Sigmaplusbuilder, processMcCustomVertexer, "Process MC, photons from pairing the daughter tracks in this task (no V0Datas)", false);
 
   void processFindable(CollisionsFullMC const& collisions, aod::V0Datas const& v0s, TracksFullMC const& tracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
   {

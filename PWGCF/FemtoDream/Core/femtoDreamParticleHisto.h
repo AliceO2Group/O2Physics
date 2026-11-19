@@ -236,8 +236,10 @@ class FemtoDreamParticleHisto
         if (std::abs(mPDG) == kKPlus) {
           mHistogramRegistry->add((folderName + folderSuffix + "/Debug/hPDGmother_SecondaryFromHF").c_str(), "; PDG mother; Entries", o2::framework::HistType::kTH1I, {{12001, -6000.5, 6000.5}});
           mHistogramRegistry->add((folderName + folderSuffix + "/Debug/hPDGmother_SecondaryFromLF").c_str(), "; PDG mother; Entries", o2::framework::HistType::kTH1I, {{12001, -6000.5, 6000.5}});
+          mHistogramRegistry->add((folderName + folderSuffix + "/Debug/hPDGmother_SecondaryFromPhi").c_str(), "; PDG mother; Entries", o2::framework::HistType::kTH1I, {{12001, -6000.5, 6000.5}});
           mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_SecondaryFromHF").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTHnSparseF, {tempFitVarpTAxis, tempFitVarAxis, dcazAxis, multAxis});
           mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_SecondaryFromLF").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTHnSparseF, {tempFitVarpTAxis, tempFitVarAxis, dcazAxis, multAxis});
+          mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_SecondaryFromPhi").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTHnSparseF, {tempFitVarpTAxis, tempFitVarAxis, dcazAxis, multAxis});
         }
 
         mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_Primary").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTHnSparseF, {tempFitVarpTAxis, tempFitVarAxis, dcazAxis, multAxis});
@@ -254,6 +256,7 @@ class FemtoDreamParticleHisto
         if (std::abs(mPDG) == kKPlus) {
           mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_SecondaryFromHF").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
           mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_SecondaryFromLF").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
+          mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_SecondaryFromPhi").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
         }
         mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_Secondary").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hDCAxy_Material").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
@@ -274,6 +277,9 @@ class FemtoDreamParticleHisto
         mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_WrongCollision").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTHnSparseF, {tempFitVarpTAxis, tempFitVarAxis, multAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_Fake").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTHnSparseF, {tempFitVarpTAxis, tempFitVarAxis, multAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_Else").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTHnSparseF, {tempFitVarpTAxis, tempFitVarAxis, multAxis});
+        mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_SecondaryFromHF").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTHnSparseF, {tempFitVarpTAxis, tempFitVarAxis, multAxis});
+        mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_SecondaryFromLF").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTHnSparseF, {tempFitVarpTAxis, tempFitVarAxis, multAxis});
+        mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_SecondaryFromPhi").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTHnSparseF, {tempFitVarpTAxis, tempFitVarAxis, multAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_Secondary_SIGMA0").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTHnSparseF, {tempFitVarpTAxis, tempFitVarAxis, multAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_Secondary_XIMinus").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTHnSparseF, {tempFitVarpTAxis, tempFitVarAxis, multAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_Secondary_XI0").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTHnSparseF, {tempFitVarpTAxis, tempFitVarAxis, multAxis});
@@ -284,6 +290,9 @@ class FemtoDreamParticleHisto
         mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_WrongCollision").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_Fake").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_Else").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
+        mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_SecondaryFromHF").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
+        mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_SecondaryFromLF").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
+        mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_SecondaryFromPhi").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_Secondary_SIGMA0").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_Secondary_XIMinus").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
         mHistogramRegistry->add((folderName + folderSuffix + "/hCPA_Secondary_XI0").c_str(), "; #it{p}_{T} (GeV/#it{c}); CPA", o2::framework::HistType::kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
@@ -617,6 +626,11 @@ class FemtoDreamParticleHisto
               mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hDCAxy_SecondaryFromLF"),
                                        part.pt(), part.tempFitVar(), part.dcaZ(), mult);
               break;
+            case (o2::aod::femtodreamMCparticle::kSecondaryFromPhi):
+              mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/Debug/hPDGmother_SecondaryFromPhi"), part.fdExtMCParticle().motherPDG());
+              mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hDCAxy_SecondaryFromPhi"),
+                                       part.pt(), part.tempFitVar(), part.dcaZ(), mult);
+              break;
             case (o2::aod::femtodreamMCparticle::kMaterial):
               mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/Debug/hPDGmother_Material"), part.fdExtMCParticle().motherPDG());
               mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hDCAxy_Material"),
@@ -671,6 +685,10 @@ class FemtoDreamParticleHisto
               break;
             case (o2::aod::femtodreamMCparticle::kSecondaryFromLF):
               mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hDCAxy_SecondaryFromLF"),
+                                       part.pt(), part.tempFitVar());
+              break;
+            case (o2::aod::femtodreamMCparticle::kSecondaryFromPhi):
+              mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hDCAxy_SecondaryFromPhi"),
                                        part.pt(), part.tempFitVar());
               break;
             case (o2::aod::femtodreamMCparticle::kMaterial):
@@ -745,6 +763,18 @@ class FemtoDreamParticleHisto
               mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hCPA_Secondary_XI0"),
                                        part.pt(), part.tempFitVar(), mult);
               break;
+            case (o2::aod::femtodreamMCparticle::kSecondaryFromHF):
+              mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hCPA_SecondaryFromHF"),
+                                       part.pt(), part.tempFitVar(), mult);
+              break;
+            case (o2::aod::femtodreamMCparticle::kSecondaryFromLF):
+              mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hCPA_SecondaryFromLF"),
+                                       part.pt(), part.tempFitVar(), mult);
+              break;
+            case (o2::aod::femtodreamMCparticle::kSecondaryFromPhi):
+              mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hCPA_SecondaryFromPhi"),
+                                       part.pt(), part.tempFitVar(), mult);
+              break;
             default:
               LOG(fatal) << "femtodreamparticleMC: not known value for ParticleOriginMCTruth - please check. Quitting!";
           }
@@ -784,6 +814,18 @@ class FemtoDreamParticleHisto
               break;
             case (o2::aod::femtodreamMCparticle::kSecondaryDaughterXi0):
               mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hCPA_Secondary_XI0"),
+                                       part.pt(), part.tempFitVar());
+              break;
+            case (o2::aod::femtodreamMCparticle::kSecondaryFromHF):
+              mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hCPA_SecondaryFromHF"),
+                                       part.pt(), part.tempFitVar());
+              break;
+            case (o2::aod::femtodreamMCparticle::kSecondaryFromLF):
+              mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hCPA_SecondaryFromLF"),
+                                       part.pt(), part.tempFitVar());
+              break;
+            case (o2::aod::femtodreamMCparticle::kSecondaryFromPhi):
+              mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hCPA_SecondaryFromPhi"),
                                        part.pt(), part.tempFitVar());
               break;
             default:

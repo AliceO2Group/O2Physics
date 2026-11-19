@@ -270,11 +270,13 @@ struct FemtoProducer {
     }
     if ((builders.sigmaBuilder.fillAnyTable() || builders.sigmaPlusBuilder.fillAnyTable()) &&
         (!doprocessTracksKinksRun3pp && !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesKinksPhotonsRun3pp &&
-         !doprocessTracksKinksRun3ppMc && !doprocessTracksV0sKinksRun3ppMc)) {
+         !doprocessTracksKinksRun3ppMc && !doprocessTracksV0sKinksRun3ppMc &&
+         !doprocessTracksKinksSigmaPlusPcmsRun3pp && !doprocessTracksKinksSigmaPlusPcmsRun3ppMc)) {
       LOG(fatal) << "At least one kink table is enabled, but wrong process function is enabled. Breaking...";
     }
     if (builders.sigmaPlusPcmBuilder.fillAnyTable() &&
-        (!doprocessTracksSigmaPlusPcmsRun3pp && !doprocessTracksSigmaPlusPcmsRun3ppMc)) {
+        (!doprocessTracksSigmaPlusPcmsRun3pp && !doprocessTracksSigmaPlusPcmsRun3ppMc &&
+         !doprocessTracksKinksSigmaPlusPcmsRun3pp && !doprocessTracksKinksSigmaPlusPcmsRun3ppMc)) {
       LOG(fatal) << "At least one sigma plus (PCM) table is enabled, but wrong process function is enabled. Breaking...";
     }
     if ((builders.d0Builder.fillAnyTable() || builders.d0barBuilder.fillAnyTable()) &&
@@ -292,7 +294,7 @@ struct FemtoProducer {
          !doprocessTracksV0sRun3ppMc && !doprocessTracksV0sRun3PbPbMc &&
          !doprocessTracksV0sCascadesRun3ppMc && !doprocessTracksV0sCascadesRun3PbPbMc &&
          !doprocessTracksKinksRun3ppMc && !doprocessTracksV0sKinksRun3ppMc &&
-         !doprocessTracksSigmaPlusPcmsRun3ppMc &&
+         !doprocessTracksSigmaPlusPcmsRun3ppMc && !doprocessTracksKinksSigmaPlusPcmsRun3ppMc &&
          !doprocessTracksD0sRun3ppMc && !doprocessTracksD0sRun3PbPbMc &&
          !doprocessTracksLcsRun3ppMc && !doprocessTracksLcsRun3PbPbMc &&
          !doprocessMcOnly)) {
@@ -379,6 +381,7 @@ struct FemtoProducer {
       static_cast<int>(doprocessTracksV0sCascadesKinksRun3pp) +
       static_cast<int>(doprocessTracksV0sCascadesKinksPhotonsRun3pp) +
       static_cast<int>(doprocessTracksSigmaPlusPcmsRun3pp) +
+      static_cast<int>(doprocessTracksKinksSigmaPlusPcmsRun3pp) +
       static_cast<int>(doprocessTracksD0sRun3pp) +
       static_cast<int>(doprocessTracksD0sRun3PbPb) +
       static_cast<int>(doprocessTracksRun3ppMc) +
@@ -390,6 +393,7 @@ struct FemtoProducer {
       static_cast<int>(doprocessTracksKinksRun3ppMc) +
       static_cast<int>(doprocessTracksV0sKinksRun3ppMc) +
       static_cast<int>(doprocessTracksSigmaPlusPcmsRun3ppMc) +
+      static_cast<int>(doprocessTracksKinksSigmaPlusPcmsRun3ppMc) +
       static_cast<int>(doprocessTracksD0sRun3ppMc) +
       static_cast<int>(doprocessTracksD0sRun3PbPbMc) +
       static_cast<int>(doprocessTracksLcsRun3pp) +
@@ -833,6 +837,29 @@ struct FemtoProducer {
   }
   PROCESS_SWITCH(FemtoProducer, processTracksSigmaPlusPcmsRun3pp, "Provide tracks and sigma plus reconstructed with a PCM photon", false);
 
+  void processTracksKinksSigmaPlusPcmsRun3pp(rawinputs::Run3PpCollisions const& cols,
+                                             o2::aod::BCsWithTimestamps const& bcs,
+                                             rawinputs::Run3FullPidTracks const& tracks,
+                                             rawinputs::Run3Kinks const& kinks,
+                                             rawinputs::Run3SigmaPlusPcms const& sigmaPlusPcms)
+  {
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+      auto kinksThisCol = kinks.sliceBy(preslices.perColRecoKinks, col.globalIndex());
+      processKinks<modes::System::kPP_Run3>(col, tracksThisCol, kinksThisCol);
+      auto sigmaPlusPcmsThisCol = sigmaPlusPcms.sliceBy(preslices.perColSigmaPlusPcms, col.globalIndex());
+      processSigmaPlusPcms<modes::System::kPP_Run3>(col, tracksThisCol, sigmaPlusPcmsThisCol);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksKinksSigmaPlusPcmsRun3pp, "Provide tracks, kinks and sigma plus reconstructed with a PCM photon", false);
+
   void processTracksV0sCascadesKinksRun3pp(rawinputs::Run3PpCollisions const& cols,
                                            o2::aod::BCsWithTimestamps const& bcs,
                                            rawinputs::Run3FullPidTracks const& tracks,
@@ -1167,6 +1194,37 @@ struct FemtoProducer {
     }
   }
   PROCESS_SWITCH(FemtoProducer, processTracksSigmaPlusPcmsRun3ppMc, "Provide reconstructed and generated tracks and sigma plus reconstructed with a PCM photon", false);
+
+  void processTracksKinksSigmaPlusPcmsRun3ppMc(rawinputs::Run3PpMcGenCollisions const& mcCols,
+                                               rawinputs::Run3PpMcRecoCollisions const& cols,
+                                               o2::aod::BCsWithTimestamps const& bcs,
+                                               rawinputs::Run3McRecoTracks const& tracks,
+                                               rawinputs::Run3Kinks const& kinks,
+                                               rawinputs::Run3RecoSigmaPlusPcms const& sigmaPlusPcms,
+                                               rawinputs::Run3McGenParticles const& mcParticles)
+  {
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    if (builders.mcBuilder.isPassThrough()) {
+      builders.mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, preslices.perMcCollision, mcProducts);
+    }
+
+    for (const auto& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColRecoTracks, col.globalIndex());
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processMcTracks<modes::System::kPP_Run3_MC>(col, mcCols, tracksThisCol, tracksWithItsPid, mcParticles);
+
+      auto kinksThisCol = kinks.sliceBy(preslices.perColRecoKinks, col.globalIndex());
+      processMcKinks<modes::System::kPP_Run3_MC>(col, mcCols, tracks, kinksThisCol, mcParticles);
+      auto sigmaPlusPcmsThisCol = sigmaPlusPcms.sliceBy(preslices.perColRecoSigmaPlusPcms, col.globalIndex());
+      processMcSigmaPlusPcms<modes::System::kPP_Run3_MC>(col, mcCols, tracks, sigmaPlusPcmsThisCol, mcParticles);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksKinksSigmaPlusPcmsRun3ppMc, "Provide reconstructed and generated tracks, kinks and sigma plus reconstructed with a PCM photon", false);
 
   void processTracksV0sKinksRun3ppMc(rawinputs::Run3PpMcGenCollisions const& mcCols,
                                      rawinputs::Run3PpMcRecoCollisions const& cols,

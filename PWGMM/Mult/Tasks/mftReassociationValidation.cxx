@@ -971,7 +971,7 @@ struct MftReassociationValidation {
     grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(configTask.grpmagPath, bc.timestamp());
     o2::base::Propagator::initFieldFromGRP(grpmag);
 
-    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    o2::field::MagneticField* field = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     bZ = field->getBz(CcenterMFT);
 
     if (configTask.cfgApplyZShiftFromCCDB) {

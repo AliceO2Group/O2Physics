@@ -241,7 +241,7 @@ struct ResonancesGfwFlow {
   ConfigurableAxis axisParticles{"axisParticles", {3, 0, 3}, "axis for different hadrons"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
   using AodTracksWithoutBayes = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
@@ -921,8 +921,9 @@ struct ResonancesGfwFlow {
     return true;
   }
 
-  template <typename TTrack, typename vector, char... chars, typename TCollision>
-  void resurrectPhi(const TTrack& trackplus, const TTrack& trackminus, const TCollision& collision, vector plusdaug, vector minusdaug, vector mom, double plusmass, const ConstStr<chars...>& hist)
+  template <typename TTrack, typename vector, typename TName, typename TCollision>
+    requires is_const_str<TName>::value
+  void resurrectPhi(const TTrack& trackplus, const TTrack& trackminus, const TCollision& collision, vector plusdaug, vector minusdaug, vector mom, double plusmass, const TName& hist)
   {
     for (auto const& [partplus, partminus] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(trackplus, trackminus))) {
       histos.fill(HIST("hPhiCount"), 0.5);
@@ -981,8 +982,9 @@ struct ResonancesGfwFlow {
     return;
   }
 
-  template <typename TTrack, char... chars, typename TCollision>
-  void likeSignPhi(const TTrack& track, const TCollision& collision, double plusmass, const ConstStr<chars...>& hist)
+  template <typename TTrack, typename TName, typename TCollision>
+    requires is_const_str<TName>::value
+  void likeSignPhi(const TTrack& track, const TCollision& collision, double plusmass, const TName& hist)
   {
     ROOT::Math::PxPyPzMVector daug1, daug2, mom;
     for (auto const& [part1, part2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(track, track))) {

@@ -72,6 +72,17 @@ DECLARE_SOA_TABLE(BinnedGenPts, "AOD", "BINNEDGENPT", // To be joined with EMMCE
 );
 using BinnedGenPt = BinnedGenPts::iterator;
 
+namespace emmcbinnedgendalitz
+{
+DECLARE_SOA_COLUMN(GeneratedPi0Dalitz, generatedPi0Dalitz, std::vector<uint16_t>); //! pi0 -> e+e-gamma binned generated data (pT, |y|, m_ee)
+DECLARE_SOA_COLUMN(GeneratedEtaDalitz, generatedEtaDalitz, std::vector<uint16_t>); //! eta -> e+e-gamma binned generated data (pT, |y|, m_ee)
+} // namespace emmcbinnedgendalitz
+
+DECLARE_SOA_TABLE(BinnedGenDalitzs, "AOD", "BINNEDGENDAL", // To be joined with EMMCEvents table at analysis level.
+                  emmcbinnedgendalitz::GeneratedPi0Dalitz,
+                  emmcbinnedgendalitz::GeneratedEtaDalitz);
+using BinnedGenDalitz = BinnedGenDalitzs::iterator;
+
 // DECLARE_SOA_TABLE(BinnedGenPtAccs, "AOD", "BINNEDGENPTACC", // To be joined with EMMCEvents table at analysis level.
 //                   emmcbinnedgen::GeneratedPi0_Acc_gg,
 //                   emmcbinnedgen::GeneratedPi0_Acc_eeg,
@@ -606,6 +617,10 @@ DECLARE_SOA_COLUMN(RunNumber, runNumber, int);                 //! run of the so
 DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);            //! CCDB timestamp of the source collision (builder run 2 on derived data: no BCs)
 DECLARE_SOA_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, int); //! PV contributors with |eta| < 1 of the source collision
 DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);                 //! FT0A + FT0C amplitude of the source collision
+DECLARE_SOA_COLUMN(PartnerDz, partnerDz, float);               //! mixed: z_vtx(partner) - z_vtx(current) (cm); N-photon mixing: mean |difference| over the N partners; same event: 0
+DECLARE_SOA_COLUMN(PartnerDCent, partnerDCent, float);         //! as PartnerDz for the centrality (%)
+DECLARE_SOA_COLUMN(PartnerDOcc, partnerDOcc, float);           //! as PartnerDz for the occupancy
+DECLARE_SOA_COLUMN(PartnerDt, partnerDt, float);               //! as PartnerDz for the time, |timestamp(partner) - timestamp(current)| (s)
 } // namespace pcmmixcol
 DECLARE_SOA_TABLE(PCMMixCollisions, "AOD", "PCMMIXCOL", //!
                   o2::soa::Index<>, collision::PosX, collision::PosY, collision::PosZ,
@@ -614,7 +629,8 @@ DECLARE_SOA_TABLE(PCMMixCollisions, "AOD", "PCMMIXCOL", //!
                   pcmmixcol::CentFT0M, pcmmixcol::CentFT0A, pcmmixcol::CentFT0C,
                   pcmmixcol::IsMixed, pcmmixcol::SourceCollisionId, pcmmixcol::SourceEventUid,
                   pcmmixcol::ZBin, pcmmixcol::OccBin, pcmmixcol::Occupancy, pcmmixcol::FirstLeg, pcmmixcol::NLegs,
-                  pcmmixcol::RunNumber, pcmmixcol::MultNTracksPVeta1, pcmmixcol::MultFT0M, pcmmixcol::Timestamp);
+                  pcmmixcol::RunNumber, pcmmixcol::MultNTracksPVeta1, pcmmixcol::MultFT0M, pcmmixcol::Timestamp,
+                  pcmmixcol::PartnerDz, pcmmixcol::PartnerDCent, pcmmixcol::PartnerDOcc, pcmmixcol::PartnerDt);
 using PCMMixCollision = PCMMixCollisions::iterator;
 
 namespace pcmmixleg
@@ -657,6 +673,9 @@ DECLARE_SOA_COLUMN(SourcePvCovYZ, sourcePvCovYZ, float);          //!
 DECLARE_SOA_COLUMN(SourcePvCovZZ, sourcePvCovZZ, float);          //!
 DECLARE_SOA_COLUMN(SourcePvChi2, sourcePvChi2, float);            //!
 DECLARE_SOA_COLUMN(SourcePvNContrib, sourcePvNContrib, uint16_t); //!
+DECLARE_SOA_COLUMN(AlignDx, alignDx, float);                      //!
+DECLARE_SOA_COLUMN(AlignDy, alignDy, float);                      //!
+DECLARE_SOA_COLUMN(AlignDz, alignDz, float);                      //!
 DECLARE_SOA_COLUMN(OrigTrackId, origTrackId, int);                //! AO2D track (DF of the source event)
 DECLARE_SOA_COLUMN(McParticleId, mcParticleId, int);              //! MC: particle of the leg (DF of the source event), -1 without
 DECLARE_SOA_COLUMN(McMotherId, mcMotherId, int);                  //! MC: first mother (DF of the source event), -1 without
@@ -691,6 +710,7 @@ DECLARE_SOA_TABLE(PCMMixLegs, "AOD", "PCMMIXLEG", //!
                   pcmmixleg::SourcePx, pcmmixleg::SourcePy, pcmmixleg::SourcePz, pcmmixleg::SourceVx, pcmmixleg::SourceVy, pcmmixleg::SourceVz,
                   pcmmixleg::SourcePvX, pcmmixleg::SourcePvY, pcmmixleg::SourcePvZ, pcmmixleg::SourcePvCovXX, pcmmixleg::SourcePvCovXY, pcmmixleg::SourcePvCovXZ,
                   pcmmixleg::SourcePvCovYY, pcmmixleg::SourcePvCovYZ, pcmmixleg::SourcePvCovZZ, pcmmixleg::SourcePvChi2, pcmmixleg::SourcePvNContrib,
+                  pcmmixleg::AlignDx, pcmmixleg::AlignDy, pcmmixleg::AlignDz,
                   pcmmixleg::OrigTrackId, pcmmixleg::McParticleId, pcmmixleg::McMotherId, pcmmixleg::McPdg, pcmmixleg::McMotherPdg,
                   pcmmixleg::McMotherPx, pcmmixleg::McMotherPy, pcmmixleg::McMotherPz, pcmmixleg::McGrandMotherId, pcmmixleg::McGrandMotherPdg, pcmmixleg::McAncestorId,
                   pcmmixleg::McGGMotherId, pcmmixleg::McGGMotherPdg, pcmmixleg::McRootId, pcmmixleg::McRootPdg, pcmmixleg::McRootDepth, pcmmixleg::McVx, pcmmixleg::McVy, pcmmixleg::McVz,
@@ -734,7 +754,8 @@ DECLARE_SOA_COLUMN(TrackIdDelta, trackIdDelta, int); //! AO2D track index minus 
 DECLARE_SOA_TABLE(PCMFreeLegIds, "AOD", "PCMFREELEGID", //! rows in increasing track order; track index = running sum of TrackIdDelta over the DF
                   o2::soa::Index<>, pcmfreeleg::CollisionId, pcmfreelegid::TrackIdDelta);
 using PCMFreeLegId = PCMFreeLegIds::iterator;
-DECLARE_SOA_TABLE(PCMFreeLegEMEventIds, "AOD", "PCMFREELEGEVID", pcmfreelegid::PMEventId); //! to be joined with PCMFreeLegIds
+DECLARE_SOA_TABLE(PCMFreeLegEMEventIds, "AOD", "PCMFREELEGEVID", pcmfreelegid::PMEventId);                        //! to be joined with PCMFreeLegIds
+DECLARE_SOA_TABLE(PCMFreeLegMCLabels, "AOD", "PCMFLMCLABEL", v0legmclabel::EMMCParticleId, v0legmclabel::McMask); //! MC label of a free leg (derived MC), to be joined with PCMFreeLegs
 
 // builder run 2 output (same columns as the run-1 tables; collisionId = PCMMixCollisions row, trackId = PCMMixLegs row,
 // v0Id >= 0: original pairing of run 1, -1: crossed pairing)

@@ -333,6 +333,19 @@ struct AssociatePhotonToEMEvent {
     }
   }
 
+  // free legs of run 1 with their parameters (PCMFreeLegs, self-contained derived data, donor events only)
+  void processPCMFreeLegsFull(aod::PMEvents const& collisions, aod::PCMFreeLegs const& freeLegs)
+  {
+    std::unordered_map<int, int> eventOf;
+    for (const auto& collision : collisions) {
+      eventOf[collision.collisionId()] = collision.globalIndex();
+    }
+    for (const auto& leg : freeLegs) {
+      const auto it = eventOf.find(leg.collisionId());
+      freelegeventid(it == eventOf.end() ? -1 : it->second);
+    }
+  }
+
   void processElectronFromDalitz(aod::PMEvents const& collisions, aod::EMPrimaryElectronsFromDalitz const& tracks)
   {
     fillEventId(collisions, tracks, prmeleventid, perCollisionEl);
@@ -357,6 +370,7 @@ struct AssociatePhotonToEMEvent {
 
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPCM, "process pcm-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPCMFreeLegs, "free legs of run 1 (PCMFreeLegIds) -> derived event index, for the mixer on linked derived data", false);
+  PROCESS_SWITCH(AssociatePhotonToEMEvent, processPCMFreeLegsFull, "free legs of run 1 with parameters (PCMFreeLegs) -> derived event index, for the mixer on self-contained derived data", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processElectronFromDalitz, "process dalitzee-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPHOS, "process phos-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processEMC, "process emc-event indexing", false);

@@ -53,11 +53,20 @@ using FemtoTracksWithMass = o2::soa::Join<FemtoTracks, o2::aod::FTrackMass>;
 // needs the upstream producer's TrackTables.produceItsPurity/produceTpcPurity/produceTofPurity/produceTrackDcas enabled
 using FemtoTracksWithFitVars = o2::soa::Join<FemtoTracks, o2::aod::FItsPurity, o2::aod::FTpcPurity, o2::aod::FTofPurity, o2::aod::FTrackDcas>;
 using FemtoLambdas = o2::soa::Join<o2::aod::FLambdas, o2::aod::FLambdaMasks>;
+// opt-in: carries the lambda's own fraction table through to the re-written output --
+// needs the upstream producer's V0Tables.produceLambdaFrac enabled
+using FemtoLambdasWithFitVars = o2::soa::Join<FemtoLambdas, o2::aod::FLambdaFrac>;
 using FemtoK0shorts = o2::soa::Join<o2::aod::FK0shorts, o2::aod::FK0shortMasks>;
 using FemtoRho0s = o2::soa::Join<o2::aod::FRho0s, o2::aod::FRho0Masks>;
 using FemtoPhis = o2::soa::Join<o2::aod::FPhis, o2::aod::FPhiMasks>;
 using FemtoXis = o2::soa::Join<o2::aod::FXis, o2::aod::FXiMasks>;
+// opt-in: carries the xi's own fraction table through to the re-written output --
+// needs the upstream producer's CascadeTables.produceXiFrac enabled
+using FemtoXisWithFitVars = o2::soa::Join<FemtoXis, o2::aod::FXiFrac>;
 using FemtoOmegas = o2::soa::Join<o2::aod::FOmegas, o2::aod::FOmegaMasks>;
+// opt-in: carries the omega's own fraction table through to the re-written output --
+// needs the upstream producer's CascadeTables.produceOmegaFrac enabled
+using FemtoOmegasWithFitVars = o2::soa::Join<FemtoOmegas, o2::aod::FOmegaFrac>;
 using FemtoSigma = o2::soa::Join<o2::aod::FSigmas, o2::aod::FSigmaMasks>;
 using FemtoSigmaPlus = o2::soa::Join<o2::aod::FSigmaPlus, o2::aod::FSigmaPlusMasks>;
 using FemtoSigmaPlusExtended = o2::soa::Join<FemtoSigmaPlus, o2::aod::FSigmaPlusExtras>;
@@ -65,6 +74,11 @@ using FemtoSigmaPlusPcm = o2::soa::Join<o2::aod::FSigmaPlusPcm, o2::aod::FSigmaP
 using FemtoSigmaPlusPcmExtended = o2::soa::Join<FemtoSigmaPlusPcm, o2::aod::FSigmaPlusPcmExtras>;
 
 using FemtoMcTracks = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
+// opt-in: carries the packed purity tables and FTrackDcas through to the re-written MC output --
+// needs the upstream producer's TrackTables.produceItsPurity/produceTpcPurity/produceTofPurity/produceTrackDcas enabled
+using FemtoMcTracksWithFitVars = o2::soa::Join<FemtoTracksWithFitVars, o2::aod::FTrackLabels>;
+using FemtoMcLambdas = o2::soa::Join<FemtoLambdasWithFitVars, o2::aod::FLambdaLabels>;
+using FemtoMcXis = o2::soa::Join<FemtoXisWithFitVars, o2::aod::FXiLabels>;
 using FemtoMcSigma = o2::soa::Join<FemtoSigma, o2::aod::FSigmaLabels>;
 using FemtoMcSigmaPlus = o2::soa::Join<FemtoSigmaPlus, o2::aod::FSigmaPlusLabels>;
 using FemtoMcSigmaPlusExtended = o2::soa::Join<FemtoSigmaPlusExtended, o2::aod::FSigmaPlusLabels>;
@@ -83,6 +97,7 @@ struct FemtoProducerDerivedToDerived {
     o2::framework::Preslice<femtotables::FemtoTracksWithMass> perColTracksWithMass = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoTracksWithFitVars> perColTracksWithFitVars = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoLambdas> perColLambdas = o2::aod::femtobase::stored::fColId;
+    o2::framework::Preslice<femtotables::FemtoLambdasWithFitVars> perColLambdasWithFitVars = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoK0shorts> perColK0shorts = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoRho0s> perColRho0s = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoPhis> perColPhis = o2::aod::femtobase::stored::fColId;
@@ -92,8 +107,13 @@ struct FemtoProducerDerivedToDerived {
     o2::framework::Preslice<femtotables::FemtoSigmaPlusPcm> perColSigmaPlusPcm = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoSigmaPlusPcmExtended> perColSigmaPlusPcmExtended = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoXis> perColXis = o2::aod::femtobase::stored::fColId;
+    o2::framework::Preslice<femtotables::FemtoXisWithFitVars> perColXisWithFitVars = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoOmegas> perColOmegas = o2::aod::femtobase::stored::fColId;
+    o2::framework::Preslice<femtotables::FemtoOmegasWithFitVars> perColOmegasWithFitVars = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoMcTracks> perColMcTracks = o2::aod::femtobase::stored::fColId;
+    o2::framework::Preslice<femtotables::FemtoMcTracksWithFitVars> perColMcTracksWithFitVars = o2::aod::femtobase::stored::fColId;
+    o2::framework::Preslice<femtotables::FemtoMcLambdas> perColMcLambdas = o2::aod::femtobase::stored::fColId;
+    o2::framework::Preslice<femtotables::FemtoMcXis> perColMcXis = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoMcSigma> perColMcSigma = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoMcSigmaPlus> perColMcSigmaPlus = o2::aod::femtobase::stored::fColId;
     o2::framework::Preslice<femtotables::FemtoMcSigmaPlusExtended> perColMcSigmaPlusExtended = o2::aod::femtobase::stored::fColId;
@@ -117,6 +137,7 @@ struct FemtoProducerDerivedToDerived {
   collisionbuilder::ConfCollisionSelection collisionSelection;
   o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   collisionbuilder::CollisionBuilderDerivedToDerivedProducts collisionBuilderProducts;
+  collisionbuilder::ConfCollisionDownsampling confCollisionDownsampling;
 
   // track builder
   trackbuilder::TrackBuilderDerivedToDerivedProducts trackBuilderProducts;
@@ -139,6 +160,7 @@ struct FemtoProducerDerivedToDerived {
 
   v0builder::ConfLambdaSelection1 lambdaSelection1;
   o2::framework::Partition<femtotables::FemtoLambdas> lambdaPartition = MAKE_LAMBDA_PARTITION(lambdaSelection1);
+  o2::framework::Partition<femtotables::FemtoLambdasWithFitVars> lambdaWithFitVarsPartition = MAKE_LAMBDA_PARTITION(lambdaSelection1);
 
   v0builder::ConfK0shortSelection1 k0shortSelection1;
   o2::framework::Partition<femtotables::FemtoK0shorts> k0shortPartition = MAKE_K0SHORT_PARTITION(k0shortSelection1);
@@ -174,9 +196,11 @@ struct FemtoProducerDerivedToDerived {
 
   cascadebuilder::ConfXiSelection xiSelection;
   o2::framework::Partition<femtotables::FemtoXis> xiPartition = MAKE_CASCADE_PARTITION(xiSelection);
+  o2::framework::Partition<femtotables::FemtoXisWithFitVars> xiWithFitVarsPartition = MAKE_CASCADE_PARTITION(xiSelection);
 
   cascadebuilder::ConfOmegaSelection omegaSelection;
   o2::framework::Partition<femtotables::FemtoOmegas> omegaPartition = MAKE_CASCADE_PARTITION(omegaSelection);
+  o2::framework::Partition<femtotables::FemtoOmegasWithFitVars> omegaWithFitVarsPartition = MAKE_CASCADE_PARTITION(omegaSelection);
 
   // mc builder
   mcbuilder::McBuilderDerivedToDerivedProducts mcBuilderProducts;
@@ -184,6 +208,12 @@ struct FemtoProducerDerivedToDerived {
 
   o2::framework::Partition<femtotables::FemtoMcTracks> mcTrackPartition1 = MAKE_TRACK_PARTITION(trackSelections1);
   o2::framework::Partition<femtotables::FemtoMcTracks> mcTrackPartition2 = MAKE_TRACK_PARTITION(trackSelections2);
+
+  o2::framework::Partition<femtotables::FemtoMcTracksWithFitVars> mcTrackWithFitVarsPartition1 = MAKE_TRACK_PARTITION(trackSelections1);
+  o2::framework::Partition<femtotables::FemtoMcTracksWithFitVars> mcTrackWithFitVarsPartition2 = MAKE_TRACK_PARTITION(trackSelections2);
+
+  o2::framework::Partition<femtotables::FemtoMcLambdas> mcLambdaPartition = MAKE_LAMBDA_PARTITION(lambdaSelection1);
+  o2::framework::Partition<femtotables::FemtoMcXis> mcXiPartition = MAKE_CASCADE_PARTITION(xiSelection);
 
   o2::framework::Partition<femtotables::FemtoMcSigma> mcSigmaPartition = MAKE_SIGMA_PARTITION(sigmaSelection1);
 
@@ -197,18 +227,20 @@ struct FemtoProducerDerivedToDerived {
   {
     const int activeProcesses =
       static_cast<int>(doprocessTracks) + static_cast<int>(doprocessTracksWithMass) + static_cast<int>(doprocessTracksWithFitVars) +
-      static_cast<int>(doprocessTracksLambdas) + static_cast<int>(doprocessTracksWithMassLambdas) + static_cast<int>(doprocessTracksWithFitVarsLambdas) +
+      static_cast<int>(doprocessTracksLambdas) + static_cast<int>(doprocessTracksWithMassLambdas) + static_cast<int>(doprocessTracksLambdasWithFitVars) +
       static_cast<int>(doprocessLambdas) +
-      static_cast<int>(doprocessTracksXis) + static_cast<int>(doprocessTracksWithFitVarsXis) +
-      static_cast<int>(doprocessTracksOmegas) + static_cast<int>(doprocessTracksWithFitVarsOmegas) +
-      static_cast<int>(doprocessTracksK0shorts) + static_cast<int>(doprocessTracksWithFitVarsK0shorts) + static_cast<int>(doprocessTracksSigma) +
+      static_cast<int>(doprocessTracksXis) + static_cast<int>(doprocessTracksXisWithFitVars) +
+      static_cast<int>(doprocessTracksOmegas) + static_cast<int>(doprocessTracksOmegasWithFitVars) +
+      static_cast<int>(doprocessTracksK0shorts) + static_cast<int>(doprocessTracksK0shortsWithFitVars) + static_cast<int>(doprocessTracksSigma) +
       static_cast<int>(doprocessTracksSigmaPlus) + static_cast<int>(doprocessTracksSigmaPlusExtended) +
       static_cast<int>(doprocessTracksSigmaPlusPcm) + static_cast<int>(doprocessTracksSigmaPlusPcmExtended) +
       static_cast<int>(doprocessTracksRho0) + static_cast<int>(doprocessTracksPhi) +
-      static_cast<int>(doprocessLambdasXis) +
-      static_cast<int>(doprocessTracksMc) + static_cast<int>(doprocessTracksSigmaMc) +
+      static_cast<int>(doprocessLambdasXis) + static_cast<int>(doprocessLambdasXisWithFitVars) +
+      static_cast<int>(doprocessTracksMcWithFitVars) + static_cast<int>(doprocessTracksSigmaMc) +
       static_cast<int>(doprocessTracksSigmaPlusMc) + static_cast<int>(doprocessTracksSigmaPlusExtendedMc) +
-      static_cast<int>(doprocessTracksSigmaPlusPcmMc) + static_cast<int>(doprocessTracksSigmaPlusPcmExtendedMc);
+      static_cast<int>(doprocessTracksSigmaPlusPcmMc) + static_cast<int>(doprocessTracksSigmaPlusPcmExtendedMc) +
+      static_cast<int>(doprocessLambdasMcWithFitVars) + static_cast<int>(doprocessTracksLambdasMcWithFitVars) +
+      static_cast<int>(doprocessTracksXisMcWithFitVars) + static_cast<int>(doprocessLambdasXisMcWithFitVars);
     if (activeProcesses != 1) {
       LOG(fatal) << "Exactly one process function must be activated (got " << activeProcesses << ").";
     }
@@ -218,26 +250,29 @@ struct FemtoProducerDerivedToDerived {
     // an unused builder is free to keep its (possibly all-zero) default limits
     const bool needsTrackBuilder =
       doprocessTracks || doprocessTracksWithMass || doprocessTracksWithFitVars ||
-      doprocessTracksLambdas || doprocessTracksWithMassLambdas || doprocessTracksWithFitVarsLambdas ||
-      doprocessTracksXis || doprocessTracksWithFitVarsXis ||
-      doprocessTracksOmegas || doprocessTracksWithFitVarsOmegas ||
-      doprocessTracksK0shorts || doprocessTracksWithFitVarsK0shorts ||
+      doprocessTracksLambdas || doprocessTracksWithMassLambdas || doprocessTracksLambdasWithFitVars ||
+      doprocessTracksXis || doprocessTracksXisWithFitVars ||
+      doprocessTracksOmegas || doprocessTracksOmegasWithFitVars ||
+      doprocessTracksK0shorts || doprocessTracksK0shortsWithFitVars ||
       doprocessTracksSigma || doprocessTracksSigmaPlus || doprocessTracksSigmaPlusExtended ||
       doprocessTracksSigmaPlusPcm || doprocessTracksSigmaPlusPcmExtended ||
       doprocessTracksRho0 || doprocessTracksPhi ||
-      doprocessTracksMc || doprocessTracksSigmaMc || doprocessTracksSigmaPlusMc ||
-      doprocessTracksSigmaPlusExtendedMc || doprocessTracksSigmaPlusPcmMc || doprocessTracksSigmaPlusPcmExtendedMc;
+      doprocessTracksMcWithFitVars || doprocessTracksSigmaMc || doprocessTracksSigmaPlusMc ||
+      doprocessTracksSigmaPlusExtendedMc || doprocessTracksSigmaPlusPcmMc || doprocessTracksSigmaPlusPcmExtendedMc ||
+      doprocessTracksLambdasMcWithFitVars || doprocessTracksXisMcWithFitVars;
 
     const bool needsV0Builder =
-      doprocessTracksLambdas || doprocessTracksWithMassLambdas || doprocessTracksWithFitVarsLambdas ||
+      doprocessTracksLambdas || doprocessTracksWithMassLambdas || doprocessTracksLambdasWithFitVars ||
       doprocessLambdas ||
-      doprocessTracksK0shorts || doprocessTracksWithFitVarsK0shorts ||
-      doprocessLambdasXis;
+      doprocessTracksK0shorts || doprocessTracksK0shortsWithFitVars ||
+      doprocessLambdasXis || doprocessLambdasXisWithFitVars ||
+      doprocessLambdasMcWithFitVars || doprocessTracksLambdasMcWithFitVars || doprocessLambdasXisMcWithFitVars;
 
     const bool needsCascadeBuilder =
-      doprocessTracksXis || doprocessTracksWithFitVarsXis ||
-      doprocessTracksOmegas || doprocessTracksWithFitVarsOmegas ||
-      doprocessLambdasXis;
+      doprocessTracksXis || doprocessTracksXisWithFitVars ||
+      doprocessTracksOmegas || doprocessTracksOmegasWithFitVars ||
+      doprocessLambdasXis || doprocessLambdasXisWithFitVars ||
+      doprocessTracksXisMcWithFitVars || doprocessLambdasXisMcWithFitVars;
 
     const bool needsKinkBuilder =
       doprocessTracksSigma || doprocessTracksSigmaPlus || doprocessTracksSigmaPlusExtended ||
@@ -248,8 +283,9 @@ struct FemtoProducerDerivedToDerived {
     const bool needsResonanceBuilder = doprocessTracksRho0 || doprocessTracksPhi;
 
     const bool needsMcBuilder =
-      doprocessTracksMc || doprocessTracksSigmaMc || doprocessTracksSigmaPlusMc ||
-      doprocessTracksSigmaPlusExtendedMc || doprocessTracksSigmaPlusPcmMc || doprocessTracksSigmaPlusPcmExtendedMc;
+      doprocessTracksMcWithFitVars || doprocessTracksSigmaMc || doprocessTracksSigmaPlusMc ||
+      doprocessTracksSigmaPlusExtendedMc || doprocessTracksSigmaPlusPcmMc || doprocessTracksSigmaPlusPcmExtendedMc ||
+      doprocessLambdasMcWithFitVars || doprocessTracksLambdasMcWithFitVars || doprocessTracksXisMcWithFitVars || doprocessLambdasXisMcWithFitVars;
 
     // skip init() entirely for builders the active process doesn't touch: their limit
     // members default to 0 and are only ever read by the collisionHasTooFew*/process*
@@ -274,6 +310,7 @@ struct FemtoProducerDerivedToDerived {
     if (needsMcBuilder) {
       builders.mcBuilder.init(confMcBuilder);
     }
+    builders.collisionBuilder.init(confCollisionDownsampling);
   }
 
   // process functions
@@ -282,6 +319,9 @@ struct FemtoProducerDerivedToDerived {
     builders.trackBuilder.reset(tracks);
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
@@ -297,6 +337,9 @@ struct FemtoProducerDerivedToDerived {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache)) {
         continue;
       }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
+        continue;
+      }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.trackBuilder.processTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
     }
@@ -310,17 +353,23 @@ struct FemtoProducerDerivedToDerived {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache)) {
         continue;
       }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
+        continue;
+      }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.trackBuilder.processTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
     }
   }
-  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithFitVars, "Process tracks, carrying through FitVars tables", false);
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithFitVars, "Process tracks, carrying through their purity and DCA (fraction-extraction) tables", false);
 
   void processTracksLambdas(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoLambdas const& lambdas)
   {
     builders.trackBuilder.reset(tracks);
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
@@ -337,6 +386,9 @@ struct FemtoProducerDerivedToDerived {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache) || builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
         continue;
       }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
+        continue;
+      }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.trackBuilder.processTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
       builders.v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
@@ -344,25 +396,31 @@ struct FemtoProducerDerivedToDerived {
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithMassLambdas, "Process lambdas and tracks with mass", false);
 
-  void processTracksWithFitVarsLambdas(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracksWithFitVars const& tracks, femtotables::FemtoLambdas const& lambdas)
+  void processTracksLambdasWithFitVars(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracksWithFitVars const& tracks, femtotables::FemtoLambdasWithFitVars const& lambdas)
   {
     builders.trackBuilder.reset(tracks);
     for (auto const& col : cols) {
-      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache) || builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache) || builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaWithFitVarsPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.trackBuilder.processTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-      builders.v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+      builders.v0Builder.processLambdas(col, lambdas, tracks, lambdaWithFitVarsPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
     }
   }
-  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithFitVarsLambdas, "Process lambdas and tracks, carrying through FitVars tables", false);
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksLambdasWithFitVars, "Process lambdas and tracks, carrying through the tracks' purity/DCA tables and the lambdas' fraction-extraction table", false);
 
   void processLambdas(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoLambdas const& lambdas)
   {
     builders.trackBuilder.reset(tracks);
     for (auto const& col : cols) {
       if (builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
@@ -378,6 +436,9 @@ struct FemtoProducerDerivedToDerived {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.cascadeBuilder.collisionHasTooFewXis(col, xis, xiPartition, cache)) {
         continue;
       }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
+        continue;
+      }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
       builders.cascadeBuilder.processXis(col, xis, tracks, xiPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
@@ -385,25 +446,31 @@ struct FemtoProducerDerivedToDerived {
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksXis, "Process tracks and xis", false);
 
-  void processTracksWithFitVarsXis(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracksWithFitVars const& tracks, femtotables::FemtoXis const& xis)
+  void processTracksXisWithFitVars(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracksWithFitVars const& tracks, femtotables::FemtoXisWithFitVars const& xis)
   {
     builders.trackBuilder.reset(tracks);
     for (auto const& col : cols) {
-      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache) || builders.cascadeBuilder.collisionHasTooFewXis(col, xis, xiPartition, cache)) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache) || builders.cascadeBuilder.collisionHasTooFewXis(col, xis, xiWithFitVarsPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.trackBuilder.processTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-      builders.cascadeBuilder.processXis(col, xis, tracks, xiPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+      builders.cascadeBuilder.processXis(col, xis, tracks, xiWithFitVarsPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
     }
   }
-  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithFitVarsXis, "Process tracks and xis, carrying through FitVars tables", false);
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksXisWithFitVars, "Process tracks and xis, carrying through the tracks' purity/DCA tables and the xis' fraction-extraction table", false);
 
   void processTracksOmegas(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoOmegas const& omegas)
   {
     builders.trackBuilder.reset(tracks);
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.cascadeBuilder.collisionHasTooFewOmegas(col, omegas, omegaPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
@@ -413,25 +480,31 @@ struct FemtoProducerDerivedToDerived {
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksOmegas, "Process tracks and omegas", false);
 
-  void processTracksWithFitVarsOmegas(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracksWithFitVars const& tracks, femtotables::FemtoOmegas const& omegas)
+  void processTracksOmegasWithFitVars(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracksWithFitVars const& tracks, femtotables::FemtoOmegasWithFitVars const& omegas)
   {
     builders.trackBuilder.reset(tracks);
     for (auto const& col : cols) {
-      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache) || builders.cascadeBuilder.collisionHasTooFewOmegas(col, omegas, omegaPartition, cache)) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache) || builders.cascadeBuilder.collisionHasTooFewOmegas(col, omegas, omegaWithFitVarsPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.trackBuilder.processTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-      builders.cascadeBuilder.processOmegas(col, omegas, tracks, omegaPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+      builders.cascadeBuilder.processOmegas(col, omegas, tracks, omegaWithFitVarsPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
     }
   }
-  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithFitVarsOmegas, "Process tracks and omegas, carrying through FitVars tables", false);
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksOmegasWithFitVars, "Process tracks and omegas, carrying through the tracks' purity/DCA tables and the omegas' fraction-extraction table", false);
 
   void processTracksK0shorts(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoK0shorts const& k0shorts)
   {
     builders.trackBuilder.reset(tracks);
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.v0Builder.collisionHasTooFewK0shorts(col, k0shorts, k0shortPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
@@ -441,11 +514,14 @@ struct FemtoProducerDerivedToDerived {
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksK0shorts, "Process k0short and tracks", false);
 
-  void processTracksWithFitVarsK0shorts(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracksWithFitVars const& tracks, femtotables::FemtoK0shorts const& k0shorts)
+  void processTracksK0shortsWithFitVars(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracksWithFitVars const& tracks, femtotables::FemtoK0shorts const& k0shorts)
   {
     builders.trackBuilder.reset(tracks);
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithFitVarsPartition1, trackWithFitVarsPartition2, cache) || builders.v0Builder.collisionHasTooFewK0shorts(col, k0shorts, k0shortPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
@@ -453,13 +529,16 @@ struct FemtoProducerDerivedToDerived {
       builders.v0Builder.processK0shorts(col, k0shorts, tracks, k0shortPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
     }
   }
-  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithFitVarsK0shorts, "Process k0short and tracks, carrying through FitVars tables", false);
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksK0shortsWithFitVars, "Process k0short and tracks, carrying through the tracks' purity and DCA (fraction-extraction) tables", false);
 
   void processTracksSigma(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoSigma const& sigma)
   {
     builders.trackBuilder.reset(tracks);
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigma(col, sigma, sigmaPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
@@ -476,6 +555,9 @@ struct FemtoProducerDerivedToDerived {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlus(col, sigmaplus, sigmaPlusPartition, cache)) {
         continue;
       }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
+        continue;
+      }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
       builders.kinkBuilder.processSigmaPlus(col, sigmaplus, tracks, sigmaPlusPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
@@ -488,6 +570,9 @@ struct FemtoProducerDerivedToDerived {
     builders.trackBuilder.reset(tracks);
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlus(col, sigmaplus, sigmaPlusExtendedPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
@@ -504,6 +589,9 @@ struct FemtoProducerDerivedToDerived {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlusPcm(col, sigmapluspcm, sigmaPlusPcmPartition, cache)) {
         continue;
       }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
+        continue;
+      }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
       builders.kinkBuilder.processSigmaPlusPcm(col, sigmapluspcm, tracks, sigmaPlusPcmPartition, builders.trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
@@ -516,6 +604,9 @@ struct FemtoProducerDerivedToDerived {
     builders.trackBuilder.reset(tracks);
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlusPcm(col, sigmapluspcm, sigmaPlusPcmExtendedPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
@@ -532,6 +623,9 @@ struct FemtoProducerDerivedToDerived {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.resonanceBuilder.collisionHasTooFewRho0s(col, rho0s, rho0Partition, cache)) {
         continue;
       }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
+        continue;
+      }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
       builders.resonanceBuilder.processRho0s(col, rho0s, tracks, rho0Partition, builders.trackBuilder, cache, resonanceBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
@@ -544,6 +638,9 @@ struct FemtoProducerDerivedToDerived {
     builders.trackBuilder.reset(tracks);
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || builders.resonanceBuilder.collisionHasTooFewPhis(col, phis, phiPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
@@ -560,6 +657,9 @@ struct FemtoProducerDerivedToDerived {
       if (builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache) || builders.cascadeBuilder.collisionHasTooFewXis(col, xis, xiPartition, cache)) {
         continue;
       }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
+        continue;
+      }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
       builders.cascadeBuilder.processXis(col, xis, tracks, xiPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
@@ -567,30 +667,162 @@ struct FemtoProducerDerivedToDerived {
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processLambdasXis, "Process lambdas and xis", false);
 
+  void processLambdasXisWithFitVars(femtotables::FilteredFemtoCollisions const& cols, femtotables::FemtoTracks const& tracks, femtotables::FemtoLambdasWithFitVars const& lambdas, femtotables::FemtoXisWithFitVars const& xis)
+  {
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      if (builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaWithFitVarsPartition, cache) || builders.cascadeBuilder.collisionHasTooFewXis(col, xis, xiWithFitVarsPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.v0Builder.processLambdas(col, lambdas, tracks, lambdaWithFitVarsPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+      builders.cascadeBuilder.processXis(col, xis, tracks, xiWithFitVarsPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processLambdasXisWithFitVars, "Process lambdas and xis, carrying through their fraction-extraction tables", false);
+
   // mc processing
-  void processTracksMc(femtotables::FilteredFemtoMcCollisions const& cols,
-                       femtotables::FemtoMcTracks const& tracks,
-                       o2::aod::FMcCols const& mcCols,
-                       femtotables::FemtoMcParticles const& mcParticles,
-                       o2::aod::FMcMothers const& mcMothers,
-                       o2::aod::FMcPartMoths const& mcPartonicMothers)
+  void processTracksMcWithFitVars(femtotables::FilteredFemtoMcCollisions const& cols,
+                                  femtotables::FemtoMcTracksWithFitVars const& tracks,
+                                  o2::aod::FMcCols const& mcCols,
+                                  femtotables::FemtoMcParticles const& mcParticles,
+                                  o2::aod::FMcMothers const& mcMothers,
+                                  o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
     // once per dataframe
     builders.mcBuilder.reset(mcCols, mcParticles);
     builders.trackBuilder.reset(tracks);
 
     for (auto const& col : cols) {
-      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackPartition1, mcTrackPartition2, cache)) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackWithFitVarsPartition1, mcTrackWithFitVarsPartition2, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
-      builders.trackBuilder.processTracksWithMc(col, tracks, mcTrackPartition1, mcTrackPartition2, cache,
+      builders.trackBuilder.processTracksWithMc(col, tracks, mcTrackWithFitVarsPartition1, mcTrackWithFitVarsPartition2, cache,
                                                 trackBuilderProducts, collisionBuilderProducts,
                                                 builders.mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
     }
   }
-  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksMc, "Process tracks with MC information", false);
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksMcWithFitVars, "Process tracks with MC information, carrying through their purity and DCA (fraction-extraction) tables", false);
+
+  void processLambdasMcWithFitVars(femtotables::FilteredFemtoMcCollisions const& cols,
+                                   femtotables::FemtoMcTracks const& tracks,
+                                   femtotables::FemtoMcLambdas const& lambdas,
+                                   o2::aod::FMcCols const& mcCols,
+                                   femtotables::FemtoMcParticles const& mcParticles,
+                                   o2::aod::FMcMothers const& mcMothers,
+                                   o2::aod::FMcPartMoths const& mcPartonicMothers)
+  {
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      if (builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, mcLambdaPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
+      builders.v0Builder.processLambdasWithMc(col, lambdas, tracks, mcLambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts,
+                                              builders.mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processLambdasMcWithFitVars, "Process lambdas only with MC information, carrying through their fraction-extraction table (produced track table contains daughters only)", false);
+
+  void processTracksLambdasMcWithFitVars(femtotables::FilteredFemtoMcCollisions const& cols,
+                                         femtotables::FemtoMcTracksWithFitVars const& tracks,
+                                         femtotables::FemtoMcLambdas const& lambdas,
+                                         o2::aod::FMcCols const& mcCols,
+                                         femtotables::FemtoMcParticles const& mcParticles,
+                                         o2::aod::FMcMothers const& mcMothers,
+                                         o2::aod::FMcPartMoths const& mcPartonicMothers)
+  {
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackWithFitVarsPartition1, mcTrackWithFitVarsPartition2, cache) ||
+          builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, mcLambdaPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
+      builders.trackBuilder.processTracksWithMc(col, tracks, mcTrackWithFitVarsPartition1, mcTrackWithFitVarsPartition2, cache,
+                                                trackBuilderProducts, collisionBuilderProducts,
+                                                builders.mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
+      builders.v0Builder.processLambdasWithMc(col, lambdas, tracks, mcLambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts,
+                                              builders.mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksLambdasMcWithFitVars, "Process lambdas and tracks with MC information, carrying through the tracks' purity/DCA tables and the lambdas' fraction-extraction table", false);
+
+  void processTracksXisMcWithFitVars(femtotables::FilteredFemtoMcCollisions const& cols,
+                                     femtotables::FemtoMcTracksWithFitVars const& tracks,
+                                     femtotables::FemtoMcXis const& xis,
+                                     o2::aod::FMcCols const& mcCols,
+                                     femtotables::FemtoMcParticles const& mcParticles,
+                                     o2::aod::FMcMothers const& mcMothers,
+                                     o2::aod::FMcPartMoths const& mcPartonicMothers)
+  {
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackWithFitVarsPartition1, mcTrackWithFitVarsPartition2, cache) ||
+          builders.cascadeBuilder.collisionHasTooFewXis(col, xis, mcXiPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
+      builders.trackBuilder.processTracksWithMc(col, tracks, mcTrackWithFitVarsPartition1, mcTrackWithFitVarsPartition2, cache,
+                                                trackBuilderProducts, collisionBuilderProducts,
+                                                builders.mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
+      builders.cascadeBuilder.processXisWithMc(col, xis, tracks, mcXiPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts,
+                                               builders.mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksXisMcWithFitVars, "Process tracks and xis with MC information, carrying through the tracks' purity/DCA tables and the xis' fraction-extraction table", false);
+
+  void processLambdasXisMcWithFitVars(femtotables::FilteredFemtoMcCollisions const& cols,
+                                      femtotables::FemtoMcTracks const& tracks,
+                                      femtotables::FemtoMcLambdas const& lambdas,
+                                      femtotables::FemtoMcXis const& xis,
+                                      o2::aod::FMcCols const& mcCols,
+                                      femtotables::FemtoMcParticles const& mcParticles,
+                                      o2::aod::FMcMothers const& mcMothers,
+                                      o2::aod::FMcPartMoths const& mcPartonicMothers)
+  {
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      if (builders.v0Builder.collisionHasTooFewLambdas(col, lambdas, mcLambdaPartition, cache) ||
+          builders.cascadeBuilder.collisionHasTooFewXis(col, xis, mcXiPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
+        continue;
+      }
+      builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
+      builders.mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
+      builders.v0Builder.processLambdasWithMc(col, lambdas, tracks, mcLambdaPartition, builders.trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts,
+                                              builders.mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
+      builders.cascadeBuilder.processXisWithMc(col, xis, tracks, mcXiPartition, builders.trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts,
+                                               builders.mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processLambdasXisMcWithFitVars, "Process lambdas and xis with MC information, carrying through their fraction-extraction tables", false);
 
   void processTracksSigmaMc(femtotables::FilteredFemtoMcCollisions const& cols,
                             femtotables::FemtoMcTracks const& tracks,
@@ -606,6 +838,9 @@ struct FemtoProducerDerivedToDerived {
 
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackPartition1, mcTrackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigma(col, sigma, mcSigmaPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
@@ -635,6 +870,9 @@ struct FemtoProducerDerivedToDerived {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackPartition1, mcTrackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlus(col, sigmaplus, mcSigmaPlusPartition, cache)) {
         continue;
       }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
+        continue;
+      }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
       builders.trackBuilder.processTracksWithMc(col, tracks, mcTrackPartition1, mcTrackPartition2, cache,
@@ -660,6 +898,9 @@ struct FemtoProducerDerivedToDerived {
 
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackPartition1, mcTrackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlus(col, sigmaplus, mcSigmaPlusExtendedPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
@@ -689,6 +930,9 @@ struct FemtoProducerDerivedToDerived {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackPartition1, mcTrackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlusPcm(col, sigmapluspcm, mcSigmaPlusPcmPartition, cache)) {
         continue;
       }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
+        continue;
+      }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);
       builders.mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
       builders.trackBuilder.processTracksWithMc(col, tracks, mcTrackPartition1, mcTrackPartition2, cache,
@@ -714,6 +958,9 @@ struct FemtoProducerDerivedToDerived {
 
     for (auto const& col : cols) {
       if (builders.trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackPartition1, mcTrackPartition2, cache) || builders.kinkBuilder.collisionHasTooFewSigmaPlusPcm(col, sigmapluspcm, mcSigmaPlusPcmExtendedPartition, cache)) {
+        continue;
+      }
+      if (builders.collisionBuilder.collisionFailsDownsampling()) {
         continue;
       }
       builders.collisionBuilder.processCollision(col, collisionBuilderProducts);

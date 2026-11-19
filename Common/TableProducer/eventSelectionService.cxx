@@ -112,6 +112,8 @@ struct EventselectionRun3 { // o2-linter: disable=name/workflow-file (exception 
 
   o2::common::eventselection::EvselConfigurables evselOpts;
   o2::common::eventselection::EventSelectionModule evselmodule;
+  o2::common::eventselection::BcOccConfigurables bcoccOpts;
+  o2::common::eventselection::BcOccAllConfigurables bcoccAllOpts;
 
   o2::common::eventselection::LumiConfigurables lumiOpts;
   o2::common::eventselection::LumiModule lumimodule;
@@ -119,6 +121,8 @@ struct EventselectionRun3 { // o2-linter: disable=name/workflow-file (exception 
   Produces<aod::Timestamps> timestampTable; /// Table with SOR timestamps produced by the task
   Produces<aod::BcSels> bcsel;
   Produces<aod::EvSels> evsel;
+  Produces<aod::BcOccs> bcocc;
+  Produces<aod::BcOccsAll> bcoccall;
 
   // for slicing
   SliceCache cache;
@@ -149,6 +153,8 @@ struct EventselectionRun3 { // o2-linter: disable=name/workflow-file (exception 
     timestampMod.init(timestampConfigurables, metadataInfo);
     bcselmodule.init(context, bcselOpts, histos, metadataInfo);
     evselmodule.init(context, evselOpts, histos, metadataInfo);
+    evselmodule.initBcOccupancy(context, bcoccOpts);
+    evselmodule.initBcOccupancyAll(context, bcoccAllOpts);
     lumimodule.init(context, lumiOpts, histos);
   }
 
@@ -163,6 +169,8 @@ struct EventselectionRun3 { // o2-linter: disable=name/workflow-file (exception 
     timestampMod.process(bcs, ccdb, timestamps, timestampTable);
     bcselmodule.processRun3(ccdb, histos, bcs, timestamps, bcselsbuffer, bcsel);
     evselmodule.processRun3(ccdb, histos, bcs, collisions, pvTracks, ft0s, cache, timestamps, bcselsbuffer, evsel);
+    evselmodule.processRun3BcOccupancy(bcs, bcselsbuffer, bcocc);
+    evselmodule.processRun3BcOccupancyAll(bcs, bcoccall);
     lumimodule.process(ccdb, histos, bcs, timestamps, bcselsbuffer);
   }
 };

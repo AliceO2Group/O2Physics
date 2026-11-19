@@ -345,11 +345,11 @@ struct lmeelfcocktail {
       addHistogram1D("Ptee", ptee_axis, i);
       // addHistogram1D_stage("Dca", dca_axis, i, "rec/");
       // addHistogram1D_stage("Dcaee", dcaee_axis, i, "rec/");
-      i = -1;
+      // i = -1; // FIXME: unused
       // addHistogram2D_stage("DcaVsPt", dca_axis, pt_axis, i, "rec/");
       // addHistogram2D_stage("DcaeeVsPtee", dcaee_axis, ptee_axis, i, "rec/");
       // addHistogram2D_stage("DcaeeVsMee", dcaee_axis, mass_axis, i, "rec/");
-      i = -1;
+      i = -1; // FIXME: unused
       addHistogramND("MeeVsPteeVsCos2DPhiRP", std::vector<AxisSpec>{mass_axis, ptee_axis, cos2dphi_axis}, i);
     }
   }

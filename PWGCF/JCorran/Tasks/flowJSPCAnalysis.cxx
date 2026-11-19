@@ -27,6 +27,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -35,12 +36,14 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TFormula.h>
+#include <TTree.h>
 
 #include <sys/types.h>
 
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <cstddef>
 #include <cstdint>
 #include <experimental/type_traits>
 #include <iterator>
@@ -64,6 +67,9 @@ using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::J
 
 struct flowJSPCAnalysis {
   HistogramRegistry spcHistograms{"SPCResults", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  // One entry. Branch centBinEdges is the edge list; Centrality_i runs from centBinEdges[i] to centBinEdges[i + 1].
+  OutputObj<TTree> centBinEdgeTree{"CentralityBinEdges", OutputObjHandlingPolicy::AnalysisObject};
+  std::vector<float> centBinEdges;
   FlowJSPCAnalysis spcAnalysis;
   FlowJSPCAnalysis::JQVectorsT jqvecs;
   template <class T>
@@ -95,6 +101,10 @@ struct flowJSPCAnalysis {
     Configurable<int> cfgMultMin{"cfgMultMin", 10, "Minimum number of particles required for the event to have."};
   } cfgEventCuts;
 
+  // false: FlowJHistManager bins 0,5,10,20,30,40,50,60,70,100. true: cfgCustomCentBinEdges (at most 9 bins).
+  Configurable<bool> cfgUseCustomCentBins{"cfgUseCustomCentBins", false, "Use cfgCustomCentBinEdges instead of the default centrality bins."};
+  Configurable<std::vector<float>> cfgCustomCentBinEdges{"cfgCustomCentBinEdges", {0.f, 100.f}, "last edge inclusive, e.g. [0,100] or [0,20,40,60,100]"};
+
   O2_DEFINE_CONFIGURABLE(cfgTrackBitMask, uint16_t, 0, "Track selection bitmask to use as defined in the filterCorrelations.cxx task");
   O2_DEFINE_CONFIGURABLE(cfgMultCorrelationsMask, uint16_t, 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask.")
   O2_DEFINE_CONFIGURABLE(cfgMultCutFormula, std::string, "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity, [cFT0M] FT0M centrality")
@@ -112,11 +122,49 @@ struct flowJSPCAnalysis {
   uint32_t mNhUse = FlowJSPCAnalysis::NhFull;
   uint32_t mNkUse = FlowJSPCAnalysis::NkFull;
 
+  // Bin index for cfgCustomCentBinEdges. Lower edges are inclusive; the last edge is inclusive. -1 if outside.
+  int getCustomCentBin(float cValue) const
+  {
+    const auto& edges = cfgCustomCentBinEdges.value;
+    const int nEdges = static_cast<int>(edges.size());
+    if (nEdges < 2 || cValue < edges.front() || cValue > edges.back()) { // o2-linter: disable=magic-number (minimum edge count)
+      return -1;
+    }
+    for (int i = 1; i < nEdges - 1; ++i) {
+      if (cValue < edges[i]) {
+        return i - 1;
+      }
+    }
+    return nEdges - 2;
+  }
+
   void init(InitContext const&)
   {
+    if (cfgUseCustomCentBins.value) {
+      const auto& edges = cfgCustomCentBinEdges.value;
+      if (edges.size() < 2 || edges.size() > 10) { // o2-linter: disable=magic-number (2 to 10 edges, at most 9 bins)
+        LOGF(fatal, "cfgCustomCentBinEdges must contain 2 to 10 edges (at most 9 bins), got %zu.", edges.size());
+      }
+      for (std::size_t i = 1; i < edges.size(); ++i) {
+        if (!(edges[i] > edges[i - 1])) {
+          LOGF(fatal, "cfgCustomCentBinEdges must be strictly increasing.");
+        }
+      }
+      LOGF(info, "Custom centrality bins in use (%zu bins).", edges.size() - 1);
+    }
+
     // Add histomanager here
     spcAnalysis.setHistRegistry(&spcHistograms);
     spcAnalysis.createHistos();
+
+    if (cfgUseCustomCentBins.value) {
+      centBinEdges.assign(cfgCustomCentBinEdges.value.begin(), cfgCustomCentBinEdges.value.end());
+    } else {
+      centBinEdges = {0.f, 5.f, 10.f, 20.f, 30.f, 40.f, 50.f, 60.f, 70.f, 100.f};
+    }
+    centBinEdgeTree.setObject(new TTree("CentralityBinEdges", "Centrality bin edges"));
+    centBinEdgeTree->Branch("centBinEdges", &centBinEdges);
+    centBinEdgeTree->Fill();
 
     spcObservables.setSPCObservables(cfgWhichSPC);
     spcAnalysis.setFullCorrSet(spcObservables.harmonicArray);
@@ -156,10 +204,20 @@ struct flowJSPCAnalysis {
       return;
 
     float cent = collision.multiplicity();
-    if (cent < 0. || cent > 100.) {
-      return;
+    int cBin = -1;
+    if (!cfgUseCustomCentBins.value) {
+      if (cent < 0. || cent > 100.) { // o2-linter: disable=magic-number (full centrality range)
+        return;
+      }
+      cBin = histManager.getCentBin(cent);
+    } else {
+      cBin = getCustomCentBin(cent);
+      // LOGF(info, "Centrality bin is %d for centrality %f", cBin, cent);
+      if (cBin < 0 || cBin > 8) { // o2-linter: disable=magic-number (SPC histogram slots are 0-8)
+        LOGF(info, "Centrality bin %d is out of range", cBin);
+        return;
+      }
     }
-    int cBin = histManager.getCentBin(cent);
     spcHistograms.fill(HIST("FullCentrality"), cent);
     int nTracks = tracks.size();
 

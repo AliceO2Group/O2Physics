@@ -35,9 +35,11 @@
 #include <Framework/Logger.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <random>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -82,6 +84,7 @@ struct ConfCollisionBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> sphericityMin{"sphericityMin", {}, "Minimum sphericity"};
   o2::framework::Configurable<std::vector<float>> sphericityMax{"sphericityMax", {}, "Maximum sphericity"};
   o2::framework::Configurable<std::vector<std::string>> triggers{"triggers", {}, "List of all triggers to be used"};
+  o2::framework::Configurable<int> triggerBcTolerance{"triggerBcTolerance", 100, "Tolerance for +-(bc range) around triggered collisions"};
   o2::framework::Configurable<int> eventPlaneAngleDetector{"eventPlaneAngleDetector", 0, "Detector used to estimate the event plane angle: 0 -> FT0C, 1 -> FT0A"};
   o2::framework::Configurable<int> qvecDetector{"qvecDetector", 0, "Detector used to estimate the Q-vector: 0 -> FT0C, 1 -> FT0A"};
   o2::framework::Configurable<int> qvecHarmonic{"qvecHarmonic", 2, "Harmonic n of the Q-vector and event plane angle Psi_n: 2 -> elliptic, 3 -> triangular"};
@@ -235,6 +238,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     // trigger (Zorro) setup
     if (!config.triggers.value.empty()) {
       mUseTrigger = true;
+      mTriggerBcTolerance = config.triggerBcTolerance.value;
       for (size_t i = 0; i < config.triggers.value.size(); ++i) {
         mTriggerNames += config.triggers.value[i];
         if (i != config.triggers.value.size() - 1) {
@@ -309,7 +313,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
       return;
     }
     LOG(info) << "Init Zorro with Run Number: " << runNumber << "; timestamp: " << timestamp << "; Trigger Names: " << mTriggerNames;
-    mZorro.initCCDB(ccdb.service, runNumber, timestamp, mTriggerNames);
+    mZorro.initCCDB(ccdb.service, runNumber, timestamp, mTriggerNames, mTriggerBcTolerance);
     mZorro.populateHistRegistry(histRegistry, runNumber);
   }
 
@@ -320,7 +324,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     if (!mUseTrigger) {
       return {};
     }
-    return mZorro.getTriggerOfInterestResults(globalBC);
+    return mZorro.getTriggerOfInterestResults(globalBC, mTriggerBcTolerance);
   }
 
   void setMagneticField(int MagField)
@@ -587,6 +591,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   // trigger (Zorro)
   Zorro mZorro;
   bool mUseTrigger = false;
+  int mTriggerBcTolerance = 100;
   std::string mTriggerNames = std::string("");
 };
 
@@ -852,11 +857,36 @@ struct CollisionBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::StoredFColMasks> producedCollisionMask;
 };
 
+// configurable for uniform collision downsampling
+struct ConfCollisionDownsampling : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("CollisionDownsampling");
+  o2::framework::Configurable<float> fraction{"fraction", 1.f, "Fraction of collisions (that already passed all other selections) to keep via uniform random downsampling. 1 = keep all (default, no-op), 0 = keep none."};
+  o2::framework::Configurable<int64_t> seed{"seed", 0, "Seed for the downsampling RNG. Set to 0 to generate a unique seed from the current time, or to a fixed positive value for reproducible downsampling."};
+};
+
 class CollisionBuilderDerivedToDerived
 {
  public:
   CollisionBuilderDerivedToDerived() = default;
   ~CollisionBuilderDerivedToDerived() = default;
+
+  void init(ConfCollisionDownsampling const& confDownsampling)
+  {
+    mFraction = confDownsampling.fraction.value;
+    uint64_t randomSeed = confDownsampling.seed.value == 0
+                            ? static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
+                            : static_cast<uint64_t>(confDownsampling.seed.value);
+    mRng = std::mt19937(randomSeed);
+  }
+
+  /// \return true if this collision is randomly rejected by the configured downsampling fraction
+  bool collisionFailsDownsampling()
+  {
+    if (mFraction >= 1.f) {
+      return false;
+    }
+    return mDist(mRng) >= mFraction;
+  }
 
   template <typename T1, typename T2>
   void processCollision(T1& col, T2& newCollisionTable)
@@ -867,6 +897,11 @@ class CollisionBuilderDerivedToDerived
                                         col.magField());
     newCollisionTable.producedCollisionMask(col.mask());
   }
+
+ private:
+  float mFraction = 1.f;
+  std::mt19937 mRng;
+  std::uniform_real_distribution<float> mDist{0.f, 1.f};
 };
 
 } // namespace o2::analysis::femto::collisionbuilder

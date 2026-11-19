@@ -301,7 +301,7 @@ struct AnalysisTrackSelection {
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
-          filterMap |= (uint32_t(1) << i);
+          filterMap |= (static_cast<uint32_t>(1) << i);
           if (fConfigQA && passEvFilter) {
             fHistMan->FillHistClass(fHistNamesReco[i].Data(), VarManager::fgValues);
           }
@@ -323,23 +323,23 @@ struct AnalysisTrackSelection {
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
           if ((*sig).CheckSignal(true, track.reducedMCTrack())) {
-            mcDecision |= (uint32_t(1) << isig);
+            mcDecision |= (static_cast<uint32_t>(1) << isig);
           }
         }
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
           if ((*sig).CheckSignal(true, track.template mcParticle_as<aod::McParticles_001>())) {
-            mcDecision |= (uint32_t(1) << isig);
+            mcDecision |= (static_cast<uint32_t>(1) << isig);
           }
         }
       }
 
       // fill histograms
       for (unsigned int i = 0; i < fMCSignals.size(); i++) {
-        if (!(mcDecision & (uint32_t(1) << i))) {
+        if (!(mcDecision & (static_cast<uint32_t>(1) << i))) {
           continue;
         }
         for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
-          if (filterMap & (uint8_t(1) << j)) {
+          if (filterMap & (static_cast<uint8_t>(1) << j)) {
             fHistMan->FillHistClass(fHistNamesMCMatched[j][i].Data(), VarManager::fgValues);
           }
         } // end loop over cuts
@@ -531,7 +531,7 @@ struct AnalysisSameEventPairing {
 
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
       if constexpr (TPairType == VarManager::kDecayToEE) {
-        twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected());
+        twoTrackFilter = static_cast<uint32_t>(t1.isBarrelSelected()) & static_cast<uint32_t>(t2.isBarrelSelected());
       }
       if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
         continue;
@@ -544,12 +544,12 @@ struct AnalysisSameEventPairing {
       for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) { // for skimmed DQ model
           if ((*sig).CheckSignal(true, t1.reducedMCTrack(), t2.reducedMCTrack())) {
-            mcDecision |= (uint32_t(1) << isig);
+            mcDecision |= (static_cast<uint32_t>(1) << isig);
           }
         }
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) { // for Framework data model
           if ((*sig).CheckSignal(true, t1.template mcParticle_as<aod::McParticles_001>(), t2.template mcParticle_as<aod::McParticles_001>())) {
-            mcDecision |= (uint32_t(1) << isig);
+            mcDecision |= (static_cast<uint32_t>(1) << isig);
           }
         }
       } // end loop over MC signals
@@ -559,11 +559,11 @@ struct AnalysisSameEventPairing {
 
       // Loop over all fulfilled cuts and fill pair histograms
       for (unsigned int icut = 0; icut < ncuts; icut++) {
-        if (twoTrackFilter & (uint8_t(1) << icut)) {
+        if (twoTrackFilter & (static_cast<uint8_t>(1) << icut)) {
           if (t1.sign() * t2.sign() < 0) {
             fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
             for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
-              if (mcDecision & (uint32_t(1) << isig)) {
+              if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
                 fHistMan->FillHistClass(histNamesMCmatched[icut][isig][0].Data(), VarManager::fgValues);
               }
             }
@@ -571,14 +571,14 @@ struct AnalysisSameEventPairing {
             if (t1.sign() > 0) {
               fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
               for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
-                if (mcDecision & (uint32_t(1) << isig)) {
+                if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
                   fHistMan->FillHistClass(histNamesMCmatched[icut][isig][1].Data(), VarManager::fgValues);
                 }
               }
             } else {
               fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
               for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
-                if (mcDecision & (uint32_t(1) << isig)) {
+                if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
                   fHistMan->FillHistClass(histNamesMCmatched[icut][isig][2].Data(), VarManager::fgValues);
                 }
               }

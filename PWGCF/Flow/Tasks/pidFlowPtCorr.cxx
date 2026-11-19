@@ -565,7 +565,7 @@ struct PidFlowChargedTimeProducer {
     std::vector<double> bestDistance(tracks.size(), std::numeric_limits<double>::infinity());
     const auto globalBC = [&bcs](int64_t id) -> int64_t {
       const int64_t index = id - bcs.offset();
-      if (index < 0 || index >= static_cast<int64_t>(bcs.size())) {
+      if (index < 0 || index >= bcs.size()) {
         return -1;
       }
       return static_cast<int64_t>(bcs.rawIteratorAt(index).globalBC());
@@ -573,7 +573,7 @@ struct PidFlowChargedTimeProducer {
     for (auto const& track : tracks) {
       const int64_t index = track.globalIndex() - tracks.offset();
       const int64_t original = track.collisionId() - collisions.offset();
-      if (!track.has_collision() || original < 0 || original >= static_cast<int64_t>(collisions.size())) {
+      if (!track.has_collision() || original < 0 || original >= collisions.size()) {
         continue;
       }
       if (track.isPVContributor()) {
@@ -601,7 +601,7 @@ struct PidFlowChargedTimeProducer {
     for (auto const& pair : pairs) {
       const int64_t index = pair.trackId() - tracks.offset();
       const int64_t target = pair.collisionId() - collisions.offset();
-      if (index < 0 || index >= static_cast<int64_t>(tracks.size()) || target < 0 || target >= static_cast<int64_t>(collisions.size())) {
+      if (index < 0 || index >= static_cast<int64_t>(tracks.size()) || target < 0 || target >= collisions.size()) {
         LOGF(fatal, "TrackAssoc index is outside the full source track/collision tables");
       }
       auto track = tracks.rawIteratorAt(index);
@@ -894,7 +894,7 @@ struct PidFlowPtCorr {
   // filter and using
   // data
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value);
+  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value);
 
   using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   using TracksPIDForDetectorPidQA = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -2380,13 +2380,14 @@ struct PidFlowPtCorr {
   /**
    * @brief fill graphs like c22, c24, etc.
    *
-   * @tparam chars
+   * @tparam TName
    * @param corrconf
    * @param tarName graph name
    * @param cent
    */
-  template <char... chars>
-  void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfile(const GFW::CorrConfig& corrconf, const TName& tarName, const double& cent)
   {
     // calculate #sum exp{i * 0 (#phi_{i} - #phi_{j})} == N_{pairs}
     // note that weight is ignored in the formula but not in the calculation, for c24 is similar
@@ -2453,7 +2454,7 @@ struct PidFlowPtCorr {
    * @note why we need weightedc22? when calculating cov(v2,pt), we need N_{pair} * N_{charged} to be weight
    *       NOTICE!!! when filling weighted, value gave to param ptSum is nch, when filling diffpt, its just ptsum
    *
-   * @tparam chars
+   * @tparam TName
    * @param corrconf
    * @param tarName
    * @param cent
@@ -2461,8 +2462,9 @@ struct PidFlowPtCorr {
    * @param nch
    * @param meanPt
    */
-  template <char... chars>
-  void fillProfilevnpt(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent, const double& ptSum, const double& nch, const double& meanPt = 0)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfilevnpt(const GFW::CorrConfig& corrconf, const TName& tarName, const double& cent, const double& ptSum, const double& nch, const double& meanPt = 0)
   {
     double dnx = 0.0, val = 0.0;
     dnx = fGFW->Calculate(corrconf, 0, true).real();
@@ -2475,8 +2477,9 @@ struct PidFlowPtCorr {
     }
   }
 
-  template <char... chars>
-  void fillProfilePOIvnpt(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent, const double& ptSum, const double& nch, const double& rndm)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfilePOIvnpt(const GFW::CorrConfig& corrconf, const TName& tarName, const double& cent, const double& ptSum, const double& nch, const double& rndm)
   {
     double dnx = 0.0, val = 0.0;
     dnx = fGFW->Calculate(corrconf, 0, true).real();
@@ -2496,8 +2499,9 @@ struct PidFlowPtCorr {
    *          counts are added before division. The PID mean pT is only the profile
    *          coordinate, so the profile is weighted by the combined pair count alone.
    */
-  template <char... chars>
-  void fillProfilePOIvnpt(const GFW::CorrConfig& corrconfA, const GFW::CorrConfig& corrconfB, const ConstStr<chars...>& tarName, const double& cent, const double& ptSum, const double& nPid, const double& rndm)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfilePOIvnpt(const GFW::CorrConfig& corrconfA, const GFW::CorrConfig& corrconfB, const TName& tarName, const double& cent, const double& ptSum, const double& nPid, const double& rndm)
   {
     const double dnxA = fGFW->Calculate(corrconfA, 0, true).real();
     const double dnxB = fGFW->Calculate(corrconfB, 0, true).real();

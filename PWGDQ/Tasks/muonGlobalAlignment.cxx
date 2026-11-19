@@ -2334,14 +2334,6 @@ struct MuonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
         continue;
       }
 
-      collTable(collisionInfo.runNumber,
-                collisionInfo.globalBC,
-                collisionInfo.timestamp,
-                c.posX(), c.posY(), c.posZ(),
-                c.covXX(), c.covYY(), c.covZZ(),
-                c.collisionTime(), c.collisionTimeRes());
-      collisionIdRemapping[collisionIndex] = remappedCollisionIndex;
-
       bool hasGoodOppositeSignMuonPair = false;
       std::vector<MuonPair> muonPairs;
       getMuonPairs(collisionInfo, muonPairs);
@@ -2391,13 +2383,9 @@ struct MuonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
       }
 
       // loop over MCH tracks
+      int nMchTracksStored = 0;
       for (const auto& mchIndex : collisionInfo.mchTracks) {
         auto const& mchTrack = muonTracks.rawIteratorAt(mchIndex);
-
-        // skip tracks that have already been stored from another compatible collision
-        if (muonTrackIdRemapping.contains(mchIndex)) {
-          continue;
-        }
 
         // skip tracks without associated collision (this should never be true here)
         if (!mchTrack.has_collision()) {
@@ -2412,6 +2400,13 @@ struct MuonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
           if (!IsGoodMuon(mchTrack, c, cfgTrackChi2MchUp, cfgMftMchResidualsPLow, cfgMftMchResidualsPtLow, {cfgEtaMftLow, cfgEtaMftUp}, {cfgRabsLow, cfgRabsUp}, fSigmaPdcaUp)) {
             continue;
           }
+        }
+
+        nMchTracksStored += 1;
+
+        // skip tracks that have already been stored from another compatible collision
+        if (muonTrackIdRemapping.contains(mchIndex)) {
+          continue;
         }
 
         fwdTable(remappedCollisionIndex,
@@ -2494,6 +2489,17 @@ struct MuonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
         }
       }
 
+      if (nMchTracksStored < 1) {
+        continue;
+      }
+
+      collTable(collisionInfo.runNumber,
+                collisionInfo.globalBC,
+                collisionInfo.timestamp,
+                c.posX(), c.posY(), c.posZ(),
+                c.covXX(), c.covYY(), c.covZZ(),
+                c.collisionTime(), c.collisionTimeRes());
+      collisionIdRemapping[collisionIndex] = remappedCollisionIndex;
       remappedCollisionIndex += 1;
     }
 

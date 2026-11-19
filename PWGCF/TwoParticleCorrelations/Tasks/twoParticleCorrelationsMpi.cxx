@@ -186,7 +186,7 @@ struct TwoParticleCorrelationsMpi {
   Filter collisionVertexTypeFilter = (aod::collision::flags & static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks)) == static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks);
 
   // Track filters
-  Filter trackFilter = (nabs(aod::track::eta) < cfgGeneral.cfgCutEta) && (aod::track::pt > cfgGeneral.cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
+  Filter trackFilter = (nabs(aod::track::eta) < cfgGeneral.cfgCutEta) && (aod::track::pt > cfgGeneral.cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true)));
   Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgGeneral.cfgCutEta) && (aod::cftrack::pt > cfgGeneral.cfgCutPt) && ncheckbit(aod::track::trackType, as<uint8_t>(cfgTrackBitMask));
 
   // MC filters
@@ -469,6 +469,9 @@ struct TwoParticleCorrelationsMpi {
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{axisMultiplicityQA, "/multiplicity/centrality"}}});
+    if (doprocessSameDerivedCorrected || doprocessSameDerivedMultSetCorrected || doprocessMCDetectorClosure) {
+      registry.add("correctedVsRawMultiplicity", "corrected versus raw event multiplicity;corrected sum-of-weights N_{ch};raw N_{ch};events", {HistType::kTH2F, {axisMultiplicityQA, axisMultiplicityQA}});
+    }
     if (doprocessMCDetectorClosure) {
       registry.add("detectorClosure/rawMultiplicityVsTrue", "raw reconstructed versus true charged multiplicity;N_{ch}^{true};N_{ch}^{raw,reco}", {HistType::kTH2F, {axisMultiplicity, axisMultiplicity}});
       registry.add("detectorClosure/correctedMultiplicityVsTrue", "corrected reconstructed versus true charged multiplicity;N_{ch}^{true};N_{ch}^{corr,reco}", {HistType::kTH2F, {axisMultiplicity, axisMultiplicity}});
@@ -987,6 +990,9 @@ struct TwoParticleCorrelationsMpi {
   void fillQA(const TCollision& collision, float multiplicity, const TTracks& tracks)
   {
     registry.fill(HIST("multiplicity"), multiplicity);
+    if constexpr (std::experimental::is_detected<HasCorrectedMultiplicity, TCollision>::value) {
+      registry.fill(HIST("correctedVsRawMultiplicity"), collision.multiplicityCorrected(), collision.multiplicity());
+    }
     if constexpr (std::experimental::is_detected<HasMultSet, TCollision>::value) {
       if (std::popcount(cfgMultCorrelationsMask.value) != static_cast<int>(collision.multiplicities().size())) {
         LOGF(fatal, "Multiplicity selections (cfgMultCorrelationsMask = 0x%x) do not match the size of the table column (%ld). The histogram filling relies on the preservation of order.", cfgMultCorrelationsMask.value, collision.multiplicities().size());

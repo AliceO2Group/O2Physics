@@ -96,13 +96,13 @@ using CollisionsFullWithPVMult = CollisionsFull;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults, aod::PVMults>;
 using HadHyperCollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::FT0Mults>;
 using HadHyperCollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::FT0Mults>;
-using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime>;
-using TrackCandidatesMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
+using TrackCandidates = soa::Join<aod::pidTOFmass, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime>;
+using TrackCandidatesMC = soa::Join<aod::pidTOFmass, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
 // The DCA-template process explicitly subscribes to the propagated covariance
 // table. This makes the propagation service enter the branch where TrackTuner
 // corrections can be applied when enabled, without adding that dependency to
 // unrelated MC process switches.
-using TrackCandidatesMCDca = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
+using TrackCandidatesMCDca = soa::Join<aod::pidTOFmass, aod::TracksIU, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
 
 namespace
 {
@@ -435,6 +435,8 @@ struct HadNucleiFemto {
     std::string prefix{"tritonPid"};
     // Triton track-quality, purity and PID cuts
     Configurable<int> settingITSNClsMinTr{"settingITSNClsMinTr", 5, "Minimum number of ITS clusters for triton candidates"};
+    Configurable<float> settingTPCChi2NClMaxTr{"settingTPCChi2NClMaxTr", 4.f, "Maximum TPC chi2 per cluster for triton candidates"};
+    Configurable<float> settingITSChi2NClMaxTr{"settingITSChi2NClMaxTr", 36.f, "Maximum ITS chi2 per cluster for triton candidates"};
     Configurable<float> settingPIDMomentumSplitTr{"settingPIDMomentumSplitTr", 2.f, "Momentum separating low- and high-momentum triton TPC PID"};
     Configurable<float> settingCutTPCNsigmaLowPTr{"settingCutTPCNsigmaLowPTr", 3.f, "Maximum absolute TPC n-sigma for tritons below the momentum split"};
     Configurable<float> settingCutITSNsigmaLowPTr{"settingCutITSNsigmaLowPTr", 3.f, "Maximum absolute ITS n-sigma for tritons below the momentum split"};
@@ -442,6 +444,7 @@ struct HadNucleiFemto {
     Configurable<float> settingCutTPCNsigmaHighPMaxTr{"settingCutTPCNsigmaHighPMaxTr", 3.f, "Maximum TPC n-sigma for tritons above the momentum split"};
     Configurable<float> settingTOFMassMomentumMinTr{"settingTOFMassMomentumMinTr", 1.2f, "Minimum momentum to apply the triton TOF mass cut"};
     Configurable<float> settingTOFMassMinTr{"settingTOFMassMinTr", 2.5f, "Minimum triton TOF mass"};
+    Configurable<bool> settingUseTOFMassTableTr{"settingUseTOFMassTableTr", false, "Use pidTOFmass mass for triton PID and purity instead of computeTOFMass"};
     Configurable<float> settingTOFMassMaxTr{"settingTOFMassMaxTr", 3.4f, "Maximum triton TOF mass"};
     Configurable<float> settingTPCRejectNsig{"settingTPCRejectNsig", 3.f, "Minimum absolute TPC n-sigma from deuteron, proton and pion hypotheses"};
   } tritonPid;
@@ -623,7 +626,9 @@ struct HadNucleiFemto {
     // cppcheck-suppress unusedStructMember
     std::string prefix{"zorro"};
     // Zorro
-    Configurable<bool> settingSkimmedProcessing{"settingSkimmedProcessing", false, "Skimmed dataset processing"};
+    Configurable<bool> settingEnableTriggerSelection{"settingEnableTriggerSelection", false, "Enable Zorro event selection for the configured software triggers"};
+    Configurable<std::string> settingSoftwareTriggerNames{"settingSoftwareTriggerNames", "fHighFt0Mult", "Software trigger names, separated by commas (OR selection)"};
+    Configurable<std::string> settingBaseCCDBPathForTriggers{"settingBaseCCDBPathForTriggers", "EventFiltering/Zorro/", "CCDB path for Zorro trigger information"};
   } zorro;
 
   struct : o2::framework::ConfigurableGroup {
@@ -834,6 +839,8 @@ struct HadNucleiFemto {
      {"h2NsigmaHadKaTOF", "NsigmaHad TOF distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(K)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
 
      // Purity
+     {"h2MassTOFTrComputedVsTable", "Triton TOF mass comparison before mass cut;computed mass (GeV/#it{c}^{2});table mass (GeV/#it{c}^{2})", {HistType::kTH2F, {{280, 0.f, 7.f}, {280, 0.f, 7.f}}}},
+     {"purity/h2MassTOFTrComputedVsTable", "Triton TOF mass comparison before mass cut;computed mass (GeV/#it{c}^{2});table mass (GeV/#it{c}^{2})", {HistType::kTH2F, {{280, 0.f, 7.f}, {280, 0.f, 7.f}}}},
      {"purity/h2MassTOFTr_preselection", "Triton TOF mass before mass cut; signed #it{p}_{T} (GeV/#it{c}); m_{TOF} (GeV/#it{c}^{2})", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {280, 0.0f, 7.0f}}}},
      {"purity/h2NsigmaNuTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
      {"purity/h2NsigmaNuTPC_preselecComp", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
@@ -1041,8 +1048,9 @@ struct HadNucleiFemto {
       return;
     }
     if constexpr (!isMC) {
-      if (zorro.settingSkimmedProcessing) {
-        mZorro.initCCDB(mCcdb.service, bc.runNumber(), bc.timestamp(), zorroTriggerMask());
+      if (useZorroSelection()) {
+        mZorro.setBaseCCDBPath(zorro.settingBaseCCDBPathForTriggers.value);
+        mZorro.initCCDB(mCcdb.service, bc.runNumber(), bc.timestamp(), zorro.settingSoftwareTriggerNames.value);
         mZorro.populateHistRegistry(mQaRegistry, bc.runNumber());
       }
     }
@@ -1113,7 +1121,7 @@ struct HadNucleiFemto {
   template <typename Tcollision>
   bool passesZorroSelection(const Tcollision& collision)
   {
-    if (!zorro.settingSkimmedProcessing) {
+    if (!useZorroSelection()) {
       return true;
     }
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -1132,7 +1140,7 @@ struct HadNucleiFemto {
     mQaRegistry.fill(HIST("hEvents"), 1);
 
     if constexpr (!isMC) {
-      if (zorro.settingSkimmedProcessing) {
+      if (useZorroSelection()) {
         if (!passesZorroSelection(collision)) {
           return false;
         }
@@ -1258,18 +1266,16 @@ struct HadNucleiFemto {
     constexpr float maxAbsDcaXY = 0.2f;
     constexpr float maxAbsDcaZ = 0.2f;
     constexpr int minTPCCrossedRows = 70;
-    constexpr float maxTPCChi2NCl = 5.f;
     constexpr float maxTPCFractionSharedCls = 0.3f;
-    constexpr float maxITSChi2NCl = 10.f;
 
     return !(std::abs(candidate.eta()) >= maxAbsEta ||
              std::abs(candidate.dcaXY()) >= maxAbsDcaXY ||
              std::abs(candidate.dcaZ()) >= maxAbsDcaZ ||
              candidate.tpcNClsCrossedRows() < minTPCCrossedRows ||
-             candidate.tpcChi2NCl() >= maxTPCChi2NCl ||
+             candidate.tpcChi2NCl() >= tritonPid.settingTPCChi2NClMaxTr ||
              candidate.tpcFractionSharedCls() >= maxTPCFractionSharedCls ||
              candidate.itsNCls() < tritonPid.settingITSNClsMinTr ||
-             candidate.itsChi2NCl() >= maxITSChi2NCl);
+             candidate.itsChi2NCl() >= tritonPid.settingITSChi2NClMaxTr);
   }
 
   bool useDeuteronNucleus() const
@@ -1287,12 +1293,9 @@ struct HadNucleiFemto {
     return species.settingNuPDGCode.value == He3PDG;
   }
 
-  const char* zorroTriggerMask() const
+  bool useZorroSelection() const
   {
-    if (useTritonNucleus()) {
-      return "fTritonFemto";
-    }
-    return useHelium3Nucleus() ? "fHe" : "fDe";
+    return zorro.settingEnableTriggerSelection.value;
   }
 
   const char* nucleusBetheBlochLabel() const
@@ -1926,6 +1929,26 @@ struct HadNucleiFemto {
   }
 
   template <typename Ttrack>
+  float tritonTOFMass(const Ttrack& candidate) const
+  {
+    return tritonPid.settingUseTOFMassTableTr.value ? candidate.mass() : computeTOFMass(candidate);
+  }
+
+  template <typename Ttrack>
+  void fillTritonTOFMassComparison(const Ttrack& candidate, bool isPurity)
+  {
+    const float computedMass = computeTOFMass(candidate);
+    const float tableMass = candidate.mass();
+    if (std::isfinite(computedMass) && std::isfinite(tableMass)) {
+      if (isPurity) {
+        mQaRegistry.fill(HIST("purity/h2MassTOFTrComputedVsTable"), computedMass, tableMass);
+      } else {
+        mQaRegistry.fill(HIST("h2MassTOFTrComputedVsTable"), computedMass, tableMass);
+      }
+    }
+  }
+
+  template <typename Ttrack>
   bool selectionPIDTr(const Ttrack& candidate)
   {
     const float tpcNSigmaTr = candidate.tpcNSigmaTr();
@@ -1957,9 +1980,10 @@ struct HadNucleiFemto {
       if (!candidate.hasTOF()) {
         return false;
       }
-      const float massTOFTr = computeTOFMass(candidate);
+      fillTritonTOFMassComparison(candidate, false);
+      const float massTOFTr = tritonTOFMass(candidate);
       mQaRegistry.fill(HIST("h2MassTOFTr"), candidate.sign() * absP, massTOFTr);
-      if (massTOFTr <= tritonPid.settingTOFMassMinTr || massTOFTr >= tritonPid.settingTOFMassMaxTr) {
+      if (!std::isfinite(massTOFTr) || massTOFTr <= tritonPid.settingTOFMassMinTr || massTOFTr >= tritonPid.settingTOFMassMaxTr) {
         return false;
       }
     }
@@ -4109,7 +4133,8 @@ struct HadNucleiFemto {
             mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselection"), signedPtTr, tpcNSigmaTr);
             // Apply the triton TPC PID cut but keep TOF mass uncut to retain its sidebands.
             if (passTPCTr && absPTr > tritonPid.settingTOFMassMomentumMinTr && track.hasTOF()) {
-              const float massTOFTr = computeTOFMass(track);
+              fillTritonTOFMassComparison(track, true);
+              const float massTOFTr = tritonTOFMass(track);
               if (std::isfinite(massTOFTr)) {
                 mQaRegistry.fill(HIST("purity/h2MassTOFTr_preselection"), signedPtTr, massTOFTr);
               }

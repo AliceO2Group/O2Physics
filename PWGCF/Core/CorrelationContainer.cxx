@@ -626,7 +626,7 @@ TH2* CorrelationContainer::getSumOfRatios(CorrelationContainer* mixed, Correlati
         double finiteBinCorrection = -1.0 / (2 * mTrackEtaCut) * binWidthEta / 2 + 1;
         LOGF(info, "Finite bin correction: %f", finiteBinCorrection);
         mixedNorm /= finiteBinCorrection;
-        mixedNormError /= finiteBinCorrection;
+        // mixedNormError /= finiteBinCorrection; // FIXME: unused
       } else {
         LOGF(error, "ERROR: mTrackEtaCut not set. Finite bin correction cannot be applied. Continuing anyway...");
       }

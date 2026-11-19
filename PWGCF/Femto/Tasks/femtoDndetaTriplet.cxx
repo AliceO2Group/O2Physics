@@ -352,26 +352,23 @@ struct FemtoDndetaTriplet {
   // data
   void processTrackTrackTrack(FemtoCollision const& col, FemtoTracks const& tracks)
   {
-    dndetaBuilder.processData(col, dndetaTrackPartitionGlobal, dndetaTrackPartitionItsOnly, cache, [&]() {
-      return tripletTrackTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, trackPartition2, trackPartition3, cache);
-    });
+    bool const found = tripletTrackTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, trackPartition2, trackPartition3, cache);
+    dndetaBuilder.processData(col, dndetaTrackPartitionGlobal, dndetaTrackPartitionItsOnly, cache, [found]() { return found; }, found ? tripletTrackTrackTrackBuilder.getMinimumAcceptedQ3() : -1.f);
   }
   PROCESS_SWITCH(FemtoDndetaTriplet, processTrackTrackTrack, "Data, track-track-track trigger", true);
 
   void processTrackTrackV0(FemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/)
   {
-    dndetaBuilder.processData(col, dndetaTrackPartitionGlobal, dndetaTrackPartitionItsOnly, cache, [&]() {
-      return tripletTrackTrackLambdaBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, trackPartition2, lambdaPartition, cache);
-    });
+    bool const found = tripletTrackTrackLambdaBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, trackPartition2, lambdaPartition, cache);
+    dndetaBuilder.processData(col, dndetaTrackPartitionGlobal, dndetaTrackPartitionItsOnly, cache, [found]() { return found; }, found ? tripletTrackTrackLambdaBuilder.getMinimumAcceptedQ3() : -1.f);
   }
   PROCESS_SWITCH(FemtoDndetaTriplet, processTrackTrackV0, "Data, track-track-lambda trigger", false);
 
   // data with strangeness yields
   void processTrackTrackTrackWithStrangeness(FemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/, FemtoK0shorts const& /*k0shorts*/)
   {
-    if (dndetaBuilder.processData(col, dndetaTrackPartitionGlobal, dndetaTrackPartitionItsOnly, cache, [&]() {
-          return tripletTrackTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, trackPartition2, trackPartition3, cache);
-        })) {
+    bool const found = tripletTrackTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, trackPartition2, trackPartition3, cache);
+    if (dndetaBuilder.processData(col, dndetaTrackPartitionGlobal, dndetaTrackPartitionItsOnly, cache, [found]() { return found; }, found ? tripletTrackTrackTrackBuilder.getMinimumAcceptedQ3() : -1.f)) {
       fillStrangeness(col);
     }
   }
@@ -379,9 +376,8 @@ struct FemtoDndetaTriplet {
 
   void processTrackTrackV0WithStrangeness(FemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/, FemtoK0shorts const& /*k0shorts*/)
   {
-    if (dndetaBuilder.processData(col, dndetaTrackPartitionGlobal, dndetaTrackPartitionItsOnly, cache, [&]() {
-          return tripletTrackTrackLambdaBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, trackPartition2, lambdaPartition, cache);
-        })) {
+    bool const found = tripletTrackTrackLambdaBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, trackPartition2, lambdaPartition, cache);
+    if (dndetaBuilder.processData(col, dndetaTrackPartitionGlobal, dndetaTrackPartitionItsOnly, cache, [found]() { return found; }, found ? tripletTrackTrackLambdaBuilder.getMinimumAcceptedQ3() : -1.f)) {
       fillStrangeness(col);
     }
   }
@@ -390,23 +386,31 @@ struct FemtoDndetaTriplet {
   // mc
   void processTrackTrackTrackMc(FemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
+    float triggerQ3 = -1.f;
     dndetaBuilder.processMc(
       cols, mcCols, dndetaTrackWithLabelPartitionGlobal, dndetaTrackWithLabelPartitionItsOnly, cache, mcParticles, mcMothers, perMcColParticles, pdg,
       [&](auto const& col) {
-        return tripletTrackTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, trackWithLabelPartition3, mcParticles, mcMothers, mcPartonicMothers, cache);
+        bool const found = tripletTrackTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, trackWithLabelPartition3, mcParticles, mcMothers, mcPartonicMothers, cache);
+        triggerQ3 = found ? tripletTrackTrackTrackBuilder.getMinimumAcceptedQ3() : -1.f;
+        return found;
       },
-      [&](auto const& mcCol) { return evaluateGenTrigger(mcCol, mcParticles, mcMothers, mcPartonicMothers); });
+      [&](auto const& mcCol) { return evaluateGenTrigger(mcCol, mcParticles, mcMothers, mcPartonicMothers); },
+      triggerQ3);
   }
   PROCESS_SWITCH(FemtoDndetaTriplet, processTrackTrackTrackMc, "MC, track-track-track trigger", false);
 
   void processTrackTrackV0Mc(FemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdasWithLabel const& /*lambdas*/, FemtoMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
+    float triggerQ3 = -1.f;
     dndetaBuilder.processMc(
       cols, mcCols, dndetaTrackWithLabelPartitionGlobal, dndetaTrackWithLabelPartitionItsOnly, cache, mcParticles, mcMothers, perMcColParticles, pdg,
       [&](auto const& col) {
-        return tripletTrackTrackLambdaBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, lambdaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
+        bool const found = tripletTrackTrackLambdaBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, lambdaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
+        triggerQ3 = found ? tripletTrackTrackLambdaBuilder.getMinimumAcceptedQ3() : -1.f;
+        return found;
       },
-      [&](auto const& mcCol) { return evaluateGenTrigger(mcCol, mcParticles, mcMothers, mcPartonicMothers); });
+      [&](auto const& mcCol) { return evaluateGenTrigger(mcCol, mcParticles, mcMothers, mcPartonicMothers); },
+      triggerQ3);
   }
   PROCESS_SWITCH(FemtoDndetaTriplet, processTrackTrackV0Mc, "MC, track-track-lambda trigger", false);
 };

@@ -251,7 +251,7 @@ struct HfCandidateSelectorXicToXiPiPi {
         registry.add("hNCrossedRowsTpcV0PosDauRecBkg", "Reconstructed background;#it{N}_{rows}^{TPC} (V0 pos. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
         registry.add("hNCrossedRowsTpcV0NegDauRecBkg", "Reconstructed background;#it{N}_{rows}^{TPC} (V0 neg. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
         /// reconstructed MC
-        registry.add("hmass_pt_reco_truth", "Reconstructed truth matching MC;inv.mass(#Xi#pi#pi) [GeV/c^{2}];p_{T} [GeV/c]", {HistType::kTH2F, {{40, 2.3, 2.7}, {200, 0, 20}}});
+        registry.add("hMassPtRecSig", "Reconstructed truth matching MC;inv.mass(#Xi#pi#pi) [GeV/c^{2}];p_{T} [GeV/c]", {HistType::kTH2F, {{40, 2.3, 2.7}, {200, 0, 20}}});
       }
     }
 
@@ -655,7 +655,8 @@ struct HfCandidateSelectorXicToXiPiPi {
       if constexpr (IsMc) {
         if (isMatchedSignal) {
           registry.fill(HIST("hSelCandidatesRecSig"), PidSelected);
-          registry.fill(HIST("hmass_pt_reco_truth"), hfCandXic.invMassXicPlus(), hfCandXic.pt());
+          if (fillQAHistograms)
+            registry.fill(HIST("hMassPtRecSig"), hfCandXic.invMassXicPlus(), hfCandXic.pt());
         } else {
           registry.fill(HIST("hSelCandidatesRecBkg"), PidSelected);
         }
