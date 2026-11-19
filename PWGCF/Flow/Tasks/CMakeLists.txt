@@ -121,5 +121,5 @@ o2physics_add_dpl_workflow(flow-directed-flow-task
 
 o2physics_add_dpl_workflow(flow-small-systems
                     SOURCES flowSmallSystems.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::GFWCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::GFWCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
