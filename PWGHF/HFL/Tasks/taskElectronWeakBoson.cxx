@@ -427,7 +427,7 @@ struct HfTaskElectronWeakBoson {
     // Z-hadron correlation histograms
     const int nSysVar = nCutVariations();
     if (sysCfg.enableSystematics) {
-      const size_t nVar = static_cast<size_t>(nSysVar - 1);
+      const auto nVar = static_cast<size_t>(nSysVar - 1);
       if (nVar == 0) {
         LOGF(warn, "systematics: enableSystematics is on but every variation vector is empty, so the axis has one bin and nothing is varied.");
       }
@@ -975,11 +975,8 @@ struct HfTaskElectronWeakBoson {
   // wider window genuinely adds candidates. iv == 0 uses the nominal configurables.
   bool passZVariation(const HfZeeCandidate& zBoson, int iv)
   {
-    if (zBoson.mass < variedValue(sysCfg.varMassZMin.value, iv, massZMin) ||
-        zBoson.mass > variedValue(sysCfg.varMassZMax.value, iv, massZMax)) {
-      return false;
-    }
-    return true;
+    return zBoson.mass >= variedValue(sysCfg.varMassZMin.value, iv, massZMin) &&
+           zBoson.mass <= variedValue(sysCfg.varMassZMax.value, iv, massZMax);
   }
 
   // W trigger electron. selectedElectronsIso carries no identification cut, so these three can
@@ -1160,7 +1157,7 @@ struct HfTaskElectronWeakBoson {
   // Returns false if the event fails the centrality selection.
   // -------------------------------------------------------------------------
   template <typename TCollision, typename FRho>
-  bool initEvent(TCollision const& collision, FRho&& getRho, float& centrality, float& energyUE)
+  bool initEvent(TCollision const& collision, FRho const& getRho, float& centrality, float& energyUE)
   {
     selectedElectronsIso.clear();
     selectedPositronsIso.clear();

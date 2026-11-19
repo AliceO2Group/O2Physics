@@ -58,6 +58,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -354,7 +355,7 @@ struct HfDerivedDataCreatorElectronWeakBoson {
           pSum += other.p();
         }
       }
-      HfEleCand cand{track.globalIndex(), static_cast<float>(pSum), static_cast<int16_t>(nTrk), HfEmcMatch{}};
+      HfEleCand cand{.trackGlobalIndex = track.globalIndex(), .pSum = static_cast<float>(pSum), .nTrk = static_cast<int16_t>(nTrk), .emc = HfEmcMatch{}};
       auto matches = matchedTracks.sliceBy(perTrackMatched, track.globalIndex());
       if (matches.size() != 0) {
         cand.emc = findClosestCluster(matches, clusters);
