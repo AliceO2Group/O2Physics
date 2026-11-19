@@ -5230,7 +5230,7 @@ struct LambdaProtonBalanceFunction {
     LOG(info) << "===============================================";
     LOG(info) << "";
   }
-  // ─────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& context)
