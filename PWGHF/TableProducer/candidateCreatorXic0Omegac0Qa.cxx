@@ -1057,7 +1057,7 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
 
   // Configurables
   struct : ConfigurableGroup {
-    Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
+    Configurable<bool> rejectBackground{"rejectBackground", false, "Reject particles from background events"};
     Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", true, "Match also candidates with tracks that decay with kinked topology"};
     Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", true, "Match also candidates with tracks that interact with material"};
   } configs;
