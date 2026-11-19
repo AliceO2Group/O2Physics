@@ -14,7 +14,7 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: a6564f5d57444e123433a5c9af733e3975c77229 # frozen: v0.11.0.1-1
+    rev: 745eface02aef23e168a8afb6b5737818efbea95 # frozen: v0.11.0.1 (requires Python >= 3.9)
     hooks:
       - id: shellcheck
   - repo: https://github.com/astral-sh/ruff-pre-commit
