@@ -2510,7 +2510,7 @@ struct FlowGenericFramework {
       }
 
       bool isK0 = (v0.pdgCode() == PDG_t::kK0Short);
-      bool isLambda = (v0.pdgCode() == PDG_t::kLambda0);
+      bool isLambda = (std::abs(v0.pdgCode()) == PDG_t::kLambda0);
 
       if (!isK0 && !isLambda) {
         return;
