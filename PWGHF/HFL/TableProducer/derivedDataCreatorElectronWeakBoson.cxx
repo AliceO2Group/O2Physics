@@ -326,10 +326,10 @@ struct HfDerivedDataCreatorElectronWeakBoson {
 
     // ---- pass 1 : electron candidates (needs the EMCal matching for the skim decision)
     struct HfEleCand {
-      int64_t trackGlobalIndex;
-      float pSum;
-      int16_t nTrk;
-      HfEmcMatch emc;
+      int64_t trackGlobalIndex = -1;
+      float pSum = 0.f;
+      int16_t nTrk = 0;
+      HfEmcMatch emc{};
     };
     std::vector<HfEleCand> eleCands;
     bool hasMatchedTrack = false; // skim step 1
