@@ -355,9 +355,9 @@ struct FlowSP {
     nParticleTypes
   };
 
-  enum SelectionType { 
-    kEvent, 
-    kTrack, 
+  enum SelectionType {
+    kEvent,
+    kTrack,
     nSelectionTypes
   };
 
@@ -424,8 +424,8 @@ struct FlowSP {
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_MultCuts + 1, "Multiplicity Cuts Pilup");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_isSelectedZDC + 1, "isSelected");
 
-    histos.add("hSingleEventRejection", "", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}}); 
-    histos.add("hEventRejectionMatrix", "", {HistType::kTH2D, {{nEventSelections, 0, nEventSelections}, {nEventSelections, 0, nEventSelections}}}); 
+    histos.add("hSingleEventRejection", "", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
+    histos.add("hEventRejectionMatrix", "", {HistType::kTH2D, {{nEventSelections, 0, nEventSelections}, {nEventSelections, 0, nEventSelections}}});
 
     for (int i = 1; i <= nEventSelections; i++) {
       const char* label = histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->GetBinLabel(i);
@@ -446,8 +446,8 @@ struct FlowSP {
     histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_ZeroCharge + 1, "Only charged");
     histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_ParticleWeights + 1, "Apply weights");
 
-    histos.add("hSingleTrackRejection", "", {HistType::kTH1D, {{nTrackSelections, 0, nTrackSelections}}}); 
-    histos.add("hTrackRejectionMatrix", "", {HistType::kTH2D, {{nTrackSelections, 0, nTrackSelections}, {nTrackSelections, 0, nTrackSelections}}}); 
+    histos.add("hSingleTrackRejection", "", {HistType::kTH1D, {{nTrackSelections, 0, nTrackSelections}}});
+    histos.add("hTrackRejectionMatrix", "", {HistType::kTH2D, {{nTrackSelections, 0, nTrackSelections}, {nTrackSelections, 0, nTrackSelections}}});
 
     for (int i = 1; i <= nTrackSelections; i++) {
       const char* label = histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->GetBinLabel(i);
@@ -1030,7 +1030,6 @@ struct FlowSP {
     return true;
   }
 
-
   template <FillType ft, ChargeType ct, typename McParticleObject>
   inline void fillPrimaryHistos(const McParticleObject& mcparticle)
   {
@@ -1042,33 +1041,34 @@ struct FlowSP {
     }
   }
 
-  //HIER
-  template <SelectionType st> 
-  void makeSelectionMatrix(std::vector<bool> passedCuts) { 
+  // HIER
+  template <SelectionType st>
+  void makeSelectionMatrix(std::vector<bool> passedCuts)
+  {
     int nCuts = static_cast<int>(passedCuts.size());
 
-    int nRejected = 0; 
-    int rejectedIndex = -1; 
+    int nRejected = 0;
+    int rejectedIndex = -1;
 
-    for(int i = 0; i < nCuts; i++){ 
-      if(passedCuts[i]) { 
-        continue; 
+    for (int i = 0; i < nCuts; i++) {
+      if (passedCuts[i]) {
+        continue;
       }
 
-      nRejected++; 
-      rejectedIndex = i; 
+      nRejected++;
+      rejectedIndex = i;
 
-      // Loop over entire matrix again for this specific cut that failed 
-      for(int j = 0; j < nCuts; j++){ 
-        if(!passedCuts[j]) { 
+      // Loop over entire matrix again for this specific cut that failed
+      for (int j = 0; j < nCuts; j++) {
+        if (!passedCuts[j]) {
           histos.fill(HIST("h") + HIST(Selections[st]) + HIST("RejectionMatrix"), i, j);
         }
       }
     }
 
-    // Check if only one single selection rejected event or track 
-    if(nRejected == 1){ 
-      histos.fill(HIST("hSingle") + HIST(Selections[st]) + HIST("Rejection"), rejectedIndex); 
+    // Check if only one single selection rejected event or track
+    if (nRejected == 1) {
+      histos.fill(HIST("hSingle") + HIST(Selections[st]) + HIST("Rejection"), rejectedIndex);
     }
   }
 
@@ -1076,22 +1076,22 @@ struct FlowSP {
   bool eventSelected(const TCollision& collision, const int& multTrk)
   {
 
-    bool isEventSelected  = true; 
-    std::vector<bool> passedCuts(nEventSelections, true); 
+    bool isEventSelected = true;
+    std::vector<bool> passedCuts(nEventSelections, true);
 
     if (!collision.sel8()) {
-      isEventSelected  = false; 
-      passedCuts[evSel_sel8] = false; 
+      isEventSelected = false;
+      passedCuts[evSel_sel8] = false;
     }
-    if(isEventSelected) {
+    if (isEventSelected) {
       histos.fill(HIST("hEventCount"), evSel_sel8);
     }
 
     if (cfg.cEvtUseRCTFlagChecker && !rctChecker(collision)) {
-      isEventSelected  = false; 
-      passedCuts[evSel_RCTFlagsZDC] = false; 
+      isEventSelected = false;
+      passedCuts[evSel_RCTFlagsZDC] = false;
     }
-    if(isEventSelected) {
+    if (isEventSelected) {
       histos.fill(HIST("hEventCount"), evSel_RCTFlagsZDC);
     }
 
@@ -1099,11 +1099,11 @@ struct FlowSP {
     if (cfg.cEvSelsDoOccupancySel) {
       auto occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy > cfg.cEvSelsMaxOccupancy || occupancy < cfg.cEvSelsMinOccupancy) {
-        isEventSelected  = false; 
-        passedCuts[evSel_occupancy] = false; 
+        isEventSelected = false;
+        passedCuts[evSel_occupancy] = false;
       }
     }
-    if(isEventSelected) {
+    if (isEventSelected) {
       histos.fill(HIST("hEventCount"), evSel_occupancy);
     }
 
@@ -1111,52 +1111,52 @@ struct FlowSP {
       if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
         // rejects collisions which are associated with the same "found-by-T0" bunch crossing
         // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
-        isEventSelected  = false; 
-        passedCuts[evSel_kNoSameBunchPileup] = false; 
+        isEventSelected = false;
+        passedCuts[evSel_kNoSameBunchPileup] = false;
       }
     }
-    if(isEventSelected) {
+    if (isEventSelected) {
       histos.fill(HIST("hEventCount"), evSel_kNoSameBunchPileup);
     }
     if (cfg.cEvSelsIsGoodZvtxFT0vsPV) {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
         // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
         // use this cut at low multiplicities with caution
-        isEventSelected  = false; 
-        passedCuts[evSel_kIsGoodZvtxFT0vsPV] = false; 
+        isEventSelected = false;
+        passedCuts[evSel_kIsGoodZvtxFT0vsPV] = false;
       }
     }
-    if(isEventSelected) {
+    if (isEventSelected) {
       histos.fill(HIST("hEventCount"), evSel_kIsGoodZvtxFT0vsPV);
     }
     if (cfg.cEvSelsNoCollInTimeRangeStandard) {
       if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         //  Rejection of the collisions which have other events nearby
-        isEventSelected  = false; 
-        passedCuts[evSel_kNoCollInTimeRangeStandard] = false; 
+        isEventSelected = false;
+        passedCuts[evSel_kNoCollInTimeRangeStandard] = false;
       }
     }
-    if(isEventSelected) {
+    if (isEventSelected) {
       histos.fill(HIST("hEventCount"), evSel_kNoCollInTimeRangeStandard);
     }
     if (cfg.cEvSelsNoCollInTimeRangeNarrow) {
       if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
         // Rejection of the collisions which have other events nearby
-        isEventSelected  = false; 
-        passedCuts[evSel_kNoCollInTimeRangeNarrow] = false; 
+        isEventSelected = false;
+        passedCuts[evSel_kNoCollInTimeRangeNarrow] = false;
       }
     }
-    if(isEventSelected) {
+    if (isEventSelected) {
       histos.fill(HIST("hEventCount"), evSel_kNoCollInTimeRangeNarrow);
     }
     if (cfg.cEvSelsIsVertexITSTPC) {
       if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
         // selects collisions with at least one ITS-TPC track, and thus rejects vertices built from ITS-only tracks
-        isEventSelected  = false; 
-        passedCuts[evSel_kIsVertexITSTPC] = false; 
+        isEventSelected = false;
+        passedCuts[evSel_kIsVertexITSTPC] = false;
       }
     }
-    if(isEventSelected) {
+    if (isEventSelected) {
       histos.fill(HIST("hEventCount"), evSel_kIsVertexITSTPC);
     }
 
@@ -1164,20 +1164,20 @@ struct FlowSP {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         // New event selection bits to cut time intervals with dead ITS staves
         // https://indico.cern.ch/event/1493023/ (09-01-2025)
-        isEventSelected  = false; 
-        passedCuts[evSel_kIsGoodITSLayersAll] = false; 
+        isEventSelected = false;
+        passedCuts[evSel_kIsGoodITSLayersAll] = false;
       }
     }
-    if(isEventSelected) {
+    if (isEventSelected) {
       histos.fill(HIST("hEventCount"), evSel_kIsGoodITSLayersAll);
     }
     if (cfg.cEvSelsIsGoodITSLayer0123) {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
-        isEventSelected  = false; 
-        passedCuts[evSel_kIsGoodITSLayer0123] = false; 
+        isEventSelected = false;
+        passedCuts[evSel_kIsGoodITSLayer0123] = false;
       }
     }
-    if(isEventSelected) {
+    if (isEventSelected) {
       histos.fill(HIST("hEventCount"), evSel_kIsGoodITSLayer0123);
     }
 
@@ -1196,30 +1196,29 @@ struct FlowSP {
       auto multNTracksPV = collision.multNTracksPV();
 
       if (vtxz > cfg.cEvSelsVtxZ || vtxz < -cfg.cEvSelsVtxZ || multNTracksPV < fMultPVCutLow->Eval(collision.centFT0C()) || multNTracksPV > fMultPVCutHigh->Eval(collision.centFT0C()) || multTrk < fMultCutLow->Eval(collision.centFT0C()) || multTrk > fMultCutHigh->Eval(collision.centFT0C())) {
-        isEventSelected  = false; 
-        passedCuts[evSel_MultCuts] = false; 
+        isEventSelected = false;
+        passedCuts[evSel_MultCuts] = false;
       }
     }
-    if(isEventSelected) {
+    if (isEventSelected) {
       histos.fill(HIST("hEventCount"), evSel_MultCuts);
     }
 
     if constexpr (o2::framework::has_type_v<aod::sptablezdc::IsSelected, typename TCollision::all_columns>) {
-      if (!collision.isSelected()) { 
-        isEventSelected  = false; 
-        passedCuts[evSel_isSelectedZDC] = false; 
+      if (!collision.isSelected()) {
+        isEventSelected = false;
+        passedCuts[evSel_isSelectedZDC] = false;
       }
-      if(isEventSelected) {
+      if (isEventSelected) {
         histos.fill(HIST("hEventCount"), evSel_isSelectedZDC);
       }
     }
 
     if (spm.centrality > cfg.cCentMax || spm.centrality < cfg.cCentMin) {
-      isEventSelected  = false; 
+      isEventSelected = false;
       passedCuts[evSel_CentCuts] = false;
     }
     histos.fill(HIST("hEventCount"), evSel_CentCuts);
-
 
     makeSelectionMatrix<kEvent>(passedCuts);
 
@@ -1230,8 +1229,8 @@ struct FlowSP {
   bool trackSelected(const TrackObject& track, const int& field)
   {
 
-    bool isTrackSelected = true; 
-    std::vector<bool> passedCuts(nTrackSelections, true); 
+    bool isTrackSelected = true;
+    std::vector<bool> passedCuts(nTrackSelections, true);
 
     //---- This is a lambda!!
     auto fillSpectraStudyMCReco = [&](TrackSelections sel) {
@@ -1253,32 +1252,32 @@ struct FlowSP {
     //---- End of lambda
 
     if (std::fabs(track.eta()) > cfg.cTrackSelsEta) {
-      isTrackSelected = false; 
-      passedCuts[trackSel_Eta] = false; 
+      isTrackSelected = false;
+      passedCuts[trackSel_Eta] = false;
     }
-    if(isTrackSelected) {
+    if (isTrackSelected) {
       histos.fill(HIST("hTrackCount"), trackSel_Eta);
       fillSpectraStudyMCReco(trackSel_Eta);
     }
-    
+
     if (track.pt() < cfg.cTrackSelsPtmin || track.pt() > cfg.cTrackSelsPtmax) {
-      isTrackSelected = false; 
-      passedCuts[trackSel_Pt] = false; 
+      isTrackSelected = false;
+      passedCuts[trackSel_Pt] = false;
     }
-    if(isTrackSelected) {
+    if (isTrackSelected) {
       histos.fill(HIST("hTrackCount"), trackSel_Pt);
       fillSpectraStudyMCReco(trackSel_Pt);
     }
-    
+
     if (track.tpcNClsCrossedRows() < cfg.cTrackSelsNcls) {
-      isTrackSelected = false; 
+      isTrackSelected = false;
       passedCuts[trackSel_NCls] = false;
     }
-    if(isTrackSelected) {
+    if (isTrackSelected) {
       histos.fill(HIST("hTrackCount"), trackSel_NCls);
       fillSpectraStudyMCReco(trackSel_NCls);
     }
-    
+
     double phimodn = track.phi();
     if (field < 0) {
       phimodn = o2::constants::math::TwoPI - phimodn;
@@ -1298,11 +1297,11 @@ struct FlowSP {
 
     if (cfg.cTrackSelsUseAdditionalTrackCut) {
       if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt())) {
-        isTrackSelected = false; 
+        isTrackSelected = false;
         passedCuts[trackSel_TPCBoundary] = false; // reject track
       }
     }
-    if(isTrackSelected) {
+    if (isTrackSelected) {
       histos.fill(HIST("hTrackCount"), trackSel_TPCBoundary);
       fillSpectraStudyMCReco(trackSel_TPCBoundary);
       if (cfg.cFillTrackQA) {
@@ -1311,22 +1310,22 @@ struct FlowSP {
     }
 
     if (track.tpcFractionSharedCls() > cfg.cTrackSelsFshcls) {
-      isTrackSelected = false; 
+      isTrackSelected = false;
       passedCuts[trackSel_FshCls] = false;
     }
-    if(isTrackSelected) {
+    if (isTrackSelected) {
       histos.fill(HIST("hTrackCount"), trackSel_FshCls);
       fillSpectraStudyMCReco(trackSel_FshCls);
     }
-    
+
     // Only fill primary/secondary histos for MC data.
     if constexpr (o2::framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
       if (!track.has_mcParticle()) {
-          return false;
-        }
+        return false;
+      }
       auto mcParticle = track.template mcParticle_as<MCs>();
 
-      if(isTrackSelected){
+      if (isTrackSelected) {
         fillPrimaryHistos<kBefore, kInclusive>(mcParticle);
         if (spm.charge == kPositive) {
           fillPrimaryHistos<kBefore, kPositive>(mcParticle);
@@ -1336,70 +1335,70 @@ struct FlowSP {
       }
 
       if (std::fabs(track.dcaXY()) > cfg.cTrackSelsDCAxy || std::fabs(track.dcaXY()) > fDCACut->Eval(track.pt())) {
-        isTrackSelected = false; 
+        isTrackSelected = false;
         passedCuts[trackSel_DCAxy] = false;
       }
-      if(isTrackSelected) {
+      if (isTrackSelected) {
         histos.fill(HIST("hTrackCount"), trackSel_DCAxy);
         fillSpectraStudyMCReco(trackSel_DCAxy);
       }
-      
+
       if (std::fabs(track.dcaZ()) > cfg.cTrackSelsDCAz || (cfg.cTrackSelsDoDCApt && std::fabs(track.dcaZ()) > fDCACut->Eval(track.pt()))) {
-        isTrackSelected = false; 
+        isTrackSelected = false;
         passedCuts[trackSel_DCAz] = false;
       }
-      if(isTrackSelected) {
+      if (isTrackSelected) {
         histos.fill(HIST("hTrackCount"), trackSel_DCAz);
         fillSpectraStudyMCReco(trackSel_DCAz);
       }
 
       if (!track.isGlobalTrack()) {
-        isTrackSelected = false; 
+        isTrackSelected = false;
         passedCuts[trackSel_GlobalTracks] = false;
       }
-      if(isTrackSelected) {
+      if (isTrackSelected) {
         histos.fill(HIST("hTrackCount"), trackSel_GlobalTracks);
         fillSpectraStudyMCReco(trackSel_GlobalTracks);
       }
-      
-      if(isTrackSelected) {
-      fillPrimaryHistos<kAfter, kInclusive>(mcParticle);
-      if (spm.charge == kPositive) {
-        fillPrimaryHistos<kAfter, kPositive>(mcParticle);
-      } else {
-        fillPrimaryHistos<kAfter, kNegative>(mcParticle);
+
+      if (isTrackSelected) {
+        fillPrimaryHistos<kAfter, kInclusive>(mcParticle);
+        if (spm.charge == kPositive) {
+          fillPrimaryHistos<kAfter, kPositive>(mcParticle);
+        } else {
+          fillPrimaryHistos<kAfter, kNegative>(mcParticle);
+        }
       }
-    }
     } else { // Only apply DCA-cuts for data (Do not fill secondary plots in between in data as we don't have that info)
       if (std::fabs(track.dcaXY()) > cfg.cTrackSelsDCAxy || std::fabs(track.dcaXY()) > fDCACut->Eval(track.pt())) {
-        isTrackSelected = false; 
+        isTrackSelected = false;
         passedCuts[trackSel_DCAxy] = false;
       }
-      if(isTrackSelected) {
+      if (isTrackSelected) {
         histos.fill(HIST("hTrackCount"), trackSel_DCAxy);
       }
 
       if (std::fabs(track.dcaZ()) > cfg.cTrackSelsDCAz || (cfg.cTrackSelsDoDCApt && std::fabs(track.dcaZ()) > fDCACut->Eval(track.pt()))) {
-        isTrackSelected = false; 
+        isTrackSelected = false;
         passedCuts[trackSel_DCAz] = false;
       }
-      if(isTrackSelected) {
+      if (isTrackSelected) {
         histos.fill(HIST("hTrackCount"), trackSel_DCAz);
         fillSpectraStudyMCReco(trackSel_DCAz);
       }
 
       if (!track.isGlobalTrack()) {
-        isTrackSelected = false; 
+        isTrackSelected = false;
         passedCuts[trackSel_GlobalTracks] = false;
       }
-      if(isTrackSelected) {
+      if (isTrackSelected) {
         histos.fill(HIST("hTrackCount"), trackSel_GlobalTracks);
         fillSpectraStudyMCReco(trackSel_GlobalTracks);
       }
     }
 
     makeSelectionMatrix<kTrack>(passedCuts);
-    
+
     return isTrackSelected;
   }
 
