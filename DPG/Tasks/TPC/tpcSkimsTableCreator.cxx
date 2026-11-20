@@ -215,8 +215,8 @@ struct TreeWriterTpcV0 {
     }
 
     if (saveMomentumHistograms) {
-      registry.add("hMomentumPos", "hMomentumPos;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2F, {{200, std::log10(0.1), std::log10(20.)}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
-      registry.add("hMomentumNeg", "hMomentumNeg;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2F, {{200, std::log10(0.1), std::log10(20.)}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
+      registry.add("hMomentumPos", "hMomentumPos;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{200, std::log10(0.1), std::log10(20.)}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
+      registry.add("hMomentumNeg", "hMomentumNeg;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{200, std::log10(0.1), std::log10(20.)}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
     }
 
     if (applyAdaptiveDownsampling) {
@@ -828,8 +828,8 @@ struct TreeWriterTpcTof {
     }
 
     if (saveMomentumHistograms) {
-      registry.add("hMomentumPos", "hMomentumPos;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2F, {{200, std::log10(0.1), std::log10(20.)}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
-      registry.add("hMomentumNeg", "hMomentumNeg;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2F, {{200, std::log10(0.1), std::log10(20.)}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
+      registry.add("hMomentumPos", "hMomentumPos;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{200, std::log10(0.1), std::log10(20.)}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
+      registry.add("hMomentumNeg", "hMomentumNeg;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{200, std::log10(0.1), std::log10(20.)}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
     }
   }
 
