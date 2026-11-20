@@ -1695,7 +1695,7 @@ class VarManager : public TObject
   static bool fgPVrecalKF;
   static void SetVariableDependencies(); // toggle those variables on which other used variables might depend
 
-  static float fgMagField;                  // magnetic field, in kGaus
+  static float fgMagField; // magnetic field, in kGaus
   static float fgzMatching;
   static float fgxShiftFwd;
   static float fgyShiftFwd;
@@ -3090,8 +3090,7 @@ void VarManager::FillTrack(T const& track, float* values)
     if (fgUsedVars[kPhiTPCOuter]) {
       if (track.pt() > 0.022 * fgMagField) {
         values[kPhiTPCOuter] = RecoDecay::constrainAngle(track.phi() - track.sign() * (o2::constants::math::PIHalf - std::acos(0.022 * fgMagField / track.pt())));
-      }
-      else {
+      } else {
         values[kPhiTPCOuter] = o2::dqconstants::InvalidValueF;
       }
     }
