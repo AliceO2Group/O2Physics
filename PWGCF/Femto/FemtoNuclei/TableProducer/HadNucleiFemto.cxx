@@ -437,6 +437,14 @@ struct HadNucleiFemto {
     Configurable<int> settingITSNClsMinTr{"settingITSNClsMinTr", 5, "Minimum number of ITS clusters for triton candidates"};
     Configurable<float> settingTPCChi2NClMaxTr{"settingTPCChi2NClMaxTr", 4.f, "Maximum TPC chi2 per cluster for triton candidates"};
     Configurable<float> settingITSChi2NClMaxTr{"settingITSChi2NClMaxTr", 36.f, "Maximum ITS chi2 per cluster for triton candidates"};
+    Configurable<float> settingDCAxyShiftTr{"settingDCAxyShiftTr", 0.00049472f, "Shift added to triton DCAxy in cm before taking its absolute value"};
+    Configurable<float> settingDCAxyOffsetTr{"settingDCAxyOffsetTr", 0.00780663f, "Constant term of the triton DCAxy limit in cm"};
+    Configurable<float> settingDCAxyCoeffTr{"settingDCAxyCoeffTr", 0.02015144f, "Coefficient of the inverse-pT term of the triton DCAxy limit"};
+    Configurable<float> settingDCAxyPowerTr{"settingDCAxyPowerTr", 5.86322f, "Inverse-pT exponent of the triton DCAxy limit"};
+    Configurable<float> settingDCAzShiftTr{"settingDCAzShiftTr", -0.00003534f, "Shift added to triton DCAz in cm before taking its absolute value"};
+    Configurable<float> settingDCAzOffsetTr{"settingDCAzOffsetTr", 0.00677261f, "Constant term of the triton DCAz limit in cm"};
+    Configurable<float> settingDCAzCoeffTr{"settingDCAzCoeffTr", 0.01587102f, "Coefficient of the inverse-pT term of the triton DCAz limit"};
+    Configurable<float> settingDCAzPowerTr{"settingDCAzPowerTr", 3.82604f, "Inverse-pT exponent of the triton DCAz limit"};
     Configurable<float> settingPIDMomentumSplitTr{"settingPIDMomentumSplitTr", 2.f, "Momentum separating low- and high-momentum triton TPC PID"};
     Configurable<float> settingCutTPCNsigmaLowPTr{"settingCutTPCNsigmaLowPTr", 3.f, "Maximum absolute TPC n-sigma for tritons below the momentum split"};
     Configurable<float> settingCutITSNsigmaLowPTr{"settingCutITSNsigmaLowPTr", 3.f, "Maximum absolute ITS n-sigma for tritons below the momentum split"};
@@ -444,7 +452,7 @@ struct HadNucleiFemto {
     Configurable<float> settingCutTPCNsigmaHighPMaxTr{"settingCutTPCNsigmaHighPMaxTr", 3.f, "Maximum TPC n-sigma for tritons above the momentum split"};
     Configurable<float> settingTOFMassMomentumMinTr{"settingTOFMassMomentumMinTr", 1.2f, "Minimum momentum to apply the triton TOF mass cut"};
     Configurable<float> settingTOFMassMinTr{"settingTOFMassMinTr", 2.5f, "Minimum triton TOF mass"};
-    Configurable<bool> settingUseTOFMassTableTr{"settingUseTOFMassTableTr", false, "Use pidTOFmass mass for triton PID and purity instead of computeTOFMass"};
+    Configurable<bool> settingUseTOFMassTableTr{"settingUseTOFMassTableTr", false, "Use pidTOFmass mass for triton PID, purity and pair-table output instead of computed mass"};
     Configurable<float> settingTOFMassMaxTr{"settingTOFMassMaxTr", 3.4f, "Maximum triton TOF mass"};
     Configurable<float> settingTPCRejectNsig{"settingTPCRejectNsig", 3.f, "Minimum absolute TPC n-sigma from deuteron, proton and pion hypotheses"};
   } tritonPid;
@@ -1263,14 +1271,18 @@ struct HadNucleiFemto {
   bool selectTrackTr(const Ttrack& candidate)
   {
     constexpr float maxAbsEta = 0.8f;
-    constexpr float maxAbsDcaXY = 0.2f;
-    constexpr float maxAbsDcaZ = 0.2f;
+    const float absPt = std::abs(candidate.pt());
+    if (!std::isfinite(absPt) || absPt <= 0.f) {
+      return false;
+    }
+    const float maxAbsDcaXY = tritonPid.settingDCAxyOffsetTr.value + tritonPid.settingDCAxyCoeffTr.value / std::pow(absPt, tritonPid.settingDCAxyPowerTr.value);
+    const float maxAbsDcaZ = tritonPid.settingDCAzOffsetTr.value + tritonPid.settingDCAzCoeffTr.value / std::pow(absPt, tritonPid.settingDCAzPowerTr.value);
     constexpr int minTPCCrossedRows = 70;
     constexpr float maxTPCFractionSharedCls = 0.3f;
 
     return !(std::abs(candidate.eta()) >= maxAbsEta ||
-             std::abs(candidate.dcaXY()) >= maxAbsDcaXY ||
-             std::abs(candidate.dcaZ()) >= maxAbsDcaZ ||
+             std::abs(candidate.dcaXY() + tritonPid.settingDCAxyShiftTr.value) >= maxAbsDcaXY ||
+             std::abs(candidate.dcaZ() + tritonPid.settingDCAzShiftTr.value) >= maxAbsDcaZ ||
              candidate.tpcNClsCrossedRows() < minTPCCrossedRows ||
              candidate.tpcChi2NCl() >= tritonPid.settingTPCChi2NClMaxTr ||
              candidate.tpcFractionSharedCls() >= maxTPCFractionSharedCls ||
@@ -2363,9 +2375,13 @@ struct HadNucleiFemto {
     hadNucand.collisionIDHad = trackHad.collisionId();
 
     if (trackDe.hasTOF()) {
-      float beta = o2::pid::tof::Beta::GetBeta(trackDe);
-      beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
-      hadNucand.massTOFNu = hadNucand.momNuTPC * nuChargeFactor * std::sqrt(1.f / (beta * beta) - 1.f);
+      if (useTritonNucleus() && tritonPid.settingUseTOFMassTableTr.value) {
+        hadNucand.massTOFNu = tritonTOFMass(trackDe);
+      } else {
+        float beta = o2::pid::tof::Beta::GetBeta(trackDe);
+        beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+        hadNucand.massTOFNu = hadNucand.momNuTPC * nuChargeFactor * std::sqrt(1.f / (beta * beta) - 1.f);
+      }
     }
     if (trackHad.hasTOF()) {
       float beta = o2::pid::tof::Beta::GetBeta(trackHad);
@@ -2498,10 +2514,14 @@ struct HadNucleiFemto {
     }
 
     if (track.hasTOF()) {
-      float beta = o2::pid::tof::Beta::GetBeta(track);
-      beta = std::clamp(beta, 1.e-4f, 1.f - 1.e-6f);
-      const float momentumForMass = isNucleus ? bufferedTrack.tpcInnerParam * nucleusChargeFactor() : bufferedTrack.tpcInnerParam;
-      bufferedTrack.massTOF = momentumForMass * std::sqrt(1.f / (beta * beta) - 1.f);
+      if (isNucleus && useTritonNucleus() && tritonPid.settingUseTOFMassTableTr.value) {
+        bufferedTrack.massTOF = tritonTOFMass(track);
+      } else {
+        float beta = o2::pid::tof::Beta::GetBeta(track);
+        beta = std::clamp(beta, 1.e-4f, 1.f - 1.e-6f);
+        const float momentumForMass = isNucleus ? bufferedTrack.tpcInnerParam * nucleusChargeFactor() : bufferedTrack.tpcInnerParam;
+        bufferedTrack.massTOF = momentumForMass * std::sqrt(1.f / (beta * beta) - 1.f);
+      }
     }
     return bufferedTrack;
   }
