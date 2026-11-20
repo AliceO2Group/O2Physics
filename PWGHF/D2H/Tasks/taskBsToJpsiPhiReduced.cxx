@@ -568,6 +568,9 @@ struct HfTaskBsToJpsiPhiReduced {
   /// Fill particle histograms (gen MC truth)
   void fillCandMcGen(aod::HfMcGenRedBss::iterator const& particle)
   {
+    if (particle.flagMcDecayChanRec() != o2::hf_decay::hf_cand_beauty::BsToJpsiPhi) { // we only accept resonant channel
+      return;
+    }
     auto ptParticle = particle.ptTrack();
     auto yParticle = particle.yTrack();
     if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
