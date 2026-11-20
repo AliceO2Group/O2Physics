@@ -492,8 +492,7 @@ struct HfCandidateSelectorToXiPiQa {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 7.0);
-      // TODO: check if this is needed
-      // The QA KF table has no dedicated charm-bachelor-to-PV topological chi2 column.
+      // TODO: check if this cut is needed,the QA KF table has no dedicated charm-bachelor-to-PV topological chi2 column
       // if (candidate.chi2TopoPiFromXicToPv() < 0 || candidate.chi2TopoPiFromXicToPv() > cuts->get(inputPtBin, "chi2TopoPiFromXicToPv")) {
       //   return false;
       // }
@@ -509,6 +508,7 @@ struct HfCandidateSelectorToXiPiQa {
       }
       registry.fill(HIST("hSelStatusHf"), 10.0);
 
+      // TODO: this is not correct for the OmegaC0->XiPi decay, need to differentiate between the two decays
       // ctau
       if (std::abs(HfHelper::ctXiczero(candidate)) > cuts->get(inputPtBin, "cTauXic")) {
         return false;

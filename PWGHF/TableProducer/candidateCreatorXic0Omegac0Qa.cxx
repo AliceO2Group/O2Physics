@@ -587,6 +587,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     }
 
     //----------Create charm baryon as KF Particle object starting from V0----------
+    // TODO: investigate if we can use the KFParticle object of cascade from straHelper instead of creating a new one here
     // Create KFParticle object of V0 Daughter & Bachelor
     const KFPTrack kfTrack0 = createKFPTrackFromTrack(posTrack);
     const KFPTrack kfTrack1 = createKFPTrackFromTrack(negTrack);
@@ -1090,6 +1091,11 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
 
   void init(InitContext& initContext)
   {
+    const std::array<bool, 3> mcProcesses{doprocessMcNoCent, doprocessMcCentFT0C, doprocessMcCentFT0M};
+    if (std::accumulate(mcProcesses.begin(), mcProcesses.end(), 0) > 1) {
+      LOGP(fatal, "At most one MC process function can be enabled at a time.");
+    }
+
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name == "hf-candidate-creator-xic0-omegac0-qa") {

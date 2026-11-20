@@ -324,7 +324,7 @@ struct HfTreeCreatorToXiPiQa {
 
   Configurable<int> selectionFlag{"selectionFlag", 7, "Selection threshold: 1 skims, 3 topology, 7 PID, 15 ML"};
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
-  Configurable<int8_t> decayChannelSelection{"decayChannelSelection", hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Xic0ToXiPi, "Decay channel used to match particle information"};
+  Configurable<int> decayChannelSelection{"decayChannelSelection", hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Xic0ToXiPi, "Decay channel used to match particle information"};
   Configurable<bool> fillGenTable{"fillGenTable", true, "Fill generated MC information if requested"};
 
   using MyTrackTable = soa::Join<aod::TracksWExtra, aod::TrackSelection, aod::TracksPidPi, aod::TracksPidPr>;
@@ -349,8 +349,8 @@ struct HfTreeCreatorToXiPiQa {
   using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_to_xi_pi_qa::isSelToXiPi >= selectionFlag;
-  Filter filterRecXiPi = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(decayChannelSelection);
-  Filter filterGenXiPi = nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(decayChannelSelection);
+  Filter filterRecXiPi = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == decayChannelSelection;
+  Filter filterGenXiPi = nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == decayChannelSelection;
 
   PresliceUnsorted<MyEventTableWithMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
@@ -521,7 +521,7 @@ struct HfTreeCreatorToXiPiQa {
                          candidate.cpaXYV0(),
                          candidate.cpaXY(),
                          candidate.cpaXYCascade(),
-                         HfHelper::ctXiczero(candidate),
+                         HfHelper::ctXiczero(candidate), // TODO: this gives incorrect value for Omegac0, need to use proper helper function for Omegac0->XiPi
                          trackV0PosDau.eta(),
                          trackV0NegDau.eta(),
                          trackPiFromCasc.eta(),
@@ -604,11 +604,11 @@ struct HfTreeCreatorToXiPiQa {
                        candidate.massLambda(),
                        candidate.massCascade(),
                        HfHelper::invMassXiczeroToXiPi(candidate),
-                       HfHelper::yXiczero(candidate),
+                       HfHelper::yXiczero(candidate), // TODO: this gives incorrect value for Omegac0, need to use proper helper function for Omegac0->XiPi
                        RecoDecay::sqrtSumOfSquares(candidate.pxProng1(), candidate.pyProng1()),
                        candidate.pt(),
-                       HfHelper::cosThetaStarXiczeroToXiPi(candidate),
-                       HfHelper::ctXiczero(candidate),
+                       HfHelper::cosThetaStarXiczeroToXiPi(candidate), // TODO: this gives incorrect value for Omegac0, need to use proper helper function for Omegac0->XiPi
+                       HfHelper::ctXiczero(candidate),                 // TODO: this gives incorrect value for Omegac0, need to use proper helper function for Omegac0->XiPi
                        candidate.eta(),
                        candidate.ndfGeoV0(),
                        candidate.ndfGeoCascade(),

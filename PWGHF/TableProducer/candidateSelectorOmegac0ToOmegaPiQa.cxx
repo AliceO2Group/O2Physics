@@ -204,10 +204,10 @@ struct HfCandidateSelectorToOmegaPiQa {
     Configurable<float> v0Chi2OverNdfMax{"v0Chi2OverNdfMax", 100., "Maximum chi2Geo/NDF of V0"};
     Configurable<float> cascChi2OverNdfMax{"cascChi2OverNdfMax", 100., "Maximum chi2Geo/NDF of casc"};
     Configurable<float> omegacChi2OverNdfMax{"omegacChi2OverNdfMax", 100., "Maximum chi2Geo/NDF of Omegac"};
-    Configurable<float> chi2TopoV0ToCascMax{"chi2TopoV0ToCascMax", 100., "Maximum chi2Topo/NDF of V0ToCas"};
-    Configurable<float> chi2TopoOmegacToPvMax{"chi2TopoOmegacToPvMax", 100., "Maximum chi2Topo/NDF of OmegacToPv"};
-    Configurable<float> chi2TopoCascToOmegacMax{"chi2TopoCascToOmegacMax", 100., "Maximum chi2Topo/NDF of CascToOmegac"};
-    Configurable<float> chi2TopoCascToPvMax{"chi2TopoCascToPvMax", 100., "Maximum chi2Topo/NDF of CascToPv"};
+    Configurable<float> chi2TopoV0ToCascMax{"chi2TopoV0ToCascMax", 100., "Maximum chi2Topo of V0ToCasc"};
+    Configurable<float> chi2TopoOmegacToPvMax{"chi2TopoOmegacToPvMax", 100., "Maximum chi2Topo of OmegacToPv"};
+    Configurable<float> chi2TopoCascToOmegacMax{"chi2TopoCascToOmegacMax", 100., "Maximum chi2Topo of CascToOmegac"};
+    Configurable<float> chi2TopoCascToPvMax{"chi2TopoCascToPvMax", 100., "Maximum chi2Topo of CascToPv"};
     Configurable<float> decayLenXYOmegacMax{"decayLenXYOmegacMax", 1.5, "Maximum decay lengthXY of Omegac"};
     Configurable<float> decayLenXYCascMin{"decayLenXYCascMin", 1., "Minimum decay lengthXY of Cascade"};
     Configurable<float> decayLenXYLambdaMin{"decayLenXYLambdaMin", 0., "Minimum decay lengthXY of V0"};
@@ -507,8 +507,7 @@ struct HfCandidateSelectorToOmegaPiQa {
         }
         registry.fill(HIST("hSelStatusLf"), 22.0);
 
-        // TODO: fix cascRejectInvmass variable needed not available in the current table
-
+        // TODO: cascRejectInvmass variable not available in the current table, check if needed
         // Competing Xi rejection
         // if (kfConfigurableGroup.applyCompetingCascRejection) {
         //  const auto invMassXiHypothesis = candidate.cascRejectInvmass();
@@ -597,11 +596,11 @@ struct HfCandidateSelectorToOmegaPiQa {
         registry.fill(HIST("hSelStatusHf"), 5.0);
 
         // Chi2
-        if (candidate.chi2GeoOverNdfCascade() < 0 || candidate.chi2GeoOverNdfCascade() > kfConfigurableGroup.omegacChi2OverNdfMax) {
+        if (candidate.chi2GeoOverNdf() < 0 || candidate.chi2GeoOverNdf() > kfConfigurableGroup.omegacChi2OverNdfMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusHf"), 6.0);
-        if (candidate.chi2TopoCascadeToPv() < 0 || candidate.chi2TopoCascadeToPv() > kfConfigurableGroup.chi2TopoOmegacToPvMax) {
+        if (candidate.chi2TopoToPv() < 0 || candidate.chi2TopoToPv() > kfConfigurableGroup.chi2TopoOmegacToPvMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusHf"), 7.0);
@@ -723,9 +722,7 @@ struct HfCandidateSelectorToOmegaPiQa {
 
       if (!TESTBIT(candidate.hfflag(), aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi)) {
         hfSelOmegaC0ToOmegaPiCandidate(statusOmegaC0ToOmegaPi);
-        if (applyMl) {
-          hfMlOmegaC0ToOmegaPiCandidate(outputMlOmegac);
-        }
+        hfMlOmegaC0ToOmegaPiCandidate(outputMlOmegac);
         continue;
       }
       SETBIT(statusOmegaC0ToOmegaPi, aod::SelectionStep::RecoSkims);
@@ -753,9 +750,7 @@ struct HfCandidateSelectorToOmegaPiQa {
 
       if (!selectedLf || !selectedHf || !selectedTrackQuality) {
         hfSelOmegaC0ToOmegaPiCandidate(statusOmegaC0ToOmegaPi);
-        if (applyMl) {
-          hfMlOmegaC0ToOmegaPiCandidate(outputMlOmegac);
-        }
+        hfMlOmegaC0ToOmegaPiCandidate(outputMlOmegac);
         continue;
       }
       SETBIT(statusOmegaC0ToOmegaPi, aod::SelectionStep::RecoTopol);
@@ -780,9 +775,7 @@ struct HfCandidateSelectorToOmegaPiQa {
 
       if (!isSelectedPID(pidPrFromLam, pidPiFromLam, pidKaFromCasc, pidPiFromCharmBaryon)) {
         hfSelOmegaC0ToOmegaPiCandidate(statusOmegaC0ToOmegaPi);
-        if (applyMl) {
-          hfMlOmegaC0ToOmegaPiCandidate(outputMlOmegac);
-        }
+        hfMlOmegaC0ToOmegaPiCandidate(outputMlOmegac);
         continue;
       }
       SETBIT(statusOmegaC0ToOmegaPi, aod::SelectionStep::RecoPID);
@@ -808,6 +801,8 @@ struct HfCandidateSelectorToOmegaPiQa {
           continue;
         }
         SETBIT(statusOmegaC0ToOmegaPi, aod::SelectionStep::RecoMl);
+      } else {
+        hfMlOmegaC0ToOmegaPiCandidate(outputMlOmegac);
       }
 
       registry.fill(HIST("hInvMassCharmBaryon"), HfHelper::invMassOmegaczeroToOmegaPi(candidate));
