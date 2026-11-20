@@ -109,9 +109,14 @@ struct ChargedParticles {
   int maxMultMeas{100}; // from collisionSystem
   int maxMultTrue{100};
   Configurable<float> etaCut{"etaCut", 0.8f, "eta cut"};
-  Configurable<float> ptMinCut{"ptMinCut", 0.15f, "pt min cut"};
-  Configurable<float> ptMaxCut{"ptMaxCut", 10.f, "pt max cut"};
-  Configurable<std::string> eventClasses{"eventClasses", "fiducial", "mc event classes, comma separated: fiducial (N_ch > 0), inelgt0, triggered (tvx; run 2: v0and, 2010/2011: int1), inel; one class: flat output, several: one subfolder per class"};
+  Configurable<std::string> ptRange{"ptRange", "nominal", "pt window and binning of tracks and particles: nominal (0.15-10), lowPt (0.05-10, low field), highPt (0.15-50)"};
+  Configurable<bool> fiducialMult{"fiducialMult", true, "count n_ch (measured and true, and so the event class fiducial) only in the fiducial window 0.15 < pt < 10, whatever ptRange"};
+  static constexpr float FiducialPtMin = 0.15f;
+  static constexpr float FiducialPtMax = 10.f;
+  float ptMin{FiducialPtMin}; // from ptRange
+  float ptMax{FiducialPtMax};
+  bool isInMultWindow(float pt) const { return !fiducialMult.value || (pt > FiducialPtMin && pt < FiducialPtMax); }
+  Configurable<std::string> eventClasses{"eventClasses", "fiducial", "mc event classes, comma separated: fiducial (N_ch > 0, N_ch as set by ptRange and fiducialMult), inelgt0, triggered (tvx; run 2: v0and, 2010/2011: int1), inel; one class: flat output, several: one subfolder per class"};
   enum EventClass { kFiducial,
                     kINELGT0,
                     kTriggered,
@@ -146,16 +151,20 @@ struct ChargedParticles {
   };
   std::unordered_map<int64_t, ParticleTracks> tracksPerParticle; // qa: selected tracks per mc particle in the current mc event
   std::string lastRunLabel;
+  int phiRunBin{0}; // qa: run bin of qa/tracks/phiRun (0 = no run label yet)
   Configurable<std::string> evSelBits{"evSelBits", "auto", "event selection bits on top of sel8 (names as in EventSelectionParams), comma separated; auto = default of the collision system (currently kNoSameBunchPileup for all)"};
   Configurable<float> maxVtxZ{"maxVtxZ", 10.f, "max |z| of the reco and true vertex"};
   uint64_t evSelMask{0};
   std::vector<int> evSelBitList; // configured bits in the given order (cut-flow)
   std::vector<int> trackCutBits; // single cuts of the track selection mask (track qa)
+  uint32_t tpcCutMask{0};        // qa: tpc cuts of the selection mask (its-tpc matching)
+  uint32_t itsCutMask{0};        // qa: its cuts of the selection mask (its-tpc matching)
   bool isNominal{true};          // qa only for the nominal setting
   Configurable<uint32_t> seedOffset{"seedOffset", 0, "offset for the (deterministic) random numbers of the particle composition correction"};
 
   // systematic variations, numbering as in run 2 where the cut exists (unfolding framework expects these ids);
-  // 107-110 (shared tpc clusters, golden chi2) and 118-119 (geometric cut) do not exist in run 3 (fatal);
+  // 107: max shared tpc cluster fraction 0.4 (nominal: no cut; one-sided, 108 unused);
+  // 109-110 (golden chi2) and 118-119 (geometric cut) do not exist in run 3 (fatal);
   // 116-117 are tpc crossed rows (run 2: geometric length cut); 130+ are new in run 3
   enum : uint32_t {
     kSystNominal = 100,
@@ -165,6 +174,7 @@ struct ChargedParticles {
     kSystUpChi2PerClusterTPC,        // 104
     kSystDownTPCCrossedRowsOverNCls, // 105
     kSystUpTPCCrossedRowsOverNCls,   // 106
+    kSystDownTPCFracSharedCls,       // 107
     kSystDownDCAxy = 111,
     kSystUpDCAxy,            // 112
     kSystDownDCAz,           // 113
@@ -173,13 +183,16 @@ struct ChargedParticles {
     kSystDownTPCCrossedRows, // 116
     kSystUpTPCCrossedRows,   // 117
     kSystDownPCC = 120,
-    kSystUpPCC,         // 121
-    kSystDownVtxZ = 130 // |z| < 7 cm (reco and true vertex)
+    kSystUpPCC,                 // 121
+    kSystDownVtxZ = 130,        // |z| < 7 cm (reco and true vertex)
+    kSystEvSelNoCollInRof,      // 131, + kNoCollInRofStandard (run 3 only)
+    kSystEvSelNoCollInTimeRange // 132, + kNoCollInTimeRangeStandard (run 3 only)
   };
   Configurable<uint32_t> systMode{"systMode", kSystNominal, "variation for systematic uncertainties"};
   float vtxZCut() const { return (systMode.value == kSystDownVtxZ) ? 7.f : maxVtxZ.value; } // applied |z| cut (reco and true vertex)
   uint16_t trackSelMask{TrackSelectionFlags::kGlobalTrackWoPtEta};                          // track selection bitmask (without cut that is being varied)
   uint16_t cutVarFlag{0};
+  bool isCutVar{false}; // a single cut is varied (checked with trackSel)
   TrackSelection trackSel;
   TrackSelection::TrackCuts trackSelFlag{};
   static bool isINT1Period(int runNumber)
@@ -200,6 +213,7 @@ struct ChargedParticles {
     bool isChargedPrimary{false};
     uint32_t nRepetitions{1u};
     int64_t mcCollisionIndex{-1}; // current mc collision
+    float zVtx{0.f};              // qa: reco vertex z (its-tpc matching)
   };
   VarContainer vars;
 
@@ -303,7 +317,7 @@ void ChargedParticles::init(InitContext const&)
     LOGP(fatal, "evSelBits '{}' is not applied to run 2 data (run 2 uses sel7 and kINT7): keep evSelBits = auto", evSelBits.value);
   }
 
-  // collision system: multiplicity axes (run 2 values; light ions from the 2025 data, oo/nene above the tail) and event selection default
+  // collision system: multiplicity axes (run 2 values; light ions from the 2025 data, oo/nene above the tail; xexe/pbpb above the 2026 pb-pb tail) and event selection default
   // todo: measure the event selection default per system (data vs mc rejection, qa/events/multMeasBits)
   std::string evSelBitsDefault = "kNoSameBunchPileup";
   if (collisionSystem.value == "pp") {
@@ -319,8 +333,8 @@ void ChargedParticles::init(InitContext const&)
     maxMultMeas = 400;
     maxMultTrue = 600;
   } else if (collisionSystem.value == "XeXe" || collisionSystem.value == "PbPb") {
-    maxMultMeas = 2500;
-    maxMultTrue = 3800;
+    maxMultMeas = 4000;
+    maxMultTrue = 5000;
   } else {
     LOGP(fatal, "unknown collisionSystem '{}' (pp, pPb, pO, OO, NeNe, XeXe, PbPb)", collisionSystem.value);
   }
@@ -381,11 +395,33 @@ void ChargedParticles::init(InitContext const&)
     evSelMask |= (1ULL << bit);
     evSelBitList.push_back(bit);
   }
+  // event selection variations: one more bit on top of the configured ones
+  if (systMode == kSystEvSelNoCollInRof || systMode == kSystEvSelNoCollInTimeRange) {
+    const int bit = (systMode == kSystEvSelNoCollInRof) ? aod::evsel::kNoCollInRofStandard : aod::evsel::kNoCollInTimeRangeStandard;
+    if (!isRun3) {
+      LOGP(fatal, "systMode {} (event selection variation) exists only for run 3", systMode.value);
+    }
+    if (((evSelMask >> bit) & 1ULL) != 0) {
+      LOGP(fatal, "systMode {}: {} is already in evSelBits (variation would equal nominal)", systMode.value, aod::evsel::selectionLabels[bit]);
+    }
+    evSelMask |= (1ULL << bit);
+    evSelBitList.push_back(bit);
+  }
 
   std::vector<double> ptBinEdges = {0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75,
                                     0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9,
                                     2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5,
                                     6.0, 6.5, 7.0, 8.0, 9.0, 10.0};
+  // pt window = first and last edge
+  if (ptRange.value == "lowPt") {
+    ptBinEdges.insert(ptBinEdges.begin(), {0.05, 0.075, 0.1, 0.125});
+  } else if (ptRange.value == "highPt") {
+    ptBinEdges.insert(ptBinEdges.end(), {11., 12., 13., 14., 15., 16., 18., 20., 22., 24., 26., 30., 34., 40., 50.});
+  } else if (ptRange.value != "nominal") {
+    LOGP(fatal, "unknown ptRange '{}' (nominal, lowPt, highPt)", ptRange.value);
+  }
+  ptMin = ptBinEdges.front();
+  ptMax = ptBinEdges.back();
 
   const AxisSpec ptMeasAxis{ptBinEdges, "#it{p}^{ meas}_{T} (GeV/#it{c})", "pt_meas"};
 
@@ -410,6 +446,7 @@ void ChargedParticles::init(InitContext const&)
     histos.add("QA/tracks/signed1Pt", "", kTH1D, {{200, -8., 8., "q/#it{p}_{T}"}});
     histos.add("QA/tracks/eta", "", kTH1D, {{180, -0.9, 0.9, "#eta"}});
     histos.add("QA/tracks/phi", "", kTH1D, {{180, 0., o2::constants::math::TwoPI, "#phi (rad)"}});
+    histos.add("QA/tracks/phiRun", "", kTH2D, {{180, 0., o2::constants::math::TwoPI, "#phi (rad)"}, {512, 0., 512.}}); // run axis labelled as runStatistics
     histos.add("QA/tracks/itsNCls", "", kTH1D, {{8, -0.5, 7.5, "# clusters ITS"}});
     histos.add("QA/tracks/itsHits", "", kTH1D, {{7, -0.5, 6.5, "layer ITS"}});
     histos.add("QA/tracks/itsChi2NCl", "", kTH1D, {{100, 0., 40., "chi2 per cluster ITS"}});
@@ -417,6 +454,7 @@ void ChargedParticles::init(InitContext const&)
     histos.add("QA/tracks/tpcNClsFound", "", kTH1D, {{165, -0.5, 164.5, "# clusters TPC"}});
     histos.add("QA/tracks/tpcCrossedRows", "", kTH1D, {{165, -0.5, 164.5, "# crossed rows TPC"}});
     histos.add("QA/tracks/tpcCrossedRowsOverFindableCls", "", kTH1D, {{90, 0.7, 1.6, "crossed rows / findable clusters TPC"}});
+    histos.add("QA/tracks/tpcFractionSharedCls", "", kTH2D, {ptMeasAxis, {51, 0., 1.02, "fraction of shared clusters TPC"}});
     histos.add("QA/tracks/tpcChi2NCl", "", kTH1D, {{100, 0., 10., "chi2 / cluster TPC"}});
     histos.add("QA/tracks/sigmaPt", "", kTH2D, {ptMeasAxis, {100, 0., 0.3, "#sigma(#it{p}^{ meas}_{T}) / #it{p}^{ meas}_{T}"}});
     // one dca axis for all dca qa: a bin centred at 0, fine in the core (resolution down to ~10 um at high pt), coarse
@@ -452,6 +490,16 @@ void ChargedParticles::init(InitContext const&)
     histos.add("QA/tracks/trackCuts", "", kTH2D, {ptMeasAxis, {nCutBins, -0.5, nCutBins - 0.5}});
     histos.add("QA/tracks/dcaXYnm1", "", kTH2D, {ptMeasAxis, dcaXYAxis});
     histos.add("QA/tracks/dcaZnm1", "", kTH2D, {ptMeasAxis, dcaZAxis});
+    // its-tpc matching: tracks passing the tpc cuts of the mask (no track type, its or dca cut), with an its track, and passing the its cuts
+    for (const auto& bit : trackCutBits) {
+      const auto cut = static_cast<TrackSelection::TrackCuts>(bit);
+      if (cut == TrackSelection::TrackCuts::kTPCNCls || cut == TrackSelection::TrackCuts::kTPCCrossedRows || cut == TrackSelection::TrackCuts::kTPCCrossedRowsOverNCls || cut == TrackSelection::TrackCuts::kTPCChi2NDF || cut == TrackSelection::TrackCuts::kTPCRefit) {
+        tpcCutMask |= (1u << bit);
+      } else if (cut == TrackSelection::TrackCuts::kITSNCls || cut == TrackSelection::TrackCuts::kITSChi2NDF || cut == TrackSelection::TrackCuts::kITSRefit || cut == TrackSelection::TrackCuts::kITSHits) {
+        itsCutMask |= (1u << bit);
+      }
+    }
+    histos.add("QA/tracks/itsTpcMatch", "", kTH2D, {ptMeasAxis, {5, -0.5, 4.5}});
   }
 
   if (doprocessMC || doprocessMCnoPCC) {
@@ -526,7 +574,16 @@ void ChargedParticles::init(InitContext const&)
     for (int i = 0; i < NLayersITS; ++i) {
       axisHits->SetBinLabel(i + 1, ("L" + std::to_string(i)).c_str());
     }
+    auto* axisMatch = histos.get<TH2>(HIST("QA/tracks/itsTpcMatch"))->GetYaxis();
+    axisMatch->SetBinLabel(1, "tpc cuts");
+    axisMatch->SetBinLabel(2, "matchable (its or x < 90 cm)");
+    axisMatch->SetBinLabel(3, "pointing in z");
+    axisMatch->SetBinLabel(4, "with its track");
+    axisMatch->SetBinLabel(5, "its cuts");
     metaLabel = metadataInfo.isInitialized() ? metadataInfo.makeMetadataLabel() + ", O2 " + metadataInfo.getO2Version() : std::string("no ao2d metadata");
+    if (ptRange.value != "nominal") {
+      metaLabel += ", ptRange " + ptRange.value + ", fiducialMult " + (fiducialMult.value ? "true" : "false");
+    }
     if (doprocessMC || doprocessMCnoPCC) {
       metaLabel += ", " + eventClasses.value;
       forEachDir([&](auto dir) {
@@ -566,6 +623,9 @@ void ChargedParticles::init(InitContext const&)
     trackSel.SetMinNCrossedRowsOverFindableClustersTPC(0.9);
     cutVarFlag = TrackSelectionFlags::kTPCCrossedRowsOverNCls;
     trackSelFlag = TrackSelection::TrackCuts::kTPCCrossedRowsOverNCls;
+  } else if (systMode == kSystDownTPCFracSharedCls) {
+    trackSel.SetMaxTPCFractionSharedCls(0.4f); // not in the nominal mask: nothing to remove from it
+    trackSelFlag = TrackSelection::TrackCuts::kTPCFracSharedCls;
   } else if (systMode == kSystDownDCAxy) {
     trackSel.SetMaxDcaXYPtDep([](float pt) { return 4. / 7. * (0.0105f + 0.0350f / std::pow(pt, 1.1f)); });
     cutVarFlag = TrackSelectionFlags::kDCAxy;
@@ -598,9 +658,10 @@ void ChargedParticles::init(InitContext const&)
     if (!doprocessMC) {
       LOGP(fatal, "systMode {} (pcc variation) needs processMC (with pcc)", systMode.value);
     }
-  } else if (systMode != kSystNominal && systMode != kSystDownVtxZ) {
-    LOGP(fatal, "undefined systMode {} (valid: 100-106, 111-117, 120-121, 130)", systMode.value);
+  } else if (systMode != kSystNominal && systMode != kSystDownVtxZ && systMode != kSystEvSelNoCollInRof && systMode != kSystEvSelNoCollInTimeRange) {
+    LOGP(fatal, "undefined systMode {} (valid: 100-107, 111-117, 120-121, 130-132)", systMode.value);
   }
+  isCutVar = (cutVarFlag != 0) || (systMode == kSystDownTPCFracSharedCls);
   trackSelMask &= (~cutVarFlag);
 }
 
@@ -725,7 +786,7 @@ bool ChargedParticles::initParticle(const P& particle)
   if (std::abs(particle.eta()) >= etaCut) {
     return false;
   }
-  if (particle.pt() <= ptMinCut || particle.pt() >= ptMaxCut) {
+  if (particle.pt() <= ptMin || particle.pt() >= ptMax) {
     return false;
   }
   return true;
@@ -764,14 +825,14 @@ bool ChargedParticles::initTrack(const T& track)
   if (std::abs(track.eta()) >= etaCut) {
     return false;
   }
-  if (track.pt() <= ptMinCut || track.pt() >= ptMaxCut) {
+  if (track.pt() <= ptMin || track.pt() >= ptMax) {
     return false;
   }
   if (!TrackSelectionFlags::checkFlag(track.trackCutFlag(), trackSelMask)) {
     return false;
   }
   // for systematic variation of standard selections, check if the varied cut is passed
-  if (cutVarFlag && !trackSel.IsSelected(track, trackSelFlag)) {
+  if (isCutVar && !trackSel.IsSelected(track, trackSelFlag)) {
     return false;
   }
   return true;
@@ -788,13 +849,14 @@ void ChargedParticles::initEvent(const C& collision, const T& tracks)
   vars.multMeas = 0;
   bool isValidParticle{false};
   for (const auto& track : tracks) {
-    if (initTrack(track)) {
+    if (initTrack(track) && isInMultWindow(track.pt())) {
       // same definition in data and mc: every selected track counts
       vars.multMeas += getTrackRepetitions<IS_MC, P>(track, isValidParticle);
     }
   }
 
   vars.isAcceptedEvent = false;
+  vars.zVtx = collision.posZ();
   if (std::abs(collision.posZ()) < vtxZCut()) {
     if (isRun3) {
       if (collision.sel8() && (collision.selection_raw() & evSelMask) == evSelMask) {
@@ -842,7 +904,7 @@ void ChargedParticles::initEventMC(const C& collision, const P& particles)
     if (std::abs(particle.eta()) < 1.f) {
       vars.isINELGT0EventMC = true; // inel>0: charged primary in |eta| < 1
     }
-    if (isInAcceptance) {
+    if (isInAcceptance && isInMultWindow(particle.pt())) {
       vars.multTrue += vars.nRepetitions;
     }
   }
@@ -874,7 +936,7 @@ void ChargedParticles::initEventMC(const C& collision, const P& particles)
 template <typename T>
 void ChargedParticles::fillTrackCutQA(const T& track)
 {
-  if (std::abs(track.eta()) >= etaCut || track.pt() <= ptMinCut || track.pt() >= ptMaxCut) {
+  if (std::abs(track.eta()) >= etaCut || track.pt() <= ptMin || track.pt() >= ptMax) {
     return;
   }
   const auto flags = track.trackCutFlag();
@@ -916,6 +978,25 @@ void ChargedParticles::fillTrackCutQA(const T& track)
     }
     histos.fill(HIST("QA/tracks/trackCuts"), pt, nCuts + 3 + k);
   }
+  // its-tpc matching; tpc-only tracks starting deep in the tpc (second arcs, loopers) are not matchable;
+  // pointing in z: straight-line extrapolation in r-z to the beam line (= dca_z for propagated tracks) vs the vertex
+  constexpr float MaxTpcStartX = 90.f; // cm, tpc inner wall at about 83 cm
+  constexpr float MaxDzPointing = 3.f; // cm
+  if ((flags & tpcCutMask) == tpcCutMask) {
+    histos.fill(HIST("QA/tracks/itsTpcMatch"), pt, 0);
+    if (track.hasITS() || track.x() < MaxTpcStartX) {
+      histos.fill(HIST("QA/tracks/itsTpcMatch"), pt, 1);
+      if (std::abs(track.z() - track.tgl() * track.x() - vars.zVtx) < MaxDzPointing) {
+        histos.fill(HIST("QA/tracks/itsTpcMatch"), pt, 2);
+        if (track.hasITS()) {
+          histos.fill(HIST("QA/tracks/itsTpcMatch"), pt, 3);
+          if ((flags & itsCutMask) == itsCutMask) {
+            histos.fill(HIST("QA/tracks/itsTpcMatch"), pt, 4);
+          }
+        }
+      }
+    }
+  }
 }
 
 //**************************************************************************************************
@@ -929,6 +1010,9 @@ void ChargedParticles::fillTrackQA(const T& track)
   histos.fill(HIST("QA/tracks/signed1Pt"), track.signed1Pt());
   histos.fill(HIST("QA/tracks/eta"), track.eta());
   histos.fill(HIST("QA/tracks/phi"), track.phi());
+  if (phiRunBin > 0) {
+    histos.fill(HIST("QA/tracks/phiRun"), track.phi(), phiRunBin - 0.5);
+  }
   histos.fill(HIST("QA/tracks/itsNCls"), track.itsNCls());
   for (int i = 0; i < NLayersITS; ++i) {
     if (track.itsClusterMap() & (1 << i)) {
@@ -940,6 +1024,7 @@ void ChargedParticles::fillTrackQA(const T& track)
   histos.fill(HIST("QA/tracks/tpcNClsFound"), track.tpcNClsFound());
   histos.fill(HIST("QA/tracks/tpcCrossedRows"), track.tpcNClsCrossedRows());
   histos.fill(HIST("QA/tracks/tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
+  histos.fill(HIST("QA/tracks/tpcFractionSharedCls"), track.pt(), track.tpcFractionSharedCls());
   histos.fill(HIST("QA/tracks/tpcChi2NCl"), track.tpcChi2NCl());
   histos.fill(HIST("QA/tracks/sigmaPt"), track.pt(), track.sigma1Pt() * track.pt());
   histos.fill(HIST("QA/tracks/dcaXY"), track.pt(), track.dcaXY());
@@ -986,6 +1071,7 @@ void ChargedParticles::fillEvSelQA(const C& collision, aod::FT0s const& ft0s, bo
     if (runNumber != lastRunNumber) {
       lastRunNumber = runNumber;
       lastRunLabel = std::to_string(runNumber);
+      phiRunBin = histos.get<TH2>(HIST("QA/tracks/phiRun"))->GetYaxis()->FindBin(lastRunLabel.c_str()); // adds the label once per run
     }
     histos.get<TH1>(HIST("QA/events/runStatistics"))->Fill(lastRunLabel.c_str(), 1.);
     histos.get<TH1>(HIST("QA/events/metaInfo"))->Fill(metaLabel.c_str(), 1.);
