@@ -97,6 +97,7 @@ struct TreeWriterTpcV0 {
   Configurable<std::string> adaptDwnsplFileName{"adaptDwnsplFileName", "AnalysisResults.root", "Name of the file with expected-momentum histograms"};
   Configurable<std::string> adaptDwnsplHistoPosName{"adaptDwnsplHistoPosName", "tree-writer-tpc-v0/hMomentumPos", "Name of the histogram with expected-momentum of positively charged particles"};
   Configurable<std::string> adaptDwnsplHistoNegName{"adaptDwnsplHistoNegName", "tree-writer-tpc-v0/hMomentumNeg", "Name of the histogram with expected-momentum of negatively charged particles"};
+  Configurable<float> adaptDwnsplHistoScaleFactor{"adaptDwnsplHistoScaleFactor", 1.f, "Scaling factor for the histograms with expected-momentum"};
   /// Configurables downsampling
   Configurable<double> dwnSmplFactorPi{"dwnSmplFactorPi", 1., "downsampling factor for pions, default fraction to keep is 1."};
   Configurable<double> dwnSmplFactorPr{"dwnSmplFactorPr", 1., "downsampling factor for protons, default fraction to keep is 1."};
@@ -225,6 +226,10 @@ struct TreeWriterTpcV0 {
 
     if (applyAdaptiveDownsampling) {
       initAdaptDwnsplHistograms(ccdbPathForAdaptDwnsplFile, adaptDwnsplFileName, adaptDwnsplHistoPosName, adaptDwnsplHistoNegName, mHistMomentumPos, mHistMomentumNeg);
+      if (adaptDwnsplHistoScaleFactor != 1.f) {
+        mHistMomentumPos->Scale(adaptDwnsplHistoScaleFactor);
+        mHistMomentumNeg->Scale(adaptDwnsplHistoScaleFactor);
+      }
     }
   }
 
@@ -745,6 +750,7 @@ struct TreeWriterTpcTof {
   Configurable<std::string> adaptDwnsplFileName{"adaptDwnsplFileName", "AnalysisResults.root", "Name of the file with expected-momentum histograms"};
   Configurable<std::string> adaptDwnsplHistoPosName{"adaptDwnsplHistoPosName", "tree-writer-tpc-tof/hMomentumPos", "Name of the histogram with expected-momentum of positively charged particles"};
   Configurable<std::string> adaptDwnsplHistoNegName{"adaptDwnsplHistoNegName", "tree-writer-tpc-tof/hMomentumNeg", "Name of the histogram with expected-momentum of negatively charged particles"};
+  Configurable<float> adaptDwnsplHistoScaleFactor{"adaptDwnsplHistoScaleFactor", 1.f, "Scaling factor for the histograms with expected-momentum"};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -825,6 +831,10 @@ struct TreeWriterTpcTof {
 
     if (applyAdaptiveDownsampling) {
       initAdaptDwnsplHistograms(ccdbPathForAdaptDwnsplFile, adaptDwnsplFileName, adaptDwnsplHistoPosName, adaptDwnsplHistoNegName, mHistMomentumPos, mHistMomentumNeg);
+      if (adaptDwnsplHistoScaleFactor != 1.f) {
+        mHistMomentumPos->Scale(adaptDwnsplHistoScaleFactor);
+        mHistMomentumNeg->Scale(adaptDwnsplHistoScaleFactor);
+      }
     }
   }
 
