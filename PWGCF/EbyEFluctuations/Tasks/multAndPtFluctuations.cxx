@@ -42,12 +42,16 @@ struct MultAndPtFluctuations {
   Configurable<int> ndcaXY{"ndcaXY", 100, "DCAxy bins"};
   Configurable<int> ndcaZ{"ndcaZ", 100, "DCAz bins"};
   Configurable<int> nCentBins{"nCentBins", 100, "Number of centrality bins"};
+  ConfigurableAxis centBining{"centBining", {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "Centrality bining"};//varying binning
 
   // ------ Event Cuts
   Configurable<float> vtxZcut{"vtxZcut", 10.0f, "vertex Z"};
   Configurable<bool> cfgNoSameBunchPileup{"cfgNoSameBunchPileup", true, "kNoSameBunchPileup"};
   Configurable<bool> cfgEvSelUseGoodZvtxFT0vsPV{"cfgEvSelUseGoodZvtxFT0vsPV", true, "Good Zvtx FT0 vs PV"};
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Good ITS Layers"};
+
+  // --------------- Subsample configuration
+  Configurable<int> cfgNSubsample{"cfgNSubsample", 30, "No of Subsamples"};
 
   // ----- Centrality estimator
   Configurable<bool> cFT0M{"cFT0M", false, "FT0M centrality"}; // for pp
@@ -80,6 +84,11 @@ struct MultAndPtFluctuations {
     const AxisSpec axisdcaZ{ndcaZ, -3.0, 3.0, "DCAz"};
     const AxisSpec axisNch{500, 0, 500, "Nch"};
     const AxisSpec axisCent{nCentBins, 0.0, 100.0, "Centrality (%)"}; // ------------- centrality bins
+
+    //--------------- Subsample Axes
+    const int nSubsamples = static_cast<int>(cfgNSubsample);
+    const AxisSpec subsampleAxis{cfgNSubsample, 0.0, static_cast<double>(nSubsamples), "Subsample"};
+
     histos.add("QA/BeforeCut/VtxZ", "Vertex Z", kTH1F, {axisVtxz});
     histos.add("QA/AfterCut/VtxZ", "Vertex Z", kTH1F, {axisVtxz});
     histos.add("QA/BeforeCut/Cent", "Centrality", kTH1F, {axisCent});
@@ -96,14 +105,52 @@ struct MultAndPtFluctuations {
     histos.add("QA/AfterCut/DcaZ", "DCAz", kTH1F, {axisdcaZ});
     histos.add("hNch", "Nch", kTH1F, {axisNch});
     histos.add("h2_DcaZ", "DCA_{Z}", kTH2D, {{axisPt}, {axisdcaZ}});
+    histos.add("Nch/hNch", "Nch", kTH1F, {axisNch});
+    histos.add("Nch/hNch_0_10",  "Nch (0-10%)",  kTH1F, {axisNch});
+    histos.add("Nch/hNch_10_20", "Nch (10-20%)", kTH1F, {axisNch});
+    histos.add("Nch/hNch_20_30", "Nch (20-30%)", kTH1F, {axisNch});
+    histos.add("Nch/hNch_30_40", "Nch (30-40%)", kTH1F, {axisNch});
+    histos.add("Nch/hNch_40_50", "Nch (40-50%)", kTH1F, {axisNch});
+    histos.add("Nch/hNch_50_60", "Nch (50-60%)", kTH1F, {axisNch});
+    histos.add("Nch/hNch_60_70", "Nch (60-70%)", kTH1F, {axisNch});
+    histos.add("Nch/hNch_70_80", "Nch (70-80%)", kTH1F, {axisNch});
+    histos.add("Nch/hNch_80_90", "Nch (80-90%)", kTH1F, {axisNch});
+    histos.add("Nch/hNch_90_100", "Nch (90-100%)", kTH1F, {axisNch});
     histos.add("h2_DcaXY", "DCA_{XY}", kTH2D, {{axisPt}, {axisdcaXY}});
     histos.add("hEventCounter", "Number of events vs centrality", kTH1F, {axisCent});
+
+    //---------- Data TProfiles-----------------------------------
     histos.add("p_a", "<A> vs centrality", kTProfile, {axisCent});
     histos.add("p_b", "<B> vs centrality", kTProfile, {axisCent});
     histos.add("p_a2", "<A^{2}> vs centrality", kTProfile, {axisCent});
     histos.add("p_b2", "<B^{2}> vs centrality", kTProfile, {axisCent});
     histos.add("p_ab", "<AB> vs centrality", kTProfile, {axisCent});
     histos.add("p_asumb", "<A+B> vs centrality", kTProfile, {axisCent});
+
+    // For varying binning
+    histos.add("Data/p_a_custom", "<A> vs custom centrality", kTProfile, {centBining});
+    histos.add("Data/p_b_custom", "<B> vs custom centrality", kTProfile, {centBining});
+    histos.add("Data/p_a2_custom", "<A^{2}> vs custom centrality", kTProfile, {centBining});
+    histos.add("Data/p_b2_custom", "<B^{2}> vs custom centrality", kTProfile, {centBining});
+    histos.add("Data/p_ab_custom", "<AB> vs custom centrality", kTProfile, {centBining});
+    histos.add("Data/p_asumb_custom", "<A+B> vs custom centrality", kTProfile, {centBining});
+
+    //------- subsample TProfile
+    histos.add("Data/subsample/p_a", "<A> vs cent & subsample", kTProfile2D, {axisCent, subsampleAxis});
+    histos.add("Data/subsample/p_b", "<B> vs cent & subsample", kTProfile2D, {axisCent, subsampleAxis});
+    histos.add("Data/subsample/p_a2", "<A^{2}> vs cent & subsample", kTProfile2D, {axisCent, subsampleAxis});
+    histos.add("Data/subsample/p_b2", "<B^{2}> vs cent & subsample", kTProfile2D, {axisCent, subsampleAxis});
+    histos.add("Data/subsample/p_ab", "<AB> vs cent & subsample", kTProfile2D, {axisCent, subsampleAxis});
+    histos.add("Data/subsample/p_asumb", "<A+B> vs cent & subsample", kTProfile2D, {axisCent, subsampleAxis});
+
+    //---------- subsample custom TProfile
+    histos.add("Data/subsample/p_a_custom", "<A> vs cent & subsample custom", kTProfile2D, {centBining, subsampleAxis});
+    histos.add("Data/subsample/p_b_custom", "<B> vs cent & subsample custom", kTProfile2D, {centBining, subsampleAxis});
+    histos.add("Data/subsample/p_a2_custom", "<A^{2}> vs cent & subsample custom", kTProfile2D, {centBining, subsampleAxis});
+    histos.add("Data/subsample/p_b2_custom", "<B^{2}> vs cent & subsample custom", kTProfile2D, {centBining, subsampleAxis});
+    histos.add("Data/subsample/p_ab_custom", "<AB> vs cent & subsample custom", kTProfile2D, {centBining, subsampleAxis});
+    histos.add("Data/subsample/p_asumb_custom", "<A+B> vs cent & subsample custom", kTProfile2D, {centBining, subsampleAxis});
+
   }
 
   //---------- Filters
@@ -215,6 +262,18 @@ struct MultAndPtFluctuations {
       a++; // A-nch, B =pt
       b += track.pt();
     }
+    static constexpr float cent10 = 10.f;
+    histos.fill(HIST("Nch/hNch"), a);
+    if (cent < cent10) histos.fill(HIST("Nch/hNch_0_10"), a);
+    else if (cent < cent10*2) histos.fill(HIST("Nch/hNch_10_20"), a);
+    else if (cent < cent10*3) histos.fill(HIST("Nch/hNch_20_30"), a);
+    else if (cent < cent10*4) histos.fill(HIST("Nch/hNch_30_40"), a);
+    else if (cent < cent10*5) histos.fill(HIST("Nch/hNch_40_50"), a);
+    else if (cent < cent10*6) histos.fill(HIST("Nch/hNch_50_60"), a);
+    else if (cent < cent10*7) histos.fill(HIST("Nch/hNch_60_70"), a);
+    else if (cent < cent10*8) histos.fill(HIST("Nch/hNch_70_80"), a);
+    else if (cent < cent10*9) histos.fill(HIST("Nch/hNch_80_90"), a);
+    else if (cent < cent10*10) histos.fill(HIST("Nch/hNch_90_100"), a);
 
     // ---- Fill TProfiles (once per event)
     histos.fill(HIST("p_a"), cent, a);
@@ -223,6 +282,29 @@ struct MultAndPtFluctuations {
     histos.fill(HIST("p_b2"), cent, b * b);
     histos.fill(HIST("p_ab"), cent, a * b);
     histos.fill(HIST("p_asumb"), cent, a + b);
+
+    histos.fill(HIST("Data/p_a_custom"), cent, a);
+    histos.fill(HIST("Data/p_b_custom"), cent, b);
+    histos.fill(HIST("Data/p_a2_custom"), cent, a*a);
+    histos.fill(HIST("Data/p_b2_custom"), cent, b*b);
+    histos.fill(HIST("Data/p_ab_custom"), cent, a*b);
+    histos.fill(HIST("Data/p_asumb_custom"), cent, a+b);
+
+    const int nSub = std::max(1, static_cast<int>(cfgNSubsample));
+    const int subsample = static_cast<int>(col.globalIndex() % static_cast<uint64_t>(nSub));
+
+    histos.fill(HIST("Data/subsample/p_a"), cent, subsample, a);
+    histos.fill(HIST("Data/subsample/p_b"), cent, subsample, b);
+    histos.fill(HIST("Data/subsample/p_a2"), cent, subsample, a*a);
+    histos.fill(HIST("Data/subsample/p_b2"), cent, subsample, b*b);
+    histos.fill(HIST("Data/subsample/p_ab"), cent, subsample, a*b);
+    histos.fill(HIST("Data/subsample/p_asumb"), cent, subsample, a+b);
+    histos.fill(HIST("Data/subsample/p_a_custom"), cent, subsample, a);
+    histos.fill(HIST("Data/subsample/p_b_custom"), cent, subsample, b);
+    histos.fill(HIST("Data/subsample/p_a2_custom"), cent, subsample, a*a);
+    histos.fill(HIST("Data/subsample/p_b2_custom"), cent, subsample, b*b);
+    histos.fill(HIST("Data/subsample/p_ab_custom"), cent, subsample, a*b);
+    histos.fill(HIST("Data/subsample/p_asumb_custom"), cent, subsample, a+b);
   }
 };
 
