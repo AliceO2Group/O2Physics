@@ -21,6 +21,7 @@
 #include "PWGLF/Utils/inelGt.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -60,6 +61,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::rctsel;
 
 struct PhiMesonCandProducer {
   // Produce the table with the phi candidates information
@@ -1294,15 +1296,6 @@ struct EventSelectionProducer {
   Produces<aod::PhiStrangeEvtSelDataLike> phiStrangeEvtSelDataLike;
   Produces<aod::PhiStrangeEvtSelMcGen> phiStrangeEvtSelMcGen;
 
-  // Produces<aod::PhiStrangeDefEvtSelDataLike> phiStrangeDefEvtSelDataLike;
-  // Produces<aod::PhiStrangeDefEvtSelMcGen> phiStrangeDefEvtSelMcGen;
-
-  /*Produces<aod::DefaultSelectionData> defaultSelectionData;
-  Produces<aod::DefaultSelectionMcGen> defaultSelectionMcGen;
-
-  Produces<aod::PhimesonSelectionData> phimesonSelectionData;
-  Produces<aod::PhimesonSelectionMcGen> phimesonSelectionMcGen;*/
-
   HistogramRegistry histos{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Configurable for event selection
@@ -1322,6 +1315,9 @@ struct EventSelectionProducer {
 
   Configurable<bool> withTrueGenPhi{"withTrueGenPhi", false, "Require the presence of a true generated phi meson in the event"};
 
+  // Configurable for RCTFlagChecker
+  Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "", "Which detector condition requirements? (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)"};
+
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
   using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
@@ -1334,6 +1330,9 @@ struct EventSelectionProducer {
   // Necessary service to flag INEL>0 events in GenMC
   Service<o2::framework::O2DatabasePDG> pdgDB{};
 
+  // Necessary tool to flag collision according to detector run condition
+  RCTFlagsChecker rctFlagsChecker;
+
   void init(InitContext&)
   {
     // Defining histogram axes
@@ -1341,17 +1340,25 @@ struct EventSelectionProducer {
     AxisSpec multAxis = {120, 0.0f, 120.0f, "centFT0M"};
     AxisSpec binnedmultAxis{std::vector<double>(binsMult), "centFT0M"};
 
+    // The RCT selection, from the label in the configuration (read before init, not at construction)
+    rctFlagsChecker.init(cfgRCTLabel.value);
+    // A label it does not know leaves the checker without flags, which it would only report at the first event
+    if (!cfgRCTLabel.value.empty() && !rctFlagsChecker.any()) {
+      LOG(fatal) << "Unknown cfgRCTLabel '" << cfgRCTLabel.value << "': expected one of CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo";
+    }
+
     // Booking histograms for event selection QA
     // Number of events per selection in Data
-    histos.add("hEventSelectionData", "hEventSelectionData", kTH1F, {{5, -0.5f, 4.5f}});
+    histos.add("hEventSelectionData", "hEventSelectionData", kTH1F, {{6, -0.5f, 5.5f}});
     histos.get<TH1>(HIST("hEventSelectionData"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelectionData"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
     histos.get<TH1>(HIST("hEventSelectionData"))->GetXaxis()->SetBinLabel(3, "posZ cut");
     histos.get<TH1>(HIST("hEventSelectionData"))->GetXaxis()->SetBinLabel(4, "INEL>0 cut");
-    histos.get<TH1>(HIST("hEventSelectionData"))->GetXaxis()->SetBinLabel(5, "With at least a #phi cand");
+    histos.get<TH1>(HIST("hEventSelectionData"))->GetXaxis()->SetBinLabel(5, "RCTFlags cut");
+    histos.get<TH1>(HIST("hEventSelectionData"))->GetXaxis()->SetBinLabel(6, "With at least a #phi cand");
 
     // Number of MC events per selection in MC
-    histos.add("hEventSelectionMC", "hEventSelectionMC", kTH1F, {{8, -0.5f, 7.5f}});
+    histos.add("hEventSelectionMC", "hEventSelectionMC", kTH1F, {{9, -0.5f, 8.5f}});
     histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(2, "kIsTriggerTVX");
     histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(3, "kNoTimeFrameBorder");
@@ -1359,7 +1366,8 @@ struct EventSelectionProducer {
     histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(5, "posZ cut");
     histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(6, "INEL>0 cut");
     histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(7, "With at least a gen coll");
-    histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(8, "With at least a #phi cand");
+    histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(8, "RCTFlags cut");
+    histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(9, "With at least a #phi cand");
 
     // Event information
     histos.add("hVertexZ", "Vertex Z", kTH1F, {vertexZAxis});
@@ -1390,6 +1398,10 @@ struct EventSelectionProducer {
         return false;
       }
       histos.fill(HIST("hEventSelectionData"), 3); // INEL>0 collisions
+      if (!cfgRCTLabel.value.empty() && !rctFlagsChecker(collision)) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelectionData"), 4); // RCTFlags cut
 
       multPercentile = collision.centFT0M();
     } else { // MCreco event
@@ -1420,6 +1432,10 @@ struct EventSelectionProducer {
         return false;
       }
       histos.fill(HIST("hEventSelectionMC"), 6); // with at least a gen collision
+      if (!cfgRCTLabel.value.empty() && !rctFlagsChecker(collision)) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelectionMC"), 7); // RCTFlags cut
 
       const auto& mcCollision = collision.template mcCollision_as<MC_T>();
       multPercentile = mcCollision.centFT0M();
@@ -1463,14 +1479,14 @@ struct EventSelectionProducer {
     float multPercentile{0.0f};
 
     if constexpr (!isMC) {
-      histos.fill(HIST("hEventSelectionData"), 4);
+      histos.fill(HIST("hEventSelectionData"), 5);
 
       multPercentile = collision.centFT0M();
     } else {
       if constexpr (std::is_same_v<MC_T, void>) {
         multPercentile = collision.centFT0M();
       } else {
-        histos.fill(HIST("hEventSelectionMC"), 7);
+        histos.fill(HIST("hEventSelectionMC"), 8);
 
         const auto& mcCollision = collision.template mcCollision_as<MC_T>();
         multPercentile = mcCollision.centFT0M();
