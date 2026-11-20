@@ -567,9 +567,9 @@ struct TreeWriterTpcV0 {
           if (saveMomentumHistograms) {
             const double log10p = std::log10(dauTrack.tpcInnerParam());
             if (isPositive) {
-              registry.fill(HIST("hMomentumPos"), log10p, daughterId);
+              registry.fill(HIST("hMomentumPos"), log10p, daughter.id);
             } else {
-              registry.fill(HIST("hMomentumNeg"), log10p, daughterId);
+              registry.fill(HIST("hMomentumNeg"), log10p, daughter.id);
             }
           }
           if (saveTrees && passDownsamplig) {
