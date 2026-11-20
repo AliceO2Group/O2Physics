@@ -94,10 +94,13 @@ struct TreeWriterTpcV0 {
   Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
-  /// Configurables downsampling
+  /// Configurables adaptive downsampling
   Configurable<bool> applyAdaptiveDownsampling{"applyAdaptiveDownsampling", false, "Apply downsampling driven by expected momentum distribution"};
   Configurable<std::string> ccdbPathForAdaptDwnsplFile{"ccdbPathForAdaptDwnsplFile", "", "CCDB path for file with expected-momentum histograms"};
   Configurable<std::string> adaptDwnsplFileName{"adaptDwnsplFileName", "AnalysisResults.root", "Name of the file with expected-momentum histograms"};
+  Configurable<std::string> adaptDwnsplHistoPosName{"adaptDwnsplHistoPosName", "tree-writer-tpc-v0/hMomentumPos", "Name of the histogram with expected-momentum of positively charged particles"};
+  Configurable<std::string> adaptDwnsplHistoNegName{"adaptDwnsplHistoNegName", "tree-writer-tpc-v0/hMomentumNeg", "Name of the histogram with expected-momentum of negatively charged particles"};
+  /// Configurables downsampling
   Configurable<double> dwnSmplFactorPi{"dwnSmplFactorPi", 1., "downsampling factor for pions, default fraction to keep is 1."};
   Configurable<double> dwnSmplFactorPr{"dwnSmplFactorPr", 1., "downsampling factor for protons, default fraction to keep is 1."};
   Configurable<double> dwnSmplFactorEl{"dwnSmplFactorEl", 1., "downsampling factor for electrons, default fraction to keep is 1."};
@@ -124,6 +127,7 @@ struct TreeWriterTpcV0 {
   // Configurables flagging saving trees and/or HistogramSpec
   Configurable<bool> saveTrees{"saveTrees", true, "Flag to save trees"};
   Configurable<bool> saveMomentumHistograms{"saveMomentumHistograms", false, "Flag to save momentum histograms"};
+  ConfigurableAxis axisMomentumHistograms{"axisMomentumHistograms", {200, std::log10(0.1), std::log10(20.)}, "log_{10}(#it{p} / (GeV/#it{c}))"};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -215,8 +219,8 @@ struct TreeWriterTpcV0 {
     }
 
     if (saveMomentumHistograms) {
-      registry.add("hMomentumPos", "hMomentumPos;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{200, std::log10(0.1), std::log10(20.)}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
-      registry.add("hMomentumNeg", "hMomentumNeg;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{200, std::log10(0.1), std::log10(20.)}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
+      registry.add("hMomentumPos", "hMomentumPos;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{axisMomentumHistograms}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
+      registry.add("hMomentumNeg", "hMomentumNeg;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{axisMomentumHistograms}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
       for (int iParticle = 0; iParticle < o2::track::PID::NIDs; ++iParticle) {
         registry.get<TH2>(HIST("hMomentumPos"))->GetYaxis()->SetBinLabel(iParticle + 1, ParticleNames.at(iParticle).data());
         registry.get<TH2>(HIST("hMomentumNeg"))->GetYaxis()->SetBinLabel(iParticle + 1, ParticleNames.at(iParticle).data());
@@ -237,14 +241,14 @@ struct TreeWriterTpcV0 {
         LOGF(fatal, "Failed to open expected-momentum histograms file from CCDB: %s/%s", ccdbPathForAdaptDwnsplFile.value.c_str(), adaptDwnsplFileName.value.c_str());
         return;
       }
-      mHistMomentumPos = dynamic_cast<TH2*>(adaptDwsplFile->Get<TH2>("tree-writer-tpc-v0/hMomentumPos")->Clone()); // TODO make Configurable
-      mHistMomentumNeg = dynamic_cast<TH2*>(adaptDwsplFile->Get<TH2>("tree-writer-tpc-v0/hMomentumNeg")->Clone());
+      mHistMomentumPos = dynamic_cast<TH2*>(adaptDwsplFile->Get<TH2>(adaptDwnsplHistoPosName.value.c_str())->Clone());
+      mHistMomentumNeg = dynamic_cast<TH2*>(adaptDwsplFile->Get<TH2>(adaptDwnsplHistoNegName.value.c_str())->Clone());
       if (mHistMomentumPos == nullptr) {
-        LOGF(fatal, "Histogram %s not found in expected-momentum histograms file!", "tree-writer-tpc-v0/hMomentumPos");
+        LOGF(fatal, "Histogram %s not found in expected-momentum histograms file!", adaptDwnsplHistoPosName.value.c_str());
         return;
       }
       if (mHistMomentumNeg == nullptr) {
-        LOGF(fatal, "Histogram %s not found in expected-momentum histograms file!", "tree-writer-tpc-v0/hMomentumNeg");
+        LOGF(fatal, "Histogram %s not found in expected-momentum histograms file!", adaptDwnsplHistoNegName.value.c_str());
         return;
       }
       mHistMomentumPos->SetDirectory(nullptr);
@@ -765,6 +769,7 @@ struct TreeWriterTpcTof {
   // Configurables flagging saving trees and/or HistogramSpec
   Configurable<bool> saveTrees{"saveTrees", true, "Flag to save trees"};
   Configurable<bool> saveMomentumHistograms{"saveMomentumHistograms", false, "Flag to save momentum histograms"};
+  ConfigurableAxis axisMomentumHistograms{"axisMomentumHistograms", {200, std::log10(0.1), std::log10(20.)}, "log_{10}(#it{p} / (GeV/#it{c}))"};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -832,8 +837,8 @@ struct TreeWriterTpcTof {
     }
 
     if (saveMomentumHistograms) {
-      registry.add("hMomentumPos", "hMomentumPos;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{200, std::log10(0.1), std::log10(20.)}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
-      registry.add("hMomentumNeg", "hMomentumNeg;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{200, std::log10(0.1), std::log10(20.)}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
+      registry.add("hMomentumPos", "hMomentumPos;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{axisMomentumHistograms}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
+      registry.add("hMomentumNeg", "hMomentumNeg;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{axisMomentumHistograms}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
       for (int iParticle = 0; iParticle < o2::track::PID::NIDs; ++iParticle) {
         registry.get<TH2>(HIST("hMomentumPos"))->GetYaxis()->SetBinLabel(iParticle + 1, ParticleNames.at(iParticle).data());
         registry.get<TH2>(HIST("hMomentumNeg"))->GetYaxis()->SetBinLabel(iParticle + 1, ParticleNames.at(iParticle).data());
