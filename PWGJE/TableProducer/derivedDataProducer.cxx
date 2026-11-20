@@ -327,7 +327,7 @@ struct JetDerivedDataProducerTask {
     if (config.includeHadronicRate) {
       if (runNumber != bc.runNumber()) {
         runNumber = bc.runNumber();
-        hadronicRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 0.001;
+        hadronicRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, config.irSource) * 0.001;
       }
     }
     uint64_t triggerBit = 0;
