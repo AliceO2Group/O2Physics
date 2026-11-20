@@ -8,8 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \author Ionut Cristian Arsene  <iarsene@cern.ch, i.c.arsene@fys.uio.no>, Oslo
+/// \brief Class to handle analysis variables
+/// \file VarManager.cxx
 
 #include "PWGDQ/Core/VarManager.h"
+
+#include "PWGDQ/Core/DQConstants.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Tools/KFparticle/KFUtilities.h"
@@ -34,13 +40,13 @@
 #include <KFParticle.h>
 
 #include <Rtypes.h>
-#include <RtypesCore.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <numeric>
 #include <tuple>
@@ -133,6 +139,10 @@ void VarManager::SetVariableDependencies()
   }
   if (fgUsedVars[kTrackIsInsideTPCModule]) {
     fgUsedVars[kPhiTPCOuter] = true;
+    fgUsedVars[kLocalSectorPhi] = true;
+  }
+  if (fgUsedVars[kLocalSectorPhi]) {
+    fgUsedVars[kPhiTPCOuter] = true;
   }
 }
 
@@ -145,7 +155,7 @@ void VarManager::ResetValues(int startValue, int endValue, float* values)
   if (!values) {
     values = fgValues;
   }
-  for (Int_t i = startValue; i < endValue; ++i) {
+  for (int i = startValue; i < endValue; ++i) {
     values[i] = -9999.;
   }
 }
@@ -258,37 +268,37 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
   // species: 0 - electron, 1 - pion, 2 - kaon, 3 - proton
   // Depending on the PID calibration type, we use different types of calibration histograms
 
-  if (fgCalibrationType == 1) {
+  if (fgCalibrationType == o2::dqconstants::defaults::TPCPIDCalibrationMeanSigma) {
     // get the calibration histograms
     CalibObjects calibMean = kTPCElectronMean;
     CalibObjects calibSigma = kTPCElectronSigma;
     switch (species) {
-      case 0:
+      case o2::dqconstants::defaults::PostCalibElectron:
         calibMean = kTPCElectronMean;
         calibSigma = kTPCElectronSigma;
         break;
-      case 1:
+      case o2::dqconstants::defaults::PostCalibPion:
         calibMean = kTPCPionMean;
         calibSigma = kTPCPionSigma;
         break;
-      case 2:
+      case o2::dqconstants::defaults::PostCalibKaon:
         calibMean = kTPCKaonMean;
         calibSigma = kTPCKaonSigma;
         break;
-      case 3:
+      case o2::dqconstants::defaults::PostCalibProton:
         calibMean = kTPCProtonMean;
         calibSigma = kTPCProtonSigma;
         break;
       default:
         LOG(fatal) << "Invalid species for PID calibration: " << species;
-        return -999.0; // Return zero if species is invalid
+        return o2::dqconstants::InvalidValueI; // Return zero if species is invalid
     }
 
     TH3F* calibMeanHist = dynamic_cast<TH3F*>(fgCalibs[calibMean]);
     TH3F* calibSigmaHist = dynamic_cast<TH3F*>(fgCalibs[calibSigma]);
     if (!calibMeanHist || !calibSigmaHist) {
       LOG(fatal) << "Calibration histograms not found for species: " << species;
-      return -999.0; // Return zero if histograms are not found
+      return o2::dqconstants::InvalidValueI; // Return zero if histograms are not found
     }
 
     // Get the bin indices for the calibration histograms
@@ -305,35 +315,35 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
     double mean = calibMeanHist->GetBinContent(binTPCncls, binPin, binEta);
     double sigma = calibSigmaHist->GetBinContent(binTPCncls, binPin, binEta);
     return (nSigmaValue - mean) / sigma; // Return the calibrated nSigma value
-  } else if (fgCalibrationType == 2) {
+  } else if (fgCalibrationType == o2::dqconstants::defaults::TPCPIDCalibrationMeanSigmaStatus) {
     // get the calibration histograms
     CalibObjects calibMean = kTPCElectronMean;
     CalibObjects calibSigma = kTPCElectronSigma;
     CalibObjects calibStatus = kTPCElectronStatus;
     switch (species) {
-      case 0:
+      case o2::dqconstants::defaults::PostCalibElectron:
         calibMean = kTPCElectronMean;
         calibSigma = kTPCElectronSigma;
         calibStatus = kTPCElectronStatus;
         break;
-      case 1:
+      case o2::dqconstants::defaults::PostCalibPion:
         calibMean = kTPCPionMean;
         calibSigma = kTPCPionSigma;
         calibStatus = kTPCPionStatus;
         break;
-      case 2:
+      case o2::dqconstants::defaults::PostCalibKaon:
         calibMean = kTPCKaonMean;
         calibSigma = kTPCKaonSigma;
         calibStatus = kTPCKaonStatus;
         break;
-      case 3:
+      case o2::dqconstants::defaults::PostCalibProton:
         calibMean = kTPCProtonMean;
         calibSigma = kTPCProtonSigma;
         calibStatus = kTPCProtonStatus;
         break;
       default:
         LOG(fatal) << "Invalid species for PID calibration: " << species;
-        return -999.0; // Return zero if species is invalid
+        return o2::dqconstants::InvalidValueI; // Return zero if species is invalid
     }
 
     THnF* calibMeanHist = dynamic_cast<THnF*>(fgCalibs[calibMean]);
@@ -341,7 +351,7 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
     THnF* calibStatusHist = dynamic_cast<THnF*>(fgCalibs[calibStatus]);
     if (!calibMeanHist || !calibSigmaHist || !calibStatusHist) {
       LOG(fatal) << "Calibration histograms not found for species: " << species;
-      return -999.0; // Return zero if histograms are not found
+      return o2::dqconstants::InvalidValueI; // Return zero if histograms are not found
     }
 
     // Get the bin indices for the calibration histograms
@@ -539,7 +549,7 @@ std::tuple<float, float, float, float, float> VarManager::BimodalityCoefficientU
   // Bimodality coefficient = (skewness^2 + 1) / kurtosis
   // return a tuple including the coefficient, mean, RMS, skewness, and kurtosis
   size_t n = data.size();
-  if (n < 3) {
+  if (n < o2::dqconstants::defaults::BimodalMinDataSize) {
     return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
   }
   float mean = std::accumulate(data.begin(), data.end(), 0.0) / n;
@@ -724,7 +734,7 @@ void VarManager::SetDefaultVarNames()
   //
   // Set default variable names
   //
-  for (Int_t ivar = 0; ivar < kNVars; ++ivar) {
+  for (int ivar = 0; ivar < kNVars; ++ivar) {
     fgVariableNames[ivar] = "DEFAULT NOT DEFINED";
     fgVariableUnits[ivar] = "n/a";
   }
@@ -767,6 +777,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVtxNcontrib] = "";
   fgVariableNames[kVtxNcontribReal] = "Real Vtx contrib.";
   fgVariableUnits[kVtxNcontribReal] = "";
+  fgVariableNames[kMultNtrkGlobal] = "Global tracks";
+  fgVariableUnits[kMultNtrkGlobal] = "";
   fgVariableNames[kVtxCovXX] = "Vtx covXX";
   fgVariableUnits[kVtxCovXX] = "cm";
   fgVariableNames[kVtxCovXY] = "Vtx covXY";
@@ -828,6 +840,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableNames[kMultMCNParticlesEta05] = "MC Multiplicity Central Barrel for |eta| < 0.5";
   fgVariableNames[kMultMCNParticlesEta08] = "MC Multiplicity Central Barrel for |eta| < 0.8";
   fgVariableNames[kMultMCNParticlesEta10] = "MC Multiplicity Central Barrel for |eta| < 1.0";
+  fgVariableNames[kMultMCGlobalParticles] = "MC Multiplicity corresponding to global track definition";
   fgVariableUnits[kMCEventGeneratorId] = "";
   fgVariableUnits[kMCEventSubGeneratorId] = "";
   fgVariableUnits[kMCVtxX] = "cm";
@@ -841,6 +854,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMultMCNParticlesEta05] = "Multiplicity_eta05";
   fgVariableUnits[kMultMCNParticlesEta08] = "Multiplicity_eta08";
   fgVariableUnits[kMultMCNParticlesEta10] = "Multiplicity_eta10";
+  fgVariableUnits[kMultMCGlobalParticles] = "Multiplicity_globalTrk";
   fgVariableNames[kTwoEvPosZ1] = "vtx-z_{1}";
   fgVariableUnits[kTwoEvPosZ1] = "cm";
   fgVariableNames[kTwoEvPosZ2] = "vtx-z_{2}";
@@ -995,6 +1009,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDCAzNPeaksTrimmed3] = "";
   fgVariableNames[kInteractionRate] = "Interaction rate";
   fgVariableUnits[kInteractionRate] = "kHz";
+  fgVariableNames[kMuPerBc] = "#mu";
+  fgVariableUnits[kMuPerBc] = "";
   fgVariableNames[kPt] = "p_{T}";
   fgVariableUnits[kPt] = "GeV/c";
   fgVariableNames[kPt1] = "p_{T1}";
@@ -1015,6 +1031,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kEta] = "";
   fgVariableNames[kPhi] = "#varphi";
   fgVariableUnits[kPhi] = "rad.";
+  fgVariableNames[kLocalSectorPhi] = "local sector #varphi";
+  fgVariableUnits[kLocalSectorPhi] = "rad.";
   fgVariableNames[kRap] = "y";
   fgVariableUnits[kRap] = "";
   fgVariableNames[kMass] = "mass";
@@ -1029,8 +1047,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCharge2] = "";
   fgVariableNames[kPin] = "p_{IN}";
   fgVariableUnits[kPin] = "GeV/c";
-  fgVariableNames[kPin_leg1] = "p_{IN}";
+  fgVariableNames[kPin_leg1] = "p_{IN, 1}";
   fgVariableUnits[kPin_leg1] = "GeV/c";
+  fgVariableNames[kPin_leg2] = "p_{IN, 2}";
+  fgVariableUnits[kPin_leg2] = "GeV/c";
   fgVariableNames[kSignedPin] = "p_{IN} x charge";
   fgVariableUnits[kSignedPin] = "GeV/c";
   fgVariableNames[kTOFExpMom] = "TOF expected momentum";
@@ -1041,6 +1061,12 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTrackTimeRes] = "ns";
   fgVariableNames[kTrackTimeResRelative] = "Relative resolution of the track time";
   fgVariableUnits[kTrackTimeResRelative] = "";
+  fgVariableNames[kTrackAssocDeltaTime] = "Track-collision association #Deltat";
+  fgVariableUnits[kTrackAssocDeltaTime] = "ns";
+  fgVariableNames[kTrackAssocTimeThreshold] = "Track-collision association time threshold";
+  fgVariableUnits[kTrackAssocTimeThreshold] = "ns";
+  fgVariableNames[kTrackAssocDeltaTimeNorm] = "|#Deltat| / threshold";
+  fgVariableUnits[kTrackAssocDeltaTimeNorm] = "";
   fgVariableNames[kDetectorMap] = "DetectorMap";
   fgVariableUnits[kDetectorMap] = "";
   fgVariableNames[kHasITS] = "HasITS";
@@ -1068,6 +1094,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTPCnCRoverFindCls] = "";
   fgVariableNames[kTPCchi2] = "TPC chi2";
   fgVariableUnits[kTPCchi2] = "";
+  fgVariableNames[kTPCFractionSharedCls] = "TPC fraction shared clusters";
+  fgVariableUnits[kTPCFractionSharedCls] = "";
   fgVariableNames[kTPCsignal] = "TPC dE/dx";
   fgVariableUnits[kTPCsignal] = "";
   fgVariableNames[kPhiTPCOuter] = "#varphi_{TPCout}";
@@ -1124,6 +1152,14 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDCAxy2] = "cm";
   fgVariableNames[kDCAz2] = "DCA_{z}";
   fgVariableUnits[kDCAz2] = "cm";
+  fgVariableNames[kDCAxyOverSig1] = "DCA_{xy}/#sigma_{DCA_{xy}}";
+  fgVariableUnits[kDCAxyOverSig1] = "";
+  fgVariableNames[kDCAzOverSig1] = "DCA_{z}/#sigma_{DCA_{z}}";
+  fgVariableUnits[kDCAzOverSig1] = "";
+  fgVariableNames[kDCAxyOverSig2] = "DCA_{xy}/#sigma_{DCA_{xy}}";
+  fgVariableUnits[kDCAxyOverSig2] = "";
+  fgVariableNames[kDCAzOverSig2] = "DCA_{z}/#sigma_{DCA_{z}}";
+  fgVariableUnits[kDCAzOverSig2] = "";
   fgVariableNames[kTPCnSigmaEl] = "n #sigma_{e}^{TPC}";
   fgVariableUnits[kTPCnSigmaEl] = "";
   fgVariableNames[kTPCnSigmaEl_Corr] = "n #sigma_{e}^{TPC} Corr.";
@@ -1266,6 +1302,18 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCPhiCS] = "rad";
   fgVariableNames[kMCPhiTildeCS] = "MC #tilde{#varphi}_{CS}";
   fgVariableUnits[kMCPhiTildeCS] = "rad";
+  fgVariableNames[kMCCosThetaGJB1] = "MC cos#it{#theta}_{GJ1}";
+  fgVariableUnits[kMCCosThetaGJB1] = "";
+  fgVariableNames[kMCPhiGJB1] = "MC #varphi_{GJ1}";
+  fgVariableUnits[kMCPhiGJB1] = "rad";
+  fgVariableNames[kMCPhiTildeGJB1] = "MC #tilde{#varphi}_{GJ1}";
+  fgVariableUnits[kMCPhiTildeGJB1] = "rad";
+  fgVariableNames[kMCCosThetaGJB2] = "MC cos#it{#theta}_{GJ2}";
+  fgVariableUnits[kMCCosThetaGJB2] = "";
+  fgVariableNames[kMCPhiGJB2] = "MC #varphi_{GJ2}";
+  fgVariableUnits[kMCPhiGJB2] = "rad";
+  fgVariableNames[kMCPhiTildeGJB2] = "MC #tilde{#varphi}_{GJ2}";
+  fgVariableUnits[kMCPhiTildeGJB2] = "rad";
   fgVariableNames[kMCCosThetaPP] = "MC cos(#theta_{PP})";
   fgVariableUnits[kMCCosThetaPP] = "";
   fgVariableNames[kMCPhiPP] = "MC #varphi_{PP}";
@@ -1318,12 +1366,16 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingLxyzProjected] = "cm";
   fgVariableNames[kVertexingTauzProjected] = "Pair pseudo-proper Tauz";
   fgVariableUnits[kVertexingTauzProjected] = "ns";
-  fgVariableNames[kVertexingTauxyProjected] = "Pair pseudo-proper Tauxy";
-  fgVariableUnits[kVertexingTauxyProjected] = "ns";
-  fgVariableNames[kVertexingTauxyProjectedPoleJPsiMass] = "Pair pseudo-proper Tauxy (with pole JPsi mass)";
-  fgVariableUnits[kVertexingTauxyProjectedPoleJPsiMass] = "ns";
-  fgVariableNames[kVertexingTauxyzProjected] = "Pair pseudo-proper Tauxyz";
-  fgVariableUnits[kVertexingTauxyzProjected] = "ns";
+  // Change of incorrect unit labeling (from ns to cm)
+  fgVariableNames[kVertexingTauxyProjected] = "Pair pseudo-proper decay length";
+  fgVariableUnits[kVertexingTauxyProjected] = "cm";
+  fgVariableNames[kVertexingTauxyProjectedPoleJPsiMass] = "Pair pseudo-proper decay length (with pole JPsi mass)";
+  fgVariableUnits[kVertexingTauxyProjectedPoleJPsiMass] = "cm";
+  fgVariableNames[kVertexingTauxyProjectedNs] = "Pair pseudo-proper decay time";
+  fgVariableUnits[kVertexingTauxyProjectedNs] = "ns";
+  fgVariableNames[kVertexingTauxyzProjected] = "Pair pseudo-proper decay length";
+  fgVariableUnits[kVertexingTauxyzProjected] = "cm";
+
   fgVariableNames[kMCVertexingLxyProjected] = "MC Lxy_{proj}";
   fgVariableUnits[kMCVertexingLxyProjected] = "cm";
   fgVariableNames[kMCVertexingLzProjected] = "MC Lz_{proj}";
@@ -1338,8 +1390,14 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCVertexingTauxyzProjected] = "ns";
   fgVariableNames[kCosPointingAngle] = "cos(#theta_{pointing})";
   fgVariableUnits[kCosPointingAngle] = "";
+  fgVariableNames[kVertexingImpactParameter] = "d_{0}";
+  fgVariableUnits[kVertexingImpactParameter] = "cm";
   fgVariableNames[kMCCosPointingAngle] = "MC cos(#theta_{pointing})";
   fgVariableUnits[kMCCosPointingAngle] = "";
+  fgVariableNames[kD0DcaDaughters] = "DCA of D0 daughters";
+  fgVariableUnits[kD0DcaDaughters] = "";
+  fgVariableNames[kD0ImpParProduct] = "D0 impact parameter product";
+  fgVariableUnits[kD0ImpParProduct] = "";
   fgVariableNames[kVertexingPz] = "Pz Pair";
   fgVariableUnits[kVertexingPz] = "GeV/c";
   fgVariableNames[kVertexingSV] = "Secondary Vertexing z";
@@ -1478,6 +1536,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kQ4Y0C] = "";
   fgVariableNames[kU2Q2] = "u_{2}Q_{2}^{A} ";
   fgVariableUnits[kU2Q2] = "";
+  fgVariableNames[kU2Q2FT0A] = "u_{2}Q_{2}^{FT0A} "; // Added variable for the U2Q2-values for FT0A
+  fgVariableUnits[kU2Q2FT0A] = "";
+  fgVariableNames[kU2Q2FT0C] = "u_{2}Q_{2}^{FT0C} "; // Added variable for the U2Q2-values for FT0C
+  fgVariableUnits[kU2Q2FT0C] = "";
   fgVariableNames[kU3Q3] = "u_{3}Q_{3}^{A} ";
   fgVariableUnits[kU3Q3] = "";
   fgVariableNames[kQ42XA] = "Q_{42,x}^{A} ";
@@ -1660,6 +1722,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kR3EP] = "";
   fgVariableNames[kNPairsPerEvent] = "number of pairs per event";
   fgVariableUnits[kNPairsPerEvent] = "";
+  fgVariableNames[kNSelTracksForPairing] = "number of selected tracks for pairing";
+  fgVariableUnits[kNSelTracksForPairing] = "";
   fgVariableNames[kPairMass] = "mass";
   fgVariableUnits[kPairMass] = "GeV/c2";
   fgVariableNames[kPairMassDau] = "mass dilepton";
@@ -1708,6 +1772,18 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPhiCS] = "rad.";
   fgVariableNames[kPhiTildeCS] = "#tilde{#varphi}_{CS}";
   fgVariableUnits[kPhiTildeCS] = "rad.";
+  fgVariableNames[kCosThetaGJB1] = "cos#it{#theta}_{GJ1}";
+  fgVariableUnits[kCosThetaGJB1] = "";
+  fgVariableNames[kPhiGJB1] = "#varphi_{GJ1}";
+  fgVariableUnits[kPhiGJB1] = "rad.";
+  fgVariableNames[kPhiTildeGJB1] = "#tilde{#varphi}_{GJ1}";
+  fgVariableUnits[kPhiTildeGJB1] = "rad.";
+  fgVariableNames[kCosThetaGJB2] = "cos#it{#theta}_{GJ2}";
+  fgVariableUnits[kCosThetaGJB2] = "";
+  fgVariableNames[kPhiGJB2] = "#varphi_{GJ2}";
+  fgVariableUnits[kPhiGJB2] = "rad.";
+  fgVariableNames[kPhiTildeGJB2] = "#tilde{#varphi}_{GJ2}";
+  fgVariableUnits[kPhiTildeGJB2] = "rad.";
   fgVariableNames[kCosThetaPP] = "cos#it{#theta}_{PP}";
   fgVariableUnits[kCosThetaPP] = "";
   fgVariableNames[kPhiPP] = "#varphi_{PP}";
@@ -2080,6 +2156,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kVtxZ"] = kVtxZ;
   fgVarNamesMap["kVtxNcontrib"] = kVtxNcontrib;
   fgVarNamesMap["kVtxNcontribReal"] = kVtxNcontribReal;
+  fgVarNamesMap["kMultNtrkGlobal"] = kMultNtrkGlobal;
   fgVarNamesMap["kVtxCovXX"] = kVtxCovXX;
   fgVarNamesMap["kVtxCovXY"] = kVtxCovXY;
   fgVarNamesMap["kVtxCovXZ"] = kVtxCovXZ;
@@ -2171,6 +2248,10 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCEventImpParam"] = kMCEventImpParam;
   fgVarNamesMap["kMCEventPlaneAngle"] = kMCEventPlaneAngle;
   fgVarNamesMap["kMCEventCentrFT0C"] = kMCEventCentrFT0C;
+  fgVarNamesMap["kMultMCNParticlesEta05"] = kMultMCNParticlesEta05;
+  fgVarNamesMap["kMultMCNParticlesEta08"] = kMultMCNParticlesEta08;
+  fgVarNamesMap["kMultMCNParticlesEta10"] = kMultMCNParticlesEta10;
+  fgVarNamesMap["kMultMCGlobalParticles"] = kMultMCGlobalParticles;
   fgVarNamesMap["kQ1ZNAX"] = kQ1ZNAX;
   fgVarNamesMap["kQ1ZNAY"] = kQ1ZNAY;
   fgVarNamesMap["kQ1ZNCX"] = kQ1ZNCX;
@@ -2323,7 +2404,9 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kTwoR2EP1"] = kTwoR2EP1;
   fgVarNamesMap["kTwoR2EP2"] = kTwoR2EP2;
   fgVarNamesMap["kNPairsPerEvent"] = kNPairsPerEvent;
+  fgVarNamesMap["kNSelTracksForPairing"] = kNSelTracksForPairing;
   fgVarNamesMap["kInteractionRate"] = kInteractionRate;
+  fgVarNamesMap["kMuPerBc"] = kMuPerBc;
   fgVarNamesMap["kNEventWiseVariables"] = kNEventWiseVariables;
   fgVarNamesMap["kX"] = kX;
   fgVarNamesMap["kY"] = kY;
@@ -2345,22 +2428,28 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kUsedKF"] = kUsedKF;
   fgVarNamesMap["kKFMass"] = kKFMass;
   fgVarNamesMap["kKFMassGeoTop"] = kKFMassGeoTop;
+  fgVarNamesMap["kLocalSectorPhi"] = kLocalSectorPhi;
   fgVarNamesMap["kPt1"] = kPt1;
   fgVarNamesMap["kEta1"] = kEta1;
   fgVarNamesMap["kPhi1"] = kPhi1;
   fgVarNamesMap["kCharge1"] = kCharge1;
   fgVarNamesMap["kDCAxy1"] = kDCAxy1;
   fgVarNamesMap["kDCAz1"] = kDCAz1;
+  fgVarNamesMap["kDCAxyOverSig1"] = kDCAxyOverSig1;
+  fgVarNamesMap["kDCAzOverSig1"] = kDCAzOverSig1;
   fgVarNamesMap["kITSclusterMap1"] = kITSclusterMap1;
   fgVarNamesMap["kTPCnSigmaEl1"] = kTPCnSigmaEl1;
   fgVarNamesMap["kPin_leg1"] = kPin_leg1;
   fgVarNamesMap["kTPCnSigmaKa_leg1"] = kTPCnSigmaKa_leg1;
+  fgVarNamesMap["kPin_leg2"] = kPin_leg2;
   fgVarNamesMap["kPt2"] = kPt2;
   fgVarNamesMap["kEta2"] = kEta2;
   fgVarNamesMap["kPhi2"] = kPhi2;
   fgVarNamesMap["kCharge2"] = kCharge2;
   fgVarNamesMap["kDCAxy2"] = kDCAxy2;
   fgVarNamesMap["kDCAz2"] = kDCAz2;
+  fgVarNamesMap["kDCAxyOverSig2"] = kDCAxyOverSig2;
+  fgVarNamesMap["kDCAzOverSig2"] = kDCAzOverSig2;
   fgVarNamesMap["kITSclusterMap2"] = kITSclusterMap2;
   fgVarNamesMap["kTPCnSigmaEl2"] = kTPCnSigmaEl2;
   fgVarNamesMap["kPin"] = kPin;
@@ -2369,6 +2458,9 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kTrackTime"] = kTrackTime;
   fgVarNamesMap["kTrackTimeRes"] = kTrackTimeRes;
   fgVarNamesMap["kTrackTimeResRelative"] = kTrackTimeResRelative;
+  fgVarNamesMap["kTrackAssocDeltaTime"] = kTrackAssocDeltaTime;
+  fgVarNamesMap["kTrackAssocTimeThreshold"] = kTrackAssocTimeThreshold;
+  fgVarNamesMap["kTrackAssocDeltaTimeNorm"] = kTrackAssocDeltaTimeNorm;
   fgVarNamesMap["kDetectorMap"] = kDetectorMap;
   fgVarNamesMap["kHasITS"] = kHasITS;
   fgVarNamesMap["kHasTRD"] = kHasTRD;
@@ -2393,6 +2485,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kTPCnclsCR"] = kTPCnclsCR;
   fgVarNamesMap["kTPCnCRoverFindCls"] = kTPCnCRoverFindCls;
   fgVarNamesMap["kTPCchi2"] = kTPCchi2;
+  fgVarNamesMap["kTPCFractionSharedCls"] = kTPCFractionSharedCls;
   fgVarNamesMap["kTPCsignal"] = kTPCsignal;
   fgVarNamesMap["kPhiTPCOuter"] = kPhiTPCOuter;
   fgVarNamesMap["kTrackIsInsideTPCModule"] = kTrackIsInsideTPCModule;
@@ -2549,6 +2642,12 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCCosThetaCS"] = kMCCosThetaCS;
   fgVarNamesMap["kMCPhiCS"] = kMCPhiCS;
   fgVarNamesMap["kMCPhiTildeCS"] = kMCPhiTildeCS;
+  fgVarNamesMap["kMCCosThetaGJB1"] = kMCCosThetaGJB1;
+  fgVarNamesMap["kMCPhiGJB1"] = kMCPhiGJB1;
+  fgVarNamesMap["kMCPhiTildeGJB1"] = kMCPhiTildeGJB1;
+  fgVarNamesMap["kMCCosThetaGJB2"] = kMCCosThetaGJB2;
+  fgVarNamesMap["kMCPhiGJB2"] = kMCPhiGJB2;
+  fgVarNamesMap["kMCPhiTildeGJB2"] = kMCPhiTildeGJB2;
   fgVarNamesMap["kMCCosThetaPP"] = kMCCosThetaPP;
   fgVarNamesMap["kMCPhiPP"] = kMCPhiPP;
   fgVarNamesMap["kMCPhiTildePP"] = kMCPhiTildePP;
@@ -2595,6 +2694,12 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kCosThetaCS"] = kCosThetaCS;
   fgVarNamesMap["kPhiCS"] = kPhiCS;
   fgVarNamesMap["kPhiTildeCS"] = kPhiTildeCS;
+  fgVarNamesMap["kCosThetaGJB1"] = kCosThetaGJB1;
+  fgVarNamesMap["kPhiGJB1"] = kPhiGJB1;
+  fgVarNamesMap["kPhiTildeGJB1"] = kPhiTildeGJB1;
+  fgVarNamesMap["kCosThetaGJB2"] = kCosThetaGJB2;
+  fgVarNamesMap["kPhiGJB2"] = kPhiGJB2;
+  fgVarNamesMap["kPhiTildeGJB2"] = kPhiTildeGJB2;
   fgVarNamesMap["kCosThetaPP"] = kCosThetaPP;
   fgVarNamesMap["kPhiPP"] = kPhiPP;
   fgVarNamesMap["kPhiTildePP"] = kPhiTildePP;
@@ -2622,7 +2727,10 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kQuadDCAsigXYZ"] = kQuadDCAsigXYZ;
   fgVarNamesMap["kSignQuadDCAsigXY"] = kSignQuadDCAsigXY;
   fgVarNamesMap["kCosPointingAngle"] = kCosPointingAngle;
+  fgVarNamesMap["kVertexingImpactParameter"] = kVertexingImpactParameter;
   fgVarNamesMap["kMCCosPointingAngle"] = kMCCosPointingAngle;
+  fgVarNamesMap["kD0ImpParProduct"] = kD0ImpParProduct;
+  fgVarNamesMap["kD0DcaDaughters"] = kD0DcaDaughters;
   fgVarNamesMap["kImpParXYJpsi"] = kImpParXYJpsi;
   fgVarNamesMap["kImpParXYK"] = kImpParXYK;
   fgVarNamesMap["kDCATrackProd"] = kDCATrackProd;
@@ -2639,6 +2747,8 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kWV2SP"] = kWV2SP;
   fgVarNamesMap["kWV2EP"] = kWV2EP;
   fgVarNamesMap["kU2Q2"] = kU2Q2;
+  fgVarNamesMap["kU2Q2FT0A"] = kU2Q2FT0A; // Added variable names for U2Q2 in FT0A
+  fgVarNamesMap["kU2Q2FT0C"] = kU2Q2FT0C; // Added variable names for U2Q2 in FT0C
   fgVarNamesMap["kU3Q3"] = kU3Q3;
   fgVarNamesMap["kQ42XA"] = kQ42XA;
   fgVarNamesMap["kQ42YA"] = kQ42YA;
@@ -2917,4 +3027,65 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kInnerTOFnSigmaTr"] = kInnerTOFnSigmaTr;
   fgVarNamesMap["kInnerTOFnSigmaHe3"] = kInnerTOFnSigmaHe3;
   fgVarNamesMap["kInnerTOFnSigmaAl"] = kInnerTOFnSigmaAl;
+}
+
+//__________________________________________________________________
+bool VarManager::computeBarrelAssocTimeCompat(float trackTime, float trackTimeRes, bool timeResIsRange, bool isPVContributor,
+                                              int64_t origBC, float origCollTime, int origNumContrib,
+                                              int64_t collBC, float collTime, float collTimeRes,
+                                              float nSigma, float timeMargin, int bcWindowForOneSigma,
+                                              int usePVAssociation, int maxPvContribLowMult, float* values)
+{
+  //
+  // Mirrors the time-based association of Common/Core/CollisionAssociation.h::runAssocWithTime for central barrel tracks.
+  // Every arithmetic step is kept identical to the associator (including the double->int64 truncations),
+  //   so that re-applying it on skimmed associations with a smaller timeMargin reproduces a skim produced directly with that margin.
+  // Only tracks assigned to a collision in the AO2D are handled (this is always the case for tracks written by the DQ table makers).
+  //
+  if (!values) {
+    values = fgValues;
+  }
+  values[kTrackAssocDeltaTime] = -9999.f;
+  values[kTrackAssocTimeThreshold] = 0.f;
+  values[kTrackAssocDeltaTimeNorm] = 9999.f;
+
+  constexpr double BunchSpacingNS = o2::constants::lhc::LHCBunchSpacingNS;
+
+  // (1) BC pre-window (CollisionAssociation.h: trackBCCache, bcOffsetMax, bcOffsetWindow)
+  //     NOTE: the associator uses the raw trackTime here also for PV contributors
+  const int64_t bcOffsetMax = static_cast<int64_t>(bcWindowForOneSigma * nSigma + timeMargin / BunchSpacingNS);
+  const int64_t trackBCCache = static_cast<int64_t>(static_cast<double>(origBC) + static_cast<double>(trackTime) / BunchSpacingNS);
+  if (std::abs(trackBCCache - collBC) > bcOffsetMax) {
+    return false;
+  }
+
+  // (2) PV-contributor handling (usePVAssociation: 0 off, 1 OnlySameBc, 2 SameBcAndLowMult)
+  constexpr int OnlySameBc = 1;
+  constexpr int SameBcAndLowMult = 2;
+  const bool pvMode = (usePVAssociation == OnlySameBc && isPVContributor) ||
+                      (usePVAssociation == SameBcAndLowMult && isPVContributor && origNumContrib > maxPvContribLowMult);
+  float tTrack = trackTime;
+  float tTrackRes = trackTimeRes;
+  if (pvMode) {
+    tTrack = origCollTime;                          // time of the ORIGINAL collision
+    tTrackRes = static_cast<float>(BunchSpacingNS); // 1 BC
+  }
+
+  // (3) time difference and threshold
+  const int64_t bcOffset = origBC - collBC;
+  const float collTimeRes2 = collTimeRes * collTimeRes;
+  const float deltaTime = tTrack - collTime + bcOffset * static_cast<float>(BunchSpacingNS);
+  float threshold = 0.f;
+  if (pvMode) {
+    threshold = tTrackRes; // margin NOT applied
+  } else if (timeResIsRange) {
+    threshold = tTrackRes + nSigma * std::sqrt(collTimeRes2) + timeMargin;
+  } else {
+    threshold = nSigma * std::sqrt(collTimeRes2 + tTrackRes * tTrackRes) + timeMargin;
+  }
+
+  values[kTrackAssocDeltaTime] = deltaTime;
+  values[kTrackAssocTimeThreshold] = threshold;
+  values[kTrackAssocDeltaTimeNorm] = (threshold > 0.f) ? std::abs(deltaTime) / threshold : 9999.f;
+  return std::abs(deltaTime) < threshold;
 }

@@ -386,7 +386,7 @@ struct he3HadronFemto {
   ConfigurableAxis axisVertex{"axisVertex", {30, -10, 10}, "Binning for multiplicity"};
   ConfigurableAxis axisCentrality{"axisCentrality", {40, 0, 100}, "Binning for centrality"};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  BinningType binningPolicy{{axisVertex, axisCentrality}, true};
+  BinningType binningPolicy{{axisVertex, axisCentrality}};
   SliceCache cache;
   SameKindPair<CollisionsFull, TrackCandidates, BinningType> mPair{binningPolicy, settingNoMixedEvents, -1, &cache};
 
@@ -1407,7 +1407,7 @@ struct he3HadronFemto {
           he3Hadcand.flags |= Flags::kMixedPair;
         }
 
-        LOG(info) << "He3 flags: " << int(he3Hadcand.flagsHe3) << ", Hadron flags: " << int(he3Hadcand.flagsHad) << ", Pair flags: " << int(he3Hadcand.flags);
+        LOG(info) << "He3 flags: " << static_cast<int>(he3Hadcand.flagsHe3) << ", Hadron flags: " << static_cast<int>(he3Hadcand.flagsHad) << ", Pair flags: " << static_cast<int>(he3Hadcand.flags);
         if (!settingFillPrimariesMc && (he3Hadcand.flags == Flags::kBothPrimaries)) {
           continue;
         }

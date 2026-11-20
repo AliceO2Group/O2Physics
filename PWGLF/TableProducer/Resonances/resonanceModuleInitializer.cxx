@@ -110,9 +110,9 @@ struct ResonanceModuleInitializer {
   static constexpr int PdgLambda1520 = o2::constants::physics::Pdg::kLambda1520_Py;
   static constexpr int Xi1530Code = 3324;
   static constexpr int PdgK1Plus1270 = o2::constants::physics::Pdg::kK1_1270Plus;
-  static constexpr int Xi1820NeutralCode = 123314;
-  static constexpr int Xi1820MinusCode = 123324;
-  static constexpr int Omega2012MinusCode = 123334;
+  static constexpr int Xi1820MinusCode = o2::constants::physics::Pdg::kXi1820Minus;
+  static constexpr int Xi1820ZeroCode = o2::constants::physics::Pdg::kXi1820Zero;
+  static constexpr int Omega2012MinusCode = o2::constants::physics::Pdg::kOmega2012Minus;
   static constexpr int PdgProton = PDG_t::kProton;
   static constexpr int PdgLambda0 = PDG_t::kLambda0;
   static constexpr int PdgXiMinus = PDG_t::kXiMinus;
@@ -232,7 +232,7 @@ struct ResonanceModuleInitializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == PdgLambda1520)      // Lambda(1520)
                                                     || (nabs(aod::mcparticle::pdgCode) == Xi1530Code)         // Xi(1530)0
                                                     || (nabs(aod::mcparticle::pdgCode) == PdgK1Plus1270)      // K1(1270)+
-                                                    || (nabs(aod::mcparticle::pdgCode) == Xi1820NeutralCode)  // Xi(1820)0
+                                                    || (nabs(aod::mcparticle::pdgCode) == Xi1820ZeroCode)     // Xi(1820)0
                                                     || (nabs(aod::mcparticle::pdgCode) == Xi1820MinusCode)    // Xi(1820)-
                                                     || (nabs(aod::mcparticle::pdgCode) == Omega2012MinusCode) // Omega(2012)-
                                                     || (nabs(aod::mcparticle::pdgCode) == PdgProton)          // proton
@@ -273,9 +273,25 @@ struct ResonanceModuleInitializer {
     }
     LOGF(info, "Stored collision multiplicity estimator: %d", EventConfig.cfgMultiplicityEstimator.value);
 
+    const int enabledGenProcesses = static_cast<int>(doprocessMCgen) +
+                                    static_cast<int>(doprocessMCgenFT0M) +
+                                    static_cast<int>(doprocessMCgenFT0C) +
+                                    static_cast<int>(doprocessMCgenFV0A) +
+                                    static_cast<int>(doprocessMCgenNoCent);
+    const bool anyGenProcess = enabledGenProcesses > 0;
+    if (enabledGenProcesses > 1) {
+      LOGF(fatal, "Enable only one generator process: processMCgen, processMCgenFT0M, processMCgenFT0C, processMCgenFV0A, or processMCgenNoCent");
+    }
+    if (doprocessMCgenNoCent && GenCuts.cfgGenMultPercentile) {
+      LOGF(fatal, "processMCgenNoCent requires cfgGenMultPercentile=false");
+    }
+    if ((doprocessMCgenFT0M || doprocessMCgenFT0C || doprocessMCgenFV0A) && !GenCuts.cfgGenMultPercentile) {
+      LOGF(fatal, "The estimator-specific generator processes require cfgGenMultPercentile=true; use processMCgenNoCent otherwise");
+    }
+
     // Run 2 and Run 3 callbacks require different event-selection semantics.
     const bool anyRun2Process = doprocessRun2 || doprocessRun2MC;
-    const bool anyRun3Process = doprocessRun3 || doprocessRun3MC || doprocessMCgen;
+    const bool anyRun3Process = doprocessRun3 || doprocessRun3MC || anyGenProcess;
     if (anyRun2Process && anyRun3Process) {
       LOG(fatal) << "Run 2 and Run 3 processes cannot be enabled in the same ResonanceModuleInitializer";
     }
@@ -290,13 +306,13 @@ struct ResonanceModuleInitializer {
                                                  static_cast<int>(GenCuts.cfgGenMultFT0M.value) +
                                                  static_cast<int>(GenCuts.cfgGenMultFT0C.value) +
                                                  static_cast<int>(GenCuts.cfgGenMultFV0A.value);
-    if ((doprocessMCgen || doprocessRun2MC || doprocessRun3MC) && enabledGenMultiplicityEstimators > 1) {
+    if ((anyGenProcess || doprocessRun2MC || doprocessRun3MC) && enabledGenMultiplicityEstimators > 1) {
       LOG(fatal) << "Only one generator multiplicity estimator can be enabled: cfgGenMult05, cfgGenMult10, cfgGenMultFT0M, cfgGenMultFT0C, or cfgGenMultFV0A";
     }
-    if (doprocessMCgen) {
-      if (GenCuts.cfgGenMultPercentile && multEstimator != CentralityFT0M &&
+    if (anyGenProcess) {
+      if (doprocessMCgen && GenCuts.cfgGenMultPercentile && multEstimator != CentralityFT0M &&
           multEstimator != CentralityFT0C && multEstimator != CentralityFV0A) {
-        LOGF(fatal, "cfgGenMultPercentile supports cfgMultName=FT0M, FT0C, or FV0A");
+        LOGF(fatal, "processMCgen with cfgGenMultPercentile supports cfgMultName=FT0M, FT0C, or FV0A");
       }
       if (GenCuts.isZvtxcutGen &&
           (!std::isfinite(GenCuts.cutzvertexGen.value) || GenCuts.cutzvertexGen.value <= 0.f)) {
@@ -362,7 +378,7 @@ struct ResonanceModuleInitializer {
       ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
     }
 
-    if (doprocessMCgen) {
+    if (anyGenProcess) {
       constexpr std::array<char const*, 5> MCEventLabels{"All", "z vertex", "BC RCT", "INEL", "INEL>0"};
       AxisSpec centAxisGen = {GenCuts.binsCentGen, "Centrality (%)"};
       AxisSpec eventTypeAxis = {2, 0.f, 2.f, "Event type"};
@@ -533,7 +549,14 @@ struct ResonanceModuleInitializer {
     fillDetailedCollisionQA(collision, o2::analysis::CollisonCuts::kAllpassed);
   }
 
+  // Keep the original input for existing processMCgen configurations. The
+  // dedicated callbacks select the MC percentile independently of cfgMultName
+  // (reconstructed centrality) and cfgGenMult* (generator multiplicity).
   using GenMCCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::McCentFV0As, aod::MultsExtraMC>;
+  using GenMCCollisionsFT0M = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>;
+  using GenMCCollisionsFT0C = soa::Join<aod::McCollisions, aod::McCentFT0Cs, aod::MultsExtraMC>;
+  using GenMCCollisionsFV0A = soa::Join<aod::McCollisions, aod::McCentFV0As, aod::MultsExtraMC>;
+  using GenMCCollisionsNoCent = soa::Join<aod::McCollisions, aod::MultsExtraMC>;
   using Run3MCCollisions = soa::Join<aod::McCollisions, aod::MultsExtraMC>;
   using Run2MCCollisions = soa::Join<aod::McCollisions, aod::MultsExtraMC>;
   using GenRecoCollisions = soa::Join<aod::ResoCollisionCandidates, aod::MultsExtra, aod::PVMults, aod::McCollisionLabels>;
@@ -846,19 +869,19 @@ struct ResonanceModuleInitializer {
    * reduced AOD tables. RCT quality is evaluated through the generator
    * collision's associated BC because it is a run-condition property.
    */
-  void processMCgen(GenMCCollisions::iterator const& mcCollision,
-                    aod::McParticles const& mcParticles,
-                    soa::SmallGroups<GenRecoCollisions> const& collisions,
-                    BCsWithRCT const&)
+  template <typename MCCollision>
+  void processMCgenQA(MCCollision const& mcCollision,
+                      aod::McParticles const& mcParticles,
+                      soa::SmallGroups<GenRecoCollisions> const& collisions,
+                      float generatorCentrality)
   {
-    auto bc = mcCollision.bc_as<BCsWithRCT>();
+    auto bc = mcCollision.template bc_as<BCsWithRCT>();
     initCCDB(bc);
 
     const auto getReconstructedCentrality = [&](auto const& collision) {
       return centEst(collision);
     };
 
-    const float generatorCentrality = getMCCentrality(mcCollision);
     const float impactParameter = mcCollision.impactParameter();
     const float multiplicity = getMCMultiplicity(mcCollision);
 
@@ -910,7 +933,51 @@ struct ResonanceModuleInitializer {
       qaRegistry.fill(HIST("EventGen/h4MultCent_recMC"), eventType, reconstructedCentrality, multiplicity, impactParameter);
     }
   }
-  PROCESS_SWITCH(ResonanceModuleInitializer, processMCgen, "Process generator-level MC QA", false);
+
+  void processMCgen(GenMCCollisions::iterator const& mcCollision,
+                    aod::McParticles const& mcParticles,
+                    soa::SmallGroups<GenRecoCollisions> const& collisions,
+                    BCsWithRCT const&)
+  {
+    processMCgenQA(mcCollision, mcParticles, collisions, getMCCentrality(mcCollision));
+  }
+  PROCESS_SWITCH(ResonanceModuleInitializer, processMCgen, "Process generator-level MC QA with all MC percentile inputs (legacy)", false);
+
+  void processMCgenFT0M(GenMCCollisionsFT0M::iterator const& mcCollision,
+                        aod::McParticles const& mcParticles,
+                        soa::SmallGroups<GenRecoCollisions> const& collisions,
+                        BCsWithRCT const&)
+  {
+    processMCgenQA(mcCollision, mcParticles, collisions, mcCollision.centFT0M());
+  }
+  PROCESS_SWITCH(ResonanceModuleInitializer, processMCgenFT0M, "Process generator-level MC QA with only the FT0M MC percentile input", false);
+
+  void processMCgenFT0C(GenMCCollisionsFT0C::iterator const& mcCollision,
+                        aod::McParticles const& mcParticles,
+                        soa::SmallGroups<GenRecoCollisions> const& collisions,
+                        BCsWithRCT const&)
+  {
+    processMCgenQA(mcCollision, mcParticles, collisions, mcCollision.centFT0C());
+  }
+  PROCESS_SWITCH(ResonanceModuleInitializer, processMCgenFT0C, "Process generator-level MC QA with only the FT0C MC percentile input", false);
+
+  void processMCgenFV0A(GenMCCollisionsFV0A::iterator const& mcCollision,
+                        aod::McParticles const& mcParticles,
+                        soa::SmallGroups<GenRecoCollisions> const& collisions,
+                        BCsWithRCT const&)
+  {
+    processMCgenQA(mcCollision, mcParticles, collisions, mcCollision.centFV0A());
+  }
+  PROCESS_SWITCH(ResonanceModuleInitializer, processMCgenFV0A, "Process generator-level MC QA with only the FV0A MC percentile input", false);
+
+  void processMCgenNoCent(GenMCCollisionsNoCent::iterator const& mcCollision,
+                          aod::McParticles const& mcParticles,
+                          soa::SmallGroups<GenRecoCollisions> const& collisions,
+                          BCsWithRCT const&)
+  {
+    processMCgenQA(mcCollision, mcParticles, collisions, 100.5f);
+  }
+  PROCESS_SWITCH(ResonanceModuleInitializer, processMCgenNoCent, "Process generator-level MC QA using reconstructed centrality without MC percentile inputs", false);
 
   /**
    * @brief Processes Run3 MC data
@@ -1008,6 +1075,7 @@ struct ResonanceDaughterInitializer {
   static constexpr float MomentumQuantizationScale = 1000.f;
   static constexpr std::size_t StoredMCRelationCount = 2;
   static constexpr std::size_t MaxCandidateDaughters = 3;
+  static constexpr int NumberOfITSLayers = 7;
 
   /// Selected-candidate state and the optional global daughter-ID veto set.
   /// By default only candidate existence is recorded and daughter reuse is
@@ -1132,6 +1200,8 @@ struct ResonanceDaughterInitializer {
   // General daughter output options
   Configurable<bool> cfgFillQA{"cfgFillQA", false, "Fill QA histograms"};
   Configurable<bool> cfgDetailTrackQA{"cfgDetailTrackQA", false, "Fill detailed QA histograms for enabled track output tables"};
+  Configurable<bool> cfgQAITS{"cfgQAITS", false, "Fill Micro001 ITS quality vs pT (requires cfgFillQA and cfgFillMicroTracks)"};
+  Configurable<bool> cfgQATPC{"cfgQATPC", false, "Fill Micro001 TPC crossed rows vs pT (requires cfgFillQA and cfgFillMicroTracks)"};
 
   // Track pre-selection and DCA cuts
   struct : ConfigurableGroup {
@@ -1243,13 +1313,12 @@ struct ResonanceDaughterInitializer {
   // data-model relation keeps its legacy v000 default target; v001 consumers
   // must use resoCollision_as<T>() with the exact bound v001 table type for
   // dereferencing (aod::ResoCollisions_001 when the parent is not joined).
-  // Original-collision grouping is provided by the scalar-only version-1
-  // ResoCollisionGroups_001 table, avoiding a hard source-AO2D relation.
+  // Daughter callbacks use the original collision ID from ResoCollisionColls
+  // to slice input candidates explicitly. The scalar ResoCollisionGroups_001
+  // output is retained for consumers that do not need source-AO2D dereferencing.
   // Collision mappings are always written; cfgBypassCollIndexFill is retained
   // only so existing configuration files remain accepted.
   using ResoCollisionWithIndex = soa::Join<aod::ResoCollisions_001, aod::ResoCollisionColls>;
-  using SelectedResoCollisions = soa::Join<aod::ResoCollisions_001, aod::ResoCollisionGroups_001>;
-  PresliceUnsorted<SelectedResoCollisions> reducedCollisionsPerOriginalCollision = aod::resocollisiongroup001::originalCollisionId;
 
   /**
    * @brief Initializes the task
@@ -1263,7 +1332,7 @@ struct ResonanceDaughterInitializer {
       LOGF(fatal, "cfgPairGateMode must be 0 (configured gates) or 1 (V0 or cascade)");
     }
     const bool useEitherPairGate = FilterForDerivedTables.cfgPairGateMode.value == PairGateModeEither;
-    const bool processTrackDataEnabled = doprocessData || doprocessDataHybrid || doprocessDataWithPairGate ||
+    const bool processTrackDataEnabled = doprocessData || doprocessDataWithPairGate ||
                                          doprocessDataWithV0PairGate || doprocessDataWithCascPairGate;
     const bool processTrackMCEnabled = doprocessMC || doprocessMCWithPairGate ||
                                        doprocessMCWithV0PairGate || doprocessMCWithCascPairGate;
@@ -1275,7 +1344,6 @@ struct ResonanceDaughterInitializer {
     const bool anyDataProcessEnabled = processTrackDataEnabled || processV0DataEnabled || processCascDataEnabled;
     const bool anyMCProcessEnabled = processTrackMCEnabled || doprocessV0MC || doprocessCascMC;
     const int enabledTrackProcesses = static_cast<int>(doprocessData) +
-                                      static_cast<int>(doprocessDataHybrid) +
                                       static_cast<int>(doprocessDataWithPairGate) +
                                       static_cast<int>(doprocessDataWithV0PairGate) +
                                       static_cast<int>(doprocessDataWithCascPairGate) +
@@ -1311,10 +1379,10 @@ struct ResonanceDaughterInitializer {
     if (static_cast<int>(doprocessCascData) + static_cast<int>(doprocessCascMC) > 1) {
       LOGF(fatal, "Only one cascade process can be enabled in ResonanceDaughterInitializer");
     }
-    if ((doprocessData || doprocessDataHybrid || doprocessMC) &&
+    if ((doprocessData || doprocessMC) &&
         (useEitherPairGate || FilterForDerivedTables.cfgBypassNoPairV0s || FilterForDerivedTables.cfgBypassNoPairCascades ||
          FilterForDerivedTables.cfgGlobalDaughterVeto)) {
-      LOGF(warn, "Pair-gate options are ignored by processData/processDataHybrid/processMC; enable the matching *WithPairGate process to apply them");
+      LOGF(warn, "Pair-gate options are ignored by processData/processMC; enable the matching *WithPairGate process to apply them");
     }
     const auto validatePairGateOutputs = [&](bool pairProcessEnabled,
                                              bool v0OutputEnabled,
@@ -1510,6 +1578,24 @@ struct ResonanceDaughterInitializer {
             qaRegistry.add("QA/h4UltraMicroTrackTPCnSigma", "ResoUltraMicroTracks TPC nSigma Pi, Ka, Pr as pT", kTHnSparseD, {ptAxis, nSigmaTPCAxis, nSigmaTPCAxis, nSigmaTPCAxis});
             qaRegistry.add("QA/h4UltraMicroTrackTOFnSigma", "ResoUltraMicroTracks TOF nSigma Pi, Ka, Pr as pT", kTHnSparseD, {ptAxis, nSigmaTOFAxis, nSigmaTOFAxis, nSigmaTOFAxis});
           }
+        }
+      }
+
+      if ((processTrackDataEnabled || processTrackMCEnabled) && FilterForDerivedTables.cfgFillMicroTracks) {
+        AxisSpec qualityPtAxis = {300, 0.f, 30.f, "#it{p}_{T} (GeV/#it{c})"};
+        if (cfgQAITS) {
+          AxisSpec itsMapAxis = {128, -0.5, 127.5, "ITS cluster map"};
+          AxisSpec itsNClsAxis = {8, -0.5, 7.5, "ITS occupied layers"};
+          AxisSpec itsInnerBarrelNClsAxis = {4, -0.5, 3.5, "ITS inner-barrel occupied layers"};
+          AxisSpec itsLayerAxis = {NumberOfITSLayers, -0.5, NumberOfITSLayers - 0.5, "ITS layer (0 = innermost)"};
+          qaRegistry.add("QA/h2MicroTrackITSClusterMapVsPt", "ResoMicroTracks ITS cluster map vs pT", kTH2D, {qualityPtAxis, itsMapAxis});
+          qaRegistry.add("QA/h2MicroTrackITSNClsVsPt", "ResoMicroTracks ITS occupied layers vs pT", kTH2D, {qualityPtAxis, itsNClsAxis});
+          qaRegistry.add("QA/h2MicroTrackITSNClsInnerBarrelVsPt", "ResoMicroTracks ITS inner-barrel occupied layers vs pT", kTH2D, {qualityPtAxis, itsInnerBarrelNClsAxis});
+          qaRegistry.add("QA/h2MicroTrackITSLayerHitsVsPt", "ResoMicroTracks ITS hits vs pT (one entry per occupied layer)", kTH2D, {qualityPtAxis, itsLayerAxis});
+        }
+        if (cfgQATPC) {
+          AxisSpec tpcCrossedRowsAxis = {256, -0.5, 255.5, "TPC crossed rows"};
+          qaRegistry.add("QA/h2MicroTrackTPCCrossedRowsVsPt", "ResoMicroTracks TPC crossed rows vs pT", kTH2D, {qualityPtAxis, tpcCrossedRowsAxis});
         }
       }
 
@@ -2195,6 +2281,22 @@ struct ResonanceDaughterInitializer {
           qaRegistry.fill(HIST("QA/h4MicroTrackTOFnSigma"), track.pt(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr());
         }
       }
+      // Quality QA follows the same selected rows as Micro001, independently
+      // of the detailed PID/DCA QA. ITS count getters count occupied layers.
+      if (cfgFillQA && cfgQAITS) {
+        const auto itsClusterMap = track.itsClusterMap();
+        qaRegistry.fill(HIST("QA/h2MicroTrackITSClusterMapVsPt"), track.pt(), itsClusterMap);
+        qaRegistry.fill(HIST("QA/h2MicroTrackITSNClsVsPt"), track.pt(), track.itsNCls());
+        qaRegistry.fill(HIST("QA/h2MicroTrackITSNClsInnerBarrelVsPt"), track.pt(), track.itsNClsInnerBarrel());
+        for (int layer = 0; layer < NumberOfITSLayers; ++layer) {
+          if ((itsClusterMap & (1u << layer)) != 0) {
+            qaRegistry.fill(HIST("QA/h2MicroTrackITSLayerHitsVsPt"), track.pt(), layer);
+          }
+        }
+      }
+      if (cfgFillQA && cfgQATPC) {
+        qaRegistry.fill(HIST("QA/h2MicroTrackTPCCrossedRowsVsPt"), track.pt(), track.tpcNClsCrossedRows());
+      }
       reso2microtrks(collision.globalIndex(),
                      track.globalIndex(),
                      track.px(),
@@ -2204,7 +2306,9 @@ struct ResonanceDaughterInitializer {
                      static_cast<uint8_t>(o2::aod::resomicrodaughter001::PidNSigma(track.tpcNSigmaKa(), track.tofNSigmaKa(), track.hasTOF())),
                      static_cast<uint8_t>(o2::aod::resomicrodaughter001::PidNSigma(track.tpcNSigmaPr(), track.tofNSigmaPr(), track.hasTOF())),
                      static_cast<uint8_t>(trackSelFlag),
-                     trackFlags);
+                     trackFlags,
+                     static_cast<uint8_t>(track.tpcNClsCrossedRows()),
+                     track.itsClusterMap());
       if (!FilterForDerivedTables.cfgBypassTrackIndexFill) {
         resoMicroTrackTracks(track.globalIndex());
       }
@@ -2782,31 +2886,6 @@ struct ResonanceDaughterInitializer {
     fillTrackTablesForCollision<false>(collision, tracks, tracksPerCollision);
   }
   PROCESS_SWITCH(ResonanceDaughterInitializer, processData, "Process tracks for data", false);
-
-  /**
-   * @brief Processes data tracks using the two-stage hybrid grouping
-   *
-   * GroupSlicer associates tracks automatically to the original
-   * aod::Collision. Reduced collisions retain a scalar original-collision row
-   * number and are explicitly sliced from the much smaller mapping table. The
-   * tracks argument is already the selected slice and must not be sliced again.
-   */
-  void processDataHybrid(aod::Collision const& originalCollision,
-                         SelectedResoCollisions const& reducedCollisions,
-                         soa::Filtered<aod::ResoTrackCandidates> const& tracks)
-  {
-    auto reducedCollisionsThisCollision = reducedCollisions.sliceBy(reducedCollisionsPerOriginalCollision, originalCollision.globalIndex());
-    if (reducedCollisionsThisCollision.size() == 0) {
-      return;
-    }
-    if (reducedCollisionsThisCollision.size() > 1) {
-      LOGF(error, "Found %zu reduced collisions for one original collision; skipping the ambiguous association", reducedCollisionsThisCollision.size());
-      return;
-    }
-    auto reducedCollision = reducedCollisionsThisCollision.begin();
-    fillTrackTables<false>(reducedCollision, tracks);
-  }
-  PROCESS_SWITCH(ResonanceDaughterInitializer, processDataHybrid, "Process data tracks with the two-stage hybrid grouping", false);
 
   /**
    * @brief Processes data tracks with configurable selected V0 and cascade gates

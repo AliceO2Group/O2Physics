@@ -257,7 +257,7 @@ struct sigma {
   using BinningTypeCentralityM = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
 
-  BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
+  BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}};
   Pair<EventCandidates, TrackCandidates, V0TrackCandidate, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, &cache};
 
   void processSE(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::V0Datas const& V0s, aod::BCs const&)

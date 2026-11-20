@@ -104,7 +104,7 @@ struct LumiStabilityTask {
     const AxisSpec axisTime{1000, -10, 40};
     const AxisSpec axisTimeFDD{1000, -20, 100};
     const AxisSpec axisCountsTime{2, -0.5, 1.5};
-    const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
+    const AxisSpec axisOrbits{(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
     const AxisSpec axisTimeRate{static_cast<int>(static_cast<double>(43200) / (nOrbitsPerTF * 89e-6)), 0., 43200, ""}; // t in seconds. Histo for 12 hrs. Each bin contain one time frame (128/32 orbits for 2022/2023).
     const AxisSpec timeAxis{1200, 0., 1200., "#bf{t-t_{SOF} (min)}"};
 
@@ -276,11 +276,11 @@ struct LumiStabilityTask {
     int executionCounter = 0;
     int nbin = o2::constants::lhc::LHCMaxBunches;
     uint32_t nOrbitsPerTF = 0; // 128 in 2022, 32 in 2023
-    if (is2022Data) {
-      nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023
-    } else {
-      nOrbitsPerTF = 32; // 128 in 2022, 32 in 2023
-    }
+    // if (is2022Data) {
+    //   nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023 // FIXME: unused
+    // } else {
+    //   nOrbitsPerTF = 32; // 128 in 2022, 32 in 2023 // FIXME: unused
+    // }
     int runNumber = bcs.iteratorAt(0).runNumber();
     if (runNumber != lastRunNumber && executionCounter < 1) {
       tsSOR = 0;
@@ -497,8 +497,8 @@ struct LumiStabilityTask {
             pastActivityFDDVertex |= (vertexPast);
           }
         }
-        deltaIndex = 0;
-        deltaBC = 0;
+        // deltaIndex = 0; // FIXME: unused
+        // deltaBC = 0; // FIXME: unused
 
         if (pastActivityFDDVertex == false) {
           histos.fill(HIST("FDD/hCounts"), 2);
@@ -645,8 +645,8 @@ struct LumiStabilityTask {
               pastActivityFDDTriggerCCoincidenceC |= (triggerCPast & isCoinCPast);
             }
           }
-          deltaIndex = 0;
-          deltaBC = 0;
+          // deltaIndex = 0; // FIXME: unused
+          // deltaBC = 0; // FIXME: unused
 
           if (pastActivityFDDVertexCoincidences == false) {
             histos.fill(HIST("FDD/hCounts"), 4);
@@ -782,8 +782,8 @@ struct LumiStabilityTask {
             pastActivityFT0TriggerC |= triggerCPast;
           }
         }
-        deltaIndex = 0;
-        deltaBC = 0;
+        // deltaIndex = 0; // FIXME: unused
+        // deltaBC = 0; // FIXME: unused
 
         histos.fill(HIST("FT0/hCounts"), 1);
         if (pastActivityFT0Vertex == false) {

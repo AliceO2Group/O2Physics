@@ -459,7 +459,7 @@ struct HfCorrelatorXicHadrons {
   ConfigurableAxis binsCandMassXic0{"binsCandMassXic0", {200, 2.4, 2.8}, "inv. mass (Xi pi) (GeV/#it{c}^{2})"};
   ConfigurableAxis binsNSigmas{"binsNSigmas", {4000, -500., 500.}, "n#sigma"};
 
-  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
+  BinningType corrBinning{{binsZVtx, binsMultiplicity}};
   HistogramRegistry registry{"registry"};
 
   int8_t chargeCand = 3;
@@ -584,7 +584,7 @@ struct HfCorrelatorXicHadrons {
     registry.add("hV0LambdaReflPiKRejMcRec", "McRec V0 Lambda reflected candidates with #pi K rejection;inv. mass (p #pi) (GeV/#it{c}^{2});GeV/#it{c};GeV/#it{c}", {HistType::kTH3F, {{axisMassV0}, {axisPtV0}, {axisPtHadron}}});
     registry.add("hV0PtPrimLambdaMcGen", "Mcgen V0 Lambda candidates;GeV/#it{c}", {HistType::kTH1F, {{axisPtV0}}});
 
-    corrBinning = {{binsZVtx, binsMultiplicity}, true};
+    corrBinning = {{binsZVtx, binsMultiplicity}};
   }
 
   template <typename MlProbType>
@@ -1525,7 +1525,7 @@ struct HfCorrelatorXicHadrons {
     int8_t candSign = 0;
 
     registry.fill(HIST("hMcEvtCount"), 0);
-    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}, true};
+    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}};
     poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
     registry.fill(HIST("hMultFT0AMcGen"), mcCollision.multMCFT0A());
 
@@ -1865,7 +1865,7 @@ struct HfCorrelatorXicHadrons {
   void processMcGenMixedEvent(SelCollisionsMc const& collisions,
                               CandidatesXicPlusMcGen const& mcParticles)
   {
-    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}, true};
+    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}};
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
     Pair<SelCollisionsMc, CandidatesXicPlusMcGen, CandidatesXicPlusMcGen, BinningTypeMcGen> const pairMcGen{corrBinningMcGen, cfgXicCand.numberEventsMixed, -1, collisions, tracksTuple, &cache};
 

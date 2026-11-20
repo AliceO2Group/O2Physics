@@ -494,7 +494,7 @@ struct phispectrapbpbqa {
   void processMixedEventOpti(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, cnfgaxis.configThnAxisCentrality, axisOccupancy}, true};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, cnfgaxis.configThnAxisCentrality, axisOccupancy}};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
       if (!collision1.sel8() || !collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {

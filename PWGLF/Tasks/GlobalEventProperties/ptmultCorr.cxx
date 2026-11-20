@@ -120,12 +120,12 @@ const AxisSpec axisPhi{{0, o2::constants::math::PIQuarter, o2::constants::math::
 const AxisSpec axisPhi2{629, 0, o2::constants::math::TwoPI, "#phi"};
 const AxisSpec axisCent{100, 0, 100, "#Cent"};
 const AxisSpec axisDeltaPt{50, -1.0, +1.0, "#Delta(pT)"};
-const AxisSpec axisDCAxy{600, -3.0, 3.0, "DCA_{xy} (cm)", "DCAxyAxis"}; // range ±3 cm for TPC-only case
 const AxisSpec axisGenPtVary = {kGenpTend - 1, +kGenpTbegin + 0.5, +kGenpTend - 0.5, "", "GenpTVaryAxis"};
 const AxisSpec axisGenTrkType = {kGenTrkTypeend - 1, +kGenTrkTypebegin + 0.5, +kGenTrkTypeend - 0.5, "", "GenTrackTypeAxis"};
 const AxisSpec axisRecTrkType = {kRecTrkTypeend - 1, +kRecTrkTypebegin + 0.5, +kRecTrkTypeend - 0.5, "", "RecTrackTypeAxis"};
 const AxisSpec axisTrackType = {kTrackTypeend - 1, +kTrackTypebegin + 0.5, +kTrackTypeend - 0.5, "", "TrackTypeAxis"};
 auto static constexpr KminCharge = 3.f;
+static constexpr float kZeroFloat{0.f};
 
 struct PtmultCorr {
 
@@ -149,6 +149,69 @@ struct PtmultCorr {
   Configurable<float> cfgMaxChi2ClsTPC{"cfgMaxChi2ClsTPC", 4.0f, "Maximum TPC chi2/cls"};
   Configurable<float> cfgMaxChi2ClsITS{"cfgMaxChi2ClsITS", 36.0f, "Maximum ITS chi2/cls"};
   Configurable<float> cfgDCAz{"cfgDCAz", 0.04, "DCAz cut in cm"};
+
+  // ── pT-dependent DCAxy cut ──────────────────────────────────────────────────
+  // The THnSparses keep the FULL DCAxy distribution (needed for the template fit).
+  // When the flag is on, additional *DcaCut histograms (no DCAxy axis) are
+  // filled only with tracks passing |DCAxy| < N * (A + B/pT^C), using reco pT.
+  Configurable<bool> cfgApplyPtDepDcaXY{"cfgApplyPtDepDcaXY", false, "fill *DcaCut spectra with |DCAxy| < N*(A + B/pT^C)"};
+  Configurable<float> cfgDcaXYSigmaA{"cfgDcaXYSigmaA", 0.0015f, "sigma_DCAxy(pT) = A + B/pT^C : A (cm)"};
+  Configurable<float> cfgDcaXYSigmaB{"cfgDcaXYSigmaB", 0.0050f, "sigma_DCAxy(pT) = A + B/pT^C : B (cm (GeV/c)^C)"};
+  Configurable<float> cfgDcaXYSigmaC{"cfgDcaXYSigmaC", 1.1f, "sigma_DCAxy(pT) = A + B/pT^C : C"};
+  Configurable<float> cfgDcaXYNSigma{"cfgDcaXYNSigma", 7.f, "number of sigmas for the DCAxy cut"};
+
+  // DCAxy binning of the THnSparses, by regions in |DCAxy| from 0 outwards:
+  // region i spans (edge[i-1], edge[i]] with bin width width[i].
+  // Default = previous uniform binning (20 um over +-5 cm).
+  // Finer core, e.g.: edges {0.05, 0.5, 5.0}, widths {0.0005, 0.005, 0.1}
+  Configurable<std::vector<double>> cfgDcaXYRegionEdges{"cfgDcaXYRegionEdges", {5.0}, "DCAxy binning: outer |DCAxy| edge of each region (cm), increasing"};
+  Configurable<std::vector<double>> cfgDcaXYRegionWidths{"cfgDcaXYRegionWidths", {0.002}, "DCAxy binning: bin width in each region (cm)"};
+
+  // Fine DCAxy vs reco pT of primaries (sigma(pT) extraction, MC only)
+  ConfigurableAxis binsDcaXYFine{"binsDcaXYFine", {4000, -0.4, 0.4}, "fine DCAxy binning for sigma(pT) (cm)"};
+  ConfigurableAxis binsPtDcaFine{"binsPtDcaFine", {VARIABLE_WIDTH, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.6, 4.0, 5.0, 6.0, 8.0, 10.0, 13.0, 20.0, 30.0, 50.0}, "reco pT binning of the fine DCAxy histograms"};
+
+  bool passDcaXY(float pt, float dcaXY) const
+  {
+    if (pt <= kZeroFloat) {
+      return false;
+    }
+    const float sigma = cfgDcaXYSigmaA.value + cfgDcaXYSigmaB.value / std::pow(pt, cfgDcaXYSigmaC.value);
+    return std::fabs(dcaXY) < cfgDcaXYNSigma.value * sigma;
+  }
+
+  static std::vector<double> makeDcaXYEdges(const std::vector<double>& regionEdges, const std::vector<double>& regionWidths)
+  {
+    if (regionEdges.empty() || regionEdges.size() != regionWidths.size()) {
+      LOGF(fatal, "DCAxy binning: %zu region edges vs %zu widths", regionEdges.size(), regionWidths.size());
+    }
+    std::vector<double> pos{0.};
+    double x0 = 0.;
+    for (size_t i = 0; i < regionEdges.size(); ++i) {
+      const double xMax = regionEdges[i];
+      const double w = regionWidths[i];
+      if (xMax <= x0 || w <= kZeroFloat) {
+        LOGF(fatal, "DCAxy binning: region %zu invalid (edge %g after %g, width %g)", i, xMax, x0, w);
+      }
+      const int n = std::max(1, static_cast<int>(std::lround((xMax - x0) / w)));
+      for (int j = 1; j <= n; ++j) {
+        pos.push_back(x0 + j * (xMax - x0) / n); // integer steps: region edges are exact
+      }
+      if (std::fabs((xMax - x0) / n - w) > kWidthRelTol * w) {
+        LOGF(warning, "DCAxy binning: region %zu width adjusted from %g to %g cm to fit the range", i, w, (xMax - x0) / n);
+      }
+      x0 = xMax;
+    }
+    std::vector<double> edges;
+    for (auto it = pos.rbegin(); it != pos.rend(); ++it) {
+      if (*it > kZeroFloat) {
+        edges.push_back(-*it);
+      }
+    }
+    edges.insert(edges.end(), pos.begin(), pos.end());
+    LOGF(info, "DCAxy axis: %zu bins in [%g, %g] cm", edges.size() - 1, edges.front(), edges.back());
+    return edges;
+  }
 
   ConfigurableAxis ptHistBin{"ptHistBin", {200, 0., 20.}, ""};
   ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, ""};
@@ -183,6 +246,7 @@ struct PtmultCorr {
 
   static constexpr int kZeroInt{0};
   static constexpr float kOne{1.0f};
+  static constexpr double kWidthRelTol{1e-3};
 
   void init(InitContext const&)
   {
@@ -192,6 +256,9 @@ struct PtmultCorr {
     AxisSpec centAxis = {centralityBinning, "Centrality", "CentralityAxis"};
     AxisSpec axisPt = {ptHistBin, "pT", "pTAxis"};
     AxisSpec impactParAxis = {binsImpactPar, "Impact Parameter"};
+    const AxisSpec axisDCAxy{makeDcaXYEdges(cfgDcaXYRegionEdges.value, cfgDcaXYRegionWidths.value), "DCA_{xy} (cm)", "DCAxyAxis"};
+    const AxisSpec axisDcaXYFine{binsDcaXYFine, "DCA_{xy} (cm)", "DCAxyFineAxis"};
+    const AxisSpec axisPtDcaFine{binsPtDcaFine, "#it{p}_{T}^{rec} (GeV/#it{c})", "pTDcaFineAxis"};
 
     histos.add("EventHist", "EventHist", kTH1D, {axisEvent}, false);
     histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ}, false);
@@ -202,10 +269,16 @@ struct PtmultCorr {
     if (doprocessDataPbPb) {
       histos.add("hdatazvtxcent", "hdatazvtxcent", kTH2D, {axisVtxZ, centAxis}, false);
       histos.add("hdatahistPbPb", "hdatahistPbPb", kTHnSparseD, {axisVtxZ, centAxis, axisPt, axisPhi, axisTrackType, axisDCAxy}, false);
+      if (cfgApplyPtDepDcaXY) {
+        histos.add("hdatahistPbPbDcaCut", "hdatahistPbPbDcaCut", kTHnSparseD, {axisVtxZ, centAxis, axisPt, axisPhi, axisTrackType}, false);
+      }
     }
 
     if (doprocessDatapp) {
       histos.add("hdatahistpp", "hdatahistpp", kTHnSparseD, {axisVtxZ, axisPt, axisPhi, axisTrackType, axisDCAxy}, false);
+      if (cfgApplyPtDepDcaXY) {
+        histos.add("hdatahistppDcaCut", "hdatahistppDcaCut", kTHnSparseD, {axisVtxZ, axisPt, axisPhi, axisTrackType}, false);
+      }
     }
 
     if (doprocessMCeffPbPb) {
@@ -221,7 +294,14 @@ struct PtmultCorr {
       histos.add("hPbPbRecMCvtxzcent", "hPbPbRecMCvtxzcent", kTH2D, {axisVtxZ, centAxis}, false);
       histos.add("hPbPbRecMCcent", "hPbPbRecMCcent", kTH1D, {axisCent}, false);
       histos.add("hPbPbRecMCdndpt", "hPbPbRecMCdndpt", kTHnSparseD, {axisVtxZ, centAxis, axisPt, axisPhi, axisRecTrkType, axisTrackType, axisDCAxy}, false);
+      if (cfgApplyPtDepDcaXY) {
+        histos.add("hPbPbRecMCdndptDcaCut", "hPbPbRecMCdndptDcaCut", kTHnSparseD, {axisVtxZ, centAxis, axisPt, axisPhi, axisRecTrkType, axisTrackType}, false);
+      }
       histos.add("hPbPbEtaReso", "hPbPbEtaReso", kTH2D, {axisPt, axisDeltaPt});
+      // DCAxy of reco primaries (global tracks, same MC collision) vs RECO pT and centrality
+      histos.add("hPbPbDcaXYPrimFine", "hPbPbDcaXYPrimFine", kTH3F, {axisPtDcaFine, axisDcaXYFine, centAxis}, false);
+      // primaries whose MC particle belongs to another MC collision (mis-association)
+      histos.add("hPbPbDcaXYPrimWrongColl", "hPbPbDcaXYPrimWrongColl", kTH2F, {axisPtDcaFine, axisDcaXYFine}, false);
     }
 
     if (doprocessMCeffpp) {
@@ -233,7 +313,12 @@ struct PtmultCorr {
 
       histos.add("hppRecMCvtxz", "hppRecMCvtxz", kTH1D, {axisVtxZ}, false);
       histos.add("hppRecMCdndpt", "hppRecMCdndpt", kTHnSparseD, {axisVtxZ, axisPt, axisPhi, axisRecTrkType, axisTrackType, axisDCAxy}, false);
+      if (cfgApplyPtDepDcaXY) {
+        histos.add("hppRecMCdndptDcaCut", "hppRecMCdndptDcaCut", kTHnSparseD, {axisVtxZ, axisPt, axisPhi, axisRecTrkType, axisTrackType}, false);
+      }
       histos.add("hppEtaReso", "hppEtaReso", kTH2D, {axisPt, axisDeltaPt});
+      histos.add("hppDcaXYPrimFine", "hppDcaXYPrimFine", kTH2F, {axisPtDcaFine, axisDcaXYFine}, false);
+      histos.add("hppDcaXYPrimWrongColl", "hppDcaXYPrimWrongColl", kTH2F, {axisPtDcaFine, axisDcaXYFine}, false);
     }
 
     if (doprocessEvtLossSigLossMCpp || doprocessEvtLossSigLossMCPbPb) {
@@ -389,6 +474,9 @@ struct PtmultCorr {
     return true;
   }
 
+  // All track cuts EXCEPT the pT-dependent DCAxy cut (the flat DCAz cut is included).
+  // The DCAxy cut is applied at the fill points via passDcaXY(), so that the
+  // THnSparses keep the full DCAxy distribution for the template fit.
   template <typename CheckTrack>
   bool isTrackSelected(CheckTrack const& track)
   {
@@ -512,11 +600,14 @@ struct PtmultCorr {
       if (!isTrackSelected(track)) {
         continue;
       }
+      auto trkType = track.hasTPC() ? kGlobalonly : kITSonly;
+      // full DCAxy distribution (template fit)
       histos.fill(HIST("hdatahistPbPb"), cols.posZ(), cols.centFT0C(), track.pt(), track.phi(), kGlobalplusITS, track.dcaXY());
-      if (track.hasTPC()) {
-        histos.fill(HIST("hdatahistPbPb"), cols.posZ(), cols.centFT0C(), track.pt(), track.phi(), kGlobalonly, track.dcaXY());
-      } else {
-        histos.fill(HIST("hdatahistPbPb"), cols.posZ(), cols.centFT0C(), track.pt(), track.phi(), kITSonly, track.dcaXY());
+      histos.fill(HIST("hdatahistPbPb"), cols.posZ(), cols.centFT0C(), track.pt(), track.phi(), trkType, track.dcaXY());
+      // spectrum with the pT-dependent DCAxy cut
+      if (cfgApplyPtDepDcaXY && passDcaXY(track.pt(), track.dcaXY())) {
+        histos.fill(HIST("hdatahistPbPbDcaCut"), cols.posZ(), cols.centFT0C(), track.pt(), track.phi(), kGlobalplusITS);
+        histos.fill(HIST("hdatahistPbPbDcaCut"), cols.posZ(), cols.centFT0C(), track.pt(), track.phi(), trkType);
       }
     }
   }
@@ -539,11 +630,14 @@ struct PtmultCorr {
       if (!isTrackSelected(track)) {
         continue;
       }
+      auto trkType = track.hasTPC() ? kGlobalonly : kITSonly;
+      // full DCAxy distribution (template fit)
       histos.fill(HIST("hdatahistpp"), cols.posZ(), track.pt(), track.phi(), kGlobalplusITS, track.dcaXY());
-      if (track.hasTPC()) {
-        histos.fill(HIST("hdatahistpp"), cols.posZ(), track.pt(), track.phi(), kGlobalonly, track.dcaXY());
-      } else {
-        histos.fill(HIST("hdatahistpp"), cols.posZ(), track.pt(), track.phi(), kITSonly, track.dcaXY());
+      histos.fill(HIST("hdatahistpp"), cols.posZ(), track.pt(), track.phi(), trkType, track.dcaXY());
+      // spectrum with the pT-dependent DCAxy cut
+      if (cfgApplyPtDepDcaXY && passDcaXY(track.pt(), track.dcaXY())) {
+        histos.fill(HIST("hdatahistppDcaCut"), cols.posZ(), track.pt(), track.phi(), kGlobalplusITS);
+        histos.fill(HIST("hdatahistppDcaCut"), cols.posZ(), track.pt(), track.phi(), trkType);
       }
     }
   }
@@ -651,23 +745,41 @@ struct PtmultCorr {
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       std::vector<int> mclabels;
       for (const auto& Rectrack : recTracksPart) {
-        if (!isTrackSelected(Rectrack)) {
+        if (!isTrackSelected(Rectrack)) { // all cuts except the pT-dependent DCAxy cut
           continue;
         }
         auto trkType = Rectrack.hasTPC() ? kGlobalonly : kITSonly;
+        // DCAxy cut always evaluated with RECO pT (as in data)
+        const bool passCut = cfgApplyPtDepDcaXY && passDcaXY(Rectrack.pt(), Rectrack.dcaXY());
 
-        histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll), kGlobalplusITS, Rectrack.dcaXY());
-        histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll), trkType, Rectrack.dcaXY());
+        // fills the full-DCAxy THnSparse (templates) and, for tracks passing
+        // the DCAxy cut, the *DcaCut copy (spectrum / efficiency numerator)
+        auto fillRec = [&](float pt, float phi, int cls) {
+          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), pt, phi, static_cast<double>(cls), kGlobalplusITS, Rectrack.dcaXY());
+          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), pt, phi, static_cast<double>(cls), trkType, Rectrack.dcaXY());
+          if (passCut) {
+            histos.fill(HIST("hPbPbRecMCdndptDcaCut"), RecCol.posZ(), RecCol.centFT0C(), pt, phi, static_cast<double>(cls), kGlobalplusITS);
+            histos.fill(HIST("hPbPbRecMCdndptDcaCut"), RecCol.posZ(), RecCol.centFT0C(), pt, phi, static_cast<double>(cls), trkType);
+          }
+        };
+
+        fillRec(Rectrack.pt(), Rectrack.phi(), kRecoAll);
 
         if (Rectrack.has_mcParticle()) {
           int pid = 0;
           auto mcpart = Rectrack.mcParticle();
           histos.fill(HIST("hPbPbEtaReso"), Rectrack.pt(), Rectrack.pt() - mcpart.pt());
-          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc), kGlobalplusITS, Rectrack.dcaXY());
-          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc), trkType, Rectrack.dcaXY());
+          fillRec(mcpart.pt(), mcpart.phi(), kRecoHasmc);
           if (mcpart.isPhysicalPrimary()) {
-            histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary), kGlobalplusITS, Rectrack.dcaXY());
-            histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary), trkType, Rectrack.dcaXY());
+            // fine DCAxy for sigma(pT): global tracks, reco pT, no DCAxy cut
+            if (Rectrack.hasTPC()) {
+              if (mcpart.mcCollisionId() == mcCollision.globalIndex()) {
+                histos.fill(HIST("hPbPbDcaXYPrimFine"), Rectrack.pt(), Rectrack.dcaXY(), RecCol.centFT0C());
+              } else {
+                histos.fill(HIST("hPbPbDcaXYPrimWrongColl"), Rectrack.pt(), Rectrack.dcaXY());
+              }
+            }
+            fillRec(mcpart.pt(), mcpart.phi(), kRecoPrimary);
             switch (std::abs(mcpart.pdgCode())) {
               case PDG_t::kPiPlus:
                 pid = kRecoPion;
@@ -690,8 +802,7 @@ struct PtmultCorr {
               pid = kRecoMaterial;
             }
             // also fill the union bin as a cross-check (weak + material)
-            histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoSecondary), kGlobalplusITS, Rectrack.dcaXY());
-            histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoSecondary), trkType, Rectrack.dcaXY());
+            fillRec(mcpart.pt(), mcpart.phi(), kRecoSecondary);
           }
 
           // duplicate-track (split) relabel — overrides origin, as before
@@ -700,11 +811,9 @@ struct PtmultCorr {
           }
           mclabels.push_back(Rectrack.mcParticleId());
 
-          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid), kGlobalplusITS, Rectrack.dcaXY());
-          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid), trkType, Rectrack.dcaXY());
+          fillRec(mcpart.pt(), mcpart.phi(), pid);
         } else {
-          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg), kGlobalplusITS, Rectrack.dcaXY());
-          histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg), trkType, Rectrack.dcaXY());
+          fillRec(Rectrack.pt(), Rectrack.phi(), kRecoBkg);
         }
       }
     } // collision loop
@@ -797,21 +906,39 @@ struct PtmultCorr {
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       std::vector<int> mclabels;
       for (const auto& Rectrack : recTracksPart) {
-        if (!isTrackSelected(Rectrack)) {
+        if (!isTrackSelected(Rectrack)) { // all cuts except the pT-dependent DCAxy cut
           continue;
         }
         auto trkType = Rectrack.hasTPC() ? kGlobalonly : kITSonly;
-        histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll), kGlobalplusITS, Rectrack.dcaXY());
-        histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoAll), trkType, Rectrack.dcaXY());
+        // DCAxy cut always evaluated with RECO pT (as in data)
+        const bool passCut = cfgApplyPtDepDcaXY && passDcaXY(Rectrack.pt(), Rectrack.dcaXY());
+
+        auto fillRec = [&](float pt, float phi, int cls) {
+          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), pt, phi, static_cast<double>(cls), kGlobalplusITS, Rectrack.dcaXY());
+          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), pt, phi, static_cast<double>(cls), trkType, Rectrack.dcaXY());
+          if (passCut) {
+            histos.fill(HIST("hppRecMCdndptDcaCut"), RecCol.posZ(), pt, phi, static_cast<double>(cls), kGlobalplusITS);
+            histos.fill(HIST("hppRecMCdndptDcaCut"), RecCol.posZ(), pt, phi, static_cast<double>(cls), trkType);
+          }
+        };
+
+        fillRec(Rectrack.pt(), Rectrack.phi(), kRecoAll);
+
         if (Rectrack.has_mcParticle()) {
           int pid = 0;
           auto mcpart = Rectrack.mcParticle();
           histos.fill(HIST("hppEtaReso"), Rectrack.pt(), Rectrack.pt() - mcpart.pt());
-          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc), kGlobalplusITS, Rectrack.dcaXY());
-          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoHasmc), trkType, Rectrack.dcaXY());
+          fillRec(mcpart.pt(), mcpart.phi(), kRecoHasmc);
           if (mcpart.isPhysicalPrimary()) {
-            histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary), kGlobalplusITS, Rectrack.dcaXY());
-            histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoPrimary), trkType, Rectrack.dcaXY());
+            // fine DCAxy for sigma(pT): global tracks, reco pT, no DCAxy cut
+            if (Rectrack.hasTPC()) {
+              if (mcpart.mcCollisionId() == mcCollision.globalIndex()) {
+                histos.fill(HIST("hppDcaXYPrimFine"), Rectrack.pt(), Rectrack.dcaXY());
+              } else {
+                histos.fill(HIST("hppDcaXYPrimWrongColl"), Rectrack.pt(), Rectrack.dcaXY());
+              }
+            }
+            fillRec(mcpart.pt(), mcpart.phi(), kRecoPrimary);
             switch (std::abs(mcpart.pdgCode())) {
               case PDG_t::kPiPlus:
                 pid = kRecoPion;
@@ -834,19 +961,16 @@ struct PtmultCorr {
               pid = kRecoMaterial;
             }
             // union cross-check bin (weak + material)
-            histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoSecondary), kGlobalplusITS, Rectrack.dcaXY());
-            histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoSecondary), trkType, Rectrack.dcaXY());
+            fillRec(mcpart.pt(), mcpart.phi(), kRecoSecondary);
           }
           // duplicate-track (split) relabel — overrides origin, as before
           if (find(mclabels.begin(), mclabels.end(), Rectrack.mcParticleId()) != mclabels.end()) {
             pid = kRecoFake;
           }
           mclabels.push_back(Rectrack.mcParticleId());
-          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid), kGlobalplusITS, Rectrack.dcaXY());
-          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid), trkType, Rectrack.dcaXY());
+          fillRec(mcpart.pt(), mcpart.phi(), pid);
         } else {
-          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg), kGlobalplusITS, Rectrack.dcaXY());
-          histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg), trkType, Rectrack.dcaXY());
+          fillRec(Rectrack.pt(), Rectrack.phi(), kRecoBkg);
         }
       } // track (mcrec) loop
     } // collision loop

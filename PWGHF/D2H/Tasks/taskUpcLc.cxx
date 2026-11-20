@@ -17,6 +17,7 @@
 /// \author Ran Tu <ran.tu@cern.ch>, Fudan University
 
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"
@@ -28,10 +29,13 @@
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/UPCHelpers.h"
 
+#include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <CommonDataFormat/TimeStamp.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -44,6 +48,9 @@
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Vertex.h>
+
+#include <TH1.h>
+#include <TH2.h>
 
 #include <array>
 #include <cmath>
@@ -67,6 +74,8 @@ namespace full
 DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(BkgScore, bkgScore, float);
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);        //! Run number of the collision
+DECLARE_SOA_COLUMN(HasLcCandidate, hasLcCandidate, bool); //! At least one selected Lc candidate within the task rapidity acceptance
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);
 DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);
@@ -91,12 +100,15 @@ DECLARE_SOA_TABLE(HfUpcQa, "AOD", "HFUPCQA",
                   full::AmpFT0A,
                   full::AmpFT0C,
                   full::ZdcTimeZNA,
-                  full::ZdcTimeZNC);
+                  full::ZdcTimeZNC,
+                  full::HasLcCandidate,
+                  full::RunNumber);
 
 DECLARE_SOA_TABLE(HfUpcLcBdtInfos, "AOD", "HFUPCLCBDTINFOS",
                   full::M,
                   full::Pt,
-                  full::BkgScore);
+                  full::BkgScore,
+                  full::RunNumber);
 
 DECLARE_SOA_TABLE(HfUpcLcInfos, "AOD", "HFUPCLCINFOS",
                   full::M,
@@ -126,6 +138,10 @@ DECLARE_SOA_TABLE(HfUpcLcMcInfos, "AOD", "HFUPCLCMCINFO",
                   full::FlagMcMatchRec,
                   full::OriginMcRec,
                   full::PtBhadMotherPart);
+DECLARE_SOA_TABLE(HfUpcLcMcGen, "AOD", "HFUPCLCMCGEN",
+                  full::Pt,
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::OriginMcGen);
 } // namespace o2::aod
 
 /// Λc± → p± K∓ π± analysis task
@@ -134,16 +150,19 @@ struct HfTaskUpcLc {
   Produces<o2::aod::HfUpcLcInfos> rowCandUpc;
   Produces<o2::aod::HfUpcLcMcBdtInfos> rowCandUpcMcBdt;
   Produces<o2::aod::HfUpcLcMcInfos> rowCandUpcMc;
+  Produces<o2::aod::HfUpcLcMcGen> rowLcMcGen;
   Produces<o2::aod::HfUpcQa> rowUpcQa;
 
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<bool> fillTreeOnlySingleGap{"fillTreeOnlySingleGap", false, "Only fill the tree for candidates that pass the single-gap UPC events"};
+  Configurable<bool> fillMcGenLcTree{"fillMcGenLcTree", false, "Fill the generated Lc to p K pi tree"};
   Configurable<bool> fillTreeUpcQa{"fillTreeUpcQa", false, "Fill Tree for UPC QA"};
   Configurable<bool> fillHistQa{"fillHistQa", false, "Fill histograms for UPC detector QA"};
   Configurable<bool> verticesWithUpc{"verticesWithUpc", false, "Consider vertices with UPC settings"};
   Configurable<float> zdcTimeThreshold{"zdcTimeThreshold", 2., "Threshold for ZNA/ZNC time"};
+  Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Estimator of the interaction rate (pp: T0VTX, Pb-Pb: ZNC hadronic)"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
@@ -151,6 +170,7 @@ struct HfTaskUpcLc {
 
   HfEventSelection hfEvSel;         // event selection and monitoring
   HfUpcGapThresholds upcThresholds; // UPC gap determination thresholds
+  ctpRateFetcher mRateFetcher;
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
@@ -164,6 +184,8 @@ struct HfTaskUpcLc {
   Filter filterSelectCandidates = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc;
   Preslice<aod::HfCand3Prong> candLcPerCollision = aod::hf_cand::collisionId;
   PresliceUnsorted<aod::McCollisionLabels> colPerMcCollision = aod::mcparticle::mcCollisionId;
+
+  ConfigurableAxis axisInteractionRate{"axisInteractionRate", {1000, 0., 100.}, "Interaction rate axis (kHz)"};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -181,7 +203,12 @@ struct HfTaskUpcLc {
       LOGP(fatal, "no or more than one process function enabled! Please check your configuration!");
     }
 
-    auto vbins = (std::vector<double>)binsPt;
+    auto vbins = std::vector<double>(binsPt);
+    if (fillHistQa) {
+      auto hInteractionRateVsRun = registry.add<TH2>("Data/hInteractionRateVsRun", "Selected collisions;Run number;Hadronic interaction rate (kHz)", HistType::kTH2F, {{1, 0., 1.}, axisInteractionRate});
+      hInteractionRateVsRun->SetCanExtend(TH1::kXaxis);
+      hInteractionRateVsRun->GetXaxis()->LabelsOption("v");
+    }
     registry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{200, 0., 200}, {200, 0., 200}}});
     registry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{100, 0., 10}, {100, 0., 10}}});
     registry.add("Data/zdc/timeZNA_vs_timeZNC", "ZNA vs ZNC time;ZNA Time;ZNC time", {HistType::kTH2F, {{200, -10., 10}, {200, -10., 10}}});
@@ -211,10 +238,22 @@ struct HfTaskUpcLc {
                                       BCsType const& bcs,
                                       aod::FT0s const& ft0s,
                                       aod::FV0As const& fv0as,
-                                      aod::FDDs const& fdds
-
-  )
+                                      aod::FDDs const& fdds,
+                                      soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const* mcParticles = nullptr)
   {
+    if constexpr (IsMc) {
+      if (fillMcGenLcTree) {
+        for (const auto& particle : *mcParticles) {
+          if (std::abs(particle.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
+            continue;
+          }
+          if (yCandRecoMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus)) > yCandRecoMax) {
+            continue;
+          }
+          rowLcMcGen(particle.pt(), particle.flagMcMatchGen(), particle.originMcGen());
+        }
+      }
+    }
     for (const auto& collision : collisions) {
       float centrality{-1.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, BCsType>(collision, centrality, ccdb, registry, bcs);
@@ -302,10 +341,17 @@ struct HfTaskUpcLc {
       registry.fill(HIST("Data/hUpcMulti"), multNTracksPV);
       registry.fill(HIST("Data/hUpcVtz"), posZ);
 
-      if (fillTreeUpcQa) {
-        rowUpcQa(numPvContributors, multNTracksPV, posZ, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC);
+      if constexpr (!IsMc) {
+        if (fillHistQa) {
+          const double rate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource, true);
+          if (rate >= 0.) {
+            const auto runLabel = std::to_string(bc.runNumber());
+            registry.get<TH2>(HIST("Data/hInteractionRateVsRun"))->Fill(runLabel.c_str(), rate * 1.e-3, 1.); // Hz to kHz
+          }
+        }
       }
 
+      bool hasLcCandidate = false;
       for (const auto& candidate : groupedLcCandidates) {
         if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
           continue;
@@ -313,6 +359,7 @@ struct HfTaskUpcLc {
         if (yCandRecoMax >= 0. && std::abs(HfHelper::yLc(candidate)) > yCandRecoMax) {
           continue;
         }
+        hasLcCandidate = true;
         const auto pt = candidate.pt();
         const auto ptProng0 = candidate.ptProng0();
         const auto ptProng1 = candidate.ptProng1();
@@ -350,7 +397,7 @@ struct HfTaskUpcLc {
               outputBkg = mlProb[MlClassBackground]; /// bkg score
             }
             /// Fill the ML outputScores and variables of candidate
-            rowCandUpcBdt(massLc, pt, outputBkg);
+            rowCandUpcBdt(massLc, pt, outputBkg, bc.runNumber());
 
           } else {
             rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa);
@@ -363,6 +410,10 @@ struct HfTaskUpcLc {
         if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
           fillTHnData(false);
         }
+      }
+      if (fillTreeUpcQa) {
+        // One QA row per selected collision, including collisions without Lc candidates.
+        rowUpcQa(numPvContributors, multNTracksPV, posZ, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC, hasLcCandidate, bc.runNumber());
       }
     }
   }
@@ -397,13 +448,14 @@ struct HfTaskUpcLc {
                               aod::BcFullInfos const& bcs,
                               LcCandidatesMlMc const& selectedLcCandidatesMlMc,
                               aod::McCollisions const&,
+                              soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                               aod::TracksWMc const&,
                               aod::FT0s const& ft0s,
                               aod::FV0As const& fv0as,
                               aod::FDDs const& fdds,
                               aod::Zdcs const& /*zdcs*/)
   {
-    runAnalysisPerCollisionWithUpc<true, true>(collisions, selectedLcCandidatesMlMc, bcs, ft0s, fv0as, fdds);
+    runAnalysisPerCollisionWithUpc<true, true>(collisions, selectedLcCandidatesMlMc, bcs, ft0s, fv0as, fdds, &mcParticles);
   }
   PROCESS_SWITCH(HfTaskUpcLc, processMcWithMlWithUpc, "Process MC with the ML method with UPC", false);
 
@@ -411,13 +463,14 @@ struct HfTaskUpcLc {
                            aod::BcFullInfos const& bcs,
                            LcCandidatesMc const& selectedLcCandidatesMc,
                            aod::McCollisions const&,
+                           soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                            aod::TracksWMc const&,
                            aod::FT0s const& ft0s,
                            aod::FV0As const& fv0as,
                            aod::FDDs const& fdds,
                            aod::Zdcs const& /*zdcs*/)
   {
-    runAnalysisPerCollisionWithUpc<false, true>(collisions, selectedLcCandidatesMc, bcs, ft0s, fv0as, fdds);
+    runAnalysisPerCollisionWithUpc<false, true>(collisions, selectedLcCandidatesMc, bcs, ft0s, fv0as, fdds, &mcParticles);
   }
   PROCESS_SWITCH(HfTaskUpcLc, processMcStdWithUpc, "Process MC with the standard method with UPC", false);
 };

@@ -100,7 +100,7 @@ struct HfTaskD0 {
   Configurable<int> selectionPid{"selectionPid", 1, "Selection Flag for reco PID candidates"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<int> centEstimator{"centEstimator", 0, "Centrality estimation (None: 0, FT0C: 2, FT0M: 3)"};
-  Configurable<bool> fillEventStatus{"fillEventStatus", false, "Use generated centrality in hSparseAcc and append reco-event status (requires storeCentrality)"};
+  Configurable<bool> fillEventStatus{"fillEventStatus", false, "Append generated centrality and reco-event status to hSparseAcc (requires storeCentrality)"};
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
   Configurable<bool> storeCentrality{"storeCentrality", false, "Flag to store centrality information"};
   Configurable<bool> storeOccupancyAndIR{"storeOccupancyAndIR", false, "Flag to store occupancy information and interaction rate"};
@@ -272,7 +272,7 @@ struct HfTaskD0 {
     if ((storeZdcEnergy || storeZdcTime) && !(doprocessDataWithDCAFitterNWithUpc || doprocessDataWithDCAFitterNMlWithUpc)) {
       LOGP(fatal, "Can't enable the storeZdcEnergy and storeZdcTime without UPC process");
     }
-    auto vbins = (std::vector<double>)binsPt;
+    auto vbins = std::vector<double>(binsPt);
     registry.add("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassVsPhi", "2-prong candidates vs phi;inv. mass (#pi K) (GeV/#it{c}^{2});phi (rad);entries", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {32, 0, o2::constants::math::TwoPI}}});
     registry.add("hDecLength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -341,7 +341,7 @@ struct HfTaskD0 {
       std::vector<AxisSpec> axesAcc = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin, thnAxisNumPvContr};
 
       if (storeCentrality) {
-        axesAcc.emplace_back(thnConfigAxisCent, fillEventStatus ? "Generated centrality (%)" : "Centrality");
+        axesAcc.emplace_back(thnConfigAxisCent, fillEventStatus ? "Reco centrality (%)" : "Centrality");
       }
       // interaction rate only store in Data and MC Reco. Level
       if (storeOccupancyAndIR) {
@@ -355,6 +355,7 @@ struct HfTaskD0 {
         if (centEstimator != CentralityEstimator::FT0C && centEstimator != CentralityEstimator::FT0M) {
           LOGP(fatal, "centEstimator must be FT0C (2) or FT0M (3).");
         }
+        axesAcc.emplace_back(thnConfigAxisCent, "Generated centrality (%)");
         axesAcc.emplace_back(3, -0.5, 2.5, "Reco event status (0: no reco, 1: none selected, 2: selected)");
       }
       registry.add("hSparseAcc", "Thn for generated D0 from charm and beauty", HistType::kTHnSparseD, axesAcc);
@@ -389,8 +390,8 @@ struct HfTaskD0 {
         axes.insert(axes.begin() + 2, thnAxisPromptScore);
         axes.insert(axes.begin() + 2, thnAxisBkgScore);
       } else {
-        axes.insert(axes.begin(), thnAxisPromptScore);
         axes.insert(axes.begin(), thnAxisNonPromptScore);
+        axes.insert(axes.begin(), thnAxisPromptScore);
         axes.insert(axes.begin(), thnAxisBkgScore);
       }
     }
@@ -1315,6 +1316,7 @@ struct HfTaskD0 {
         registry.fill(HIST("hPtVsYGen"), ptGen, yGen);
 
         int eventStatus = NoRecoCollision;
+        float centGen{-1.f};
 
         unsigned maxNumContrib = 0;
         float cent{-1.f};
@@ -1341,14 +1343,15 @@ struct HfTaskD0 {
           const auto mcCollision = particle.template mcCollision_as<McCollisionsWithCentrality>();
           const auto eventEntry = recoEventStatus.find(mcCollision.globalIndex());
           eventStatus = eventEntry == recoEventStatus.end() ? NoRecoCollision : eventEntry->second;
-          // Replace the existing centrality coordinate, including zero-reco events.
-          cent = centEstimator == CentralityEstimator::FT0C ? mcCollision.centFT0C() : mcCollision.centFT0M();
+          // Append generated centrality; retain the existing reco-centrality coordinate.
+          centGen = centEstimator == CentralityEstimator::FT0C ? mcCollision.centFT0C() : mcCollision.centFT0M();
         }
+        const auto histSparseAcc = HIST("hSparseAcc");
         const auto fillGeneratedSparse = [&](auto... coordinates) {
           if (fillEventStatus) {
-            registry.fill(HIST("hSparseAcc"), coordinates..., eventStatus);
+            registry.fill(histSparseAcc, coordinates..., centGen, eventStatus);
           } else {
-            registry.fill(HIST("hSparseAcc"), coordinates...);
+            registry.fill(histSparseAcc, coordinates...);
           }
         };
 

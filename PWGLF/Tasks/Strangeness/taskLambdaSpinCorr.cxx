@@ -575,7 +575,7 @@ struct LfTaskLambdaSpinCorr {
   // Processing Event Mixing
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  BinningType colBinning{{axisVertex, axisMultiplicityClass}, true};
+  BinningType colBinning{{axisVertex, axisMultiplicityClass}};
   Preslice<aod::V0Datas> tracksPerCollisionV0 = aod::v0data::collisionId;
   void processME(EventCandidates const& collisions, AllTrackCandidates const&, ResoV0s const& V0s)
   {

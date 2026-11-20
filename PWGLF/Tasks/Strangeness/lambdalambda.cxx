@@ -585,7 +585,7 @@ struct lambdalambda {
 
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-  BinningType colBinning{{vertexAxis, centAxis}, true};
+  BinningType colBinning{{vertexAxis, centAxis}};
 
   Preslice<aod::V0Datas> tracksPerCollisionV0 = aod::v0data::collisionId;
   void processDataMixed(EventCandidates const& collisions,

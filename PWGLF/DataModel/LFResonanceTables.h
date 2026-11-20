@@ -800,6 +800,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(PassedPtDependentDCAxy, passedPtDependentDCAxy,
                            [](uint8_t trackSelectionFlags) { return DCAEncoding::testPtDependentDCAxy(trackSelectionFlags); });
 DECLARE_SOA_DYNAMIC_COLUMN(PassedPtDependentDCAz, passedPtDependentDCAz,
                            [](uint8_t trackSelectionFlags) { return DCAEncoding::testPtDependentDCAz(trackSelectionFlags); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasITSHitInLayer, hasITSHitInLayer,
+                           [](uint8_t itsClusterMap, int layer) -> bool {
+                             constexpr int NumberOfITSLayers = 7;
+                             if (layer < 0 || layer >= NumberOfITSLayers) {
+                               return false;
+                             }
+                             return (itsClusterMap & (1u << layer)) != 0;
+                           });
 } // namespace resomicrodaughter001
 
 // Ultra-micro track representation.  The momentum components are quantised
@@ -1036,6 +1044,8 @@ using ResoMicroTrack = ResoMicroTracks::iterator;
 
 // Keep ResoMicroTracks as the version-0 API for existing producers and
 // consumers. Version-1 users must request ResoMicroTracks_001 explicitly.
+// Version 1 includes TPC crossed rows and the ITS cluster map; older version-1
+// files without these columns must be regenerated or explicitly converted.
 DECLARE_SOA_TABLE_VERSIONED(ResoMicroTracks_001, "AOD", "RESOMICROTRACK", 1,
                             o2::soa::Index<>,
                             resodaughter::ResoCollisionId,
@@ -1048,6 +1058,8 @@ DECLARE_SOA_TABLE_VERSIONED(ResoMicroTracks_001, "AOD", "RESOMICROTRACK", 1,
                             resomicrodaughter::PidNSigmaPrFlag,
                             resomicrodaughter001::TrackSelectionFlags,
                             resodaughter::TrackFlags,
+                            resodaughter::TpcNClsCrossedRows,
+                            track::ITSClusterMap,
                             // Dynamic columns
                             resomicrodaughter::Pt<resodaughter::Px, resodaughter::Py>,
                             resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
@@ -1069,7 +1081,10 @@ DECLARE_SOA_TABLE_VERSIONED(ResoMicroTracks_001, "AOD", "RESOMICROTRACK", 1,
                             resodaughter::IsPrimaryTrack<resodaughter::TrackFlags>,
                             resodaughter::IsPVContributor<resodaughter::TrackFlags>,
                             resodaughter::HasTOF<resodaughter::TrackFlags>,
-                            resodaughter::Sign<resodaughter::TrackFlags>);
+                            resodaughter::Sign<resodaughter::TrackFlags>,
+                            track::ITSNCls<track::ITSClusterMap>,
+                            track::ITSNClsInnerBarrel<track::ITSClusterMap>,
+                            resomicrodaughter001::HasITSHitInLayer<track::ITSClusterMap>);
 // Positional soft-link side table retained for ResoMicroTracks version 000.
 // Version 001 stores the same row number as a scalar and should be consumed
 // without joining this side table, since both columns expose trackId().

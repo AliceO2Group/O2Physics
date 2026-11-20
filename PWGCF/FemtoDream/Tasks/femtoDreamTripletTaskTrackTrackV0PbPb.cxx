@@ -97,7 +97,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   Configurable<float> confDCACutPtDepPar1{"confDCACutPtDepPar1", 0.013, "Parameter par[1] of the pt dep cut, par[0] + par[1]/(pT/(GeV/c)−1.1) cm"};
 
   /// Partition for selected particles
-  Partition<aod::FDParticles> selectedParts = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+  Partition<aod::FDParticles> selectedParts = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                               ifnode(aod::femtodreamparticle::pt * (0.5f * nexp(aod::femtodreamparticle::eta) + 0.5f * nexp(-1.f * aod::femtodreamparticle::eta)) <= confPIDthrMom, ncheckbit(aod::femtodreamparticle::pidcut, confTPCPIDBit), ncheckbit(aod::femtodreamparticle::pidcut, confTPCTOFPIDBit)) &&
                                               (ncheckbit(aod::femtodreamparticle::cut, confCutPart)) &&
                                               (aod::femtodreamparticle::pt < confMaxpT) &&
@@ -107,7 +107,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
                                                       (aod::femtodreamparticle::tempFitVar <= confMaxDCAxy)));
   ;
 
-  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> selectedPartsMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> selectedPartsMC = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                                             ifnode(aod::femtodreamparticle::pt * (0.5f * nexp(aod::femtodreamparticle::eta) + 0.5f * nexp(-1.f * aod::femtodreamparticle::eta)) <= confPIDthrMom, ncheckbit(aod::femtodreamparticle::pidcut, confTPCPIDBit), ncheckbit(aod::femtodreamparticle::pidcut, confTPCTOFPIDBit)) &&
                                                                             (ncheckbit(aod::femtodreamparticle::cut, confCutPart)) &&
                                                                             (aod::femtodreamparticle::pt < confMaxpT) &&
@@ -138,7 +138,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   Configurable<float> confMaxPtV0{"confMaxPtV0", 999.0, "Maximum pT of V0"};
 
   // Partition for selected particles
-  Partition<aod::FDParticles> selectedV0s = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+  Partition<aod::FDParticles> selectedV0s = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0)) &&
                                             (ncheckbit(aod::femtodreamparticle::cut, confCutV0)) &&
                                             (aod::femtodreamparticle::mLambda > confMinInvMassV0) &&
                                             (aod::femtodreamparticle::mLambda < confMaxInvMassV0) &&
@@ -146,7 +146,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
                                             (aod::femtodreamparticle::mAntiLambda < confMaxInvMassAntiV0) &&
                                             (aod::femtodreamparticle::pt > confMinPtV0) &&
                                             (aod::femtodreamparticle::pt < confMaxPtV0);
-  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> selectedV0sMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> selectedV0sMC = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0)) &&
                                                                           (ncheckbit(aod::femtodreamparticle::cut, confCutV0)) &&
                                                                           (aod::femtodreamparticle::mLambda > confMinInvMassV0) &&
                                                                           (aod::femtodreamparticle::mLambda < confMaxInvMassV0) &&
@@ -179,7 +179,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   ConfigurableAxis confMultBins{"confMultBins", {VARIABLE_WIDTH, 0.0f, 23.0f, 38.0f, 53.0f, 81.0f, 110.0f, 157.0f, 205.0f, 278.0f, 351.0f, 455.0f, 559.0f, 703.0f, 848.0f, 1050.0f, 1253.0f, 1530.0f, 1668.0f, 1857.0f, 2047.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis confVtxBins{"confVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinning{{confVtxBins, confMultBins}};
 
   ConfigurableAxis confQ3Bins{"confQ3Bins", {2000, 0., 8.}, "binning Q3"};
   ConfigurableAxis confQ3BinsFor4D{"confQ3BinsFor4D", {500, 0., 2.}, "binning Q3 for 4D hist"};
@@ -212,7 +212,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
 
     eventHisto.init(&qaRegistry, false);
 
-    colBinning = {{confVtxBins, confMultBins}, true};
+    colBinning = {{confVtxBins, confMultBins}};
 
     trackHistoselectedParts.init(&qaRegistry, confDummy, confDummy, confTempFitVarpTBins, confDummy, confDummy, confTempFitVarBinsTrack, confDummy, confDummy, confDummy, confDummy, confDummy, confDummy, confIsMC, confPDGCodePart);
     trackHistoALLselectedParts.init(&qaRegistry, confDummy, confDummy, confTempFitVarpTBins, confDummy, confDummy, confTempFitVarBinsTrack, confDummy, confDummy, confDummy, confDummy, confDummy, confDummy, confIsMC, confPDGCodePart);
@@ -316,7 +316,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   }
 
   template <bool isMC, typename CollisionType>
-  void fillCollision(CollisionType col)
+  void fillCollision(const CollisionType& col)
   {
     threeBodyQARegistry.fill(HIST("TripletTaskQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multNtr()}));
     eventHisto.fillQA<isMC>(col);
@@ -331,7 +331,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupSelectedTracks, PartitionType groupselectedV0s, PartType parts, float magFieldTesla, int multCol, float centCol)
+  void doSameEvent(const PartitionType& groupSelectedTracks, const PartitionType& groupselectedV0s, const PartType& parts, float magFieldTesla, int multCol, float centCol)
   {
     /// Histograming tracks
     for (const auto& part : groupSelectedTracks) {
@@ -570,7 +570,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartitionType groupPartsThree, PartType parts, float magFieldTesla, int multCol)
+  void doMixedEvent(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, const PartitionType& groupPartsThree, const PartType& parts, float magFieldTesla, int multCol)
   {
     for (const auto& [T1, T2, V0] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo, groupPartsThree))) {
       const auto& posChild = parts.iteratorAt(V0.globalIndex() - 2);

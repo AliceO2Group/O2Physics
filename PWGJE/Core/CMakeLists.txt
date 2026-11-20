@@ -27,3 +27,41 @@ o2physics_target_root_dictionary(PWGJECore
                       utilsTrackMatchingEMC.h
               LINKDEF PWGJECoreLinkDef.h)
 endif()
+
+# Precompiled header shared across PWGJE. Percentages are the share of the
+# group's workflow translation units that include the header, measured over the tree.
+# Jet.h reaches 90% of the group; the existing substructure carriers already
+# precompile it, so this one serves everything they do not cover.
+#
+# runDataProcessing.h is deliberately NOT precompiled: it requires each workflow's
+# customize() to be declared before it is included, so precompiling it silently
+# unregisters every option (the binary aborts at --dump-workflow, but links fine).
+#
+# Skipped under recc, which caches compilations remotely instead.
+add_library(JetDataModelPCH OBJECT jetDataModelPCH.cxx)
+# The PCH compile is one of the heaviest translation units in the tree -- it
+# instantiates the whole data model up front -- but add_library() does not put
+# it in the 'analysis' job pool that o2physics_add_dpl_workflow() uses for the
+# workflows. Left out, it runs unthrottled alongside the pooled compilations
+# and defeats the per-job memory budget the pool exists to enforce.
+set_property(TARGET JetDataModelPCH PROPERTY JOB_POOL_COMPILE analysis)
+target_link_libraries(JetDataModelPCH PUBLIC O2::Framework O2Physics::AnalysisCore O2Physics::PWGJECore)
+if(NOT DEFINED ENV{USE_RECC})
+  target_precompile_headers(JetDataModelPCH PRIVATE
+    # Framework baseline -- same set AnalysisPCH precompiles. A target with
+    # REUSE_FROM uses ONLY this PCH, so anything left out here is parsed from
+    # scratch by every consumer: without this block these workflows precompile
+    # LESS than the default carrier they opted out of.
+    <Framework/ASoA.h>
+    <Framework/AnalysisDataModel.h>
+    <Framework/AnalysisHelpers.h>
+    <Framework/AnalysisTask.h>
+    <Framework/ConfigContext.h>
+    <Framework/Configurable.h>
+    <Framework/DataProcessorSpec.h>
+    <Framework/HistogramRegistry.h>
+    <Framework/HistogramSpec.h>
+    <Framework/InitContext.h>
+    [["PWGJE/DataModel/Jet.h"]]                # 90%
+  )
+endif()

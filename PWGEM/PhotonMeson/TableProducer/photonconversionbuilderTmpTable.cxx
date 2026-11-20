@@ -16,8 +16,12 @@
 
 #include "PWGEM/PhotonMeson/TableProducer/photonconversionbuilder.h"
 
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigContext.h>
+#include <Framework/WorkflowSpec.h>
+
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   return o2::framework::WorkflowSpec{
-    adaptAnalysisTask<PhotonConversionBuilder<o2::aod::V0PhotonsKFTmp, o2::aod::V0LegsTmp, o2::aod::V0LegsXYZTmp, o2::aod::V0LegsDeDxMCTmp, o2::aod::V0PhotonsPhiVPsiTmp>>(context, o2::framework::TaskName{"photon-conversion-builder-tmptable"})};
+    adaptAnalysisTask<PhotonConversionBuilder<o2::aod::V0PhotonsKFTmp, o2::aod::V0LegsTmp, o2::aod::V0LegsXYZTmp, o2::aod::V0LegsDeDxMCTmp, o2::aod::V0PhotonsPhiVPsiTmp, o2::aod::V0LegsCovTmp, o2::aod::V0PhotonsKFChi2Tmp>>(context, o2::framework::TaskName{"photon-conversion-builder-tmptable"})};
 }

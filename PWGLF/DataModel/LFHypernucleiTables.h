@@ -135,6 +135,36 @@ DECLARE_SOA_TABLE(DataHypCandsFlow, "AOD", "HYPCANDSFLOW",
 
 DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   o2::soa::Index<>,
+                  hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::TrackOccupancyInTimeRange, hyperrec::Ft0cOccupancyInTimeRange,
+                  hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
+
+                  hyperrec::RunNumber, hyperrec::IsMatter,
+                  hyperrec::PtHe3, hyperrec::PhiHe3, hyperrec::EtaHe3,
+                  hyperrec::PtPi, hyperrec::PhiPi, hyperrec::EtaPi,
+                  hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
+                  hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
+                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi, hyperrec::NTPCCrossedRowsHe, hyperrec::NTPCCrossedRowsPi,
+                  hyperrec::TpcMomHe, hyperrec::TpcMomPi, hyperrec::TpcSignalHe, hyperrec::TpcSignalPi, hyperrec::TpcChi2He, hyperrec::ItsChi2He, hyperrec::ItsChi2Pi,
+                  hyperrec::TofMass,
+                  hyperrec::ItsClusterSizesHe, hyperrec::ItsClusterSizesPi,
+                  hyperrec::Flags, hyperrec::TrackedClSize,
+                  hyperrec::GenPt,
+                  hyperrec::GenPhi,
+                  hyperrec::GenEta,
+                  hyperrec::GenPtHe3,
+                  hyperrec::GenXDecVtx,
+                  hyperrec::GenYDecVtx,
+                  hyperrec::GenZDecVtx,
+                  hyperrec::IsReco,
+                  hyperrec::IsFakeHeOnITSLayer,
+                  hyperrec::IsSignal,
+                  hyperrec::IsRecoMCCollision,
+                  hyperrec::IsSurvEvSel,
+                  hyperrec::IsTwoBodyDecay, aod::mcparticle::StatusCode);
+
+DECLARE_SOA_TABLE(MCHypCandsWColl, "AOD", "MCHYPCANDSWCOLL",
+                  o2::soa::Index<>,
                   hyperrec::CollisionId, hyperrec::HeTrackId, hyperrec::PiTrackId,
                   hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
                   hyperrec::TrackOccupancyInTimeRange, hyperrec::Ft0cOccupancyInTimeRange,
@@ -185,6 +215,7 @@ DECLARE_SOA_TABLE(DataHypCandsWColl, "AOD", "HYPCANDSWCOLL",
 using DataHypCand = DataHypCands::iterator;
 using DataHypCandFlow = DataHypCandsFlow::iterator;
 using MCHypCand = MCHypCands::iterator;
+using MCHypCandWColl = MCHypCandsWColl::iterator;
 using DataHypCandWColl = DataHypCandsWColl::iterator;
 
 namespace hyperkink

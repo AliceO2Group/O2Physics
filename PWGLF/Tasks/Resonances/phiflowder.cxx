@@ -430,12 +430,12 @@ struct phiflowder {
 
   // Processing Event Mixing
   using BinningType = ColumnBinningPolicy<aod::kaonevent::Posz, aod::kaonevent::Cent>;
-  BinningType colBinning{{cfgVtxBins, cfgCentBins}, true};
+  BinningType colBinning{{cfgVtxBins, cfgCentBins}};
 
   void processMixedData(EventCandidates const& collisions,
                         aod::KaonTracks const& /*kaontracks*/)
   {
-    BinningType colBinning{{cfgVtxBins, cfgCentBins}, true};
+    BinningType colBinning{{cfgVtxBins, cfgCentBins}};
     for (const auto& [collision1, collision2] : selfCombinations(colBinning, nEvtMixing.value, -1, collisions, collisions)) {
 
       if (collision1.globalIndex() == collision2.globalIndex()) {
@@ -524,8 +524,7 @@ struct phiflowder {
       {getSPAngle},
       {cfgVtxBins,
        cfgCentBins,
-       cfgSPAngleBins},
-      true};
+       cfgSPAngleBins}};
 
     for (const auto& [collision1, collision2] :
          selfCombinations(binningOnSPAngle,

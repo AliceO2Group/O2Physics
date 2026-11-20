@@ -1487,8 +1487,7 @@ struct lambdajetpolarizationionsderived {
       using LeadPBinningType = FlexibleBinningPolicy<std::tuple<decltype(getMixLeadPPt), decltype(getMixCentrality)>,
                                                      o2::aod::lambdajetpol::Zvtx, decltype(getMixLeadPPt), decltype(getMixCentrality)>;
       LeadPBinningType leadPBinning{{getMixLeadPPt, getMixCentrality},
-                                    {axisConfigurations.axisPVz, axisConfigurations.axisJetPt, axisConfigurations.axisCentrality},
-                                    true}; // Ignore overflows true
+                                    {axisConfigurations.axisPVz, axisConfigurations.axisJetPt, axisConfigurations.axisCentrality}}; // Ignore overflows true
 
       // SameKindPair defaults to CombinationsBlockStrictlyUpperSameIndexPolicy, so no same-event mixing should happen:
       //(Already filtered by Zvtx even though we call by aod::RingCollisions, so no need to access the filtered table)
@@ -1532,8 +1531,7 @@ struct lambdajetpolarizationionsderived {
       using LeadJetBinningType = FlexibleBinningPolicy<std::tuple<decltype(getMixLeadJetPt), decltype(getMixCentrality)>,
                                                        o2::aod::lambdajetpol::Zvtx, decltype(getMixLeadJetPt), decltype(getMixCentrality)>;
       LeadJetBinningType leadJetBinning{{getMixLeadJetPt, getMixCentrality},
-                                        {axisConfigurations.axisPVz, axisConfigurations.axisJetPt, axisConfigurations.axisCentrality},
-                                        true};
+                                        {axisConfigurations.axisPVz, axisConfigurations.axisJetPt, axisConfigurations.axisCentrality}};
 
       // RingJets is still the associated table (SameKindPair requires one), but its sliced content goes unused here:
       // the borrowed direction comes from jetProxyByCollision, which already knows which jet is the leading one.
@@ -1568,8 +1566,7 @@ struct lambdajetpolarizationionsderived {
       using SubJetBinningType = FlexibleBinningPolicy<std::tuple<decltype(getMixSubJetPt), decltype(getMixCentrality)>,
                                                       o2::aod::lambdajetpol::Zvtx, decltype(getMixSubJetPt), decltype(getMixCentrality)>;
       SubJetBinningType subJetBinning{{getMixSubJetPt, getMixCentrality},
-                                      {axisConfigurations.axisPVz, axisConfigurations.axisJetPt, axisConfigurations.axisCentrality},
-                                      true};
+                                      {axisConfigurations.axisPVz, axisConfigurations.axisJetPt, axisConfigurations.axisCentrality}};
 
       SameKindPair<o2::aod::RingCollisions, o2::aod::RingJets, SubJetBinningType> subJetPair{
         subJetBinning, fakePolSwitches.mixedEventWindowSize, -1, collisions, std::make_tuple(jets), &mixCache};

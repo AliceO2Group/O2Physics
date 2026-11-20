@@ -112,11 +112,11 @@ struct tracksWGTInBCs {
           LOGF(debug, "  Number of BCs %d", atr.bc().size());
           if (atr.bc().size() > 0) {
             auto firstCompatibleBC = atr.bc().begin().globalBC();
-            closestBC = (uint64_t)(firstCompatibleBC +
-                                   (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
+            closestBC = static_cast<uint64_t>(firstCompatibleBC +
+                                              (track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
             // update tracksInBCList
             LOGF(debug, "closestBC %d", closestBC);
-            tracksInBCList[closestBC].emplace_back((int32_t)track.globalIndex());
+            tracksInBCList[closestBC].emplace_back(static_cast<int32_t>(track.globalIndex()));
           }
         } else {
           // registry.get<TH1>(HIST("barrelTracks"))->Fill(2., 1.);
@@ -128,7 +128,7 @@ struct tracksWGTInBCs {
 
           // update tracksInBCList
           LOGF(debug, "closestBC %d", closestBC);
-          tracksInBCList[closestBC].emplace_back((int32_t)track.globalIndex());
+          tracksInBCList[closestBC].emplace_back(static_cast<int32_t>(track.globalIndex()));
         }
       }
       LOGF(debug, "track finished.\n");
@@ -195,12 +195,12 @@ struct tracksWGTInBCs {
           LOGF(debug, "  Number of BCs %d", aftr.bc().size());
           if (aftr.bc().size() > 0) {
             auto firstCompatibleBC = aftr.bc().begin().globalBC();
-            closestBC = (uint64_t)(firstCompatibleBC +
-                                   (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
+            closestBC = static_cast<uint64_t>(firstCompatibleBC +
+                                              (fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS));
 
             // update fwdTracksWGTInBCList
             LOGF(debug, "closestBC %d", closestBC);
-            fwdTracksWGTInBCList[closestBC].emplace_back((int32_t)fwdTrack.globalIndex());
+            fwdTracksWGTInBCList[closestBC].emplace_back(static_cast<int32_t>(fwdTrack.globalIndex()));
           }
         } else {
           // registry.get<TH1>(HIST("forwardTracks"))->Fill(2., 1.);
@@ -212,7 +212,7 @@ struct tracksWGTInBCs {
 
           // update fwdTracksWGTInBCList
           LOGF(debug, "closestBC %d", closestBC);
-          fwdTracksWGTInBCList[closestBC].emplace_back((int32_t)fwdTrack.globalIndex());
+          fwdTracksWGTInBCList[closestBC].emplace_back(static_cast<int32_t>(fwdTrack.globalIndex()));
         }
       }
       LOGF(debug, "FwdTrack finished.\n");
@@ -282,7 +282,7 @@ struct DGBCFilterRun3 {
 
   void init(InitContext&)
   {
-    diffCuts = (DGCutparHolder)DGCuts;
+    diffCuts = DGCutparHolder(DGCuts);
   }
 
   // some general Collisions and Tracks filter

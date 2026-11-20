@@ -107,7 +107,7 @@ void multGlauberNBDFitter::InitGlauberNBD(const float mu, const float k, const f
 {
   fNBDFitterMode = NBDFitterMode::Glauber;
   fGlauberNBD = new TF1("fGlauberNBD", this, &multGlauberNBDFitter::GlauberProbDistrib,
-                        0, 50000, 5, "multGlauberNBDFitter", "GlauberProbDistrib");
+                        0, 50000, 5);
   fGlauberNBD->SetParameter(Index(FitPar::mu), mu);
   fGlauberNBD->SetParameter(Index(FitPar::k), k);
   fGlauberNBD->SetParameter(Index(FitPar::f), f);
@@ -125,7 +125,7 @@ void multGlauberNBDFitter::InitTrentoNBD(const float mu, const float k, const fl
   fNBDFitterMode = NBDFitterMode::Trento;
   fGlauberNBD = nullptr;
   fTrentoNBD = new TF1("fTrentoNBD", this, &multGlauberNBDFitter::TrentoProbDistrib,
-                       0, 50000, 5, "multGlauberNBDFitter", "TrentoProbDistrib");
+                       0, 50000, 5);
   fTrentoNBD->SetParameter(Index(FitPar::mu), mu);
   fTrentoNBD->SetParameter(Index(FitPar::k), k);
   fTrentoNBD->SetParameter(Index(FitPar::norm), norm);
@@ -443,7 +443,20 @@ double multGlauberNBDFitter::ContinuousNBD(const double n, const double mu, cons
   return F;
 }
 
-void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F* hPercentileMap, double lLoRange, double lHiRange, TH3D* lNpNcEcc, TH2F* lEcc2DPlot, TH3D* lNpNcB, TH2F* lB2DPlot, TH2F* lNancestor2DPlot, double fProbabilityCutoff)
+void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf,
+                                           TProfile* lNCollProf,
+                                           TH2F* lNPart2DPlot,
+                                           TH2F* lNColl2DPlot,
+                                           TH1F* hPercentileMap,
+                                           double lLoRange,
+                                           double lHiRange,
+                                           TH3D* lNpNcEcc,
+                                           TH2F* lEcc2DPlot,
+                                           TH3D* lNpNcB,
+                                           TH2F* lB2DPlot,
+                                           TH2F* lNancestor2DPlot,
+                                           TH2F* lMult2DPlot,
+                                           double fProbabilityCutoff)
 {
   LOG(info) << "Calculating <Npart>, <Ncoll> in centrality bins...";
   LOG(info) << "Range to calculate: " << lLoRange << " to " << lHiRange;
@@ -556,6 +569,9 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
       if (lNancestor2DPlot) {
         // fill cross-check histogram with lNancestorCount at lNancestors value
         lNancestor2DPlot->Fill(lMultValueToFill, lNancestors, lProbability);
+      }
+      if (lMult2DPlot) {
+        lMult2DPlot->Fill(lMultValueToFill, lMultValue, lProbability);
       }
       if (lNPart2DPlot) {
         lNPart2DPlot->Fill(lMultValueToFill, fNpart[ibin], lProbability);

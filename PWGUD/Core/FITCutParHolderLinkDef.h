@@ -13,12 +13,9 @@
 // \author Sandor Lokos, sandor.lokos@cern.ch
 // \since  March 2026
 
-#ifndef PWGUD_CORE_FITCUTPARHOLDERLINKDEF_H_
-#define PWGUD_CORE_FITCUTPARHOLDERLINKDEF_H_
+// NOLINT(build/header_guard)
 
 #pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
 #pragma link C++ class FITCutParHolder + ;
-
-#endif // PWGUD_CORE_FITCUTPARHOLDERLINKDEF_H_

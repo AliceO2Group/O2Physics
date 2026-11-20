@@ -20,7 +20,6 @@
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -72,34 +71,12 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
 
-enum QvecEstimator {
-  FT0M = 0,
-  FT0A,
-  FT0C,
-  TPCPos,
-  TPCNeg,
-  TPCTot,
-  FV0A
-};
-
 enum CentralityEstimator {
   None = 0,
   CFT0A,
   CFT0C,
   CFT0M,
   NCentralityEstimators
-};
-
-enum Harmonics {
-  kNone = 0,
-  kDirect = 1,
-  kElliptic = 2,
-  kTriangluar = 3,
-  kQuadrangular = 4,
-  kPentagonal = 5,
-  kHexagonal = 6,
-  kHeptagonal = 7,
-  kOctagonal = 8
 };
 
 enum class MapLevel {
@@ -294,6 +271,7 @@ struct CalibTaskEmc {
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
+    fEMEventCut.SetFT0COccupancyRange(eventcuts.cfgFT0COccupancyMin, eventcuts.cfgFT0COccupancyMax);
   }
 
   void defineEMCCut()
@@ -363,7 +341,7 @@ struct CalibTaskEmc {
     fEMCCut.addQAHistograms(&registry);
     definePCMCut();
     fV0PhotonCut.addQAHistograms(&registry);
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&registry);
+    fEMEventCut.addEventHistograms(&registry);
 
     const AxisSpec thnAxisInvMass{thnConfigAxisInvMass, "#it{M}_{#gamma#gamma} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality (%)"};
@@ -587,14 +565,10 @@ struct CalibTaskEmc {
   bool isFullEventSelected(TCollision const& collision, bool fillHisto = false)
   {
     if (fillHisto) {
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&registry, collision);
+      fEMEventCut.fillEventInfo<0>(&registry, collision);
     }
     if (!(fEMEventCut.IsSelected(collision))) {
       // general event selection
-      return false;
-    }
-    if (!(eventcuts.cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
-      // occupancy selection
       return false;
     }
     float cent = getCentrality(collision);
@@ -603,9 +577,8 @@ struct CalibTaskEmc {
       return false;
     }
     if (fillHisto) {
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&registry, collision);
-      registry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
-      registry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
+      fEMEventCut.fillEventInfo<1>(&registry, collision);
+      fEMEventCut.fillAccepted(&registry);
     }
     return true;
   }
@@ -704,7 +677,7 @@ struct CalibTaskEmc {
     fEMCCut.AreSelectedRunning(flags, clusters, matchedPrims, matchedSeconds);
 
     using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}, true};
+    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}};
 
     auto clustersTuple = std::make_tuple(clusters);
     SameKindPair<FilteredCollsWithQvecs, EMCalPhotons, BinningType> pair{binningMixedEvent, mixingConfig.cfgMixingDepth, -1, collisions, clustersTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
@@ -712,10 +685,6 @@ struct CalibTaskEmc {
     for (const auto& [c1, clusters1, c2, clusters2] : pair) {
       if (!(fEMEventCut.IsSelected(c1)) || !(fEMEventCut.IsSelected(c2))) {
         // general event selection
-        continue;
-      }
-      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange()) || !(c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange()) || !(c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
-        // occupancy selection
         continue;
       }
       if (getCentrality(c1) < eventcuts.cfgMinCent || getCentrality(c1) > eventcuts.cfgMaxCent || getCentrality(c2) < eventcuts.cfgMinCent || getCentrality(c2) > eventcuts.cfgMaxCent) {
@@ -866,7 +835,7 @@ struct CalibTaskEmc {
       return;
     }
     using BinningTypeMixed = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-    BinningTypeMixed binningOnPositions{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}, true};
+    BinningTypeMixed binningOnPositions{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}};
 
     auto associatedTables = std::make_tuple(clusters, pcmPhotons);
 
@@ -885,10 +854,6 @@ struct CalibTaskEmc {
     for (const auto& [c1, photonEMC, c2, photonPCM] : pairPCMEMC) {
       if (!(fEMEventCut.IsSelected(c1)) || !(fEMEventCut.IsSelected(c2))) {
         // general event selection
-        continue;
-      }
-      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange()) || !(c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange()) || !(c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
-        // occupancy selection
         continue;
       }
       if (getCentrality(c1) < eventcuts.cfgMinCent || getCentrality(c1) > eventcuts.cfgMaxCent || getCentrality(c2) < eventcuts.cfgMinCent || getCentrality(c2) > eventcuts.cfgMaxCent) {
@@ -1020,7 +985,7 @@ struct CalibTaskEmc {
       return;
     }
     using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}, true};
+    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}};
 
     auto pcmPhotonTuple = std::make_tuple(pcmPhotons);
     SameKindPair<FilteredCollsWithQvecs, PCMPhotons, BinningType> pair{binningMixedEvent, mixingConfig.cfgMixingDepth, -1, collisions, pcmPhotonTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
@@ -1031,10 +996,6 @@ struct CalibTaskEmc {
     for (const auto& [c1, photon1, c2, photon2] : pair) {
       if (!(fEMEventCut.IsSelected(c1)) || !(fEMEventCut.IsSelected(c2))) {
         // general event selection
-        continue;
-      }
-      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange()) || !(c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange()) || !(c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
-        // occupancy selection
         continue;
       }
       if (getCentrality(c1) < eventcuts.cfgMinCent || getCentrality(c1) > eventcuts.cfgMaxCent || getCentrality(c2) < eventcuts.cfgMinCent || getCentrality(c2) > eventcuts.cfgMaxCent) {

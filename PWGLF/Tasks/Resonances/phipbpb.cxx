@@ -941,8 +941,8 @@ struct phipbpb {
   }
   PROCESS_SWITCH(phipbpb, processSameEventv1, "Process Same event for v1", false);
 
-  BinningTypeVertexContributor binningOnEPAngle{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
-  BinningTypeVertexContributorv1 binningOnSPAngle{{axisVertex, axisMultiplicityClass, axisSPAngle}, true};
+  BinningTypeVertexContributor binningOnEPAngle{{axisVertex, axisMultiplicityClass, axisEPAngle}};
+  BinningTypeVertexContributorv1 binningOnSPAngle{{axisVertex, axisMultiplicityClass, axisSPAngle}};
   Preslice<aod::Tracks> tracksPerCollision = aod::track::collisionId;
   void processMEAcc(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
@@ -1188,7 +1188,7 @@ struct phipbpb {
   void processMixedEventOpti(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
       // if (!collision1.sel8() || !collision1.triggereventep() || !collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
@@ -1310,7 +1310,7 @@ struct phipbpb {
   void processMixedEventOptiv1(EventCandidatesv1 const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeVertexContributorv1 binningOnPositions{{axisVertex, axisMultiplicityClass, axisSPAngle}, true};
+    BinningTypeVertexContributorv1 binningOnPositions{{axisVertex, axisMultiplicityClass, axisSPAngle}};
     SameKindPair<EventCandidatesv1, TrackCandidates, BinningTypeVertexContributorv1> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
       if (!collision1.sel8() || !collision1.triggereventsp() || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup)) {

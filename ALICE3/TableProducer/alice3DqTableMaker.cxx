@@ -301,7 +301,7 @@ struct Alice3DqTableMaker {
     fStatsList.setObject(new TList());
     fStatsList->SetOwner(true);
     std::vector<TString> eventLabels{"Collisions before filtering", "Before cuts", "After cuts"};
-    TH2I* histEvents = new TH2I("EventStats", "Event statistics", eventLabels.size(), -0.5, eventLabels.size() - 0.5, o2::aod::evsel::kNsel + 1, -0.5, (float)o2::aod::evsel::kNsel + 0.5);
+    TH2I* histEvents = new TH2I("EventStats", "Event statistics", eventLabels.size(), -0.5, eventLabels.size() - 0.5, o2::aod::evsel::kNsel + 1, -0.5, static_cast<float>(o2::aod::evsel::kNsel) + 0.5);
     int ibX = 1;
     for (auto label = eventLabels.begin(); label != eventLabels.end(); label++, ibX++) {
       histEvents->GetXaxis()->SetBinLabel(ibX, (*label).Data());
@@ -583,7 +583,7 @@ struct Alice3DqTableMaker {
             if (fDoDetailedQA) {
               j = 0;
               for (const auto& cut : fTrackCuts) {
-                if ((trackTempFilterMap & (uint8_t(1) << j)) != 0u) {
+                if ((trackTempFilterMap & (static_cast<uint8_t>(1) << j)) != 0u) {
                   fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut->GetName(), sig->GetName()), dqefficiency_helpers::varValues()); // fill the reconstructed truth
                 }
                 j++;

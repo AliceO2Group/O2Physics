@@ -216,7 +216,7 @@ struct myAnalysis {
     JEhistos.add("hKaonminusCounts", "hKaonminusCounts", {HistType::kTH1F, {{1, -0.5, 0.5f}}});
 
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(cfgeventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
   } // end of init
 
   double massPi = o2::constants::physics::MassPiMinus;

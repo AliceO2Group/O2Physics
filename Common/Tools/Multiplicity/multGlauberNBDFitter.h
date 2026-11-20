@@ -131,7 +131,20 @@ class multGlauberNBDFitter : public TNamed
 
   // For estimating Npart, Ncoll in multiplicity bins
   // also viable: eccentricity, impact parameter, ancestor cross-check plot
-  void CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F* hPercentileMap, double lLoRange = -1, double lHiRange = -1, TH3D* lNpNcEcc = nullptr, TH2F* lEcc2DPlot = nullptr, TH3D* lNpNcB = nullptr, TH2F* lB2DPlot = nullptr, TH2F* lNancestor2DPlot = nullptr, double fProbabilityCutoff = -1);
+  void CalculateAvNpNc(TProfile* lNPartProf,
+                       TProfile* lNCollProf,
+                       TH2F* lNPart2DPlot,
+                       TH2F* lNColl2DPlot,
+                       TH1F* hPercentileMap,
+                       double lLoRange = -1,
+                       double lHiRange = -1,
+                       TH3D* lNpNcEcc = nullptr,
+                       TH2F* lEcc2DPlot = nullptr,
+                       TH3D* lNpNcB = nullptr,
+                       TH2F* lB2DPlot = nullptr,
+                       TH2F* lNancestor2DPlot = nullptr,
+                       TH2F* lMult2DPlot = nullptr,
+                       double fProbabilityCutoff = -1);
 
  private:
   // This function serves as the (analytical) NBD

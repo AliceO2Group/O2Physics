@@ -663,7 +663,7 @@ struct SigmaHadCorr {
   {
     if (useMultNTracksPV.value) {
       for (auto const& [collision1, collision2] :
-           selfCombinations(BinningTypeMultNTracksPV{{cfgVtxBins, cfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
+           selfCombinations(BinningTypeMultNTracksPV{{cfgVtxBins, cfgMultBins}}, nEvtMixingBkg, -1, collisions, collisions)) {
         if (collision1.index() == collision2.index())
           continue;
         if (std::abs(collision1.posZ()) > cutZVertex || !collision1.sel8())
@@ -685,7 +685,7 @@ struct SigmaHadCorr {
       }
     } else {
       for (auto const& [collision1, collision2] :
-           selfCombinations(BinningTypeNumContrib{{cfgVtxBins, cfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
+           selfCombinations(BinningTypeNumContrib{{cfgVtxBins, cfgMultBins}}, nEvtMixingBkg, -1, collisions, collisions)) {
         if (collision1.index() == collision2.index())
           continue;
         if (std::abs(collision1.posZ()) > cutZVertex || !collision1.sel8())
@@ -835,7 +835,7 @@ struct SigmaHadCorr {
   {
     if (useMultNTracksPV.value) {
       for (auto const& [collision1, collision2] :
-           selfCombinations(BinningTypeMultNTracksPV{{cfgVtxBins, cfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
+           selfCombinations(BinningTypeMultNTracksPV{{cfgVtxBins, cfgMultBins}}, nEvtMixingBkg, -1, collisions, collisions)) {
         if (collision1.index() == collision2.index())
           continue;
         if (std::abs(collision1.posZ()) > cutZVertex || !collision1.sel8())
@@ -883,7 +883,7 @@ struct SigmaHadCorr {
       }
     } else {
       for (auto const& [collision1, collision2] :
-           selfCombinations(BinningTypeNumContrib{{cfgVtxBins, cfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
+           selfCombinations(BinningTypeNumContrib{{cfgVtxBins, cfgMultBins}}, nEvtMixingBkg, -1, collisions, collisions)) {
         if (collision1.index() == collision2.index())
           continue;
         if (std::abs(collision1.posZ()) > cutZVertex || !collision1.sel8())

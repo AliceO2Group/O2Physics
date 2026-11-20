@@ -17,10 +17,12 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
@@ -33,9 +35,21 @@
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <THnSparse.h>
+#include <TObject.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -45,6 +59,70 @@ using namespace o2::framework::expressions;
 
 using BinningCentPosZ = ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ, aod::hf_collisions_reduced::Centrality>;
 using BinningMultPosZ = ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ, aod::hf_collisions_reduced::Multiplicity>;
+
+// Mimic the HfcRedSEHadHads table structure to be used in the correlator
+// task so that the had-had workflow can be run from the derived data used
+// for the charm-hadron correlations
+struct HadHadPairFromCharmTables {
+  float fPtTrig;
+  float fPtAssoc;
+  float fEtaTrig;
+  float fEtaAssoc;
+  float fDeltaEta;
+  float fPhiTrig;
+  float fPhiAssoc;
+  float fDeltaPhi;
+  int fNTpcCrossedRowsTrig;
+  int fItsClsMapTrig;
+  int fItsNClsTrig;
+  float fDcaXYTrig;
+  float fDcaZTrig;
+  int fNTpcCrossedRowsAssoc;
+  int fItsClsMapAssoc;
+  int fItsNClsAssoc;
+  float fDcaXYAssoc;
+  float fDcaZAssoc;
+
+  // Setters
+  void setPtTrig(float val) { fPtTrig = val; }
+  void setPtAssoc(float val) { fPtAssoc = val; }
+  void setEtaTrig(float val) { fEtaTrig = val; }
+  void setEtaAssoc(float val) { fEtaAssoc = val; }
+  void setDeltaEta(float val) { fDeltaEta = val; }
+  void setPhiTrig(float val) { fPhiTrig = val; }
+  void setPhiAssoc(float val) { fPhiAssoc = val; }
+  void setDeltaPhi(float val) { fDeltaPhi = val; }
+  void setNTpcCrossedRowsTrig(int val) { fNTpcCrossedRowsTrig = val; }
+  void setItsClsMapTrig(int val) { fItsClsMapTrig = val; }
+  void setItsNClsTrig(int val) { fItsNClsTrig = val; }
+  void setDcaXYTrig(float val) { fDcaXYTrig = val; }
+  void setDcaZTrig(float val) { fDcaZTrig = val; }
+  void setNTpcCrossedRowsAssoc(int val) { fNTpcCrossedRowsAssoc = val; }
+  void setItsClsMapAssoc(int val) { fItsClsMapAssoc = val; }
+  void setItsNClsAssoc(int val) { fItsNClsAssoc = val; }
+  void setDcaXYAssoc(float val) { fDcaXYAssoc = val; }
+  void setDcaZAssoc(float val) { fDcaZAssoc = val; }
+
+  // Access methods to mimic the HfcRedSEHadHads table structure
+  [[nodiscard]] float ptTrig() const { return fPtTrig; }
+  [[nodiscard]] float ptAssoc() const { return fPtAssoc; }
+  [[nodiscard]] float etaTrig() const { return fEtaTrig; }
+  [[nodiscard]] float etaAssoc() const { return fEtaAssoc; }
+  [[nodiscard]] float deltaEta() const { return fDeltaEta; }
+  [[nodiscard]] float phiTrig() const { return fPhiTrig; }
+  [[nodiscard]] float phiAssoc() const { return fPhiAssoc; }
+  [[nodiscard]] float deltaPhi() const { return fDeltaPhi; }
+  [[nodiscard]] int nTpcCrossedRowsTrig() const { return fNTpcCrossedRowsTrig; }
+  [[nodiscard]] int itsClsMapTrig() const { return fItsClsMapTrig; }
+  [[nodiscard]] int itsNClsTrig() const { return fItsNClsTrig; }
+  [[nodiscard]] float dcaXYTrig() const { return fDcaXYTrig; }
+  [[nodiscard]] float dcaZTrig() const { return fDcaZTrig; }
+  [[nodiscard]] int nTpcCrossedRowsAssoc() const { return fNTpcCrossedRowsAssoc; }
+  [[nodiscard]] int itsClsMapAssoc() const { return fItsClsMapAssoc; }
+  [[nodiscard]] int itsNClsAssoc() const { return fItsNClsAssoc; }
+  [[nodiscard]] float dcaXYAssoc() const { return fDcaXYAssoc; }
+  [[nodiscard]] float dcaZAssoc() const { return fDcaZAssoc; }
+};
 
 /// Get charm candidate or hadron track pT
 /// \param track is the candidate
@@ -82,22 +160,24 @@ double getPhi(const TTrack& track)
   }
 }
 
-struct HfCorrelatorFlowCharmHadronsReduced {
-  // Produces<aod::HfcRedSEChHads> rowPairSECharmHads; //! Correlation pairs information Same Event
-  // Produces<aod::HfcRedMEChHads> rowPairMECharmHads; //! Correlation pairs information Mixed Event
-  // Produces<aod::HfcRedSEHadHads> rowPairSEHadHads;  //! Correlation pairs information Same Event
-  // Produces<aod::HfcRedMEHadHads> rowPairMEHadHads;  //! Correlation pairs information Mixed Event
-  // Produces<aod::HfcRedCollInfos> rowCollInfos;      //! Collision info
+enum HistoEffType {
+  kTH1 = 0,
+  kTH2,
+  kTH3,
+  kTHnSparse
+};
 
-  Configurable<bool> fillSparses{"fillSparses", true, "Fill sparse histograms"};
-  Configurable<bool> fillTables{"fillTables", false, "Fill tables"};
+struct HfCorrelatorFlowCharmHadronsReduced {
+
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
-  Configurable<std::vector<double>> binsPtTrig{"binsPtTrig", std::vector<double>{0., 3., 5., 8., 16., 36.}, "pT bin limits for trigger candidates"};
   Configurable<std::vector<double>> bdtScore0PtMaxs{"bdtScore0PtMaxs", std::vector<double>{0.1, 0.1, 0.1, 0.1, 0.1}, "pT-differential maximum score 0 for charm candidates"};
   Configurable<std::vector<double>> bdtScore1PtMins{"bdtScore1PtMins", std::vector<double>{0.1, 0.1, 0.1, 0.1, 0.1}, "pT-differential minimum score 1 for charm candidates"};
-  Configurable<std::vector<double>> binsPtAssoc{"binsPtAssoc", std::vector<double>{0.3, 1., 2., 50.}, "pT bin limits for associated particles"};
-  Configurable<float> centralityMin{"centralityMin", 0, "min. centrality"};
-  Configurable<float> centralityMax{"centralityMax", 10., "max. centrality"};
+  Configurable<bool> selCentrality{"selCentrality", false, "Use centrality to select events"};
+  Configurable<bool> selMultiplicity{"selMultiplicity", false, "Use multiplicity to select events"};
+  Configurable<float> centMin{"centMin", 0, "min. centrality"};
+  Configurable<float> centMax{"centMax", 10., "max. centrality"};
+  Configurable<float> multMin{"multMin", 0, "min. multiplicity"};
+  Configurable<float> multMax{"multMax", 10., "max. multiplicity"};
   Configurable<float> deltaEtaAbsMin{"deltaEtaAbsMin", 0.5, "min. pair delta eta"};
   Configurable<float> deltaEtaAbsMax{"deltaEtaAbsMax", 2., "max. pair delta eta"};
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. track DCA XY"};
@@ -106,16 +186,34 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   Configurable<int> itsNClsMin{"itsNClsMin", 1, "min. ITS clusters"};
   Configurable<float> downSamplePairs{"downSamplePairs", 1., "Fraction of pairs to keep"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
-  Configurable<float> centMaxForDownSample{"centMaxForDownSample", 10., "Maximum centrality for the application of the downsampling factor"};
+  Configurable<float> centMultMaxForDownSample{"centMultMaxForDownSample", 10., "Maximum centrality for the application of the downsampling factor"};
+
+  // Efficiency correction
+  Configurable<bool> doEfficiencyCorrection{"doEfficiencyCorrection", false, "Flag for applying efficiency corrections"};
+  Configurable<int> effHistTypeCharm{"effHistTypeCharm", 0, "Histogram type for charm efficiency (0=TH1, 1=TH2, 2=TH3, 3=THnSparse)"};
+  Configurable<int> effHistTypeAssoc{"effHistTypeAssoc", 0, "Histogram type for associated efficiency (0=TH1, 1=TH2, 2=TH3, 3=THnSparse)"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> assocEffCcdbPath{"assocEffCcdbPath", "", "CCDB path for associated efficiency"};
+  Configurable<std::string> promptEffCcdbPath{"promptEffCcdbPath", "", "CCDB path for trigger efficiency"};
+  Configurable<int64_t> timestampCcdb{"timestampCcdb", -1, "timestamp of the efficiency files used to query in CCDB"};
+  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   SliceCache cache;
 
+  Service<ccdb::BasicCCDBManager> ccdb{};
+  std::shared_ptr<TObject> hEffPrompt = nullptr;
+  std::shared_ptr<TObject> hEffAssoc = nullptr;
+
   int poolBins{0};
+  std::vector<double> mPtEdgesTrig;
 
   using SameEvtPairsChHad = soa::Filtered<soa::Join<aod::HfcRedSEChBases, aod::HfcRedAssTracks>>;
+  using SameEvtPairsChHadWEffInfo = soa::Filtered<soa::Join<aod::HfcRedSEChBases, aod::HfcRedAssBases, aod::HfcRedAssTracks>>;
   using SameEvtPairsHadHad = soa::Filtered<soa::Join<aod::HfcRedSEHadBases, aod::HfcRedAssTracks>>;
+  using SameEvtPairsHadHadWEffInfo = soa::Filtered<soa::Join<aod::HfcRedSEHadBases, aod::HfcRedAssBases, aod::HfcRedAssTracks>>;
   using AssocTracks = soa::Filtered<soa::Join<aod::HfcRedAssBases, aod::HfcRedAssTracks>>;
   using TrigCharmCands = soa::Join<aod::HfcRedTrigBases, aod::HfcRedTrigCharms>;
+  using TrigTracks = soa::Join<aod::HfcRedTrigBases, aod::HfcRedTrigTracks>;
 
   Filter filterAssocTracks = (nabs(aod::hf_correl_charm_had_reduced::dcaXYAssoc) < dcaXYTrackMax) && (nabs(aod::hf_correl_charm_had_reduced::dcaZAssoc) < dcaZTrackMax) && (aod::hf_correl_charm_had_reduced::nTpcCrossedRowsAssoc > tpcCrossedRowsMin) && (aod::hf_correl_charm_had_reduced::itsNClsAssoc > itsNClsMin);
   Filter filterTrigTracks = (nabs(aod::hf_correl_charm_had_reduced::dcaXYTrig) < dcaXYTrackMax) && (nabs(aod::hf_correl_charm_had_reduced::dcaZTrig) < dcaZTrackMax) && (aod::hf_correl_charm_had_reduced::nTpcCrossedRowsTrig > tpcCrossedRowsMin) && (aod::hf_correl_charm_had_reduced::itsNClsTrig > itsNClsMin);
@@ -124,43 +222,110 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   Preslice<AssocTracks> assocTracksPerCol = aod::hf_correl_charm_had_reduced::hfcRedCorrCollId;
   Preslice<TrigCharmCands> trigCharmCandsPerCol = aod::hf_correl_charm_had_reduced::hfcRedCorrCollId;
 
-  ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0}, "Z vertex position pools"};
-  ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 900., 1800., 6000.}, "Event multiplicity pools (FT0M)"};
-  ConfigurableAxis centPoolBins{"centPoolBins", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100}, "Event centrality pools"};
+  ConfigurableAxis binsPtTrig{"binsPtTrig", {VARIABLE_WIDTH, 0., 1., 2., 3., 4., 5., 6., 8., 10., 12., 16., 24.}, "Trigger candidate pT bins"};
+  ConfigurableAxis binsPtAssoc{"binsPtAssoc", {VARIABLE_WIDTH, 0.3, 1., 2., 50.}, "Associated particle pT bins"};
+  ConfigurableAxis binsZPool{"binsZPool", {VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0}, "Z vertex position pools"};
+  ConfigurableAxis binsMultPool{"binsMultPool", {VARIABLE_WIDTH, 0., 900., 1800., 6000.}, "Event multiplicity pools (FT0M)"};
+  ConfigurableAxis binsCentPool{"binsCentPool", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100}, "Event centrality pools"};
   ConfigurableAxis binsInvMass{"binsInvMass", {300, 1.6, 2.2}, "Invariant mass bins"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {100, 0., 10000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsCent{"binsCent", {100, 0., 100.}, "Centrality bins"};
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "Primary vertex z coordinate"};
-  ConfigurableAxis binsEta{"binsEta", {50, -2., 2.}, "Eta bins"};
-  ConfigurableAxis binsPhi{"binsPhi", {64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, "Phi bins"};
   ConfigurableAxis binsDeltaEta{"binsDeltaEta", {100, -2., 2.}, "Delta Eta bins"};
-  ConfigurableAxis binsDeltaPhi{"binsDeltaPhi", {64, -3., 3.}, "Delta Phi bins"};
+  ConfigurableAxis binsDeltaPhi{"binsDeltaPhi", {64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, "Delta Phi bins"};
   ConfigurableAxis binsMlOne{"binsMlOne", {100, 0., 1.}, "ML score index 1 bins"};
   ConfigurableAxis binsMlTwo{"binsMlTwo", {100, 0., 1.}, "ML score index 2 bins"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  std::shared_ptr<TObject> loadEfficiencyHistogram(const std::string& path, int histoType)
+  {
+    TObject* object = nullptr;
+
+    switch (histoType) {
+      case kTH1:
+        object = ccdb->getForTimeStamp<TH1F>(Form("%s/TH1/", path.c_str()), timestampCcdb);
+        break;
+      case kTH2:
+        object = ccdb->getForTimeStamp<TH2F>(Form("%s/TH2/", path.c_str()), timestampCcdb);
+        break;
+      case kTH3:
+        object = ccdb->getForTimeStamp<TH3F>(Form("%s/TH3/", path.c_str()), timestampCcdb);
+        break;
+      case kTHnSparse:
+        object = ccdb->getForTimeStamp<THnSparseF>(Form("%s/THnSparse/", path.c_str()), timestampCcdb);
+        break;
+      default:
+        LOGF(fatal, "Invalid efficiency histogram type: %d", histoType);
+    }
+
+    if (!object) {
+      LOGF(fatal, "Could not load efficiency histogram from %s", path.c_str());
+    }
+
+    return std::shared_ptr<TObject>(object);
+  }
+
   void init(InitContext&)
   {
-    if ((doprocessSameEventCharmHadWCentMix && doprocessMixedEventCharmHadWMultMix) ||
-        (doprocessSameEventCharmHadWMultMix && doprocessMixedEventCharmHadWCentMix) ||
-        (doprocessSameEventHadHadWCentMix && doprocessMixedEventHadHadWMultMix) ||
-        (doprocessSameEventHadHadWMultMix && doprocessMixedEventHadHadWCentMix)) {
-      LOGP(fatal, "You cannot mix centrality and multiplicity mixing in the same processing! Please check your configuration!");
+    // Event selection config
+    if (selCentrality && selMultiplicity) {
+      LOGP(fatal, "You cannot select events based on both centrality and multiplicity! Please check your configuration!");
     }
-    if (!fillSparses && !fillTables) {
-      LOGP(fatal, "At least one of fillSparses or fillTables must be true!");
+    if (!selCentrality && !selMultiplicity) {
+      LOGP(fatal, "You must select events based on either centrality or multiplicity! Please check your configuration!");
     }
-    if ((binsPtTrig.value.size() != (bdtScore0PtMaxs.value.size() + 1) || binsPtTrig.value.size() != (bdtScore1PtMins.value.size() + 1))) {
+
+    // Check process functions consistency
+    // Same-event
+    const bool seCharmHadCent = doprocessSECharmHadWCentMix || doprocessSECharmHadWCentMixWEffInfo;
+    const bool seCharmHadMult = doprocessSECharmHadWMultMix || doprocessSECharmHadWMultMixWEffInfo;
+    const bool seHadHadCent = doprocessSEHadHadWCentMix || doprocessSEHadHadWCentMixWEffInfo ||
+                              doprocessSEHadHadWCentMixFromCharmTables || doprocessSEHadHadWCentMixFromCharmTablesWEffInfo;
+    const bool seHadHadMult = doprocessSEHadHadWMultMix || doprocessSEHadHadWMultMixWEffInfo ||
+                              doprocessSEHadHadWMultMixFromCharmTables || doprocessSEHadHadWMultMixFromCharmTablesWEffInfo;
+    // Mixed-event
+    const bool meCharmHadCent = doprocessMECharmHadWCentMix || doprocessMECharmHadWCentMixWEffInfo;
+    const bool meCharmHadMult = doprocessMECharmHadWMultMix || doprocessMECharmHadWMultMixWEffInfo;
+    const bool meHadHadCent = doprocessMEHadHadWCentMix;
+    const bool meHadHadMult = doprocessMEHadHadWMultMix;
+
+    // Aggregates
+    const bool anySE = seCharmHadCent || seCharmHadMult || seHadHadCent || seHadHadMult;
+    const bool anyME = meCharmHadCent || meCharmHadMult || meHadHadCent || meHadHadMult;
+    const bool anyCent = seCharmHadCent || seHadHadCent || meCharmHadCent || meHadHadCent;
+    const bool anyMult = seCharmHadMult || seHadHadMult || meCharmHadMult || meHadHadMult;
+    const bool anySEHadHad = seHadHadCent || seHadHadMult;
+    const bool anyMEHadHad = meHadHadCent || meHadHadMult;
+    const bool anySECharmHad = seCharmHadCent || seCharmHadMult;
+    const bool anyMECharmHad = meCharmHadCent || meCharmHadMult;
+    const bool anyCharmTriggers = doprocessCharmTriggers || doprocessCharmTriggersWEffInfo;
+
+    // Consistency checks
+    if (anyCent && anyMult) {
+      LOGP(fatal, "You cannot mix centrality and multiplicity pools in the same processing! Please check your configuration!");
+    }
+    if (anySEHadHad && anySECharmHad) {
+      LOGP(fatal, "Same-event Had-Had and Charm-Had cannot run in the same job! Please check your configuration!");
+    }
+    if (anyMEHadHad && anyMECharmHad) {
+      LOGP(fatal, "Mixed-event Had-Had and Charm-Had cannot run in the same job! Please check your configuration!");
+    }
+
+    mPtEdgesTrig.assign(binsPtTrig.value.begin() + 1, binsPtTrig.value.end());
+    if ((mPtEdgesTrig.size() != (bdtScore0PtMaxs.value.size() + 1) ||
+         mPtEdgesTrig.size() != (bdtScore1PtMins.value.size() + 1))) {
+      LOG(info) << "mPtEdgesTrig.size(): " << mPtEdgesTrig.size();
+      LOG(info) << "bdtScore0PtMaxs.value.size(): " << bdtScore0PtMaxs.value.size();
+      LOG(info) << "bdtScore1PtMins.value.size(): " << bdtScore1PtMins.value.size();
       LOGP(fatal, "The size of bdtScore0PtMaxs and bdtScore1PtMins must be the one of binsPtTrig minus one!");
     }
 
-    if (doprocessSameEventCharmHadWCentMix || doprocessSameEventHadHadWCentMix || doprocessMixedEventCharmHadWCentMix || doprocessMixedEventHadHadWCentMix || doprocessSameEventCharmHadWCentMixBase || doprocessMixedEventCharmHadWCentMixBase) {
-      poolBins = (centPoolBins->size() - 2) * (zPoolBins->size() - 2);
-    } else {
-      poolBins = (multPoolBins->size() - 2) * (zPoolBins->size() - 2);
-    }
+    // Pool bins
+    poolBins = anyCent ? (binsCentPool->size() - 2) * (binsZPool->size() - 2)
+                       : (binsMultPool->size() - 2) * (binsZPool->size() - 2);
 
+    // Axes
     const AxisSpec axisInvMass{binsInvMass, "Inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisCent = {binsCent, "Centrality"};
     const AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
@@ -168,47 +333,166 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     const AxisSpec axisPoolBin = {poolBins, 0., static_cast<float>(poolBins), "PoolBin"};
     const AxisSpec axisDeltaEta = {binsDeltaEta, "#Delta#it{#eta}"};
     const AxisSpec axisDeltaPhi = {binsDeltaPhi, "#Delta#it{#varphi}"};
-    const AxisSpec axisPtTrig = {(std::vector<double>)binsPtTrig, "#it{p}_{T} Trig (GeV/#it{c})"};
-    const AxisSpec axisPtAssoc = {(std::vector<double>)binsPtAssoc, "#it{p}_{T} Assoc (GeV/#it{c})"};
+    const AxisSpec axisPtTrig = {binsPtTrig, "#it{p}_{T} Trig (GeV/#it{c})"};
+    const AxisSpec axisPtAssoc = {binsPtAssoc, "#it{p}_{T} Assoc (GeV/#it{c})"};
     const AxisSpec axisMlOne{binsMlOne, "bdtScore0"};
     const AxisSpec axisMlTwo{binsMlTwo, "bdtScore1"};
 
-    // Histograms for data analysis
-    if (doprocessSameEventCharmHadWCentMix || doprocessSameEventHadHadWCentMix) {
-      registry.add("hCentPoolBinSE", "Centrality SE", {HistType::kTH2F, {{axisCent}, {axisPoolBin}}});
-    } else if (doprocessSameEventCharmHadWMultMix || doprocessSameEventHadHadWMultMix) {
-      registry.add("hMultFT0MPoolBinSE", "Multiplicity FT0M SE", {HistType::kTH2F, {{axisMultFT0M}, {axisPoolBin}}});
-    } else if (doprocessMixedEventCharmHadWCentMix || doprocessMixedEventHadHadWCentMix) {
-      registry.add("hCentPoolBinME", "Centrality ME", {HistType::kTH2F, {{axisCent}, {axisPoolBin}}});
-    } else if (doprocessMixedEventCharmHadWMultMix || doprocessMixedEventHadHadWMultMix) {
-      registry.add("hMultFT0MPoolBinME", "Multiplicity FT0M ME", {HistType::kTH2F, {{axisMultFT0M}, {axisPoolBin}}});
-    }
+    // Event / pool histograms
     registry.add("hZVtxPoolBinSE", "z vertex SE", {HistType::kTH2F, {{axisPosZ}, {axisPoolBin}}});
     registry.add("hZVtxPoolBinME", "z vertex ME", {HistType::kTH2F, {{axisPosZ}, {axisPoolBin}}});
+    registry.add("hCollisionsCentMultAll", "Collision centrality vs multiplicity", {HistType::kTH2F, {{axisCent}, {axisMultFT0M}}});
+    registry.add("hCollisionsCentMultSel", "Collision centrality vs multiplicity", {HistType::kTH2F, {{axisCent}, {axisMultFT0M}}});
     registry.add("hPoolBinTrigSE", "Trigger candidates pool bin SE", {HistType::kTH1F, {axisPoolBin}});
     registry.add("hPoolBinTrigME", "Trigger candidates pool bin ME", {HistType::kTH1F, {axisPoolBin}});
     registry.add("hPoolBinAssocSE", "Associated particles pool bin SE", {HistType::kTH1F, {axisPoolBin}});
     registry.add("hPoolBinAssocME", "Associated particles pool bin ME", {HistType::kTH1F, {axisPoolBin}});
-    if (fillSparses) {
-      std::vector<AxisSpec> axesTrigger = {axisInvMass, axisPtTrig, axisMlOne, axisMlTwo};
-      std::vector<AxisSpec> axes = {axisPoolBin, axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi};
-      if (doprocessSameEventHadHadWCentMix || doprocessSameEventHadHadWMultMix) {
-        registry.add("hSparseCorrelationsSEHadHad", "THn for SE Had-Had correlations", HistType::kTHnSparseF, axes);
-      } else if (doprocessMixedEventHadHadWCentMix || doprocessMixedEventHadHadWMultMix) {
-        registry.add("hSparseCorrelationsMEHadHad", "THn for ME Had-Had correlations", HistType::kTHnSparseF, axes);
-      } else {
-        axes.insert(axes.end(), {axisInvMass});
-        // axes.insert(axes.end(), {axisInvMass, axisMlOne, axisMlTwo});
-        if (doprocessSameEventCharmHadWCentMix || doprocessSameEventCharmHadWMultMix || doprocessSameEventCharmHadWCentMixBase) {
-          registry.add("hSparseCorrelationsSECharmHad", "THn for SE Charm-Had correlations", HistType::kTHnSparseF, axes);
-        } else if (doprocessMixedEventCharmHadWCentMix || doprocessMixedEventCharmHadWMultMix || doprocessMixedEventCharmHadWCentMixBase) {
-          registry.add("hSparseCorrelationsMECharmHad", "THn for ME Charm-Had correlations", HistType::kTHnSparseF, axes);
-        }
-        if (doprocessCharmTriggers) {
-          registry.add("hSparseTrigCandsCharm", "THn for Charm trigger candidates", HistType::kTHnSparseF, axesTrigger);
-        }
+
+    if (anySE && anyCent) {
+      registry.add("hCentPoolBinSE", "Centrality SE", {HistType::kTH2F, {{axisCent}, {axisPoolBin}}});
+    }
+    if (anySE && anyMult) {
+      registry.add("hMultFT0MPoolBinSE", "Multiplicity FT0M SE", {HistType::kTH2F, {{axisMultFT0M}, {axisPoolBin}}});
+    }
+    if (anyME && anyCent) {
+      registry.add("hCentPoolBinME", "Centrality ME", {HistType::kTH2F, {{axisCent}, {axisPoolBin}}});
+    }
+    if (anyME && anyMult) {
+      registry.add("hMultFT0MPoolBinME", "Multiplicity FT0M ME", {HistType::kTH2F, {{axisMultFT0M}, {axisPoolBin}}});
+    }
+
+    // Correlation / trigger THnSparse
+    const std::vector<AxisSpec> axesTrigger = {axisInvMass, axisPtTrig, axisMlOne, axisMlTwo};
+    const std::vector<AxisSpec> axesHadHad = {axisPoolBin, axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi};
+    const std::vector<AxisSpec> axesCharmHad = {axisPoolBin, axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi, axisInvMass, axisMlOne, axisMlTwo};
+
+    if (anySEHadHad) {
+      registry.add("hSparseCorrelationsSEHadHad", "THn for SE Had-Had correlations", HistType::kTHnSparseF, axesHadHad);
+      if (doEfficiencyCorrection) {
+        registry.get<THnSparse>(HIST("hSparseCorrelationsSEHadHad"))->Sumw2();
       }
     }
+    if (anyMEHadHad) {
+      registry.add("hSparseCorrelationsMEHadHad", "THn for ME Had-Had correlations", HistType::kTHnSparseF, axesHadHad);
+      if (doEfficiencyCorrection) {
+        registry.get<THnSparse>(HIST("hSparseCorrelationsMEHadHad"))->Sumw2();
+      }
+    }
+    if (anySECharmHad) {
+      registry.add("hSparseCorrelationsSECharmHad", "THn for SE Charm-Had correlations", HistType::kTHnSparseF, axesCharmHad);
+      if (doEfficiencyCorrection) {
+        registry.get<THnSparse>(HIST("hSparseCorrelationsSECharmHad"))->Sumw2();
+      }
+    }
+    if (anyMECharmHad) {
+      registry.add("hSparseCorrelationsMECharmHad", "THn for ME Charm-Had correlations", HistType::kTHnSparseF, axesCharmHad);
+      if (doEfficiencyCorrection) {
+        registry.get<THnSparse>(HIST("hSparseCorrelationsMECharmHad"))->Sumw2();
+      }
+    }
+    if (anyCharmTriggers) {
+      registry.add("hSparseTrigCandsCharm", "THn for Charm trigger candidates", HistType::kTHnSparseF, axesTrigger);
+      if (doEfficiencyCorrection) {
+        registry.get<THnSparse>(HIST("hSparseTrigCandsCharm"))->Sumw2();
+      }
+    }
+
+    // Efficiencies
+    if (doEfficiencyCorrection) {
+      hEffPrompt = loadEfficiencyHistogram(promptEffCcdbPath, effHistTypeCharm);
+      hEffAssoc = loadEfficiencyHistogram(assocEffCcdbPath, effHistTypeAssoc);
+    }
+  }
+
+  template <bool IsCharm, bool IsTrigger, typename TCand>
+  double getEfficiency(TObject* hist, int histoType, const TCand& cand, float collPosZ)
+  {
+    if (!hist) {
+      LOG(debug) << "Candidate does not have required efficiency histogram.";
+      return 0.;
+    }
+
+    std::vector<double> kineFeatures{};
+
+    // 3 cases: charm triggers, track triggers and associated particles
+    if constexpr (IsTrigger) {
+      if constexpr (IsCharm) {
+        kineFeatures = {cand.ptTrig(), cand.etaTrig(), cand.phiTrig(), cand.bdtScore0Trig(), cand.bdtScore1Trig()};
+      } else {
+        // Track trigger from SameEvtPairsHadHadWEffInfo
+        if constexpr (requires { cand.ptTrig(); }) {
+          kineFeatures = {cand.ptTrig(), cand.etaTrig(), cand.phiTrig(), collPosZ};
+        } else {
+          // Track trigger from AssocTracks (charm-hadron tables)
+          kineFeatures = {cand.ptAssoc(), cand.etaAssoc(), cand.phiAssoc(), collPosZ};
+        }
+      }
+    } else {
+      kineFeatures = {cand.ptAssoc(), cand.etaAssoc(), cand.phiAssoc(), collPosZ};
+    }
+
+    switch (histoType) {
+
+      case kTH1: {
+        auto* h = dynamic_cast<TH1*>(hist);
+        if (!h || kineFeatures.empty()) {
+          return 0.;
+        }
+        return h->GetBinContent(h->FindBin(kineFeatures[0]));
+      }
+
+      case kTH2: {
+        auto* h = dynamic_cast<TH2*>(hist);
+        if (!h || kineFeatures.size() < 2) {
+          return 0.;
+        }
+        return h->GetBinContent(h->FindBin(kineFeatures[0], kineFeatures[1]));
+      }
+
+      case kTH3: {
+        auto* h = dynamic_cast<TH3*>(hist);
+        if (!h || kineFeatures.size() < 3) {
+          return 0.;
+        }
+        return h->GetBinContent(
+          h->FindBin(kineFeatures[0], kineFeatures[1], kineFeatures[2]));
+      }
+
+      case kTHnSparse: {
+        auto* h = dynamic_cast<THnSparse*>(hist);
+        if (!h || kineFeatures.size() < static_cast<size_t>(h->GetNdimensions())) {
+          return 0.;
+        }
+
+        std::vector<Int_t> bins(h->GetNdimensions());
+
+        for (int i = 0; i < h->GetNdimensions(); ++i) {
+          bins[i] = h->GetAxis(i)->FindBin(kineFeatures[i]);
+        }
+
+        return h->GetBinContent(bins.data());
+      }
+
+      default:
+        return 0.;
+    }
+  }
+
+  bool isValidEfficiency(double efficiency)
+  {
+    return std::isfinite(efficiency) && efficiency > 0.;
+  }
+
+  template <typename TColl>
+  bool isSelCollision(const TColl& collision)
+  {
+    bool isSel = false;
+    if (selCentrality) {
+      isSel = (collision.centrality() >= centMin && collision.centrality() <= centMax);
+    } else if (selMultiplicity) {
+      isSel = (collision.multiplicity() >= multMin && collision.multiplicity() <= multMax);
+    }
+    return isSel;
   }
 
   /// Get the binning pool associated to the collision
@@ -246,8 +530,8 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   bool isSelBdtScoreCut(TCand const& cand,
                         double ptTrig)
   {
-    for (size_t iPt = 0; iPt < binsPtTrig.value.size() - 1; iPt++) {
-      if (ptTrig >= binsPtTrig.value[iPt] && ptTrig < binsPtTrig.value[iPt + 1]) {
+    for (size_t iPt = 0; iPt < mPtEdgesTrig.size() - 1; iPt++) {
+      if (ptTrig >= mPtEdgesTrig[iPt] && ptTrig < mPtEdgesTrig[iPt + 1]) {
         return (cand.bdtScore0Trig() < bdtScore0PtMaxs.value[iPt]) && (cand.bdtScore1Trig() > bdtScore1PtMins.value[iPt]);
       }
     }
@@ -259,16 +543,19 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   /// \param trigCands are the selected trigger candidates
   /// \param assocTracks are the selected associated tracks
   /// \param binPolicy is the binning policy for the correlation
-  template <bool FillSparses, bool FillTables, typename TPair, typename TTrigCand, typename TBinningType>
+  template <bool CorrectEff, typename TPair, typename TTrigCand, typename TBinningType>
   void fillSameEvent(TPair const& pair,
                      TTrigCand const& trigCand,
                      const TBinningType& binPolicy)
   {
-    auto collision = pair.template hfcRedCorrColl_as<o2::aod::HfcRedCorrColls>();
-    if (collision.centrality() < centralityMin || collision.centrality() > centralityMax) {
+    auto collision = trigCand.template hfcRedCorrColl_as<o2::aod::HfcRedCorrColls>();
+    registry.fill(HIST("hCollisionsCentMultAll"), collision.centrality(), collision.multiplicity());
+    if (!isSelCollision(collision)) {
       return;
     }
-    double const ptTrig = trigCand.ptTrig();
+    registry.fill(HIST("hCollisionsCentMultSel"), collision.centrality(), collision.multiplicity());
+
+    double const ptTrig = getPt(trigCand);
     if constexpr (requires { trigCand.bdtScore0Trig(); }) { // ML selection on bkg score for Charm-Had case
       if (!isSelBdtScoreCut(trigCand, ptTrig)) {
         return;
@@ -276,32 +563,61 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     }
     if (downSamplePairs < 1.) {
       float const pseudoRndm = ptTrig * 1000. - static_cast<int64_t>(ptTrig * 1000);
-      if (ptTrig < ptMaxForDownSample && collision.centrality() < centMaxForDownSample && pseudoRndm >= downSamplePairs) {
+      float collCentMult = selCentrality ? collision.centrality() : collision.multiplicity();
+      if (ptTrig < ptMaxForDownSample && collCentMult < centMultMaxForDownSample && pseudoRndm >= downSamplePairs) {
         return;
       }
     }
     int const poolBin = getPoolBin<false>(collision, binPolicy);
     registry.fill(HIST("hPoolBinTrigSE"), poolBin);
     registry.fill(HIST("hPoolBinAssocSE"), poolBin);
-    // if constexpr (FillTables) {
-    //   if constexpr (requires { trigCand.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
-    //     rowPairSECharmHads(poolBin, ptTrig, pair.ptAssoc(), pair.deltaEta(), pair.deltaPhi(),
-    //                        trigCand.invMassTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig(),
-    //                        pair.nTpcCrossedRowsAssoc(), pair.itsClsMapAssoc(), pair.itsNClsAssoc(), pair.dcaXYAssoc(), pair.dcaZAssoc());
-    //   } else {
-    //     rowPairSEHadHads(poolBin, ptTrig, pair.ptAssoc(), pair.deltaEta(), pair.deltaPhi(),
-    //                      trigCand.nTpcCrossedRowsTrig(), trigCand.itsClsMapTrig(), trigCand.itsNClsTrig(), trigCand.dcaXYTrig(), trigCand.dcaZTrig(),
-    //                      pair.nTpcCrossedRowsAssoc(), pair.itsClsMapAssoc(), pair.itsNClsAssoc(), pair.dcaXYAssoc(), pair.dcaZAssoc());
-    //   }
-    //   rowCollInfos(collision.multiplicity(), collision.numPvContrib(), collision.centrality());
-    // }
-    if constexpr (FillSparses) {
-      if constexpr (requires { trigCand.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
-        registry.fill(HIST("hSparseCorrelationsSECharmHad"), poolBin, ptTrig, pair.ptAssoc(), pair.deltaEta(),
-                      pair.deltaPhi(), trigCand.invMassTrig()); // , trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig());
-      } else {
-        registry.fill(HIST("hSparseCorrelationsSEHadHad"), poolBin, ptTrig, pair.ptAssoc(), pair.deltaEta(), pair.deltaPhi());
+
+    double effAssoc{1.f};
+    if constexpr (CorrectEff) {
+      if (doEfficiencyCorrection) {
+        effAssoc = getEfficiency<false, false>(hEffAssoc.get(), effHistTypeAssoc.value, pair, collision.posZ());
+        if (!isValidEfficiency(effAssoc)) {
+          LOGF(warn, "Invalid efficiency value for associated track: effAssoc = %f", effAssoc);
+          return;
+        }
       }
+    }
+
+    if constexpr (requires { trigCand.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
+
+      double effTrig{1.f};
+      if constexpr (CorrectEff) {
+        if (doEfficiencyCorrection) {
+          effTrig = getEfficiency<true, true>(hEffPrompt.get(), effHistTypeCharm.value, trigCand, collision.posZ());
+          if (!isValidEfficiency(effTrig)) {
+            LOGF(warn, "Invalid efficiency value for trigger candidate: effTrig = %f", effTrig);
+            return;
+          }
+        }
+      }
+
+      double weight = doEfficiencyCorrection ? 1 / (effTrig * effAssoc) : 1.f;
+
+      std::vector<double> values = {static_cast<double>(poolBin), ptTrig, pair.ptAssoc(), pair.deltaEta(), pair.deltaPhi(), trigCand.invMassTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig()};
+
+      registry.get<THnSparse>(HIST("hSparseCorrelationsSECharmHad"))->Fill(values.data(), weight);
+    } else {
+
+      double effTrig{1.f};
+      if constexpr (CorrectEff) {
+        if (doEfficiencyCorrection) {
+          effTrig = getEfficiency<false, true>(hEffAssoc.get(), effHistTypeAssoc.value, trigCand, collision.posZ());
+          if (!isValidEfficiency(effTrig)) {
+            LOGF(warn, "Invalid efficiency value for trigger candidate: effTrig = %f", effTrig);
+            return;
+          }
+        }
+      }
+
+      double weight = doEfficiencyCorrection ? 1 / (effTrig * effAssoc) : 1.f;
+
+      std::vector<double> valuesHadHad = {static_cast<double>(poolBin), ptTrig, pair.ptAssoc(), pair.deltaEta(), pair.deltaPhi()};
+      registry.get<THnSparse>(HIST("hSparseCorrelationsSEHadHad"))->Fill(valuesHadHad.data(), weight);
     }
   }
 
@@ -309,7 +625,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   /// \param collisions are the selected collisions
   /// \param pairs are the mixed event pairs of trigger candidates and associated tracks
   /// \param binPolicy is the binning policy for the correlation
-  template <bool FillSparses, bool FillTables, typename TPairs, typename TBinningType>
+  template <bool CorrectEff, typename TPairs, typename TBinningType>
   void fillMixedEvent(TPairs const& pairs,
                       const TBinningType& binPolicy)
   {
@@ -317,10 +633,14 @@ struct HfCorrelatorFlowCharmHadronsReduced {
       if (trigCands.size() == 0 || assocTracks.size() == 0) {
         continue;
       }
-      if (trigColl.centrality() < centralityMin || trigColl.centrality() > centralityMax ||
-          assocColl.centrality() < centralityMin || assocColl.centrality() > centralityMax) {
+      registry.fill(HIST("hCollisionsCentMultAll"), trigColl.centrality(), trigColl.multiplicity());
+      registry.fill(HIST("hCollisionsCentMultAll"), assocColl.centrality(), assocColl.multiplicity());
+      if (!isSelCollision(trigColl) || !isSelCollision(assocColl)) {
         continue;
       }
+      registry.fill(HIST("hCollisionsCentMultSel"), trigColl.centrality(), trigColl.multiplicity());
+      registry.fill(HIST("hCollisionsCentMultSel"), assocColl.centrality(), assocColl.multiplicity());
+
       int const poolBinTrig = getPoolBin<true>(trigColl, binPolicy);
       int const poolBinAssoc = getPoolBin<true>(assocColl, binPolicy);
       if (poolBinAssoc != poolBinTrig) {
@@ -345,302 +665,332 @@ struct HfCorrelatorFlowCharmHadronsReduced {
         double const ptAssoc = getPt(assocTrack);
         if (downSamplePairs < 1.) {
           float const pseudoRndm = ptAssoc * 1000. - static_cast<int64_t>(ptAssoc * 1000);
-          if (ptTrig < ptMaxForDownSample && trigColl.centrality() < centMaxForDownSample &&
-              assocColl.centrality() < centMaxForDownSample && pseudoRndm >= downSamplePairs) {
+          float trigCollCentMult = selCentrality ? trigColl.centrality() : trigColl.multiplicity();
+          float assocCollCentMult = selCentrality ? assocColl.centrality() : assocColl.multiplicity();
+          if (ptTrig < ptMaxForDownSample && trigCollCentMult < centMultMaxForDownSample &&
+              assocCollCentMult < centMultMaxForDownSample && pseudoRndm >= downSamplePairs) {
             continue;
           }
         }
         double const deltaPhi = RecoDecay::constrainAngle(getPhi(assocTrack) - getPhi(trigCand), -o2::constants::math::PIHalf);
-        // if constexpr (FillTables) {
-        //   if constexpr (requires { trigCand.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
-        //     rowPairMECharmHads(poolBinTrig, ptTrig, ptAssoc, deltaEta, deltaPhi,
-        //                        trigCand.invMassTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig(),
-        //                        assocTrack.nTpcCrossedRowsAssoc(), assocTrack.itsClsMapAssoc(), assocTrack.itsNClsAssoc(), assocTrack.dcaXYAssoc(), assocTrack.dcaZAssoc());
-        //   } else {
-        //     rowPairMEHadHads(poolBinTrig, ptTrig, ptAssoc, deltaEta, deltaPhi,
-        //                      trigCand.nTpcCrossedRowsAssoc(), trigCand.itsClsMapAssoc(), trigCand.itsNClsAssoc(), trigCand.dcaXYAssoc(), trigCand.dcaZAssoc(),
-        //                      assocTrack.nTpcCrossedRowsAssoc(), assocTrack.itsClsMapAssoc(), assocTrack.itsNClsAssoc(), assocTrack.dcaXYAssoc(), assocTrack.dcaZAssoc());
-        //   }
-        //   rowCollInfos(trigColl.multiplicity(), trigColl.numPvContrib(), trigColl.centrality());
-        // }
-        if constexpr (FillSparses) {
-          if constexpr (requires { trigCand.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
-            registry.fill(HIST("hSparseCorrelationsMECharmHad"), poolBinTrig, ptTrig, ptAssoc, deltaEta,
-                          deltaPhi, trigCand.invMassTrig()); //, trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig());
-          } else {
-            registry.fill(HIST("hSparseCorrelationsMEHadHad"), poolBinTrig, ptTrig, ptAssoc, deltaEta, deltaPhi);
+
+        double effAssoc{1.f};
+        if (doEfficiencyCorrection) {
+          effAssoc = getEfficiency<false, false>(hEffAssoc.get(), effHistTypeAssoc.value, assocTrack, assocColl.posZ());
+          if (!isValidEfficiency(effAssoc)) {
+            LOGF(warn, "Invalid efficiency value for associated track: effAssoc = %f", effAssoc);
+            continue;
           }
+        }
+
+        if constexpr (requires { trigCand.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
+
+          double effTrig{1.f};
+          if (doEfficiencyCorrection) {
+            effTrig = getEfficiency<true, true>(hEffPrompt.get(), effHistTypeCharm.value, trigCand, trigColl.posZ());
+            if (!isValidEfficiency(effTrig)) {
+              LOGF(warn, "Invalid efficiency value for trigger candidate: effTrig = %f", effTrig);
+              continue;
+            }
+          }
+
+          double weight = doEfficiencyCorrection ? 1 / (effTrig * effAssoc) : 1.f;
+
+          std::vector<double> values = {static_cast<double>(poolBinTrig), ptTrig, ptAssoc, deltaEta, deltaPhi, trigCand.invMassTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig()};
+          registry.get<THnSparse>(HIST("hSparseCorrelationsMECharmHad"))->Fill(values.data(), weight);
+        } else {
+
+          double effTrig{1.f};
+          if (doEfficiencyCorrection) {
+            effTrig = getEfficiency<false, true>(hEffAssoc.get(), effHistTypeAssoc.value, trigCand, trigColl.posZ());
+            if (!isValidEfficiency(effTrig)) {
+              LOGF(warn, "Invalid efficiency value for trigger candidate: effTrig = %f", effTrig);
+              continue;
+            }
+          }
+
+          double weight = doEfficiencyCorrection ? 1 / (effTrig * effAssoc) : 1.f;
+
+          std::vector<double> valuesHadHad = {static_cast<double>(poolBinTrig), ptTrig, ptAssoc, deltaEta, deltaPhi};
+          registry.get<THnSparse>(HIST("hSparseCorrelationsMEHadHad"))->Fill(valuesHadHad.data(), weight);
         }
       }
     }
   }
 
-  /// Correlations for Same Event pairs
-  /// \param poolBin collision pool bin based on multiplicity and z-vertex position
-  /// \param trigCandsThisColl are the selected trigger candidates in the collision
-  /// \param assocTracksThisColl are the selected associated tracks in the collision
-  template <bool FillSparses, typename TTrigCand, typename TTrackAssoc>
-  void doCorrelationsSameEvent(int poolBin,
-                               const TTrigCand& trigCandsThisColl,
-                               const TTrackAssoc& assocTracksThisColl)
+  void processSECharmHadWMultMix(SameEvtPairsChHad::iterator const& pair,
+                                 aod::HfcRedTrigCharms const&,
+                                 aod::HfcRedCorrColls const&)
   {
-    for (const auto& trigCand : trigCandsThisColl) {
-      double const ptTrig = trigCand.ptTrig();
-      if constexpr (requires { trigCand.bdtScore0Trig(); }) { // ML selection on bkg score for Charm-Had case
-        if (!isSelBdtScoreCut(trigCand, ptTrig)) {
-          continue;
-        }
-      }
-
-      for (const auto& assTrk : assocTracksThisColl) {
-        // TODO: Remove Ds daughters
-        /*if (assTrk.originTrackId() == candidate.prong0Id() ||
-            assTrk.originTrackId() == candidate.prong1Id() ||
-            assTrk.originTrackId() == candidate.prong2Id()) {
-          continue;
-        }*/
-        // TODO: DCA cut
-        double deltaPhi = RecoDecay::constrainAngle(assTrk.phiAssoc() - trigCand.phiTrig(), -o2::constants::math::PIHalf);
-        double deltaEta = assTrk.etaAssoc() - trigCand.etaTrig();
-        if constexpr (FillSparses) {
-          if constexpr (requires { trigCand.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
-            registry.fill(HIST("hSparseCorrelationsSECharmHad"), poolBin, ptTrig, assTrk.ptAssoc(), deltaEta,
-                          deltaPhi, trigCand.invMassTrig());
-          } else {
-            registry.fill(HIST("hSparseCorrelationsSEHadHad"), poolBin, ptTrig, assTrk.ptAssoc(), deltaEta, deltaPhi);
-          }
-        }
-      }
-    }
-  }
-
-  /// Correlations for Mixed Event pairs
-  /// \param collisions are the selected collisions
-  /// \param trigCands are the trigger candidates
-  /// \param assocTracks  are the associated tracks
-  /// \param binPolicy is the binning policy for the correlation
-  template <bool FillSparses, typename TCollision, typename TTrigCand, typename TTrackAssoc, typename TBinningType>
-  void doCorrelationsMixedEvent(const TCollision& collisions,
-                                const TTrigCand& trigCands,
-                                const TTrackAssoc& assocTracks,
-                                const TBinningType& binPolicy)
-  {
-    auto tracksTuple = std::make_tuple(trigCands, assocTracks);
-
-    Pair<TCollision, TTrigCand, TTrackAssoc, TBinningType> pairData{binPolicy, numberEventsMixed, -1, collisions, tracksTuple, &cache};
-
-    for (const auto& [c1, tracks1, c2, tracks2] : pairData) {
-      if (tracks1.size() == 0) {
-        continue;
-      }
-
-      int poolBin = binPolicy.getBin({c2.posZ(), c2.centrality()});
-      int poolBinTrigCand = binPolicy.getBin({c1.posZ(), c1.centrality()});
-
-      if (poolBin != poolBinTrigCand) {
-        LOGF(info, "Error, poolBins are different");
-        continue;
-      }
-
-      for (const auto& [trigCand, assTrk] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        if (!isSelBdtScoreCut(trigCand, trigCand.ptTrig())) {
-          continue;
-        }
-        LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", trigCand.index(), assTrk.index(), c1.index(), c2.index(), trigCand.hfcRedCorrCollId(), assTrk.hfcRedCorrCollId());
-
-        double deltaPhi = RecoDecay::constrainAngle(assTrk.phiAssoc() - trigCand.phiTrig(), -o2::constants::math::PIHalf);
-        double deltaEta = assTrk.etaAssoc() - trigCand.etaTrig();
-        if constexpr (FillSparses) {
-          if constexpr (requires { trigCand.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
-            registry.fill(HIST("hSparseCorrelationsMECharmHad"), poolBin, trigCand.ptTrig(), assTrk.ptAssoc(), deltaEta,
-                          deltaPhi, trigCand.invMassTrig());
-          } else {
-            registry.fill(HIST("hSparseCorrelationsMEHadHad"), poolBin, trigCand.ptTrig(), assTrk.ptAssoc(), deltaEta, deltaPhi);
-          }
-        }
-      }
-    }
-  }
-
-  void processSameEventCharmHadWMultMix(SameEvtPairsChHad::iterator const& pair,
-                                        aod::HfcRedTrigCharms const&,
-                                        aod::HfcRedCorrColls const&)
-  {
-    BinningMultPosZ binPolicyPosZMult{{zPoolBins, multPoolBins}, true};
+    BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
     auto trigCand = pair.template hfcRedTrigCharm_as<aod::HfcRedTrigCharms>();
-    if (fillSparses && fillTables) {
-      fillSameEvent<true, true>(pair, trigCand, binPolicyPosZMult);
-    } else if (fillSparses) {
-      fillSameEvent<true, false>(pair, trigCand, binPolicyPosZMult);
-    } else if (fillTables) {
-      fillSameEvent<false, true>(pair, trigCand, binPolicyPosZMult);
-    }
+    fillSameEvent<false>(pair, trigCand, binPolicyPosZMult);
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSameEventCharmHadWMultMix, "Process Same Event for Charm-Had with multiplicity pools", true);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSECharmHadWMultMix, "Process Same Event for Charm-Had with multiplicity pools", false);
 
-  void processSameEventHadHadWMultMix(SameEvtPairsHadHad::iterator const& pair,
-                                      aod::HfcRedTrigTracks const&,
-                                      aod::HfcRedCorrColls const&)
+  void processSECharmHadWMultMixWEffInfo(SameEvtPairsChHadWEffInfo::iterator const& pair,
+                                         TrigCharmCands const&,
+                                         aod::HfcRedCorrColls const&)
   {
-    BinningMultPosZ binPolicyPosZMult{{zPoolBins, multPoolBins}, true};
-    auto trigCand = pair.template hfcRedTrigTrack_as<aod::HfcRedTrigTracks>();
-    if (fillSparses && fillTables) {
-      fillSameEvent<true, true>(pair, trigCand, binPolicyPosZMult);
-    } else if (fillSparses) {
-      fillSameEvent<true, false>(pair, trigCand, binPolicyPosZMult);
-    } else if (fillTables) {
-      fillSameEvent<false, true>(pair, trigCand, binPolicyPosZMult);
-    }
+    BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
+    auto trigCand = pair.template hfcRedTrigCharm_as<TrigCharmCands>();
+    fillSameEvent<true>(pair, trigCand, binPolicyPosZMult);
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSameEventHadHadWMultMix, "Process Same Event for Had-Had with multiplicity pools", false);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSECharmHadWMultMixWEffInfo, "Process Same Event for Charm-Had with multiplicity pools", false);
 
-  void processSameEventCharmHadWCentMix(SameEvtPairsChHad::iterator const& pair,
-                                        aod::HfcRedTrigCharms const&,
-                                        aod::HfcRedCorrColls const&)
+  void processSECharmHadWCentMix(SameEvtPairsChHad::iterator const& pair,
+                                 aod::HfcRedTrigCharms const&,
+                                 aod::HfcRedCorrColls const&)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}, true};
+    BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
     auto trigCand = pair.template hfcRedTrigCharm_as<aod::HfcRedTrigCharms>();
-    if (fillSparses && fillTables) {
-      fillSameEvent<true, true>(pair, trigCand, binPolicyPosZCent);
-    } else if (fillSparses) {
-      fillSameEvent<true, false>(pair, trigCand, binPolicyPosZCent);
-    } else if (fillTables) {
-      fillSameEvent<false, true>(pair, trigCand, binPolicyPosZCent);
-    }
+    fillSameEvent<false>(pair, trigCand, binPolicyPosZCent);
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSameEventCharmHadWCentMix, "Process Same Event for Charm-Had with centrality pools", true);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSECharmHadWCentMix, "Process Same Event for Charm-Had with centrality pools", true);
 
-  void processSameEventHadHadWCentMix(SameEvtPairsHadHad::iterator const& pair,
-                                      aod::HfcRedTrigTracks const&,
-                                      aod::HfcRedCorrColls const&)
+  void processSECharmHadWCentMixWEffInfo(SameEvtPairsChHadWEffInfo::iterator const& pair,
+                                         TrigCharmCands const&,
+                                         aod::HfcRedCorrColls const&)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}, true};
+    BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
+    auto trigCand = pair.template hfcRedTrigCharm_as<TrigCharmCands>();
+    fillSameEvent<true>(pair, trigCand, binPolicyPosZCent);
+  }
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSECharmHadWCentMixWEffInfo, "Process Same Event for Charm-Had with centrality pools", false);
+
+  void processSEHadHadWMultMix(SameEvtPairsHadHad::iterator const& pair,
+                               aod::HfcRedTrigTracks const&,
+                               aod::HfcRedCorrColls const&)
+  {
+    BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
     auto trigCand = pair.template hfcRedTrigTrack_as<aod::HfcRedTrigTracks>();
-    if (fillSparses && fillTables) {
-      fillSameEvent<true, true>(pair, trigCand, binPolicyPosZCent);
-    } else if (fillSparses) {
-      fillSameEvent<true, false>(pair, trigCand, binPolicyPosZCent);
-    } else if (fillTables) {
-      fillSameEvent<false, true>(pair, trigCand, binPolicyPosZCent);
+    fillSameEvent<false>(pair, trigCand, binPolicyPosZMult);
+  }
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSEHadHadWMultMix, "Process Same Event for Had-Had with multiplicity pools", false);
+
+  void processSEHadHadWMultMixWEffInfo(SameEvtPairsHadHadWEffInfo::iterator const& pair,
+                                       TrigTracks const&,
+                                       aod::HfcRedCorrColls const&)
+  {
+    BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
+    auto trigCand = pair.template hfcRedTrigTrack_as<TrigTracks>();
+    fillSameEvent<true>(pair, trigCand, binPolicyPosZMult);
+  }
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSEHadHadWMultMixWEffInfo, "Process Same Event for Had-Had with multiplicity pools with efficiency information", false);
+
+  void processSEHadHadWCentMix(SameEvtPairsHadHad::iterator const& pair,
+                               aod::HfcRedTrigTracks const&,
+                               aod::HfcRedCorrColls const&)
+  {
+    BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
+    auto trigCand = pair.template hfcRedTrigTrack_as<aod::HfcRedTrigTracks>();
+    fillSameEvent<false>(pair, trigCand, binPolicyPosZCent);
+  }
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSEHadHadWCentMix, "Process Same Event for Had-Had with centrality pools", false);
+
+  void processSEHadHadWCentMixWEffInfo(SameEvtPairsHadHadWEffInfo::iterator const& pair,
+                                       TrigTracks const&,
+                                       aod::HfcRedCorrColls const&)
+  {
+    BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
+    auto trigCand = pair.template hfcRedTrigTrack_as<TrigTracks>();
+    fillSameEvent<true>(pair, trigCand, binPolicyPosZCent);
+  }
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSEHadHadWCentMixWEffInfo, "Process Same Event for Had-Had with centrality pools with efficiency information", false);
+
+  template <typename TAssTrk>
+  HadHadPairFromCharmTables buildHadHadPair(TAssTrk const& trigger,
+                                            TAssTrk const& assoc)
+  {
+    HadHadPairFromCharmTables pair{};
+
+    pair.setPtTrig(trigger.ptAssoc());
+    pair.setPtAssoc(assoc.ptAssoc());
+    pair.setEtaTrig(trigger.etaAssoc());
+    pair.setEtaAssoc(assoc.etaAssoc());
+    float deltaEta = assoc.etaAssoc() - trigger.etaAssoc();
+    pair.setDeltaEta(deltaEta);
+    pair.setPhiTrig(trigger.phiAssoc());
+    pair.setPhiAssoc(assoc.phiAssoc());
+    float deltaPhi = RecoDecay::constrainAngle(assoc.phiAssoc() - trigger.phiAssoc(), -o2::constants::math::PIHalf);
+    pair.setDeltaPhi(deltaPhi);
+    pair.setNTpcCrossedRowsTrig(trigger.nTpcCrossedRowsAssoc());
+    pair.setItsClsMapTrig(trigger.itsClsMapAssoc());
+    pair.setItsNClsTrig(trigger.itsNClsAssoc());
+    pair.setDcaXYTrig(trigger.dcaXYAssoc());
+    pair.setDcaZTrig(trigger.dcaZAssoc());
+    pair.setNTpcCrossedRowsAssoc(assoc.nTpcCrossedRowsAssoc());
+    pair.setItsClsMapAssoc(assoc.itsClsMapAssoc());
+    pair.setItsNClsAssoc(assoc.itsNClsAssoc());
+    pair.setDcaXYAssoc(assoc.dcaXYAssoc());
+    pair.setDcaZAssoc(assoc.dcaZAssoc());
+
+    return pair;
+  }
+
+  template <bool CorrectEff, typename TBinning>
+  void runSEHadHadFromCharmTables(aod::HfcRedCorrColls const& collisions,
+                                  AssocTracks const& tracks,
+                                  const TBinning& binPolicy)
+  {
+    for (const auto& collision : collisions) {
+      auto tracksInColl = tracks.sliceBy(assocTracksPerCol, collision.globalIndex());
+      for (const auto& [trigTrk, assocTrk] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(tracksInColl, tracksInColl))) {
+        auto pair = buildHadHadPair(trigTrk, assocTrk);
+        if (std::abs(pair.deltaEta()) < deltaEtaAbsMin || std::abs(pair.deltaEta()) > deltaEtaAbsMax) {
+          continue;
+        }
+        fillSameEvent<CorrectEff>(pair, trigTrk, binPolicy);
+      }
     }
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSameEventHadHadWCentMix, "Process Same Event for Had-Had with centrality pools", false);
 
-  void processMixedEventCharmHadWCentMix(aod::HfcRedCorrColls const& collisions,
-                                         TrigCharmCands const& candidates,
-                                         AssocTracks const& tracks)
+  void processSEHadHadWMultMixFromCharmTables(aod::HfcRedCorrColls const& collisions,
+                                              AssocTracks const& tracks,
+                                              aod::HfcRedCorrColls const&)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}, true};
+    BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
+    runSEHadHadFromCharmTables<false>(collisions, tracks, binPolicyPosZMult);
+  }
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSEHadHadWMultMixFromCharmTables, "Process Same Event for Had-Had with multiplicity pools from Charm Tables", false);
+
+  void processSEHadHadWCentMixFromCharmTables(aod::HfcRedCorrColls const& collisions,
+                                              AssocTracks const& tracks,
+                                              aod::HfcRedCorrColls const&)
+  {
+    BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
+    runSEHadHadFromCharmTables<false>(collisions, tracks, binPolicyPosZCent);
+  }
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSEHadHadWCentMixFromCharmTables, "Process Same Event for Had-Had with centrality pools from Charm Tables", false);
+
+  void processSEHadHadWMultMixFromCharmTablesWEffInfo(aod::HfcRedCorrColls const& collisions,
+                                                      AssocTracks const& tracks,
+                                                      aod::HfcRedCorrColls const&)
+  {
+    BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
+    runSEHadHadFromCharmTables<true>(collisions, tracks, binPolicyPosZMult);
+  }
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSEHadHadWMultMixFromCharmTablesWEffInfo, "Process Same Event for Had-Had with multiplicity pools with efficiency information from Charm Tables", false);
+
+  void processSEHadHadWCentMixFromCharmTablesWEffInfo(aod::HfcRedCorrColls const& collisions,
+                                                      AssocTracks const& tracks,
+                                                      aod::HfcRedCorrColls const&)
+  {
+    BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
+    runSEHadHadFromCharmTables<true>(collisions, tracks, binPolicyPosZCent);
+  }
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSEHadHadWCentMixFromCharmTablesWEffInfo, "Process Same Event for Had-Had with centrality pools with efficiency information from Charm Tables", false);
+
+  void processMECharmHadWCentMix(aod::HfcRedCorrColls const& collisions,
+                                 TrigCharmCands const& candidates,
+                                 AssocTracks const& tracks)
+  {
+    BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
     auto pairsTuple = std::make_tuple(candidates, tracks);
     Pair<aod::HfcRedCorrColls, TrigCharmCands, AssocTracks, BinningCentPosZ> const pairs{binPolicyPosZCent, numberEventsMixed, -1, collisions, pairsTuple, &cache};
-    if (fillSparses && fillTables) {
-      fillMixedEvent<true, true>(pairs, binPolicyPosZCent);
-    } else if (fillSparses) {
-      fillMixedEvent<true, false>(pairs, binPolicyPosZCent);
-    } else if (fillTables) {
-      fillMixedEvent<false, true>(pairs, binPolicyPosZCent);
-    }
+    fillMixedEvent<false>(pairs, binPolicyPosZCent);
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMixedEventCharmHadWCentMix, "Process Mixed Event for Charm-Had with centrality pools", false);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMECharmHadWCentMix, "Process Mixed Event for Charm-Had with centrality pools", false);
 
-  void processMixedEventCharmHadWMultMix(aod::HfcRedCorrColls const& collisions,
+  void processMECharmHadWCentMixWEffInfo(aod::HfcRedCorrColls const& collisions,
                                          TrigCharmCands const& candidates,
                                          AssocTracks const& tracks)
   {
-    BinningMultPosZ binPolicyPosZMult{{zPoolBins, multPoolBins}, true};
+    BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
+    auto pairsTuple = std::make_tuple(candidates, tracks);
+    Pair<aod::HfcRedCorrColls, TrigCharmCands, AssocTracks, BinningCentPosZ> const pairs{binPolicyPosZCent, numberEventsMixed, -1, collisions, pairsTuple, &cache};
+    fillMixedEvent<true>(pairs, binPolicyPosZCent);
+  }
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMECharmHadWCentMixWEffInfo, "Process Mixed Event for Charm-Had with centrality pools and efficiency information", false);
+
+  void processMECharmHadWMultMix(aod::HfcRedCorrColls const& collisions,
+                                 TrigCharmCands const& candidates,
+                                 AssocTracks const& tracks)
+  {
+    BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
     auto pairsTuple = std::make_tuple(candidates, tracks);
     Pair<aod::HfcRedCorrColls, TrigCharmCands, AssocTracks, BinningMultPosZ> const pairs{binPolicyPosZMult, numberEventsMixed, -1, collisions, pairsTuple, &cache};
-    if (fillSparses && fillTables) {
-      fillMixedEvent<true, true>(pairs, binPolicyPosZMult);
-    } else if (fillSparses) {
-      fillMixedEvent<true, false>(pairs, binPolicyPosZMult);
-    } else if (fillTables) {
-      fillMixedEvent<false, true>(pairs, binPolicyPosZMult);
-    }
+    fillMixedEvent<false>(pairs, binPolicyPosZMult);
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMixedEventCharmHadWMultMix, "Process Mixed Event for Charm-Had with multiplicity pools", false);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMECharmHadWMultMix, "Process Mixed Event for Charm-Had with multiplicity pools", false);
 
-  void processMixedEventHadHadWCentMix(aod::HfcRedCorrColls const& collisions,
-                                       AssocTracks const& tracks)
+  void processMECharmHadWMultMixWEffInfo(aod::HfcRedCorrColls const& collisions,
+                                         TrigCharmCands const& candidates,
+                                         AssocTracks const& tracks)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}, true};
+    BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
+    auto pairsTuple = std::make_tuple(candidates, tracks);
+    Pair<aod::HfcRedCorrColls, TrigCharmCands, AssocTracks, BinningMultPosZ> const pairs{binPolicyPosZMult, numberEventsMixed, -1, collisions, pairsTuple, &cache};
+    fillMixedEvent<true>(pairs, binPolicyPosZMult);
+  }
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMECharmHadWMultMixWEffInfo, "Process Mixed Event for Charm-Had with multiplicity pools and efficiency information", false);
+
+  void processMEHadHadWCentMix(aod::HfcRedCorrColls const& collisions,
+                               AssocTracks const& tracks)
+  {
+    BinningCentPosZ binPolicyPosZCent{{binsZPool, binsCentPool}};
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<aod::HfcRedCorrColls, AssocTracks, BinningCentPosZ> const pairs{binPolicyPosZCent, numberEventsMixed, -1, collisions, tracksTuple, &cache};
-    if (fillSparses && fillTables) {
-      fillMixedEvent<true, true>(pairs, binPolicyPosZCent);
-    } else if (fillSparses) {
-      fillMixedEvent<true, false>(pairs, binPolicyPosZCent);
-    } else if (fillTables) {
-      fillMixedEvent<false, true>(pairs, binPolicyPosZCent);
-    }
+    fillMixedEvent<false>(pairs, binPolicyPosZCent);
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMixedEventHadHadWCentMix, "Process Mixed Event for Had-Had with centrality pools", false);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMEHadHadWCentMix, "Process Mixed Event for Had-Had with centrality pools", false);
 
-  void processMixedEventHadHadWMultMix(aod::HfcRedCorrColls const& collisions,
-                                       AssocTracks const& tracks)
+  void processMEHadHadWMultMix(aod::HfcRedCorrColls const& collisions,
+                               AssocTracks const& tracks)
   {
-    BinningMultPosZ binPolicyPosZMult{{zPoolBins, multPoolBins}, true};
+    BinningMultPosZ binPolicyPosZMult{{binsZPool, binsMultPool}};
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<aod::HfcRedCorrColls, AssocTracks, BinningMultPosZ> const pairs{binPolicyPosZMult, numberEventsMixed, -1, collisions, tracksTuple, &cache};
-    if (fillSparses && fillTables) {
-      fillMixedEvent<true, true>(pairs, binPolicyPosZMult);
-    } else if (fillSparses) {
-      fillMixedEvent<true, false>(pairs, binPolicyPosZMult);
-    } else if (fillTables) {
-      fillMixedEvent<false, true>(pairs, binPolicyPosZMult);
-    }
+    fillMixedEvent<false>(pairs, binPolicyPosZMult);
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMixedEventHadHadWMultMix, "Process Mixed Event for Had-Had with multiplicity pools", false);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMEHadHadWMultMix, "Process Mixed Event for Had-Had with multiplicity pools", false);
 
   void processCharmTriggers(aod::HfcRedTrigCharms const& trigCands,
                             aod::HfcRedCorrColls const&)
   {
+
     for (const auto& trigCand : trigCands) {
       auto collision = trigCand.template hfcRedCorrColl_as<o2::aod::HfcRedCorrColls>();
-      if (collision.centrality() < centralityMin || collision.centrality() > centralityMax) {
+      if (!isSelCollision(collision)) {
         continue;
       }
       if (!isSelBdtScoreCut(trigCand, trigCand.ptTrig())) {
         continue;
       }
-      registry.fill(HIST("hSparseTrigCandsCharm"), trigCand.invMassTrig(), trigCand.ptTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig());
+
+      std::vector<double> values = {trigCand.invMassTrig(), trigCand.ptTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig()};
+      registry.get<THnSparse>(HIST("hSparseTrigCandsCharm"))->Fill(values.data());
     }
   }
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processCharmTriggers, "Process charm trigger info", false);
 
-  void processSameEventCharmHadWCentMixBase(aod::HfcRedCorrColls const& collisions,
-                                            TrigCharmCands const& candidates,
-                                            aod::HfcRedAssBases const& tracks)
+  void processCharmTriggersWEffInfo(TrigCharmCands const& trigCands,
+                                    aod::HfcRedCorrColls const&)
   {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}, true};
 
-    for (const auto& collision : collisions) {
-      if (collision.centrality() < centralityMin || collision.centrality() > centralityMax) {
+    for (const auto& trigCand : trigCands) {
+      auto collision = trigCand.template hfcRedCorrColl_as<o2::aod::HfcRedCorrColls>();
+      if (!isSelCollision(collision)) {
         continue;
       }
-      int poolBin = binPolicyPosZCent.getBin({collision.posZ(), collision.centrality()});
+      if (!isSelBdtScoreCut(trigCand, trigCand.ptTrig())) {
+        continue;
+      }
 
-      auto thisCollId = collision.globalIndex();
-      auto candsThisColl = candidates.sliceBy(trigCharmCandsPerCol, thisCollId);
-      auto tracksThisColl = tracks.sliceBy(assocTracksPerCol, thisCollId);
-
-      doCorrelationsSameEvent<true>(poolBin, candsThisColl, tracksThisColl);
+      double effTrig = doEfficiencyCorrection ? getEfficiency<true, true>(hEffPrompt.get(), effHistTypeCharm.value, trigCand, collision.posZ()) : 1.;
+      if (doEfficiencyCorrection && !isValidEfficiency(effTrig)) {
+        LOGF(warn, "Invalid efficiency value for trigger candidate: effTrig = %f", effTrig);
+        continue;
+      }
+      std::vector<double> values = {trigCand.invMassTrig(), trigCand.ptTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig()};
+      double weight = doEfficiencyCorrection ? 1. / effTrig : 1.;
+      registry.get<THnSparse>(HIST("hSparseTrigCandsCharm"))->Fill(values.data(), weight);
     }
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSameEventCharmHadWCentMixBase, "Process Same Event base", false);
-
-  void processMixedEventCharmHadWCentMixBase(aod::HfcRedCorrColls const& collisions,
-                                             TrigCharmCands const& candidates,
-                                             aod::HfcRedAssBases const& tracks)
-  {
-    BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}, true};
-
-    doCorrelationsMixedEvent<true>(collisions, candidates, tracks, binPolicyPosZCent);
-  }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMixedEventCharmHadWCentMixBase, "Process Mixed Event base", false);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processCharmTriggersWEffInfo, "Process charm trigger info with efficiency", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfCorrelatorFlowCharmHadronsReduced>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCorrelatorFlowCharmHadronsReduced>(context)};
 }

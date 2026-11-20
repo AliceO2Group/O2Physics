@@ -1107,7 +1107,7 @@ struct Lambda1520analysis {
   void processME(o2::aod::ResoCollisions const& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}};
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {

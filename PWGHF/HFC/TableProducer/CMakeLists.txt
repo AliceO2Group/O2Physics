@@ -11,46 +11,55 @@
 
 o2physics_add_dpl_workflow(correlator-d0-d0bar
                     SOURCES correlatorD0D0bar.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(correlator-d0-d0bar-barrel-full-pid
                     SOURCES correlatorD0D0barBarrelFullPid.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(correlator-d0-hadrons
                     SOURCES correlatorD0Hadrons.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(correlator-d-meson-pairs
                     SOURCES correlatorDMesonPairs.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(correlator-dplus-dminus
                     SOURCES correlatorDplusDminus.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(correlator-dplus-dplus-reduced
                     SOURCES correlatorDplusDplusReduced.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    REUSE_FROM HfCandidatesPCH
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(correlator-dplus-hadrons
                     SOURCES correlatorDplusHadrons.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(correlator-ds-hadrons
                     SOURCES correlatorDsHadrons.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(derived-data-creator-correlations-reduced
                     SOURCES derivedDataCreatorCorrelationsReduced.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
@@ -66,6 +75,7 @@ o2physics_add_dpl_workflow(correlator-ds-hadrons-reduced
 
 o2physics_add_dpl_workflow(correlator-dstar-hadrons
                     SOURCES correlatorDstarHadrons.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -76,25 +86,36 @@ o2physics_add_dpl_workflow(correlator-hfe-hadrons
 
 o2physics_add_dpl_workflow(correlator-lc-hadrons
                     SOURCES correlatorLcHadrons.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(correlator-lc-sc-hadrons
                     SOURCES correlatorLcScHadrons.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(correlator-xic-hadrons
                     SOURCES correlatorXicHadrons.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(producer-charm-hadrons-track-femto-dream
                     SOURCES producerCharmHadronsTrackFemtoDream.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(producer-charm-hadrons-v0-femto-dream
                     SOURCES producerCharmHadronsV0FemtoDream.cxx
+                    REUSE_FROM HfCandidatesPCH
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(producer-charm-hadrons-charm-femto-dream
+                    SOURCES producerCharmHadronsCharmFemtoDream.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)

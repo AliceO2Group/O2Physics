@@ -26,6 +26,8 @@ constexpr char PrefixTripletCleanerTrackTrackV0Se[] = "TrackTrackV0Cleaner/SE/";
 constexpr char PrefixTripletCleanerTrackTrackV0Me[] = "TrackTrackV0Cleaner/ME/";
 constexpr char PrefixTripletCleanerTrackTrackCascadeSe[] = "TrackTrackCascadeCleaner/SE/";
 constexpr char PrefixTripletCleanerTrackTrackCascadeMe[] = "TrackTrackCascadeCleaner/ME/";
+constexpr char PrefixTripletCleanerMcParticleMcParticleMcParticleSe[] = "McParticleMcParticleMcParticleCleaner/SE/";
+constexpr char PrefixTripletCleanerMcParticleMcParticleMcParticleMe[] = "McParticleMcParticleMcParticleCleaner/ME/";
 
 template <auto& prefix>
 class TrackTrackTrackTripletCleaner : public paircleaner::BasePairCleaner<prefix>
@@ -42,7 +44,7 @@ class TrackTrackTrackTripletCleaner : public paircleaner::BasePairCleaner<prefix
                    this->isCleanParticlePair(track2, track3) &&
                    this->isCleanParticlePair(track1, track3);
     if (!isClean) {
-      this->fillBlocked(tripletHistManager.getKinematic());
+      this->fillBlocked(tripletHistManager.getKinematic(this->mKinematicVariable));
     }
     return isClean;
   }
@@ -88,7 +90,7 @@ class TrackTrackV0TripletCleaner : public paircleaner::BasePairCleaner<prefix>
                    this->isCleanParticlePair(track2, posDaughter) &&
                    this->isCleanParticlePair(track2, negDaughter);
     if (!isClean) {
-      this->fillBlocked(tripletHistManager.getKinematic());
+      this->fillBlocked(tripletHistManager.getKinematic(this->mKinematicVariable));
     }
     return isClean;
   }
@@ -137,7 +139,7 @@ class TrackTrackCascadeTripletCleaner : public paircleaner::BasePairCleaner<pref
                    this->isCleanParticlePair(track2, negDaughter) &&
                    this->isCleanParticlePair(track2, bachelor);
     if (!isClean) {
-      this->fillBlocked(tripletHistManager.getKinematic());
+      this->fillBlocked(tripletHistManager.getKinematic(this->mKinematicVariable));
     }
     return isClean;
   }
@@ -163,6 +165,50 @@ class TrackTrackCascadeTripletCleaner : public paircleaner::BasePairCleaner<pref
     return true;
   }
 };
+// triplet of generated particles; there are no daughters to share, so only the
+// (non-)common ancestry requirement can reject a triplet
+template <auto& prefix>
+class McParticleMcParticleMcParticleTripletCleaner : public paircleaner::BasePairCleaner<prefix>
+{
+ public:
+  McParticleMcParticleMcParticleTripletCleaner() = default;
+  ~McParticleMcParticleMcParticleTripletCleaner() override = default;
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool isCleanTriplet(T1 const& particle1, T2 const& particle2, T3 const& particle3, T4 const& tripletHistManager) const
+  {
+    this->fillAll();
+    bool isClean = this->isCleanParticlePair(particle1, particle2) &&
+                   this->isCleanParticlePair(particle2, particle3) &&
+                   this->isCleanParticlePair(particle1, particle3);
+    if (!isClean) {
+      this->fillBlocked(tripletHistManager.getKinematic(this->mKinematicVariable));
+    }
+    return isClean;
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  bool isCleanTriplet(T1 const& particle1, T2 const& particle2, T3 const& particle3, T4 const& partonicMothers, T5 const& tripletHistManager) const
+  {
+    if (!this->isCleanTriplet(particle1, particle2, particle3, tripletHistManager)) {
+      return false;
+    }
+    // triplet is clean
+    // no check if we require common or non-common ancestry
+    if (this->mMixPairsWithCommonAncestor) {
+      return this->mcPairHasCommonAncestor(particle1, particle2, partonicMothers) &&
+             this->mcPairHasCommonAncestor(particle2, particle3, partonicMothers) &&
+             this->mcPairHasCommonAncestor(particle1, particle3, partonicMothers);
+    }
+    if (this->mMixPairsWithNonCommonAncestor) {
+      return this->mcPairHasNonCommonAncestor(particle1, particle2, partonicMothers) &&
+             this->mcPairHasNonCommonAncestor(particle2, particle3, partonicMothers) &&
+             this->mcPairHasNonCommonAncestor(particle1, particle3, partonicMothers);
+    }
+    return true;
+  }
+};
+
 } // namespace o2::analysis::femto::tripletcleaner
 
 #endif // PWGCF_FEMTO_CORE_TRIPLETCLEANER_H_

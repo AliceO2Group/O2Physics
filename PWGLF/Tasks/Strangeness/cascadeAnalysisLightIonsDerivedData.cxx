@@ -17,6 +17,7 @@
 
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
@@ -56,7 +57,7 @@ using SimCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraC
 using CascadeCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascTOFPIDs, aod::CascTOFNSigmas>;
 using CascadeMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascCoreMCLabels>;
 using DaughterTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using CollisionMCTrueTable = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>;
+using CollisionMCTrueTable = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults, aod::McCentFV0As, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::McCentNGlobals>;
 using CascadeMCCores = soa::Join<aod::CascMCCores, aod::CascMCCollRefs>;
 
 struct CascadeAnalysisLightIonsDerivedData {
@@ -151,6 +152,7 @@ struct CascadeAnalysisLightIonsDerivedData {
 
   // Centrality estimator
   Configurable<int> centralityEstimator{"centralityEstimator", 0, "0 = FT0C, 1 = FTOM, 2 = FV0A, 3 = NGlobal"};
+  Configurable<bool> useMcCentrality{"useMcCentrality", false, "Use MC centrality?"};
 
   // List of estimators
   enum Option { kFT0C,
@@ -299,6 +301,8 @@ struct CascadeAnalysisLightIonsDerivedData {
       // Multiplicity Histograms
       registryMC.add("hCentEstimator_truerec", "hCentEstimator_truerec", HistType::kTH1D, {{101, 0.0f, 101.0f}});
       registryMC.add("hCentralityVsNch_truerec", "hCentralityVsNch_truerec", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisNch});
+      if (useMcCentrality)
+        registryMC.add("hEventVsGenCentrality_truerec", "hEventVsGenCentrality_truerec", HistType::kTH2D, {{101, 0.0f, 101.0f}, {101, 0.0f, 101.0f}});
       if (centralityEstimator == Option::kNGlobal)
         registryMC.add("hCentralityVsMultiplicity_truerec", "hCentralityVsMultiplicity_truerec", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisNch});
       else
@@ -322,27 +326,46 @@ struct CascadeAnalysisLightIonsDerivedData {
       // QC Histograms
       registryQC.add("hVertexZGen", "hVertexZGen", HistType::kTH1D, {{vertexZAxis}});
       // Histograms for xi (mc)
-      registryMC.add("h2dGenXiMinusVsMultMC_RecoedEvt", "h2dGenXiMinusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
-      registryMC.add("h2dGenXiPlusVsMultMC_RecoedEvt", "h2dGenXiPlusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
-      registryMC.add("h2dGenXiMinusVsMultMC", "h2dGenXiMinusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
-      registryMC.add("h2dGenXiPlusVsMultMC", "h2dGenXiPlusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
       registryMC.add("h2dGenXiMinus", "h2dGenXiMinus", HistType::kTH2D, {centAxis, ptAxis});
       registryMC.add("h2dGenXiPlus", "h2dGenXiPlus", HistType::kTH2D, {centAxis, ptAxis});
 
       // Histograms for omega (mc)
-      registryMC.add("h2dGenOmegaMinusVsMultMC_RecoedEvt", "h2dGenOmegaMinusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
-      registryMC.add("h2dGenOmegaPlusVsMultMC_RecoedEvt", "h2dGenOmegaPlusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
-      registryMC.add("h2dGenOmegaMinusVsMultMC", "h2dGenOmegaMinusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
-      registryMC.add("h2dGenOmegaPlusVsMultMC", "h2dGenOmegaPlusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
       registryMC.add("h2dGenOmegaMinus", "h2dGenOmegaMinus", HistType::kTH2D, {centAxis, ptAxis});
       registryMC.add("h2dGenOmegaPlus", "h2dGenOmegaPlus", HistType::kTH2D, {centAxis, ptAxis});
 
-      // Histograms for event loss/splitting
-      registryMC.add("hGenEvents", "hGenEvents", HistType::kTH2D, {{axisNch}, {4, -0.5f, +3.5f}});
-      registryMC.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(1, "All gen. events");
-      registryMC.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(2, "All gen. events in INEL > 0");
-      registryMC.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(3, "Gen. with at least 1 rec. events");
-      registryMC.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(4, "Gen. with at least 1 rec. events in INEL > 0");
+      if (useMcCentrality) {
+        registryMC.add("h2dGenXiMinusVsMcCentrality_RecoedEvt", "h2dGenXiMinusVsMcCentrality_RecoedEvt", HistType::kTH2D, {axisCentEstimator, ptAxis});
+        registryMC.add("h2dGenXiPlusVsMcCentrality_RecoedEvt", "h2dGenXiPlusVsMcCentrality_RecoedEvt", HistType::kTH2D, {axisCentEstimator, ptAxis});
+        registryMC.add("h2dGenXiMinusVsMcCentrality", "h2dGenXiMinusVsMcCentrality", HistType::kTH2D, {axisCentEstimator, ptAxis});
+        registryMC.add("h2dGenXiPlusVsMcCentrality", "h2dGenXiPlusVsMcCentrality", HistType::kTH2D, {axisCentEstimator, ptAxis});
+
+        registryMC.add("h2dGenOmegaMinusVsMcCentrality_RecoedEvt", "h2dGenOmegaMinusVsMcCentrality_RecoedEvt", HistType::kTH2D, {axisCentEstimator, ptAxis});
+        registryMC.add("h2dGenOmegaPlusVsMcCentrality_RecoedEvt", "h2dGenOmegaPlusVsMcCentrality_RecoedEvt", HistType::kTH2D, {axisCentEstimator, ptAxis});
+        registryMC.add("h2dGenOmegaMinusVsMcCentrality", "h2dGenOmegaMinusVsMcCentrality", HistType::kTH2D, {axisCentEstimator, ptAxis});
+        registryMC.add("h2dGenOmegaPlusVsMcCentrality", "h2dGenOmegaPlusVsMcCentrality", HistType::kTH2D, {axisCentEstimator, ptAxis});
+
+        registryMC.add("hGenEventsVsMcCentrality", "hGenEventsVsMcCentrality", HistType::kTH2D, {axisCentEstimator, {4, -0.5f, +3.5f}});
+        registryMC.get<TH2>(HIST("hGenEventsVsMcCentrality"))->GetYaxis()->SetBinLabel(1, "All gen. events");
+        registryMC.get<TH2>(HIST("hGenEventsVsMcCentrality"))->GetYaxis()->SetBinLabel(2, "All gen. events in INEL > 0");
+        registryMC.get<TH2>(HIST("hGenEventsVsMcCentrality"))->GetYaxis()->SetBinLabel(3, "Gen. with at least 1 rec. events");
+        registryMC.get<TH2>(HIST("hGenEventsVsMcCentrality"))->GetYaxis()->SetBinLabel(4, "Gen. with at least 1 rec. events in INEL > 0");
+      } else {
+        registryMC.add("h2dGenXiMinusVsMultMC_RecoedEvt", "h2dGenXiMinusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
+        registryMC.add("h2dGenXiPlusVsMultMC_RecoedEvt", "h2dGenXiPlusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
+        registryMC.add("h2dGenXiMinusVsMultMC", "h2dGenXiMinusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
+        registryMC.add("h2dGenXiPlusVsMultMC", "h2dGenXiPlusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
+
+        registryMC.add("h2dGenOmegaMinusVsMultMC_RecoedEvt", "h2dGenOmegaMinusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
+        registryMC.add("h2dGenOmegaPlusVsMultMC_RecoedEvt", "h2dGenOmegaPlusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
+        registryMC.add("h2dGenOmegaMinusVsMultMC", "h2dGenOmegaMinusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
+        registryMC.add("h2dGenOmegaPlusVsMultMC", "h2dGenOmegaPlusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
+
+        registryMC.add("hGenEvents", "hGenEvents", HistType::kTH2D, {axisNch, {4, -0.5f, +3.5f}});
+        registryMC.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(1, "All gen. events");
+        registryMC.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(2, "All gen. events in INEL > 0");
+        registryMC.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(3, "Gen. with at least 1 rec. events");
+        registryMC.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(4, "Gen. with at least 1 rec. events in INEL > 0");
+      }
       registryMC.add("hGenEventCentrality", "hGenEventCentrality", kTH1D, {{101, 0.0f, 101.0f}});
 
       registryMC.add("hCentralityVsNcoll_beforeEvSel", "hCentralityVsNcoll_beforeEvSel", HistType::kTH2D, {centAxis, {50, -0.5f, 49.5f}});
@@ -684,12 +707,29 @@ struct CascadeAnalysisLightIonsDerivedData {
       if (applyZVtxSelOnMCPV && std::fabs(mcCollision.posZ()) > zVtx)
         continue;
 
-      registryMC.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 0 /* all gen. events*/);
+      float centralityMC = -1.f;
+      if (centralityEstimator == Option::kFT0C)
+        centralityMC = mcCollision.centFT0C();
+      if (centralityEstimator == Option::kFT0M)
+        centralityMC = mcCollision.centFT0M();
+      if (centralityEstimator == Option::kFV0A)
+        centralityMC = mcCollision.centFV0A();
+      if (centralityEstimator == Option::kNGlobal)
+        centralityMC = mcCollision.centNGlobal();
+
+      if (useMcCentrality)
+        registryMC.fill(HIST("hGenEventsVsMcCentrality"), centralityMC, 0 /* all gen. events*/);
+      else
+        registryMC.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 0 /* all gen. events*/);
 
       if (requireInel0OnMC && mcCollision.multMCNParticlesEta10() < 1) {
         continue;
       }
-      registryMC.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 1 /* all gen. events in INEL > 0*/);
+
+      if (useMcCentrality)
+        registryMC.fill(HIST("hGenEventsVsMcCentrality"), centralityMC, 1 /* all gen. events in INEL > 0*/);
+      else
+        registryMC.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 1 /* all gen. events in INEL > 0*/);
 
       auto groupedCollisions = getGroupedCollisions(collisions, mcCollision.globalIndex());
       // Check if there is at least one of the reconstructed collisions associated to this MC collision
@@ -740,14 +780,18 @@ struct CascadeAnalysisLightIonsDerivedData {
 
         if (biggestNContribs < collision.multPVTotalContributors()) {
           biggestNContribs = collision.multPVTotalContributors();
-          if (centralityEstimator == Option::kFT0C)
-            centralitydata = collision.centFT0C();
-          if (centralityEstimator == Option::kFT0M)
-            centralitydata = collision.centFT0M();
-          if (centralityEstimator == Option::kFV0A)
-            centralitydata = collision.centFV0A();
-          if (centralityEstimator == Option::kNGlobal)
-            centralitydata = collision.centNGlobal();
+          if (useMcCentrality) {
+            centralitydata = centralityMC;
+          } else {
+            if (centralityEstimator == Option::kFT0C)
+              centralitydata = collision.centFT0C();
+            if (centralityEstimator == Option::kFT0M)
+              centralitydata = collision.centFT0M();
+            if (centralityEstimator == Option::kFV0A)
+              centralitydata = collision.centFV0A();
+            if (centralityEstimator == Option::kNGlobal)
+              centralitydata = collision.centNGlobal();
+          }
         }
         nCollisions++;
 
@@ -761,8 +805,13 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryQC.fill(HIST("hVertexZGen"), mcCollision.posZ());
 
       if (atLeastOne) {
-        registryMC.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 2 /* at least 1 rec. event*/);
-        registryMC.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 3 /* at least 1 rec. event in INEL > 0*/);
+        if (useMcCentrality) {
+          registryMC.fill(HIST("hGenEventsVsMcCentrality"), centralityMC, 2 /* at least 1 rec. event*/);
+          registryMC.fill(HIST("hGenEventsVsMcCentrality"), centralityMC, 3 /* at least 1 rec. event in INEL > 0*/);
+        } else {
+          registryMC.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 2 /* at least 1 rec. event*/);
+          registryMC.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 3 /* at least 1 rec. event in INEL > 0*/);
+        }
         registryMC.fill(HIST("hGenEventCentrality"), centralitydata);
       }
     }
@@ -953,6 +1002,25 @@ struct CascadeAnalysisLightIonsDerivedData {
     if (centralityEstimator == Option::kNGlobal) {
       centralityMcRec = RecCol.centNGlobal();
       multiplicityMcRec = RecCol.multNTracksGlobal();
+    }
+
+    if (useMcCentrality) {
+      const float recoCentrality = centralityMcRec;
+      centralityMcRec = -1.f;
+
+      if (RecCol.has_straMCCollision()) {
+        auto mcCollision = RecCol.template straMCCollision_as<CollisionMCTrueTable>();
+        if (centralityEstimator == Option::kFT0C)
+          centralityMcRec = mcCollision.centFT0C();
+        if (centralityEstimator == Option::kFT0M)
+          centralityMcRec = mcCollision.centFT0M();
+        if (centralityEstimator == Option::kFV0A)
+          centralityMcRec = mcCollision.centFV0A();
+        if (centralityEstimator == Option::kNGlobal)
+          centralityMcRec = mcCollision.centNGlobal();
+      }
+
+      registryMC.fill(HIST("hEventVsGenCentrality_truerec"), recoCentrality, centralityMcRec);
     }
 
     registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 0, centralityMcRec);
@@ -1148,47 +1216,86 @@ struct CascadeAnalysisLightIonsDerivedData {
       }
 
       float centralityMC = 100.5f;
+      float centralityMCtrue = -1.f;
+
+      if (centralityEstimator == Option::kFT0C)
+        centralityMCtrue = mcCollision.centFT0C();
+      if (centralityEstimator == Option::kFT0M)
+        centralityMCtrue = mcCollision.centFT0M();
+      if (centralityEstimator == Option::kFV0A)
+        centralityMCtrue = mcCollision.centFV0A();
+      if (centralityEstimator == Option::kNGlobal)
+        centralityMCtrue = mcCollision.centNGlobal();
 
       if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
         auto collision = RecCols.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
-        if (centralityEstimator == Option::kFT0C)
-          centralityMC = collision.centFT0C();
-        if (centralityEstimator == Option::kFT0M)
-          centralityMC = collision.centFT0M();
-        if (centralityEstimator == Option::kFV0A)
-          centralityMC = collision.centFV0A();
-        if (centralityEstimator == Option::kNGlobal)
-          centralityMC = collision.centNGlobal();
+
+        if (useMcCentrality) {
+          centralityMC = centralityMCtrue;
+        } else {
+          if (centralityEstimator == Option::kFT0C)
+            centralityMC = collision.centFT0C();
+          if (centralityEstimator == Option::kFT0M)
+            centralityMC = collision.centFT0M();
+          if (centralityEstimator == Option::kFV0A)
+            centralityMC = collision.centFV0A();
+          if (centralityEstimator == Option::kNGlobal)
+            centralityMC = collision.centNGlobal();
+        }
 
         if (cascMC.pdgCode() == kXiMinus && std::abs(cascMC.rapidityMC(0)) < rapcut) {
-          registryMC.fill(HIST("h2dGenXiMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          if (useMcCentrality)
+            registryMC.fill(HIST("h2dGenXiMinusVsMcCentrality_RecoedEvt"), centralityMCtrue, ptmc);
+          else
+            registryMC.fill(HIST("h2dGenXiMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
         if (cascMC.pdgCode() == kXiPlusBar && std::abs(cascMC.rapidityMC(0)) < rapcut) {
-          registryMC.fill(HIST("h2dGenXiPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          if (useMcCentrality)
+            registryMC.fill(HIST("h2dGenXiPlusVsMcCentrality_RecoedEvt"), centralityMCtrue, ptmc);
+          else
+            registryMC.fill(HIST("h2dGenXiPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
         if (cascMC.pdgCode() == kOmegaMinus && std::abs(cascMC.rapidityMC(2)) < rapcut) {
-          registryMC.fill(HIST("h2dGenOmegaMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          if (useMcCentrality)
+            registryMC.fill(HIST("h2dGenOmegaMinusVsMcCentrality_RecoedEvt"), centralityMCtrue, ptmc);
+          else
+            registryMC.fill(HIST("h2dGenOmegaMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
         if (cascMC.pdgCode() == kOmegaPlusBar && std::abs(cascMC.rapidityMC(2)) < rapcut) {
-          registryMC.fill(HIST("h2dGenOmegaPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          if (useMcCentrality)
+            registryMC.fill(HIST("h2dGenOmegaPlusVsMcCentrality_RecoedEvt"), centralityMCtrue, ptmc);
+          else
+            registryMC.fill(HIST("h2dGenOmegaPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
       }
 
       if (cascMC.pdgCode() == kXiMinus && std::abs(cascMC.rapidityMC(0)) < rapcut) {
         registryMC.fill(HIST("h2dGenXiMinus"), centralityMC, ptmc);
-        registryMC.fill(HIST("h2dGenXiMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        if (useMcCentrality)
+          registryMC.fill(HIST("h2dGenXiMinusVsMcCentrality"), centralityMCtrue, ptmc);
+        else
+          registryMC.fill(HIST("h2dGenXiMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
       if (cascMC.pdgCode() == kXiPlusBar && std::abs(cascMC.rapidityMC(0)) < rapcut) {
         registryMC.fill(HIST("h2dGenXiPlus"), centralityMC, ptmc);
-        registryMC.fill(HIST("h2dGenXiPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        if (useMcCentrality)
+          registryMC.fill(HIST("h2dGenXiPlusVsMcCentrality"), centralityMCtrue, ptmc);
+        else
+          registryMC.fill(HIST("h2dGenXiPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
       if (cascMC.pdgCode() == kOmegaMinus && std::abs(cascMC.rapidityMC(2)) < rapcut) {
         registryMC.fill(HIST("h2dGenOmegaMinus"), centralityMC, ptmc);
-        registryMC.fill(HIST("h2dGenOmegaMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        if (useMcCentrality)
+          registryMC.fill(HIST("h2dGenOmegaMinusVsMcCentrality"), centralityMCtrue, ptmc);
+        else
+          registryMC.fill(HIST("h2dGenOmegaMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
       if (cascMC.pdgCode() == kOmegaPlusBar && std::abs(cascMC.rapidityMC(2)) < rapcut) {
         registryMC.fill(HIST("h2dGenOmegaPlus"), centralityMC, ptmc);
-        registryMC.fill(HIST("h2dGenOmegaPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        if (useMcCentrality)
+          registryMC.fill(HIST("h2dGenOmegaPlusVsMcCentrality"), centralityMCtrue, ptmc);
+        else
+          registryMC.fill(HIST("h2dGenOmegaPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
     } // cascMC loop
   }

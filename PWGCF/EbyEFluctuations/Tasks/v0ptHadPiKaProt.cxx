@@ -285,7 +285,7 @@ struct V0ptHadPiKaProt {
       ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
       LOGF(info, "Getting object %s", ccdbPath.value.data());
       TList* lst = ccdb->getForTimeStamp<TList>(ccdbPath.value, ccdbNoLaterThan.value);
-      hWeightPhiFunctionVzEtaPhi = reinterpret_cast<TH3D*>(lst->FindObject("hWeightPhiFunctionVzEtaPhi"));
+      hWeightPhiFunctionVzEtaPhi = dynamic_cast<TH3D*>(lst->FindObject("hWeightPhiFunctionVzEtaPhi"));
       if (!hWeightPhiFunctionVzEtaPhi)
         LOGF(info, "FATAL!! could not get phi weights---------> check");
     }
@@ -299,10 +299,10 @@ struct V0ptHadPiKaProt {
       ccdb->setCreatedNotAfter(ccdbNoLaterThanPtEff.value);
       LOGF(info, "Getting object %s", ccdbPathPtEff.value.data());
       TList* lst = ccdb->getForTimeStamp<TList>(ccdbPathPtEff.value, ccdbNoLaterThanPtEff.value);
-      hEffAllCharged = reinterpret_cast<TH1D*>(lst->FindObject("hEffAllCharged"));
-      hEffPion = reinterpret_cast<TH1D*>(lst->FindObject("hEffPion"));
-      hEffKaon = reinterpret_cast<TH1D*>(lst->FindObject("hEffKaon"));
-      hEffProton = reinterpret_cast<TH1D*>(lst->FindObject("hEffProton"));
+      hEffAllCharged = dynamic_cast<TH1D*>(lst->FindObject("hEffAllCharged"));
+      hEffPion = dynamic_cast<TH1D*>(lst->FindObject("hEffPion"));
+      hEffKaon = dynamic_cast<TH1D*>(lst->FindObject("hEffKaon"));
+      hEffProton = dynamic_cast<TH1D*>(lst->FindObject("hEffProton"));
       if (!hEffAllCharged || !hEffPion || !hEffKaon || !hEffProton)
         LOGF(info, "FATAL!! could not get efficiency files---------> !!! check !!!");
     }
@@ -990,7 +990,7 @@ struct V0ptHadPiKaProt {
   }
 
   template <typename TTrack>
-  int getNsigmaPID(TTrack track)
+  int getNsigmaPID(const TTrack& track)
   {
     // Computing Nsigma arrays for pion, kaon, and protons
     std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
@@ -1041,7 +1041,7 @@ struct V0ptHadPiKaProt {
 
   // additional multiplicity correlation based event selection cuts
   template <typename TCollision>
-  bool eventSelectedSmallion(TCollision collision, const int multTrk, const float centrality)
+  bool eventSelectedSmallion(const TCollision& collision, const int multTrk, const float centrality)
   {
     auto multNTracksPV = collision.multNTracksPV();
 
@@ -1083,7 +1083,7 @@ struct V0ptHadPiKaProt {
   }
 
   template <typename TCollision>
-  bool eventSelectionDefaultCuts(TCollision coll)
+  bool eventSelectionDefaultCuts(const TCollision& coll)
   {
     histos.fill(HIST("hEventStatData"), 0.5);
     if (!coll.sel8()) {

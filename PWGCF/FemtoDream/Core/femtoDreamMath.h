@@ -373,6 +373,29 @@ class FemtoDreamMath
     phi_pair_onPsi = TMath::Abs(phi_pair_onPsi);
     return phi_pair_onPsi;
   }
+
+  /// Signed φ_pair − Ψ_EP (same as getPairPhiEP without the final |·|); used as the B-frame rotation angle.
+  template <typename T1, typename T2>
+  static float getPairPhiEPSigned(const T1& part1, const float mass1, const T2& part2, const float mass2, const float Psi_ep)
+  {
+    const ROOT::Math::PtEtaPhiMVector vecpart1(part1.pt(), part1.eta(), part1.phi(), mass1);
+    const ROOT::Math::PtEtaPhiMVector vecpart2(part2.pt(), part2.eta(), part2.phi(), mass2);
+    const ROOT::Math::PtEtaPhiMVector trackSum = vecpart1 + vecpart2;
+    return TVector2::Phi_mpi_pi(trackSum.Phi() - Psi_ep);
+  }
+
+  /// Signed counterpart of the plane-calibrated (two-event-plane) getPairPhiEP.
+  template <typename T1, typename T2>
+  static float getPairPhiEPSigned(const T1& part1, const float mass1, const T2& part2, const float mass2, const float Psi_ep1, const float Psi_ep2)
+  {
+    const ROOT::Math::PtEtaPhiMVector vecpart1(part1.pt(), part1.eta(), part1.phi(), mass1);
+    const ROOT::Math::PtEtaPhiMVector vecpart2(part2.pt(), part2.eta(), part2.phi(), mass2);
+    const float psidiff = Psi_ep2 - Psi_ep1;
+    const float newPhi2 = TVector2::Phi_mpi_pi(vecpart2.Phi() - psidiff);
+    const ROOT::Math::PtEtaPhiMVector vecpart2_calibd(vecpart2.Pt(), vecpart2.Eta(), newPhi2, vecpart2.M());
+    const ROOT::Math::PtEtaPhiMVector trackSum = vecpart1 + vecpart2_calibd;
+    return TVector2::Phi_mpi_pi(trackSum.Phi() - Psi_ep1);
+  }
 };
 
 } // namespace o2::analysis::femtoDream

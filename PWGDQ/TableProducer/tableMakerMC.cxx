@@ -187,7 +187,7 @@ struct TableMakerMC {
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
 
   // TODO: filter on TPC dedx used temporarily until electron PID will be improved
-  Filter barrelSelectedTracks = ifnode(fIsRun2.node() == true, aod::track::trackType == uint8_t(aod::track::Run2Track), aod::track::trackType == uint8_t(aod::track::Track)) && o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= 0.9f;
+  Filter barrelSelectedTracks = ifnode(fIsRun2.node() == true, aod::track::trackType == static_cast<uint8_t>(aod::track::Run2Track), aod::track::trackType == static_cast<uint8_t>(aod::track::Track)) && o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= 0.9f;
 
   Filter muonFilter = o2::aod::fwdtrack::pt >= fConfigMuonPtLow;
 
@@ -432,10 +432,10 @@ struct TableMakerMC {
       // fill stats information, before selections
       for (int i = 0; i < kNaliases; i++) {
         if (triggerAliases & (static_cast<uint32_t>(1) << i)) {
-          (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(i));
+          (dynamic_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(i));
         }
       }
-      (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
+      (dynamic_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
 
       if (!fEventCut->IsSelected(VarManager::fgValues)) {
         continue;
@@ -448,10 +448,10 @@ struct TableMakerMC {
       // fill stats information, after selections
       for (int i = 0; i < kNaliases; i++) {
         if (triggerAliases & (static_cast<uint32_t>(1) << i)) {
-          (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(i));
+          (dynamic_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(i));
         }
       }
-      (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(kNaliases));
+      (dynamic_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(kNaliases));
 
       event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0 && (TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
@@ -578,14 +578,14 @@ struct TableMakerMC {
           int i = 0;
           for (auto& cut : fTrackCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
-              trackTempFilterMap |= (uint8_t(1) << i);
+              trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
               if (fConfigQA) {
                 fHistMan->FillHistClass(Form("TrackBarrel_%s", cut.GetName()), VarManager::fgValues); // fill the reconstructed truth
                 if (fIsAmbiguous && isAmbiguous == 1) {
                   fHistMan->FillHistClass(Form("Ambiguous_TrackBarrel_%s", cut.GetName()), VarManager::fgValues);
                 }
               }
-              (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(static_cast<float>(i));
+              (dynamic_cast<TH1I*>(fStatsList->At(1)))->Fill(static_cast<float>(i));
             }
             i++;
           }
@@ -604,7 +604,7 @@ struct TableMakerMC {
             trackFilteringTag |= (static_cast<uint64_t>(track.pidbit()) << 2);
             for (int iv0 = 0; iv0 < 5; iv0++) {
               if (track.pidbit() & (static_cast<uint8_t>(1) << iv0)) {
-                (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
+                (dynamic_cast<TH1I*>(fStatsList->At(1)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
               }
             }
           }
@@ -623,7 +623,7 @@ struct TableMakerMC {
               if (fDoDetailedQA) {
                 j = 0;
                 for (auto& cut : fTrackCuts) {
-                  if (trackTempFilterMap & (uint8_t(1) << j)) {
+                  if (trackTempFilterMap & (static_cast<uint8_t>(1) << j)) {
                     fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
                   }
                   j++;
@@ -775,7 +775,7 @@ struct TableMakerMC {
           int i = 0;
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
-              trackTempFilterMap |= (uint8_t(1) << i);
+              trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
             }
             i++;
           }
@@ -823,11 +823,11 @@ struct TableMakerMC {
           int i = 0;
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
-              trackTempFilterMap |= (uint8_t(1) << i);
+              trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
               if (fIsAmbiguous && isAmbiguous == 1) {
                 fHistMan->FillHistClass(Form("Ambiguous_Muons_%s", cut.GetName()), VarManager::fgValues);
               }
-              (reinterpret_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(i));
+              (dynamic_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(i));
             }
             i++;
           }
@@ -847,7 +847,7 @@ struct TableMakerMC {
               if (fDoDetailedQA) {
                 j = 0;
                 for (auto& cut : fMuonCuts) {
-                  if (trackTempFilterMap & (uint8_t(1) << j)) {
+                  if (trackTempFilterMap & (static_cast<uint8_t>(1) << j)) {
                     fHistMan->FillHistClass(Form("Muons_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
                   }
                   j++;
@@ -978,11 +978,11 @@ struct TableMakerMC {
               mctrack.vx(), mctrack.vy(), mctrack.vz(), mctrack.vt(), mcflags);
       for (unsigned int isig = 0; isig < fMCSignals.size(); isig++) {
         if (mcflags & (static_cast<uint16_t>(1) << isig)) {
-          (reinterpret_cast<TH1I*>(fStatsList->At(3)))->Fill(static_cast<float>(isig));
+          (dynamic_cast<TH1I*>(fStatsList->At(3)))->Fill(static_cast<float>(isig));
         }
       }
       if (mcflags == 0) {
-        (reinterpret_cast<TH1I*>(fStatsList->At(3)))->Fill(static_cast<float>(fMCSignals.size()));
+        (dynamic_cast<TH1I*>(fStatsList->At(3)))->Fill(static_cast<float>(fMCSignals.size()));
       }
     } // end loop over labels
 
@@ -1067,10 +1067,10 @@ struct TableMakerMC {
       // fill stats information, before selections
       for (int i = 0; i < kNaliases; i++) {
         if (triggerAliases & (static_cast<uint32_t>(1) << i)) {
-          (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(i));
+          (dynamic_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(i));
         }
       }
-      (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
+      (dynamic_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
 
       if (!fEventCut->IsSelected(VarManager::fgValues)) {
         continue;
@@ -1083,10 +1083,10 @@ struct TableMakerMC {
       // fill stats information, after selections
       for (int i = 0; i < kNaliases; i++) {
         if (triggerAliases & (static_cast<uint32_t>(1) << i)) {
-          (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(i));
+          (dynamic_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(i));
         }
       }
-      (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(kNaliases));
+      (dynamic_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(kNaliases));
 
       event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0 && (TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
@@ -1201,14 +1201,14 @@ struct TableMakerMC {
           int i = 0;
           for (auto& cut : fTrackCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
-              trackTempFilterMap |= (uint8_t(1) << i);
+              trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
               if (fConfigQA) {
                 fHistMan->FillHistClass(Form("TrackBarrel_%s", cut.GetName()), VarManager::fgValues); // fill the reconstructed truth
                 if (fIsAmbiguous && isAmbiguous == 1) {
                   fHistMan->FillHistClass(Form("Ambiguous_TrackBarrel_%s", cut.GetName()), VarManager::fgValues);
                 }
               }
-              (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(static_cast<float>(i));
+              (dynamic_cast<TH1I*>(fStatsList->At(1)))->Fill(static_cast<float>(i));
             }
             i++;
           }
@@ -1227,7 +1227,7 @@ struct TableMakerMC {
             trackFilteringTag |= (static_cast<uint64_t>(track.pidbit()) << 2);
             for (int iv0 = 0; iv0 < 5; iv0++) {
               if (track.pidbit() & (static_cast<uint8_t>(1) << iv0)) {
-                (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
+                (dynamic_cast<TH1I*>(fStatsList->At(1)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
               }
             }
           }
@@ -1246,7 +1246,7 @@ struct TableMakerMC {
               if (fDoDetailedQA) {
                 j = 0;
                 for (auto& cut : fTrackCuts) {
-                  if (trackTempFilterMap & (uint8_t(1) << j)) {
+                  if (trackTempFilterMap & (static_cast<uint8_t>(1) << j)) {
                     fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
                   }
                   j++;
@@ -1334,7 +1334,7 @@ struct TableMakerMC {
           int i = 0;
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
-              trackTempFilterMap |= (uint8_t(1) << i);
+              trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
             }
             i++;
           }
@@ -1379,12 +1379,12 @@ struct TableMakerMC {
           int i = 0;
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
-              trackTempFilterMap |= (uint8_t(1) << i);
+              trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
               fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
               if (fIsAmbiguous && isAmbiguous == 1) {
                 fHistMan->FillHistClass(Form("Ambiguous_Muons_%s", cut.GetName()), VarManager::fgValues);
               }
-              (reinterpret_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(i));
+              (dynamic_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(i));
             }
             i++;
           }
@@ -1404,7 +1404,7 @@ struct TableMakerMC {
               if (fDoDetailedQA) {
                 j = 0;
                 for (auto& cut : fMuonCuts) {
-                  if (trackTempFilterMap & (uint8_t(1) << j)) {
+                  if (trackTempFilterMap & (static_cast<uint8_t>(1) << j)) {
                     fHistMan->FillHistClass(Form("Muons_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
                   }
                   j++;
@@ -1517,11 +1517,11 @@ struct TableMakerMC {
               mctrack.vx(), mctrack.vy(), mctrack.vz(), mctrack.vt(), mcflags);
       for (unsigned int isig = 0; isig < fMCSignals.size(); isig++) {
         if (mcflags & (static_cast<uint16_t>(1) << isig)) {
-          (reinterpret_cast<TH1I*>(fStatsList->At(3)))->Fill(static_cast<float>(isig));
+          (dynamic_cast<TH1I*>(fStatsList->At(3)))->Fill(static_cast<float>(isig));
         }
       }
       if (mcflags == 0) {
-        (reinterpret_cast<TH1I*>(fStatsList->At(3)))->Fill(static_cast<float>(fMCSignals.size()));
+        (dynamic_cast<TH1I*>(fStatsList->At(3)))->Fill(static_cast<float>(fMCSignals.size()));
       }
     } // end loop over labels
 
@@ -1576,7 +1576,7 @@ struct TableMakerMC {
     fStatsList.setObject(new TList());
     fStatsList->SetOwner(kTRUE);
     std::vector<TString> eventLabels{"BCs", "Collisions before filtering", "Before cuts", "After cuts"};
-    TH2I* histEvents = new TH2I("EventStats", "Event statistics", eventLabels.size(), -0.5, eventLabels.size() - 0.5, (float)kNaliases + 1, -0.5, (float)kNaliases + 0.5);
+    TH2I* histEvents = new TH2I("EventStats", "Event statistics", eventLabels.size(), -0.5, eventLabels.size() - 0.5, static_cast<float>(kNaliases) + 1, -0.5, static_cast<float>(kNaliases) + 0.5);
     int ib = 1;
     for (auto label = eventLabels.begin(); label != eventLabels.end(); label++, ib++) {
       histEvents->GetXaxis()->SetBinLabel(ib, (*label).Data());
@@ -1767,10 +1767,10 @@ struct TableMakerMC {
   {
     for (int i = 0; i < kNaliases; i++) {
       if (bc.alias_bit(i) > 0) {
-        (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(0.0, static_cast<float>(i));
+        (dynamic_cast<TH2I*>(fStatsList->At(0)))->Fill(0.0, static_cast<float>(i));
       }
     }
-    (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(0.0, static_cast<float>(kNaliases));
+    (dynamic_cast<TH2I*>(fStatsList->At(0)))->Fill(0.0, static_cast<float>(kNaliases));
   }
 
   PROCESS_SWITCH(TableMakerMC, processFull, "Produce both barrel and muon skims", false);

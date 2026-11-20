@@ -74,6 +74,7 @@ enum class InputFeaturesTracks : uint8_t {
   itsChi2NCl,
   // TPC quality
   tpcNClsFound,
+  tpcNClsCrossedRows,
   tpcCrossedRowsOverFindableCls,
   tpcChi2NCl,
   tpcFractionSharedCls,
@@ -110,6 +111,7 @@ struct HfTrackMlFeatures {
   float itsChi2NCl{0.f};
   // TPC quality
   float tpcNClsFound{0.f};
+  float tpcNClsCrossedRows{0.f};
   float tpcCrossedRowsOverFindableCls{0.f};
   float tpcChi2NCl{0.f};
   float tpcFractionSharedCls{0.f};
@@ -171,6 +173,7 @@ class HfMlResponseHfTracks : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_HF_TRACK(itsNClsInnerBarrel);
         CHECK_AND_FILL_VEC_HF_TRACK(itsChi2NCl);
         CHECK_AND_FILL_VEC_HF_TRACK(tpcNClsFound);
+        CHECK_AND_FILL_VEC_HF_TRACK(tpcNClsCrossedRows);
         CHECK_AND_FILL_VEC_HF_TRACK(tpcCrossedRowsOverFindableCls);
         CHECK_AND_FILL_VEC_HF_TRACK(tpcChi2NCl);
         CHECK_AND_FILL_VEC_HF_TRACK(tpcFractionSharedCls);
@@ -204,6 +207,7 @@ class HfMlResponseHfTracks : public HfMlResponse<TypeOutputScore>
       FILL_MAP_HF_TRACK(itsNClsInnerBarrel),
       FILL_MAP_HF_TRACK(itsChi2NCl),
       FILL_MAP_HF_TRACK(tpcNClsFound),
+      FILL_MAP_HF_TRACK(tpcNClsCrossedRows),
       FILL_MAP_HF_TRACK(tpcCrossedRowsOverFindableCls),
       FILL_MAP_HF_TRACK(tpcChi2NCl),
       FILL_MAP_HF_TRACK(tpcFractionSharedCls),

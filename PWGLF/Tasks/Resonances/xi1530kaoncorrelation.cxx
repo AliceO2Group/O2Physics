@@ -177,7 +177,7 @@ struct xi1530kaoncorrelation {
   using MixingBinning = ColumnBinningPolicy<aod::collision::PosZ,
                                             aod::redxistarkevent::FT0MPercentile,
                                             aod::redxistarkevent::Bz>;
-  MixingBinning mixingBinning{{cfgMixVtxBins, cfgMixFT0MBins, cfgMixBzBins}, true};
+  MixingBinning mixingBinning{{cfgMixVtxBins, cfgMixFT0MBins, cfgMixBzBins}};
 
   Preslice<aod::XiStarCandidates> xiStarsPerEvent = aod::redxistarcandidate::redXiStarKEventId;
   Preslice<aod::KaonCandidates> kaonsPerEvent = aod::redxistarkaon::redXiStarKEventId;

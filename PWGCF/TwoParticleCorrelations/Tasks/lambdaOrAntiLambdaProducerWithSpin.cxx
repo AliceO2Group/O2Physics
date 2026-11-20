@@ -32,6 +32,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 #include <Framework/OutputObjHeader.h>
 
 #include <Math/GenVector/Boost.h>
@@ -123,6 +124,21 @@ DECLARE_SOA_COLUMN(NegTrackId, negTrackId, int64_t);
 DECLARE_SOA_COLUMN(Alpha, alpha, float);
 DECLARE_SOA_COLUMN(QtArm, qtArm, float);
 
+// Compatible with the K0Short mass window; not a truth label
+DECLARE_SOA_COLUMN(IsKShortCompatible, isKShortCompatible, bool);
+
+// Positive daughter: TPC momentum, dE/dx signal, and PID
+DECLARE_SOA_COLUMN(PosTPCMomentum, posTPCMomentum, float);
+DECLARE_SOA_COLUMN(PosTPCSignal, posTPCSignal, float);
+DECLARE_SOA_COLUMN(PosTPCNSigmaPr, posTPCNSigmaPr, float);
+DECLARE_SOA_COLUMN(PosTPCNSigmaPi, posTPCNSigmaPi, float);
+
+// Negative daughter: TPC momentum, dE/dx signal, and PID
+DECLARE_SOA_COLUMN(NegTPCMomentum, negTPCMomentum, float);
+DECLARE_SOA_COLUMN(NegTPCSignal, negTPCSignal, float);
+DECLARE_SOA_COLUMN(NegTPCNSigmaPr, negTPCNSigmaPr, float);
+DECLARE_SOA_COLUMN(NegTPCNSigmaPi, negTPCNSigmaPi, float);
+
 } // namespace lambdaorantilambda
 
 DECLARE_SOA_TABLE(LambdaOrAntiLambdas,
@@ -176,7 +192,19 @@ DECLARE_SOA_TABLE(LambdaOrAntiLambdas,
                   lambdaorantilambda::NegTrackId,
 
                   lambdaorantilambda::Alpha,
-                  lambdaorantilambda::QtArm);
+                  lambdaorantilambda::QtArm,
+
+                  lambdaorantilambda::IsKShortCompatible,
+
+                  lambdaorantilambda::PosTPCMomentum,
+                  lambdaorantilambda::PosTPCSignal,
+                  lambdaorantilambda::PosTPCNSigmaPr,
+                  lambdaorantilambda::PosTPCNSigmaPi,
+
+                  lambdaorantilambda::NegTPCMomentum,
+                  lambdaorantilambda::NegTPCSignal,
+                  lambdaorantilambda::NegTPCNSigmaPr,
+                  lambdaorantilambda::NegTPCNSigmaPi);
 
 namespace lambdahyperon
 {
@@ -210,6 +238,18 @@ DECLARE_SOA_COLUMN(PionDcaToPV, pionDcaToPV, float);
 DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);
 DECLARE_SOA_COLUMN(Alpha, alpha, float);
 DECLARE_SOA_COLUMN(QtArm, qtArm, float);
+
+// Positive daughter
+DECLARE_SOA_COLUMN(PosTPCMomentum, posTPCMomentum, float);
+DECLARE_SOA_COLUMN(PosTPCSignal, posTPCSignal, float);
+DECLARE_SOA_COLUMN(PosTPCNSigmaPr, posTPCNSigmaPr, float);
+DECLARE_SOA_COLUMN(PosTPCNSigmaPi, posTPCNSigmaPi, float);
+
+// Negative daughter
+DECLARE_SOA_COLUMN(NegTPCMomentum, negTPCMomentum, float);
+DECLARE_SOA_COLUMN(NegTPCSignal, negTPCSignal, float);
+DECLARE_SOA_COLUMN(NegTPCNSigmaPr, negTPCNSigmaPr, float);
+DECLARE_SOA_COLUMN(NegTPCNSigmaPi, negTPCNSigmaPi, float);
 } // namespace lambdahyperon
 
 DECLARE_SOA_TABLE(Lambdas, "AOD", "LAMBDAS", o2::soa::Index<>,
@@ -222,7 +262,11 @@ DECLARE_SOA_TABLE(Lambdas, "AOD", "LAMBDAS", o2::soa::Index<>,
                   lambdahyperon::PosTrackId, lambdahyperon::NegTrackId,
                   lambdahyperon::CosPA, lambdahyperon::DcaDau, lambdahyperon::DcaV0ToPV,
                   lambdahyperon::ProtonDcaToPV, lambdahyperon::PionDcaToPV,
-                  lambdahyperon::V0Radius, lambdahyperon::Alpha, lambdahyperon::QtArm);
+                  lambdahyperon::V0Radius, lambdahyperon::Alpha, lambdahyperon::QtArm,
+                  lambdahyperon::PosTPCMomentum, lambdahyperon::PosTPCSignal,
+                  lambdahyperon::PosTPCNSigmaPr, lambdahyperon::PosTPCNSigmaPi,
+                  lambdahyperon::NegTPCMomentum, lambdahyperon::NegTPCSignal,
+                  lambdahyperon::NegTPCNSigmaPr, lambdahyperon::NegTPCNSigmaPi);
 
 DECLARE_SOA_TABLE(AntiLambdas, "AOD", "ANTILAMBDAS", o2::soa::Index<>,
                   lambdahyperon::CollisionId,
@@ -234,7 +278,11 @@ DECLARE_SOA_TABLE(AntiLambdas, "AOD", "ANTILAMBDAS", o2::soa::Index<>,
                   lambdahyperon::PosTrackId, lambdahyperon::NegTrackId,
                   lambdahyperon::CosPA, lambdahyperon::DcaDau, lambdahyperon::DcaV0ToPV,
                   lambdahyperon::ProtonDcaToPV, lambdahyperon::PionDcaToPV,
-                  lambdahyperon::V0Radius, lambdahyperon::Alpha, lambdahyperon::QtArm);
+                  lambdahyperon::V0Radius, lambdahyperon::Alpha, lambdahyperon::QtArm,
+                  lambdahyperon::PosTPCMomentum, lambdahyperon::PosTPCSignal,
+                  lambdahyperon::PosTPCNSigmaPr, lambdahyperon::PosTPCNSigmaPi,
+                  lambdahyperon::NegTPCMomentum, lambdahyperon::NegTPCSignal,
+                  lambdahyperon::NegTPCNSigmaPr, lambdahyperon::NegTPCNSigmaPi);
 
 // =====================================================================
 // MC-reconstructed Lambda/anti-Lambda candidates
@@ -305,6 +353,9 @@ DECLARE_SOA_COLUMN(PieDcaToPV, pieDcaToPV, float);
 DECLARE_SOA_COLUMN(PieTPCCrossedRows, pieTPCCrossedRows, int);
 DECLARE_SOA_COLUMN(PieTPCNSigma, pieTPCNSigma, float);
 
+// KShort Mass Campatability
+DECLARE_SOA_COLUMN(IsKShortCompatible, isKShortCompatible, bool);
+
 } // namespace mcrecolambda
 
 DECLARE_SOA_TABLE(McRecoLambdaCandidates,
@@ -365,7 +416,8 @@ DECLARE_SOA_TABLE(McRecoLambdaCandidates,
                   mcrecolambda::PiePhi,
                   mcrecolambda::PieDcaToPV,
                   mcrecolambda::PieTPCCrossedRows,
-                  mcrecolambda::PieTPCNSigma);
+                  mcrecolambda::PieTPCNSigma,
+                  mcrecolambda::IsKShortCompatible);
 
 // =====================================================================
 // MC-generated Lambda/anti-Lambda candidates
@@ -409,6 +461,7 @@ struct LambdaOrAntiLambdaProducerWithSpin {
 
   Configurable<int> minTPCCrossedRows{"minTPCCrossedRows", 70, "Minimum number of TPC crossed rows"};
   Configurable<float> maxTPCNSigma{"maxTPCNSigma", 3.0f, "Maximum absolute TPC PID n-sigma"};
+  Configurable<float> kShortRejectionWindow{"kShortRejectionWindow", 0.001f, "K0Short mass rejection half-window (GeV/c2)"};
 
   ConfigurableAxis axisInvariantMass{"axisInvariantMass", {100, 1.08f, 1.2f}, "Invariant-mass axis"};
   ConfigurableAxis axisLambdaAntiLambdaPt{"axisLambdaAntiLambdaPt", {200, 0.f, 10.f}, "LambdaAntiLambda transverse-momentum axis"};
@@ -466,6 +519,16 @@ struct LambdaOrAntiLambdaProducerWithSpin {
     rLambdaOrAntiLambda.add("Pion/hPhi", "Pion azimuth;#varphi;entries", HistType::kTH1F, {{72, 0.f, o2::constants::math::TwoPI}});
     rLambdaOrAntiLambda.add("Pion/hDcaToPV", "Pion DCA to PV;DCA (cm);entries", HistType::kTH1F, {{200, 0.f, 10.f}});
 
+    // Positive daughter: measured signal and both PID hypotheses
+    rLambdaOrAntiLambda.add("Positive/hTPCdEdxVsP", "Positive daughter;p_{TPC} (GeV/c);TPC dE/dx (arb. units)", HistType::kTH2F, {{200, 0.f, 10.f}, {500, 0.f, 1000.f}});
+    rLambdaOrAntiLambda.add("Positive/hTPCNSigmaPrVsP", "Positive daughter, proton hypothesis;p_{TPC} (GeV/c);TPC n#sigma_{p}", HistType::kTH2F, {{200, 0.f, 10.f}, {200, -10.f, 10.f}});
+    rLambdaOrAntiLambda.add("Positive/hTPCNSigmaPiVsP", "Positive daughter, pion hypothesis;p_{TPC} (GeV/c);TPC n#sigma_{#pi}", HistType::kTH2F, {{200, 0.f, 10.f}, {200, -10.f, 10.f}});
+
+    // Negative daughter: measured signal and both PID hypotheses
+    rLambdaOrAntiLambda.add("Negative/hTPCdEdxVsP", "Negative daughter;p_{TPC} (GeV/c);TPC dE/dx (arb. units)", HistType::kTH2F, {{200, 0.f, 10.f}, {500, 0.f, 1000.f}});
+    rLambdaOrAntiLambda.add("Negative/hTPCNSigmaPrVsP", "Negative daughter, antiproton hypothesis;p_{TPC} (GeV/c);TPC n#sigma_{#bar{p}}", HistType::kTH2F, {{200, 0.f, 10.f}, {200, -10.f, 10.f}});
+    rLambdaOrAntiLambda.add("Negative/hTPCNSigmaPiVsP", "Negative daughter, pion hypothesis;p_{TPC} (GeV/c);TPC n#sigma_{#pi}", HistType::kTH2F, {{200, 0.f, 10.f}, {200, -10.f, 10.f}});
+
     // Armenteros-Podolanski
     rLambdaOrAntiLambda.add("Armenteros/hAlpha", "Armenteros #alpha;#alpha;entries", HistType::kTH1F, {{200, -1.f, 1.f}});
     rLambdaOrAntiLambda.add("Armenteros/hQtArm", "Armenteros q_{T};q_{T} (GeV/c);entries", HistType::kTH1F, {{200, 0.f, 0.4f}});
@@ -480,9 +543,9 @@ struct LambdaOrAntiLambdaProducerWithSpin {
   using TracksWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPr, aod::pidTPCPi>;
   using CollisionsWithActivity = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
 
-  void process(aod::V0Datas const& v0s,
-               TracksWithPID const&,
-               CollisionsWithActivity const&)
+  void processData(aod::V0Datas const& v0s,
+                   TracksWithPID const&,
+                   CollisionsWithActivity const&)
   {
 
     for (auto const& v0 : v0s) {
@@ -493,6 +556,9 @@ struct LambdaOrAntiLambdaProducerWithSpin {
       if (posTrack.tpcNClsCrossedRows() < minTPCCrossedRows || negTrack.tpcNClsCrossedRows() < minTPCCrossedRows) {
         continue;
       }
+
+      const bool isKShortCompatible =
+        std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) <= kShortRejectionWindow.value;
 
       const bool isLambda =
         std::abs(posTrack.tpcNSigmaPr()) < maxTPCNSigma &&
@@ -575,7 +641,22 @@ struct LambdaOrAntiLambdaProducerWithSpin {
 
         // Armenteros-Podolanski
         v0.alpha(),
-        v0.qtarm());
+        v0.qtarm(),
+
+        // K0 Mass Comaptablity test
+        isKShortCompatible,
+
+        // Positive daughter: measured signal and both PID hypotheses
+        posTrack.tpcInnerParam(),
+        posTrack.tpcSignal(),
+        posTrack.tpcNSigmaPr(),
+        posTrack.tpcNSigmaPi(),
+
+        // Negative daughter: measured signal and both PID hypotheses
+        negTrack.tpcInnerParam(),
+        negTrack.tpcSignal(),
+        negTrack.tpcNSigmaPr(),
+        negTrack.tpcNSigmaPi());
 
       rLambdaOrAntiLambda.fill(HIST("Event/hCentrality"), collision.centFT0M());
 
@@ -619,8 +700,22 @@ struct LambdaOrAntiLambdaProducerWithSpin {
       rLambdaOrAntiLambda.fill(HIST("Armenteros/hAlpha"), v0.alpha());
       rLambdaOrAntiLambda.fill(HIST("Armenteros/hQtArm"), v0.qtarm());
       rLambdaOrAntiLambda.fill(HIST("Armenteros/hAlphaVsQt"), v0.alpha(), v0.qtarm());
+
+      // Positive daughter: before PID selection
+      rLambdaOrAntiLambda.fill(HIST("Positive/hTPCdEdxVsP"), posTrack.tpcInnerParam(), posTrack.tpcSignal());
+      rLambdaOrAntiLambda.fill(HIST("Positive/hTPCNSigmaPrVsP"), posTrack.tpcInnerParam(), posTrack.tpcNSigmaPr());
+      rLambdaOrAntiLambda.fill(HIST("Positive/hTPCNSigmaPiVsP"), posTrack.tpcInnerParam(), posTrack.tpcNSigmaPi());
+
+      // Negative daughter: before PID selection
+      rLambdaOrAntiLambda.fill(HIST("Negative/hTPCdEdxVsP"), negTrack.tpcInnerParam(), negTrack.tpcSignal());
+      rLambdaOrAntiLambda.fill(HIST("Negative/hTPCNSigmaPrVsP"), negTrack.tpcInnerParam(), negTrack.tpcNSigmaPr());
+      rLambdaOrAntiLambda.fill(HIST("Negative/hTPCNSigmaPiVsP"), negTrack.tpcInnerParam(), negTrack.tpcNSigmaPi());
     }
   }
+  void processDummy(aod::Collisions const&) {}
+
+  PROCESS_SWITCH(LambdaOrAntiLambdaProducerWithSpin, processData, "Run candidate production", true);
+  PROCESS_SWITCH(LambdaOrAntiLambdaProducerWithSpin, processDummy, "Skip candidate production", false);
 };
 
 //***********************************************************************************************************
@@ -676,6 +771,16 @@ struct LambdaAntiLambdaSelector {
     rSelected.add((prefix + "/Armenteros/hAlpha").c_str(), "Armenteros #alpha;#alpha;entries", HistType::kTH1F, {{200, -1.f, 1.f}});
     rSelected.add((prefix + "/Armenteros/hQtArm").c_str(), "Armenteros q_{T};q_{T} (GeV/c);entries", HistType::kTH1F, {{200, 0.f, 0.4f}});
     rSelected.add((prefix + "/Armenteros/hAlphaVsQt").c_str(), "Armenteros-Podolanski;#alpha;q_{T} (GeV/c)", HistType::kTH2F, {{200, -1.f, 1.f}, {200, 0.f, 0.4f}});
+
+    // Positive daughter
+    rSelected.add((prefix + "/Positive/hTPCdEdxVsP").c_str(), "Positive daughter;p_{TPC} (GeV/c);TPC dE/dx (arb. units)", HistType::kTH2F, {{200, 0.f, 10.f}, {500, 0.f, 1000.f}});
+    rSelected.add((prefix + "/Positive/hTPCNSigmaPrVsP").c_str(), "Positive daughter, proton hypothesis;p_{TPC} (GeV/c);TPC n#sigma_{p}", HistType::kTH2F, {{200, 0.f, 10.f}, {200, -10.f, 10.f}});
+    rSelected.add((prefix + "/Positive/hTPCNSigmaPiVsP").c_str(), "Positive daughter, pion hypothesis;p_{TPC} (GeV/c);TPC n#sigma_{#pi}", HistType::kTH2F, {{200, 0.f, 10.f}, {200, -10.f, 10.f}});
+
+    // Negative daughter
+    rSelected.add((prefix + "/Negative/hTPCdEdxVsP").c_str(), "Negative daughter;p_{TPC} (GeV/c);TPC dE/dx (arb. units)", HistType::kTH2F, {{200, 0.f, 10.f}, {500, 0.f, 1000.f}});
+    rSelected.add((prefix + "/Negative/hTPCNSigmaPrVsP").c_str(), "Negative daughter, antiproton hypothesis;p_{TPC} (GeV/c);TPC n#sigma_{#bar{p}}", HistType::kTH2F, {{200, 0.f, 10.f}, {200, -10.f, 10.f}});
+    rSelected.add((prefix + "/Negative/hTPCNSigmaPiVsP").c_str(), "Negative daughter, pion hypothesis;p_{TPC} (GeV/c);TPC n#sigma_{#pi}", HistType::kTH2F, {{200, 0.f, 10.f}, {200, -10.f, 10.f}});
   }
 
   void init(InitContext const&)
@@ -716,6 +821,14 @@ struct LambdaAntiLambdaSelector {
       rSelected.fill(HIST("Lambda/Armenteros/hAlpha"), candidate.alpha());
       rSelected.fill(HIST("Lambda/Armenteros/hQtArm"), candidate.qtArm());
       rSelected.fill(HIST("Lambda/Armenteros/hAlphaVsQt"), candidate.alpha(), candidate.qtArm());
+
+      rSelected.fill(HIST("Lambda/Positive/hTPCdEdxVsP"), candidate.posTPCMomentum(), candidate.posTPCSignal());
+      rSelected.fill(HIST("Lambda/Positive/hTPCNSigmaPrVsP"), candidate.posTPCMomentum(), candidate.posTPCNSigmaPr());
+      rSelected.fill(HIST("Lambda/Positive/hTPCNSigmaPiVsP"), candidate.posTPCMomentum(), candidate.posTPCNSigmaPi());
+
+      rSelected.fill(HIST("Lambda/Negative/hTPCdEdxVsP"), candidate.negTPCMomentum(), candidate.negTPCSignal());
+      rSelected.fill(HIST("Lambda/Negative/hTPCNSigmaPrVsP"), candidate.negTPCMomentum(), candidate.negTPCNSigmaPr());
+      rSelected.fill(HIST("Lambda/Negative/hTPCNSigmaPiVsP"), candidate.negTPCMomentum(), candidate.negTPCNSigmaPi());
     } else {
       rSelected.fill(HIST("AntiLambda/Event/hCentrality"), candidate.centrality());
       rSelected.fill(HIST("AntiLambda/Event/hMultiplicity"), candidate.multiplicity());
@@ -744,6 +857,14 @@ struct LambdaAntiLambdaSelector {
       rSelected.fill(HIST("AntiLambda/Armenteros/hAlpha"), candidate.alpha());
       rSelected.fill(HIST("AntiLambda/Armenteros/hQtArm"), candidate.qtArm());
       rSelected.fill(HIST("AntiLambda/Armenteros/hAlphaVsQt"), candidate.alpha(), candidate.qtArm());
+
+      rSelected.fill(HIST("AntiLambda/Positive/hTPCdEdxVsP"), candidate.posTPCMomentum(), candidate.posTPCSignal());
+      rSelected.fill(HIST("AntiLambda/Positive/hTPCNSigmaPrVsP"), candidate.posTPCMomentum(), candidate.posTPCNSigmaPr());
+      rSelected.fill(HIST("AntiLambda/Positive/hTPCNSigmaPiVsP"), candidate.posTPCMomentum(), candidate.posTPCNSigmaPi());
+
+      rSelected.fill(HIST("AntiLambda/Negative/hTPCdEdxVsP"), candidate.negTPCMomentum(), candidate.negTPCSignal());
+      rSelected.fill(HIST("AntiLambda/Negative/hTPCNSigmaPrVsP"), candidate.negTPCMomentum(), candidate.negTPCNSigmaPr());
+      rSelected.fill(HIST("AntiLambda/Negative/hTPCNSigmaPiVsP"), candidate.negTPCMomentum(), candidate.negTPCNSigmaPi());
     }
   }
   // ================================================================
@@ -841,7 +962,7 @@ struct LambdaAntiLambdaSelector {
 
   Configurable<float> minLambdaPt{"minLambdaPt", 0.5f, "Minimum Lambda pT (GeV/c)"};
 
-  Configurable<float> maxLambdaPt{"maxLambdaPt", 4.5f, "Maximum Lambda pT (GeV/c)"};
+  Configurable<float> maxLambdaPt{"maxLambdaPt", 5.0f, "Maximum Lambda pT (GeV/c)"};
 
   Configurable<float> maxLambdaRapidity{"maxLambdaRapidity", 0.5f, "Maximum absolute Lambda rapidity"};
 
@@ -856,6 +977,12 @@ struct LambdaAntiLambdaSelector {
                                     aod::lambdaorantilambda::pt < maxLambdaPt&&
 
                                                                     nabs(aod::lambdaorantilambda::rapidity) < maxLambdaRapidity;
+  // =====================================================================
+  // Applying KShort Mass Compatablilty Filtere
+  // =====================================================================
+
+  Filter kShortRejectionFilter =
+    aod::lambdaorantilambda::isKShortCompatible == false;
 
   // All compatible filters above are combined with logical AND.
   using SelectedLambdaOrAntiLambdas = soa::Filtered<aod::LambdaOrAntiLambdas>;
@@ -870,7 +997,7 @@ struct LambdaAntiLambdaSelector {
   Partition<SelectedLambdaOrAntiLambdas>
     selectedAntiLambdas = aod::lambdaorantilambda::isAntiLambdaHypothesis == true;
 
-  void process(SelectedLambdaOrAntiLambdas const&)
+  void processData(SelectedLambdaOrAntiLambdas const&)
   {
     // ============================================================
     // Fill the final Lambda table
@@ -912,7 +1039,17 @@ struct LambdaAntiLambdaSelector {
 
         candidate.v0Radius(),
         candidate.alpha(),
-        candidate.qtArm());
+        candidate.qtArm(),
+
+        candidate.posTPCMomentum(),
+        candidate.posTPCSignal(),
+        candidate.posTPCNSigmaPr(),
+        candidate.posTPCNSigmaPi(),
+
+        candidate.negTPCMomentum(),
+        candidate.negTPCSignal(),
+        candidate.negTPCNSigmaPr(),
+        candidate.negTPCNSigmaPi());
     }
 
     // ============================================================
@@ -955,9 +1092,23 @@ struct LambdaAntiLambdaSelector {
 
         candidate.v0Radius(),
         candidate.alpha(),
-        candidate.qtArm());
+        candidate.qtArm(),
+
+        candidate.posTPCMomentum(),
+        candidate.posTPCSignal(),
+        candidate.posTPCNSigmaPr(),
+        candidate.posTPCNSigmaPi(),
+
+        candidate.negTPCMomentum(),
+        candidate.negTPCSignal(),
+        candidate.negTPCNSigmaPr(),
+        candidate.negTPCNSigmaPi());
     }
   }
+  void processDummy(aod::Collisions const&) {}
+
+  PROCESS_SWITCH(LambdaAntiLambdaSelector, processData, "Run candidate production", true);
+  PROCESS_SWITCH(LambdaAntiLambdaSelector, processDummy, "Skip candidate production", false);
 };
 
 //***********************************************************************************************************
@@ -971,6 +1122,7 @@ struct LambdaAntiLambdaMcRecoTableProducer {
   // ================================================================
 
   Configurable<float> maxTPCNSigma{"maxTPCNSigma", 3.f, "Maximum TPC PID n-sigma"};
+  Configurable<float> kShortRejectionWindow{"kShortRejectionWindow", 0.001f, "K0Short mass rejection half-window (GeV/c2)"};
 
   // ================================================================
   // Lambda/anti-Lambda invariant-mass selection
@@ -1000,6 +1152,9 @@ struct LambdaAntiLambdaMcRecoTableProducer {
 
       auto posTrack = v0.posTrack_as<DaughterTracks>();
       auto negTrack = v0.negTrack_as<DaughterTracks>();
+
+      const bool isKShortCompatible =
+        std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) <= kShortRejectionWindow.value;
 
       const bool isLambda =
         std::abs(posTrack.tpcNSigmaPr()) < maxTPCNSigma &&
@@ -1132,7 +1287,8 @@ struct LambdaAntiLambdaMcRecoTableProducer {
         pionTrack.phi(),
         pionDcaToPV,
         static_cast<int>(pionTrack.tpcNClsCrossedRows()),
-        pionTrack.tpcNSigmaPi());
+        pionTrack.tpcNSigmaPi(),
+        isKShortCompatible);
     }
   }
 
@@ -1162,6 +1318,9 @@ struct LambdaAntiLambdaMcRecoTableProducer {
       nSel8Collisions);
   }
 
+  void processDummy(aod::Collisions const&) {}
+
+  PROCESS_SWITCH(LambdaAntiLambdaMcRecoTableProducer, processDummy, "Do nothing on real data", true);
   PROCESS_SWITCH(LambdaAntiLambdaMcRecoTableProducer, processMcReco, "Produce MC reconstructed table", false);
   PROCESS_SWITCH(LambdaAntiLambdaMcRecoTableProducer, processEveSelPassedMcGenTable, "Produce MC generated table", false);
 };
@@ -1217,7 +1376,7 @@ struct LambdaAntiLambdaEfficiencyPlots {
   // ================================================================
 
   Configurable<float> minLambdaPt{"minLambdaPt", 0.5f, "Minimum Lambda pT"};
-  Configurable<float> maxLambdaPt{"maxLambdaPt", 4.5f, "Maximum Lambda pT"};
+  Configurable<float> maxLambdaPt{"maxLambdaPt", 5.0f, "Maximum Lambda pT"};
   Configurable<float> maxLambdaRapidity{"maxLambdaRapidity", 0.5f, "Maximum absolute Lambda rapidity"};
 
   Filter mcRecoKinematicFilter = aod::mcrecolambda::recoPt > minLambdaPt&&
@@ -1235,6 +1394,13 @@ struct LambdaAntiLambdaEfficiencyPlots {
   Filter mcRecoDaughterFilter = aod::mcrecolambda::proPt > minDaughterPt&& aod::mcrecolambda::piePt > minDaughterPt&&
                                                                                                         nabs(aod::mcrecolambda::proEta) < maxDaughterEta&& nabs(aod::mcrecolambda::pieEta) < maxDaughterEta&& aod::mcrecolambda::proTPCCrossedRows
                                 >= minTPCCrossedRows&& aod::mcrecolambda::pieTPCCrossedRows >= minTPCCrossedRows;
+
+  Configurable<float> minLambdaMass{"minLambdaMass", 1.11f, "Minimum Lambda mass (GeV/c2)"};
+  Configurable<float> maxLambdaMass{"maxLambdaMass", 1.12f, "Maximum Lambda mass (GeV/c2)"};
+
+  Filter mcRecoMassFilter = aod::mcrecolambda::massLambda >= minLambdaMass && aod::mcrecolambda::massLambda <= maxLambdaMass;
+
+  Filter mcRecoKShortRejectionFilter = aod::mcrecolambda::isKShortCompatible == false;
 
   void addEfficiencyPlotsHistograms(std::string const& particle)
   {
@@ -1335,6 +1501,10 @@ struct LambdaAntiLambdaEfficiencyPlots {
       }
     }
   }
+
+  void processDummy(aod::Collisions const&) {}
+
+  PROCESS_SWITCH(LambdaAntiLambdaEfficiencyPlots, processDummy, "Do nothing on real data", true);
   PROCESS_SWITCH(LambdaAntiLambdaEfficiencyPlots, processEfficiencyMcGen, "Fill MC-generated efficiency histograms", false);
 };
 
@@ -1360,14 +1530,18 @@ struct LambdaAntiLambdaSelectionCutFlow {
 
   // Lambda kinematics
   Configurable<float> minLambdaPt{"minLambdaPt", 0.5f, "Minimum Lambda pT"};
-  Configurable<float> maxLambdaPt{"maxLambdaPt", 4.5f, "Maximum Lambda pT"};
+  Configurable<float> maxLambdaPt{"maxLambdaPt", 5.0f, "Maximum Lambda pT"};
   Configurable<float> maxLambdaRapidity{"maxLambdaRapidity", 0.5f, "Maximum absolute Lambda rapidity"};
+
+  // Lambda Mass Cuts
+  Configurable<float> minLambdaMass{"minLambdaMass", 1.11f, "Minimum Lambda mass (GeV/c2)"};
+  Configurable<float> maxLambdaMass{"maxLambdaMass", 1.12f, "Maximum Lambda mass (GeV/c2)"};
 
   void init(InitContext const&)
   {
     AxisSpec eventCutAxis{3, -0.5, 2.5, "Event-selection stage"};
 
-    AxisSpec lambdaCutAxis{8, -0.5, 7.5, "Candidate-selection stage"};
+    AxisSpec lambdaCutAxis{10, -0.5, 9.5, "Candidate-selection stage"};
 
     cutFlowRegistry.add("Event/hCutFlow", "Event cut flow;Selection;Collisions", HistType::kTH1D, {eventCutAxis});
     cutFlowRegistry.add("Lambda/hCutFlow", "Lambda cut flow;Selection;Candidates", HistType::kTH1D, {lambdaCutAxis});
@@ -1392,6 +1566,8 @@ struct LambdaAntiLambdaSelectionCutFlow {
       histogram->GetXaxis()->SetBinLabel(6, "TPC crossed rows");
       histogram->GetXaxis()->SetBinLabel(7, "V0 topology");
       histogram->GetXaxis()->SetBinLabel(8, "Lambda kinematics");
+      histogram->GetXaxis()->SetBinLabel(9, "K0Short rejection");
+      histogram->GetXaxis()->SetBinLabel(10, "Lambda mass window");
     }
   }
 
@@ -1472,9 +1648,22 @@ struct LambdaAntiLambdaSelectionCutFlow {
         continue;
       }
       fillStage(7.f);
+
+      if (candidate.isKShortCompatible()) {
+        continue;
+      }
+      fillStage(8.f);
+
+      if (candidate.massLambda() < minLambdaMass.value ||
+          candidate.massLambda() > maxLambdaMass.value) {
+        continue;
+      }
+      fillStage(9.f);
     }
   }
+  void processDummy(aod::Collisions const&) {}
 
+  PROCESS_SWITCH(LambdaAntiLambdaSelectionCutFlow, processDummy, "Do nothing on real data", true);
   PROCESS_SWITCH(LambdaAntiLambdaSelectionCutFlow, processEventCutFlow, "Fill reconstructed-event cut flow", false);
   PROCESS_SWITCH(LambdaAntiLambdaSelectionCutFlow, processLambdaCutFlow, "Fill MCReco Lambda cut flow", false);
 };
@@ -1502,14 +1691,17 @@ struct LambdaAntiLambdaPairAnalysis {
   ConfigurableAxis axisDeltaCent{"axisDeltaCent", {200, -100.f, 100.f}, "Delta Centrality axis"};
 
   // Mixed-Event Compatablity variables
-  Configurable<float> compatibilityDeltaPt{"compatibilityDeltaPt", 0.1f, "compatibility pT difference for mixed-candidate matching"};
-  Configurable<float> compatibilityDeltaPhi{"compatibilityDeltaPhi", 0.1f, "compatibility phi difference for mixed-candidate matching"};
-  Configurable<float> compatibilityDeltaRapidity{"compatibilityDeltaRapidity", 0.1f, "compatibility rapidity difference for mixed-candidate matching"};
   Configurable<float> mixedEventMaxDeltaMultiplicity{"mixedEventMaxDeltaMultiplicity", 10.f, "Maximum multiplicity difference between mixed events"};
+  Configurable<int> maxMixedEvents{"maxMixedEvents", 5, "Maximum multiplicity-compatible collision combinations with selected candidates in both collisions per dataframe"};
 
   // Short-range pairs
   Configurable<float> sameEventShortRangePairMaxDeltaRapidity{"sameEventShortRangePairMaxDeltaRapidity", 0.5f, "ShortRangePai Maximum absolute rapidity difference for same-event pairs"};
   Configurable<float> sameEventShortRangePairMaxDeltaPhi{"sameEventShortRangePairMaxDeltaPhi", 1.047f, "ShortRangePai Maximum absolute wrapped phi difference for same-event pairs"}; // Pi/3 =1.047
+
+  // For JackKnife Method of Error estemation
+  Configurable<bool> jackknife{"jackknife", false, "Enable leave-one-group-out jackknife"};
+  Configurable<int> jackknifeExcludedGroup{"jackknifeExcludedGroup", 0, "Group to exclude: 0 to 9"};
+  static constexpr int NJackknifeGroups = 10;
 
   void addHistograms(TString const& candidate1, TString const& candidate2)
   {
@@ -1586,7 +1778,17 @@ struct LambdaAntiLambdaPairAnalysis {
                                                                              "pairs;"
                                                                              "MixedEvent",
                       HistType::kTH1F, {{1, -0.5, 0.5}});
+    rSpinAnalysis.add(candidate1 + candidate2 + "/hMixedEvent/ShortRange/EventCount", "Mixed-event short-range " + candidate1 + candidate2 +
+                                                                                        "pairs;"
+                                                                                        "MixedEvent",
+                      HistType::kTH1F, {{1, -0.5, 0.5}});
+    rSpinAnalysis.add(candidate1 + candidate2 + "/hMixedEvent/LongRange/EventCount", "Mixed-event long-range " + candidate1 + candidate2 +
+                                                                                       "pairs;"
+                                                                                       "MixedEvent",
+                      HistType::kTH1F, {{1, -0.5, 0.5}});
     rSpinAnalysis.add(candidate1 + candidate2 + "/hMixedEvent/NumberOfPairs", "Mixed-event pair count;Counter;Accepted pairs", HistType::kTH1F, {{1, -0.5, 0.5}});
+    rSpinAnalysis.add(candidate1 + candidate2 + "/hMixedEvent/ShortRange/NumberOfPairs", "Mixed-event short-range pair count;Counter;Accepted pairs", HistType::kTH1F, {{1, -0.5, 0.5}});
+    rSpinAnalysis.add(candidate1 + candidate2 + "/hMixedEvent/LongRange/NumberOfPairs", "Mixed-event long-range pair count;Counter;Accepted pairs", HistType::kTH1F, {{1, -0.5, 0.5}});
 
     // Delta Kinaematics histos
     rSpinAnalysis.add(candidate1 + candidate2 + "/hMixedEvent/DeltaEtaDelatPhi", "Mixed-event" + candidate1 + candidate2 +
@@ -1637,6 +1839,24 @@ struct LambdaAntiLambdaPairAnalysis {
                                                                           "Mult" +
                                                                           candidate2,
                       HistType::kTH3F, {axisCos, axisMult, axisMult});
+    rSpinAnalysis.add(candidate1 + candidate2 + "/hMixedEvent/ShortRange/CosMult", "Mixed-event short-range" + candidate1 + candidate2 +
+                                                                                     "pairs;"
+                                                                                     "cos#theta;"
+                                                                                     "Mult" +
+                                                                                     candidate1 +
+                                                                                     ";"
+                                                                                     "Mult" +
+                                                                                     candidate2,
+                      HistType::kTH3F, {axisCos, axisMult, axisMult});
+    rSpinAnalysis.add(candidate1 + candidate2 + "/hMixedEvent/LongRange/CosMult", "Mixed-event long-range" + candidate1 + candidate2 +
+                                                                                    "pairs;"
+                                                                                    "cos#theta;"
+                                                                                    "Mult" +
+                                                                                    candidate1 +
+                                                                                    ";"
+                                                                                    "Mult" +
+                                                                                    candidate2,
+                      HistType::kTH3F, {axisCos, axisMult, axisMult});
     rSpinAnalysis.add(candidate1 + candidate2 + "/hMixedEvent/CosCent", "Mixed-event" + candidate1 + candidate2 +
                                                                           "pairs;"
                                                                           "cos#theta;"
@@ -1646,10 +1866,36 @@ struct LambdaAntiLambdaPairAnalysis {
                                                                           "Cent" +
                                                                           candidate2,
                       HistType::kTH3F, {axisCos, axisCent, axisCent});
+    rSpinAnalysis.add(candidate1 + candidate2 + "/hMixedEvent/ShortRange/CosCent", "Mixed-event short-range" + candidate1 + candidate2 +
+                                                                                     "pairs;"
+                                                                                     "cos#theta;"
+                                                                                     "Cent" +
+                                                                                     candidate1 +
+                                                                                     ";"
+                                                                                     "Cent" +
+                                                                                     candidate2,
+                      HistType::kTH3F, {axisCos, axisCent, axisCent});
+    rSpinAnalysis.add(candidate1 + candidate2 + "/hMixedEvent/LongRange/CosCent", "Mixed-event long-range" + candidate1 + candidate2 +
+                                                                                    "pairs;"
+                                                                                    "cos#theta;"
+                                                                                    "Cent" +
+                                                                                    candidate1 +
+                                                                                    ";"
+                                                                                    "Cent" +
+                                                                                    candidate2,
+                      HistType::kTH3F, {axisCos, axisCent, axisCent});
     // 1d
     rSpinAnalysis.add(candidate1 + candidate2 + "/hMixedEvent/Cos", "Mixed-event" + candidate1 + candidate2 +
                                                                       "pairs;"
                                                                       "cos#theta",
+                      HistType::kTH1F, {axisCos});
+    rSpinAnalysis.add(candidate1 + candidate2 + "/hMixedEvent/ShortRange/Cos", "Mixed-event short-range" + candidate1 + candidate2 +
+                                                                                 "pairs;"
+                                                                                 "cos#theta",
+                      HistType::kTH1F, {axisCos});
+    rSpinAnalysis.add(candidate1 + candidate2 + "/hMixedEvent/LongRange/Cos", "Mixed-event long-range" + candidate1 + candidate2 +
+                                                                                "pairs;"
+                                                                                "cos#theta",
                       HistType::kTH1F, {axisCos});
   }
 
@@ -1658,6 +1904,9 @@ struct LambdaAntiLambdaPairAnalysis {
     addHistograms("Lambda", "AntiLambda");
     addHistograms("Lambda", "Lambda");
     addHistograms("AntiLambda", "AntiLambda");
+    if (jackknife.value && (jackknifeExcludedGroup.value < 0 || jackknifeExcludedGroup.value >= NJackknifeGroups)) {
+      LOGF(fatal, "jackknifeExcludedGroup must be between 0 and 9");
+    }
   }
 
   ROOT::Math::PxPyPzMVector daughterInParentRestFrame(float parentLambdaPx, float parentLambdaPy, float parentLambdaPz, float parentLambdaMass, float daughterProtonPx, float daughterProtonPy, float daughterProtonPz, float daughterProtonMass)
@@ -1685,15 +1934,13 @@ struct LambdaAntiLambdaPairAnalysis {
   }
 
   template <typename Candidate1, typename Candidate2>
-  bool isKinematicallyCompatible(Candidate1 const& candidate1, Candidate2 const& candidate2)
+  bool isSameEventLongRange(Candidate1 const& candidate1, Candidate2 const& candidate2)
   {
-    const float deltaPt = std::abs(candidate1.pt() - candidate2.pt());
     const float deltaPhi = std::abs(std::remainder(candidate1.phi() - candidate2.phi(), o2::constants::math::TwoPI));
     const float deltaRapidity = std::abs(candidate1.rapidity() - candidate2.rapidity());
 
-    return deltaPt < compatibilityDeltaPt &&
-           deltaPhi < compatibilityDeltaPhi &&
-           deltaRapidity < compatibilityDeltaRapidity;
+    return deltaPhi > sameEventShortRangePairMaxDeltaPhi &&
+           deltaRapidity > sameEventShortRangePairMaxDeltaRapidity;
   }
 
   template <typename Candidate1, typename Candidate2>
@@ -1742,6 +1989,7 @@ struct LambdaAntiLambdaPairAnalysis {
       rSpinAnalysis.fill(HIST("LambdaAntiLambda/hSameEvent/Mass"), lambda.mass(), antiLambda.mass());
 
       const bool isShortRange = isSameEventShortRange(lambda, antiLambda);
+      const bool isLongRange = isSameEventLongRange(lambda, antiLambda);
 
       if (isShortRange) {
         hasShortRangePair = true;
@@ -1750,7 +1998,7 @@ struct LambdaAntiLambdaPairAnalysis {
         rSpinAnalysis.fill(HIST("LambdaAntiLambda/hSameEvent/ShortRange/Cos"), cosDeltaThetaStar);
         rSpinAnalysis.fill(HIST("LambdaAntiLambda/hSameEvent/ShortRange/CosMult"), cosDeltaThetaStar, lambda.multiplicity());
         rSpinAnalysis.fill(HIST("LambdaAntiLambda/hSameEvent/ShortRange/CosCent"), cosDeltaThetaStar, lambda.centrality());
-      } else {
+      } else if (isLongRange) {
         hasLongRangePair = true;
 
         rSpinAnalysis.fill(HIST("LambdaAntiLambda/hSameEvent/LongRange/NumberOfPairs"), 0);
@@ -1804,6 +2052,7 @@ struct LambdaAntiLambdaPairAnalysis {
       rSpinAnalysis.fill(HIST("LambdaLambda/hSameEvent/Mass"), lambda1.mass(), lambda2.mass());
 
       const bool isShortRange = isSameEventShortRange(lambda1, lambda2);
+      const bool isLongRange = isSameEventLongRange(lambda1, lambda2);
 
       if (isShortRange) {
         hasShortRangePair = true;
@@ -1812,7 +2061,7 @@ struct LambdaAntiLambdaPairAnalysis {
         rSpinAnalysis.fill(HIST("LambdaLambda/hSameEvent/ShortRange/Cos"), cosDeltaThetaStar);
         rSpinAnalysis.fill(HIST("LambdaLambda/hSameEvent/ShortRange/CosMult"), cosDeltaThetaStar, lambda1.multiplicity());
         rSpinAnalysis.fill(HIST("LambdaLambda/hSameEvent/ShortRange/CosCent"), cosDeltaThetaStar, lambda1.centrality());
-      } else {
+      } else if (isLongRange) {
         hasLongRangePair = true;
 
         rSpinAnalysis.fill(HIST("LambdaLambda/hSameEvent/LongRange/NumberOfPairs"), 0);
@@ -1865,6 +2114,7 @@ struct LambdaAntiLambdaPairAnalysis {
       rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hSameEvent/Mass"), antilambda1.mass(), antilambda2.mass());
 
       const bool isShortRange = isSameEventShortRange(antilambda1, antilambda2);
+      const bool isLongRange = isSameEventLongRange(antilambda1, antilambda2);
 
       if (isShortRange) {
         hasShortRangePair = true;
@@ -1873,7 +2123,7 @@ struct LambdaAntiLambdaPairAnalysis {
         rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hSameEvent/ShortRange/Cos"), cosDeltaThetaStar);
         rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hSameEvent/ShortRange/CosMult"), cosDeltaThetaStar, antilambda1.multiplicity());
         rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hSameEvent/ShortRange/CosCent"), cosDeltaThetaStar, antilambda1.centrality());
-      } else {
+      } else if (isLongRange) {
         hasLongRangePair = true;
 
         rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hSameEvent/LongRange/NumberOfPairs"), 0);
@@ -1893,13 +2143,18 @@ struct LambdaAntiLambdaPairAnalysis {
   template <typename LambdaSlice1, typename AntiLambdaSlice2>
   void fillLambdaAntiLambdaMixedEvent(LambdaSlice1 const& lambdas, AntiLambdaSlice2 const& antiLambdas)
   {
+
+    bool hasShortRangeMixedPair = false;
+    bool hasLongRangeMixedPair = false;
+
     bool hasAcceptedPair = false;
+
     // Lambda-AntiLambda pairs
     for (auto const& [lambda, antiLambda] : combinations(CombinationsFullIndexPolicy(lambdas, antiLambdas))) {
+      // Evaluate your existing short-range and long-range tests.
+      const bool isShortRangeMixed = isSameEventShortRange(lambda, antiLambda);
+      const bool isLongRangeMixed = isSameEventLongRange(lambda, antiLambda);
 
-      if (!isKinematicallyCompatible(lambda, antiLambda)) {
-        continue;
-      }
       // Boost the proton into the Lambda rest frame.
       const auto protonStar = daughterInParentRestFrame(lambda.px(), lambda.py(), lambda.pz(), lambda.mass(), lambda.protonPx(), lambda.protonPy(), lambda.protonPz(), o2::constants::physics::MassProton);
       // Boost the antiproton into the anti-Lambda rest frame.
@@ -1928,23 +2183,49 @@ struct LambdaAntiLambdaPairAnalysis {
       rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/CosMult"), cosDeltaThetaStar, lambda.multiplicity(), antiLambda.multiplicity());
       rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/CosCent"), cosDeltaThetaStar, lambda.centrality(), antiLambda.centrality());
       rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/Cos"), cosDeltaThetaStar);
+
+      if (isShortRangeMixed) {
+        hasShortRangeMixedPair = true;
+        rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/ShortRange/NumberOfPairs"), 0);
+        rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/ShortRange/Cos"), cosDeltaThetaStar);
+        rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/ShortRange/CosMult"), cosDeltaThetaStar, lambda.multiplicity(), antiLambda.multiplicity());
+        rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/ShortRange/CosCent"), cosDeltaThetaStar, lambda.centrality(), antiLambda.centrality());
+      } else if (isLongRangeMixed) {
+        hasLongRangeMixedPair = true;
+        rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/LongRange/NumberOfPairs"), 0);
+        rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/LongRange/Cos"), cosDeltaThetaStar);
+        rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/LongRange/CosMult"), cosDeltaThetaStar, lambda.multiplicity(), antiLambda.multiplicity());
+        rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/LongRange/CosCent"), cosDeltaThetaStar, lambda.centrality(), antiLambda.centrality());
+      }
     }
 
     if (hasAcceptedPair) {
       rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/EventCount"), 0);
+    }
+
+    if (hasShortRangeMixedPair) {
+      rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/ShortRange/EventCount"), 0);
+    }
+
+    if (hasLongRangeMixedPair) {
+      rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/LongRange/EventCount"), 0);
     }
   }
 
   template <typename AntiLambdaSlice1, typename LambdaSlice2>
   void fillAntiLambdaLambdaMixedEvent(AntiLambdaSlice1 const& antiLambdas, LambdaSlice2 const& lambdas)
   {
+    bool hasShortRangeMixedPair = false;
+    bool hasLongRangeMixedPair = false;
+
     bool hasAcceptedPair = false;
     // Lambda-AntiLambda pairs
     for (auto const& [lambda, antiLambda] : combinations(CombinationsFullIndexPolicy(lambdas, antiLambdas))) {
 
-      if (!isKinematicallyCompatible(lambda, antiLambda)) {
-        continue;
-      }
+      // Evaluate your existing short-range and long-range tests.
+      const bool isShortRangeMixed = isSameEventShortRange(lambda, antiLambda);
+      const bool isLongRangeMixed = isSameEventLongRange(lambda, antiLambda);
+
       // Boost the proton into the Lambda rest frame.
       const auto protonStar = daughterInParentRestFrame(lambda.px(), lambda.py(), lambda.pz(), lambda.mass(), lambda.protonPx(), lambda.protonPy(), lambda.protonPz(), o2::constants::physics::MassProton);
       // Boost the antiproton into the anti-Lambda rest frame.
@@ -1973,23 +2254,49 @@ struct LambdaAntiLambdaPairAnalysis {
       rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/CosMult"), cosDeltaThetaStar, lambda.multiplicity(), antiLambda.multiplicity());
       rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/CosCent"), cosDeltaThetaStar, lambda.centrality(), antiLambda.centrality());
       rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/Cos"), cosDeltaThetaStar);
+
+      if (isShortRangeMixed) {
+        hasShortRangeMixedPair = true;
+        rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/ShortRange/NumberOfPairs"), 0);
+        rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/ShortRange/Cos"), cosDeltaThetaStar);
+        rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/ShortRange/CosMult"), cosDeltaThetaStar, lambda.multiplicity(), antiLambda.multiplicity());
+        rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/ShortRange/CosCent"), cosDeltaThetaStar, lambda.centrality(), antiLambda.centrality());
+      } else if (isLongRangeMixed) {
+        hasLongRangeMixedPair = true;
+        rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/LongRange/NumberOfPairs"), 0);
+        rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/LongRange/Cos"), cosDeltaThetaStar);
+        rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/LongRange/CosMult"), cosDeltaThetaStar, lambda.multiplicity(), antiLambda.multiplicity());
+        rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/LongRange/CosCent"), cosDeltaThetaStar, lambda.centrality(), antiLambda.centrality());
+      }
     }
 
     if (hasAcceptedPair) {
       rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/EventCount"), 0);
+    }
+
+    if (hasShortRangeMixedPair) {
+      rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/ShortRange/EventCount"), 0);
+    }
+
+    if (hasLongRangeMixedPair) {
+      rSpinAnalysis.fill(HIST("LambdaAntiLambda/hMixedEvent/LongRange/EventCount"), 0);
     }
   }
 
   template <typename LambdaSlice1, typename LambdaSlice2>
   void fillLambdaLambdaMixedEvent(LambdaSlice1 const& lambdas1, LambdaSlice2 const& lambdas2)
   {
+    bool hasShortRangeMixedPair = false;
+    bool hasLongRangeMixedPair = false;
+
     bool hasAcceptedPair = false;
     // Lambda-AntiLambda pairs
     for (auto const& [lambda1, lambda2] : combinations(CombinationsFullIndexPolicy(lambdas1, lambdas2))) {
 
-      if (!isKinematicallyCompatible(lambda1, lambda2)) {
-        continue;
-      }
+      // Evaluate your existing short-range and long-range tests.
+      const bool isShortRangeMixed = isSameEventShortRange(lambda1, lambda2);
+      const bool isLongRangeMixed = isSameEventLongRange(lambda1, lambda2);
+
       // Boost the proton into the Lambda rest frame.
       const auto protonStar = daughterInParentRestFrame(lambda1.px(), lambda1.py(), lambda1.pz(), lambda1.mass(), lambda1.protonPx(), lambda1.protonPy(), lambda1.protonPz(), o2::constants::physics::MassProton);
       // Boost the antiproton into the anti-Lambda rest frame.
@@ -2018,23 +2325,48 @@ struct LambdaAntiLambdaPairAnalysis {
       rSpinAnalysis.fill(HIST("LambdaLambda/hMixedEvent/CosMult"), cosDeltaThetaStar, lambda1.multiplicity(), lambda2.multiplicity());
       rSpinAnalysis.fill(HIST("LambdaLambda/hMixedEvent/CosCent"), cosDeltaThetaStar, lambda1.centrality(), lambda2.centrality());
       rSpinAnalysis.fill(HIST("LambdaLambda/hMixedEvent/Cos"), cosDeltaThetaStar);
+
+      if (isShortRangeMixed) {
+        hasShortRangeMixedPair = true;
+        rSpinAnalysis.fill(HIST("LambdaLambda/hMixedEvent/ShortRange/NumberOfPairs"), 0);
+        rSpinAnalysis.fill(HIST("LambdaLambda/hMixedEvent/ShortRange/Cos"), cosDeltaThetaStar);
+        rSpinAnalysis.fill(HIST("LambdaLambda/hMixedEvent/ShortRange/CosMult"), cosDeltaThetaStar, lambda1.multiplicity(), lambda2.multiplicity());
+        rSpinAnalysis.fill(HIST("LambdaLambda/hMixedEvent/ShortRange/CosCent"), cosDeltaThetaStar, lambda1.centrality(), lambda2.centrality());
+      } else if (isLongRangeMixed) {
+        hasLongRangeMixedPair = true;
+        rSpinAnalysis.fill(HIST("LambdaLambda/hMixedEvent/LongRange/NumberOfPairs"), 0);
+        rSpinAnalysis.fill(HIST("LambdaLambda/hMixedEvent/LongRange/Cos"), cosDeltaThetaStar);
+        rSpinAnalysis.fill(HIST("LambdaLambda/hMixedEvent/LongRange/CosMult"), cosDeltaThetaStar, lambda1.multiplicity(), lambda2.multiplicity());
+        rSpinAnalysis.fill(HIST("LambdaLambda/hMixedEvent/LongRange/CosCent"), cosDeltaThetaStar, lambda1.centrality(), lambda2.centrality());
+      }
     }
 
     if (hasAcceptedPair) {
       rSpinAnalysis.fill(HIST("LambdaLambda/hMixedEvent/EventCount"), 0);
+    }
+    if (hasShortRangeMixedPair) {
+      rSpinAnalysis.fill(HIST("LambdaLambda/hMixedEvent/ShortRange/EventCount"), 0);
+    }
+
+    if (hasLongRangeMixedPair) {
+      rSpinAnalysis.fill(HIST("LambdaLambda/hMixedEvent/LongRange/EventCount"), 0);
     }
   }
 
   template <typename AntiLambdaSlice1, typename AntiLambdaSlice2>
   void fillAntiLambdaAntiLambdaMixedEvent(AntiLambdaSlice1 const& antiLambdas1, AntiLambdaSlice2 const& antiLambdas2)
   {
+    bool hasShortRangeMixedPair = false;
+    bool hasLongRangeMixedPair = false;
+
     bool hasAcceptedPair = false;
     // Lambda-AntiLambda pairs
     for (auto const& [antiLambda1, antiLambda2] : combinations(CombinationsFullIndexPolicy(antiLambdas1, antiLambdas2))) {
 
-      if (!isKinematicallyCompatible(antiLambda1, antiLambda2)) {
-        continue;
-      }
+      // Evaluate your existing short-range and long-range tests.
+      const bool isShortRangeMixed = isSameEventShortRange(antiLambda1, antiLambda2);
+      const bool isLongRangeMixed = isSameEventLongRange(antiLambda1, antiLambda2);
+
       // Boost the proton into the Lambda rest frame.
       const auto protonStar = daughterInParentRestFrame(antiLambda1.px(), antiLambda1.py(), antiLambda1.pz(), antiLambda1.mass(), antiLambda1.protonPx(), antiLambda1.protonPy(), antiLambda1.protonPz(), o2::constants::physics::MassProton);
       // Boost the antiproton into the anti-Lambda rest frame.
@@ -2063,10 +2395,31 @@ struct LambdaAntiLambdaPairAnalysis {
       rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hMixedEvent/CosMult"), cosDeltaThetaStar, antiLambda1.multiplicity(), antiLambda2.multiplicity());
       rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hMixedEvent/CosCent"), cosDeltaThetaStar, antiLambda1.centrality(), antiLambda2.centrality());
       rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hMixedEvent/Cos"), cosDeltaThetaStar);
+
+      if (isShortRangeMixed) {
+        hasShortRangeMixedPair = true;
+        rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hMixedEvent/ShortRange/NumberOfPairs"), 0);
+        rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hMixedEvent/ShortRange/Cos"), cosDeltaThetaStar);
+        rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hMixedEvent/ShortRange/CosMult"), cosDeltaThetaStar, antiLambda1.multiplicity(), antiLambda2.multiplicity());
+        rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hMixedEvent/ShortRange/CosCent"), cosDeltaThetaStar, antiLambda1.centrality(), antiLambda2.centrality());
+      } else if (isLongRangeMixed) {
+        hasLongRangeMixedPair = true;
+        rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hMixedEvent/LongRange/NumberOfPairs"), 0);
+        rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hMixedEvent/LongRange/Cos"), cosDeltaThetaStar);
+        rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hMixedEvent/LongRange/CosMult"), cosDeltaThetaStar, antiLambda1.multiplicity(), antiLambda2.multiplicity());
+        rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hMixedEvent/LongRange/CosCent"), cosDeltaThetaStar, antiLambda1.centrality(), antiLambda2.centrality());
+      }
     }
 
     if (hasAcceptedPair) {
       rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hMixedEvent/EventCount"), 0);
+    }
+    if (hasShortRangeMixedPair) {
+      rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hMixedEvent/ShortRange/EventCount"), 0);
+    }
+
+    if (hasLongRangeMixedPair) {
+      rSpinAnalysis.fill(HIST("AntiLambdaAntiLambda/hMixedEvent/LongRange/EventCount"), 0);
     }
   }
   // ================================================================
@@ -2086,11 +2439,14 @@ struct LambdaAntiLambdaPairAnalysis {
   Preslice<FilteredLambdas> lambdasPerCollision = aod::lambdahyperon::collisionId;
   Preslice<FilteredAntiLambdas> antiLambdasPerCollision = aod::lambdahyperon::collisionId;
 
-  void process(CollisionsWithMultiplicity const& collisions, FilteredLambdas const& lambdas, FilteredAntiLambdas const& antiLambdas)
+  void processSameEventData(CollisionsWithMultiplicity const& collisions, FilteredLambdas const& lambdas, FilteredAntiLambdas const& antiLambdas)
   {
     static constexpr int MinimumSameSpeciesCandidates = 2;
 
     for (auto const& collision : collisions) {
+      if (jackknife.value && collision.globalIndex() % NJackknifeGroups == jackknifeExcludedGroup.value) {
+        continue;
+      }
 
       const auto lambdasThisCollision = lambdas.sliceBy(lambdasPerCollision, collision.globalIndex());
       const auto antiLambdasThisCollision = antiLambdas.sliceBy(antiLambdasPerCollision, collision.globalIndex());
@@ -2110,14 +2466,22 @@ struct LambdaAntiLambdaPairAnalysis {
         fillAntiLambdaAntiLambdaSameEvent(antiLambdasThisCollision);
       }
     }
+  }
 
-    // ============================================================
-    // Mixed events
-    // ============================================================
+  void processMixedEventData(CollisionsWithMultiplicity const& collisions, FilteredLambdas const& lambdas, FilteredAntiLambdas const& antiLambdas)
+  {
+    int mixedEventCounter = 0;
 
     for (auto const& [collision1, collision2] : combinations(CombinationsStrictlyUpperIndexPolicy(collisions, collisions))) {
+      if (jackknife.value && (collision1.globalIndex() % NJackknifeGroups == jackknifeExcludedGroup.value || collision2.globalIndex() % NJackknifeGroups == jackknifeExcludedGroup.value)) {
+        continue;
+      }
 
       const float deltaMultiplicity = std::abs(static_cast<float>(collision1.multNTracksPV()) - static_cast<float>(collision2.multNTracksPV()));
+
+      if (mixedEventCounter >= maxMixedEvents) {
+        break;
+      }
 
       if (deltaMultiplicity > mixedEventMaxDeltaMultiplicity) {
         continue;
@@ -2128,6 +2492,12 @@ struct LambdaAntiLambdaPairAnalysis {
 
       const auto antiLambdas1 = antiLambdas.sliceBy(antiLambdasPerCollision, collision1.globalIndex());
       const auto antiLambdas2 = antiLambdas.sliceBy(antiLambdasPerCollision, collision2.globalIndex());
+
+      // Empty collisions must not consume the mixing allowance.
+      if ((lambdas1.size() == 0 && antiLambdas1.size() == 0) ||
+          (lambdas2.size() == 0 && antiLambdas2.size() == 0)) {
+        continue;
+      }
 
       // Lambda–anti-Lambda requires at least one of each.
       if (lambdas1.size() > 0 && antiLambdas2.size() > 0) {
@@ -2144,28 +2514,17 @@ struct LambdaAntiLambdaPairAnalysis {
       if (antiLambdas1.size() > 0 && antiLambdas2.size() > 0) {
         fillAntiLambdaAntiLambdaMixedEvent(antiLambdas1, antiLambdas2);
       }
+
+      ++mixedEventCounter;
     }
   }
+
+  void processDummy(aod::Collisions const&) {}
+
+  PROCESS_SWITCH(LambdaAntiLambdaPairAnalysis, processSameEventData, "Run same-event pair analysis", true);
+  PROCESS_SWITCH(LambdaAntiLambdaPairAnalysis, processMixedEventData, "Run mixed-event pair analysis", false);
+  PROCESS_SWITCH(LambdaAntiLambdaPairAnalysis, processDummy, "Skip candidate production", false);
 };
-
-/*WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  const bool isMC = cfgc.options().get<bool>("isMC");
-
-  WorkflowSpec workflow;
-
-  if (isMC) {
-    workflow.push_back(adaptAnalysisTask<LambdaAntiLambdaMcRecoTableProducer>(cfgc));
-    workflow.push_back(adaptAnalysisTask<LambdaAntiLambdaEfficiencyPlots>(cfgc));
-    workflow.push_back(adaptAnalysisTask<LambdaAntiLambdaSelectionCutFlow>(cfgc));
-  } else {
-    workflow.push_back(adaptAnalysisTask<LambdaOrAntiLambdaProducerWithSpin>(cfgc));
-    workflow.push_back(adaptAnalysisTask<LambdaAntiLambdaSelector>(cfgc));
-    workflow.push_back(adaptAnalysisTask<LambdaAntiLambdaPairAnalysis>(cfgc));
-  }
-
-  return workflow;
-}*/
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

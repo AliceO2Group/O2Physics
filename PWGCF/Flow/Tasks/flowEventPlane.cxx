@@ -76,7 +76,7 @@ DECLARE_SOA_COLUMN(ZncEnergyCommon, zncEnergyCommon, float);
 DECLARE_SOA_COLUMN(ZnaEnergy, znaEnergy, std::vector<float>);
 DECLARE_SOA_COLUMN(ZncEnergy, zncEnergy, std::vector<float>);
 } // namespace colspcalib
-DECLARE_SOA_TABLE(ColSpCalib, "AOD", "COLSPCALIB", o2::soa::Index<>,
+DECLARE_SOA_TABLE(ColSpCalibs, "AOD", "COLSPCALIB", o2::soa::Index<>,
                   colspcalib::RunNumber,
                   colspcalib::Timestamp,
                   colspcalib::Cent,
@@ -87,6 +87,18 @@ DECLARE_SOA_TABLE(ColSpCalib, "AOD", "COLSPCALIB", o2::soa::Index<>,
                   colspcalib::ZncEnergyCommon,
                   colspcalib::ZnaEnergy,
                   colspcalib::ZncEnergy);
+
+using ColSpCalib = ColSpCalibs::iterator;
+
+namespace trackspcalib
+{
+DECLARE_SOA_INDEX_COLUMN(ColSpCalib, colSpCalib);
+} // namespace trackspcalib
+DECLARE_SOA_TABLE(TrackSpCalib, "AOD", "TRACKSPCALIB", o2::soa::Index<>,
+                  trackspcalib::ColSpCalibId,
+                  aod::track::Pt,
+                  aod::track::Eta,
+                  aod::track::Phi);
 
 namespace colspext
 {
@@ -159,7 +171,8 @@ enum V0Type {
 
 struct SpCalibTableProducer {
   // Table producer
-  Produces<aod::ColSpCalib> colSpCalibTable;
+  Produces<aod::ColSpCalibs> colSpCalibTable;
+  Produces<aod::TrackSpCalib> trackSPCalibTable;
 
   // Configurables
   // Collisions
@@ -167,12 +180,26 @@ struct SpCalibTableProducer {
   Configurable<float> cMaxZVtx{"cMaxZVtx", 10.0, "Max VtxZ cut"};
   Configurable<float> cMinCent{"cMinCent", 0., "Minumum Centrality"};
   Configurable<float> cMaxCent{"cMaxCent", 100.0, "Maximum Centrality"};
+  Configurable<int> cCentBins{"cCentBins", 100, "Number of bins in centrality axis"};
   Configurable<bool> cSel8Trig{"cSel8Trig", true, "Sel8 (T0A + T0C) Selection Run3"};
   Configurable<bool> cPileupReject{"cPileupReject", true, "Pileup rejection"};
   Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", true, "z-vtx time diff selection"};
+  Configurable<bool> cNoCollInTimeRangeStd{"cNoCollInTimeRangeStd", true, "No of collision in time range standard"};
+  Configurable<bool> cIsITSTPCVtx{"cIsITSTPCVtx", true, "ITS-TPC Vertex"};
   Configurable<bool> cIsGoodITSLayers{"cIsGoodITSLayers", true, "Good ITS Layers All"};
   Configurable<float> cMinOccupancy{"cMinOccupancy", 0, "Minimum FT0C Occupancy"};
-  Configurable<float> cMaxOccupancy{"cMaxOccupancy", 1e6, "Maximum FT0C Occupancy"};
+  Configurable<float> cMaxOccupancy{"cMaxOccupancy", 1e4, "Maximum FT0C Occupancy"};
+  Configurable<bool> capplyTdcCut{"capplyTdcCut", false, "Flag for TDC cut"};
+  Configurable<float> ctdcZnMin{"ctdcZnMin", -2.5, "Min ZN TDC cut"};
+  Configurable<float> ctdcZnMax{"ctdcZnMax", 2.5, "Max ZN TDC cut"};
+
+  // Tracks
+  Configurable<float> cTrackMinPt{"cTrackMinPt", 0.1, "p_{T} minimum"};
+  Configurable<float> cTrackMaxPt{"cTrackMaxPt", 10.0, "p_{T} maximum"};
+  Configurable<float> cTrackEtaCut{"cTrackEtaCut", 0.8, "Pseudorapidity cut"};
+  Configurable<bool> cTrackGlobal{"cTrackGlobal", true, "Global Track"};
+  Configurable<float> cTrackDcaXYCut{"cTrackDcaXYCut", 0.1, "DcaXY Cut"};
+  Configurable<float> cTrackDcaZCut{"cTrackDcaZCut", 1., "DcaXY Cut"};
 
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -183,9 +210,10 @@ struct SpCalibTableProducer {
 
   void init(InitContext const&)
   {
-    // Histogram collision
-    histos.add("hCent", "Centrality", kTH1F, {{100, 0., 100., "FT0C%"}});
+    // Histogram collisions and tracks
+    histos.add("hCent", "Centrality", kTH1F, {{cCentBins, 0., 100., "FT0C%"}});
     histos.add("hVz", "V_{z}", kTH1F, {{100, -10., 10., "V_{z}(cm)"}});
+    histos.add("hPt", "pT", kTH1F, {{200, 0, 20, "p_{T}(GeV/#it{c})"}});
   }
 
   template <typename C>
@@ -204,7 +232,7 @@ struct SpCalibTableProducer {
       return false;
     }
 
-    if (col.ft0cOccupancyInTimeRange() < cMinOccupancy || col.ft0cOccupancyInTimeRange() > cMaxOccupancy) { // Occupancy cut
+    if (col.trackOccupancyInTimeRange() < cMinOccupancy || col.trackOccupancyInTimeRange() > cMaxOccupancy) { // Occupancy cut
       return false;
     }
 
@@ -213,6 +241,14 @@ struct SpCalibTableProducer {
     }
 
     if (cZVtxTimeDiff && !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) { // ZvtxFT0 vs PV
+      return false;
+    }
+
+    if (cNoCollInTimeRangeStd && !col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard)) { // No collision in standard time range
+      return false;
+    }
+
+    if (cIsITSTPCVtx && !col.selection_bit(aod::evsel::kIsVertexITSTPC)) { // ITS+TPC vertex
       return false;
     }
 
@@ -226,8 +262,41 @@ struct SpCalibTableProducer {
     return true;
   }
 
-  template <typename B, typename C>
-  void analyzeCollision(B const& bc, C const& collision)
+  template <typename C>
+  bool selZdcHit(C const& zdc)
+  {
+    if (capplyTdcCut) { // a narrow TDC window is set
+      if ((zdc.timeZNC() <= ctdcZnMin) || (zdc.timeZNC() >= ctdcZnMax)) {
+        return false;
+      }
+      if ((zdc.timeZNA() <= ctdcZnMin) || (zdc.timeZNA() >= ctdcZnMax)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Track Selection
+  template <typename T>
+  bool selectTrack(T const& track)
+  {
+    if (track.pt() <= cTrackMinPt || track.pt() >= cTrackMaxPt || std::abs(track.eta()) >= cTrackEtaCut) {
+      return false;
+    }
+
+    if (cTrackGlobal && !track.isGlobalTrackWoDCA()) {
+      return false;
+    }
+
+    if (std::abs(track.dcaXY()) >= cTrackDcaXYCut || std::abs(track.dcaZ()) >= cTrackDcaZCut) {
+      return false;
+    }
+
+    return true;
+  }
+
+  template <typename B, typename C, typename T>
+  void analyzeCollision(B const& bc, C const& collision, T const& tracks)
   {
     // Check zdc
     if (!bc.has_zdc()) {
@@ -243,6 +312,10 @@ struct SpCalibTableProducer {
     posZ = collision.posZ();
 
     auto zdc = bc.zdc();
+    if (!selZdcHit(zdc)) {
+      return;
+    }
+
     std::vector<float> znaEnergy, zncEnergy;
     for (int i = 0; i < kXYAC; ++i) {
       znaEnergy.push_back(zdc.energySectorZNA()[i]);
@@ -260,22 +333,31 @@ struct SpCalibTableProducer {
     histos.fill(HIST("hCent"), cent);
     histos.fill(HIST("hVz"), posZ);
     colSpCalibTable(runNum, timestamp, cent, posX, posY, posZ, znaEnergyCommon, zncEnergyCommon, znaEnergy, zncEnergy);
+
+    for (auto const& track : tracks) {
+      if (!selectTrack(track)) {
+        continue;
+      }
+      histos.fill(HIST("hPt"), track.pt());
+      trackSPCalibTable(colSpCalibTable.lastIndex(), track.pt(), track.eta(), track.phi());
+    }
   }
 
   using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
   using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::TPCMults, aod::PVMults, aod::MultsGlobal, aod::MultsExtra>;
+  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::TOFSignal, aod::pidTPCEl, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPr, aod::pidTOFPr>;
 
   void processDummy(CollisionsRun3::iterator const&) {}
 
   PROCESS_SWITCH(SpCalibTableProducer, processDummy, "Dummy process", true);
 
-  void processFEP(CollisionsRun3::iterator const& collision, BCsRun3 const&, aod::Zdcs const&)
+  void processFEP(CollisionsRun3::iterator const& collision, BCsRun3 const&, aod::Zdcs const&, Tracks const& tracks)
   {
     // Get bunch crossing
     auto bc = collision.template foundBC_as<BCsRun3>();
     runNum = collision.template foundBC_as<BCsRun3>().runNumber();
     timestamp = collision.template foundBC_as<BCsRun3>().timestamp();
-    analyzeCollision(bc, collision);
+    analyzeCollision(bc, collision, tracks);
   }
 
   PROCESS_SWITCH(SpCalibTableProducer, processFEP, "Flow Event Plane Table Producer", false);
@@ -292,12 +374,20 @@ struct SpectatorPlaneTableProducer {
   Configurable<float> cMaxZVtx{"cMaxZVtx", 10.0, "Max VtxZ cut"};
   Configurable<float> cMinCent{"cMinCent", 0., "Minumum Centrality"};
   Configurable<float> cMaxCent{"cMaxCent", 100.0, "Maximum Centrality"};
+  Configurable<int> cCentBins{"cCentBins", 100, "Number of bins in centrality axis"};
   Configurable<bool> cSel8Trig{"cSel8Trig", true, "Sel8 (T0A + T0C) Selection Run3"};
   Configurable<bool> cPileupReject{"cPileupReject", true, "Pileup rejection"};
   Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", true, "z-vtx time diff selection"};
+  Configurable<bool> cNoCollInTimeRangeStd{"cNoCollInTimeRangeStd", true, "No of collision in time range standard"};
+  Configurable<bool> cIsITSTPCVtx{"cIsITSTPCVtx", true, "ITS-TPC Vertex"};
   Configurable<bool> cIsGoodITSLayers{"cIsGoodITSLayers", true, "Good ITS Layers All"};
   Configurable<float> cMinOccupancy{"cMinOccupancy", 0, "Minimum FT0C Occupancy"};
-  Configurable<float> cMaxOccupancy{"cMaxOccupancy", 1e6, "Maximum FT0C Occupancy"};
+  Configurable<float> cMaxOccupancy{"cMaxOccupancy", 1e4, "Maximum FT0C Occupancy"};
+  Configurable<bool> capplyTdcCut{"capplyTdcCut", false, "Flag for TDC cut"};
+  Configurable<float> ctdcZnMin{"ctdcZnMin", -2.5, "Min ZN TDC cut"};
+  Configurable<float> ctdcZnMax{"ctdcZnMax", 2.5, "Max ZN TDC cut"};
+
+  ConfigurableAxis axisVarCent{"axisVarCent", {VARIABLE_WIDTH, 0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 100}, "Variable width centrality bins"};
 
   // Coarse binning factor
   Configurable<int> cAxisCBF{"cAxisCBF", 10, "Coarse Bin Factor"};
@@ -313,6 +403,7 @@ struct SpectatorPlaneTableProducer {
   Configurable<bool> cRecentVxVy{"cRecentVxVy", true, "Vx / Vy recentering"};
 
   // Corrections
+
   Configurable<bool> cLoadCorrection{"cLoadCorrection", true, "Load corrections"};
   Configurable<bool> cDoGainCalib{"cDoGainCalib", true, "Gain Calib Flag"};
   Configurable<bool> cUseAlphaZDC{"cUseAlphaZDC", true, "Use Alpha ZDC"};
@@ -327,7 +418,6 @@ struct SpectatorPlaneTableProducer {
   // Tracks
   Configurable<float> cTrackMinPt{"cTrackMinPt", 0.1, "p_{T} minimum"};
   Configurable<float> cTrackMaxPt{"cTrackMaxPt", 10.0, "p_{T} maximum"};
-  Configurable<int> cNEtaBins{"cNEtaBins", 7, "# of eta bins"};
   Configurable<float> cTrackEtaCut{"cTrackEtaCut", 0.8, "Pseudorapidity cut"};
   Configurable<bool> cTrackGlobal{"cTrackGlobal", true, "Global Track"};
   Configurable<float> cTrackDcaXYCut{"cTrackDcaXYCut", 0.1, "DcaXY Cut"};
@@ -389,7 +479,7 @@ struct SpectatorPlaneTableProducer {
     // Define axes
     const AxisSpec axisZDCEnergy{500, 0, 500, "ZD[AC] Signal"};
 
-    const AxisSpec axisCent{100, 0., 100, "FT0C%"};
+    const AxisSpec axisCent{cCentBins, 0., 100, "FT0C%"};
     const AxisSpec axisVx{cAxisVxyBins, cAxisVxMin, cAxisVxMax, "V_{X}(cm)"};
     const AxisSpec axisVy{cAxisVxyBins, cAxisVyMin, cAxisVyMax, "V_{Y}(cm)"};
     const AxisSpec axisVz{cAxisVzBins, cMinZVtx, cMaxZVtx, "V_{Z}(cm)"};
@@ -468,6 +558,7 @@ struct SpectatorPlaneTableProducer {
 
     // Directed flow QXY vector
     histos.add("DF/hQaQc", "X^{A}_{1}X^{C}_{1} + Y^{A}_{1}Y^{C}_{1}", kTProfile, {axisCent});
+    histos.add("DF/hQaQcVarCent", "X^{A}_{1}X^{C}_{1} + Y^{A}_{1}Y^{C}_{1}", kTProfile, {axisVarCent});
   }
 
   // Select collsion
@@ -487,7 +578,7 @@ struct SpectatorPlaneTableProducer {
       return false;
     }
 
-    if (col.ft0cOccupancyInTimeRange() < cMinOccupancy || col.ft0cOccupancyInTimeRange() > cMaxOccupancy) { // Occupancy cut
+    if (col.trackOccupancyInTimeRange() < cMinOccupancy || col.trackOccupancyInTimeRange() > cMaxOccupancy) { // Occupancy cut
       return false;
     }
 
@@ -499,6 +590,14 @@ struct SpectatorPlaneTableProducer {
       return false;
     }
 
+    if (cNoCollInTimeRangeStd && !col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard)) { // No collision in standard time range
+      return false;
+    }
+
+    if (cIsITSTPCVtx && !col.selection_bit(aod::evsel::kIsVertexITSTPC)) { // ITS+TPC vertex
+      return false;
+    }
+
     if (cIsGoodITSLayers && !col.selection_bit(aod::evsel::kIsGoodITSLayersAll)) { // All ITS layer active
       return false;
     }
@@ -506,6 +605,20 @@ struct SpectatorPlaneTableProducer {
     // Set Multiplicity
     mult = col.multTPC();
 
+    return true;
+  }
+
+  template <typename C>
+  bool selZdcHit(C const& zdc)
+  {
+    if (capplyTdcCut) { // a narrow TDC window is set
+      if ((zdc.timeZNC() <= ctdcZnMin) || (zdc.timeZNC() >= ctdcZnMax)) {
+        return false;
+      }
+      if ((zdc.timeZNA() <= ctdcZnMin) || (zdc.timeZNA() >= ctdcZnMax)) {
+        return false;
+      }
+    }
     return true;
   }
 
@@ -699,10 +812,17 @@ struct SpectatorPlaneTableProducer {
 
     // Zdc information
     auto zdc = bc.zdc();
+
+    if (!selZdcHit(zdc)) {
+      return false;
+    }
     auto znaEnergy = zdc.energySectorZNA();
     auto zncEnergy = zdc.energySectorZNC();
     auto znaEnergyCommon = zdc.energyCommonZNA();
     auto zncEnergyCommon = zdc.energyCommonZNC();
+
+    // Change in 3rd tower energy due to spurious peaks
+    zncEnergy[2] = zncEnergyCommon - zncEnergy[0] - zncEnergy[1] - zncEnergy[3];
 
     // Check energy deposits
     if (znaEnergyCommon <= 0 || zncEnergyCommon <= 0 || znaEnergy[0] <= 0 || znaEnergy[1] <= 0 || znaEnergy[2] <= 0 || znaEnergy[3] <= 0 || zncEnergy[0] <= 0 || zncEnergy[1] <= 0 || zncEnergy[2] <= 0 || zncEnergy[3] <= 0) {
@@ -901,6 +1021,7 @@ struct SpectatorPlaneTableProducer {
       // Directed flow QXY vector
       float qac = (vSP[kXa] * vSP[kXc]) + (vSP[kYa] * vSP[kYc]);
       histos.fill(HIST("DF/hQaQc"), cent, qac);
+      histos.fill(HIST("DF/hQaQcVarCent"), cent, qac);
     }
 
     // Fill table
@@ -925,7 +1046,9 @@ struct SpectatorPlaneTableProducer {
 
 struct FlowEventPlane {
   // Tracks
-  Configurable<int> cEtaBins{"cEtaBins", 5, "# of eta bins"};
+  Configurable<int> cEtaBinsCharged{"cEtaBinsCharged", 5, "# of eta bins"};
+  Configurable<int> cEtaBinsHadrons{"cEtaBinsHadrons", 5, "# of eta bins"};
+  Configurable<int> cEtaBinsStrange{"cEtaBinsStrange", 5, "# of eta bins"};
   Configurable<float> cEtaCut{"cEtaCut", 0.8, "Rapidity cut"};
 
   // Pi,Ka,Pr
@@ -960,6 +1083,8 @@ struct FlowEventPlane {
   Configurable<float> cLambdaMinPt{"cLambdaMinPt", 0.6, "Lambda Min pT"};
   Configurable<float> cLambdaMaxPt{"cLambdaMaxPt", 6.0, "Lambda Max pT"};
 
+  ConfigurableAxis axisVarCent{"axisVarCent", {VARIABLE_WIDTH, 0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 100}, "Variable width centrality bins"};
+
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -970,13 +1095,15 @@ struct FlowEventPlane {
   void init(InitContext const&)
   {
     // Define axes
-    const AxisSpec axisCent{100, 0., 100, "FT0C%"};
+    // const AxisSpec axisCent{100, 0., 100, "FT0C%"};
 
     const AxisSpec axisXYac{600, -6, 6, "Q^{t}Q^{p}"};
     const AxisSpec axisV1{400, -4, 4, "v_{1}"};
 
     const AxisSpec axisTrackPt{100, 0., 10., "p_{T} (GeV/#it{c})"};
-    const AxisSpec axisTrackEta{cEtaBins, -0.8, 0.8, "#eta"};
+    const AxisSpec axisTrackEtaCharged{cEtaBinsCharged, -0.8, 0.8, "#etaCharged"};
+    const AxisSpec axisTrackEtaHadrons{cEtaBinsHadrons, -0.8, 0.8, "#etaHadrons"};
+    const AxisSpec axisTrackEtaStrange{cEtaBinsStrange, -0.8, 0.8, "#etaStrange"};
     const AxisSpec axisTrackDcaXY{60, -0.15, 0.15, "DCA_{XY}"};
     const AxisSpec axisTrackDcaZ{230, -1.15, 1.15, "DCA_{XY}"};
     const AxisSpec axisTrackdEdx{360, 20, 200, "#frac{dE}{dx}"};
@@ -1004,12 +1131,12 @@ struct FlowEventPlane {
       histos.add("TrackQA/hPtDcaXY", "DCA_{XY} vs p_{T}", kTH2F, {axisTrackPt, axisTrackDcaXY});
       histos.add("TrackQA/hPtDcaZ", "DCA_{Z} vs p_{T}", kTH2F, {axisTrackPt, axisTrackDcaZ});
       histos.add("TrackQA/hTrackTPCdEdX", "hTrackTPCdEdX", kTH2F, {axisMomPID, axisdEdx});
-      histos.add("DF/hAQu", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisCent, axisTrackEta});
-      histos.add("DF/hCQu", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisCent, axisTrackEta});
-      histos.add("DF/hAQuPos", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisCent, axisTrackEta});
-      histos.add("DF/hCQuPos", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisCent, axisTrackEta});
-      histos.add("DF/hAQuNeg", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisCent, axisTrackEta});
-      histos.add("DF/hCQuNeg", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisCent, axisTrackEta});
+      histos.add("DF/hAQu", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisVarCent, axisTrackEtaCharged});
+      histos.add("DF/hCQu", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisVarCent, axisTrackEtaCharged});
+      histos.add("DF/hAQuPos", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisVarCent, axisTrackEtaCharged});
+      histos.add("DF/hCQuPos", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisVarCent, axisTrackEtaCharged});
+      histos.add("DF/hAQuNeg", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisVarCent, axisTrackEtaCharged});
+      histos.add("DF/hCQuNeg", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisVarCent, axisTrackEtaCharged});
     }
 
     // Identified hadrons
@@ -1018,22 +1145,22 @@ struct FlowEventPlane {
       histos.add("PartId/Pion/hTOFSignal", "#beta_{TOF} vs p_{T}", kTH2F, {axisMomPID, axisTrackTofSignal});
       histos.add("PartId/Pion/hTPCNSigma", "n#sigma_{TPC} vs p_{T}", kTH2F, {axisMomPID, axisTrackNSigma});
       histos.add("PartId/Pion/hTOFNSigma", "n#sigma_{TOF} vs p_{T}", kTH2F, {axisMomPID, axisTrackNSigma});
-      histos.add("PartId/Pion/hAQuPos", "PartId/Pion/hAQuPos", kTProfile2D, {axisCent, axisTrackEta});
-      histos.add("PartId/Pion/hAQuNeg", "PartId/Pion/hAQuNeg", kTProfile2D, {axisCent, axisTrackEta});
-      histos.add("PartId/Pion/hCQuPos", "PartId/Pion/hCQuPos", kTProfile2D, {axisCent, axisTrackEta});
-      histos.add("PartId/Pion/hCQuNeg", "PartId/Pion/hCQuNeg", kTProfile2D, {axisCent, axisTrackEta});
+      histos.add("PartId/Pion/hAQuPos", "PartId/Pion/hAQuPos", kTProfile2D, {axisVarCent, axisTrackEtaHadrons});
+      histos.add("PartId/Pion/hAQuNeg", "PartId/Pion/hAQuNeg", kTProfile2D, {axisVarCent, axisTrackEtaHadrons});
+      histos.add("PartId/Pion/hCQuPos", "PartId/Pion/hCQuPos", kTProfile2D, {axisVarCent, axisTrackEtaHadrons});
+      histos.add("PartId/Pion/hCQuNeg", "PartId/Pion/hCQuNeg", kTProfile2D, {axisVarCent, axisTrackEtaHadrons});
       histos.addClone("PartId/Pion/", "PartId/Kaon/");
       histos.addClone("PartId/Pion/", "PartId/Proton/");
     }
 
     // Resonance
     if (doprocessResoFlow) {
-      histos.add("Reso/Phi/hSigCentEtaInvMass", "hUSCentEtaInvMass", kTH3F, {axisCent, axisTrackEta, axisPhiInvMass});
-      histos.add("Reso/Phi/hBkgCentEtaInvMass", "hLSCentEtaInvMass", kTH3F, {axisCent, axisTrackEta, axisPhiInvMass});
-      histos.add("Reso/Phi/Sig/hQuA", "hPhiQuA", kTProfile3D, {axisCent, axisTrackEta, axisPhiInvMass});
-      histos.add("Reso/Phi/Sig/hQuC", "hPhiQuC", kTProfile3D, {axisCent, axisTrackEta, axisPhiInvMass});
-      histos.add("Reso/Phi/Bkg/hQuA", "hPhiQuA", kTProfile3D, {axisCent, axisTrackEta, axisPhiInvMass});
-      histos.add("Reso/Phi/Bkg/hQuC", "hPhiQuC", kTProfile3D, {axisCent, axisTrackEta, axisPhiInvMass});
+      histos.add("Reso/Phi/hBkgCentEtaInvMass", "hLSCentEtaInvMass", kTH3F, {axisVarCent, axisTrackEtaStrange, axisPhiInvMass});
+      histos.add("Reso/Phi/hSigCentEtaInvMass", "hUSCentEtaInvMass", kTH3F, {axisVarCent, axisTrackEtaStrange, axisPhiInvMass});
+      histos.add("Reso/Phi/Sig/hQuA", "hPhiQuA", kTProfile3D, {axisVarCent, axisTrackEtaStrange, axisPhiInvMass});
+      histos.add("Reso/Phi/Sig/hQuC", "hPhiQuC", kTProfile3D, {axisVarCent, axisTrackEtaStrange, axisPhiInvMass});
+      histos.add("Reso/Phi/Bkg/hQuA", "hPhiQuA", kTProfile3D, {axisVarCent, axisTrackEtaStrange, axisPhiInvMass});
+      histos.add("Reso/Phi/Bkg/hQuC", "hPhiQuC", kTProfile3D, {axisVarCent, axisTrackEtaStrange, axisPhiInvMass});
     }
 
     // Lambda
@@ -1053,14 +1180,14 @@ struct FlowEventPlane {
       histos.add("V0/Lambda/QA/hPosNsigPiVsP", "TPC n#sigma Pos Prong", kTH2F, {axisMomPID, axisNsigma});
       histos.add("V0/Lambda/QA/hNegNsigPiVsP", "TPC n#sigma Neg Prong", kTH2F, {axisMomPID, axisNsigma});
       histos.addClone("V0/Lambda/", "V0/K0Short/");
-      histos.add("V0/Lambda/hMassVsRap", "hMassVsRap", kTH3F, {axisCent, axisTrackEta, axisLambdaInvMass});
-      histos.add("V0/Lambda/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackEta, axisLambdaInvMass});
-      histos.add("V0/Lambda/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackEta, axisLambdaInvMass});
+      histos.add("V0/Lambda/hMassVsRap", "hMassVsRap", kTH3F, {axisVarCent, axisTrackEtaStrange, axisLambdaInvMass});
+      histos.add("V0/Lambda/Flow/hQuA", "hQuA", kTProfile3D, {axisVarCent, axisTrackEtaStrange, axisLambdaInvMass});
+      histos.add("V0/Lambda/Flow/hQuC", "hQuC", kTProfile3D, {axisVarCent, axisTrackEtaStrange, axisLambdaInvMass});
       histos.addClone("V0/Lambda/", "V0/AntiLambda/");
       histos.addClone("V0/Lambda/", "V0/LambdaAntiLambda/");
-      histos.add("V0/K0Short/hMassVsRap", "hMassVsRap", kTH3F, {axisCent, axisTrackEta, axisK0ShortInvMass});
-      histos.add("V0/K0Short/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackEta, axisK0ShortInvMass});
-      histos.add("V0/K0Short/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackEta, axisK0ShortInvMass});
+      histos.add("V0/K0Short/hMassVsRap", "hMassVsRap", kTH3F, {axisVarCent, axisTrackEtaStrange, axisK0ShortInvMass});
+      histos.add("V0/K0Short/Flow/hQuA", "hQuA", kTProfile3D, {axisVarCent, axisTrackEtaStrange, axisK0ShortInvMass});
+      histos.add("V0/K0Short/Flow/hQuC", "hQuC", kTProfile3D, {axisVarCent, axisTrackEtaStrange, axisK0ShortInvMass});
     }
   }
 

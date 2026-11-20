@@ -50,6 +50,9 @@ inline const EMCALClusterDefinition kV3SmallestTimeDiff(ClusterAlgorithm::kV3, 4
 inline const EMCALClusterDefinition kV3MostSplitSmallTimeDiff(ClusterAlgorithm::kV3, 43, 1, "kV3MostSplitSmallTimeDiff", 0.5, 0.1, -10000, 10000, 500, true, 0., false);
 inline const EMCALClusterDefinition kV3MostSplitSmallerTimeDiff(ClusterAlgorithm::kV3, 44, 1, "kV3MostSplitSmallerTimeDiff", 0.5, 0.1, -10000, 10000, 100, true, 0., false);
 inline const EMCALClusterDefinition kV3MostSplitSmallestTimeDiff(ClusterAlgorithm::kV3, 45, 1, "kV3MostSplitSmallestTimeDiff", 0.5, 0.1, -10000, 10000, 50, true, 0., false);
+inline const EMCALClusterDefinition kV3SmallTimeDiffLowestSeed(ClusterAlgorithm::kV3, 46, 1, "kV3SmallTimeDiffLowestSeed", 0.1, 0.1, -10000, 10000, 500, true, 0.03, false);
+inline const EMCALClusterDefinition kV3SmallerTimeDiffLowSeed(ClusterAlgorithm::kV3, 47, 1, "kV3SmallerTimeDiffLowSeed", 0.3, 0.1, -10000, 10000, 100, true, 0.03, false);
+inline const EMCALClusterDefinition kV3SmallestTimeDiffLowerSeed(ClusterAlgorithm::kV3, 48, 1, "kV3SmallestTimeDiffLowerSeed", 0.2, 0.1, -10000, 10000, 50, true, 0.03, false);
 inline const EMCALClusterDefinition kV3MostSplitSmallestTimeDiffLowestSeed(ClusterAlgorithm::kV3, 50, 1, "kV3MostSplitSmallestTimeDiffLowestSeed", 0.1, 0.1, -10000, 10000, 50, true, 0., false);
 inline const EMCALClusterDefinition kV3MostSplitSmallestTimeDiffLowSeed(ClusterAlgorithm::kV3, 51, 1, "kV3MostSplitSmallestTimeDiffLowSeed", 0.3, 0.1, -10000, 10000, 50, true, 0., false);
 inline const EMCALClusterDefinition kV3MostSplitSmallestTimeDiffLowerSeed(ClusterAlgorithm::kV3, 52, 1, "kV3MostSplitSmallestTimeDiffLowerSeed", 0.2, 0.1, -10000, 10000, 50, true, 0., false);
@@ -94,6 +97,12 @@ inline const EMCALClusterDefinition& getClusterDefinitionFromID(int storageID)
       return kV3MostSplitSmallerTimeDiff;
     case 45:
       return kV3MostSplitSmallestTimeDiff;
+    case 46:
+      return kV3SmallTimeDiffLowestSeed;
+    case 47:
+      return kV3SmallerTimeDiffLowSeed;
+    case 48:
+      return kV3SmallestTimeDiffLowerSeed;
     case 50:
       return kV3MostSplitSmallestTimeDiffLowestSeed;
     case 51:
@@ -128,6 +137,9 @@ inline const EMCALClusterDefinition& getClusterDefinitionFromString(const std::s
     {"kV3MostSplitSmallTimeDiff", 43},
     {"kV3MostSplitSmallerTimeDiff", 44},
     {"kV3MostSplitSmallestTimeDiff", 45},
+    {"kV3SmallTimeDiffLowestSeed", 46},
+    {"kV3SmallerTimeDiffLowSeed", 47},
+    {"kV3SmallestTimeDiffLowerSeed", 48},
     {"kV3MostSplitSmallestTimeDiffLowestSeed", 50},
     {"kV3MostSplitSmallestTimeDiffLowSeed", 51},
     {"kV3MostSplitSmallestTimeDiffLowerSeed", 52},
@@ -156,6 +168,7 @@ DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                          //! flag 
 DECLARE_SOA_COLUMN(DistanceToBadChannel, distanceToBadChannel, float); //! distance to bad channel
 DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //! number of local maxima
 DECLARE_SOA_COLUMN(Definition, definition, int);                       //! cluster definition, see EMCALClusterDefinition.h
+DECLARE_SOA_COLUMN(Dispersion, dispersion, float);                     //! cluster energy dispersion (cells)
 
 } // namespace emcalcluster
 // table of clusters that could be matched to a collision
@@ -173,6 +186,12 @@ DECLARE_SOA_TABLE(EMCALAmbiguousClusters, "AOD", "EMCALAMBCLUS", //!
 
 using EMCALCluster = EMCALClusters::iterator;
 using EMCALAmbiguousCluster = EMCALAmbiguousClusters::iterator;
+
+DECLARE_SOA_TABLE(Dispersions, "AOD", "DISPERSIONS", //!
+                  o2::soa::Index<>, emcalcluster::Dispersion);
+
+DECLARE_SOA_TABLE(AmbigousDispersions, "AOD", "AMBDISPERSIONS", //!
+                  o2::soa::Index<>, emcalcluster::Dispersion);
 
 namespace emcalclustermc
 {

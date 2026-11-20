@@ -37,6 +37,8 @@
 #include <Math/Vector4D.h>
 #include <TMath.h>
 
+#include <vector>
+
 using namespace o2;
 using namespace o2::analysis::femtoWorld;
 using namespace o2::framework;
@@ -129,7 +131,7 @@ struct femtoWorldProducerReducedTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
   }
 
@@ -203,9 +205,9 @@ struct femtoWorldProducerReducedTask {
                    track.dcaXY(), childIDs, 0, 0);
       if (ConfDebugOutput) {
         outputDebugTracks(track.sign(),
-                          (uint8_t)track.tpcNClsFound(),
+                          static_cast<uint8_t>(track.tpcNClsFound()),
                           track.tpcNClsFindable(),
-                          (uint8_t)track.tpcNClsCrossedRows(),
+                          static_cast<uint8_t>(track.tpcNClsCrossedRows()),
                           track.tpcNClsShared(),
                           track.tpcInnerParam(),
                           track.itsNCls(),

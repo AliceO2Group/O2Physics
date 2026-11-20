@@ -118,5 +118,6 @@ o2physics_add_dpl_workflow(converter-reduced-3-prongs-ml
 
 o2physics_add_dpl_workflow(tree-creator-dstar-spin-align-mixing
                     SOURCES treeCreatorDstarSpinAlignMixing.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

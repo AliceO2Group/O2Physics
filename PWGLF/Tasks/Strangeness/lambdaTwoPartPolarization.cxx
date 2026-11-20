@@ -601,7 +601,7 @@ struct LfLambdaTwoPartPolarization {
   Preslice<aod::V0Datas> tracksPerCollisionV0 = aod::v0data::collisionId;
 
   using BinningTypeT0C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  BinningTypeT0C colBinningT0C{{vertexAxis, centAxis}, true};
+  BinningTypeT0C colBinningT0C{{vertexAxis, centAxis}};
 
   void processDataMixedT0C(EventCandidates const& collisions,
                            TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
@@ -633,7 +633,7 @@ struct LfLambdaTwoPartPolarization {
   PROCESS_SWITCH(LfLambdaTwoPartPolarization, processDataMixedT0C, "Process event for mixed data in PbPb", false);
 
   using BinningTypeT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-  BinningTypeT0M colBinningT0M{{vertexAxis, centAxis}, true};
+  BinningTypeT0M colBinningT0M{{vertexAxis, centAxis}};
 
   void processDataMixedT0M(EventCandidates const& collisions,
                            TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)

@@ -577,7 +577,7 @@ struct TwoTracksEventTableProducer {
           if (verboseInfo)
             printLargeMessage("Truth collision has more than 1 reco collision. Skipping this event.");
           histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(1);
-          problem = true;
+          // problem = true; // FIXME: unused
           continue;
         }
         // grap reco-level collision

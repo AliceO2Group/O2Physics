@@ -36,6 +36,7 @@
 #include <TProfile.h>
 #include <TString.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -345,7 +346,7 @@ struct standardConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
 
   // centrality operation
-  o2::framework::Configurable<std::string> generatorName{"generatorName", "", {"Specify if and only if this is MC. Typical: PYTHIA"}};
+  o2::framework::Configurable<std::string> generatorName{"generatorName", "", {"MC generator name for centrality calibration (e.g. PYTHIA, EPOS). Empty: autodetect from metadata in Run 3, falling back to PYTHIA. Specify if and only if this is MC to override autodetect from metadata"}};
   o2::framework::Configurable<bool> embedINELgtZEROselection{"embedINELgtZEROselection", false, {"Option to do percentile 100.5 if not INELgtZERO"}};
 };
 
@@ -480,7 +481,7 @@ class MultModule
     LOGF(info, "Metadata information: isMC? %i", metadataInfo.isMC());
     const auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
 
-    TString listOfRequestors[nTablesConst];
+    std::array<TString, nTablesConst> listOfRequestors{};
     for (int i = 0; i < nTablesConst; i++) {
       int f = internalOpts.enabledTables->get(tableNames[i].c_str(), "enable");
       if (f == 1) {
@@ -687,14 +688,14 @@ class MultModule
         }
 
         if (lCalibObjects) {
-          hVtxZFV0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
-          hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
-          hVtxZFT0C = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
-          hVtxZFDDA = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDA"));
-          hVtxZFDDC = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDC"));
-          hVtxZNTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
-          hVtxZNMFTTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZMFT"));
-          hVtxZNGlobalTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNGlobals"));
+          hVtxZFV0A = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
+          hVtxZFT0A = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
+          hVtxZFT0C = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
+          hVtxZFDDA = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDA"));
+          hVtxZFDDC = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDC"));
+          hVtxZNTracks = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
+          hVtxZNMFTTracks = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZMFT"));
+          hVtxZNGlobalTracks = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNGlobals"));
           lCalibLoaded = true;
           // Capture error
           if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
@@ -1097,11 +1098,11 @@ class MultModule
       Run2CL1Info.mCalibrationStored = false;
       if (callst != nullptr) {
         auto getccdb = [callst](const char* ccdbhname) {
-          TH1* h = reinterpret_cast<TH1*>(callst->FindObject(ccdbhname));
+          TH1* h = dynamic_cast<TH1*>(callst->FindObject(ccdbhname));
           return h;
         };
         auto getformulaccdb = [callst](const char* ccdbhname) {
-          TFormula* f = reinterpret_cast<TFormula*>(callst->FindObject(ccdbhname));
+          TFormula* f = dynamic_cast<TFormula*>(callst->FindObject(ccdbhname));
           return f;
         };
 
@@ -1198,16 +1199,10 @@ class MultModule
       mRunNumberCentrality = bc.runNumber(); // mark that this run has been attempted already regardless of outcome
       LOGF(info, "centrality loading procedure for timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
 
-      // capture the need for PYTHIA calibration in Pb-Pb runs
-      if (metadataInfo.isMC() && mRunNumber >= 544013 && mRunNumber <= 545367 && internalOpts.generatorName.value.empty()) {
-        LOGF(info, "This is MC for Pb-Pb. Setting generatorName automatically to PYTHIA");
-        internalOpts.generatorName.value = "PYTHIA";
-      }
-
-      // capture the need for PYTHIA calibration in light ion runs automatically
-      if (metadataInfo.isMC() && mRunNumber >= 564250 && mRunNumber <= 564472 && internalOpts.generatorName.value.empty()) {
-        LOGF(info, "This is MC for light ion runs. Setting generatorName automatically to PYTHIA");
-        internalOpts.generatorName.value = "PYTHIA";
+      // autodetect the generator from the metadata if not explicitly configured
+      if (metadataInfo.isMC() && internalOpts.generatorName.value.empty()) {
+        internalOpts.generatorName.value = metadataInfo.getGenerator();
+        LOGF(info, "Setting generatorName automatically from metadata to %s", internalOpts.generatorName.value);
       }
 
       LOGF(info, "centrality loading procedure for timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
@@ -1252,8 +1247,8 @@ class MultModule
       if (callst != nullptr) {
         LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
         auto getccdb = [callst, bc](struct CalibrationInfo& estimator, const o2::framework::Configurable<std::string>& generatorName) { // TODO: to consider the name inside the estimator structure
-          estimator.mhMultSelCalib = reinterpret_cast<TH1*>(callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
-          estimator.mMCScale = reinterpret_cast<TFormula*>(callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
+          estimator.mhMultSelCalib = dynamic_cast<TH1*>(callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
+          estimator.mMCScale = dynamic_cast<TFormula*>(callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
           if (estimator.mhMultSelCalib != nullptr) {
             if (generatorName->length() != 0) {
               LOGF(info, "Retrieving MC calibration for %d, generator name: %s", bc.runNumber(), generatorName->c_str());
