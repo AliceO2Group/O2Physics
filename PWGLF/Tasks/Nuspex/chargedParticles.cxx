@@ -317,8 +317,9 @@ void ChargedParticles::init(InitContext const&)
     LOGP(fatal, "evSelBits '{}' is not applied to run 2 data (run 2 uses sel7 and kINT7): keep evSelBits = auto", evSelBits.value);
   }
 
-  // collision system: multiplicity axes (run 2 values; light ions from the 2025 data, oo/nene above the tail; xexe/pbpb above the 2026 pb-pb tail) and event selection default
-  // todo: measure the event selection default per system (data vs mc rejection, qa/events/multMeasBits)
+  // collision system: multiplicity axis ranges (measured, true) and default event selection
+  // pp, p-pb: as in run 2; p-o, o-o, ne-ne: cover the 2025 data; pb-pb, xe-xe: extended to cover central pb-pb collisions at 5.36 tev
+  // event selection default: kNoSameBunchPileup for all systems (pb-pb under study)
   std::string evSelBitsDefault = "kNoSameBunchPileup";
   if (collisionSystem.value == "pp") {
     maxMultMeas = 100;
