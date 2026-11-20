@@ -91,6 +91,7 @@ DECLARE_SOA_COLUMN(TpcChi2NClLfTrack1, tpcChi2NClLfTrack1, float);              
 DECLARE_SOA_COLUMN(AbsEtaLfTrack1, absEtaLfTrack1, float);                             //! |eta|
 DECLARE_SOA_COLUMN(MJpsi, mJpsi, float);                                               //! Invariant mass of Jpsi daughter candidates (GeV/c)
 DECLARE_SOA_COLUMN(MK0Star, mK0Star, float);                                           //! Invariant mass of K*0 daughter candidates (GeV/c)
+DECLARE_SOA_COLUMN(MPhi, mPhi, float);                                                 //! Invariant mass of K*0 daughter candidates for Bs veto (GeV/c)
 DECLARE_SOA_COLUMN(M, m, float);                                                       //! Invariant mass of candidate particle (GeV/c2)
 DECLARE_SOA_COLUMN(Pt, pt, float);                                                     //! Transverse momentum of candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                               //! Transverse momentum of candidate (GeV/c)
@@ -172,6 +173,7 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_b0tojpsik0star_lite::MJpsi,
                   hf_cand_b0tojpsik0star_lite::PtJpsi,
                   hf_cand_b0tojpsik0star_lite::MK0Star,
+                  hf_cand_b0tojpsik0star_lite::MPhi,
                   hf_cand_b0tojpsik0star_lite::ImpactParameterJpsiDauPos,
                   hf_cand_b0tojpsik0star_lite::ImpactParameterJpsiDauNeg,
                   hf_cand_b0tojpsik0star_lite::ImpactParameterLfTrack0,
@@ -260,6 +262,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
   Configurable<bool> useJpsiPdgMass{"useJpsiPdgMass", true, "Whether to use J/Psi PDG mass for B+ candidate mass evaluation or to use the invariant mass of the two prongs"};
   Configurable<bool> useK0StarPdgMass{"useK0StarPdgMass", true, "Whether to use K*0 PDG mass for B+ candidate mass evaluation or to use the invariant mass of the two prongs"};
+  Configurable<bool> sampleReflections{"sampleReflections", false, "Flag to enable random rejection of one of the two mass hypotheses for reflected candidates"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_b0_to_jpsi_k0star::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_b0_to_jpsi_k0star::Cuts[0], hf_cuts_b0_to_jpsi_k0star::NBinsPt, hf_cuts_b0_to_jpsi_k0star::NCutVars, hf_cuts_b0_to_jpsi_k0star::labelsPt, hf_cuts_b0_to_jpsi_k0star::labelsCutVar}, "B0 candidate selection per pT bin"};
@@ -423,6 +426,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
     auto invMassJpsi = RecoDecay::m(std::array{pVecMu0, pVecMu1}, std::array{o2::constants::physics::MassMuonPlus, o2::constants::physics::MassMuonMinus});
     auto invMassK0StarKPi = RecoDecay::m(std::array{pVecLfDau0, pVecLfDau1}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
     auto invMassK0StarPiK = RecoDecay::m(std::array{pVecLfDau0, pVecLfDau1}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
+    auto invMassKK = RecoDecay::m(std::array{pVecLfDau0, pVecLfDau1}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus}); // for mass veto
 
     int8_t flagMcMatchRec{0}, flagMcDecayChanRec{0}, flagWrongCollision{0};
     bool isSignal = false;
@@ -599,6 +603,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
         invMassJpsi,
         ptJpsi,
         isSelKPi ? invMassK0StarKPi : invMassK0StarPiK,
+        invMassKK,
         candidate.impactParameter0(),
         candidate.impactParameter1(),
         candidate.impactParameter2(),
@@ -661,6 +666,15 @@ struct HfTaskB0ToJpsiK0StarReduced {
         swapped);
     };
 
+    if (sampleReflections && statusB0KPi >= selectionFlagB0 && statusB0PiK >= selectionFlagB0) {
+      float const pseudoRndmB = ptCandB0 * 1000. - static_cast<int64_t>(ptCandB0 * 1000);
+      if (pseudoRndm < 0) {
+        statusB0KPi = -1;
+      } else {
+        statusB0PiK = -1;
+      }
+    }
+
     if (statusB0KPi >= selectionFlagB0) {
       fillTable(true);
     }
@@ -672,6 +686,9 @@ struct HfTaskB0ToJpsiK0StarReduced {
   /// Fill particle histograms (gen MC truth)
   void fillCandMcGen(aod::HfMcGenRedB0s::iterator const& particle)
   {
+    if (particle.flagMcDecayChanRec() != o2::hf_decay::hf_cand_beauty::B0ToJpsiKstar0) { // we only accept resonant channel
+      return;
+    }
     auto ptParticle = particle.ptTrack();
     auto yParticle = particle.yTrack();
     if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
