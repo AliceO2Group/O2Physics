@@ -505,7 +505,7 @@ struct LambdaProtonBalanceFunction {
     std::ostringstream out;
     out.imbue(std::locale::classic());
     out << std::hexfloat
-        << "CombinedCorr-v1|PDG=3122,-3122,2212,-2212|dataV0-noTruth-beforeCleaning"
+        << "CombinedCorr-v2|PDG=3122,-3122,2212,-2212|dataV0-noTruth-beforeCleaning"
         << "|assignedArmHypothesis|unionSharedCleaning|precleanDaughterVeto"
         << "|oneMatchedRecoCollision|sel8-recoZ-extraFlags|noINEL-contributor-centCut"
         << "|N2=usableLabel-sameCollision-signedPDG|N3=N2-physicalPrimary"
@@ -568,8 +568,17 @@ struct LambdaProtonBalanceFunction {
       const auto& h = state.correctionInputs[species][0];
       for (auto const& axis : {h->GetXaxis(), h->GetYaxis(), h->GetZaxis()}) {
         out << '|';
-        for (int bin = 1; bin <= axis->GetNbins() + 1; ++bin) {
-          out << axis->GetBinLowEdge(bin) << ',';
+        if (axis->GetXbins()->GetSize() == 0) {
+          // Serialize the uniform-axis definition: calculated edges can differ
+          // by floating-point rounding between worker platforms.
+          out << "U," << axis->GetNbins() << ','
+              << axis->GetXmin() << ',' << axis->GetXmax() << ',';
+        } else {
+          // Variable axes have explicit stored edges; preserve them exactly.
+          out << "V," << axis->GetNbins() << ',';
+          for (int i = 0; i < axis->GetXbins()->GetSize(); ++i) {
+            out << axis->GetXbins()->At(i) << ',';
+          }
         }
       }
     }
@@ -5230,7 +5239,7 @@ struct LambdaProtonBalanceFunction {
     LOG(info) << "===============================================";
     LOG(info) << "";
   }
-  // ────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& context)
