@@ -13,7 +13,7 @@
 /// \author Diana Rosales Herrera (diana.rosales.herrera@cern.ch)
 /// \author Chiara De Martin (chiara.de.martin@cern.ch)
 
-#include <Framework/AnalysisDataModel.h> // tpcNClsCrossedRows
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/runDataProcessing.h>
 #include <Framework/HistogramRegistry.h>
@@ -23,12 +23,12 @@
 #include <Framework/Configurable.h>
 #include <Framework/AnalysisHelpers.h>
 
-#include <Common/DataModel/TrackSelectionTables.h> // TracksDCA
-#include <Common/DataModel/EventSelection.h> // ft0cOccupancyInTimeRange,trackOccupancyInTimeRange
+#include <Common/DataModel/TrackSelectionTables.h>
+#include <Common/DataModel/EventSelection.h>
 #include <Common/DataModel/Centrality.h>
-#include <Common/DataModel/Multiplicity.h> // multNTracksPVeta1, multNTracksGlobal
+#include <Common/DataModel/Multiplicity.h>
 
-#include "Common/CCDB/EventSelectionParams.h" //kIsTriggerTVX, kNoSameBunchPileup, kIsGoodZvtxFT0vsPV
+#include "Common/CCDB/EventSelectionParams.h"
 
 #include <string>
 #include <vector>
@@ -42,7 +42,7 @@ using namespace o2::framework::expressions;
 using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::PVMults, aod::MultsGlobal, aod::Mults>;
 using TrackCandidates = soa::Join<aod::Tracks, aod::TracksDCA, aod::TracksExtra>;
 
-struct CentralityClassificationPbPb
+struct heatCapacity
 {
 
   struct EventSelections : ConfigurableGroup {
@@ -377,6 +377,6 @@ struct CentralityClassificationPbPb
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<CentralityClassificationPbPb>(cfgc)
+    adaptAnalysisTask<heatCapacity>(cfgc)
   };
 }
