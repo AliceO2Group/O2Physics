@@ -32,7 +32,10 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
+
+#include <TH1.h>
 
 #include <algorithm>
 #include <chrono>
@@ -648,7 +651,7 @@ class CollisionBuilder
                 << "injected-signal productions.";
 
       mHistRegistry = registry;
-      mHistRegistry->add(GenCollisionSelHistName, "; ; Entries", o2::framework::HistType::kTH1F, {{2, -0.5, 1.5}});
+      mHistRegistry->add(static_cast<char const*>(GenCollisionSelHistName), "; ; Entries", o2::framework::HistType::kTH1F, {{2, -0.5, 1.5}});
       mHistRegistry->get<TH1>(HIST(GenCollisionSelHistName))->GetXaxis()->SetBinLabel(1, "All analyzed");
       mHistRegistry->get<TH1>(HIST(GenCollisionSelHistName))->GetXaxis()->SetBinLabel(2, "Passed sub-generator ID filter");
     }
