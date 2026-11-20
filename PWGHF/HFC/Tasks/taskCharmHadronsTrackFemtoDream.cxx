@@ -1674,6 +1674,8 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         case femtodreamcollision::kMultMultPercentile:
           mixEvents(colBinningMultMultPercentile);
           break;
+        default:
+          LOGP(fatal, "Invalid mixing bin policy: {}", mixSetting.mixingBinPolicy.value);
       }
     }
   }

@@ -70,6 +70,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <numeric>
 #include <string>
@@ -207,7 +208,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     Configurable<int> applyMlMode{"applyMlMode", 1, "None: 0, BDT model from candidate selector: 1, New BDT model on Top of candidate selector: 2"};
     Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
     Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
-    Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+    Configurable<LabeledArray<double>> cutsMl{"cutsMl", {&hf_cuts_ml::Cuts[0][0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
     Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
     Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   } mlCfg;
@@ -309,7 +310,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
 
     // event QA histograms
     constexpr int EventTypes = PairSelected + 1;
-    std::string labels[EventTypes];
+    std::array<std::string, EventTypes> labels;
     labels[Event::All] = "All events";
     labels[Event::RejEveSel] = "rejected by event selection";
     labels[Event::RejNoTracksAndCharm] = "rejected by no tracks and charm";
