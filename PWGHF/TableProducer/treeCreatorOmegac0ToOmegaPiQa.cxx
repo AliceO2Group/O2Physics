@@ -245,7 +245,7 @@ struct HfTreeCreatorToOmegaPiQa {
   using CollsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
   using McCollsWithFT0M = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
-  Filter filterOmegaCMatchedRec = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToOmegaPi);
+  Filter filterOmegaCMatchedRec = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_casc_bach_qa::DecayChannelMain::Omegac0ToOmegaPi) || (keepOnlyMcSignal.node() == false);
   Filter filterSelectCandidates = aod::hf_sel_candidate_omegac0_qa::isSelOmegaC0ToOmegaPi >= selectionFlagOmegac0;
 
   void init(InitContext const&)
@@ -265,17 +265,8 @@ struct HfTreeCreatorToOmegaPiQa {
   }
 
   template <int svReco, bool useCentrality, typename CollTable, typename T>
-  void fillCandidate(const T& candidate, TracksSel const& tracks, TracksSelLf const& lfTracks, int8_t flagMc, int8_t originMc, float centrality = -999.f)
+  void fillCandidate(const T& candidate, TracksSel const& tracks, TracksSelLf const& lfTracks, int8_t flagMc, int8_t originMc, float centrality = -1.)
   {
-
-    // save all candidate information
-    if constexpr (useCentrality) {
-      if (centrality < -998.f) {
-        auto const& collision = candidate.template collision_as<CollTable>();
-        centrality = o2::hf_centrality::getCentralityColl(collision);
-      }
-    }
-
     // retrive PID information
     auto trackV0PosDau = lfTracks.rawIteratorAt(candidate.posTrackId());
     auto trackV0NegDau = lfTracks.rawIteratorAt(candidate.negTrackId());
@@ -289,8 +280,9 @@ struct HfTreeCreatorToOmegaPiQa {
       trackPrFromLam = trackV0NegDau;
     }
 
+    auto const& collision = candidate.template collision_as<CollTable>();
+
     if constexpr (svReco == DCAFITTER) {
-      auto const& collision = candidate.template collision_as<CollTable>();
       rowCandidate(collision.posX(),
                    collision.posY(),
                    collision.posZ(),
@@ -367,7 +359,7 @@ struct HfTreeCreatorToOmegaPiQa {
                    originMc);
     } else {
       rowKfCandidate(centrality,
-                     candidate.template collision_as<CollTable>().numContrib(),
+                     collision.numContrib(),
                      trackPiFromCharm.tpcNSigmaPi(),
                      trackPiFromCharm.tofNSigmaPi(),
                      trackKaFromCasc.tpcNSigmaKa(),
@@ -463,7 +455,9 @@ struct HfTreeCreatorToOmegaPiQa {
     // Filling candidate properties
     rowCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<DCAFITTER, true, CollsSelWithFT0M>(candidate, tracks, lfTracks, -7, RecoDecay::OriginType::None);
+      auto const& collision = candidate.template collision_as<CollsSelWithFT0M>();
+      float cent = o2::hf_centrality::getCentralityColl(collision);
+      fillCandidate<DCAFITTER, true, CollsSelWithFT0M>(candidate, tracks, lfTracks, -7, RecoDecay::OriginType::None, cent);
     }
   }
 
@@ -506,7 +500,9 @@ struct HfTreeCreatorToOmegaPiQa {
     // Filling candidate properties
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<KFPARTICLE, true, CollsSelWithFT0M>(candidate, tracks, lfTracks, -7, RecoDecay::OriginType::None);
+      auto const& collision = candidate.template collision_as<CollsSelWithFT0M>();
+      float cent = o2::hf_centrality::getCentralityColl(collision);
+      fillCandidate<KFPARTICLE, true, CollsSelWithFT0M>(candidate, tracks, lfTracks, -7, RecoDecay::OriginType::None, cent);
     }
   }
 
@@ -556,9 +552,12 @@ struct HfTreeCreatorToOmegaPiQa {
       if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
         continue;
       }
-      auto mcCollision = candidate.collision_as<CollsWithMcLabels>().mcCollision_as<McCollsWithFT0M>();
-      float centFt0m = o2::hf_centrality::getCentralityColl(mcCollision);
-      fillCandidate<DCAFITTER, true, CollsWithMcLabels>(candidate, tracks, lfTracks, candidate.flagMcMatchRec(), candidate.originMcRec(), centFt0m);
+      auto collision = candidate.collision_as<CollsWithMcLabels>();
+      float cent = -1.;
+      if (collision.has_mcCollision()) {
+        cent = o2::hf_centrality::getCentralityColl(collision.mcCollision_as<McCollsWithFT0M>());
+      }
+      fillCandidate<DCAFITTER, true, CollsWithMcLabels>(candidate, tracks, lfTracks, candidate.flagMcMatchRec(), candidate.originMcRec(), cent);
     }
   }
 
@@ -608,9 +607,12 @@ struct HfTreeCreatorToOmegaPiQa {
       if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
         continue;
       }
-      auto mcCollision = candidate.collision_as<CollsWithMcLabels>().mcCollision_as<McCollsWithFT0M>();
-      float centFt0m = o2::hf_centrality::getCentralityColl(mcCollision);
-      fillCandidate<KFPARTICLE, true, CollsWithMcLabels>(candidate, tracks, lfTracks, candidate.flagMcMatchRec(), candidate.originMcRec(), centFt0m);
+      auto collision = candidate.collision_as<CollsWithMcLabels>();
+      float cent = -1.;
+      if (collision.has_mcCollision()) {
+        cent = o2::hf_centrality::getCentralityColl(collision.mcCollision_as<McCollsWithFT0M>());
+      }
+      fillCandidate<KFPARTICLE, true, CollsWithMcLabels>(candidate, tracks, lfTracks, candidate.flagMcMatchRec(), candidate.originMcRec(), cent);
     }
   }
 
