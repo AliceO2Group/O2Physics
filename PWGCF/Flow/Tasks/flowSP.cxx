@@ -1359,7 +1359,7 @@ struct FlowSP {
       if (isTrackSelected) {
         histos.fill(HIST("hTrackCount"), trackSel_GlobalTracks);
         fillSpectraStudyMCReco(trackSel_GlobalTracks);
-      
+
         fillPrimaryHistos<kAfter, kInclusive>(mcParticle);
         if (spm.charge == kPositive) {
           fillPrimaryHistos<kAfter, kPositive>(mcParticle);
