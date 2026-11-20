@@ -90,7 +90,7 @@ struct JetGnnInferenceTask {
   Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
   Configurable<float> leadingConstituentPtMax{"leadingConstituentPtMax", 9999.0, "maximum pT selection on jet constituent"};
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
-  Configurable<int> nTracksMin{"nTracksMin", 2, "minimum number of tracks for GNN evaluation"};
+  Configurable<uint32_t> nTracksMin{"nTracksMin", 2, "minimum number of tracks for GNN evaluation"};
 
   // ML configuration
   Configurable<int> nJetConst{"nJetConst", 100, "maximum number of jet constituents to be used for ML evaluation"};
