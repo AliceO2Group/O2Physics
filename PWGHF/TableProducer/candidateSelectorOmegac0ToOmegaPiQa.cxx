@@ -133,7 +133,7 @@ struct HfCandidateSelectorToOmegaPiQa {
 
   // PID options
   Configurable<bool> usePidTpcOnly{"usePidTpcOnly", true, "Perform PID using only TPC"};
-  Configurable<bool> usePidTpcTofCombined{"usePidTpcTofCombined", false, "Perform PID using TPC or TOF"};
+  Configurable<bool> usePidTpcOrTof{"usePidTpcOrTof", false, "Perform PID using TPC or TOF"};
 
   // PID - TPC selections
   Configurable<double> ptPiPidTpcMin{"ptPiPidTpcMin", -1, "Lower bound of track pT for TPC PID for pion selection"};
@@ -223,8 +223,8 @@ struct HfCandidateSelectorToOmegaPiQa {
       LOGP(fatal, "Exactly one process function for selector can be enabled at a time.");
     }
 
-    if (usePidTpcOnly == usePidTpcTofCombined) {
-      LOGF(fatal, "Check the PID configurables, usePidTpcOnly and usePidTpcTofCombined can't have the same value");
+    if (usePidTpcOnly == usePidTpcOrTof) {
+      LOGF(fatal, "Check the PID configurables, usePidTpcOnly and usePidTpcOrTof can't have the same value");
     }
 
     selectorPion.setRangePtTpc(ptPiPidTpcMin, ptPiPidTpcMax);
@@ -376,7 +376,7 @@ struct HfCandidateSelectorToOmegaPiQa {
     }
   }
 
-  // LF cuts - Cuts on LF tracks reco
+  // TODO: check if all these cuts are needed and remove those that are already applied in the candidate creator
   // Selection on LF related informations
   // returns true if all cuts are passed
   template <int svReco, typename T>
@@ -543,7 +543,7 @@ struct HfCandidateSelectorToOmegaPiQa {
     return true;
   }
 
-  // HF cuts - Cuts on Charm baryon reco
+  // TODO: check if all these cuts are needed and remove those that are already applied in the candidate creator
   // Apply cuts with charm baryon & charm bachelor related informations
   // returns true if all cuts are passed
   template <int svReco, typename T>
@@ -688,20 +688,19 @@ struct HfCandidateSelectorToOmegaPiQa {
   // apply PID selection on the decay products
   bool isSelectedPID(const TrackSelectorPID::Status pidPrFromLam, const TrackSelectorPID::Status pidPiFromLam, const TrackSelectorPID::Status pidKaFromCasc, const TrackSelectorPID::Status pidPiFromCharmBaryon)
   {
-    // TODO: check PID logic, usually we require particles to not be TrackSelectorPID::Rejected
     registry.fill(HIST("hSelStatusPID"), 0.0);
 
-    if (pidPrFromLam != TrackSelectorPID::Accepted || pidPiFromLam != TrackSelectorPID::Accepted) {
+    if (pidPrFromLam == TrackSelectorPID::Rejected || pidPiFromLam == TrackSelectorPID::Rejected) {
       return false;
     }
     registry.fill(HIST("hSelStatusPID"), 1.0);
 
-    if (pidKaFromCasc != TrackSelectorPID::Accepted) {
+    if (pidKaFromCasc == TrackSelectorPID::Rejected) {
       return false;
     }
     registry.fill(HIST("hSelStatusPID"), 2.0);
 
-    if (pidPiFromCharmBaryon != TrackSelectorPID::Accepted) {
+    if (pidPiFromCharmBaryon == TrackSelectorPID::Rejected) {
       return false;
     }
     registry.fill(HIST("hSelStatusPID"), 3.0);
@@ -761,12 +760,13 @@ struct HfCandidateSelectorToOmegaPiQa {
       TrackSelectorPID::Status pidKaFromCasc{};
       TrackSelectorPID::Status pidPiFromCharmBaryon{};
 
+      // TODO: add TPC and TOF option for PID selection
       if (usePidTpcOnly) {
         pidPrFromLam = selectorProton.statusTpc(trackPrFromLam);
         pidPiFromLam = selectorPion.statusTpc(trackPiFromLam);
         pidKaFromCasc = selectorKaon.statusTpc(trackKaFromCasc);
         pidPiFromCharmBaryon = selectorPion.statusTpc(trackPiFromCharm);
-      } else if (usePidTpcTofCombined) {
+      } else if (usePidTpcOrTof) {
         pidPrFromLam = selectorProton.statusTpcOrTof(trackPrFromLam);
         pidPiFromLam = selectorPion.statusTpcOrTof(trackPiFromLam);
         pidKaFromCasc = selectorKaon.statusTpcOrTof(trackKaFromCasc);
