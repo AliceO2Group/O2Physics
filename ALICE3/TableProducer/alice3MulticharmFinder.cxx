@@ -98,7 +98,8 @@ struct Alice3MulticharmFinder {
   } cfgFitter;
 
   Configurable<float> cfgMagneticField{"cfgMagneticField", 20.0f, "Magnetic field (in kilogauss) if value not found from geo provider"};
-  Configurable<bool> doDCAplots{"doDCAplots", true, "do daughter prong DCA plots for D mesons"};
+  Configurable<bool> doDCAplots{"doDCAplots", true, "do daughter prong DCA plots for hf daughters"};
+  Configurable<bool> do3dHistQa{"do3dHistQa", true, "Book and fill the 3D QA histograms (h3dMassXiCC)"};
   Configurable<bool> mcSameMotherCheck{"mcSameMotherCheck", true, "check if tracks come from the same MC mother"};
 
   struct : ConfigurableGroup {
@@ -591,7 +592,9 @@ struct Alice3MulticharmFinder {
 
     insertHist("hEtaXiCC", "hEtaXiCC", kTH1D, {{axisEta}});
     insertHist("hPtXiCC", "hPtXiCC", kTH1D, {{axisPt}});
-    insertHist("h3dMassXiCC", "h3dMassXiCC", kTH3D, {{axisPt, axisEta, axisXiCCMass}});
+    if (do3dHistQa) {
+      insertHist("h3dMassXiCC", "h3dMassXiCC", kTH3D, {{axisPt, axisEta, axisXiCCMass}});
+    }
 
     insertHist("hDCAXiCDaughters", "hDCAXiCDaughters", kTH1D, {{axisDCAXiCDaughters}});
     insertHist("hDCAXiCCDaughters", "hDCAXiCCDaughters", kTH1D, {{axisDCAXiCCDaughters}});
@@ -864,7 +867,9 @@ struct Alice3MulticharmFinder {
           hist<TH1>("hMassXiCC")->Fill(thisXiccCandidate.mass);
           hist<TH1>("hPtXiCC")->Fill(thisXiccCandidate.pt);
           hist<TH1>("hEtaXiCC")->Fill(thisXiccCandidate.eta);
-          hist<TH3>("h3dMassXiCC")->Fill(thisXiccCandidate.pt, thisXiccCandidate.eta, thisXiccCandidate.mass);
+          if (do3dHistQa) {
+            hist<TH3>("h3dMassXiCC")->Fill(thisXiccCandidate.pt, thisXiccCandidate.eta, thisXiccCandidate.mass);
+          }
 
           hist<TH1>("hPi1cDCAxy")->Fill(std::abs(pi1c.dcaXY() * ToMicrons));
           hist<TH1>("hPi1cDCAz")->Fill(std::abs(pi1c.dcaZ() * ToMicrons));
