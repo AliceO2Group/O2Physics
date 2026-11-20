@@ -25,7 +25,9 @@
 #include <Framework/AnalysisDataModel.h>
 #include <ReconstructionDataFormats/PID.h>
 
+#include <array>
 #include <cstdint>
+#include <string_view>
 
 namespace o2::aod
 {
@@ -163,5 +165,7 @@ constexpr double UndefValueDouble{-999.};
 constexpr double MultiplicityNorm{11000.};
 
 constexpr float OneToKilo{1e-3f};
+
+constexpr std::array<std::string_view, 9> ParticleNames{"e", "#mu", "#pi", "K", "p", "d", "t", "{}^{3}He", "#alpha"};
 } // namespace o2::dpg_tpcskimstablecreator
 #endif // DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
