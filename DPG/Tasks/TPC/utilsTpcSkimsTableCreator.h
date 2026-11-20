@@ -26,15 +26,19 @@
 #include "Common/DataModel/OccupancyTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Logger.h>
 
+#include <TFile.h>
+#include <TH2.h>
 #include <TRandom3.h>
 
 #include <cmath>
 #include <cstdint>
+#include <map>
 #include <string>
 
 namespace o2::dpg_tpcskimstablecreator
@@ -173,6 +177,39 @@ void evaluateOccupancyVariables(const TrkType& track, OccupancyValues& occValues
   occValues.twmoFT0AUnfm80 = tmoFromTrack.twmoFT0AUnfm80();
   occValues.twmoFT0CUnfm80 = tmoFromTrack.twmoFT0CUnfm80();
   occValues.twmoRT0V0PrimUnfm80 = tmoFromTrack.twmoRobustT0V0PrimUnfm80();
+}
+
+inline void initAdaptDwnsplHistograms(const std::string& ccdbPathForAdaptDwnsplFile, const std::string& adaptDwnsplFileName, const std::string& adaptDwnsplHistoPosName, const std::string& adaptDwnsplHistoNegName, TH2*& histoPos, TH2*& histoNeg)
+{
+  o2::ccdb::CcdbApi ccdbApi;
+  ccdbApi.init("http://alice-ccdb.cern.ch");
+  const std::map<std::string, std::string> metadata;
+  // Retrieve the file from CCDB
+  const bool isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForAdaptDwnsplFile, ".", metadata, -1, false, adaptDwnsplFileName);
+  if (!isFileAvailable) {
+    LOGF(fatal, "Failed to retrieve expected-momentum histograms file from CCDB: %s/%s", ccdbPathForAdaptDwnsplFile.c_str(), adaptDwnsplFileName.c_str());
+    return;
+  }
+  TFile* adaptDwsplFile = TFile::Open(adaptDwnsplFileName.c_str(), "read");
+  if (adaptDwsplFile == nullptr || adaptDwsplFile->IsZombie()) {
+    LOGF(fatal, "Failed to open expected-momentum histograms file from CCDB: %s/%s", ccdbPathForAdaptDwnsplFile.c_str(), adaptDwnsplFileName.c_str());
+    return;
+  }
+  histoPos = dynamic_cast<TH2*>(adaptDwsplFile->Get<TH2>(adaptDwnsplHistoPosName.c_str())->Clone());
+  histoNeg = dynamic_cast<TH2*>(adaptDwsplFile->Get<TH2>(adaptDwnsplHistoNegName.c_str())->Clone());
+  if (histoPos == nullptr) {
+    LOGF(fatal, "Histogram %s not found in expected-momentum histograms file!", adaptDwnsplHistoPosName.c_str());
+    return;
+  }
+  if (histoNeg == nullptr) {
+    LOGF(fatal, "Histogram %s not found in expected-momentum histograms file!", adaptDwnsplHistoNegName.c_str());
+    return;
+  }
+  histoPos->SetDirectory(nullptr);
+  histoNeg->SetDirectory(nullptr);
+  adaptDwsplFile->Close();
+  delete adaptDwsplFile;
+  adaptDwsplFile = nullptr;
 }
 
 } // namespace o2::dpg_tpcskimstablecreator

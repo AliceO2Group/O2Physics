@@ -37,7 +37,6 @@
 #include "Common/TableProducer/PID/pidTPCBase.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -49,7 +48,6 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
-#include <TFile.h>
 #include <TH2.h>
 #include <TObject.h>
 #include <TRandom3.h>
@@ -58,7 +56,6 @@
 #include <cmath>
 #include <concepts>
 #include <cstdint>
-#include <map>
 #include <numeric>
 #include <string>
 #include <type_traits>
@@ -175,7 +172,6 @@ struct TreeWriterTpcV0 {
   };
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
-  o2::ccdb::CcdbApi ccdbApi;
 
   ctpRateFetcher mRateFetcher{};
 
@@ -228,34 +224,7 @@ struct TreeWriterTpcV0 {
     }
 
     if (applyAdaptiveDownsampling) {
-      ccdbApi.init("http://alice-ccdb.cern.ch");
-      const std::map<std::string, std::string> metadata;
-      // Retrieve the file from CCDB
-      const bool isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForAdaptDwnsplFile, ".", metadata, -1, false, adaptDwnsplFileName);
-      if (!isFileAvailable) {
-        LOGF(fatal, "Failed to retrieve expected-momentum histograms file from CCDB: %s/%s", ccdbPathForAdaptDwnsplFile.value.c_str(), adaptDwnsplFileName.value.c_str());
-        return;
-      }
-      TFile* adaptDwsplFile = TFile::Open(adaptDwnsplFileName.value.c_str(), "read");
-      if (adaptDwsplFile == nullptr || adaptDwsplFile->IsZombie()) {
-        LOGF(fatal, "Failed to open expected-momentum histograms file from CCDB: %s/%s", ccdbPathForAdaptDwnsplFile.value.c_str(), adaptDwnsplFileName.value.c_str());
-        return;
-      }
-      mHistMomentumPos = dynamic_cast<TH2*>(adaptDwsplFile->Get<TH2>(adaptDwnsplHistoPosName.value.c_str())->Clone());
-      mHistMomentumNeg = dynamic_cast<TH2*>(adaptDwsplFile->Get<TH2>(adaptDwnsplHistoNegName.value.c_str())->Clone());
-      if (mHistMomentumPos == nullptr) {
-        LOGF(fatal, "Histogram %s not found in expected-momentum histograms file!", adaptDwnsplHistoPosName.value.c_str());
-        return;
-      }
-      if (mHistMomentumNeg == nullptr) {
-        LOGF(fatal, "Histogram %s not found in expected-momentum histograms file!", adaptDwnsplHistoNegName.value.c_str());
-        return;
-      }
-      mHistMomentumPos->SetDirectory(nullptr);
-      mHistMomentumNeg->SetDirectory(nullptr);
-      adaptDwsplFile->Close();
-      delete adaptDwsplFile;
-      adaptDwsplFile = nullptr;
+      initAdaptDwnsplHistograms(ccdbPathForAdaptDwnsplFile, adaptDwnsplFileName, adaptDwnsplHistoPosName, adaptDwnsplHistoNegName, mHistMomentumPos, mHistMomentumNeg);
     }
   }
 
@@ -770,6 +739,12 @@ struct TreeWriterTpcTof {
   Configurable<bool> saveTrees{"saveTrees", true, "Flag to save trees"};
   Configurable<bool> saveMomentumHistograms{"saveMomentumHistograms", false, "Flag to save momentum histograms"};
   ConfigurableAxis axisMomentumHistograms{"axisMomentumHistograms", {200, std::log10(0.1), std::log10(20.)}, "log_{10}(#it{p} / (GeV/#it{c}))"};
+  /// Configurables adaptive downsampling
+  Configurable<bool> applyAdaptiveDownsampling{"applyAdaptiveDownsampling", false, "Apply downsampling driven by expected momentum distribution"};
+  Configurable<std::string> ccdbPathForAdaptDwnsplFile{"ccdbPathForAdaptDwnsplFile", "", "CCDB path for file with expected-momentum histograms"};
+  Configurable<std::string> adaptDwnsplFileName{"adaptDwnsplFileName", "AnalysisResults.root", "Name of the file with expected-momentum histograms"};
+  Configurable<std::string> adaptDwnsplHistoPosName{"adaptDwnsplHistoPosName", "tree-writer-tpc-tof/hMomentumPos", "Name of the histogram with expected-momentum of positively charged particles"};
+  Configurable<std::string> adaptDwnsplHistoNegName{"adaptDwnsplHistoNegName", "tree-writer-tpc-tof/hMomentumNeg", "Name of the histogram with expected-momentum of negatively charged particles"};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -797,6 +772,9 @@ struct TreeWriterTpcTof {
   o2::aod::rctsel::RCTFlagsChecker rctChecker{};
 
   TRandom3* fRndm = new TRandom3();
+
+  TH2* mHistMomentumPos{};
+  TH2* mHistMomentumNeg{};
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra,
                          aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa,
@@ -843,6 +821,10 @@ struct TreeWriterTpcTof {
         registry.get<TH2>(HIST("hMomentumPos"))->GetYaxis()->SetBinLabel(iParticle + 1, ParticleNames.at(iParticle).data());
         registry.get<TH2>(HIST("hMomentumNeg"))->GetYaxis()->SetBinLabel(iParticle + 1, ParticleNames.at(iParticle).data());
       }
+    }
+
+    if (applyAdaptiveDownsampling) {
+      initAdaptDwnsplHistograms(ccdbPathForAdaptDwnsplFile, adaptDwnsplFileName, adaptDwnsplHistoPosName, adaptDwnsplHistoNegName, mHistMomentumPos, mHistMomentumNeg);
     }
   }
 
