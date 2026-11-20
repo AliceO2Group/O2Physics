@@ -65,7 +65,7 @@ o2::common::core::MetadataHelper metadataInfo; // ao2d metadata (production, pas
 // Task declaration
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
-struct ChargedParticles {
+struct ChargedParticles { // NOLINT(clang-analyzer-optin.performance.Padding): one task instance, member order kept readable
   // pcc repetitions: floor(weight) + 1 with probability frac(weight)
   // random number = hash of the particle -> same for all loops, reproducible, independent of processing order
   static uint64_t splitMix64(uint64_t x)
