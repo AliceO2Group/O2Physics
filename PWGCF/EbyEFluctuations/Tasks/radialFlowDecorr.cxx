@@ -475,6 +475,7 @@ struct RadialFlowDecorr {
   // Forward multiplicity (FT0A, FT0C, FV0A amplitudes) correlated with mid-rapidity [pT] and N
   struct : ConfigurableGroup {
     Configurable<bool> cfgFwd{"cfgFwd", true, "Mean/Fluc: forward amplitudes and their covariance with [pT](eta) and N(eta)"};
+    Configurable<bool> cfgRawMoments{"cfgRawMoments", true, "Fluc, Base, pT range 0 (data, every MC level, bootstrap): raw moments Prof_Raw_* vs N_ch (<N_A N_C>, <N_A>; with cfgFwd <a_i a_j>, <a_i>, <a_k N>, <N>, <a_k [pT]>, <[pT]>, <a_k>), no mean-pass reference; offline, N_ch bins are merged into centrality classes with the (cent, N_ch) map and Cov = <xy> - <x><y>"};
     Configurable<bool> cfgFwdGainEq{"cfgFwdGainEq", true, "DATA: apply the FT0/FV0 gain equalisation from cfgGainEqPath"};
     Configurable<std::string> cfgGainEqPath{"cfgGainEqPath", "Analysis/EventPlane/GainEq", "CCDB path of the FT0/FV0 gain equalisation (+ /FT0, /FV0); central objects per run for LHC23zzh Pb-Pb and 2025 O-O/Ne-Ne"};
     Configurable<bool> cfgFwdVzCorr{"cfgFwdVzCorr", true, "Channel eta relative to the primary vertex (else to z = 0)"};
@@ -611,6 +612,22 @@ struct RadialFlowDecorr {
     std::shared_ptr<TProfile3D> covFwdN;                    // (N_ch, eta bin, forward bin): <dN da>
     std::shared_ptr<TProfile3D> covFwdFwd;                  // (N_ch, forward bin i, forward bin j): <da_i da_j>
   };
+  // Raw moments (cfgRawMoments; Base, pT range 0): x = N_ch, or the Base centrality in the bootstrap replicas.
+  // No mean-pass reference: the covariance of a class of x bins is <xy> - <x><y> of the merged profiles,
+  // each pair with its means over the same events. N = sum w (efficiency and flattening weighted, as kObsN),
+  // [pT] = sum w pT / sum w (events with sum w > 0), a = forward amplitude (events with the detector read out).
+  // Eta-bin index axis: 0 = reference |eta| < cfgCutEta, i >= 1 the narrow bins (the eta_A, eta_C bins of nAnC).
+  struct RawHists {
+    std::shared_ptr<TProfile3D> nAnC;     // (x, eta_A, eta_C): <N_A N_C>, every event; diagonal <N^2 - sum w^2> (as Prof_CNN2D)
+    std::shared_ptr<TProfile3D> nA;       // (x, eta_A, eta_C): <N_A>, every event (<N_C> is its transpose)
+    std::shared_ptr<TProfile3D> fwd;      // (x, forward bin i, forward bin j): <a_i>, events with i and j read out (diagonal: <a_i>)
+    std::shared_ptr<TProfile3D> fwdFwd;   // (x, forward bin i, forward bin j): <a_i a_j>, same events
+    std::shared_ptr<TProfile3D> fwdN;     // (x, eta bin, forward bin k): <a_k N>, events with k read out
+    std::shared_ptr<TProfile3D> nFwdSel;  // (x, eta bin, forward bin k): <N>, same events
+    std::shared_ptr<TProfile3D> fwdPt;    // (x, eta bin, forward bin k): <a_k [pT]>, events with k read out and sum w > 0
+    std::shared_ptr<TProfile3D> ptFwdSel; // (x, eta bin, forward bin k): <[pT]>, same events
+    std::shared_ptr<TProfile3D> fwdPtSel; // (x, eta bin, forward bin k): <a_k>, same events
+  };
   struct {
     std::shared_ptr<TH2> evtCount;                         // (EEvtCut, variation)
     std::shared_ptr<TH2> trkCount;                         // (ETrkCut, variation)
@@ -628,6 +645,8 @@ struct RadialFlowDecorr {
     // per pT range: the index-axis profiles are shared with range 0, the maps are separate
     std::array<std::array<std::array<FlucHists, KNPtMax>, kNLevels>, kNSyst> fluc{};
     std::array<std::array<FlucHists, KNPtMax>, KMaxBoot> boot{};
+    std::array<RawHists, kNLevels> raw{}; // raw moments of Base, pT range 0, per level
+    std::array<RawHists, KMaxBoot> bootRaw{};
     std::shared_ptr<TProfile2D> fwdChannel; // (channel: FT0 0-207, FV0 208-255; EChanQA)
     std::shared_ptr<TProfile> fwdEta;       // amplitude-weighted eta per forward bin
     std::shared_ptr<TH3> mcTrackOrigin;     // (N_ch, pT, ETrackOrigin) of the Base tracks
@@ -775,6 +794,8 @@ struct RadialFlowDecorr {
     std::array<bool, KNEtaMax> qTAValid{};
     std::array<double, KNFwdMax> fwd{}, dFwd{};
     std::array<bool, KNFwdMax> fwdValid{};
+    std::array<double, KNFwdMax> fwdAmp{}; // amplitude of every read-out forward bin (raw moments: no mean-pass reference)
+    std::array<bool, KNFwdMax> fwdRead{};
   };
 
   // ===========================================================================
@@ -1508,6 +1529,13 @@ struct RadialFlowDecorr {
       evObs.dN[ieta] = evObs.nW[ieta] - profileValue(input.pmean[level], nCh, ybin, kMeanN + 1);
     }
     evObs.fwdValid.fill(false);
+    evObs.fwdRead.fill(false);
+    if (fwd) {
+      for (int k = 0; k < nFwd; ++k) {
+        evObs.fwdRead[k] = fwd->valid[k];
+        evObs.fwdAmp[k] = fwd->ampl[k];
+      }
+    }
     if (!fwd || !input.pmeanFwd[level]) {
       return;
     }
@@ -1629,6 +1657,48 @@ struct RadialFlowDecorr {
       for (int j = 0; j < nFwd; ++j) {
         if (evObs.fwdValid[j]) {
           fill(h.covFwdFwd, x, k, j, da * evObs.dFwd[j]);
+        }
+      }
+    }
+  }
+
+  // Raw moments of one level (or bootstrap replica with weight w) at x = N_ch (replica: centrality).
+  void fillRaw(const RawHists& h, const EventObs& evObs, double w, float x)
+  {
+    if (!h.nAnC) {
+      return;
+    }
+    for (int ietaA = 1; ietaA < nEta; ++ietaA) {
+      const float etaValA = (etaLw[ietaA] + etaUp[ietaA]) / 2.0f;
+      for (int ietaC = 1; ietaC < nEta; ++ietaC) {
+        const float etaValC = (etaLw[ietaC] + etaUp[ietaC]) / 2.0f;
+        // diagonal without the self pairs, the convention of Prof_CNN2D
+        const double nn = (ietaA == ietaC) ? evObs.nW[ietaA] * evObs.nW[ietaA] - evObs.nW2[ietaA] : evObs.nW[ietaA] * evObs.nW[ietaC];
+        h.nAnC->Fill(x, etaValA, etaValC, nn, w);
+        h.nA->Fill(x, etaValA, etaValC, evObs.nW[ietaA], w);
+      }
+    }
+    if (!h.fwd) {
+      return;
+    }
+    for (int k = 0; k < nFwd; ++k) {
+      if (!evObs.fwdRead[k]) {
+        continue;
+      }
+      const double a = evObs.fwdAmp[k];
+      for (int j = 0; j < nFwd; ++j) {
+        if (evObs.fwdRead[j]) {
+          h.fwd->Fill(x, k, j, a, w);
+          h.fwdFwd->Fill(x, k, j, a * evObs.fwdAmp[j], w);
+        }
+      }
+      for (int ieta = 0; ieta < nEta; ++ieta) {
+        h.fwdN->Fill(x, ieta, k, a * evObs.nW[ieta], w);
+        h.nFwdSel->Fill(x, ieta, k, evObs.nW[ieta], w);
+        if (std::isfinite(evObs.mean[ieta])) {
+          h.fwdPt->Fill(x, ieta, k, a * evObs.mean[ieta], w);
+          h.ptFwdSel->Fill(x, ieta, k, evObs.mean[ieta], w);
+          h.fwdPtSel->Fill(x, ieta, k, a, w);
         }
       }
     }
@@ -1944,6 +2014,33 @@ struct RadialFlowDecorr {
     dropBinSumw2(h.fwdVar);
   }
 
+  // Raw-moment profiles (cfgRawMoments) named prefix + name + suffix, x axis ax titled xTitle.
+  RawHists declareRaw(HistogramRegistry& r, const std::string& p, const std::string& s, const AxisSpec& ax, const std::string& xTitle)
+  {
+    RawHists h;
+    auto n = [&](const char* name) { return p + name + s; };
+    auto t = [&](const char* rest) { return ";" + xTitle + rest; };
+    const AxisSpec etaIdxAxis{nEta, -0.5, nEta - 0.5, "#eta bin (0: |#eta| < cfgCutEta)"};
+    h.nAnC = r.add<TProfile3D>(n("Prof_Raw_NANC_Nch_etaA_etaC").c_str(), t(";#eta_{A};#eta_{C};#LT N_{A} N_{C}#GT (diagonal #LT N^{2} - #Sigma w^{2}#GT)").c_str(), kTProfile3D, {{ax}, {etaAxis}, {etaAxis}});
+    h.nA = r.add<TProfile3D>(n("Prof_Raw_NA_Nch_etaA_etaC").c_str(), t(";#eta_{A};#eta_{C};#LT N_{A}#GT").c_str(), kTProfile3D, {{ax}, {etaAxis}, {etaAxis}});
+    if (cfgFwdOpt.cfgFwd) {
+      h.fwd = r.add<TProfile3D>(n("Prof_Raw_FwdAmp_Nch_fwdbin_fwdbin").c_str(), t(";forward bin i;forward bin j;#LT a_{i}#GT (i and j read out)").c_str(), kTProfile3D, {{ax}, {fwdAxis}, {fwdAxis}});
+      h.fwdFwd = r.add<TProfile3D>(n("Prof_Raw_FwdAmpFwdAmp_Nch_fwdbin_fwdbin").c_str(), t(";forward bin i;forward bin j;#LT a_{i} a_{j}#GT").c_str(), kTProfile3D, {{ax}, {fwdAxis}, {fwdAxis}});
+      h.fwdN = r.add<TProfile3D>(n("Prof_Raw_FwdAmpN_Nch_etabin_fwdbin").c_str(), t(";#eta bin (0: |#eta| < cut);forward bin;#LT a N#GT").c_str(), kTProfile3D, {{ax}, {etaIdxAxis}, {fwdAxis}});
+      h.nFwdSel = r.add<TProfile3D>(n("Prof_Raw_NFwdSel_Nch_etabin_fwdbin").c_str(), t(";#eta bin (0: |#eta| < cut);forward bin;#LT N#GT (forward bin read out)").c_str(), kTProfile3D, {{ax}, {etaIdxAxis}, {fwdAxis}});
+      h.fwdPt = r.add<TProfile3D>(n("Prof_Raw_FwdAmpMeanpT_Nch_etabin_fwdbin").c_str(), t(";#eta bin (0: |#eta| < cut);forward bin;#LT a [p_{T}]#GT").c_str(), kTProfile3D, {{ax}, {etaIdxAxis}, {fwdAxis}});
+      h.ptFwdSel = r.add<TProfile3D>(n("Prof_Raw_MeanpTFwdSel_Nch_etabin_fwdbin").c_str(), t(";#eta bin (0: |#eta| < cut);forward bin;#LT [p_{T}]#GT (forward bin read out)").c_str(), kTProfile3D, {{ax}, {etaIdxAxis}, {fwdAxis}});
+      h.fwdPtSel = r.add<TProfile3D>(n("Prof_Raw_FwdAmpPtSel_Nch_etabin_fwdbin").c_str(), t(";#eta bin (0: |#eta| < cut);forward bin;#LT a#GT ([p_{T}] defined)").c_str(), kTProfile3D, {{ax}, {etaIdxAxis}, {fwdAxis}});
+    }
+    return h;
+  }
+  static void dropBinSumw2(const RawHists& h)
+  {
+    for (const auto& p : {h.nAnC, h.nA, h.fwd, h.fwdFwd, h.fwdN, h.nFwdSel, h.fwdPt, h.ptFwdSel, h.fwdPtSel}) {
+      dropBinSumw2(p);
+    }
+  }
+
   // Fluctuation profiles of every variation, level and pT range.
   void declareFlucAll(uint32_t mask, bool isMC)
   {
@@ -1960,6 +2057,12 @@ struct RadialFlowDecorr {
         }
       }
     }
+    if (cfgFwdOpt.cfgRawMoments && TESTBIT(mask, kSystBase)) {
+      for (int l = 0; l < nLev; ++l) {
+        hists.raw[l] = declareRaw(histos, isMC ? mcDir[l] : std::string{}, "", nchAxisObs, "N_{ch}");
+        dropBinSumw2(hists.raw[l]);
+      }
+    }
   }
 
   // Poisson-bootstrap replicas of all fluctuation profiles (Base, DataFluc only). Their x axis
@@ -1969,6 +2072,11 @@ struct RadialFlowDecorr {
     for (int s = 0; s < bootstrap.n; ++s) {
       for (int ipt = 0; ipt < ptRange.n; ++ipt) {
         hists.boot[s][ipt] = declareFluc(ipt == 0 ? histosBoot : histosBoot2, "Bootstrap/", Form("_sample%d", s), centAxisBoot, false, ipt, &hists.boot[s][0]);
+      }
+      if (cfgFwdOpt.cfgRawMoments) {
+        // the replica means do not need the per-bin sum of squared weights (errors from the replica spread)
+        hists.bootRaw[s] = declareRaw(histosBoot, "Bootstrap/", Form("_sample%d", s), centAxisBoot, "Centrality (%)");
+        dropBinSumw2(hists.bootRaw[s]);
       }
     }
   }
@@ -2428,11 +2536,12 @@ struct RadialFlowDecorr {
       LOGF(warning, "cfgNBootstrap=%d capped at %d", cfgNBootstrap.value, KMaxBoot);
     }
     {
-      // objects per replica, as booked in declareFluc (C2Sub, CNN, C_TA, c1; Obs and forward in range 0 only):
-      // range 0 in histosBoot, range 1 in histosBoot2
+      // objects per replica, as booked in declareFluc (C2Sub, CNN, C_TA, c1; Obs and forward in range 0 only)
+      // and declareRaw (N_A N_C, N_A; 7 forward): range 0 and raw moments in histosBoot, range 1 in histosBoot2
       const int nTA = cfgAziTA ? 2 : 0;
       const int nFwdObj = cfgFwdOpt.cfgFwd ? 4 : 0;
-      const int perReplica0 = 3 + nTA + nFwdObj;
+      const int nRawObj = cfgFwdOpt.cfgRawMoments ? 2 + (cfgFwdOpt.cfgFwd ? 7 : 0) : 0;
+      const int perReplica0 = 3 + nTA + nFwdObj + nRawObj;
       const int perReplicaExtra = (ptRange.n - 1) * (2 + nTA);
       const int nFit = std::min(KMaxRegistryObjects / perReplica0, perReplicaExtra > 0 ? KMaxRegistryObjects / perReplicaExtra : KMaxBoot);
       if (bootstrap.on && bootstrap.n > nFit) {
@@ -3170,6 +3279,9 @@ struct RadialFlowDecorr {
           for (int ipt = 0; ipt < ptRange.n; ++ipt) {
             computeEventObs(sums[v][l][ipt], v, l, fwd, nCh, evObs, ipt);
             fillFluc(hists.fluc[v][l][ipt], evObs, 1., nCh, ipt);
+            if (v == kSystBase && ipt == 0) {
+              fillRaw(hists.raw[l], evObs, 1., nCh);
+            }
           }
         }
       }
@@ -3481,11 +3593,17 @@ struct RadialFlowDecorr {
       for (int ipt = 0; ipt < ptRange.n; ++ipt) {
         computeEventObs(sums[v][0][ipt], v, 0, cfgFwdOpt.cfgFwd ? &fwd : nullptr, nCh, evObs, ipt);
         fillFluc(hists.fluc[v][0][ipt], evObs, 1., nCh, ipt);
+        if (v == kSystBase && ipt == 0) {
+          fillRaw(hists.raw[0], evObs, 1., nCh);
+        }
         // bootstrap replicas of Base, in the 5% centrality classes
         if (v == kSystBase && bootstrap.on) {
           for (int s = 0; s < bootstrap.n; ++s) {
             if (poisW[s] > 0.) {
               fillFluc(hists.boot[s][ipt], evObs, poisW[s], ev.cent[kSystBase], ipt);
+              if (ipt == 0) {
+                fillRaw(hists.bootRaw[s], evObs, poisW[s], ev.cent[kSystBase]);
+              }
             }
           }
         }
