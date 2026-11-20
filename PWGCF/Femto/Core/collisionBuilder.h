@@ -147,6 +147,7 @@ enum CollisionSels {
 };
 
 constexpr char ColSelHistName[] = "hCollisionSelection";
+constexpr char GenCollisionSelHistName[] = "hGenCollisionSelection";
 const char colSelsName[] = "Collision Selection Object";
 const std::unordered_map<CollisionSels, std::string> collisionSelectionNames = {
   {kSel8, "Sel8"},
@@ -636,6 +637,22 @@ class CollisionBuilder
     mGrpPath = confCcdb.grpPath.value;
     mSubGeneratorId = confFilter.subGeneratorId.value;
 
+    if (mSubGeneratorId >= 0) {
+      LOG(warn) << "CollisionFilter.subGeneratorId = " << mSubGeneratorId << " is active: only collisions "
+                << "whose generated collision has this exact sub-generator ID (0 = MB, >0 = injected signal) "
+                << "are kept. This only makes sense for productions with an injected signal, where "
+                << "sub-generator IDs distinguish the injected signal from the underlying event. General-"
+                << "purpose MC never sets a sub-generator ID, so this filter silently discards the entire "
+                << "sample -- with no trace in hCollisionSelection, since that histogram is filled earlier, "
+                << "independent of this check. Check hGenCollisionSelection, and only use this filter on "
+                << "injected-signal productions.";
+
+      mHistRegistry = registry;
+      mHistRegistry->add(GenCollisionSelHistName, "; ; Entries", o2::framework::HistType::kTH1F, {{2, -0.5, 1.5}});
+      mHistRegistry->get<TH1>(HIST(GenCollisionSelHistName))->GetXaxis()->SetBinLabel(1, "All analyzed");
+      mHistRegistry->get<TH1>(HIST(GenCollisionSelHistName))->GetXaxis()->SetBinLabel(2, "Passed sub-generator ID filter");
+    }
+
     mProducedCollisions = utils::enableTable("FCols_001", confTable.produceCollisions.value, initContext);
     mProducedLiteCollisions = utils::enableTable("FLiteCols_001", confTable.produceLiteCollisions.value, initContext);
     mProducedCollisionMasks = utils::enableTable("FColMasks_001", confTable.produceCollisionMasks.value, initContext);
@@ -730,9 +747,11 @@ class CollisionBuilder
     if (mSubGeneratorId >= 0) {
       if (col.has_mcCollision()) {
         auto mcCol = col.template mcCollision_as<T2>();
+        mHistRegistry->fill(HIST(GenCollisionSelHistName), 0);
         if (mcCol.getSubGeneratorId() != mSubGeneratorId) {
           return false;
         }
+        mHistRegistry->fill(HIST(GenCollisionSelHistName), 1);
       }
     }
 
@@ -833,6 +852,7 @@ class CollisionBuilder
 
  private:
   CollisionSelection<SelectionHistName, FilterHistName> mCollisionSelection;
+  o2::framework::HistogramRegistry* mHistRegistry = nullptr;
   bool mCollisionAlreadyFilled = false;
   int64_t mCurrentCollisionIndex = -1;
   int mRunNumber = -1;
