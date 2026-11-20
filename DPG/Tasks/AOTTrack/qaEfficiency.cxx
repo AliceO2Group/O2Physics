@@ -500,7 +500,7 @@ struct QaEfficiency {
     subList->SetName(partName);
     listEfficiencyMC->Add(subList);
 
-    auto makeEfficiency = [&](const TString effname, auto h) { // 1D efficiencies
+    auto makeEfficiency = [&](const TString& effname, const auto& h) { // 1D efficiencies
       LOG(debug) << " Making 1D TEfficiency " << effname << " from " << h->GetName();
       const TAxis* axis = h->GetXaxis();
       TString efftitle = h->GetTitle();
@@ -563,7 +563,7 @@ struct QaEfficiency {
     makeEfficiency("ITS-TPC_vsPhi_Prm_Trk", hPhiTrkItsTpcPrm[histogramIndex]);
     makeEfficiency("ITS-TPC-TOF_vsPhi_Prm", hPhiItsTpcTofPrm[histogramIndex]);
 
-    auto makeEfficiency2D = [&](const TString effname, auto h) { // 2D efficiencies
+    auto makeEfficiency2D = [&](const TString& effname, const auto& h) { // 2D efficiencies
       LOG(debug) << " Making 2D TEfficiency " << effname << " from " << h->GetName();
       const TAxis* axisX = h->GetXaxis();
       const TAxis* axisY = h->GetYaxis();
@@ -898,7 +898,7 @@ struct QaEfficiency {
     listEfficiencyData.setObject(new THashList);
     if (makeEff) {
       LOG(debug) << "Making TEfficiency for Data";
-      auto makeEfficiency = [&](TString effname, TString efftitle, auto templateHisto, TEfficiency*& eff) {
+      auto makeEfficiency = [&](const TString& effname, const TString& efftitle, auto templateHisto, TEfficiency*& eff) {
         TAxis* axis = histos.get<TH1>(templateHisto)->GetXaxis();
         if (axis->IsVariableBinSize()) {
           eff = new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXbins()->GetArray());
@@ -927,7 +927,7 @@ struct QaEfficiency {
                      "TPC-TOF M.E. in data " + tagPhi + ";#it{#varphi} (rad);Efficiency", HIST("Data/pos/phi/its_tpc_tof"),
                      effTPCTOFMatchingVsPhi);
 
-      auto makeEfficiency2D = [&](TString effname, TString efftitle, auto templateHistoX, auto templateHistoY, TEfficiency*& eff) {
+      auto makeEfficiency2D = [&](const TString& effname, const TString& efftitle, auto templateHistoX, auto templateHistoY, TEfficiency*& eff) {
         TAxis* axisX = histos.get<TH1>(templateHistoX)->GetXaxis();
         TAxis* axisY = histos.get<TH1>(templateHistoY)->GetYaxis();
         if (axisX->IsVariableBinSize() || axisY->IsVariableBinSize()) {
@@ -1359,15 +1359,15 @@ struct QaEfficiency {
 
     const char* partName = particleName(pdgSign, id);
     LOG(debug) << "Filling efficiency for particle " << static_cast<int>(id) << " " << partName;
-    THashList* subList = static_cast<THashList*>(listEfficiencyMC->FindObject(partName));
+    THashList* subList = dynamic_cast<THashList*>(listEfficiencyMC->FindObject(partName));
     if (!subList) {
       LOG(warning) << "Cannot find list of efficiency objects for particle " << partName;
       return;
     }
 
     // Filling 1D efficiencies
-    auto doFillEfficiency = [&](const TString effname, auto num, auto den) {
-      TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
+    auto doFillEfficiency = [&](const TString& effname, const auto& num, const auto& den) {
+      TEfficiency* eff = dynamic_cast<TEfficiency*>(subList->FindObject(effname));
       if (!eff) {
         LOG(warning) << "Cannot find TEfficiency " << effname;
         return;
@@ -1436,8 +1436,8 @@ struct QaEfficiency {
     }
 
     // Filling 2D efficiencies
-    auto fillEfficiency2D = [&](const TString effname, auto num, auto den) {
-      TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
+    auto fillEfficiency2D = [&](const TString& effname, const auto& num, const auto& den) {
+      TEfficiency* eff = dynamic_cast<TEfficiency*>(subList->FindObject(effname));
       if (!eff) {
         LOG(warning) << "Cannot find TEfficiency " << effname;
         return;
@@ -1802,10 +1802,10 @@ struct QaEfficiency {
       }
       float centrality = -1.;
       float occupancy = -1.;
-      if (doOccupancy) {
-        centrality = getCentralityColl(groupedCollisions);
-        occupancy = getOccupancyColl(groupedCollisions);
-      }
+      // if (doOccupancy) {
+      //   centrality = getCentralityColl(groupedCollisions); // FIXME: unused
+      //   occupancy = getOccupancyColl(groupedCollisions); // FIXME: unused
+      // }
       histos.fill(HIST("MC/generatedCollisions"), 2);
       if (skipEventsWithoutTPCTracks) {
         int nTPCTracks = 0;

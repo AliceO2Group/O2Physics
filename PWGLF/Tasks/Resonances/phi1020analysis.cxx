@@ -1028,7 +1028,7 @@ struct Phi1020analysis {
   {
     auto tracksTuple = std::make_tuple(tracks);
 
-    BinningTypeVtxZT0M colBinning{{configBkg.cfgVtxBins, configBkg.cfgMultPercentileBins}, true};
+    BinningTypeVtxZT0M colBinning{{configBkg.cfgVtxBins, configBkg.cfgMultPercentileBins}};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVtxZT0M> pairs{colBinning, configBkg.nEvtMixing, -1, collision, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {

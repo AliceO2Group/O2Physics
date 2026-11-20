@@ -41,6 +41,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 
 using namespace o2;
 using namespace o2::framework;
@@ -50,7 +51,7 @@ using namespace o2::soa;
 using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorFV0AVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEoIs, aod::Mults>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::PMEvSels, aod::EMEoIs, aod::Mults>;
 using MyCollisionsCent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisionsCentQvec = soa::Join<MyCollisionsCent, MyQvectors>;
 
@@ -67,6 +68,8 @@ struct CreateEMEventPhoton {
   Produces<o2::aod::EMSWTriggerBits> emswtbit;
   Produces<o2::aod::EMEventNormInfos_001> event_norm_info;
   Produces<o2::aod::EMEventsWeight> eventWeights;
+  Produces<o2::aod::EMEventsXY> eventXY;   // filled only with fillVertex
+  Produces<o2::aod::EMEventsCov> eventCov; // filled only with fillVertex
 
   enum class EMEventType : int {
     kEvent = 0,
@@ -75,6 +78,7 @@ struct CreateEMEventPhoton {
     kEvent_JJ = 3,
   };
 
+  Configurable<bool> fillVertex{"fillVertex", false, "fill EMEventsXY and EMEventsCov (primary vertex x, y, covariance, chi2; the tables are written in any case, empty if false), joinable to PMEvents: needed by the co-reconstructed mixed event on derived data (photon-mixed-event-producer processDerived)"};
   Configurable<bool> needEMCTrigger{"needEMCTrigger", false, "flag to only save events which have kTVXinEMC trigger bit. To reduce PbPb derived data size"};
   Configurable<bool> needPHSTrigger{"needPHSTrigger", false, "flag to only save events which have kTVXinPHOS trigger bit. To reduce PbPb derived data size"};
   Configurable<bool> enableJJHistograms{"enableJJHistograms", false, "flag to fill JJ QA histograms for outlier rejection"};
@@ -95,6 +99,7 @@ struct CreateEMEventPhoton {
   template <bool isMC, bool isTriggerAnalysis, EMEventType eventtype, typename TCollisions, typename TBCs>
   void skimEvent(TCollisions const& collisions, TBCs const&)
   {
+
     for (const auto& collision : collisions) {
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {
@@ -148,7 +153,10 @@ struct CreateEMEventPhoton {
             collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
       eventalias(collision.alias_raw());
 
-      // eventCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
+      if (fillVertex) {
+        eventXY(collision.posX(), collision.posY());
+        eventCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
+      }
 
       eventMult(collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
 
@@ -278,6 +286,7 @@ struct CreateEMEventPhoton {
 };
 struct AssociatePhotonToEMEvent {
   Produces<o2::aod::V0KFEMEventIds> v0kfeventid;
+  Produces<o2::aod::PCMFreeLegEMEventIds> freelegeventid;
   Produces<o2::aod::EMPrimaryElectronDaEMEventIds> prmeleventid;
   Produces<o2::aod::PHOSEMEventIds> phoseventid;
   Produces<o2::aod::EMCEMEventIds> emceventid;
@@ -311,6 +320,32 @@ struct AssociatePhotonToEMEvent {
     fillEventId(collisions, photons, v0kfeventid, perCollisionPCM);
   }
 
+  // free legs of run 1 (PCMFreeLegIds, linked derived data): one row per free leg, in its order; -1 when the collision has no PMEvent
+  void processPCMFreeLegs(aod::PMEvents const& collisions, aod::PCMFreeLegIds const& freeLegs)
+  {
+    std::unordered_map<int, int> eventOf;
+    for (const auto& collision : collisions) {
+      eventOf[collision.collisionId()] = collision.globalIndex();
+    }
+    for (const auto& leg : freeLegs) {
+      const auto it = eventOf.find(leg.collisionId());
+      freelegeventid(it == eventOf.end() ? -1 : it->second);
+    }
+  }
+
+  // free legs of run 1 with their parameters (PCMFreeLegs, self-contained derived data, donor events only)
+  void processPCMFreeLegsFull(aod::PMEvents const& collisions, aod::PCMFreeLegs const& freeLegs)
+  {
+    std::unordered_map<int, int> eventOf;
+    for (const auto& collision : collisions) {
+      eventOf[collision.collisionId()] = collision.globalIndex();
+    }
+    for (const auto& leg : freeLegs) {
+      const auto it = eventOf.find(leg.collisionId());
+      freelegeventid(it == eventOf.end() ? -1 : it->second);
+    }
+  }
+
   void processElectronFromDalitz(aod::PMEvents const& collisions, aod::EMPrimaryElectronsFromDalitz const& tracks)
   {
     fillEventId(collisions, tracks, prmeleventid, perCollisionEl);
@@ -334,6 +369,8 @@ struct AssociatePhotonToEMEvent {
   void processDummy(aod::PMEvents const&) {}
 
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPCM, "process pcm-event indexing", false);
+  PROCESS_SWITCH(AssociatePhotonToEMEvent, processPCMFreeLegs, "free legs of run 1 (PCMFreeLegIds) -> derived event index, for the mixer on linked derived data", false);
+  PROCESS_SWITCH(AssociatePhotonToEMEvent, processPCMFreeLegsFull, "free legs of run 1 with parameters (PCMFreeLegs) -> derived event index, for the mixer on self-contained derived data", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processElectronFromDalitz, "process dalitzee-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPHOS, "process phos-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processEMC, "process emc-event indexing", false);

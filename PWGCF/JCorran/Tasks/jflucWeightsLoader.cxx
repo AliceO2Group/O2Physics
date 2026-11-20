@@ -16,6 +16,7 @@
 /// The weights are loaded from the local files or CCDB and stored in the JWeights table.
 
 #include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGCF/GenericFramework/DataModel/GfwDerived.h"
 #include "PWGCF/JCorran/DataModel/JCatalyst.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -116,14 +117,16 @@ struct JflucWeightsLoader {
 
   void init(InitContext const&)
   {
-    if (!doprocessLoadWeights && !doprocessLoadWeightsCF && !doprocessJNUACreatorCFDerived) {
+    if (!doprocessLoadWeights && !doprocessLoadWeightsCF && !doprocessLoadWeightsGFW && !doprocessJNUACreatorCFDerived) {
       return;
     }
 
-    if (doprocessLoadWeights && doprocessLoadWeightsCF)
-      LOGF(fatal, "Only one of JTracks or CFTracks processing can be enabled at a time.");
+    const int nWeightProcesses = static_cast<int>(doprocessLoadWeights) + static_cast<int>(doprocessLoadWeightsCF) + static_cast<int>(doprocessLoadWeightsGFW);
+    if (nWeightProcesses > 1) {
+      LOGF(fatal, "Only one of JTracks, CFTracks, or GFWTracks weight loading can be enabled at a time.");
+    }
 
-    if (doprocessLoadWeights || doprocessLoadWeightsCF) {
+    if (doprocessLoadWeights || doprocessLoadWeightsCF || doprocessLoadWeightsGFW) {
       // NUA corrections from local file or CCDB
       if (cfgPathPhiWeights.value.substr(0, 8) == "local://") {
         LOGF(info, "Using NUA corrections locally from: %s", cfgPathPhiWeights.value.substr(8).c_str());
@@ -172,7 +175,7 @@ struct JflucWeightsLoader {
           ccdb->setFatalWhenNull(false);
         }
       }
-    } // doprocessLoadWeights || doprocessLoadWeightsCF
+    } // doprocessLoadWeights || doprocessLoadWeightsCF || doprocessLoadWeightsGFW
 
     if (doprocessJNUACreatorCFDerived) {
       qaHistRegistry.add("trackType", "trackType;trackType;counts", HistType::kTH1F, {{65, -0.5, 64.5}});
@@ -275,6 +278,12 @@ struct JflucWeightsLoader {
     loadWeights(output, collision, tracks);
   }
   PROCESS_SWITCH(JflucWeightsLoader, processLoadWeightsCF, "Load weights histograms for CF derived data table", true);
+
+  void processLoadWeightsGFW(aod::GfwCollision const& collision, aod::GfwTracks const& tracks)
+  {
+    loadWeights(output, collision, tracks);
+  }
+  PROCESS_SWITCH(JflucWeightsLoader, processLoadWeightsGFW, "Load weights histograms for GFW derived data table", false);
 
   Produces<aod::J2ProngWeights> output2p;
   void processLoadWeightsCF2Prong(aod::CFCollision const& collision, aod::CF2ProngTracks const& tracks2p)

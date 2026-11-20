@@ -72,7 +72,11 @@ DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, float);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
 DECLARE_SOA_COLUMN(LocalBC, localBC, int);
+DECLARE_SOA_COLUMN(KNoCollInTimeRangeStandard, kNoCollInTimeRangeStandard, bool);
+DECLARE_SOA_COLUMN(KNoCollInRofStandard, kNoCollInRofStandard, bool);
+DECLARE_SOA_COLUMN(KNoHighMultCollInPrevRof, kNoHighMultCollInPrevRof, bool);
 // FIT info
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
@@ -107,9 +111,12 @@ DECLARE_SOA_COLUMN(LeadingTrackKaPID, leadingTrackKaPID, float);
 DECLARE_SOA_COLUMN(SubleadingTrackKaPID, subleadingTrackKaPID, float);
 DECLARE_SOA_COLUMN(LeadingTrackPrPID, leadingTrackPrPID, float);
 DECLARE_SOA_COLUMN(SubleadingTrackPrPID, subleadingTrackPrPID, float);
+DECLARE_SOA_COLUMN(LeadingTrackTofHit, leadingTrackTofHit, int);
+DECLARE_SOA_COLUMN(SubleadingTrackTofHit, subleadingTrackTofHit, int);
 } // namespace reco_tree
 DECLARE_SOA_TABLE(RecoTree, "AOD", "RECOTREE",
-                  reco_tree::RecoSetting, reco_tree::RunNumber, reco_tree::PosX, reco_tree::PosY, reco_tree::PosZ, reco_tree::OccupancyInTime, reco_tree::HadronicRate, reco_tree::LocalBC,
+                  reco_tree::RecoSetting, reco_tree::RunNumber, reco_tree::PosX, reco_tree::PosY, reco_tree::PosZ, reco_tree::OccupancyInTime, reco_tree::HadronicRate, reco_tree::GlobalBC, reco_tree::LocalBC,
+                  reco_tree::KNoCollInTimeRangeStandard, reco_tree::KNoCollInRofStandard, reco_tree::KNoHighMultCollInPrevRof,
                   reco_tree::TotalFT0AmplitudeA, reco_tree::TotalFT0AmplitudeC, reco_tree::TotalFV0AmplitudeA, reco_tree::TotalFDDAmplitudeA, reco_tree::TotalFDDAmplitudeC,
                   reco_tree::TimeFT0A, reco_tree::TimeFT0C, reco_tree::TimeFV0A, reco_tree::TimeFDDA, reco_tree::TimeFDDC,
                   reco_tree::EnergyCommonZNA, reco_tree::EnergyCommonZNC, reco_tree::TimeZNA, reco_tree::TimeZNC, reco_tree::NeutronClass,
@@ -120,8 +127,8 @@ DECLARE_SOA_TABLE(RecoTree, "AOD", "RECOTREE",
                   reco_tree::LeadingTrackPiPID, reco_tree::SubleadingTrackPiPID,
                   reco_tree::LeadingTrackElPID, reco_tree::SubleadingTrackElPID,
                   reco_tree::LeadingTrackKaPID, reco_tree::SubleadingTrackKaPID,
-                  reco_tree::LeadingTrackPrPID, reco_tree::SubleadingTrackPrPID);
-
+                  reco_tree::LeadingTrackPrPID, reco_tree::SubleadingTrackPrPID,
+                  reco_tree::LeadingTrackTofHit, reco_tree::SubleadingTrackTofHit);
 namespace mc_tree
 {
 // misc event info
@@ -129,6 +136,7 @@ DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(PosX, posX, float);
 DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
 DECLARE_SOA_COLUMN(LocalBC, localBC, int);
 // tracks
 DECLARE_SOA_COLUMN(LeadingTrackSign, leadingTrackSign, int);
@@ -141,7 +149,7 @@ DECLARE_SOA_COLUMN(LeadingTrackPhi, leadingTrackPhi, float);
 DECLARE_SOA_COLUMN(SubleadingTrackPhi, subleadingTrackPhi, float);
 } // namespace mc_tree
 DECLARE_SOA_TABLE(McTree, "AOD", "MCTREE",
-                  mc_tree::RunNumber, mc_tree::PosX, mc_tree::PosY, mc_tree::PosZ, mc_tree::LocalBC,
+                  mc_tree::RunNumber, mc_tree::PosX, mc_tree::PosY, mc_tree::PosZ, mc_tree::GlobalBC, mc_tree::LocalBC,
                   mc_tree::LeadingTrackSign, mc_tree::SubleadingTrackSign,
                   mc_tree::LeadingTrackPt, mc_tree::SubleadingTrackPt,
                   mc_tree::LeadingTrackEta, mc_tree::SubleadingTrackEta,
@@ -149,6 +157,12 @@ DECLARE_SOA_TABLE(McTree, "AOD", "MCTREE",
 
 namespace resolution_tree
 {
+// misc event info
+DECLARE_SOA_COLUMN(GenGlobalBC, genGlobalBC, uint64_t);
+DECLARE_SOA_COLUMN(GenLocalBC, genLocalBC, int);
+DECLARE_SOA_COLUMN(RecoRunNumber, recoRunNumber, int);
+DECLARE_SOA_COLUMN(RecoGlobalBC, recoGlobalBC, uint64_t);
+DECLARE_SOA_COLUMN(RecoLocalBC, recoLocalBC, int);
 // vertex info
 DECLARE_SOA_COLUMN(GenPosX, genPosX, float);
 DECLARE_SOA_COLUMN(GenPosY, genPosY, float);
@@ -156,6 +170,17 @@ DECLARE_SOA_COLUMN(GenPosZ, genPosZ, float);
 DECLARE_SOA_COLUMN(RecoPosX, recoPosX, float);
 DECLARE_SOA_COLUMN(RecoPosY, recoPosY, float);
 DECLARE_SOA_COLUMN(RecoPosZ, recoPosZ, float);
+// FIT info
+DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
+DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
+DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float);
+DECLARE_SOA_COLUMN(TotalFDDAmplitudeA, totalFDDAmplitudeA, float);
+DECLARE_SOA_COLUMN(TotalFDDAmplitudeC, totalFDDAmplitudeC, float);
+DECLARE_SOA_COLUMN(TimeFT0A, timeFT0A, float);
+DECLARE_SOA_COLUMN(TimeFT0C, timeFT0C, float);
+DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);
+DECLARE_SOA_COLUMN(TimeFDDA, timeFDDA, float);
+DECLARE_SOA_COLUMN(TimeFDDC, timeFDDC, float);
 // track info
 DECLARE_SOA_COLUMN(LeadingSign, leadingSign, int);
 DECLARE_SOA_COLUMN(LeadingGenPt, leadingGenPt, float);
@@ -164,6 +189,7 @@ DECLARE_SOA_COLUMN(LeadingGenPhi, leadingGenPhi, float);
 DECLARE_SOA_COLUMN(LeadingRecoPt, leadingRecoPt, float);
 DECLARE_SOA_COLUMN(LeadingRecoEta, leadingRecoEta, float);
 DECLARE_SOA_COLUMN(LeadingRecoPhi, leadingRecoPhi, float);
+DECLARE_SOA_COLUMN(LeadingRecoTofHit, leadingRecoTofHit, int);
 DECLARE_SOA_COLUMN(SubleadingSign, subleadingSign, int);
 DECLARE_SOA_COLUMN(SubleadingGenPt, subleadingGenPt, float);
 DECLARE_SOA_COLUMN(SubleadingGenEta, subleadingGenEta, float);
@@ -171,14 +197,20 @@ DECLARE_SOA_COLUMN(SubleadingGenPhi, subleadingGenPhi, float);
 DECLARE_SOA_COLUMN(SubleadingRecoPt, subleadingRecoPt, float);
 DECLARE_SOA_COLUMN(SubleadingRecoEta, subleadingRecoEta, float);
 DECLARE_SOA_COLUMN(SubleadingRecoPhi, subleadingRecoPhi, float);
+DECLARE_SOA_COLUMN(SubleadingRecoTofHit, subleadingRecoTofHit, int);
 } // namespace resolution_tree
 DECLARE_SOA_TABLE(ResolutionTree, "AOD", "RESOLUTIONTREE",
+                  resolution_tree::GenGlobalBC, resolution_tree::GenLocalBC,
+                  resolution_tree::RecoRunNumber,
+                  resolution_tree::RecoGlobalBC, resolution_tree::RecoLocalBC,
                   resolution_tree::GenPosX, resolution_tree::GenPosY, resolution_tree::GenPosZ,
                   resolution_tree::RecoPosX, resolution_tree::RecoPosY, resolution_tree::RecoPosZ,
+                  resolution_tree::TotalFT0AmplitudeA, resolution_tree::TotalFT0AmplitudeC, resolution_tree::TotalFV0AmplitudeA, resolution_tree::TotalFDDAmplitudeA, resolution_tree::TotalFDDAmplitudeC,
+                  resolution_tree::TimeFT0A, resolution_tree::TimeFT0C, resolution_tree::TimeFV0A, resolution_tree::TimeFDDA, resolution_tree::TimeFDDC,
                   resolution_tree::LeadingSign, resolution_tree::LeadingGenPt, resolution_tree::LeadingGenEta, resolution_tree::LeadingGenPhi,
-                  resolution_tree::LeadingRecoPt, resolution_tree::LeadingRecoEta, resolution_tree::LeadingRecoPhi,
+                  resolution_tree::LeadingRecoPt, resolution_tree::LeadingRecoEta, resolution_tree::LeadingRecoPhi, resolution_tree::LeadingRecoTofHit,
                   resolution_tree::SubleadingSign, resolution_tree::SubleadingGenPt, resolution_tree::SubleadingGenEta, resolution_tree::SubleadingGenPhi,
-                  resolution_tree::SubleadingRecoPt, resolution_tree::SubleadingRecoEta, resolution_tree::SubleadingRecoPhi);
+                  resolution_tree::SubleadingRecoPt, resolution_tree::SubleadingRecoEta, resolution_tree::SubleadingRecoPhi, resolution_tree::SubleadingRecoTofHit);
 } // namespace o2::aod
 
 struct UpcRhoAnalysis {
@@ -188,9 +220,9 @@ struct UpcRhoAnalysis {
 
   SGSelector sgSelector;
 
-  const float pcEtaCut = 0.9; // physics coordination recommendation
-  const int nPions = 2;       // only study dipion final states
-  const std::vector<int> runNumbers = {544013, 544028, 544032, 544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124, 544184, 544185, 544389, 544390, 544391, 544392, 544451, 544454, 544474, 544475, 544476, 544477, 544490, 544491, 544492, 544508, 544510, 544511, 544512, 544514, 544515, 544518, 544548, 544549, 544550, 544551, 544564, 544565, 544567, 544568, 544580, 544582, 544583, 544585, 544614, 544640, 544652, 544653, 544672, 544674, 544692, 544693, 544694, 544696, 544739, 544742, 544754, 544767, 544794, 544795, 544797, 544813, 544868, 544886, 544887, 544896, 544911, 544913, 544914, 544917, 544931, 544947, 544961, 544963, 544964, 544968, 544991, 544992, 545004, 545008, 545009, 545041, 545042, 545044, 545047, 545060, 545062, 545063, 545064, 545066, 545086, 545103, 545117, 545171, 545184, 545185, 545210, 545222, 545223, 545246, 545249, 545262, 545289, 545291, 545294, 545295, 545296, 545311, 545312, 545332, 545345, 545367};
+  const float pcEtaCut = 0.9;   // physics coordination recommendation
+  const int nExpectedPions = 2; // only study dipion final states
+  const std::vector<int> runNumbers = {544013, 544028, 544032, 544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124, 544184, 544185, 544389, 544390, 544391, 544392, 544451, 544454, 544474, 544475, 544476, 544477, 544490, 544491, 544492, 544508, 544510, 544511, 544512, 544514, 544515, 544518, 544548, 544549, 544550, 544551, 544564, 544565, 544567, 544568, 544580, 544582, 544583, 544585, 544614, 544640, 544652, 544653, 544672, 544674, 544692, 544693, 544694, 544696, 544739, 544742, 544754, 544767, 544794, 544795, 544797, 544813, 544868, 544886, 544887, 544896, 544913, 544914, 544917, 544931, 544947, 544961, 544963, 544964, 544968, 544992, 545009, 545044, 545047, 545063, 545064, 545066, 545185, 545210, 545223, 545249, 545291, 545294, 545295, 545296, 545312};
   AxisSpec runNumberAxis = {static_cast<int>(runNumbers.size()), 0.5, static_cast<double>(runNumbers.size()) + 0.5, "run number"};
 
   Configurable<bool> isPO{"isPO", false, "processing p-O data?"};
@@ -207,7 +239,7 @@ struct UpcRhoAnalysis {
   Configurable<bool> useRecoFlag{"useRecoFlag", false, "use UPC/STD reconstruction flag for event selection?"};
   Configurable<int> cutRecoFlag{"cutRecoFlag", 1, "0 = std mode, 1 = upc mode"};
   Configurable<bool> useRctFlag{"useRctFlag", true, "use RCT flags for event selection?"};
-  Configurable<int> cutRctFlag{"cutRctFlag", 1, "0 = off, 1 = CBT, 2 = CBT+ZDC, 3 = CBThadron, 4 = CBThadron+ZDC"};
+  Configurable<int> cutRctFlag{"cutRctFlag", 4, "0 = off, 1 = CBT, 2 = CBT+ZDC, 3 = CBThadron, 4 = CBThadron+ZDC"};
 
   Configurable<bool> selectRuns{"selectRuns", false, "select runs?"};
   Configurable<std::vector<int>> selectedRuns{"selectedRuns", {544013, 544028, 544032, 544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124, 544184, 544185, 544389, 544390, 544391, 544392, 544451, 544454, 544474, 544475, 544476, 544477, 544490, 544491, 544492, 544508, 544510, 544511, 544512, 544514, 544515, 544518, 544548, 544549, 544550, 544551, 544564, 544565, 544567, 544568, 544580, 544582, 544583, 544585, 544614, 544640, 544652, 544653, 544672, 544674, 544692, 544693, 544694, 544696, 544739, 544742, 544754, 544767, 544794, 544795, 544797, 544813, 544868, 544886, 544887, 544896, 544913, 544914, 544917, 544931, 544947, 544961, 544963, 544964, 544968, 544992, 545009, 545044, 545047, 545063, 545064, 545066, 545185, 545210, 545223, 545249, 545291, 545294, 545295, 545296, 545312}, "list of selected runs"};
@@ -230,11 +262,12 @@ struct UpcRhoAnalysis {
   Configurable<float> tracksMaxTpcChi2NClCut{"tracksMaxTpcChi2NClCut", 3.0, "max TPC chi2/Ncls cut"};
   Configurable<float> tracksMinTpcNClsCrossedOverFindableCut{"tracksMinTpcNClsCrossedOverFindableCut", 1.0, "min TPC crossed rows / findable clusters cut"};
   Configurable<float> tracksMinPtCut{"tracksMinPtCut", 0.1, "min pT cut on tracks"};
+  Configurable<bool> applyPid{"applyPid", true, "apply PID before creating derived data?"};
 
   Configurable<float> systemMassMinCut{"systemMassMinCut", 0.5, "min M cut for reco system"};
   Configurable<float> systemMassMaxCut{"systemMassMaxCut", 1.0, "max M cut for reco system"};
   Configurable<float> systemPtCut{"systemPtCut", 0.1, "max pT cut for reco system"};
-  Configurable<float> systemYCut{"systemYCut", 0.9, "rapiditiy cut for reco system"};
+  Configurable<float> systemYCut{"systemYCut", 0.5, "rapiditiy cut for reco system"};
 
   ConfigurableAxis mAxis{"mAxis", {400, 0.0, 4.0}, "#it{m} (GeV/#it{c}^{2})"};
   ConfigurableAxis ptAxis{"ptAxis", {400, 0.0, 4.0}, "#it{p}_{T} (GeV/#it{c})"};
@@ -256,13 +289,15 @@ struct UpcRhoAnalysis {
 
   void init(o2::framework::InitContext& context)
   {
-    if (context.mOptions.get<bool>("processSGdata") || context.mOptions.get<bool>("processDGdata")) {
+    if (context.mOptions.get<bool>("processSGdata") || context.mOptions.get<bool>("processDGdata") || context.mOptions.get<bool>("processMcRecoWithTruth")) {
       // QA
       // collisions
       rQC.add("QC/collisions/all/hPosXY", ";vertex #it{x} (cm);vertex #it{y} (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
       rQC.add("QC/collisions/all/hPosZ", ";vertex #it{z} (cm);counts", kTH1D, {{400, -20.0, 20.0}});
       rQC.add("QC/collisions/all/hNumContrib", ";number of PV contributors;counts", kTH1D, {{36, -0.5, 35.5}});
       rQC.add("QC/collisions/all/hZdcCommonEnergy", ";ZNA common energy (TeV);ZNC common energy (TeV);counts", kTH2D, {znCommonEnergyAxis, znCommonEnergyAxis});
+      rQC.add("QC/collisions/all/hZnaCommonEnergyPerRun", ";ZNA common energy (TeV);run number;counts", kTH2D, {znCommonEnergyAxis, runNumberAxis});
+      rQC.add("QC/collisions/all/hZncCommonEnergyPerRun", ";ZNC common energy (TeV);run number;counts", kTH2D, {znCommonEnergyAxis, runNumberAxis});
       rQC.add("QC/collisions/all/hZdcTime", ";ZNA time (ns);ZNC time (ns);counts", kTH2D, {znTimeAxis, znTimeAxis});
       rQC.add("QC/collisions/all/hZNTimeVsZNCommonEnergy", ";ZNA/C common energy (TeV);ZNA/C time (ns);counts", kTH2D, {znCommonEnergyAxis, znTimeAxis});
       rQC.add("QC/collisions/all/hTotalFT0AmplitudeA", ";FT0A amplitude;counts", kTH1D, {{160, 0.0, 160.0}});
@@ -276,12 +311,17 @@ struct UpcRhoAnalysis {
       rQC.add("QC/collisions/all/hTimeFDDA", ";FDDA time (ns);counts", kTH1D, {{400, -5.0, 35.0}});
       rQC.add("QC/collisions/all/hTimeFDDC", ";FDDC time (ns);counts", kTH1D, {{400, -5.0, 35.0}});
       rQC.add("QC/collisions/all/hOccupancyInTime", ";occupancy in time;counts", kTH1D, {{1100, 0.0, 1100.0}});
+      rQC.add("QC/collisions/all/hRecoMode", ";reconstruction mode;counts", kTH1D, {{2, -0.5, 1.5}});
       rQC.add("QC/collisions/hNumContribVsPVTracks", ";number of track.isPVContributor() per collision;collision.numContrib();counts", kTH2D, {{101, -0.5, 100.5}, {101, -0.5, 100.5}});
+      rQC.add("QC/collisions/hLocalBC", ";BC ID;counts", kTH1D, {{o2::constants::lhc::LHCMaxBunches, -0.5, static_cast<double>(o2::constants::lhc::LHCMaxBunches) - 0.5}});
+      rQC.add("QC/collisions/all/hkNoCollInTimeRangeStandard", ";kNoCollInTimeRangeStandard;counts", kTH1D, {{2, -0.5, 1.5}});
+      rQC.add("QC/collisions/all/hkNoCollInRofStandard", ";kNoCollInRofStandard;counts", kTH1D, {{2, -0.5, 1.5}});
+      rQC.add("QC/collisions/all/hkNoHighMultCollInPrevRof", ";kNoHighMultCollInPrevRof;counts", kTH1D, {{2, -0.5, 1.5}});
       // events with selected rho candidates
       rQC.addClone("QC/collisions/all/", "QC/collisions/trackSelections/");
       rQC.addClone("QC/collisions/all/", "QC/collisions/systemSelections/");
 
-      std::vector<std::string> collisionSelectionCounterLabels = {"all collisions", "rapidity gap", "ITS-TPC vertex", "same bunch pile-up", "ITS ROF border", "TF border", "#it{z} position", "number of contributors", "RCT selections", "reco flag selection", "occupancy selection"};
+      std::vector<std::string> collisionSelectionCounterLabels = {"all collisions", "rapidity gap", "ITS-TPC vertex", "same bunch pile-up", "ITS ROF border", "TF border", "vertex #it{z} position", "number of contributors", "RCT selections", "occupancy selection"};
       rQC.add("QC/collisions/hSelectionCounter", ";;collisions passing selections", kTH1D, {{static_cast<int>(collisionSelectionCounterLabels.size()), -0.5, static_cast<float>(collisionSelectionCounterLabels.size()) - 0.5}});
       rQC.add("QC/collisions/hSelectionCounterPerRun", ";;run number;collisions passing selections", kTH2D, {{static_cast<int>(collisionSelectionCounterLabels.size()), -0.5, static_cast<float>(collisionSelectionCounterLabels.size()) - 0.5}, runNumberAxis});
       for (int i = 0; i < static_cast<int>(collisionSelectionCounterLabels.size()); ++i) {
@@ -292,13 +332,10 @@ struct UpcRhoAnalysis {
         rQC.get<TH2>(HIST("QC/collisions/hSelectionCounterPerRun"))->GetYaxis()->SetBinLabel(i + 1, std::to_string(runNumbers[i]).c_str());
       // tracks
       rQC.add("QC/tracks/all/hTpcNSigmaPi", ";TPC #it{n#sigma}(#pi);counts", kTH1D, {nSigmaAxis});
-      rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaPi", ";TPC #it{n#sigma}(#pi);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {200, 0.0, 4.0}, {18, -0.9, 0.9}});
       rQC.add("QC/tracks/all/hTpcNSigmaEl", ";TPC #it{n#sigma}(e);counts", kTH1D, {nSigmaAxis});
-      rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaEl", ";TPC #it{n#sigma}(e);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {200, 0.0, 4.0}, {18, -0.9, 0.9}});
       rQC.add("QC/tracks/all/hTpcNSigmaKa", ";TPC #it{n#sigma}(K);counts", kTH1D, {nSigmaAxis});
-      rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaKa", ";TPC #it{n#sigma}(K);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {200, 0.0, 4.0}, {18, -0.9, 0.9}});
       rQC.add("QC/tracks/all/hTpcNSigmaPr", ";TPC #it{n#sigma}(p);counts", kTH1D, {nSigmaAxis});
-      rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaPr", ";TPC #it{n#sigma}(p);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {200, 0.0, 4.0}, {18, -0.9, 0.9}});
+      rQC.add("QC/tracks/all/hTpcNSigmaMu", ";TPC #it{n#sigma}(#mu);counts", kTH1D, {nSigmaAxis});
       rQC.add("QC/tracks/all/hDcaXYZ", ";track #it{DCA}_{z} (cm);track #it{DCA}_{xy} (cm);counts", kTH2D, {{1000, -5.0, 5.0}, {400, -2.0, 2.0}});
       rQC.add("QC/tracks/all/hItsNCls", ";ITS #it{N}_{cls};counts", kTH1D, {{9, -0.5, 8.5}});
       rQC.add("QC/tracks/all/hItsChi2NCl", ";ITS #it{#chi}^{2}/#it{N}_{cls};counts", kTH1D, {{150, 0.0, 15.0}});
@@ -311,18 +348,31 @@ struct UpcRhoAnalysis {
       rQC.add("QC/tracks/all/hPhi", ";#it{#phi} (rad);counts", kTH1D, {phiAxis});
       rQC.add("QC/tracks/all/hTpcSignalVsP", ";|#it{p}| (GeV/#it{c});TPC d#it{E}/d#it{x} signal (arb. units);counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
       rQC.add("QC/tracks/all/hTpcSignalVsPt", ";#it{p}_{T} (GeV/#it{c});TPC d#it{E}/d#it{x} signal (arb. units);counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
+      rQC.add("QC/tracks/all/hLength", ";track length (cm);counts", kTH1D, {{1000, 0.0, 1000.0}});
+      rQC.add("QC/tracks/all/hTofChi2", ";TOF #it{#chi}^{2};counts", kTH1D, {{100, 0.0, 10.0}});
+      rQC.add("QC/tracks/all/hTofSignalVsP", ";|#it{p}| (GeV/#it{c});TOF signal (arb. units);counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
+      rQC.add("QC/tracks/all/hTofSignalVsPt", ";#it{p}_{T} (GeV/#it{c});TOF signal (arb. units);counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
+      rQC.add("QC/tracks/all/hTofExpMom", ";expected momentum from TOF (GeV/#it{c});counts", kTH1D, {ptAxis});
+      rQC.add("QC/tracks/all/hBeta", ";TOF #it{#beta};counts", kTH1D, {{1000, 0.0, 1.0}});
+      rQC.add("QC/tracks/all/hBetaError", ";TOF #it{#beta} error;counts", kTH1D, {{1000, 0.0, 1.0}});
+      rQC.add("QC/tracks/all/hTofNSigmaPi", ";TOF #it{n#sigma}(#pi);counts", kTH1D, {nSigmaAxis});
+      rQC.add("QC/tracks/all/hTofNSigmaEl", ";TOF #it{n#sigma}(e);counts", kTH1D, {nSigmaAxis});
+      rQC.add("QC/tracks/all/hTofNSigmaKa", ";TOF #it{n#sigma}(K);counts", kTH1D, {nSigmaAxis});
+      rQC.add("QC/tracks/all/hTofNSigmaPr", ";TOF #it{n#sigma}(p);counts", kTH1D, {nSigmaAxis});
+      rQC.add("QC/tracks/all/hTofNSigmaMu", ";TOF #it{n#sigma}(#mu);counts", kTH1D, {nSigmaAxis});
       // tracks passing selections
       rQC.addClone("QC/tracks/all/", "QC/tracks/trackSelections/");
       rQC.addClone("QC/tracks/all/", "QC/tracks/systemSelections/");
       rQC.add("QC/tracks/trackSelections/hRemainingTracks", ";remaining tracks;counts", kTH1D, {{21, -0.5, 20.5}});
       rQC.add("QC/tracks/trackSelections/hTpcNSigmaPi2D", ";TPC #it{n#sigma}(#pi)_{leading};TPC #it{n#sigma}(#pi)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
+      rQC.add("QC/tracks/trackSelections/hTpcNSigmaPi2DAfterCut", ";TPC #it{n#sigma}(#pi)_{leading};TPC #it{n#sigma}(#pi)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
       rQC.add("QC/tracks/trackSelections/hTpcNSigmaEl2D", ";TPC #it{n#sigma}(e)_{leading};TPC #it{n#sigma}(e)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
       rQC.add("QC/tracks/trackSelections/hTpcNSigmaKa2D", ";TPC #it{n#sigma}(K)_{leading};TPC #it{n#sigma}(K)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
       rQC.add("QC/tracks/trackSelections/hTpcNSigmaPr2D", ";TPC #it{n#sigma}(p)_{leading};TPC #it{n#sigma}(p)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
+      rQC.add("QC/tracks/trackSelections/hTpcNSigmaMu2D", ";TPC #it{n#sigma}(#mu)_{leading};TPC #it{n#sigma}(#mu)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
       // selection counter
       std::vector<std::string> trackSelectionCounterLabels = {"all tracks", "PV contributor", "ITS hit", "ITS #it{N}_{cls}", "itsClusterMap check", "ITS #it{#chi}^{2}/#it{N}_{cls}", "TPC hit", "found TPC #it{N}_{cls}", "TPC #it{#chi}^{2}/#it{N}_{cls}", "TPC crossed rows",
                                                               "TPC crossed rows/#it{N}_{cls}",
-                                                              "TOF requirement",
                                                               "#it{p}_{T}", "#it{DCA}", "#it{#eta}", "exactly 2 tracks", "PID"};
       rQC.add("QC/tracks/hSelectionCounter", ";;tracks passing selections", kTH1D, {{static_cast<int>(trackSelectionCounterLabels.size()), -0.5, static_cast<float>(trackSelectionCounterLabels.size()) - 0.5}});
       rQC.add("QC/tracks/hSelectionCounterPerRun", ";;run number;tracks passing selections", kTH2D, {{static_cast<int>(trackSelectionCounterLabels.size()), -0.5, static_cast<float>(trackSelectionCounterLabels.size()) - 0.5}, runNumberAxis});
@@ -378,7 +428,7 @@ struct UpcRhoAnalysis {
       rSystem.addClone("system/selected/AnAn/", "system/selected/XnXn/");
     }
 
-    if (context.mOptions.get<bool>("processMCdata") || context.mOptions.get<bool>("processMCdataWithBCs")) {
+    if (context.mOptions.get<bool>("processMCdata") || context.mOptions.get<bool>("processMCdataWithBCs") || context.mOptions.get<bool>("processMcRecoWithTruth")) {
       // MC
       // collisions
       rMC.add("MC/collisions/hPosXY", ";vertex #it{x} (cm);vertex #it{y} (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
@@ -413,6 +463,8 @@ struct UpcRhoAnalysis {
       rMC.add("MC/system/hPhiCharge", ";#Delta#it{#phi}_{charge} (rad);counts", kTH1D, {deltaPhiAxis});
       rMC.add("MC/system/hPhiRandomVsM", ";#it{m} (GeV/#it{c}^{2});#Delta#it{#phi} (rad);counts", kTH2D, {mAxis, deltaPhiAxis});
       rMC.add("MC/system/hPhiChargeVsM", ";#it{m} (GeV/#it{c}^{2});#Delta#it{#phi} (rad);counts", kTH2D, {mAxis, deltaPhiAxis});
+      rMC.add("MC/system/hPhiRandomVsPt", ";#it{p}_{T} (GeV/#it{c});#Delta#it{#phi} (rad);counts", kTH2D, {ptAxis, deltaPhiAxis});
+      rMC.add("MC/system/hPhiChargeVsPt", ";#it{p}_{T} (GeV/#it{c});#Delta#it{#phi} (rad);counts", kTH2D, {ptAxis, deltaPhiAxis});
       rMC.addClone("MC/system/", "MC/system/selected/");
     }
 
@@ -434,9 +486,11 @@ struct UpcRhoAnalysis {
       rResolution.add("MC/resolution/system/1D/hM", ";#it{m}_{reco} - #it{m}_{true} (GeV/#it{c}^{2});counts", kTH1D, {resolutionAxis});
       rResolution.add("MC/resolution/system/2D/hMVsM", ";#it{m}_{true} (GeV/#it{c}^{2});#it{m}_{reco} (GeV/#it{c}^{2});counts", kTH2D, {mAxis, mAxis});
       rResolution.add("MC/resolution/system/1D/hPt", ";1/#it{p}_{T, reco} - 1/#it{p}_{T, true} (1/(GeV/#it{c}));counts", kTH1D, {resolutionAxis});
-      rResolution.add("MC/resolution/system/2D/hPtVsPt", ";1/#it{p}_{T, true} (GeV/#it{c});#it{p}_{T, reco} (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
+      rResolution.add("MC/resolution/system/2D/hPtVsPt", ";#it{p}_{T, true} (GeV/#it{c});#it{p}_{T, reco} (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
       rResolution.add("MC/resolution/system/1D/hY", ";#it{y}_{reco} - #it{y}_{true};counts", kTH1D, {resolutionAxis});
       rResolution.add("MC/resolution/system/2D/hYVsY", ";#it{y}_{true};#it{y}_{reco};counts", kTH2D, {yAxis, yAxis});
+      rResolution.add("MC/resolution/system/1D/hPhi", ";#it{#phi}_{reco} - #it{#phi}_{true} (rad);counts", kTH1D, {resolutionAxis});
+      rResolution.add("MC/resolution/system/2D/hPhiVsPhi", ";#it{#phi}_{true} (rad);#it{#phi}_{reco} (rad);counts", kTH2D, {phiAxis, phiAxis});
       rResolution.add("MC/resolution/system/1D/hDeltaPhi", ";#Delta#it{#phi}_{reco} - #Delta#it{#phi}_{true} (rad);counts", kTH1D, {resolutionAxis});
       rResolution.add("MC/resolution/system/2D/hDeltaPhiVsDeltaPhi", ";#Delta#it{#phi}_{true} (rad);#Delta#it{#phi}_{reco} (rad);counts", kTH2D, {deltaPhiAxis, deltaPhiAxis});
     }
@@ -447,11 +501,13 @@ struct UpcRhoAnalysis {
   static constexpr std::string_view NeutronClass[5] = {"AnAn/", "0n0n/", "Xn0n/", "0nXn/", "XnXn/"};
 
   template <int cuts, typename C>
-  void fillCollisionQcHistos(const C& collision) // fills collision QC histograms before/after cuts
+  void fillCollisionQcHistos(const C& collision, int runIndex) // fills collision QC histograms before/after cuts
   {
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hPosXY"), collision.posX(), collision.posY());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hPosZ"), collision.posZ());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hZdcCommonEnergy"), collision.energyCommonZNA(), collision.energyCommonZNC());
+    rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hZnaCommonEnergyPerRun"), collision.energyCommonZNA(), runIndex);
+    rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hZncCommonEnergyPerRun"), collision.energyCommonZNC(), runIndex);
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hZdcTime"), collision.timeZNA(), collision.timeZNC());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hZNTimeVsZNCommonEnergy"), collision.energyCommonZNA(), collision.timeZNA());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hZNTimeVsZNCommonEnergy"), collision.energyCommonZNC(), collision.timeZNC());
@@ -467,6 +523,10 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hTimeFDDA"), collision.timeFDDA());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hTimeFDDC"), collision.timeFDDC());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hOccupancyInTime"), collision.occupancyInTime());
+    rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hRecoMode"), collision.flags());
+    rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hkNoCollInTimeRangeStandard"), collision.trs());
+    rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hkNoCollInRofStandard"), collision.trofs());
+    rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hkNoHighMultCollInPrevRof"), collision.hmpr());
   }
 
   template <int cuts, typename T>
@@ -476,13 +536,10 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hEta"), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPhi"), phi(track.px(), track.py()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaPi"), track.tpcNSigmaPi());
-    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaPi"), track.tpcNSigmaPi(), track.pt(), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaEl"), track.tpcNSigmaEl());
-    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaEl"), track.tpcNSigmaEl(), track.pt(), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaKa"), track.tpcNSigmaKa());
-    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaKa"), track.tpcNSigmaKa(), track.pt(), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaPr"), track.tpcNSigmaPr());
-    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaPr"), track.tpcNSigmaPr(), track.pt(), eta(track.px(), track.py(), track.pz()));
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaMu"), track.tpcNSigmaMu());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hDcaXYZ"), track.dcaZ(), track.dcaXY());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hItsNCls"), track.itsNCls());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hItsChi2NCl"), track.itsChi2NCl());
@@ -492,6 +549,18 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNClsCrossedRowsOverNClsFindable"), (static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcSignalVsP"), std::abs(momentum(track.px(), track.py(), track.pz())), track.tpcSignal());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcSignalVsPt"), track.pt(), track.tpcSignal());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hLength"), track.length());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofChi2"), track.tofChi2());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofSignalVsP"), std::abs(momentum(track.px(), track.py(), track.pz())), track.tofSignal());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofSignalVsPt"), track.pt(), track.tofSignal());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofExpMom"), track.tofExpMom());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hBeta"), track.beta());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hBetaError"), track.betaerror());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofNSigmaPi"), track.tofNSigmaPi());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofNSigmaEl"), track.tofNSigmaEl());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofNSigmaKa"), track.tofNSigmaKa());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofNSigmaPr"), track.tofNSigmaPr());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTofNSigmaMu"), track.tofNSigmaMu());
   }
 
   template <int cuts, int charge>
@@ -612,18 +681,11 @@ struct UpcRhoAnalysis {
       rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 8, runIndex);
     }
 
-    if (useRecoFlag) {
-      if (collision.flags() != cutRecoFlag) // check reconstruction mode
-        return false;
-      rQC.fill(HIST("QC/collisions/hSelectionCounter"), 9);
-      rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 9, runIndex);
-    }
-
     if (cutOccupancy) {
       if (collision.occupancyInTime() > occupancyCut)
         return false;
-      rQC.fill(HIST("QC/collisions/hSelectionCounter"), 10);
-      rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 10, runIndex);
+      rQC.fill(HIST("QC/collisions/hSelectionCounter"), 9);
+      rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 9, runIndex);
     }
 
     // if all selections passed
@@ -686,27 +748,20 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 10);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 10, runIndex);
 
-    if (requireTof) {
-      if (!track.hasTOF())
-        return false;
-      rQC.fill(HIST("QC/tracks/hSelectionCounter"), 11);
-      rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 11, runIndex);
-    }
-
     if (track.pt() < tracksMinPtCut)
+      return false;
+    rQC.fill(HIST("QC/tracks/hSelectionCounter"), 11);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 11, runIndex);
+
+    if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > (0.0105 + 0.0350 / std::pow(track.pt(), 1.1)))
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 12);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 12, runIndex);
 
-    if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > (0.0105 + 0.0350 / std::pow(track.pt(), 1.01)))
+    if (std::abs(eta(track.px(), track.py(), track.pz())) > pcEtaCut)
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 13);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 13, runIndex);
-
-    if (std::abs(eta(track.px(), track.py(), track.pz())) > pcEtaCut)
-      return false;
-    rQC.fill(HIST("QC/tracks/hSelectionCounter"), 14);
-    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 14, runIndex);
 
     // if all selections passed
     return true;
@@ -812,11 +867,11 @@ struct UpcRhoAnalysis {
 
   // function to obtain index of run from the run number vector
   // search for passed run number in the vector and return its index +1 to use in the filling of a histogram
-  int getRunIndex(int runNumber, const std::vector<int>& runNumbers)
+  int getRunIndex(int runNumber, const std::vector<int>& runNumberList)
   {
-    auto it = std::find(runNumbers.begin(), runNumbers.end(), runNumber);
-    if (it != runNumbers.end()) {
-      return std::distance(runNumbers.begin(), it) + 1; // +1 to avoid 0 bin in histogram
+    auto it = std::find(runNumberList.begin(), runNumberList.end(), runNumber);
+    if (it != runNumberList.end()) {
+      return std::distance(runNumberList.begin(), it) + 1; // +1 to avoid 0 bin in histogram
     } else {
       return 0; // return 0 if run number not found
     }
@@ -836,8 +891,9 @@ struct UpcRhoAnalysis {
         nPVTracks++;
     }
     rQC.fill(HIST("QC/collisions/hNumContribVsPVTracks"), nPVTracks, collision.numContrib());
+    rQC.fill(HIST("QC/collisions/hLocalBC"), collision.globalBC() % o2::constants::lhc::LHCMaxBunches);
 
-    fillCollisionQcHistos<0>(collision);           // fill QC histograms before cuts
+    fillCollisionQcHistos<0>(collision, runIndex); // fill QC histograms before cuts
     if (!collisionPassesCuts(collision, runIndex)) // apply collision cuts
       return;
 
@@ -881,16 +937,12 @@ struct UpcRhoAnalysis {
     }
     rQC.fill(HIST("QC/tracks/trackSelections/hRemainingTracks"), cutTracks.size());
 
-    if (static_cast<int>(cutTracks.size()) != nPions) // further consider only two pion systems
+    if (static_cast<int>(cutTracks.size()) != nExpectedPions) // further consider only two pion systems
       return;
-    for (int i = 0; i < nPions; i++) {
-      rQC.fill(HIST("QC/tracks/hSelectionCounter"), 15);
-      rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 15, runIndex);
+    for (int i = 0; i < nExpectedPions; i++) {
+      rQC.fill(HIST("QC/tracks/hSelectionCounter"), 14);
+      rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 14, runIndex);
     }
-    rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaPi2D"), cutTracks[0].tpcNSigmaPi(), cutTracks[1].tpcNSigmaPi());
-    rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaEl2D"), cutTracks[0].tpcNSigmaEl(), cutTracks[1].tpcNSigmaEl());
-    rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaKa2D"), cutTracks[0].tpcNSigmaKa(), cutTracks[1].tpcNSigmaKa());
-    rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaPr2D"), cutTracks[0].tpcNSigmaPr(), cutTracks[1].tpcNSigmaPr());
 
     // create a vector of 4-vectors for selected tracks
     std::vector<ROOT::Math::PxPyPzMVector> cutTracksLVs;
@@ -902,6 +954,12 @@ struct UpcRhoAnalysis {
     auto leadingTrack = momentum(cutTracks[0].px(), cutTracks[0].py(), cutTracks[0].pz()) > momentum(cutTracks[1].px(), cutTracks[1].py(), cutTracks[1].pz()) ? cutTracks[0] : cutTracks[1];
     auto subleadingTrack = (leadingTrack == cutTracks[0]) ? cutTracks[1] : cutTracks[0];
 
+    rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaPi2D"), leadingTrack.tpcNSigmaPi(), subleadingTrack.tpcNSigmaPi());
+    rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaEl2D"), leadingTrack.tpcNSigmaEl(), subleadingTrack.tpcNSigmaEl());
+    rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaKa2D"), leadingTrack.tpcNSigmaKa(), subleadingTrack.tpcNSigmaKa());
+    rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaPr2D"), leadingTrack.tpcNSigmaPr(), subleadingTrack.tpcNSigmaPr());
+    rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaMu2D"), leadingTrack.tpcNSigmaMu(), subleadingTrack.tpcNSigmaMu());
+
     float leadingPt = leadingTrack.pt();
     float subleadingPt = subleadingTrack.pt();
     float leadingEta = eta(leadingTrack.px(), leadingTrack.py(), leadingTrack.pz());
@@ -911,8 +969,12 @@ struct UpcRhoAnalysis {
     float phiRandom = getPhiRandom(cutTracksLVs);
     float phiCharge = getPhiCharge(cutTracks, cutTracksLVs);
 
+    if (applyPid && !tracksPassPID(cutTracks)) // apply PID cut before creating derived data if desired
+      return;
+
     // fill recoTree
-    recoTree(collision.flags(), collision.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.occupancyInTime(), collision.hadronicRate(), collision.globalBC() % o2::constants::lhc::LHCMaxBunches,
+    recoTree(collision.flags(), collision.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.occupancyInTime(), collision.hadronicRate(), collision.globalBC(), collision.globalBC() % o2::constants::lhc::LHCMaxBunches,
+             collision.trs(), collision.trofs(), collision.hmpr(),
              collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
              collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
              energyCommonZNA, energyCommonZNC, timeZNA, timeZNC, neutronClass,
@@ -923,18 +985,20 @@ struct UpcRhoAnalysis {
              leadingTrack.tpcNSigmaPi(), subleadingTrack.tpcNSigmaPi(),
              leadingTrack.tpcNSigmaEl(), subleadingTrack.tpcNSigmaEl(),
              leadingTrack.tpcNSigmaKa(), subleadingTrack.tpcNSigmaKa(),
-             leadingTrack.tpcNSigmaPr(), subleadingTrack.tpcNSigmaPr());
+             leadingTrack.tpcNSigmaPr(), subleadingTrack.tpcNSigmaPr(),
+             leadingTrack.hasTOF(), subleadingTrack.hasTOF());
 
     if (!tracksPassPID(cutTracks)) // apply PID cut
       return;
+    rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaPi2DAfterCut"), leadingTrack.tpcNSigmaPi(), subleadingTrack.tpcNSigmaPi());
 
     for (const auto& cutTrack : cutTracks) {
-      rQC.fill(HIST("QC/tracks/hSelectionCounter"), 16);
-      rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 16, runIndex);
+      rQC.fill(HIST("QC/tracks/hSelectionCounter"), 15);
+      rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 15, runIndex);
       fillTrackQcHistos<1>(cutTrack); // fill QC histograms after cuts
     }
     rQC.fill(HIST("QC/tracks/hTofHitCheck"), leadingTrack.hasTOF(), subleadingTrack.hasTOF());
-    fillCollisionQcHistos<1>(collision); // fill QC histograms after track selections
+    fillCollisionQcHistos<1>(collision, runIndex); // fill QC histograms after track selections
 
     ROOT::Math::PxPyPzMVector system = reconstructSystem(cutTracksLVs);
     int totalCharge = tracksTotalCharge(cutTracks);
@@ -972,7 +1036,7 @@ struct UpcRhoAnalysis {
     // fill histograms for system passing cuts
     switch (totalCharge) {
       case 0:
-        fillCollisionQcHistos<2>(collision);
+        fillCollisionQcHistos<2>(collision, runIndex);
         for (const auto& cutTrack : cutTracks)
           fillTrackQcHistos<2>(cutTrack);
         fillTrack2dHistos<2, 0>(leadingPt, subleadingPt, leadingEta, subleadingEta, leadingPhi, subleadingPhi);
@@ -1066,7 +1130,7 @@ struct UpcRhoAnalysis {
     }
     rMC.fill(HIST("MC/collisions/hNPions"), cutMcParticles.size());
 
-    if (static_cast<int>(cutMcParticles.size()) != 2)
+    if (static_cast<int>(cutMcParticles.size()) != nExpectedPions) // further consider only two pion systems
       return;
     if (mcParticlesLVs.size() != cutMcParticles.size()) // sanity check
       return;
@@ -1098,6 +1162,8 @@ struct UpcRhoAnalysis {
     rMC.fill(HIST("MC/system/hPhiCharge"), phiCharge);
     rMC.fill(HIST("MC/system/hPhiRandomVsM"), mass, phiRandom);
     rMC.fill(HIST("MC/system/hPhiChargeVsM"), mass, phiCharge);
+    rMC.fill(HIST("MC/system/hPhiRandomVsPt"), pT, phiRandom);
+    rMC.fill(HIST("MC/system/hPhiChargeVsPt"), pT, phiCharge);
 
     if (systemPassesCuts(system)) {
       rMC.fill(HIST("MC/system/selected/hM"), mass);
@@ -1113,7 +1179,7 @@ struct UpcRhoAnalysis {
     }
 
     // fill mcTree
-    mcTree(runNumber, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches,
+    mcTree(runNumber, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.globalBC(), mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches,
            leadingPion.pdgCode() / std::abs(leadingPion.pdgCode()), subleadingPion.pdgCode() / std::abs(subleadingPion.pdgCode()),
            pt(leadingPion.px(), leadingPion.py()), pt(subleadingPion.px(), subleadingPion.py()),
            eta(leadingPion.px(), leadingPion.py(), leadingPion.pz()), eta(subleadingPion.px(), subleadingPion.py(), subleadingPion.pz()),
@@ -1146,6 +1212,8 @@ struct UpcRhoAnalysis {
   void processDGdata(FullUdDgCollision const& collision, FullUdTracks const& tracks)
   {
     int runIndex = getRunIndex(collision.runNumber(), runNumbers);
+    rQC.fill(HIST("QC/collisions/hSelectionCounter"), 0); // all collisions
+    rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 0, runIndex);
     rQC.fill(HIST("QC/collisions/hSelectionCounter"), 1); // no single-gap collisions in dataset
     rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 1, runIndex);
 
@@ -1202,7 +1270,7 @@ struct UpcRhoAnalysis {
       recoTracks.push_back(track);
     }
 
-    if (truePionLVs.size() != 2 || recoPionLVs.size() != 2)
+    if (static_cast<int>(truePionLVs.size()) != nExpectedPions || static_cast<int>(recoPionLVs.size()) != nExpectedPions)
       return;
 
     ROOT::Math::PxPyPzMVector trueSystem = reconstructSystem(truePionLVs);
@@ -1216,6 +1284,8 @@ struct UpcRhoAnalysis {
     rResolution.fill(HIST("MC/resolution/system/2D/hPtVsPt"), trueSystem.Pt(), recoSystem.Pt());
     rResolution.fill(HIST("MC/resolution/system/1D/hY"), recoSystem.Rapidity() - trueSystem.Rapidity());
     rResolution.fill(HIST("MC/resolution/system/2D/hYVsY"), trueSystem.Rapidity(), recoSystem.Rapidity());
+    rResolution.fill(HIST("MC/resolution/system/1D/hPhi"), phi(recoSystem.Px(), recoSystem.Py()) - phi(trueSystem.Px(), trueSystem.Py()));
+    rResolution.fill(HIST("MC/resolution/system/2D/hPhiVsPhi"), phi(trueSystem.Px(), trueSystem.Py()), phi(recoSystem.Px(), recoSystem.Py()));
     rResolution.fill(HIST("MC/resolution/system/1D/hDeltaPhi"), recoDeltaPhi - trueDeltaPhi);
     rResolution.fill(HIST("MC/resolution/system/2D/hDeltaPhiVsDeltaPhi"), trueDeltaPhi, recoDeltaPhi);
 
@@ -1224,14 +1294,64 @@ struct UpcRhoAnalysis {
     auto leadingRecoPion = momentum(recoTracks[0].px(), recoTracks[0].py(), recoTracks[0].pz()) > momentum(recoTracks[1].px(), recoTracks[1].py(), recoTracks[1].pz()) ? recoTracks[0] : recoTracks[1];
     auto subleadingRecoPion = (leadingRecoPion == recoTracks[0]) ? recoTracks[1] : recoTracks[0];
 
-    resolutionTree(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
+    resolutionTree(mcCollision.globalBC(), mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches,
+                   collision.runNumber(),
+                   collision.globalBC(), collision.globalBC() % o2::constants::lhc::LHCMaxBunches,
+                   mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
                    collision.posX(), collision.posY(), collision.posZ(),
+                   collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
+                   collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
                    leadingTruePion.pdgCode() / std::abs(leadingTruePion.pdgCode()), pt(leadingTruePion.px(), leadingTruePion.py()), eta(leadingTruePion.px(), leadingTruePion.py(), leadingTruePion.pz()), phi(leadingTruePion.px(), leadingTruePion.py()),
-                   pt(leadingRecoPion.px(), leadingRecoPion.py()), eta(leadingRecoPion.px(), leadingRecoPion.py(), leadingRecoPion.pz()), phi(leadingRecoPion.px(), leadingRecoPion.py()),
+                   pt(leadingRecoPion.px(), leadingRecoPion.py()), eta(leadingRecoPion.px(), leadingRecoPion.py(), leadingRecoPion.pz()), phi(leadingRecoPion.px(), leadingRecoPion.py()), leadingRecoPion.hasTOF(),
                    subleadingTruePion.pdgCode() / std::abs(subleadingTruePion.pdgCode()), pt(subleadingTruePion.px(), subleadingTruePion.py()), eta(subleadingTruePion.px(), subleadingTruePion.py(), subleadingTruePion.pz()), phi(subleadingTruePion.px(), subleadingTruePion.py()),
-                   pt(subleadingRecoPion.px(), subleadingRecoPion.py()), eta(subleadingRecoPion.px(), subleadingRecoPion.py(), subleadingRecoPion.pz()), phi(subleadingRecoPion.px(), subleadingRecoPion.py()));
+                   pt(subleadingRecoPion.px(), subleadingRecoPion.py()), eta(subleadingRecoPion.px(), subleadingRecoPion.py(), subleadingRecoPion.pz()), phi(subleadingRecoPion.px(), subleadingRecoPion.py()), subleadingRecoPion.hasTOF());
   }
   PROCESS_SWITCH(UpcRhoAnalysis, processResolution, "check resolution of kinematic variables", false);
+
+  void processMcRecoWithTruth(soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::UDZdcsReduced, aod::SGCollisions, aod::UDMcCollsLabels>::iterator const& collision, soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags, aod::UDMcTrackLabels> const& tracks, aod::UDMcCollisions const&, aod::UDMcParticles const&)
+  {
+    // basically just runs the analysis as for normal data but also accesses the MC truth information for the tracks and collisions
+    auto mcCollision = collision.udMcCollision();
+    const int runIndex = -1; // we don't care here
+    if (cutGapSide && collision.gapSide() != gapSide)
+      return;
+    if (!collisionPassesCuts(collision, runIndex)) // apply collision cuts
+      return;
+
+    std::vector<decltype(tracks.begin())> recoTracks; // store selected tracks
+    std::vector<decltype(tracks.begin().udMcParticle())> trueTracks;
+    for (const auto& track : tracks) {
+      fillTrackQcHistos<0>(track); // fill QC histograms before cuts
+
+      if (!trackPassesCuts(track, runIndex)) // apply track cuts
+        continue;
+      recoTracks.push_back(track);
+      if (track.has_udMcParticle())
+        trueTracks.push_back(track.udMcParticle());
+    }
+    if (static_cast<int>(recoTracks.size()) != nExpectedPions || static_cast<int>(trueTracks.size()) != nExpectedPions) // further consider only two pion systems
+      return;
+    if (applyPid && !tracksPassPID(recoTracks)) // apply PID cut before creating derived data if desired
+      return;
+
+    auto leadingTruePion = momentum(trueTracks[0].px(), trueTracks[0].py(), trueTracks[0].pz()) > momentum(trueTracks[1].px(), trueTracks[1].py(), trueTracks[1].pz()) ? trueTracks[0] : trueTracks[1];
+    auto subleadingTruePion = (leadingTruePion == trueTracks[0]) ? trueTracks[1] : trueTracks[0];
+    auto leadingRecoPion = momentum(recoTracks[0].px(), recoTracks[0].py(), recoTracks[0].pz()) > momentum(recoTracks[1].px(), recoTracks[1].py(), recoTracks[1].pz()) ? recoTracks[0] : recoTracks[1];
+    auto subleadingRecoPion = (leadingRecoPion == recoTracks[0]) ? recoTracks[1] : recoTracks[0];
+
+    resolutionTree(mcCollision.globalBC(), mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches,
+                   collision.runNumber(),
+                   collision.globalBC(), collision.globalBC() % o2::constants::lhc::LHCMaxBunches,
+                   mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
+                   collision.posX(), collision.posY(), collision.posZ(),
+                   collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
+                   collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
+                   leadingTruePion.pdgCode() / std::abs(leadingTruePion.pdgCode()), pt(leadingTruePion.px(), leadingTruePion.py()), eta(leadingTruePion.px(), leadingTruePion.py(), leadingTruePion.pz()), phi(leadingTruePion.px(), leadingTruePion.py()),
+                   pt(leadingRecoPion.px(), leadingRecoPion.py()), eta(leadingRecoPion.px(), leadingRecoPion.py(), leadingRecoPion.pz()), phi(leadingRecoPion.px(), leadingRecoPion.py()), leadingRecoPion.hasTOF(),
+                   subleadingTruePion.pdgCode() / std::abs(subleadingTruePion.pdgCode()), pt(subleadingTruePion.px(), subleadingTruePion.py()), eta(subleadingTruePion.px(), subleadingTruePion.py(), subleadingTruePion.pz()), phi(subleadingTruePion.px(), subleadingTruePion.py()),
+                   pt(subleadingRecoPion.px(), subleadingRecoPion.py()), eta(subleadingRecoPion.px(), subleadingRecoPion.py(), subleadingRecoPion.pz()), phi(subleadingRecoPion.px(), subleadingRecoPion.py()), subleadingRecoPion.hasTOF());
+  }
+  PROCESS_SWITCH(UpcRhoAnalysis, processMcRecoWithTruth, "process MC reco with access to MC truth", false);
 
   void processCollisionRecoCheck(aod::UDMcCollision const& /* mcCollision */, soa::SmallGroups<soa::Join<aod::UDMcCollsLabels, aod::UDCollisions>> const& collisions)
   {

@@ -30,10 +30,9 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_B0(FEATURE)                                      \
-  {                                                               \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesB0ToDPi::FEATURE) \
-  }
+#define FILL_MAP_B0(FEATURE) \
+  {                          \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesB0ToDPi::FEATURE)}
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
@@ -90,6 +89,14 @@ enum class InputFeaturesB0ToDPi : uint8_t {
   decayLengthXYNormalised,
   cpa,
   cpaXY,
+  decayLengthDToPv,
+  decayLengthDToPvXY,
+  decayLengthDToB,
+  decayLengthDToBXY,
+  cpaDToPv,
+  cpaDToPvXY,
+  cpaDToB,
+  cpaDToBXY,
   maxNormalisedDeltaIP,
   prong0MlScoreBkg,
   prong0MlScorePrompt,
@@ -139,6 +146,14 @@ class HfMlResponseB0ToDPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_B0(decayLengthXYNormalised);
         CHECK_AND_FILL_VEC_B0(cpa);
         CHECK_AND_FILL_VEC_B0(cpaXY);
+        CHECK_AND_FILL_VEC_B0(decayLengthDToPv);
+        CHECK_AND_FILL_VEC_B0(decayLengthDToPvXY);
+        CHECK_AND_FILL_VEC_B0(decayLengthDToB);
+        CHECK_AND_FILL_VEC_B0(decayLengthDToBXY);
+        CHECK_AND_FILL_VEC_B0(cpaDToPv);
+        CHECK_AND_FILL_VEC_B0(cpaDToPvXY);
+        CHECK_AND_FILL_VEC_B0(cpaDToB);
+        CHECK_AND_FILL_VEC_B0(cpaDToBXY);
         CHECK_AND_FILL_VEC_B0(maxNormalisedDeltaIP);
         // TPC PID variable
         CHECK_AND_FILL_VEC_B0_FULL(prongBachPi, tpcNSigmaPi1, tpcNSigmaPi);
@@ -202,6 +217,14 @@ class HfMlResponseB0ToDPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_B0(decayLengthXYNormalised);
         CHECK_AND_FILL_VEC_B0(cpa);
         CHECK_AND_FILL_VEC_B0(cpaXY);
+        CHECK_AND_FILL_VEC_B0(decayLengthDToPv);
+        CHECK_AND_FILL_VEC_B0(decayLengthDToPvXY);
+        CHECK_AND_FILL_VEC_B0(decayLengthDToB);
+        CHECK_AND_FILL_VEC_B0(decayLengthDToBXY);
+        CHECK_AND_FILL_VEC_B0(cpaDToPv);
+        CHECK_AND_FILL_VEC_B0(cpaDToPvXY);
+        CHECK_AND_FILL_VEC_B0(cpaDToB);
+        CHECK_AND_FILL_VEC_B0(cpaDToBXY);
         CHECK_AND_FILL_VEC_B0(maxNormalisedDeltaIP);
         // TPC PID variable
         CHECK_AND_FILL_VEC_B0_FULL(prongBachPi, tpcNSigmaPiBachPi, tpcNSigmaPi);
@@ -257,6 +280,14 @@ class HfMlResponseB0ToDPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_B0(decayLengthXYNormalised),
       FILL_MAP_B0(cpa),
       FILL_MAP_B0(cpaXY),
+      FILL_MAP_B0(decayLengthDToPv),
+      FILL_MAP_B0(decayLengthDToPvXY),
+      FILL_MAP_B0(decayLengthDToB),
+      FILL_MAP_B0(decayLengthDToBXY),
+      FILL_MAP_B0(cpaDToPv),
+      FILL_MAP_B0(cpaDToPvXY),
+      FILL_MAP_B0(cpaDToB),
+      FILL_MAP_B0(cpaDToBXY),
       FILL_MAP_B0(maxNormalisedDeltaIP),
       FILL_MAP_B0(prong0MlScoreBkg),
       FILL_MAP_B0(prong0MlScorePrompt),

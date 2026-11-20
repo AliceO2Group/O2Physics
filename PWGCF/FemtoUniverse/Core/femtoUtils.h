@@ -61,7 +61,7 @@ bool isPIDSelected(aod::femtouniverseparticle::CutContainerType pidcut,
                    int vSpecies,
                    int nSpecies,
                    float nSigma,
-                   std::vector<float> vNsigma,
+                   const std::vector<float>& vNsigma,
                    KDetector iDet)
 {
   int iNsigma = getPIDselection(nSigma, vNsigma);
@@ -85,7 +85,7 @@ bool isFullPIDSelected(aod::femtouniverseparticle::CutContainerType const& pidCu
                        float pidThresh,
                        int vSpecies,
                        int nSpecies,
-                       std::vector<float> vNsigma,
+                       const std::vector<float>& vNsigma,
                        float nSigmaTPC,
                        float nSigmaTPCTOF)
 {

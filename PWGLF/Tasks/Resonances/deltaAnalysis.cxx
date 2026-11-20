@@ -48,9 +48,10 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
-#include <unordered_set>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -94,12 +95,15 @@ struct DeltaAnalysis {
     Configurable<bool> cfgRequireRecoINELgt0{"cfgRequireRecoINELgt0", true, "Require reconstructed INEL>0 event class (at least one PV track in |eta|<1)"};
     Configurable<bool> cfgUseNoSameBunchPileupCut{"cfgUseNoSameBunchPileupCut", false, "Apply kNoSameBunchPileup event selection"};
     Configurable<bool> cfgUseGoodZvtxFT0vsPVCut{"cfgUseGoodZvtxFT0vsPVCut", false, "Apply kIsGoodZvtxFT0vsPV event selection"};
+    Configurable<bool> cfgUseGoodITSLayersAll{"cfgUseGoodITSLayersAll", false, "Apply kIsGoodITSLayersAll event selection"};
     Configurable<bool> applyOccupancyInTimeRangeCut{"applyOccupancyInTimeRangeCut", false, "Apply occupancy-in-time-range cut"};
     Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", 0, "Minimum track occupancy in time range"};
     Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 9999, "Maximum track occupancy in time range"};
     Configurable<int> cfgCentralityEstimator{"cfgCentralityEstimator", 0, "Centrality estimator: 0=FT0M 1=FT0A 2=FT0C 3=FV0A 4=NTPV"};
     Configurable<float> cfgCentMin{"cfgCentMin", 0.f, "Minimum centrality percentile"};
     Configurable<float> cfgCentMax{"cfgCentMax", 100.f, "Maximum centrality percentile"};
+    Configurable<bool> cfgUseMCTruthCentrality{"cfgUseMCTruthCentrality", false, "Use MC truth centrality for generated Delta histograms"};
+    Configurable<bool> cfgApplyMCTruthINELgt0{"cfgApplyMCTruthINELgt0", true, "Apply truth-level INEL>0 selection to MC generated events"};
   } evSel;
 
   struct : ConfigurableGroup {
@@ -109,14 +113,22 @@ struct DeltaAnalysis {
     Configurable<float> cfgMaxY{"cfgMaxY", 0.5f, "Maximum rapidity of reconstructed Delta"};
     Configurable<int> cfgMinITSClusters{"cfgMinITSClusters", 5, "Minimum ITS clusters"};
     Configurable<int> cfgMinTPCClusters{"cfgMinTPCClusters", 70, "Minimum TPC clusters found"};
-    Configurable<int> numberOfInvMassBins{"numberOfInvMassBins", 120, "Number of bins along the invariant mass axis"};
     Configurable<int> cfgMinTPCCrossedRows{"cfgMinTPCCrossedRows", 70, "Minimum TPC crossed pad rows"};
     Configurable<float> cfgMinCrossedRowsOverFindable{"cfgMinCrossedRowsOverFindable", 0.8f, "Minimum ratio crossedRows/findableClusters"};
     Configurable<int> cfgMaxTPCSharedClusters{"cfgMaxTPCSharedClusters", 0, "Maximum TPC shared clusters"};
     Configurable<float> cfgMaxTPCChi2NCl{"cfgMaxTPCChi2NCl", 4.0f, "Maximum TPC chi2/NCl"};
     Configurable<float> cfgMaxITSChi2NCl{"cfgMaxITSChi2NCl", 36.0f, "Maximum ITS chi2/NCl"};
+    // ── Per-cut ON/OFF switches for the first 7 basic track-quality cuts (all default true) ──
+    Configurable<bool> applyITSClusterCut{"applyITSClusterCut", true, "Enable/disable minimum ITS clusters cut"};
+    Configurable<bool> applyTPCSharedClusterCut{"applyTPCSharedClusterCut", true, "Enable/disable maximum TPC shared clusters cut"};
+    Configurable<bool> applyTPCFoundClusterCut{"applyTPCFoundClusterCut", true, "Enable/disable minimum TPC clusters found cut"};
+    Configurable<bool> applyTPCCrossedRowsCut{"applyTPCCrossedRowsCut", true, "Enable/disable minimum TPC crossed rows cut"};
+    Configurable<bool> applyTPCCrossedRowsOverFindableCut{"applyTPCCrossedRowsOverFindableCut", true, "Enable/disable minimum TPC crossed rows / findable clusters cut"};
+    Configurable<bool> applyTPCChi2NClCut{"applyTPCChi2NClCut", true, "Enable/disable maximum TPC chi2/NCl cut"};
+    Configurable<bool> applyITSChi2NClCut{"applyITSChi2NClCut", true, "Enable/disable maximum ITS chi2/NCl cut"};
     Configurable<bool> requirePrimaryTrack{"requirePrimaryTrack", true, "Require isPrimaryTrack flag"};
-    Configurable<bool> requireGlobalTrackNoDCA{"requireGlobalTrackNoDCA", true, "Require isGlobalTrackWoDCA flag"};
+    Configurable<bool> requireGlobalTrack{"requireGlobalTrack", true, "Require global track (includes the DCA cuts of the standard global-track selection)"};
+    Configurable<bool> requireGlobalTrackWoDCA{"requireGlobalTrackWoDCA", false, "Require global track without DCA cuts (isGlobalTrackWoDCA). Mutually exclusive with requireGlobalTrack"};
     Configurable<bool> requirePVContributor{"requirePVContributor", true, "Require PV-contributor flag"};
   } trackCuts;
 
@@ -126,6 +138,10 @@ struct DeltaAnalysis {
     Configurable<std::vector<float>> protonMaxDCAxyPerPtBin{"protonMaxDCAxyPerPtBin", {0.10f, 0.08f, 0.05f, 0.05f}, "Max |DCAxy| for proton per pT bin [cm]"};
     Configurable<std::vector<float>> pionDCAPtBinEdges{"pionDCAPtBinEdges", {0.0f, 0.5f, 1.0f, 2.0f, 1000.f}, "Pion pT bin edges for DCAxy cut [GeV/c]"};
     Configurable<std::vector<float>> pionMaxDCAxyPerPtBin{"pionMaxDCAxyPerPtBin", {0.20f, 0.15f, 0.10f, 0.08f}, "Max |DCAxy| for pion per pT bin [cm]"};
+    Configurable<bool> isApplyPtDepDCAxyCut{"isApplyPtDepDCAxyCut", false, "Use continuous pT-dependent DCAxy cut"};
+    Configurable<float> dcaXYConst{"dcaXYConst", 0.0105f, "Constant term of pT-dependent DCAxy cut [cm]"};
+    Configurable<float> dcaXYPtCoeff{"dcaXYPtCoeff", 0.035f, "pT-dependent coefficient of DCAxy cut [cm]"};
+    Configurable<float> dcaXYPtExponent{"dcaXYPtExponent", 1.1f, "pT exponent of DCAxy cut"};
   } dcaCuts;
 
   struct : ConfigurableGroup {
@@ -146,6 +162,7 @@ struct DeltaAnalysis {
     Configurable<std::vector<float>> protonTPCNSigmaCutPerBin{"protonTPCNSigmaCutPerBin", {5.f, 3.5f, 2.5f}, "Maximum TPC nSigma for proton per momentum bin"};
     Configurable<std::vector<float>> protonTOFPIDMomentumBins{"protonTOFPIDMomentumBins", {0.f, 999.f}, "Proton TOF PID momentum bin edges [GeV/c]"};
     Configurable<std::vector<float>> protonTOFNSigmaCutPerBin{"protonTOFNSigmaCutPerBin", {3.0f}, "Maximum TOF nSigma for proton per momentum bin"};
+    Configurable<float> shiftInNsigmaTOFProton{"shiftInNsigmaTOFProton", 0.0f, "Shift applied to proton TOF nSigma"};
   } protonPID;
 
   struct : ConfigurableGroup {
@@ -160,6 +177,7 @@ struct DeltaAnalysis {
     Configurable<std::vector<float>> pionTPCNSigmaCutPerBin{"pionTPCNSigmaCutPerBin", {5.f, 3.5f, 2.5f}, "Maximum TPC nSigma for pion per momentum bin"};
     Configurable<std::vector<float>> pionTOFPIDMomentumBins{"pionTOFPIDMomentumBins", {0.f, 999.f}, "Pion TOF PID momentum bin edges [GeV/c]"};
     Configurable<std::vector<float>> pionTOFNSigmaCutPerBin{"pionTOFNSigmaCutPerBin", {3.0f}, "Maximum TOF nSigma for pion per momentum bin"};
+    Configurable<float> shiftInNsigmaTOFPion{"shiftInNsigmaTOFPion", 0.0f, "Shift applied to pion TOF nSigma"};
   } pionPID;
 
   struct : ConfigurableGroup {
@@ -169,6 +187,7 @@ struct DeltaAnalysis {
 
   struct : ConfigurableGroup {
     Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per signal event"};
+    Configurable<bool> enableMCEventMixing{"enableMCEventMixing", false, "Enable event mixing for reconstructed MC (independent of the DATA event-mixing switch)"};
   } mixingCfg;
 
   struct : ConfigurableGroup {
@@ -178,7 +197,10 @@ struct DeltaAnalysis {
   } rotBkg;
 
   struct : ConfigurableGroup {
-    ConfigurableAxis cfgPtAxis{"cfgPtAxis", {VARIABLE_WIDTH, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4.0, 5.0, 7.0, 10.0}, "#it{p}_{T} (GeV/#it{c})"};
+    // Fixed-width {nBins, min, max} or variable-width {VARIABLE_WIDTH, edge0, edge1, ...}; both can be set from the JSON config.
+    ConfigurableAxis cfgPtAxis{"cfgPtAxis", {50, 0.0, 12.0}, "p_{T} (GeV/c)"};
+    ConfigurableAxis cfgMassAxis{"cfgMassAxis", {120, 1.0, 6.0}, "M_{inv} (GeV/#it{c}^{2})"};
+    ConfigurableAxis cfgMomentumAxis{"cfgMomentumAxis", {50, 0.0, 12.0}, "p (GeV/#it{c})"};
     ConfigurableAxis cfgCentAxis{"cfgCentAxis", {VARIABLE_WIDTH, 0.f, 10.f, 20.f, 30.f, 40.f, 50.f, 60.f, 70.f, 80.f, 90.f, 100.f}, "Centrality (%)"};
     ConfigurableAxis cfgVtxAxis{"cfgVtxAxis", {VARIABLE_WIDTH, -12.f, -10.f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 12.f}, "Vertex z [cm]"};
     ConfigurableAxis cfgRapAxis{"cfgRapAxis", {20, -1.0, 1.0}, "Rapidity y"};
@@ -208,6 +230,11 @@ struct DeltaAnalysis {
                    << ", bins=" << binsVec.size() << ")";
       }
     };
+    if (trackCuts.requireGlobalTrack && trackCuts.requireGlobalTrackWoDCA) {
+      LOG(fatal) << "requireGlobalTrack and requireGlobalTrackWoDCA are mutually exclusive: "
+                 << "enable only one of them (or neither).";
+    }
+
     chkSz(protonPID.protonTPCNSigmaCutPerBin, protonPID.protonTPCPIDMomentumBins, "proton TPC PID");
     chkSz(protonPID.protonTOFNSigmaCutPerBin, protonPID.protonTOFPIDMomentumBins, "proton TOF PID");
     chkSz(pionPID.pionTPCNSigmaCutPerBin, pionPID.pionTPCPIDMomentumBins, "pion TPC PID");
@@ -228,16 +255,15 @@ struct DeltaAnalysis {
     mPionDCAPtEdges = dcaCuts.pionDCAPtBinEdges.value;
     mPionMaxDCAxy = dcaCuts.pionMaxDCAxyPerPtBin.value;
 
-    const AxisSpec ptAxis{200, 0., 10., "p_{T} (GeV/c)"};
-    const AxisSpec massAxis{trackCuts.numberOfInvMassBins, 1.0, 8.0, "M_{inv} (GeV/#it{c}^{2})"};
+    const AxisSpec ptAxis{axes.cfgPtAxis, "p_{T} (GeV/c)"};
+    const AxisSpec massAxis{axes.cfgMassAxis, "M_{inv} (GeV/#it{c}^{2})"};
     const AxisSpec centAxis{axes.cfgCentAxis, "Centrality (%)"};
-    const AxisSpec centDistAxis{150, 0., 105., "Centrality (%)"};
     const AxisSpec vtxAxis{axes.cfgVtxAxis, "Vertex z [cm]"};
     const AxisSpec rapAxis{axes.cfgRapAxis, "Rapidity y"};
-    const AxisSpec nSigmaTPCaxis{100, -10., 10., "n#sigma^{TPC}"};
-    const AxisSpec nSigmaTOFaxis{100, -10., 10., "n#sigma^{TOF}"};
-    const AxisSpec momentumAxis{200, 0., 10., "p (GeV/#it{c})"};
-    const AxisSpec ptForPIDAxis{200, 0., 10., "p_{T} (GeV/#it{c})"};
+    const AxisSpec nSigmaTPCaxis{100, -5., 5., "n#sigma^{TPC}"};
+    const AxisSpec nSigmaTOFaxis{100, -5., 5., "n#sigma^{TOF}"};
+    const AxisSpec momentumAxis{axes.cfgMomentumAxis, "p (GeV/#it{c})"};
+    const AxisSpec ptForPIDAxis{axes.cfgPtAxis, "p_{T} (GeV/#it{c})"};
     const AxisSpec dcaXYaxis{200, -0.2f, 0.2f, "DCA_{xy} (cm)"};
     const AxisSpec dcaZaxis{200, -1.2f, 1.2f, "DCA_{z} (cm)"};
     const AxisSpec tpcClusAxis{200, 0, 200, "N_{clusters}^{TPC}"};
@@ -250,7 +276,7 @@ struct DeltaAnalysis {
     histos.add("Event/hNcontributor", "PV contributors; N", kTH1F, {{2001, -0.5f, 2000.5f}});
     histos.add("Event/hCentrality", "Centrality", kTH1F, {centAxis});
     histos.add("Event/hOccupancy", "Occupancy in time range", kTH1F, {occupancyAxis});
-    histos.add("Event/centralitydistribution", "Centrality distribution (Data);vCentFT0M;Entries", kTH1F, {centDistAxis});
+    histos.add("Event/centralitydistribution", "Centrality distribution (Data);vCentFT0M;Entries", kTH1F, {centAxis});
 
     histos.add("CentQA/hCentralityVsVtxZ", "Centrality vs vertex z", kTH2F, {vtxAxis, centAxis});
     histos.add("CentQA/hCentralityVsOccupancy", "Centrality vs occupancy", kTH2F, {occupancyAxis, centAxis});
@@ -267,6 +293,12 @@ struct DeltaAnalysis {
     histos.add("QAbefore/Pion/tpcNSigmaVsMomentum", "TPC n#sigma pion vs p (before cuts)", kTH2F, {momentumAxis, nSigmaTPCaxis});
     histos.add("QAbefore/Pion/tofNSigmaVsMomentum", "TOF n#sigma pion vs p (before cuts)", kTH2F, {momentumAxis, nSigmaTOFaxis});
     histos.add("QAbefore/Pion/tofNSigmaVsTPCNSigma", "TOF vs TPC n#sigma pion (before cuts)", kTH2F, {nSigmaTPCaxis, nSigmaTOFaxis});
+
+    // ── Reconstructed-track kinematic QA (Data, before track-quality/PID/DCA cuts) ──────────
+    histos.add("QAbefore/hEta_rec", "Reco dN/d#eta; #eta; dN/d#eta", kTH1F, {{50, -1.0, 1.0}});
+    histos.add("QAbefore/hPt_rec", "Reco pT; p_{T} (GeV/c); Tracks", kTH1F, {ptForPIDAxis});
+    histos.add("QAbefore/hPhi_rec", "Reco #varphi; #varphi (rad); Tracks", kTH1F, {{72, 0, 6.2832}});
+    histos.add("QAbefore/hEtaPhi_rec", "Reco #eta vs #varphi; #eta; #varphi", kTH2F, {etaAxis, {72, 0, 6.2832}});
 
     histos.add("QAafter/Proton/dcaXYvsPt", "Proton DCA_{xy} vs p_{T} (after cuts)", kTH2F, {ptForPIDAxis, dcaXYaxis});
     histos.add("QAafter/Proton/dcaZvsPt", "Proton DCA_{z} vs p_{T} (after cuts)", kTH2F, {ptForPIDAxis, dcaZaxis});
@@ -407,8 +439,30 @@ struct DeltaAnalysis {
       histos.add("QAMC/Pion/dcaXYdist", "Pion DCA_{xy} distribution (MC reco, fine bins)", kTH1F, {dcaXYaxis});
       histos.add("QAMC/Pion/dcaZdist", "Pion DCA_{z} distribution (MC reco, fine bins)", kTH1F, {dcaZaxis});
 
+      // ── Reconstructed-track kinematic QA (MC reco, before track-quality/PID/DCA cuts) ────
+      histos.add("QAMC/hEta_rec", "MC Reco dN/d#eta; #eta; dN/d#eta", kTH1F, {{50, -1.0, 1.0}});
+      histos.add("QAMC/hPt_rec", "MC Reco pT; p_{T} (GeV/c); Tracks", kTH1F, {ptForPIDAxis});
+      histos.add("QAMC/hPhi_rec", "MC Reco #varphi; #varphi (rad); Tracks", kTH1F, {{72, 0, 6.2832}});
+      histos.add("QAMC/hEtaPhi_rec", "MC Reco #eta vs #varphi; #eta; #varphi", kTH2F, {etaAxis, {72, 0, 6.2832}});
+
       histos.add("MCRecoEvent/hRecoEvents", "Reconstructed INEL>0 events (Nrec, MC reco)", kTH1F, {centAxis});
-      histos.add("MCRecoEvent/centralitydistribution", "Centrality distribution (MC);vCentFT0M;Entries", kTH1F, {centDistAxis});
+      histos.add("MCRecoEvent/centralitydistribution", "Centrality distribution (MC);vCentFT0M;Entries", kTH1F, {centAxis});
+    }
+
+    // ── MC reconstructed event mixing: histograms (gated by the dedicated MC mixing switch)
+    if (mixingCfg.enableMCEventMixing) {
+      histos.add("AnalysisMCReco/hDeltaPlusPlusInvMassEM", "#Delta^{++} invariant mass - MC reconstructed event mixing", kTH2F, {ptAxis, massAxis});
+      histos.add("AnalysisMCReco/hAntiDeltaPlusPlusInvMassEM", "#bar{#Delta}^{++} invariant mass - MC reconstructed event mixing", kTH2F, {ptAxis, massAxis});
+      histos.add("AnalysisMCReco/hDeltaZeroInvMassEM", "#Delta^{0} invariant mass - MC reconstructed event mixing", kTH2F, {ptAxis, massAxis});
+      histos.add("AnalysisMCReco/hAntiDeltaZeroInvMassEM", "#bar{#Delta}^{0} invariant mass - MC reconstructed event mixing", kTH2F, {ptAxis, massAxis});
+
+      histos.add("THnSparseMCReco/hDeltaPlusPlusEM", "THnSparse #Delta^{++} MC reconstructed event mixing", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      histos.add("THnSparseMCReco/hAntiDeltaPlusPlusEM", "THnSparse #bar{#Delta}^{++} MC reconstructed event mixing", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      histos.add("THnSparseMCReco/hDeltaZeroEM", "THnSparse #Delta^{0} MC reconstructed event mixing", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      histos.add("THnSparseMCReco/hAntiDeltaZeroEM", "THnSparse #bar{#Delta}^{0} MC reconstructed event mixing", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+
+      histos.add("QAMC/EventMixing/hMixedEventPairs", "Number of MC mixed-event collision pairs processed", kTH1F, {{1, 0.5f, 1.5f}});
+      histos.add("QAMC/EventMixing/hMixedEventPairsByCentrality", "MC mixed-event collision pairs vs centrality", kTH1F, {centAxis});
     }
 
     // ── processMCGen(): generated-level Delta spectra + QA ─────────────────────────────────
@@ -431,9 +485,6 @@ struct DeltaAnalysis {
       histos.add("MCGenQA/hGenPionAntiDeltaPlusPlus", "Gen pion from #bar{#Delta}^{++}", kTH1F, {ptAxis});
       histos.add("MCGenQA/hGenPionDeltaZero", "Gen pion from #Delta^{0}", kTH1F, {ptAxis});
       histos.add("MCGenQA/hGenPionAntiDeltaZero", "Gen pion from #bar{#Delta}^{0}", kTH1F, {ptAxis});
-
-      // Generated-Delta cut flow. 0=All generated, 1=producedByGenerator, 2=truth vertex-z,
-      // 3=truth INEL>0, 4=PDG, 5=rapidity, 6=decay channel, 7=final generated histogram.
       histos.add("MCGenQA/hGenDeltaCutFlow", "Generated #Delta cut flow", kTH1F, {{8, -0.5f, 7.5f}});
 
       histos.add("MCGen/GeneratedDelta_EventAccepted/hDeltaPlusPlusInvMass", "#Delta^{++} generated, event-accepted", kTH2F, {ptAxis, massAxis});
@@ -451,19 +502,11 @@ struct DeltaAnalysis {
       histos.add("EventFactor/hRecoEvents", "Reconstructed INEL>0 events (Nrec)", kTH1F, {centAxis});
       histos.add("EventFactor/hEventsGenAll", "Generated events passing truth |Zvtx| + truth INEL>0 cuts", kTH1F, {centAxis});
       histos.add("EventFactor/hEventsGenAccepted", "Generated events with >=1 accepted reconstructed collision (truth centrality)", kTH1F, {centAxis});
-      // NEW: same "generated with >=1 accepted reconstructed collision" population as
-      // hEventsGenAccepted, but filled with the RECONSTRUCTED centrality of that accepted
-      // collision instead of the truth centrality. This puts it on the same axis as
-      // hRecoEvents so that event_splitting = hEventsGenAcceptedReco / hRecoEvents compares
-      // like with like. hEventsGenAccepted (truth-binned) stays as-is for event_loss.
       histos.add("EventFactor/hEventsGenAcceptedReco", "Generated events with >=1 accepted reconstructed collision (reconstructed centrality)", kTH1F, {centAxis});
       histos.add("EventFactor/hNRecoCollisionsPerMcCollision", "Number of reconstructed collisions per generated collision", kTH1F, {{21, -0.5f, 20.5f}});
     }
 
     // ── Event-level cut-flow (QA-only) histograms ───────────────────────────────────────────
-    // These are pure bookkeeping: they record how many events survive each existing selection
-    // step (already implemented in passesEventSelectionImpl<Tag>(), isTruthInelGt0(), and
-    // processEventFactor()) and do not themselves apply, add, or alter any selection.
     {
       histos.add("CutFlow/Data/hEventCutFlow", "Data event cut flow", kTH1F, {{9, -0.5f, 8.5f}});
       auto hDataCutFlow = histos.get<TH1>(HIST("CutFlow/Data/hEventCutFlow"));
@@ -512,6 +555,52 @@ struct DeltaAnalysis {
       hEventFactorCutFlow->GetXaxis()->SetBinLabel(5, "RecoCollAccepted");
       hEventFactorCutFlow->GetXaxis()->SetBinLabel(6, "EventAccepted");
     }
+
+    if (doprocessMCGen) {
+      histos.add("EfficiencyQA/hGeneratedEventCutFlow", "Generated-event cut flow (efficiency QA)", kTH1F, {{5, -0.5f, 4.5f}});
+      auto hGenEventCutFlow = histos.get<TH1>(HIST("EfficiencyQA/hGeneratedEventCutFlow"));
+      hGenEventCutFlow->GetXaxis()->SetBinLabel(1, "All generated events");
+      hGenEventCutFlow->GetXaxis()->SetBinLabel(2, "|Vz| accepted");
+      hGenEventCutFlow->GetXaxis()->SetBinLabel(3, "Truth INEL>0");
+      hGenEventCutFlow->GetXaxis()->SetBinLabel(4, "Final generated event");
+      hGenEventCutFlow->GetXaxis()->SetBinLabel(5, "Associated reconstructed event accepted");
+    }
+
+    if (doprocessMC) {
+      histos.add("EfficiencyQA/hDeltaRecoCutFlow", "Generated-to-reconstructed #Delta cut flow (efficiency QA)", kTH1F, {{21, -0.5f, 20.5f}});
+      auto hDeltaRecoCutFlow = histos.get<TH1>(HIST("EfficiencyQA/hDeltaRecoCutFlow"));
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(1, "Generated Delta (event accepted)");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(2, "Delta -> p + pi");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(3, "Delta rapidity accepted");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(4, "Proton acceptance");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(5, "Pion acceptance");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(6, "Both daughters acceptance");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(7, "Proton reconstructed");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(8, "Pion reconstructed");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(9, "Both daughters reconstructed");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(10, "Proton track quality");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(11, "Pion track quality");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(12, "Both track quality");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(13, "Proton PID");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(14, "Pion PID");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(15, "Both PID");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(16, "Proton DCA");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(17, "Pion DCA");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(18, "Both DCA");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(19, "Common MC mother");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(20, "Common Delta mother");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(21, "Final reconstructed Delta");
+
+      histos.add("EfficiencyQA/hTruthMatchCutFlow", "MC truth-matching cut flow (efficiency QA)", kTH1F, {{7, -0.5f, 6.5f}});
+      auto hTruthMatchCutFlow = histos.get<TH1>(HIST("EfficiencyQA/hTruthMatchCutFlow"));
+      hTruthMatchCutFlow->GetXaxis()->SetBinLabel(1, "Reco pair");
+      hTruthMatchCutFlow->GetXaxis()->SetBinLabel(2, "Proton has MC label");
+      hTruthMatchCutFlow->GetXaxis()->SetBinLabel(3, "Pion has MC label");
+      hTruthMatchCutFlow->GetXaxis()->SetBinLabel(4, "Proton is proton");
+      hTruthMatchCutFlow->GetXaxis()->SetBinLabel(5, "Pion is pion");
+      hTruthMatchCutFlow->GetXaxis()->SetBinLabel(6, "Common MC mother");
+      hTruthMatchCutFlow->GetXaxis()->SetBinLabel(7, "Mother is Delta");
+    }
   } // end init()
 
   template <typename CollisionType>
@@ -540,8 +629,6 @@ struct DeltaAnalysis {
     return collision.multNTracksPVeta1() > 0;
   }
 
-  // Truth-level charged-primary identification, used only to build the truth-level INEL>0 event
-  // class (isTruthInelGt0 below).
   template <typename McParticleType>
   bool isChargedPrimaryMC(McParticleType const& mcPart)
   {
@@ -555,8 +642,6 @@ struct DeltaAnalysis {
     return std::abs(pdgParticle->Charge()) > MinAbsCharge;
   }
 
-  // Truth-level analogue of isRecoInelGt0() above - at least one charged primary within
-  // |eta| < 1 among the generated particles of a given MC collision.
   template <typename McParticleTableType>
   bool isTruthInelGt0(McParticleTableType const& mcParticlesInCollision)
   {
@@ -614,10 +699,6 @@ struct DeltaAnalysis {
     }
     fillEventCutFlowBin<Tag>(4.f); // Occupancy cut
 
-    // Centrality cut removed: events are no longer rejected based on centrality
-    // (cfgCentMin / cfgCentMax are intentionally no longer applied here). The
-    // centrality calculation itself, getCentrality(), cfgCentralityEstimator, and
-    // all centrality-dependent histograms/infrastructure are left untouched.
     fillEventCutFlowBin<Tag>(5.f); // Centrality range (bin retained for cut-flow numbering; no longer a cut)
 
     if (evSel.cfgUseNoSameBunchPileupCut &&
@@ -631,6 +712,11 @@ struct DeltaAnalysis {
       return false;
     }
     fillEventCutFlowBin<Tag>(7.f); // GoodZvtxFT0vsPV
+
+    if (evSel.cfgUseGoodITSLayersAll &&
+        !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      return false;
+    }
 
     fillEventCutFlowBin<Tag>(8.f); // Final accepted event
     return true;
@@ -646,31 +732,41 @@ struct DeltaAnalysis {
   template <typename TrackType>
   bool passesBasicTrackSelection(TrackType const& track)
   {
-    if (track.itsNCls() < trackCuts.cfgMinITSClusters) {
+    if (trackCuts.applyITSClusterCut &&
+        track.itsNCls() < trackCuts.cfgMinITSClusters) {
       return false;
     }
-    if (track.tpcNClsShared() > trackCuts.cfgMaxTPCSharedClusters) {
+    if (trackCuts.applyTPCSharedClusterCut &&
+        track.tpcNClsShared() > trackCuts.cfgMaxTPCSharedClusters) {
       return false;
     }
-    if (track.tpcNClsFound() < trackCuts.cfgMinTPCClusters) {
+    if (trackCuts.applyTPCFoundClusterCut &&
+        track.tpcNClsFound() < trackCuts.cfgMinTPCClusters) {
       return false;
     }
-    if (track.tpcNClsCrossedRows() < trackCuts.cfgMinTPCCrossedRows) {
+    if (trackCuts.applyTPCCrossedRowsCut &&
+        track.tpcNClsCrossedRows() < trackCuts.cfgMinTPCCrossedRows) {
       return false;
     }
-    if (track.tpcNClsCrossedRows() < trackCuts.cfgMinCrossedRowsOverFindable * track.tpcNClsFindable()) {
+    if (trackCuts.applyTPCCrossedRowsOverFindableCut &&
+        track.tpcNClsCrossedRows() < trackCuts.cfgMinCrossedRowsOverFindable * track.tpcNClsFindable()) {
       return false;
     }
-    if (track.tpcChi2NCl() > trackCuts.cfgMaxTPCChi2NCl) {
+    if (trackCuts.applyTPCChi2NClCut &&
+        track.tpcChi2NCl() > trackCuts.cfgMaxTPCChi2NCl) {
       return false;
     }
-    if (track.itsChi2NCl() > trackCuts.cfgMaxITSChi2NCl) {
+    if (trackCuts.applyITSChi2NClCut &&
+        track.itsChi2NCl() > trackCuts.cfgMaxITSChi2NCl) {
       return false;
     }
     if (trackCuts.requirePrimaryTrack && !track.isPrimaryTrack()) {
       return false;
     }
-    if (trackCuts.requireGlobalTrackNoDCA && !track.isGlobalTrackWoDCA()) {
+    if (trackCuts.requireGlobalTrack && !track.isGlobalTrack()) {
+      return false;
+    }
+    if (trackCuts.requireGlobalTrackWoDCA && !track.isGlobalTrackWoDCA()) {
       return false;
     }
     if (trackCuts.requirePVContributor && !track.isPVContributor()) {
@@ -682,6 +778,14 @@ struct DeltaAnalysis {
   template <typename TrackType>
   bool passesProtonDCASelection(TrackType const& track)
   {
+    if (dcaCuts.isApplyPtDepDCAxyCut) {
+      const float dcaConst = dcaCuts.dcaXYConst;
+      const float dcaCoeff = dcaCuts.dcaXYPtCoeff;
+      const float dcaExp = dcaCuts.dcaXYPtExponent;
+      const float maxDCAxy = dcaConst + dcaCoeff / std::pow(track.pt(), dcaExp);
+      return (std::abs(track.dcaXY()) < maxDCAxy) && (std::abs(track.dcaZ()) < dcaCuts.cfgCutDCAz);
+    }
+
     const int nBins = static_cast<int>(mProtonDCAPtEdges.size()) - 1;
     const float pt = track.pt();
     bool passed = false;
@@ -698,6 +802,14 @@ struct DeltaAnalysis {
   template <typename TrackType>
   bool passesPionDCASelection(TrackType const& track)
   {
+    if (dcaCuts.isApplyPtDepDCAxyCut) {
+      const float dcaConst = dcaCuts.dcaXYConst;
+      const float dcaCoeff = dcaCuts.dcaXYPtCoeff;
+      const float dcaExp = dcaCuts.dcaXYPtExponent;
+      const float maxDCAxy = dcaConst + dcaCoeff / std::pow(track.pt(), dcaExp);
+      return (std::abs(track.dcaXY()) < maxDCAxy) && (std::abs(track.dcaZ()) < dcaCuts.cfgCutDCAz);
+    }
+
     const int nBins = static_cast<int>(mPionDCAPtEdges.size()) - 1;
     const float pt = track.pt();
     bool passed = false;
@@ -746,7 +858,8 @@ struct DeltaAnalysis {
       }
 
       // Circular mode: joint TPC+TOF nSigma radius.
-      const float combinedNSigPr = tpcNSigPr * tpcNSigPr + tofNSigPr * tofNSigPr;
+      const float shiftedTofNSigPr = track.tofNSigmaPr() - static_cast<float>(protonPID.shiftInNsigmaTOFProton);
+      const float combinedNSigPr = tpcNSigPr * tpcNSigPr + shiftedTofNSigPr * shiftedTofNSigPr;
       const float combinedNSigPi = tpcNSigPi * tpcNSigPi + tofNSigPi * tofNSigPi;
       const auto circularCutSq = static_cast<float>(protonPID.combinedNSigmaCutProton * protonPID.combinedNSigmaCutProton);
       const float circularVetoCutSq = pidShared.tpcNSigmaVetoThreshold * pidShared.tpcNSigmaVetoThreshold +
@@ -803,7 +916,8 @@ struct DeltaAnalysis {
       }
 
       // Circular mode: joint TPC+TOF nSigma radius.
-      const float combinedNSigPi = tpcNSigPi * tpcNSigPi + tofNSigPi * tofNSigPi;
+      const float shiftedTofNSigPi = track.tofNSigmaPi() - static_cast<float>(pionPID.shiftInNsigmaTOFPion);
+      const float combinedNSigPi = tpcNSigPi * tpcNSigPi + shiftedTofNSigPi * shiftedTofNSigPi;
       const float combinedNSigPr = tpcNSigPr * tpcNSigPr + tofNSigPr * tofNSigPr;
       const auto circularCutSq = static_cast<float>(pionPID.combinedNSigmaCutPion * pionPID.combinedNSigmaCutPion);
       const float circularVetoCutSq = pidShared.tpcNSigmaVetoThreshold * pidShared.tpcNSigmaVetoThreshold +
@@ -843,7 +957,7 @@ struct DeltaAnalysis {
     histos.fill(HIST("QAafter/Proton/tpcCrossedRowsVsPt"), pt, track.tpcNClsCrossedRows());
     histos.fill(HIST("QAafter/Proton/tpcClustersFoundVsPt"), pt, track.tpcNClsFound());
     if (!pidShared.useTPCOnlyPID && track.hasTOF()) {
-      const float tofNSigPr = track.tofNSigmaPr();
+      const float tofNSigPr = track.tofNSigmaPr() - static_cast<float>(protonPID.shiftInNsigmaTOFProton);
       histos.fill(HIST("QAafter/Proton/tofNSigmaVsMomentum"), totalMomentum, tofNSigPr);
       histos.fill(HIST("QAafter/Proton/tofNSigmaVsPt"), pt, tofNSigPr);
       histos.fill(HIST("QAafter/Proton/tofNSigmaVsCentrality"), centralityPercent, tofNSigPr);
@@ -869,7 +983,7 @@ struct DeltaAnalysis {
     histos.fill(HIST("QAafter/Pion/tpcCrossedRowsVsPt"), pt, track.tpcNClsCrossedRows());
     histos.fill(HIST("QAafter/Pion/tpcClustersFoundVsPt"), pt, track.tpcNClsFound());
     if (!pidShared.useTPCOnlyPID && track.hasTOF()) {
-      const float tofNSigPi = track.tofNSigmaPi();
+      const float tofNSigPi = track.tofNSigmaPi() - static_cast<float>(pionPID.shiftInNsigmaTOFPion);
       histos.fill(HIST("QAafter/Pion/tofNSigmaVsMomentum"), totalMomentum, tofNSigPi);
       histos.fill(HIST("QAafter/Pion/tofNSigmaVsPt"), pt, tofNSigPi);
       histos.fill(HIST("QAafter/Pion/tofNSigmaVsCentrality"), centralityPercent, tofNSigPi);
@@ -895,7 +1009,7 @@ struct DeltaAnalysis {
     histos.fill(HIST("QAMC/Proton/tpcCrossedRowsVsPt"), pt, track.tpcNClsCrossedRows());
     histos.fill(HIST("QAMC/Proton/tpcClustersFoundVsPt"), pt, track.tpcNClsFound());
     if (!pidShared.useTPCOnlyPID && track.hasTOF()) {
-      const float tofNSigPr = track.tofNSigmaPr();
+      const float tofNSigPr = track.tofNSigmaPr() - static_cast<float>(protonPID.shiftInNsigmaTOFProton);
       histos.fill(HIST("QAMC/Proton/tofNSigmaVsMomentum"), totalMomentum, tofNSigPr);
       histos.fill(HIST("QAMC/Proton/tofNSigmaVsPt"), pt, tofNSigPr);
       histos.fill(HIST("QAMC/Proton/tofNSigmaVsCentrality"), centralityPercent, tofNSigPr);
@@ -921,7 +1035,7 @@ struct DeltaAnalysis {
     histos.fill(HIST("QAMC/Pion/tpcCrossedRowsVsPt"), pt, track.tpcNClsCrossedRows());
     histos.fill(HIST("QAMC/Pion/tpcClustersFoundVsPt"), pt, track.tpcNClsFound());
     if (!pidShared.useTPCOnlyPID && track.hasTOF()) {
-      const float tofNSigPi = track.tofNSigmaPi();
+      const float tofNSigPi = track.tofNSigmaPi() - static_cast<float>(pionPID.shiftInNsigmaTOFPion);
       histos.fill(HIST("QAMC/Pion/tofNSigmaVsMomentum"), totalMomentum, tofNSigPi);
       histos.fill(HIST("QAMC/Pion/tofNSigmaVsPt"), pt, tofNSigPi);
       histos.fill(HIST("QAMC/Pion/tofNSigmaVsCentrality"), centralityPercent, tofNSigPi);
@@ -1014,6 +1128,30 @@ struct DeltaAnalysis {
     }
   }
 
+  // MCReco EVENT MIXING ONLY - fills the dedicated MCReco-EM histograms. Never called with
+  // truth-matching information: mixed-event daughters come from two different MC collisions,
+  // so a common Delta mother is not physically meaningful (see fillInvariantMassHistogramsMCMixedFromPools()).
+  void fillDeltaHistogramMCRecoMixedEvent(int protonSign, int pionSign, float pairPt, float pairMass, float centrality, float rapidity)
+  {
+    if (protonSign > 0) {
+      if (pionSign > 0) {
+        histos.fill(HIST("AnalysisMCReco/hDeltaPlusPlusInvMassEM"), pairPt, pairMass);
+        histos.fill(HIST("THnSparseMCReco/hDeltaPlusPlusEM"), pairMass, pairPt, centrality, rapidity);
+      } else {
+        histos.fill(HIST("AnalysisMCReco/hDeltaZeroInvMassEM"), pairPt, pairMass);
+        histos.fill(HIST("THnSparseMCReco/hDeltaZeroEM"), pairMass, pairPt, centrality, rapidity);
+      }
+    } else {
+      if (pionSign < 0) {
+        histos.fill(HIST("AnalysisMCReco/hAntiDeltaPlusPlusInvMassEM"), pairPt, pairMass);
+        histos.fill(HIST("THnSparseMCReco/hAntiDeltaPlusPlusEM"), pairMass, pairPt, centrality, rapidity);
+      } else {
+        histos.fill(HIST("AnalysisMCReco/hAntiDeltaZeroInvMassEM"), pairPt, pairMass);
+        histos.fill(HIST("THnSparseMCReco/hAntiDeltaZeroEM"), pairMass, pairPt, centrality, rapidity);
+      }
+    }
+  }
+
   void fillRotationalBackground(int protonSign, int pionSign, float pxProton, float pyProton, float pzProton, float pionPhi, float pionPt, float pzPion, float centrality)
   {
     if (rotBkg.numberOfRotations <= 0) {
@@ -1074,6 +1212,64 @@ struct DeltaAnalysis {
   {
     const float cosAngle = std::clamp((pxPr * pxPi + pyPr * pyPi + pzPr * pzPi) / (momPr * momPi), -1.f, 1.f);
     histos.fill(HIST("QAChecks/Pair/hOpeningAngleAfter"), std::acos(cosAngle));
+  }
+
+  // ── EfficiencyQA-only helpers (used exclusively to fill EfficiencyQA/hDeltaRecoCutFlow) ────
+  // These do not feed into, and are not called by, any existing selection or histogram fill.
+  // They exist solely so the diagnostic cut flow can reuse the existing selection functions
+  // verbatim instead of re-implementing any cut.
+  struct EfficiencyQADaughterMatch {
+    bool found = false;        // a reconstructed track carrying this MC daughter's label was found
+    bool trackQuality = false; // that track passes the existing passesBasicTrackSelection()
+    bool pid = false;          // that track passes the existing passesProtonPID()/passesPionPID()
+    bool dca = false;          // that track passes the existing passesProtonDCASelection()/passesPionDCASelection()
+  };
+
+  template <typename TracksSlice, typename McPart>
+  EfficiencyQADaughterMatch matchDaughterForEfficiencyQA(TracksSlice const& tracksSlice, McPart const& mcDaughter, bool isProton)
+  {
+    EfficiencyQADaughterMatch result;
+    for (auto const& trk : tracksSlice) {
+      if (!trk.has_mcParticle() || trk.mcParticle().globalIndex() != mcDaughter.globalIndex()) {
+        continue;
+      }
+      result.found = true;
+      result.trackQuality = passesBasicTrackSelection(trk);
+      const float mom = RecoDecay::p(trk.px(), trk.py(), trk.pz());
+      if (isProton) {
+        result.pid = passesProtonPID(trk, mom);
+        result.dca = passesProtonDCASelection(trk);
+      } else {
+        result.pid = passesPionPID(trk, mom);
+        result.dca = passesPionDCASelection(trk);
+      }
+      break;
+    }
+    return result;
+  }
+
+  template <typename McPart>
+  std::pair<bool, bool> checkCommonMotherForEfficiencyQA(McPart const& mcA, McPart const& mcB)
+  {
+    bool anyCommon = false;
+    bool motherIsDelta = false;
+    for (const auto& motherA : mcA.template mothers_as<aod::McParticles>()) {
+      for (const auto& motherB : mcB.template mothers_as<aod::McParticles>()) {
+        if (motherA != motherB) {
+          continue;
+        }
+        anyCommon = true;
+        if (std::abs(motherA.pdgCode()) == delta_analysis::PdgDeltaPlusPlus ||
+            std::abs(motherA.pdgCode()) == delta_analysis::PdgDeltaZero) {
+          motherIsDelta = true;
+        }
+        break;
+      }
+      if (motherIsDelta) {
+        break;
+      }
+    }
+    return {anyCommon, motherIsDelta};
   }
 
   struct TrackCandidate {
@@ -1189,6 +1385,42 @@ struct DeltaAnalysis {
     }
   }
 
+  // MCReco EVENT-MIXING pool-pairing.
+  void fillInvariantMassHistogramsMCMixedFromPools(
+    std::vector<TrackCandidate> const& protonPool,
+    std::vector<TrackCandidate> const& pionPool,
+    float centrality)
+  {
+    for (auto const& protonCand : protonPool) {
+      for (auto const& pionCand : pionPool) {
+        const float pxPr = protonCand.px, pyPr = protonCand.py, pzPr = protonCand.pz;
+        const float pxPi = pionCand.px, pyPi = pionCand.py, pzPi = pionCand.pz;
+
+        if (pairCuts.applyDeepAngleCut) {
+          const float cosAngle = std::clamp(
+            (pxPr * pxPi + pyPr * pyPi + pzPr * pzPi) / (protonCand.mom * pionCand.mom), -1.f, 1.f);
+          if (std::acos(cosAngle) < static_cast<float>(pairCuts.deepAngleCutValue)) {
+            continue;
+          }
+        }
+
+        const std::array<std::array<float, 3>, 2> bothMomenta = {
+          std::array<float, 3>{pxPr, pyPr, pzPr},
+          std::array<float, 3>{pxPi, pyPi, pzPi}};
+        const float pairMass = RecoDecay::m(bothMomenta, kProtonPionMasses);
+        const float pairPt = RecoDecay::pt(std::array{pxPr + pxPi, pyPr + pyPi});
+        const float pairY = RecoDecay::y(std::array{pxPr + pxPi, pyPr + pyPi, pzPr + pzPi}, pairMass);
+
+        if (pairY < trackCuts.cfgMinY || pairY > trackCuts.cfgMaxY) {
+          continue;
+        }
+
+        // NOTE: intentionally no truth-matching call here - see function docstring above.
+        fillDeltaHistogramMCRecoMixedEvent(protonCand.sign, pionCand.sign, pairPt, pairMass, centrality, pairY);
+      }
+    }
+  }
+
   Filter collisionFilter = nabs(aod::collision::posZ) < evSel.cfgCutVertex;
   Filter acceptanceFilter = (nabs(aod::track::eta) < trackCuts.cfgCutEta && nabs(aod::track::pt) > trackCuts.cfgCutPt);
 
@@ -1208,18 +1440,6 @@ struct DeltaAnalysis {
   using BinningTypeFT0C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   using BinningTypeFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
   using BinningTypeNTPV = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentNTPV>;
-
-  BinningTypeFT0M binningFT0M{{axes.cfgVtxAxis, axes.cfgCentAxis}, true};
-  BinningTypeFT0A binningFT0A{{axes.cfgVtxAxis, axes.cfgCentAxis}, true};
-  BinningTypeFT0C binningFT0C{{axes.cfgVtxAxis, axes.cfgCentAxis}, true};
-  BinningTypeFV0A binningFV0A{{axes.cfgVtxAxis, axes.cfgCentAxis}, true};
-  BinningTypeNTPV binningNTPV{{axes.cfgVtxAxis, axes.cfgCentAxis}, true};
-
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0M> pairFT0M{binningFT0M, mixingCfg.cfgNoMixedEvents, -1, &cache};
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0A> pairFT0A{binningFT0A, mixingCfg.cfgNoMixedEvents, -1, &cache};
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0C> pairFT0C{binningFT0C, mixingCfg.cfgNoMixedEvents, -1, &cache};
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFV0A> pairFV0A{binningFV0A, mixingCfg.cfgNoMixedEvents, -1, &cache};
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeNTPV> pairNTPV{binningNTPV, mixingCfg.cfgNoMixedEvents, -1, &cache};
 
   std::vector<TrackCandidate> mProtonPool;
   std::vector<TrackCandidate> mPionPool;
@@ -1264,6 +1484,14 @@ struct DeltaAnalysis {
           histos.fill(HIST("QAbefore/Pion/tofNSigmaVsMomentum"), mom, track.tofNSigmaPi());
           histos.fill(HIST("QAbefore/Pion/tofNSigmaVsTPCNSigma"), track.tpcNSigmaPi(), track.tofNSigmaPi());
         }
+
+        // ── Reconstructed-track kinematic QA (Data), filled for all reconstructed tracks
+        // before any track-quality/PID/DCA selection is applied. ─────────────────────────
+        histos.fill(HIST("QAbefore/hEta_rec"), track.eta());
+        histos.fill(HIST("QAbefore/hPt_rec"), track.pt());
+        histos.fill(HIST("QAbefore/hPhi_rec"), track.phi());
+        histos.fill(HIST("QAbefore/hEtaPhi_rec"), track.eta(), track.phi());
+
         if (!passesBasicTrackSelection(track)) {
           continue;
         }
@@ -1296,35 +1524,87 @@ struct DeltaAnalysis {
     }
   }
 
-  void processMixedEvent(EventCandidates const&, TrackCandidates const&)
+  // ── MC reconstructed event mixing ────────────────────────────────────────────────────────
+  // Mirrors runMixedEvent()/processMixedEvent() above exactly (same event-selection call, same
+  // "protons1+pions2" / "protons2+pions1" combinatorics, same centrality-estimator dispatch),
+  // but:
+  //   * fills the dedicated MCReco-EM histograms instead of the DATA EM histograms
+  template <typename PairType>
+  void runMixedEventMC(PairType& mixingPair)
+  {
+    for (auto const& [c1, tracks1, c2, tracks2] : mixingPair) {
+      if (!passesEventSelection(c1) || !passesEventSelection(c2)) {
+        continue;
+      }
+      const float centrality = getCentrality(c1);
+
+      histos.fill(HIST("QAMC/EventMixing/hMixedEventPairs"), 1.f);
+      histos.fill(HIST("QAMC/EventMixing/hMixedEventPairsByCentrality"), centrality);
+
+      std::vector<TrackCandidate> protonPool1, pionPool1, protonPool2, pionPool2;
+      buildCandidatePools(tracks1, protonPool1, pionPool1);
+      buildCandidatePools(tracks2, protonPool2, pionPool2);
+      fillInvariantMassHistogramsMCMixedFromPools(protonPool1, pionPool2, centrality);
+      fillInvariantMassHistogramsMCMixedFromPools(protonPool2, pionPool1, centrality);
+    }
+  }
+
+  template <typename BinningType>
+  void runMixingWithBinning(EventCandidates const& collisions, TrackCandidates const& tracks, bool isMC)
+  {
+    BinningType binning{{axes.cfgVtxAxis, axes.cfgCentAxis}, true};
+    const int nMixedEvents = mixingCfg.cfgNoMixedEvents;
+    auto tracksTuple = std::make_tuple(tracks);
+    SameKindPair<EventCandidates, TrackCandidates, BinningType> mixingPair{binning, nMixedEvents, -1, collisions, tracksTuple, &cache};
+    if (isMC) {
+      runMixedEventMC(mixingPair);
+    } else {
+      runMixedEvent(mixingPair);
+    }
+  }
+
+  void dispatchMixing(EventCandidates const& collisions, TrackCandidates const& tracks, bool isMC)
   {
     switch (evSel.cfgCentralityEstimator) {
       case delta_analysis::kFT0M:
-        runMixedEvent(pairFT0M);
+        runMixingWithBinning<BinningTypeFT0M>(collisions, tracks, isMC);
         break;
       case delta_analysis::kFT0A:
-        runMixedEvent(pairFT0A);
+        runMixingWithBinning<BinningTypeFT0A>(collisions, tracks, isMC);
         break;
       case delta_analysis::kFT0C:
-        runMixedEvent(pairFT0C);
+        runMixingWithBinning<BinningTypeFT0C>(collisions, tracks, isMC);
         break;
       case delta_analysis::kFV0A:
-        runMixedEvent(pairFV0A);
+        runMixingWithBinning<BinningTypeFV0A>(collisions, tracks, isMC);
         break;
       case delta_analysis::kNTPV:
-        runMixedEvent(pairNTPV);
+        runMixingWithBinning<BinningTypeNTPV>(collisions, tracks, isMC);
         break;
       default:
-        runMixedEvent(pairFT0M);
+        runMixingWithBinning<BinningTypeFT0M>(collisions, tracks, isMC);
         break;
     }
   }
+
+  void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
+  {
+    dispatchMixing(collisions, tracks, false);
+  }
   PROCESS_SWITCH(DeltaAnalysis, processMixedEvent, "Process mixed event", true);
+
+  void processMCEventMixing(EventCandidates const& collisions, TrackCandidates const& tracks)
+  {
+    if (!mixingCfg.enableMCEventMixing) {
+      return;
+    }
+    dispatchMixing(collisions, tracks, true);
+  }
+  PROCESS_SWITCH(DeltaAnalysis, processMCEventMixing, "Process MC reconstructed event mixing (reuses DATA mixing pairs; no truth matching)", false);
 
   // =====================================================================================
   // processMC(): RECONSTRUCTED-ONLY. Reconstructs Delta candidates, performs truth matching,
-  // fills reconstructed QA, fills reconstructed Delta histograms (RecoDelta - the A x eps
-  // numerator). Nothing generated-only is touched here. UNCHANGED from before the refactor.
+  // fills reconstructed QA, fills reconstructed Delta histograms (RecoDelta - the A x eps numerator).
   // =====================================================================================
   void processMC(EventCandidatesMC const& collisions, aod::BCs const&, TrackCandidatesMC const& tracks, aod::McParticles const& mcParticles)
   {
@@ -1346,6 +1626,110 @@ struct DeltaAnalysis {
       auto perColTracks = tracks.sliceBy(perColMC, collIdx);
       perColTracks.bindExternalIndices(&tracks);
       perColTracks.bindExternalIndices(&mcParticles);
+
+      if (collision.has_mcCollision()) {
+        auto qaGenDeltas = mcParticles.sliceBy(perMcCollisionDelta, collision.mcCollisionId());
+        for (auto const& qaGenDelta : qaGenDeltas) {
+          if (!qaGenDelta.producedByGenerator()) {
+            continue;
+          }
+          const int qaGenPdg = qaGenDelta.pdgCode();
+          if (std::abs(qaGenPdg) != delta_analysis::PdgDeltaPlusPlus &&
+              std::abs(qaGenPdg) != delta_analysis::PdgDeltaZero) {
+            continue;
+          }
+
+          const auto qaDaughters = qaGenDelta.daughters_as<aod::McParticles>();
+          bool qaHasPr = false, qaHasPi = false;
+          auto qaMcProton = qaGenDelta; // placeholder, overwritten below when qaHasPr is true
+          auto qaMcPion = qaGenDelta;   // placeholder, overwritten below when qaHasPi is true
+          for (const auto& d : qaDaughters) {
+            if (std::abs(d.pdgCode()) == delta_analysis::PdgProton) {
+              qaHasPr = true;
+              qaMcProton = d;
+            } else if (std::abs(d.pdgCode()) == delta_analysis::PdgPion) {
+              qaHasPi = true;
+              qaMcPion = d;
+            }
+          }
+          if (!qaHasPr || !qaHasPi) {
+            continue;
+          }
+
+          if (qaGenDelta.y() < trackCuts.cfgMinY || qaGenDelta.y() > trackCuts.cfgMaxY) {
+            continue;
+          }
+
+          const bool qaProtonAcc = std::abs(qaMcProton.eta()) < trackCuts.cfgCutEta && qaMcProton.pt() > trackCuts.cfgCutPt;
+          const bool qaPionAcc = std::abs(qaMcPion.eta()) < trackCuts.cfgCutEta && qaMcPion.pt() > trackCuts.cfgCutPt;
+          if (qaProtonAcc) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 3.f); // Proton acceptance
+          }
+          if (qaPionAcc) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 4.f); // Pion acceptance
+          }
+          if (!qaProtonAcc || !qaPionAcc) {
+            continue;
+          }
+          histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 5.f); // Both daughters acceptance
+
+          const auto qaProtonMatch = matchDaughterForEfficiencyQA(perColTracks, qaMcProton, true);
+          const auto qaPionMatch = matchDaughterForEfficiencyQA(perColTracks, qaMcPion, false);
+          if (qaProtonMatch.found) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 6.f); // Proton reconstructed
+          }
+          if (qaPionMatch.found) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 7.f); // Pion reconstructed
+          }
+          if (!qaProtonMatch.found || !qaPionMatch.found) {
+            continue;
+          }
+          histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 8.f); // Both daughters reconstructed
+
+          if (qaProtonMatch.trackQuality) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 9.f); // Proton track quality
+          }
+          if (qaPionMatch.trackQuality) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 10.f); // Pion track quality
+          }
+          if (!qaProtonMatch.trackQuality || !qaPionMatch.trackQuality) {
+            continue;
+          }
+          histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 11.f); // Both track quality
+
+          if (qaProtonMatch.pid) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 12.f); // Proton PID
+          }
+          if (qaPionMatch.pid) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 13.f); // Pion PID
+          }
+          if (!qaProtonMatch.pid || !qaPionMatch.pid) {
+            continue;
+          }
+          histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 14.f); // Both PID
+
+          if (qaProtonMatch.dca) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 15.f); // Proton DCA
+          }
+          if (qaPionMatch.dca) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 16.f); // Pion DCA
+          }
+          if (!qaProtonMatch.dca || !qaPionMatch.dca) {
+            continue;
+          }
+          histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 17.f); // Both DCA
+
+          const auto [qaAnyCommonMother, qaMotherIsDelta] = checkCommonMotherForEfficiencyQA(qaMcProton, qaMcPion);
+          if (qaAnyCommonMother) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 18.f); // Common MC mother
+          }
+          if (qaMotherIsDelta) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 19.f); // Common Delta mother
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 20.f); // Final reconstructed Delta
+          }
+        }
+      }
+
       for (auto const& t0 : perColTracks) {
         if (!passesBasicTrackSelection(t0) || !t0.has_mcParticle()) {
           continue;
@@ -1390,6 +1774,14 @@ struct DeltaAnalysis {
 
       for (auto const& trackForQAMC : perColTracks) {
         const float momQAMC = RecoDecay::p(trackForQAMC.px(), trackForQAMC.py(), trackForQAMC.pz());
+
+        // ── Reconstructed-track kinematic QA (MC reco), filled for all reconstructed tracks
+        // before any track-quality/PID/DCA selection is applied. ─────────────────────────
+        histos.fill(HIST("QAMC/hEta_rec"), trackForQAMC.eta());
+        histos.fill(HIST("QAMC/hPt_rec"), trackForQAMC.pt());
+        histos.fill(HIST("QAMC/hPhi_rec"), trackForQAMC.phi());
+        histos.fill(HIST("QAMC/hEtaPhi_rec"), trackForQAMC.eta(), trackForQAMC.phi());
+
         if (!passesBasicTrackSelection(trackForQAMC)) {
           continue;
         }
@@ -1429,23 +1821,42 @@ struct DeltaAnalysis {
           }
         }
 
-        if (!t0.has_mcParticle() || !t1.has_mcParticle()) {
+        histos.fill(HIST("EfficiencyQA/hTruthMatchCutFlow"), 0.f); // Reco pair
+        const bool qaProtonHasLabel = t0.has_mcParticle();
+        if (qaProtonHasLabel) {
+          histos.fill(HIST("EfficiencyQA/hTruthMatchCutFlow"), 1.f); // Proton has MC label
+        }
+        const bool qaPionHasLabel = t1.has_mcParticle();
+        if (qaProtonHasLabel && qaPionHasLabel) {
+          histos.fill(HIST("EfficiencyQA/hTruthMatchCutFlow"), 2.f); // Pion has MC label
+        }
+        if (!qaProtonHasLabel || !qaPionHasLabel) {
           continue;
         }
         const auto mcProton = t0.mcParticle();
         const auto mcPion = t1.mcParticle();
-        if (std::abs(mcProton.pdgCode()) != delta_analysis::PdgProton) {
+        const bool qaProtonIsProton = std::abs(mcProton.pdgCode()) == delta_analysis::PdgProton;
+        if (qaProtonIsProton) {
+          histos.fill(HIST("EfficiencyQA/hTruthMatchCutFlow"), 3.f); // Proton is proton
+        }
+        if (!qaProtonIsProton) {
           continue;
         }
-        if (std::abs(mcPion.pdgCode()) != delta_analysis::PdgPion) {
+        const bool qaPionIsPion = std::abs(mcPion.pdgCode()) == delta_analysis::PdgPion;
+        if (qaPionIsPion) {
+          histos.fill(HIST("EfficiencyQA/hTruthMatchCutFlow"), 4.f); // Pion is pion
+        }
+        if (!qaPionIsPion) {
           continue;
         }
         bool foundMother = false;
+        bool qaAnyCommonMother = false; // EfficiencyQA-only: any shared mother, regardless of PDG
         for (const auto& motherPr : mcProton.mothers_as<aod::McParticles>()) {
           for (const auto& motherPi : mcPion.mothers_as<aod::McParticles>()) {
             if (motherPr != motherPi) {
               continue;
             }
+            qaAnyCommonMother = true;
             if (std::abs(motherPr.pdgCode()) != delta_analysis::PdgDeltaPlusPlus &&
                 std::abs(motherPr.pdgCode()) != delta_analysis::PdgDeltaZero) {
               continue;
@@ -1456,6 +1867,12 @@ struct DeltaAnalysis {
           if (foundMother) {
             break;
           }
+        }
+        if (qaAnyCommonMother) {
+          histos.fill(HIST("EfficiencyQA/hTruthMatchCutFlow"), 5.f); // Common MC mother
+        }
+        if (foundMother) {
+          histos.fill(HIST("EfficiencyQA/hTruthMatchCutFlow"), 6.f); // Mother is Delta
         }
         if (!foundMother) {
           continue;
@@ -1479,29 +1896,42 @@ struct DeltaAnalysis {
                     aod::McParticles const& mcParticles,
                     soa::SmallGroups<EventCandidatesMC> const& collisions)
   {
-    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 0.f); // All MC collisions
+    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 0.f);         // All MC collisions
+    histos.fill(HIST("EfficiencyQA/hGeneratedEventCutFlow"), 0.f); // All generated events
 
     if (std::abs(mcCollision.posZ()) > evSel.cfgCutVertex) {
       return;
     }
-    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 1.f); // |Vz| < cfgCutVertex
+    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 1.f);         // |Vz| < cfgCutVertex
+    histos.fill(HIST("EfficiencyQA/hGeneratedEventCutFlow"), 1.f); // |Vz| accepted
 
     const bool truthInelGt0 = isTruthInelGt0(mcParticles);
-    if (evSel.cfgRequireRecoINELgt0 && !truthInelGt0) {
+    if (evSel.cfgApplyMCTruthINELgt0 && !truthInelGt0) {
       return;
     }
-    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 2.f); // Truth INEL>0
-    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 3.f); // Centrality (no cut currently applied)
-    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 4.f); // Final generated event
+    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 2.f);         // Truth INEL>0
+    histos.fill(HIST("EfficiencyQA/hGeneratedEventCutFlow"), 2.f); // Truth INEL>0
+    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 3.f);         // Centrality (no cut currently applied)
+    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 4.f);         // Final generated event
+    histos.fill(HIST("EfficiencyQA/hGeneratedEventCutFlow"), 3.f); // Final generated event
 
     bool hasAcceptedReco = false;
-    float genCentrality = mcCollision.centFT0M(); // fallback: MC-truth centrality proxy (see note above)
+    float genCentrality = mcCollision.centFT0M();
+
     for (auto const& collision : collisions) {
       if (passesEventSelection(collision)) {
         hasAcceptedReco = true;
-        genCentrality = getCentrality(collision); // real reconstructed centrality of an accepted associated collision
+
+        if (!evSel.cfgUseMCTruthCentrality) {
+          genCentrality = getCentrality(collision);
+        }
+
         break;
       }
+    }
+
+    if (hasAcceptedReco) {
+      histos.fill(HIST("EfficiencyQA/hGeneratedEventCutFlow"), 4.f); // Associated reconstructed event accepted
     }
 
     for (auto const& mcParticle : mcParticles) {
@@ -1520,6 +1950,26 @@ struct DeltaAnalysis {
         continue;
       }
       histos.fill(HIST("MCGenQA/hGenDeltaCutFlow"), 4.f); // bin4: PDG
+
+      if (hasAcceptedReco) {
+        histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 0.f); // Generated Delta (event accepted)
+
+        const auto qaDaughtersGD = mcParticle.daughters_as<aod::McParticles>();
+        bool qaHasPrGD = false, qaHasPiGD = false;
+        for (const auto& d : qaDaughtersGD) {
+          if (std::abs(d.pdgCode()) == delta_analysis::PdgProton) {
+            qaHasPrGD = true;
+          } else if (std::abs(d.pdgCode()) == delta_analysis::PdgPion) {
+            qaHasPiGD = true;
+          }
+        }
+        if (qaHasPrGD && qaHasPiGD) {
+          histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 1.f); // Delta -> p + pi
+          if (mcParticle.y() >= trackCuts.cfgMinY && mcParticle.y() <= trackCuts.cfgMaxY) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 2.f); // Delta rapidity accepted
+          }
+        }
+      }
 
       if (mcParticle.y() < trackCuts.cfgMinY || mcParticle.y() > trackCuts.cfgMaxY) {
         continue;
@@ -1613,9 +2063,6 @@ struct DeltaAnalysis {
       const float centrality = getCentrality(collision);
       histos.fill(HIST("EventFactor/hRecoEvents"), centrality);
       if (collision.has_mcCollision()) {
-        // emplace() keeps the FIRST accepted collision's centrality if a generated collision
-        // has more than one accepted reconstructed collision (splitting), matching the
-        // "first accepted" convention already used in processMCGen() above.
         acceptedMcCollisionRecoCent.emplace(collision.mcCollisionId(), centrality);
       }
     }
@@ -1630,7 +2077,7 @@ struct DeltaAnalysis {
       histos.fill(HIST("CutFlow/EventFactor/hEventAcceptedCutFlow"), 1.f); // |Vz| < cfgCutVertex
 
       auto mcPartsThisColl = mcParticles.sliceBy(perMcCollisionDelta, mcCollision.globalIndex());
-      if (evSel.cfgRequireRecoINELgt0 && !isTruthInelGt0(mcPartsThisColl)) {
+      if (evSel.cfgApplyMCTruthINELgt0 && !isTruthInelGt0(mcPartsThisColl)) {
         continue;
       }
       histos.fill(HIST("CutFlow/EventFactor/hEventAcceptedCutFlow"), 2.f); // Truth INEL>0
@@ -1651,10 +2098,7 @@ struct DeltaAnalysis {
       if (hasAcceptedReco) {
         histos.fill(HIST("CutFlow/EventFactor/hEventAcceptedCutFlow"), 4.f); // Associated reco collision passes event selection
         histos.fill(HIST("CutFlow/EventFactor/hEventAcceptedCutFlow"), 5.f); // Final EventAccepted
-        // Truth-binned: denominator for event_loss = hEventsGenAccepted / hEventsGenAll (unchanged).
         histos.fill(HIST("EventFactor/hEventsGenAccepted"), truthCentrality);
-        // NEW - reco-binned: numerator for event_splitting = hEventsGenAcceptedReco / hRecoEvents,
-        // now on the same (reconstructed) centrality axis as hRecoEvents.
         histos.fill(HIST("EventFactor/hEventsGenAcceptedReco"), itCent->second);
       }
     }

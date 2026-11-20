@@ -199,9 +199,9 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   } trackonefilter;
 
   /// Partition for particle 1
-  Partition<FilteredFemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confPtLowPart1;
-  Partition<FilteredFemtoRecoParticles> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confPtLowPart1;
-  Partition<FemtoTruthParticles> partsOneMCTruth = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack);
+  Partition<FilteredFemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confPtLowPart1;
+  Partition<FilteredFemtoRecoParticles> partsOneMC = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confPtLowPart1;
+  Partition<FemtoTruthParticles> partsOneMCTruth = aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack);
 
   //
 
@@ -220,9 +220,9 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   } tracktwofilter;
 
   /// Partition for particle 2
-  Partition<FilteredFemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confPtLowPart2;
-  Partition<FilteredFemtoRecoParticles> partsTwoMC = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confPtLowPart2;
-  Partition<FemtoTruthParticles> partsTwoMCTruth = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack);
+  Partition<FilteredFemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confPtLowPart2;
+  Partition<FilteredFemtoRecoParticles> partsTwoMC = aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confPtLowPart2;
+  Partition<FemtoTruthParticles> partsTwoMCTruth = aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack);
 
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 2> trackHistoPartTwo;
@@ -264,8 +264,8 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   ConfigurableAxis confmTBins3D{"confmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twotracksconfigs.confUse3D>> to true in order to use)"};
   ConfigurableAxis confmultBins3D{"confmultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twotracksconfigs.confUse3D>> to true in order to use)"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBinsCent}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningNtr{{confVtxBins, confMultBinsMult}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBinsCent}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningNtr{{confVtxBins, confMultBinsMult}};
 
   ConfigurableAxis confkstarBins{"confkstarBins", {60, 0.0, 0.3}, "binning kstar"};
   ConfigurableAxis confkTBins{"confkTBins", {150, 0., 9.}, "binning kT"};
@@ -482,8 +482,8 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   void init(InitContext&)
   {
 
-    colBinningCent = ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M>{{confVtxBins, confMultBinsCent}, true};
-    colBinningNtr = ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr>{{confVtxBins, confMultBinsMult}, true};
+    colBinningCent = ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M>{{confVtxBins, confMultBinsCent}};
+    colBinningNtr = ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr>{{confVtxBins, confMultBinsMult}};
 
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, twotracksconfigs.confIsMC, trackonefilter.confPDGCodePartOne, true);
@@ -563,7 +563,7 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   }
 
   template <typename CollisionType>
-  void fillCollision(CollisionType col, bool IsCent)
+  void fillCollision(const CollisionType& col, bool IsCent)
   {
     if (IsCent) {
       mixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinningCent.getBin({col.posZ(), col.multV0M()}));
@@ -584,7 +584,7 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol, PairType contType, bool fillQA)
+  void doSameEvent(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, const PartType& parts, float magFieldTesla, int multCol, PairType contType, bool fillQA)
   {
     /// Histogramming same event
     if ((contType == PairType::PlusMinus || contType == PairType::PlusPlus) && fillQA) {
@@ -892,14 +892,14 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType>
-  void doSameEventMCTruth(PartitionType groupPartsOne, PartitionType groupPartsTwo, int multCol, PairType contType, bool fillQA)
+  void doSameEventMCTruth(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, int multCol, PairType contType, bool fillQA)
   {
 
     randgen = new TRandom2(0);
     /// Histogramming same event
     if ((cfgProcessPM || cfgProcessPP) && fillQA) {
       for (const auto& part : groupPartsOne) {
-        if (part.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) {
+        if (part.partType() == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) {
           int pdgCode = static_cast<int>(part.tempFitVar());
           const auto& pdgParticle = pdg->GetParticle(pdgCode);
           if (pdgParticle) {
@@ -911,7 +911,7 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
 
     if ((cfgProcessPM || cfgProcessMM) && fillQA) {
       for (const auto& part : groupPartsTwo) {
-        if (part.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) {
+        if (part.partType() == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) {
           int pdgCode = static_cast<int>(part.tempFitVar());
           const auto& pdgParticle = pdg->GetParticle(pdgCode);
           if (pdgParticle) {
@@ -1045,7 +1045,7 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType>
-  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, float magFieldTesla, int multCol, PairType contType)
+  void doMixedEvent(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, float magFieldTesla, int multCol, PairType contType)
   {
 
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
@@ -1389,7 +1389,7 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType>
-  void doMixedEventMCTruth(PartitionType groupPartsOne, PartitionType groupPartsTwo, int multCol, PairType contType)
+  void doMixedEventMCTruth(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, int multCol, PairType contType)
   {
     randgen = new TRandom2(0);
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {

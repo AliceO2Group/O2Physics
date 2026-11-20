@@ -97,7 +97,7 @@ struct JetTriggerChargedQa {
   {
     fiducialVolume = static_cast<float>(cfgTPCVolume) - static_cast<float>(cfgJetR);
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(evSel));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
 
     // Basic histos
     spectra.add("vertexZ", "z vertex", kTH1F, {{60, -12., 12.}});

@@ -175,7 +175,7 @@ struct UDTutorial07 {
 
       registry.fill(HIST("hSelectionCounter"), 3);
 
-      for (auto t : tracks) {
+      for (const auto& t : tracks) {
 
         // Apply good track selection criteria
         if (!trackselector(t, parameters))
@@ -208,11 +208,11 @@ struct UDTutorial07 {
           registry.fill(HIST("hSelectionCounter"), 4);
 
           // Creating rhos
-          for (auto pion : onlyPionTracks) {
+          for (const auto& pion : onlyPionTracks) {
             p += pion;
           }
 
-          for (auto rtrk : rawPionTracks) {
+          for (const auto& rtrk : rawPionTracks) {
             TLorentzVector itrk;
             itrk.SetXYZM(rtrk.px(), rtrk.py(), rtrk.pz(), o2::constants::physics::MassPionCharged);
             trackpt.push_back(itrk.Pt());
@@ -223,7 +223,7 @@ struct UDTutorial07 {
           }
 
           int sign = 0;
-          for (auto rawPion : rawPionTracks) {
+          for (const auto& rawPion : rawPionTracks) {
             sign += rawPion.sign();
           }
           // Filling tree, make to be consistent with the declared tables

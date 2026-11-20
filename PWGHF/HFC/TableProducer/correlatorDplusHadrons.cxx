@@ -22,6 +22,7 @@
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/HFC/DataModel/DerivedDataCorrelationTables.h"
+#include "PWGHF/HFC/Utils/utilsCorrelations.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -99,13 +100,12 @@ struct HfCorrelatorDplusHadronsDplusSelection {
                                  CandidatesDplusData const& candidates)
   {
     bool isSelColl = true;
-    bool isDplusFound = true;
+    bool isDplusFound = !doSelDplusCollision;
     bool isSel8 = true;
     bool isNosameBunchPileUp = true;
     if (doSelDplusCollision) {
       for (const auto& candidate : candidates) {
         if (std::abs(HfHelper::yDplus(candidate)) > yCandMax || candidate.pt() < ptCandMin) {
-          isDplusFound = false;
           continue;
         }
         isDplusFound = true;
@@ -127,7 +127,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
                                   CandidatesDplusMcRec const& candidates)
   {
     bool isSelColl = true;
-    bool isDplusFound = false;
+    bool isDplusFound = !doSelDplusCollision;
     bool isSel8 = true;
     bool isNosameBunchPileUp = true;
     if (doSelDplusCollision) {
@@ -187,9 +187,12 @@ struct HfCorrelatorDplusHadrons {
   Produces<aod::HcCandSelInfos> candSelInfo;
   Produces<aod::AssocTrackReds> assocTrackReduced;
   Produces<aod::AssocTrackSels> assocTrackSelInfo;
+  Produces<aod::BMotherPairInfo> entryDplusHadronBMotherInfo;
+  Produces<aod::BMotherCandInfo> entryDplusCandBMotherInfo;
 
   static constexpr std::size_t NDaughters{3u};
-  static constexpr float EtaDaughtersMax = 0.8f; // Eta cut on daughters of D+ meson as Run2
+  static constexpr float EtaDaughtersMax = 0.8f;     // Eta cut on daughters of D+ meson as Run2
+  static constexpr int8_t DepthMaxDplusDaughters{2}; // max. depth of the D+ daughters in the decay chain (resonant channels)
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
@@ -255,7 +258,7 @@ struct HfCorrelatorDplusHadrons {
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsMassD{"binsMassD", {200, 1.7, 2.10}, "inv. mass (#pi^{+}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
   ConfigurableAxis binsDcaXY{"binsDcaXY", {128, -0.2, 0.2}, "DCA xy"};
-  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
+  BinningType corrBinning{{binsZVtx, binsMultiplicity}};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
@@ -263,8 +266,8 @@ struct HfCorrelatorDplusHadrons {
     AxisSpec axisMassD = {binsMassD, "inv. mass (pi^{+}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
     AxisSpec const axisEta = {binsEta, "#it{#eta}"};
     AxisSpec const axisPhi = {binsPhi, "#it{#varphi}"};
-    AxisSpec axisPtD = {(std::vector<double>)binsPtD, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T} Hadron (GeV/#it{c})"};
+    AxisSpec axisPtD = {std::vector<double>(binsPtD), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec axisPtHadron = {std::vector<double>(binsPtHadron), "#it{p}_{T} Hadron (GeV/#it{c})"};
     AxisSpec const axisMultiplicity = {binsMultiplicity, "Multiplicity"};
     AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
     AxisSpec const axisPosZ = {binsZVtx, "PosZ"};
@@ -330,7 +333,7 @@ struct HfCorrelatorDplusHadrons {
     registry.add("hPhiMcGen", "D+,Hadron particles - MC Gen", {HistType::kTH1F, {axisPhi}});
     registry.add("hMultFT0AMcGen", "D+,Hadron multiplicity FT0A - MC Gen", {HistType::kTH1F, {axisMultiplicity}});
     registry.add("hFakeCollision", "Fake collision counter", {HistType::kTH1F, {{1, -0.5, 0.5, "n fake coll"}}});
-    corrBinning = {{binsZVtx, binsMultiplicity}, true};
+    corrBinning = {{binsZVtx, binsMultiplicity}};
   }
 
   template <typename ParticleContainer, typename AssocContainer>
@@ -402,6 +405,9 @@ struct HfCorrelatorDplusHadrons {
       // Count triggers
       registry.fill(HIST("hcountDplustriggersMCGen"), 0, particle.pt());
 
+      // beauty-mother information
+      const auto [ptB, deltaPhiBtoD] = hf_correlations::getBMotherInfoMcGen(particle, particlesToLoop);
+
       for (const auto& particleAssoc : groupedMcParticles) {
 
         if (std::abs(particleAssoc.eta()) > etaTrackMax ||
@@ -448,6 +454,7 @@ struct HfCorrelatorDplusHadrons {
         entryDplusHadronGenInfo(isDplusPrompt,
                                 particleAssoc.isPhysicalPrimary(),
                                 trackOrigin);
+        entryDplusHadronBMotherInfo(ptB, deltaPhiBtoD);
       }
     }
   }
@@ -553,7 +560,7 @@ struct HfCorrelatorDplusHadrons {
 
       int indexHfcReducedCollision = collReduced.lastIndex() + 1;
 
-      // Ds fill histograms and Dplus candidates information stored
+      // Dplus candidates information stored
       for (const auto& candidate : candsDplusThisColl) {
         std::vector<float> outputMl = {-1., -1., -1.};
         // candidate selected
@@ -562,7 +569,8 @@ struct HfCorrelatorDplusHadrons {
             outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
           }
           candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt(), HfHelper::invMassDplusToPiKPi(candidate), candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
-          candSelInfo(indexHfcReducedCollision, outputMl[0], outputMl[2]);
+          // Check compatibility with the candidate selector options: BdtScoreBkg, BdtScorePrompt, BdtScoreNonPrompt
+          candSelInfo(indexHfcReducedCollision, outputMl[0], outputMl[1], outputMl[2]);
         }
       }
 
@@ -632,6 +640,8 @@ struct HfCorrelatorDplusHadrons {
         bool isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
 
         std::vector<float> outputMl = {-1., -1., -1.};
+        // beauty-mother information (generated B, reconstructed D+)
+        const auto [ptB, deltaPhiBtoD] = hf_correlations::getBMotherInfoMcRec<TracksWithMc>(candidate, mcParticles, Pdg::kDPlus, DepthMaxDplusDaughters);
 
         // fill invariant mass plots from Dplus signal and background candidates
         registry.fill(HIST("hMassDplusMcRec"), HfHelper::invMassDplusToPiKPi(candidate), efficiencyWeightD);
@@ -664,6 +674,7 @@ struct HfCorrelatorDplusHadrons {
           registry.fill(HIST("hMassDplusMcRecSig"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), efficiencyWeightD);
           entryDplusCandRecoInfo(HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
           entryDplusCandGenInfo(isDplusPrompt);
+          entryDplusCandBMotherInfo(ptB, deltaPhiBtoD);
         } else {
           registry.fill(HIST("hPtCandMcRecBkg"), candidate.pt());
           registry.fill(HIST("hEtaMcRecBkg"), candidate.eta());
@@ -692,6 +703,7 @@ struct HfCorrelatorDplusHadrons {
                                track.pt(), poolBin);
           entryDplusHadronRecoInfo(HfHelper::invMassDplusToPiKPi(candidate), isDplusSignal);
           entryDplusHadronMlInfo(outputMl[0], outputMl[1], outputMl[2]);
+          entryDplusHadronBMotherInfo(ptB, deltaPhiBtoD);
           if (track.has_mcParticle()) {
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
             isPhysicalPrimary = mcParticle.isPhysicalPrimary();
@@ -721,7 +733,7 @@ struct HfCorrelatorDplusHadrons {
                     soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::McCollisionLabels> const& collisions,
                     CandDplusMcGen const& mcParticles)
   {
-    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}, true};
+    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}};
 
     for (const auto& mcCollision : mcCollisions) {
 
@@ -806,7 +818,7 @@ struct HfCorrelatorDplusHadrons {
                               TracksWithMc const& tracks,
                               aod::McParticles const& mcParticles)
   {
-    BinningType const corrBinning{{binsZVtx, binsMultiplicityMc}, true};
+    BinningType const corrBinningMcRec{{binsZVtx, binsMultiplicityMc}};
     for (const auto& candidate : candidates) {
       if (std::abs(HfHelper::yDplus(candidate)) > yCandMax || candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
         continue;
@@ -831,11 +843,11 @@ struct HfCorrelatorDplusHadrons {
       }
     }
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    Pair<SelCollisionsWithDplus, CandidatesDplusMcRec, TracksWithMc, BinningType> const pairMcRec{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
+    Pair<SelCollisionsWithDplus, CandidatesDplusMcRec, TracksWithMc, BinningType> const pairMcRec{corrBinningMcRec, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
-      int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()));
-      int const poolBinDplus = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFT0M()));
+      int poolBin = corrBinningMcRec.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()));
+      int const poolBinDplus = corrBinningMcRec.getBin(std::make_tuple(c1.posZ(), c1.multFT0M()));
       registry.fill(HIST("hMultFT0M"), c1.multFT0M());
       registry.fill(HIST("hZVtx"), c1.posZ());
       registry.fill(HIST("hTracksPoolBin"), poolBin);     // note that the selections here are not yet applied
@@ -867,6 +879,8 @@ struct HfCorrelatorDplusHadrons {
                              poolBin);
         entryDplusHadronRecoInfo(HfHelper::invMassDplusToPiKPi(candidate), isDplusSignal);
         entryDplusHadronGenInfo(isDplusPrompt, isPhysicalPrimary, trackOrigin);
+        const auto [ptB, deltaPhiBtoD] = hf_correlations::getBMotherInfoMcRec<TracksWithMc>(candidate, mcParticles, Pdg::kDPlus, DepthMaxDplusDaughters);
+        entryDplusHadronBMotherInfo(ptB, deltaPhiBtoD);
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
         }
@@ -880,7 +894,7 @@ struct HfCorrelatorDplusHadrons {
   void processMcGenMixedEvent(SelCollisionsWithDplusMc const& collisions,
                               CandDplusMcGen const& mcParticles)
   {
-    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}, true};
+    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}};
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
     Pair<SelCollisionsWithDplusMc, CandDplusMcGen, CandDplusMcGen, BinningTypeMcGen> const pairMcGen{corrBinningMcGen, numberEventsMixed, -1, collisions, tracksTuple, &cache};
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
@@ -911,6 +925,8 @@ struct HfCorrelatorDplusHadrons {
                              poolBin);
         entryDplusHadronRecoInfo(MassDPlus, true);
         entryDplusHadronGenInfo(isDplusPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
+        const auto [ptB, deltaPhiBtoD] = hf_correlations::getBMotherInfoMcGen(candidate, mcParticles);
+        entryDplusHadronBMotherInfo(ptB, deltaPhiBtoD);
       }
     }
   }

@@ -21,7 +21,6 @@
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "ALICE3/Core/GeometryContainer.h"
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
 #include "ALICE3/DataModel/OTFRICH.h"
@@ -32,7 +31,6 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <DetectorsBase/Propagator.h>
@@ -50,6 +48,7 @@
 #include <ReconstructionDataFormats/TrackParametrization.h>
 
 #include <TH1.h>
+#include <TH2.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
 
@@ -66,7 +65,7 @@ using namespace o2::framework;
 using namespace o2::constants::physics;
 
 using Alice3TracksWPid = soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels, aod::TracksDCA, aod::UpgradeTrkPids, aod::UpgradeTofs, aod::UpgradeRichs>;
-using Alice3TracksACTS = soa::Join<aod::StoredTracks, aod::StoredTracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TracksCovExtension, aod::TracksAlice3, aod::TracksAlice3Pdg>;
+using Alice3TracksACTS = soa::Join<aod::StoredTracks, aod::StoredTracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtension, aod::TracksCovExtension, aod::TracksAlice3, aod::TracksAlice3Pdg, aod::TracksExtraA3>;
 using Alice3TracksOTF = soa::Join<aod::StoredTracks, aod::StoredTracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TracksCovExtension, aod::TracksAlice3>;
 using Alice3MCParticles = soa::Join<aod::McParticles, aod::MCParticlesExtraA3>;
 
@@ -74,9 +73,6 @@ struct Alice3strangenessFinder {
   SliceCache cache;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  Service<o2::ccdb::BasicCCDBManager> ccdb{};
-  o2::fastsim::GeometryContainer geoContainer;
-  std::vector<std::vector<float>> trackingLayers;
 
   Produces<aod::V0CandidateIndices> v0CandidateIndices;    // contains V0 candidate indices
   Produces<aod::V0CandidateCores> v0CandidateCores;        // contains V0 candidate core information
@@ -95,7 +91,7 @@ struct Alice3strangenessFinder {
 
   ConfigurableAxis axisDCA{"axisDCA", {200, 0, 200}, "DCA axis"};
   ConfigurableAxis axisEta{"axisEta", {80, -4.f, 4.f}, "Eta axis"};
-  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.025f, 0.05f, 0.075f, 0.1f, 0.125f, 0.15f, 0.175f, 0.2f, 0.225f, 0.25f, 0.275f, 0.3f, 0.325f, 0.35f, 0.375f, 0.4f, 0.425f, 0.45f, 0.475f, 0.5f, 0.525f, 0.55f, 0.575f, 0.6f, 0.625f, 0.65f, 0.675f, 0.7f, 0.725f, 0.75f, 0.775f, 0.8f, 0.82f, 0.85f, 0.875f, 0.9f, 0.925f, 0.95f, 0.975f, 1.0f, 1.05f, 1.1f}, "pt axis for QA histograms"};
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.05f, 0.1f, 0.15f, 0.2f, 0.25f, 0.3f, 0.35f, 0.4f, 0.45f, 0.5f, 0.55f, 0.6f, 0.65f, 0.7f, 0.75f, 0.8f, 0.85f, 0.9f, 0.95f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.25f, 2.5, 2.75, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 10.0f, 12.f, 15.f}, "pt axis for QA histograms"};
 
   // DCA Fitter
   struct : ConfigurableGroup {
@@ -138,11 +134,24 @@ struct Alice3strangenessFinder {
     Configurable<float> cascMaxEta{"cascMaxEta", 2.5f, "DCA between cascade daughters (cm)"};
   } presel;
 
+  // Daughter Track Eff calculation
+  struct : ConfigurableGroup {
+    std::string prefix = "daughEff";
+    Configurable<bool> analyseK0Daughters{"analyseK0Daughters", true, ""};
+    Configurable<bool> analyseLambdaDaughters{"analyseLambdaDaughters", false, ""};
+    Configurable<bool> analyseAntiLambdaDaughters{"analysAntiLambdaDaughters", false, ""};
+    Configurable<bool> analyseXiMinusDaughters{"analyseXiMinusDaughters", false, ""};
+    Configurable<bool> analyseXiPlusDaughters{"analyseXiPlusDaughters", false, ""};
+    Configurable<bool> analysOmegaMinusDaughters{"analysOmegaMinusDaughters", false, ""};
+    Configurable<bool> analyseOmegaPlusDaughters{"analyseOmegaPlusDaughters", false, ""};
+  } daughEff;
+
   // Operation
   Configurable<float> magneticField{"magneticField", 20.0f, "Magnetic field (in kilogauss)"};
   Configurable<bool> mcSameMotherCheck{"mcSameMotherCheck", true, "check if tracks come from the same MC mother"};
 
   // for the ACTS study
+  Configurable<bool> useGeneratedSVposition{"useGeneratedSVposition", false, "use the MC truth position of V0 decay"};
   Configurable<bool> isK0Gun{"isK0Gun", false, "is K0s Monte Carlo gun used"};
   Configurable<bool> isLambdaGun{"isLambdaGun", true, "is Lambda Monte Carlo gun used"};
   Configurable<bool> skipFitter{"skipFitter", false, "calculate V0 properties without calling the DCA fitter, using only the track parameters "};
@@ -151,7 +160,6 @@ struct Alice3strangenessFinder {
   o2::vertexing::DCAFitterN<2> fitter;
   Service<o2::framework::O2DatabasePDG> pdgDB{};
   static constexpr float ToMicrons = 1e+4;
-  static constexpr int LutConfig = 0; // todo
 
   // partitions for v0/casc dau tracks
   Partition<Alice3TracksACTS> positiveSecondaryTracksACTS =
@@ -189,6 +197,8 @@ struct Alice3strangenessFinder {
 
     // decay properties
     float dcaDau{};
+    float posDauDCAxy{};
+    float negDauDCAxy{};
     float eta{};
     std::array<float, 3> p{};
     std::array<float, 3> posSV{};
@@ -199,7 +209,7 @@ struct Alice3strangenessFinder {
     float dcaToPV{};
   };
 
-  void init(InitContext& initContext)
+  void init(InitContext&)
   {
     // Initialization code here
     fitter.setBz(magneticField);
@@ -256,13 +266,31 @@ struct Alice3strangenessFinder {
     hV0Counter->GetXaxis()->SetBinLabel(3, "AntiLambda");
     hV0Counter->GetXaxis()->SetBinLabel(4, "Misidentified");
 
-    histos.add("hRadiusVsHitsNeg", "", kTH2D, {{400, 0, 400}, {12, 0.5, 12.5}}); // radius vs hist for MC studies
-    histos.add("hRadiusVsHitsPos", "", kTH2D, {{400, 0, 400}, {12, 0.5, 12.5}}); // radius vs hist for MC studies
+    auto hPtResolutionPositive = histos.add<TH2>("hPtResolutionPositive", "hPtResolutionPositive", kTH2D, {{axisPt}, {axisPt}});
+    hPtResolutionPositive->GetXaxis()->SetTitle("p_{T}^{reco} (GeV/c)");
+    hPtResolutionPositive->GetYaxis()->SetTitle("p_{T}^{true} (GeV/c)");
+
+    auto hPtResolutionNegative = histos.add<TH2>("hPtResolutionNegative", "hPtResolutionNegative", kTH2D, {{axisPt}, {axisPt}});
+    hPtResolutionNegative->GetXaxis()->SetTitle("p_{T}^{reco} (GeV/c)");
+    hPtResolutionNegative->GetYaxis()->SetTitle("p_{T}^{true} (GeV/c)");
+
+    auto hPtRes1DNegDau = histos.add<TH1>("hPtRes1DNegDau", "hPtRes1DNegDau", kTH1D, {{100, -0.2, 0.2}});
+    hPtRes1DNegDau->GetXaxis()->SetTitle("(p_{T}^{gen} - p_{T}^{reco})/p_{T}^{gen}");
+    auto hPtRes1DPosDau = histos.add<TH1>("hPtRes1DPosDau", "hPtRes1DPosDau", kTH1D, {{100, -0.2, 0.2}});
+    hPtRes1DPosDau->GetXaxis()->SetTitle("(p_{T}^{gen} - p_{T}^{reco})/p_{T}^{gen}");
 
     auto hV0Building = histos.add<TH1>("hV0Building", "hV0Building", kTH1D, {{10, 0.5, 10.5}});
-    hV0Building->GetXaxis()->SetBinLabel(1, "Pair");
-    hV0Building->GetXaxis()->SetBinLabel(2, "Pdg check");
-    hV0Building->GetXaxis()->SetBinLabel(3, "DCA Fitter");
+    if (doprocessFindV0CandidateOTF || doprocessFindV0CandidateACTS) {
+      hV0Building->GetXaxis()->SetBinLabel(1, "Pair");
+      hV0Building->GetXaxis()->SetBinLabel(2, "Pdg check");
+      hV0Building->GetXaxis()->SetBinLabel(3, "DCA Fitter");
+    }
+    if (doprocessMCTrueFromACTS) {
+      hV0Building->GetXaxis()->SetBinLabel(1, "Pair");
+      hV0Building->GetXaxis()->SetBinLabel(2, "PID");
+      hV0Building->GetXaxis()->SetBinLabel(3, "Mother Check");
+      hV0Building->GetXaxis()->SetBinLabel(4, "DCA Fitter");
+    }
 
     auto hCascadeBuilding = histos.add<TH1>("hCascadeBuilding", "hCascadeBuilding", kTH1D, {{10, 0.5, 10.5}});
     hCascadeBuilding->GetXaxis()->SetBinLabel(1, "Attempts");
@@ -280,36 +308,47 @@ struct Alice3strangenessFinder {
       histos.add("Generated/hGeneratedAntiOmega", "hGeneratedAntiOmega", kTH2D, {{axisPt}, {axisEta}});
     }
 
-    if (doprocessFindV0CandidateOTF) {
-      ccdb->setURL("http://alice-ccdb.cern.ch");
-      ccdb->setTimestamp(-1);
-      geoContainer.setCcdbManager(ccdb.operator->());
-      geoContainer.init(initContext);
-      const int nGeometries = geoContainer.getNumberOfConfigurations();
-      trackingLayers.resize(nGeometries);
-
-      for (int icfg = 0; icfg < nGeometries; ++icfg) {
-        auto globalConfiguration = geoContainer.getConfigurations(icfg);
-
-        for (const auto& [outerKey, innerMap] : globalConfiguration) {
-          if (outerKey.empty() || outerKey[0] != 'B') {
-            continue;
-          }
-
-          auto it = innerMap.find("r");
-          if (it != innerMap.end()) {
-            trackingLayers[icfg].push_back(std::stof(it->second));
-          }
-        }
-      }
-    }
-
     if (buildCascade) {
       histos.add("CascadeBuilding/hDcaBetweenDaus", "hDcaBetweenDaus", kTH1D, {{axisDCA}});
       histos.add("CascadeBuilding/hXiMass", "", kTH1D, {axisXiMass});
       histos.add("CascadeBuilding/hOmegaMass", "", kTH1D, {axisOmegaMass});
     }
 
+    histos.add("hPxPosRepropagated", "", kTH2D, {{200, -10.f, 10.f}, {200, -10.f, 10.f}});
+    histos.add("hPyPosRepropagated", "", kTH2D, {{200, -10.f, 10.f}, {200, -10.f, 10.f}});
+    histos.add("hPzPosRepropagated", "", kTH2D, {{200, -10.f, 10.f}, {200, -10.f, 10.f}});
+
+    histos.add("hPxNegRepropagated", "", kTH2D, {{200, -10.f, 10.f}, {200, -10.f, 10.f}});
+    histos.add("hPyNegRepropagated", "", kTH2D, {{200, -10.f, 10.f}, {200, -10.f, 10.f}});
+    histos.add("hPzNegRepropagated", "", kTH2D, {{200, -10.f, 10.f}, {200, -10.f, 10.f}});
+    histos.add("hRadius", "", kTH1D, {{100, 0, 100}});
+    histos.add("hRadiusGenNeg", "", kTH1D, {{100, 0, 100}});
+    histos.add("hRadiusGenPos", "", kTH1D, {{100, 0, 100}});
+
+    histos.add("hMomentumPosRepropagated", "", kTH2D, {{500, 0.f, 15.f}, {500, -0.f, 15.f}});
+    histos.add("hMomentumNegRepropagated", "", kTH2D, {{500, 0.f, 15.f}, {500, -0.f, 15.f}});
+
+    histos.add("hCosPhiRepropagated", "", kTH2D, {{100, 0.8f, 1.f}, {100, 0.8f, 1.f}});
+
+    if (doprocessDaughterTracksForEffACTS || doprocessDaughterTracksForEffOTF) {
+      histos.add("K0Short/hNegDaughterRecoTruePtEta", "", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("K0Short/hNegDaughterRecoPtEta", "", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("K0Short/hPosDaughterRecoTruePtEta", "", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("K0Short/hPosDaughterRecoPtEta", "", kTH2D, {{axisPt}, {axisEta}});
+      histos.addClone("K0Short/", "Lambda");
+      histos.addClone("K0Short/", "AntiLambda");
+    }
+    if (doprocessMCTrueFromACTS) {
+      histos.add("K0Short/hNegDaughterGenPtEta", "", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("K0Short/hPosDaughterGenPtEta", "", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("Lambda/hNegDaughterGenPtEta", "", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("Lambda/hPosDaughterGenPtEta", "", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("AntiLambda/hNegDaughterGenPtEta", "", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("AntiLambda/hPosDaughterGenPtEta", "", kTH2D, {{axisPt}, {axisEta}});
+
+      histos.add("hRadiusVsHitsNeg", "", kTH2D, {{100, 0, 100}, {12, 0.5, 12.5}}); // radius vs hist for MC studies
+      histos.add("hRadiusVsHitsPos", "", kTH2D, {{100, 0, 100}, {12, 0.5, 12.5}}); // radius vs hist for MC studies
+    }
     histos.print();
   }
 
@@ -362,18 +401,21 @@ struct Alice3strangenessFinder {
     } // end association check
     return returnValue;
   }
-
-  template <typename TTrackType>
-  [[nodiscard]] float getFirstLayerHitRadius(const TTrackType& track, const std::vector<float>& layers)
+  template <typename TMCParticle>
+  bool checkSameMotherGen(TMCParticle const& mcParticle1, TMCParticle const& mcParticle2, Alice3MCParticles const& mcParticles)
   {
-    const float trueRadius = std::hypot(track.x(), track.y());
-    for (const float layerRadius : layers) {
-      if (layerRadius >= trueRadius) {
-        return layerRadius;
+    bool returnValue = false;
+    if (mcParticle1.has_mothers() && mcParticle2.has_mothers()) {
+      auto motherIds1 = mcParticle1.mothersIds();
+      auto motherIds2 = mcParticle2.mothersIds();
+      if (!motherIds1.empty() && !motherIds2.empty() && motherIds1[0] == motherIds2[0]) {
+        auto mother = mcParticles.rawIteratorAt(motherIds1[0] - mcParticles.rawIteratorAt(0).globalIndex());
+        if (mother.isPhysicalPrimary()) {
+          returnValue = true;
+        }
       }
-    }
-    static constexpr float OutsideALICE3 = 100.f;
-    return OutsideALICE3;
+    } // end association check
+    return returnValue;
   }
 
   template <typename TTrackType>
@@ -424,9 +466,15 @@ struct Alice3strangenessFinder {
       thisCandidate.p[1] = thisCandidate.pDau0[1] + thisCandidate.pDau1[1];
       thisCandidate.p[2] = thisCandidate.pDau0[2] + thisCandidate.pDau1[2];
       const auto posSV = fitter.getPCACandidatePos();
-      thisCandidate.posSV[0] = posSV[0];
-      thisCandidate.posSV[1] = posSV[1];
-      thisCandidate.posSV[2] = posSV[2];
+      if (useOriginalTrackParams) {
+        thisCandidate.posSV[0] = t0.getX();
+        thisCandidate.posSV[1] = t0.getY();
+        thisCandidate.posSV[2] = t0.getZ();
+      } else {
+        thisCandidate.posSV[0] = posSV[0];
+        thisCandidate.posSV[1] = posSV[1];
+        thisCandidate.posSV[2] = posSV[2];
+      }
 
       std::array<float, o2::track::kLabCovMatSize> covA = {0};
       std::array<float, o2::track::kLabCovMatSize> covB = {0};
@@ -459,6 +507,9 @@ struct Alice3strangenessFinder {
       thisCandidate.dcaToPV = calculateDCAStraightToPV(thisCandidate.posSV[0], thisCandidate.posSV[1], thisCandidate.posSV[2],
                                                        thisCandidate.p[0], thisCandidate.p[1], thisCandidate.p[2],
                                                        vtx[0], vtx[1], vtx[2]);
+      std::array<float, 2> dcaInfo = {999.0f, 999.0f}; // by default, take large value to make sure candidate accepted, TODO implement proper DCA calculation
+      thisCandidate.posDauDCAxy = dcaInfo[0];
+      thisCandidate.negDauDCAxy = dcaInfo[1];
     } else {
       t0.getPxPyPzGlo(thisCandidate.pDau0);
       t1.getPxPyPzGlo(thisCandidate.pDau1);
@@ -475,6 +526,8 @@ struct Alice3strangenessFinder {
       thisCandidate.dcaToPV = calculateDCAStraightToPV(thisCandidate.posSV[0], thisCandidate.posSV[1], thisCandidate.posSV[2],
                                                        thisCandidate.p[0], thisCandidate.p[1], thisCandidate.p[2],
                                                        vtx[0], vtx[1], vtx[2]);
+      thisCandidate.posDauDCAxy = 999.0f;
+      thisCandidate.negDauDCAxy = 999.0f;
     }
     return true;
   }
@@ -482,21 +535,39 @@ struct Alice3strangenessFinder {
   void processGenerated(aod::McParticles const&)
   {
     for (const auto& mcParticle : trueK0s) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
       histos.fill(HIST("Generated/hGeneratedK0s"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueLambda) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
       histos.fill(HIST("Generated/hGeneratedLambda"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueAntiLambda) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
       histos.fill(HIST("Generated/hGeneratedAntiLambda"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueXi) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
       histos.fill(HIST("Generated/hGeneratedXi"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueAntiXi) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
       histos.fill(HIST("Generated/hGeneratedAntiXi"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueOmega) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
       histos.fill(HIST("Generated/hGeneratedOmega"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueAntiOmega) {
@@ -516,10 +587,12 @@ struct Alice3strangenessFinder {
       }
 
       o2::track::TrackParCov pos = getTrackParCov(posTrack);
+
       for (auto const& negTrack : negTracksGrouped) {
         if (!negTrack.isReconstructed()) {
           continue; // no ghost tracks
         }
+        o2::track::TrackParCov neg = getTrackParCov(negTrack);
 
         histos.fill(HIST("hV0Building"), 1.0);
         if (mcSameMotherCheck && !checkSameMother(posTrack, negTrack)) {
@@ -527,61 +600,65 @@ struct Alice3strangenessFinder {
         }
 
         if (isK0Gun || isLambdaGun) {
-          // ACTS: pdg code attached to track
-          if constexpr (requires { posTrack.pdgCode(); }) {
-            if ((posTrack.pdgCode() != kPiPlus && negTrack.pdgCode() != kPiMinus) && isK0Gun) {
-              continue;
-            }
-            if ((posTrack.pdgCode() != kProton && negTrack.pdgCode() != kPiMinus) && isLambdaGun) {
-              continue;
-            }
-          } else {
-            // OTF: pdg code from mcParticle table
-            if (!posTrack.has_mcParticle() && !negTrack.has_mcParticle()) {
-              continue;
-            }
-            auto mcParticlePos = posTrack.template mcParticle_as<aod::McParticles>();
-            auto mcParticleNeg = negTrack.template mcParticle_as<aod::McParticles>();
-            if ((mcParticlePos.pdgCode() != kPiPlus && mcParticleNeg.pdgCode() != kPiMinus) && isK0Gun) {
-              continue;
-            }
-            if ((mcParticlePos.pdgCode() != kProton && mcParticleNeg.pdgCode() != kPiMinus) && isLambdaGun) {
-              continue;
-            }
+          if (!posTrack.has_mcParticle() || !negTrack.has_mcParticle()) {
+            continue;
+          }
+          auto mcParticlePos = posTrack.template mcParticle_as<aod::McParticles>();
+          auto mcParticleNeg = negTrack.template mcParticle_as<aod::McParticles>();
+          if ((mcParticlePos.pdgCode() != kPiPlus && mcParticleNeg.pdgCode() != kPiMinus) && isK0Gun) {
+            continue;
+          }
+          if ((mcParticlePos.pdgCode() != kProton && mcParticleNeg.pdgCode() != kPiMinus) && isLambdaGun) {
+            continue;
           }
         }
-
         Candidate v0Cand;
         histos.fill(HIST("hV0Building"), 2.0);
-        o2::track::TrackParCov neg = getTrackParCov(negTrack);
         if (!buildDecayCandidateTwoBody(pos, neg, vtx, v0Cand)) {
           continue; // failed at building candidate
         }
 
         histos.fill(HIST("hV0Building"), 3.0);
 
-        // TODO: not all ACTS tracks have MC association, so this check is not possible for all candidates, fix is needed
-        //  auto mcParticle1 = posTrack.template mcParticle_as<aod::McParticles>();
-        //  if (mcParticle1.pdgCode() == kK0Short) {
-        //    histos.fill(HIST("hV0Counter"), 0.5);
-        //  } else if (mcParticle1.pdgCode() == kLambda0) {
-        //    histos.fill(HIST("hV0Counter"), 1.5);
-        //  } else if (mcParticle1.pdgCode() == kLambda0Bar) {
-        //    histos.fill(HIST("hV0Counter"), 2.5);
-        //  } else {
-        //    histos.fill(HIST("hV0Counter"), 3.5);
-        //  }
+        const float radiusV0 = std::hypot(v0Cand.posSV[0], v0Cand.posSV[1]);
+        std::array<float, 3> posSV = {v0Cand.posSV[0], v0Cand.posSV[1], v0Cand.posSV[2]};
+        double p_pos_orig = sqrt(posTrack.px() * posTrack.px() + posTrack.py() * posTrack.py() + posTrack.pz() * posTrack.pz());
+        double p_neg_orig = sqrt(negTrack.px() * negTrack.px() + negTrack.py() * negTrack.py() + negTrack.pz() * negTrack.pz());
+        double p_pos_reprop = sqrt(v0Cand.pDau0[0] * v0Cand.pDau0[0] + v0Cand.pDau0[1] * v0Cand.pDau0[1] + v0Cand.pDau0[2] * v0Cand.pDau0[2]);
+        double p_neg_reprop = sqrt(v0Cand.pDau1[0] * v0Cand.pDau1[0] + v0Cand.pDau1[1] * v0Cand.pDau1[1] + v0Cand.pDau1[2] * v0Cand.pDau1[2]);
+        double cosOpeningAngleReprop = (v0Cand.pDau0[0] * v0Cand.pDau1[0] + v0Cand.pDau0[1] * v0Cand.pDau1[1] + v0Cand.pDau0[2] * v0Cand.pDau1[2]) / (sqrt(v0Cand.pDau0[0] * v0Cand.pDau0[0] + v0Cand.pDau0[1] * v0Cand.pDau0[1] + v0Cand.pDau0[2] * v0Cand.pDau0[2]) * sqrt(v0Cand.pDau1[0] * v0Cand.pDau1[0] + v0Cand.pDau1[1] * v0Cand.pDau1[1] + v0Cand.pDau1[2] * v0Cand.pDau1[2]));
+        double cosOpeningAngleOrig = (posTrack.px() * negTrack.px() + posTrack.py() * negTrack.py() + posTrack.pz() * negTrack.pz()) / (sqrt(posTrack.px() * posTrack.px() + posTrack.py() * posTrack.py() + posTrack.pz() * posTrack.pz()) * sqrt(negTrack.px() * negTrack.px() + negTrack.py() * negTrack.py() + negTrack.pz() * negTrack.pz()));
 
+        if constexpr (requires { negTrack.secondaryVertexRadius(); }) {
+          histos.fill(HIST("hRadiusGenNeg"), negTrack.secondaryVertexRadius());
+          histos.fill(HIST("hRadiusGenPos"), posTrack.secondaryVertexRadius());
+          if (useGeneratedSVposition) {
+            posSV[0] = posTrack.secondaryVertexX();
+            posSV[1] = posTrack.secondaryVertexY();
+            posSV[2] = posTrack.secondaryVertexZ();
+          }
+        }
         v0CandidateIndices(collision.globalIndex(),
                            posTrack.globalIndex(),
                            negTrack.globalIndex(),
                            -1);
 
-        v0CandidateCores(v0Cand.posSV[0], v0Cand.posSV[1], v0Cand.posSV[2],
+        v0CandidateCores(posSV[0], posSV[1], posSV[2],
                          v0Cand.pDau0[0], v0Cand.pDau0[1], v0Cand.pDau0[2],
                          v0Cand.pDau1[0], v0Cand.pDau1[1], v0Cand.pDau1[2],
-                         v0Cand.dcaDau, posTrack.dcaXY(), negTrack.dcaXY(),
+                         v0Cand.dcaDau, v0Cand.posDauDCAxy, v0Cand.negDauDCAxy,
                          v0Cand.cosPA, v0Cand.dcaToPV);
+        histos.fill(HIST("hRadius"), radiusV0);
+        histos.fill(HIST("hPxPosRepropagated"), posTrack.px(), v0Cand.pDau0[0]);
+        histos.fill(HIST("hPyPosRepropagated"), posTrack.py(), v0Cand.pDau0[1]);
+        histos.fill(HIST("hPzPosRepropagated"), posTrack.pz(), v0Cand.pDau0[2]);
+        histos.fill(HIST("hPxNegRepropagated"), negTrack.px(), v0Cand.pDau1[0]);
+        histos.fill(HIST("hPyNegRepropagated"), negTrack.py(), v0Cand.pDau1[1]);
+        histos.fill(HIST("hPzNegRepropagated"), negTrack.pz(), v0Cand.pDau1[2]);
+
+        histos.fill(HIST("hCosPhiRepropagated"), cosOpeningAngleOrig, cosOpeningAngleReprop);
+        histos.fill(HIST("hMomentumPosRepropagated"), p_pos_orig, p_pos_reprop);
+        histos.fill(HIST("hMomentumNegRepropagated"), p_neg_orig, p_neg_reprop);
 
         const float lambdaMassHypothesis = RecoDecay::m(std::array{std::array{v0Cand.pDau0[0], v0Cand.pDau0[1], v0Cand.pDau0[2]},
                                                                    std::array{v0Cand.pDau1[0], v0Cand.pDau1[1], v0Cand.pDau1[2]}},
@@ -644,17 +721,14 @@ struct Alice3strangenessFinder {
             continue; // candidate outside of acceptance
           }
 
-          const float radiusV0 = std::hypot(v0Cand.posSV[0], v0Cand.posSV[1]);
+          // const float radiusV0 = std::hypot(v0Cand.posSV[0], v0Cand.posSV[1]);
           const float radiusCasc = std::hypot(cascCand.posSV[0], cascCand.posSV[1]);
-          const float posCausalityRadius = getFirstLayerHitRadius(posTrack, trackingLayers[LutConfig]);
-          const float negCausalityRadius = getFirstLayerHitRadius(negTrack, trackingLayers[LutConfig]);
-          const float bachCausalityRadius = getFirstLayerHitRadius(bachTrack, trackingLayers[LutConfig]);
-
-          if (posCausalityRadius < radiusV0) {
+          // tracks without update information (IU < 0) are not checked
+          if (posTrack.trackIU() > 0.f && posTrack.trackIU() < radiusV0) {
             continue; // positive track hit a layer before v0 decayed
           }
 
-          if (negCausalityRadius < radiusV0) {
+          if (negTrack.trackIU() > 0.f && negTrack.trackIU() < radiusV0) {
             continue; // negative track hit a layer before v0 decayed
           }
 
@@ -662,7 +736,7 @@ struct Alice3strangenessFinder {
             continue; // v0 decayed before cascade
           }
 
-          if (bachCausalityRadius < radiusCasc) {
+          if (bachTrack.trackIU() > 0.f && bachTrack.trackIU() < radiusCasc) {
             continue; // bachelor track hit a layer before v0 decayed
           }
 
@@ -715,7 +789,7 @@ struct Alice3strangenessFinder {
     } // end posTrack
   }
 
-  void processMCTrueFromACTS(aod::McCollision const& collision, Alice3MCParticles const&)
+  void processMCTrueFromACTS(aod::McCollision const& collision, Alice3MCParticles const& mcParticles)
   {
 
     auto negativeMCParticlesGrouped = negativeMCParticles->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);
@@ -728,21 +802,66 @@ struct Alice3strangenessFinder {
     bool isLambda = false;
     bool isAntiLambda = false;
     int iPosPart = 0;
+    auto posMotherPdgCode = 0;
+    auto negMotherPdgCode = 0;
     for (auto const& posParticle : positiveMCParticlesGrouped) {
-      radiusPos = std::hypot(posParticle.vx(), posParticle.vy());
-      histos.fill(HIST("hRadiusVsHitsPos"), radiusPos, posParticle.nHits());
+      if (posParticle.pdgCode() != kPiPlus && posParticle.pdgCode() != kProton) {
+        continue;
+      }
+
+      if (posParticle.has_mothers()) {
+        auto motherIds = posParticle.mothersIds();
+        if (!motherIds.empty()) {
+          auto mother = mcParticles.rawIteratorAt(motherIds[0] - mcParticles.rawIteratorAt(0).globalIndex());
+          if (mother.isPhysicalPrimary()) {
+            radiusPos = std::hypot(posParticle.vx(), posParticle.vy());
+            histos.fill(HIST("hRadiusVsHitsPos"), radiusPos, posParticle.nHits());
+            posMotherPdgCode = mother.pdgCode();
+            if (posMotherPdgCode == kK0Short) {
+              histos.fill(HIST("K0Short/hPosDaughterGenPtEta"), posParticle.pt(), posParticle.eta());
+            }
+            if (posMotherPdgCode == kLambda0) {
+              histos.fill(HIST("Lambda/hPosDaughterGenPtEta"), posParticle.pt(), posParticle.eta());
+            }
+            if (posMotherPdgCode == kLambda0Bar) {
+              histos.fill(HIST("AntiLambda/hPosDaughterGenPtEta"), posParticle.pt(), posParticle.eta());
+            }
+          }
+        }
+      }
+
       for (auto const& negParticle : negativeMCParticlesGrouped) {
         if (negParticle.pdgCode() != kPiMinus && negParticle.pdgCode() != kProtonBar) {
           continue;
         }
         radiusNeg = std::hypot(negParticle.vx(), negParticle.vy());
         if (iPosPart == 0) {
-          histos.fill(HIST("hRadiusVsHitsNeg"), radiusNeg, negParticle.nHits());
+          if (negParticle.has_mothers()) {
+            auto motherIds = negParticle.mothersIds();
+            if (!motherIds.empty()) {
+              auto mother = mcParticles.rawIteratorAt(motherIds[0] - mcParticles.rawIteratorAt(0).globalIndex());
+              if (mother.isPhysicalPrimary()) {
+                radiusNeg = std::hypot(negParticle.vx(), negParticle.vy());
+                histos.fill(HIST("hRadiusVsHitsNeg"), radiusNeg, negParticle.nHits());
+                negMotherPdgCode = mother.pdgCode();
+                if (negMotherPdgCode == kK0Short) {
+                  histos.fill(HIST("K0Short/hNegDaughterGenPtEta"), negParticle.pt(), negParticle.eta());
+                }
+                if (negMotherPdgCode == kLambda0) {
+                  histos.fill(HIST("Lambda/hNegDaughterGenPtEta"), negParticle.pt(), negParticle.eta());
+                }
+                if (negMotherPdgCode == kLambda0Bar) {
+                  histos.fill(HIST("AntiLambda/hNegDaughterGenPtEta"), negParticle.pt(), negParticle.eta());
+                }
+              }
+            }
+          }
         }
         if (radiusPos == radiusNeg) {
-          isK0s = (posParticle.pdgCode() == kPiPlus && negParticle.pdgCode() == kPiMinus);
-          isLambda = (posParticle.pdgCode() == kProton && negParticle.pdgCode() == kPiMinus);
-          isAntiLambda = (posParticle.pdgCode() == kPiPlus && negParticle.pdgCode() == kProtonBar);
+          histos.fill(HIST("hV0Building"), 1.0);
+          isK0s = (posParticle.pdgCode() == kPiPlus && negParticle.pdgCode() == kPiMinus && posMotherPdgCode == kK0Short && negMotherPdgCode == kK0Short);
+          isLambda = (posParticle.pdgCode() == kProton && negParticle.pdgCode() == kPiMinus && posMotherPdgCode == kLambda0 && negMotherPdgCode == kLambda0);
+          isAntiLambda = (posParticle.pdgCode() == kPiPlus && negParticle.pdgCode() == kProtonBar && posMotherPdgCode == kLambda0Bar && negMotherPdgCode == kLambda0Bar);
           if (isK0s || isLambda || isAntiLambda) {
             if (!isK0s && isK0Gun) {
               continue;
@@ -750,6 +869,11 @@ struct Alice3strangenessFinder {
             if (!isLambda && isLambdaGun) {
               continue;
             }
+            histos.fill(HIST("hV0Building"), 2.0);
+            if (mcSameMotherCheck && !checkSameMotherGen(posParticle, negParticle, mcParticles)) {
+              continue;
+            }
+            histos.fill(HIST("hV0Building"), 3.0);
             Candidate v0cand;
             std::vector<double> v0DecayVertex;
             v0DecayVertex.push_back(negParticle.vx());
@@ -764,10 +888,11 @@ struct Alice3strangenessFinder {
             if (!buildDecayCandidateTwoBody(posParCov, negParCov, vtx, v0cand)) {
               continue;
             }
+            histos.fill(HIST("hV0Building"), 4.0);
             v0CandidateIndices(collision.globalIndex(),
                                posParticle.globalIndex(),
                                negParticle.globalIndex(),
-                               0);
+                               -1);
             v0CandidateCores(v0cand.posSV[0], v0cand.posSV[1], v0cand.posSV[2],
                              v0cand.pDau0[0], v0cand.pDau0[1], v0cand.pDau0[2],
                              v0cand.pDau1[0], v0cand.pDau1[1], v0cand.pDau1[2],
@@ -784,10 +909,75 @@ struct Alice3strangenessFinder {
             }
           }
         }
+        negMotherPdgCode = 0;
       }
       iPosPart++;
+      posMotherPdgCode = 0;
     }
   }
+  template <typename TTracksGrouped>
+  void processDaughterTrack(const TTracksGrouped& tracksGrouped, int daughterType)
+  {
+    // for the daughter track efficiency calculation
+    for (auto const& track : tracksGrouped) {
+      if (!track.isReconstructed()) {
+        continue; // no ghost tracks
+      }
+      if (!track.has_mcParticle()) {
+        continue;
+      }
+      float pt = std::hypot(track.px(), track.py());
+      float eta = RecoDecay::eta(std::array{track.px(), track.py(), track.pz()});
+      auto mcParticle = track.template mcParticle_as<aod::McParticles>();
+      if (mcParticle.has_mothers()) {
+        for (const auto& m1 : mcParticle.template mothers_as<aod::McParticles>()) {
+          if (daughEff.analyseK0Daughters && m1.pdgCode() == kK0Short && m1.isPhysicalPrimary()) {
+            if (daughterType == 0 && mcParticle.pdgCode() == kPiMinus) {
+              histos.fill(HIST("K0Short/hNegDaughterRecoTruePtEta"), mcParticle.pt(), mcParticle.eta());
+              histos.fill(HIST("K0Short/hNegDaughterRecoPtEta"), pt, eta);
+              histos.fill(HIST("hPtResolutionNegative"), pt, mcParticle.pt());
+              histos.fill(HIST("hPtRes1DNegDau"), (mcParticle.pt() - pt) / mcParticle.pt());
+            }
+            if (daughterType == 1 && mcParticle.pdgCode() == kPiPlus) {
+              histos.fill(HIST("K0Short/hPosDaughterRecoTruePtEta"), mcParticle.pt(), mcParticle.eta());
+              histos.fill(HIST("K0Short/hPosDaughterRecoPtEta"), pt, eta);
+              histos.fill(HIST("hPtResolutionPositive"), std::hypot(track.px(), track.py()), mcParticle.pt());
+              histos.fill(HIST("hPtRes1DPosDau"), (mcParticle.pt() - pt) / mcParticle.pt());
+            }
+          }
+          if (daughEff.analyseLambdaDaughters && m1.pdgCode() == kLambda0 && m1.isPhysicalPrimary()) {
+            if (daughterType == 0 && mcParticle.pdgCode() == kPiMinus) {
+              histos.fill(HIST("Lambda/hNegDaughterRecoTruePtEta"), mcParticle.pt(), mcParticle.eta());
+              histos.fill(HIST("Lambda/hNegDaughterRecoPtEta"), pt, eta);
+              histos.fill(HIST("hPtResolutionNegative"), pt, mcParticle.pt());
+              histos.fill(HIST("hPtRes1DNegDau"), (mcParticle.pt() - pt) / mcParticle.pt());
+            }
+            if (daughterType == 1 && mcParticle.pdgCode() == kProton) {
+              histos.fill(HIST("Lambda/hPosDaughterRecoTruePtEta"), mcParticle.pt(), mcParticle.eta());
+              histos.fill(HIST("Lambda/hPosDaughterRecoPtEta"), pt, eta);
+              histos.fill(HIST("hPtResolutionPositive"), pt, mcParticle.pt());
+              histos.fill(HIST("hPtRes1DPosDau"), (mcParticle.pt() - pt) / mcParticle.pt());
+            }
+          }
+          if (daughEff.analyseAntiLambdaDaughters && m1.pdgCode() == kLambda0Bar && m1.isPhysicalPrimary()) {
+            if (daughterType == 0 && mcParticle.pdgCode() == kProtonBar) {
+              histos.fill(HIST("AntiLambda/hNegDaughterRecoTruePtEta"), mcParticle.pt(), mcParticle.eta());
+              histos.fill(HIST("AntiLambda/hNegDaughterRecoPtEta"), pt, eta);
+              histos.fill(HIST("hPtResolutionNegative"), pt, mcParticle.pt());
+              histos.fill(HIST("hPtRes1DNegDau"), (mcParticle.pt() - pt) / mcParticle.pt());
+            }
+            if (daughterType == 1 && mcParticle.pdgCode() == kPiPlus) {
+              histos.fill(HIST("AntiLambda/hPosDaughterRecoTruePtEta"), mcParticle.pt(), mcParticle.eta());
+              histos.fill(HIST("AntiLambda/hPosDaughterRecoPtEta"), pt, eta);
+              histos.fill(HIST("hPtResolutionPositive"), pt, mcParticle.pt());
+              histos.fill(HIST("hPtRes1DPosDau"), (mcParticle.pt() - pt) / mcParticle.pt());
+            }
+          }
+        }
+      }
+    }
+  }
+
   //    void processFindV0CandidateWithPid(aod::Collision const& collision, aod::McParticles const& mcParticles, Alice3TracksWPid const&)
   //     {
   //         auto negativeSecondaryPionsGrouped = negativeSecondaryPions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -812,14 +1002,35 @@ struct Alice3strangenessFinder {
     processFindV0CandidateNoPid(collision, negTracksGrouped, posTracksGrouped, bachTracksGrouped);
   }
 
+  void processDaughterTracksForEffACTS(aod::Collision const& collision, Alice3TracksACTS const&, aod::McParticles const&)
+  {
+    auto negTracksGrouped = negativeSecondaryTracksACTS->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto posTracksGrouped = positiveSecondaryTracksACTS->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    // auto bachTracksGrouped = bachelorTracksACTS->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    processDaughterTrack(negTracksGrouped, 0);
+    processDaughterTrack(posTracksGrouped, 1);
+    // processDaughterTrack(bachTracksGrouped,2);
+  }
+  void processDaughterTracksForEffOTF(aod::Collision const& collision, Alice3TracksOTF const&, aod::McParticles const&)
+  {
+    auto negTracksGrouped = negativeSecondaryTracksOTF->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto posTracksGrouped = positiveSecondaryTracksOTF->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    // auto bachTracksGrouped = bachelorTracksOTF->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    processDaughterTrack(negTracksGrouped, 0);
+    processDaughterTrack(posTracksGrouped, 1);
+    // processDaughterTrack(bachTracksGrouped,2);
+  }
+
   PROCESS_SWITCH(Alice3strangenessFinder, processGenerated, "process generated information", true);
   PROCESS_SWITCH(Alice3strangenessFinder, processFindV0CandidateACTS, "find V0 without PID from ACTS reconstruction", true);
   PROCESS_SWITCH(Alice3strangenessFinder, processFindV0CandidateOTF, "find V0 without PID from OTF simulations", false);
   PROCESS_SWITCH(Alice3strangenessFinder, processMCTrueFromACTS, "process MC truth from ACTS", false);
+  PROCESS_SWITCH(Alice3strangenessFinder, processDaughterTracksForEffACTS, "process daughter trakcs from ACTS", true);
+  PROCESS_SWITCH(Alice3strangenessFinder, processDaughterTracksForEffOTF, "process daughter trakcs from ACTS", false);
   // PROCESS_SWITCH(alice3strangenessFinder, processFindV0CandidateWithPid, "find V0 with PID", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<Alice3strangenessFinder>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<Alice3strangenessFinder>(context)};
 }

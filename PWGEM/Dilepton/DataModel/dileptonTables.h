@@ -913,7 +913,42 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_006, "AOD", "EMPRIMARYEL", 6, //!
                             emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
                             emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
 
-using EMPrimaryElectrons = EMPrimaryElectrons_006;
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_007, "AOD", "EMPRIMARYEL", 7, //!
+                            o2::soa::Index<>, emprimaryelectron::CollisionId,
+                            emprimaryelectron::TrackId, emprimaryelectron::Sign,
+                            track::Pt, track::Eta, track::Phi,
+                            track::DcaXY, track::DcaZ, o2::aod::track::CYY, o2::aod::track::CZY, o2::aod::track::CZZ,
+                            track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusPID, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
+                            track::TPCChi2NCl, track::TPCInnerParam,
+                            track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
+                            pidtofbeta::Beta, pidtof::TOFNSigmaEl,                                         /*pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,*/
+                            track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap, /*track::Tgl,*/
+                            emprimaryelectron::IsAssociatedToMPC, emprimaryelectron::IsAmbiguous, emprimaryelectron::ProbElBDT, track::Flags,
+                            mcpidtpc::DeDxTunedMc,
+
+                            // dynamic column
+                            track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCNClsPID<track::TPCNClsFindable, track::TPCNClsFindableMinusPID>,
+                            track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                            track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
+                            track::PIDForTracking<track::Flags>, // see numbering in O2/DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h
+                            track::IsPVContributor<track::Flags>,
+
+                            emprimaryelectron::Signed1Pt<track::Pt, emprimaryelectron::Sign>,
+                            emprimaryelectron::P<track::Pt, track::Eta>,
+                            emprimaryelectron::Px<track::Pt, track::Phi>,
+                            emprimaryelectron::Py<track::Pt, track::Phi>,
+                            emprimaryelectron::Pz<track::Pt, track::Eta>,
+                            emprimaryelectron::Tgl<track::Eta>,
+                            emprimaryelectron::MeanClusterSizeITS<track::ITSClusterSizes>,
+                            emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
+                            emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
+
+using EMPrimaryElectrons = EMPrimaryElectrons_007;
 // iterators
 using EMPrimaryElectron = EMPrimaryElectrons::iterator;
 
@@ -1234,7 +1269,7 @@ DECLARE_SOA_COLUMN(Signed1Pt, signed1Pt, float);   //! (sign of charge)/Pt in c/
 DECLARE_SOA_COLUMN(Eta, eta, float);               //!
 DECLARE_SOA_COLUMN(Phi, phi, float);               //!
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float signed1Pt) -> float { return 1.f / std::fabs(signed1Pt); });
-DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign, [](float signed1Pt) -> short { return (signed1Pt > 0) ? 1 : -1; }); //! Charge: positive: 1, negative: -1
+DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign, [](float signed1Pt) -> int16_t { return (signed1Pt > 0) ? 1 : -1; }); //! Charge: positive: 1, negative: -1
 } // namespace emprimarytrack
 
 DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0, //! primary charged track table for 2PC
@@ -1281,13 +1316,13 @@ DECLARE_SOA_INDEX_COLUMN(EMThinEvent, emthinevent); //!
 DECLARE_SOA_COLUMN(Pt1, pt1, float);                //!
 DECLARE_SOA_COLUMN(Eta1, eta1, float);              //!
 DECLARE_SOA_COLUMN(Phi1, phi1, float);              //!
-DECLARE_SOA_COLUMN(Sign1, sign1, short);            //!
+DECLARE_SOA_COLUMN(Sign1, sign1, int16_t);          //!
 DECLARE_SOA_COLUMN(DCA1, dca1, float);              //! DCA in sigma. Users should decide 3D or XY or Z
 DECLARE_SOA_COLUMN(Pt2, pt2, float);                //!
 DECLARE_SOA_COLUMN(Eta2, eta2, float);              //!
 DECLARE_SOA_COLUMN(Phi2, phi2, float);              //!
 DECLARE_SOA_COLUMN(DCA2, dca2, float);              //! DCA in sigma. Users should decide 3D or XY or Z
-DECLARE_SOA_COLUMN(Sign2, sign2, short);            //!
+DECLARE_SOA_COLUMN(Sign2, sign2, int16_t);          //!
 DECLARE_SOA_COLUMN(Weight, weight, float);          //! possible pair weight
 } // namespace emdilepton
 

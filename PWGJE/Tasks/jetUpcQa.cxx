@@ -66,6 +66,7 @@ DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
 DECLARE_SOA_COLUMN(NeutronClass, neutronClass, int);
 DECLARE_SOA_COLUMN(IsGapTagged, isGapTagged, bool);
 DECLARE_SOA_COLUMN(IsZDCTagged, isZDCTagged, bool);
+DECLARE_SOA_COLUMN(CollisionIndex, collisionIndex, int64_t);
 } // namespace upcjetevent
 
 DECLARE_SOA_TABLE(UpcJetEvents, "AOD", "UPCJETEVENT",
@@ -78,7 +79,8 @@ DECLARE_SOA_TABLE(UpcJetEvents, "AOD", "UPCJETEVENT",
                   upcjetevent::TimeZNC,
                   upcjetevent::NeutronClass,
                   upcjetevent::IsGapTagged,
-                  upcjetevent::IsZDCTagged);
+                  upcjetevent::IsZDCTagged,
+                  upcjetevent::CollisionIndex);
 using UpcJetEvent = UpcJetEvents::iterator;
 
 namespace upcjet
@@ -106,13 +108,23 @@ DECLARE_SOA_INDEX_COLUMN_FULL(UpcJetEvent, upcJetEvent, int32_t, UpcJetEvents, "
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(TrackCutFlag, trackCutFlag, uint16_t);
+DECLARE_SOA_COLUMN(TrackCutFlagFb5, trackCutFlagFb5, bool);
+DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
+DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);
+DECLARE_SOA_COLUMN(PassesConfiguredSelection, passesConfiguredSelection, bool);
 } // namespace upctrack
 
 DECLARE_SOA_TABLE(UpcTracks, "AOD", "UPCTRACK",
                   upctrack::UpcJetEventId,
                   upctrack::Pt,
                   upctrack::Eta,
-                  upctrack::Phi);
+                  upctrack::Phi,
+                  upctrack::TrackCutFlag,
+                  upctrack::TrackCutFlagFb5,
+                  upctrack::DcaXY,
+                  upctrack::DcaZ,
+                  upctrack::PassesConfiguredSelection);
 using UpcTrack = UpcTracks::iterator;
 
 namespace upcjettrack
@@ -147,6 +159,7 @@ DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
 DECLARE_SOA_COLUMN(NeutronClass, neutronClass, int);
 DECLARE_SOA_COLUMN(IsGapTagged, isGapTagged, bool);
 DECLARE_SOA_COLUMN(IsZDCTagged, isZDCTagged, bool);
+DECLARE_SOA_COLUMN(CollisionIndex, collisionIndex, int64_t);
 } // namespace upcjeteventmcd
 
 DECLARE_SOA_TABLE(UpcJetEventsMCD, "AOD", "UPCJETEVENTMCD",
@@ -159,7 +172,8 @@ DECLARE_SOA_TABLE(UpcJetEventsMCD, "AOD", "UPCJETEVENTMCD",
                   upcjeteventmcd::TimeZNC,
                   upcjeteventmcd::NeutronClass,
                   upcjeteventmcd::IsGapTagged,
-                  upcjeteventmcd::IsZDCTagged);
+                  upcjeteventmcd::IsZDCTagged,
+                  upcjeteventmcd::CollisionIndex);
 using UpcJetEventMCD = UpcJetEventsMCD::iterator;
 
 namespace upctrackmcd
@@ -168,13 +182,23 @@ DECLARE_SOA_INDEX_COLUMN_FULL(UpcJetEventMCD, upcJetEventMCD, int32_t, UpcJetEve
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(TrackCutFlag, trackCutFlag, uint16_t);
+DECLARE_SOA_COLUMN(TrackCutFlagFb5, trackCutFlagFb5, bool);
+DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
+DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);
+DECLARE_SOA_COLUMN(PassesConfiguredSelection, passesConfiguredSelection, bool);
 } // namespace upctrackmcd
 
 DECLARE_SOA_TABLE(UpcTracksMCD, "AOD", "UPCTRACKMCD",
                   upctrackmcd::UpcJetEventMCDId,
                   upctrackmcd::Pt,
                   upctrackmcd::Eta,
-                  upctrackmcd::Phi);
+                  upctrackmcd::Phi,
+                  upctrackmcd::TrackCutFlag,
+                  upctrackmcd::TrackCutFlagFb5,
+                  upctrackmcd::DcaXY,
+                  upctrackmcd::DcaZ,
+                  upctrackmcd::PassesConfiguredSelection);
 using UpcTrackMCD = UpcTracksMCD::iterator;
 
 namespace upcjetmcd
@@ -332,8 +356,11 @@ struct JetUpcQa {
   Configurable<int> cfgMaxNTracks{"cfgMaxNTracks", 100, "Max tracks"};
 
   Configurable<float> cfgTrackPtMin{"cfgTrackPtMin", 0.15f, "Min track pT (GeV/c)"};
+  Configurable<float> cfgTrackPtMax{"cfgTrackPtMax", 100.f, "Max track pT (GeV/c), matching derived-data kinematics"};
   Configurable<float> cfgTrackEtaMax{"cfgTrackEtaMax", 0.9f, "Max track |eta|"};
-  Configurable<std::string> cfgTrackSelection{"cfgTrackSelection", "kinematicsOnly", "Reconstructed-track selection: kinematicsOnly, globalTracks, or udDefault"};
+  Configurable<std::string> cfgTrackSelection{"cfgTrackSelection", "derivedDataSelection", "Reconstructed-track selection: derivedDataSelection, derivedQualityTracksWDCA, kinematicsOnly, globalTracks, or udDefault"};
+  Configurable<float> cfgDerivedTrackDCAZMax{"cfgDerivedTrackDCAZMax", 0.2f, "Maximum |DCAz| for the derived-data QualityTracksWDCA selection (cm)"};
+  Configurable<float> cfgVertexZCut{"cfgVertexZCut", 10.f, "Maximum absolute collision vertex z (cm)"};
   Configurable<float> cfgTrackDCAZMax{"cfgTrackDCAZMax", 2.f, "Maximum |DCAz| for udDefault track selection (cm)"};
   Configurable<float> cfgTrackDCAXYMax{"cfgTrackDCAXYMax", 0.f, "Maximum |DCAxy| for udDefault (cm); 0 uses the pT-dependent UD cut"};
   Configurable<float> cfgTrackTPCChi2NClMax{"cfgTrackTPCChi2NClMax", 4.f, "Maximum TPC chi2 per cluster for udDefault"};
@@ -367,23 +394,29 @@ struct JetUpcQa {
 
   HistogramRegistry registry{"registry"};
   enum class TrackSelectionMode {
+    DerivedDataSelection,
+    DerivedQualityTracksWDCA,
     KinematicsOnly,
     GlobalTracks,
     UDDefault
   };
-  TrackSelectionMode trackSelectionMode = TrackSelectionMode::KinematicsOnly;
+  TrackSelectionMode trackSelectionMode = TrackSelectionMode::DerivedDataSelection;
 
   // Init
   void init(InitContext&)
   {
-    if (cfgTrackSelection.value == "kinematicsOnly") {
+    if (cfgTrackSelection.value == "derivedDataSelection") {
+      trackSelectionMode = TrackSelectionMode::DerivedDataSelection;
+    } else if (cfgTrackSelection.value == "derivedQualityTracksWDCA") {
+      trackSelectionMode = TrackSelectionMode::DerivedQualityTracksWDCA;
+    } else if (cfgTrackSelection.value == "kinematicsOnly") {
       trackSelectionMode = TrackSelectionMode::KinematicsOnly;
     } else if (cfgTrackSelection.value == "globalTracks") {
       trackSelectionMode = TrackSelectionMode::GlobalTracks;
     } else if (cfgTrackSelection.value == "udDefault") {
       trackSelectionMode = TrackSelectionMode::UDDefault;
     } else {
-      LOGP(fatal, "Unknown cfgTrackSelection '{}'. Choose kinematicsOnly, globalTracks, or udDefault.", cfgTrackSelection.value);
+      LOGP(fatal, "Unknown cfgTrackSelection '{}'. Choose derivedDataSelection, derivedQualityTracksWDCA, kinematicsOnly, globalTracks, or udDefault.", cfgTrackSelection.value);
     }
 
     sgCuts.SetNDtcoll(cfgNDtcoll);
@@ -421,10 +454,27 @@ struct JetUpcQa {
   }
 
   template <typename TTrack>
+  bool passesTrackKinematics(TTrack const& track) const
+  {
+    return std::abs(track.eta()) <= cfgTrackEtaMax.value &&
+           track.pt() >= cfgTrackPtMin.value &&
+           track.pt() <= cfgTrackPtMax.value;
+  }
+
+  template <typename TTrack>
   bool isSelectedTrack(TTrack const& track) const
   {
-    if (std::abs(track.eta()) > cfgTrackEtaMax.value || track.pt() < cfgTrackPtMin.value) {
+    if (!passesTrackKinematics(track)) {
       return false;
+    }
+    if (trackSelectionMode == TrackSelectionMode::DerivedQualityTracksWDCA) {
+      // Mirror JetDerivedDataUtilities::setTrackSelectionBit(...): QualityTracksWDCA.
+      return track.isQualityTrack() && std::abs(track.dcaZ()) < cfgDerivedTrackDCAZMax.value;
+    }
+    if (trackSelectionMode == TrackSelectionMode::DerivedDataSelection) {
+      // Match the derived-data writer: retain tracks passing any stored selection bit
+      // (global, quality, or hybrid). QualityTracksWDCA is a subset of QualityTracks.
+      return track.isGlobalTrackWoPtEta() || track.isQualityTrack() || track.trackCutFlagFb5();
     }
     if (trackSelectionMode == TrackSelectionMode::KinematicsOnly) {
       return true;
@@ -505,9 +555,10 @@ struct JetUpcQa {
     return zdc.neutronClass > 0;
   }
 
-  bool isAcceptedEvent(bool isGapTagged, bool isZDCTagged) const
+  bool isAcceptedEvent(bool isGapTagged, bool isZDCTagged, float posZ) const
   {
-    return (!cfgUseGapTagging.value || isGapTagged) &&
+    return std::abs(posZ) <= cfgVertexZCut.value &&
+           (!cfgUseGapTagging.value || isGapTagged) &&
            (!cfgUseZDCTagging.value || isZDCTagged);
   }
 
@@ -748,7 +799,7 @@ struct JetUpcQa {
     int gapSide = gapInfo.gapSide;
     bool isGapTagged = isSelectedGap(gapSide);
     bool isZDCTagged = isSelectedZDC(gapInfo.zdc);
-    bool isAccepted = isAcceptedEvent(isGapTagged, isZDCTagged);
+    bool isAccepted = isAcceptedEvent(isGapTagged, isZDCTagged, collision.posZ());
     registry.fill(HIST("hGapSide"), gapSide);
     registry.fill(HIST("hZNAEnergy"), gapInfo.zdc.energyCommonZNA);
     registry.fill(HIST("hZNCEnergy"), gapInfo.zdc.energyCommonZNC);
@@ -773,7 +824,9 @@ struct JetUpcQa {
                      gapInfo.zdc.timeZNC,
                      gapInfo.zdc.neutronClass,
                      isGapTagged,
-                     isZDCTagged);
+                     isZDCTagged,
+                     collision.globalIndex());
+    // This is the row index in our output event table, not the input collision index.
     int evtIdx = upcJetEventTable.lastIndex();
 
     std::vector<fastjet::PseudoJet> fjInput;
@@ -783,12 +836,17 @@ struct JetUpcQa {
       if (t.collisionId() != collision.globalIndex()) {
         continue;
       }
-      if (!isSelectedTrack(t)) {
+      if (!passesTrackKinematics(t)) {
         continue;
       }
+      bool passesConfiguredSelection = isSelectedTrack(t);
 
-      // event-level track table
-      upcTrackTable(evtIdx, t.pt(), t.eta(), t.phi());
+      // Store all kinematically accepted candidates and the current decision so
+      // alternate track selections can be reproduced from the output table.
+      upcTrackTable(evtIdx, t.pt(), t.eta(), t.phi(), t.trackCutFlag(), t.trackCutFlagFb5(), t.dcaXY(), t.dcaZ(), passesConfiguredSelection);
+      if (!passesConfiguredSelection) {
+        continue;
+      }
 
       // jet finding input
       fastjet::PseudoJet p;
@@ -843,7 +901,7 @@ struct JetUpcQa {
     int gapSide = gapInfo.gapSide;
     bool isGapTagged = isSelectedGap(gapSide);
     bool isZDCTagged = isSelectedZDC(gapInfo.zdc);
-    bool isAccepted = isAcceptedEvent(isGapTagged, isZDCTagged);
+    bool isAccepted = isAcceptedEvent(isGapTagged, isZDCTagged, collision.posZ());
     registry.fill(HIST("hGapSideMCD"), gapSide);
     registry.fill(HIST("hZNAEnergyMCD"), gapInfo.zdc.energyCommonZNA);
     registry.fill(HIST("hZNCEnergyMCD"), gapInfo.zdc.energyCommonZNC);
@@ -868,7 +926,8 @@ struct JetUpcQa {
                         gapInfo.zdc.timeZNC,
                         gapInfo.zdc.neutronClass,
                         isGapTagged,
-                        isZDCTagged);
+                        isZDCTagged,
+                        collision.globalIndex());
     int evtIdx = upcJetEventTableMCD.lastIndex();
 
     std::vector<fastjet::PseudoJet> fjInput;
@@ -878,11 +937,15 @@ struct JetUpcQa {
       if (t.collisionId() != collision.globalIndex()) {
         continue;
       }
-      if (!isSelectedTrack(t)) {
+      if (!passesTrackKinematics(t)) {
         continue;
       }
+      bool passesConfiguredSelection = isSelectedTrack(t);
 
-      upcTrackTableMCD(evtIdx, t.pt(), t.eta(), t.phi());
+      upcTrackTableMCD(evtIdx, t.pt(), t.eta(), t.phi(), t.trackCutFlag(), t.trackCutFlagFb5(), t.dcaXY(), t.dcaZ(), passesConfiguredSelection);
+      if (!passesConfiguredSelection) {
+        continue;
+      }
 
       fastjet::PseudoJet p;
       p.reset_PtYPhiM(t.pt(), t.eta(), t.phi(), o2::constants::physics::MassPiPlus);

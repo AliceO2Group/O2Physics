@@ -78,7 +78,7 @@ class FemtoUniverseCutculator
   /// returns an std::vector in the proper format \param name Name of the
   /// selection in the dpl-config.json \return std::vector that can be directly
   /// passed to the FemtoUniverseTrack/V0/../Selection
-  std::vector<float> setSelection(std::string name)
+  std::vector<float> setSelection(const std::string& name)
   {
     try {
       boost::property_tree::ptree& selections = mConfigTree.get_child(name);
@@ -313,7 +313,7 @@ class FemtoUniverseCutculator
 
   /// This is the function called by the executable that then outputs the full
   /// selection bit-wise container incorporating the user choice of selections
-  void analyseCuts(std::string choice, bool SysChecks = false, float sign = 1)
+  void analyseCuts(const std::string& choice, bool SysChecks = false, float sign = 1)
   {
     aod::femtouniverseparticle::CutContainerType output = -1;
     if (choice == std::string("T")) {

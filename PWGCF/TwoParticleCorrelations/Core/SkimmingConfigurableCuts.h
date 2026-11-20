@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file SkimmingConfigurableCuts.h
+/// \brief Set of Brick classes which configures the derived data
+/// filtering framework
+/// \author victor.gonzalez.sebastian@gmail.com
+
 #ifndef PWGCF_TWOPARTICLECORRELATIONS_CORE_SKIMMINGCONFIGURABLECUTS_H_
 #define PWGCF_TWOPARTICLECORRELATIONS_CORE_SKIMMINGCONFIGURABLECUTS_H_
 
@@ -23,6 +28,7 @@
 
 #include <Rtypes.h>
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <set>
@@ -30,11 +36,7 @@
 #include <utility>
 #include <vector>
 
-namespace o2
-{
-namespace analysis
-{
-namespace PWGCF
+namespace o2::analysis::pwgcf
 {
 /// \class CutBrick
 /// \brief Virtual class which implements the base component of the selection cuts
@@ -46,25 +48,24 @@ class CutBrick : public TNamed
   CutBrick();
   CutBrick(const char*, const char*);
   CutBrick(const CutBrick&) = delete;
-  virtual ~CutBrick() override = default;
+  ~CutBrick() override = default;
   CutBrick& operator=(const CutBrick&) = delete;
 
- public:
   /// Returns whether the cut brick is active allowing the selection
   /// \return true if the brick is active
-  bool IsActive() { return mState == kACTIVE; }
+  bool isActive() { return mState == kACTIVE; }
   /// Pure virual function
   /// Returns whether the cut brick is incorporated in the selection chain
-  virtual std::vector<bool> IsArmed() = 0;
+  virtual std::vector<bool> isArmed() = 0;
   /// Pure virtual function. Filters the passed value
   /// The brick or brick components will change to active if the passed value
   /// fits within the brick or brick components scope
   /// \returns a vector of booleans with true on the component for which the value activated the component brick
-  virtual std::vector<bool> Filter(const TValueToFilter&) = 0;
+  virtual std::vector<bool> filter(const TValueToFilter&) = 0;
   /// Pure virtual function. Return the length needed to code the brick status
   /// The length is in brick units. The actual length is implementation dependent
   /// \returns Brick length in units of bricks
-  virtual int Length() = 0;
+  virtual int length() = 0;
   /// Virtual function. Return the index of the armed brick within this brick
   /// \returns The index of the armed brick within this brick. Default -1
   virtual int getArmedIndex() { return -1; }
@@ -73,10 +74,10 @@ class CutBrick : public TNamed
   static const char* mgImplementedbricks[];
 
   /// Set the status of the cut significative (or not) for the selection chain
-  void Arm(bool doit = true) { doit ? mMode = kSELECTED : mMode = kUNSELECTED; }
+  void arm(bool doit = true) { doit ? mMode = kSELECTED : mMode = kUNSELECTED; }
   /// Setting the value of independent variable for cuts with function levels
   /// The default behavior is to raise a fatal exception
-  virtual void setIndependentFnVar(float)
+  virtual void setIndependentFnVar(float) // NOLINT(readability/casting)
   {
     LOGF(fatal, "CutBrick::setIndependentFnVar(). The brick you are using %s does not accept setting the independent variable value");
   }
@@ -98,7 +99,7 @@ class CutBrick : public TNamed
   BrickStatus mState = kPASSIVE;
   BrickMode mMode = kUNSELECTED;
 
-  ClassDef(CutBrick, 1);
+  ClassDefOverride(CutBrick, 1);
 };
 
 /// \class CutBrickLimit
@@ -110,17 +111,17 @@ class CutBrickLimit : public CutBrick<TValueToFilter>
  public:
   CutBrickLimit();
   CutBrickLimit(const char*, const TValueToFilter&);
-  CutBrickLimit(const TString&);
-  virtual ~CutBrickLimit() override = default;
+  explicit CutBrickLimit(const TString&);
+  ~CutBrickLimit() override = default;
   CutBrickLimit(const CutBrickLimit&) = delete;
   CutBrickLimit& operator=(const CutBrickLimit&) = delete;
 
-  virtual std::vector<bool> IsArmed() override;
-  virtual std::vector<bool> Filter(const TValueToFilter&) override;
-  virtual int Length() override { return 1; }
+  std::vector<bool> isArmed() override;
+  std::vector<bool> filter(const TValueToFilter&) override;
+  int length() override { return 1; }
 
  private:
-  void ConstructCutFromString(const TString&);
+  void constructCutFromString(const TString&);
 
  protected:
   TValueToFilter mLimit; ///< the limiting upper value
@@ -128,11 +129,11 @@ class CutBrickLimit : public CutBrick<TValueToFilter>
   ClassDef(CutBrickLimit, 1);
 };
 
-/// \brief Filter the passed value to update the brick status accordingly
+/// \brief filter the passed value to update the brick status accordingly
 /// \param value The value to filter
 /// \return true if the value passed the cut false otherwise
 template <typename TValueToFilter>
-inline std::vector<bool> CutBrickLimit<TValueToFilter>::Filter(const TValueToFilter& value)
+inline std::vector<bool> CutBrickLimit<TValueToFilter>::filter(const TValueToFilter& value)
 {
   std::vector<bool> res;
   if (value < mLimit) {
@@ -154,19 +155,19 @@ class CutBrickFnLimit : public CutBrickLimit<TValueToFilter>
  public:
   CutBrickFnLimit();
   CutBrickFnLimit(const char*, const TF1&);
-  CutBrickFnLimit(const TString&);
-  virtual ~CutBrickFnLimit() override = default;
+  explicit CutBrickFnLimit(const TString&);
+  ~CutBrickFnLimit() override = default;
   CutBrickFnLimit(const CutBrickFnLimit&) = delete;
   CutBrickFnLimit& operator=(const CutBrickFnLimit&) = delete;
 
   /// sets the value of the limit according the passed variable value
-  virtual void setIndependentFnVar(float x) override
+  void setIndependentFnVar(float x) override
   {
     this->mLimit = TValueToFilter(mFunction.Eval(x));
   }
 
  private:
-  void ConstructCutFromString(const TString&);
+  void constructCutFromString(const TString&);
 
   TF1 mFunction; ///< the function for evaluating the limit value
   ClassDef(CutBrickFnLimit, 1);
@@ -181,17 +182,17 @@ class CutBrickThreshold : public CutBrick<TValueToFilter>
  public:
   CutBrickThreshold();
   CutBrickThreshold(const char*, const TValueToFilter&);
-  CutBrickThreshold(const TString&);
-  virtual ~CutBrickThreshold() override = default;
+  explicit CutBrickThreshold(const TString&);
+  ~CutBrickThreshold() override = default;
   CutBrickThreshold(const CutBrickThreshold&) = delete;
   CutBrickThreshold& operator=(const CutBrickThreshold&) = delete;
 
-  virtual std::vector<bool> IsArmed() override;
-  virtual std::vector<bool> Filter(const TValueToFilter&) override;
-  virtual int Length() override { return 1; }
+  std::vector<bool> isArmed() override;
+  std::vector<bool> filter(const TValueToFilter&) override;
+  int length() override { return 1; }
 
  private:
-  void ConstructCutFromString(const TString&);
+  void constructCutFromString(const TString&);
 
  protected:
   TValueToFilter mThreshold; ///< the threshold value
@@ -199,11 +200,11 @@ class CutBrickThreshold : public CutBrick<TValueToFilter>
   ClassDef(CutBrickThreshold, 1);
 };
 
-/// \brief Filter the passed value to update the brick status accordingly
+/// \brief filter the passed value to update the brick status accordingly
 /// \param value The value to filter
 /// \return true if the value passed the cut false otherwise
 template <typename TValueToFilter>
-inline std::vector<bool> CutBrickThreshold<TValueToFilter>::Filter(const TValueToFilter& value)
+inline std::vector<bool> CutBrickThreshold<TValueToFilter>::filter(const TValueToFilter& value)
 {
   std::vector<bool> res;
   if (mThreshold < value) {
@@ -225,19 +226,19 @@ class CutBrickFnThreshold : public CutBrickThreshold<TValueToFilter>
  public:
   CutBrickFnThreshold();
   CutBrickFnThreshold(const char*, const TF1&);
-  CutBrickFnThreshold(const TString&);
-  virtual ~CutBrickFnThreshold() override = default;
+  explicit CutBrickFnThreshold(const TString&);
+  ~CutBrickFnThreshold() override = default;
   CutBrickFnThreshold(const CutBrickFnThreshold&) = delete;
   CutBrickFnThreshold& operator=(const CutBrickFnThreshold&) = delete;
 
   /// sets the value of the threshold according the passed variable value
-  virtual void setIndependentFnVar(float x) override
+  void setIndependentFnVar(float x) override
   {
     this->mThreshold = TValueToFilter(mFunction.Eval(x));
   }
 
  private:
-  void ConstructCutFromString(const TString&);
+  void constructCutFromString(const TString&);
 
   TF1 mFunction; ///< the function for evaluate the threshold value
   ClassDef(CutBrickFnThreshold, 1);
@@ -252,17 +253,17 @@ class CutBrickRange : public CutBrick<TValueToFilter>
  public:
   CutBrickRange();
   CutBrickRange(const char*, const TValueToFilter&, const TValueToFilter&);
-  CutBrickRange(const TString&);
-  virtual ~CutBrickRange() override = default;
+  explicit CutBrickRange(const TString&);
+  ~CutBrickRange() override = default;
   CutBrickRange(const CutBrickRange&) = delete;
   CutBrickRange& operator=(const CutBrickRange&) = delete;
 
-  virtual std::vector<bool> IsArmed() override;
-  virtual std::vector<bool> Filter(const TValueToFilter&) override;
-  virtual int Length() override { return 1; }
+  std::vector<bool> isArmed() override;
+  std::vector<bool> filter(const TValueToFilter&) override;
+  int length() override { return 1; }
 
  private:
-  void ConstructCutFromString(const TString&);
+  void constructCutFromString(const TString&);
 
  protected:
   TValueToFilter mLow; ///< the lower value of the range
@@ -271,11 +272,11 @@ class CutBrickRange : public CutBrick<TValueToFilter>
   ClassDef(CutBrickRange, 1);
 };
 
-/// \brief Filter the passed value to update the brick status accordingly
+/// \brief filter the passed value to update the brick status accordingly
 /// \param value The value to filter
 /// \return true if the value passed the cut false otherwise
 template <typename TValueToFilter>
-std::vector<bool> CutBrickRange<TValueToFilter>::Filter(const TValueToFilter& value)
+std::vector<bool> CutBrickRange<TValueToFilter>::filter(const TValueToFilter& value)
 {
   std::vector<bool> res;
   if ((mLow < value) and (value < mUp)) {
@@ -297,20 +298,20 @@ class CutBrickFnRange : public CutBrickRange<TValueToFilter>
  public:
   CutBrickFnRange();
   CutBrickFnRange(const char*, const TF1&, const TF1&);
-  CutBrickFnRange(const TString&);
-  virtual ~CutBrickFnRange() override = default;
+  explicit CutBrickFnRange(const TString&);
+  ~CutBrickFnRange() override = default;
   CutBrickFnRange(const CutBrickFnRange&) = delete;
   CutBrickFnRange& operator=(const CutBrickFnRange&) = delete;
 
   /// sets the value of the limits according the passed variable value
-  virtual void setIndependentFnVar(float x) override
+  void setIndependentFnVar(float x) override
   {
     this->mLow = TValueToFilter(mLowFunction.Eval(x));
     this->mUp = TValueToFilter(mUpFunction.Eval(x));
   }
 
  private:
-  void ConstructCutFromString(const TString&);
+  void constructCutFromString(const TString&);
 
   TF1 mLowFunction; ///< the function for evaluating the low limit value
   TF1 mUpFunction;  ///< the function for evaluating the upper limit value
@@ -326,17 +327,17 @@ class CutBrickExtToRange : public CutBrick<TValueToFilter>
  public:
   CutBrickExtToRange();
   CutBrickExtToRange(const char*, const TValueToFilter&, const TValueToFilter&);
-  CutBrickExtToRange(const TString&);
-  virtual ~CutBrickExtToRange() override = default;
+  explicit CutBrickExtToRange(const TString&);
+  ~CutBrickExtToRange() override = default;
   CutBrickExtToRange(const CutBrickExtToRange&) = delete;
   CutBrickExtToRange& operator=(const CutBrickExtToRange&) = delete;
 
-  virtual std::vector<bool> IsArmed() override;
-  virtual std::vector<bool> Filter(const TValueToFilter&) override;
-  virtual int Length() override { return 1; }
+  std::vector<bool> isArmed() override;
+  std::vector<bool> filter(const TValueToFilter&) override;
+  int length() override { return 1; }
 
  private:
-  void ConstructCutFromString(const TString&);
+  void constructCutFromString(const TString&);
 
  protected:
   TValueToFilter mLow; ///< the lower value of the range
@@ -345,11 +346,11 @@ class CutBrickExtToRange : public CutBrick<TValueToFilter>
   ClassDef(CutBrickExtToRange, 1);
 };
 
-/// \brief Filter the passed value to update the brick status accordingly
+/// \brief filter the passed value to update the brick status accordingly
 /// \param value The value to filter
 /// \return true if the value passed the cut false otherwise
 template <typename TValueToFilter>
-std::vector<bool> CutBrickExtToRange<TValueToFilter>::Filter(const TValueToFilter& value)
+std::vector<bool> CutBrickExtToRange<TValueToFilter>::filter(const TValueToFilter& value)
 {
   std::vector<bool> res;
   if ((value < mLow) or (mUp < value)) {
@@ -371,20 +372,20 @@ class CutBrickFnExtToRange : public CutBrickExtToRange<TValueToFilter>
  public:
   CutBrickFnExtToRange();
   CutBrickFnExtToRange(const char*, const TF1&, const TF1&);
-  CutBrickFnExtToRange(const TString&);
-  virtual ~CutBrickFnExtToRange() override = default;
+  explicit CutBrickFnExtToRange(const TString&);
+  ~CutBrickFnExtToRange() override = default;
   CutBrickFnExtToRange(const CutBrickFnExtToRange&) = delete;
   CutBrickFnExtToRange& operator=(const CutBrickFnExtToRange&) = delete;
 
   /// sets the value of the limits according the passed variable value
-  virtual void setIndependentFnVar(float x) override
+  void setIndependentFnVar(float x) override
   {
     this->mLow = TValueToFilter(mLowFunction.Eval(x));
     this->mUp = TValueToFilter(mUpFunction.Eval(x));
   }
 
  private:
-  void ConstructCutFromString(const TString&);
+  void constructCutFromString(const TString&);
 
   TF1 mLowFunction; ///< the function for evaluating the low limit value
   TF1 mUpFunction;  ///< the function for evaluating the upper limit value
@@ -402,20 +403,20 @@ class CutBrickSelectorMultipleRanges : public CutBrick<TValueToFilter>
  public:
   CutBrickSelectorMultipleRanges();
   CutBrickSelectorMultipleRanges(const char*, const std::vector<TValueToFilter>&);
-  CutBrickSelectorMultipleRanges(const TString&);
-  virtual ~CutBrickSelectorMultipleRanges() override = default;
+  explicit CutBrickSelectorMultipleRanges(const TString&);
+  ~CutBrickSelectorMultipleRanges() override = default;
   CutBrickSelectorMultipleRanges(const CutBrickSelectorMultipleRanges&) = delete;
   CutBrickSelectorMultipleRanges& operator=(const CutBrickSelectorMultipleRanges&) = delete;
 
-  virtual std::vector<bool> IsArmed() override;
-  virtual std::vector<bool> Filter(const TValueToFilter&) override;
+  std::vector<bool> isArmed() override;
+  std::vector<bool> filter(const TValueToFilter&) override;
   /// Return the length needed to code the brick status
   /// The length is in brick units. The actual length is implementation dependent
   /// \returns Brick length in units of bricks
-  virtual int Length() override { return mActive.size(); }
+  int length() override { return mActive.size(); }
 
  private:
-  void ConstructCutFromString(const TString&);
+  void constructCutFromString(const TString&);
 
   std::vector<TValueToFilter> mEdges; ///< the value of the ranges edges (len = nranges + 1)
   std::vector<bool> mActive;          ///< if the associated range is active with the passed value to filter (len = nranges)
@@ -432,27 +433,27 @@ class CutWithVariations : public CutBrick<TValueToFilter>
   /// Default constructor
   CutWithVariations();
   CutWithVariations(const char*, const char*, bool);
-  CutWithVariations(const TString&);
-  virtual ~CutWithVariations() override = default;
+  explicit CutWithVariations(const TString&);
+  ~CutWithVariations() override = default;
   CutWithVariations(const CutWithVariations&) = delete;
   CutWithVariations& operator=(const CutWithVariations&) = delete;
 
-  bool AddDefaultBrick(CutBrick<TValueToFilter>* brick);
-  bool AddVariationBrick(CutBrick<TValueToFilter>* brick);
+  bool addDefaultBrick(CutBrick<TValueToFilter>* brick);
+  bool addVariationBrick(CutBrick<TValueToFilter>* brick);
   TList& getDefaultBricks() { return mDefaultBricks; }
   TList& getVariantBricks() { return mVariationBricks; }
-  virtual std::vector<bool> IsArmed() override;
-  virtual std::vector<bool> Filter(const TValueToFilter&) override;
-  virtual int Length() override;
-  virtual int getArmedIndex() override;
+  std::vector<bool> isArmed() override;
+  std::vector<bool> filter(const TValueToFilter&) override;
+  int length() override;
+  int getArmedIndex() override;
 
  private:
-  void ConstructCutFromString(const TString&);
+  void constructCutFromString(const TString&);
 
   bool mAllowSeveralDefaults; ///< true if allows to store several cut default values
   TList mDefaultBricks;       ///< the list with the cut default values bricks
   TList mVariationBricks;     ///< the list with the cut variation values bricks
-  ClassDef(CutWithVariations, 1);
+  ClassDefOverride(CutWithVariations, 1);
 };
 
 /// \class SpecialCutBrick
@@ -467,26 +468,24 @@ class SpecialCutBrick : public TNamed
   SpecialCutBrick();
   SpecialCutBrick(const char*, const char*);
   SpecialCutBrick(const SpecialCutBrick&) = delete;
-  virtual ~SpecialCutBrick() override = default;
+  ~SpecialCutBrick() override = default;
   SpecialCutBrick& operator=(const SpecialCutBrick&) = delete;
 
- public:
   /// Returns whether the cut brick is active allowing the selection
   /// \return true if the brick is active
-  bool IsActive() { return mState == kACTIVE; }
+  bool isActive() { return mState == kACTIVE; }
   /// Pure virtual function
   /// Returns whether the cut brick is incorporated in the selection chain
-  virtual std::vector<bool> IsArmed() = 0;
+  virtual std::vector<bool> isArmed() = 0;
   /// Pure virtual function. Return the length needed to code the brick status
   /// The length is in brick units. The actual length is implementation dependent
   /// \returns Brick length in units of bricks
-  virtual int Length() = 0;
+  virtual int length() = 0;
 
  protected:
   /// Set the status of the cut significative (or not) for the selection chain
-  void Arm(bool doit = true) { doit ? mMode = kSELECTED : mMode = kUNSELECTED; }
+  void arm(bool doit = true) { doit ? mMode = kSELECTED : mMode = kUNSELECTED; }
 
- protected:
   /// \enum BrickStatus
   /// \brief The status of the brick
   enum BrickStatus {
@@ -503,15 +502,15 @@ class SpecialCutBrick : public TNamed
   BrickStatus mState = kPASSIVE;
   BrickMode mMode = kUNSELECTED;
 
-  ClassDef(SpecialCutBrick, 1);
+  ClassDefOverride(SpecialCutBrick, 1);
 };
 
 class TrackSelectionBrick : public SpecialCutBrick
 {
  public:
   TrackSelectionBrick() = default;
-  TrackSelectionBrick(const TString&);
-  virtual ~TrackSelectionBrick() override = default;
+  explicit TrackSelectionBrick(const TString&);
+  ~TrackSelectionBrick() override = default;
 
   enum class TrackCuts : int {
     kTrackType = 0,
@@ -530,11 +529,11 @@ class TrackSelectionBrick : public SpecialCutBrick
     kNCuts
   };
 
-  static const std::string mCutNames[static_cast<int>(TrackCuts::kNCuts)];
+  static const std::array<std::string, static_cast<int>(TrackSelectionBrick::TrackCuts::kNCuts)> mCutNames;
 
-  virtual std::vector<bool> IsArmed() override;
+  std::vector<bool> isArmed() override;
   template <typename TrackToFilter>
-  bool Filter(TrackToFilter const& track)
+  bool filter(TrackToFilter const& track)
   {
     if ((track.trackType() == mTrackType) &&
         (not mCheckNClustersTPC or (track.tpcNClsFound() >= mMinNClustersTPC)) &&
@@ -546,45 +545,44 @@ class TrackSelectionBrick : public SpecialCutBrick
         ((mRequireITSRefit) ? (track.flags() & o2::aod::track::ITSrefit) : true) &&
         ((mRequireTPCRefit) ? (track.flags() & o2::aod::track::TPCrefit) : true) &&
         ((mRequireGoldenChi2) ? (track.flags() & o2::aod::track::GoldenChi2) : true) &&
-        FulfillsITSHitRequirements(track.itsClusterMap()) &&
-        (mCheckMaxDcaXY && (abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY))) &&
-        (mCheckMaxDcaZ && (abs(track.dcaZ()) <= mMaxDcaZ))) {
+        fulfillsITSHitRequirements(track.itsClusterMap()) &&
+        (mCheckMaxDcaXY && (std::abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY))) &&
+        (mCheckMaxDcaZ && (std::abs(track.dcaZ()) <= mMaxDcaZ))) {
       this->mState = this->kACTIVE;
       return true;
-    } else {
-      this->mState = this->kPASSIVE;
-      return false;
     }
+    this->mState = this->kPASSIVE;
+    return false;
   }
 
-  int Length() override { return 1; }
+  int length() override { return 1; }
 
-  void SetTrackType(o2::aod::track::TrackTypeEnum trackType) { mTrackType = trackType; }
-  void SetRequireITSRefit(bool requireITSRefit = true) { mRequireITSRefit = requireITSRefit; }
-  void SetRequireTPCRefit(bool requireTPCRefit = true) { mRequireTPCRefit = requireTPCRefit; }
-  void SetRequireGoldenChi2(bool requireGoldenChi2 = true) { mRequireGoldenChi2 = requireGoldenChi2; }
-  void SetMinNClustersTPC(int minNClustersTPC) { mMinNClustersTPC = minNClustersTPC; }
-  void SetMinNCrossedRowsTPC(int minNCrossedRowsTPC) { mMinNCrossedRowsTPC = minNCrossedRowsTPC; }
-  void SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRowsOverFindableClustersTPC) { mMinNCrossedRowsOverFindableClustersTPC = minNCrossedRowsOverFindableClustersTPC; }
-  void SetMinNClustersITS(int minNClustersITS) { mMinNClustersITS = minNClustersITS; }
-  void SetMaxChi2PerClusterTPC(float maxChi2PerClusterTPC) { mMaxChi2PerClusterTPC = maxChi2PerClusterTPC; }
-  void SetMaxChi2PerClusterITS(float maxChi2PerClusterITS) { mMaxChi2PerClusterITS = maxChi2PerClusterITS; }
-  void SetMaxDcaXY(float maxDcaXY) { mMaxDcaXY = maxDcaXY; }
-  void SetMaxDcaZ(float maxDcaZ) { mMaxDcaZ = maxDcaZ; }
+  void setTrackType(o2::aod::track::TrackTypeEnum trackType) { mTrackType = trackType; }
+  void setRequireITSRefit(bool requireITSRefit = true) { mRequireITSRefit = requireITSRefit; }
+  void setRequireTPCRefit(bool requireTPCRefit = true) { mRequireTPCRefit = requireTPCRefit; }
+  void setRequireGoldenChi2(bool requireGoldenChi2 = true) { mRequireGoldenChi2 = requireGoldenChi2; }
+  void setMinNClustersTPC(int minNClustersTPC) { mMinNClustersTPC = minNClustersTPC; }
+  void setMinNCrossedRowsTPC(int minNCrossedRowsTPC) { mMinNCrossedRowsTPC = minNCrossedRowsTPC; }
+  void setMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRowsOverFindableClustersTPC) { mMinNCrossedRowsOverFindableClustersTPC = minNCrossedRowsOverFindableClustersTPC; }
+  void setMinNClustersITS(int minNClustersITS) { mMinNClustersITS = minNClustersITS; }
+  void setMaxChi2PerClusterTPC(float maxChi2PerClusterTPC) { mMaxChi2PerClusterTPC = maxChi2PerClusterTPC; }
+  void setMaxChi2PerClusterITS(float maxChi2PerClusterITS) { mMaxChi2PerClusterITS = maxChi2PerClusterITS; }
+  void setMaxDcaXY(float maxDcaXY) { mMaxDcaXY = maxDcaXY; }
+  void setMaxDcaZ(float maxDcaZ) { mMaxDcaZ = maxDcaZ; }
 
-  void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut) { mMaxDcaXYPtDep = ptDepCut; }
-  void SetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers) { mRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers)); }
-  void SetRequireNoHitsInITSLayers(std::set<uint8_t> excludedLayers) { mRequiredITSHits.push_back(std::make_pair(-1, excludedLayers)); }
-  void ResetITSRequirements() { mRequiredITSHits.clear(); }
+  void setMaxDcaXYPtDep(std::function<float(float)> ptDepCut) { mMaxDcaXYPtDep = std::move(ptDepCut); }
+  void setRequireHitsInITSLayers(int8_t minNRequiredHits, const std::set<uint8_t>& requiredLayers) { mRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers)); }
+  void setRequireNoHitsInITSLayers(const std::set<uint8_t>& excludedLayers) { mRequiredITSHits.push_back(std::make_pair(-1, excludedLayers)); }
+  void resetITSRequirements() { mRequiredITSHits.clear(); }
 
-  void DisableNClustersTPCCheck(bool disable = true) { mCheckNClustersTPC = not disable; }
-  void DisableNCrossedRowsTPCCheck(bool disable = true) { mCheckNCrossedRowsTPC = not disable; }
-  void DisableNClustersITSCheck(bool disable = true) { mCheckNClustersITS = not disable; }
-  void DisableMaxChi2PerClusterTPCCheck(bool disable = true) { mCheckMaxChi2PerClusterTPC = not disable; }
-  void DisableMaxChi2PerClusterITSCheck(bool disable = true) { mCheckMaxChi2PerClusterITS = not disable; }
-  void DisableMinNCrossedRowsOverFindableClustersTPCCheck(bool disable = true) { mCheckMinNCrossedRowsOverFindableClustersTPC = not disable; }
-  void DisableMaxDcaXYCheck(bool disable = true) { mCheckMaxDcaXY = not disable; }
-  void DisableMaxDcaZCheck(bool disable = true) { mCheckMaxDcaZ = not disable; }
+  void disableNClustersTPCCheck(bool disable = true) { mCheckNClustersTPC = not disable; }
+  void disableNCrossedRowsTPCCheck(bool disable = true) { mCheckNCrossedRowsTPC = not disable; }
+  void disableNClustersITSCheck(bool disable = true) { mCheckNClustersITS = not disable; }
+  void disableMaxChi2PerClusterTPCCheck(bool disable = true) { mCheckMaxChi2PerClusterTPC = not disable; }
+  void disableMaxChi2PerClusterITSCheck(bool disable = true) { mCheckMaxChi2PerClusterITS = not disable; }
+  void disableMinNCrossedRowsOverFindableClustersTPCCheck(bool disable = true) { mCheckMinNCrossedRowsOverFindableClustersTPC = not disable; }
+  void disableMaxDcaXYCheck(bool disable = true) { mCheckMaxDcaXY = not disable; }
+  void disableMaxDcaZCheck(bool disable = true) { mCheckMaxDcaZ = not disable; }
 
  private:
   void constructFB1LHC2010();
@@ -594,7 +592,7 @@ class TrackSelectionBrick : public SpecialCutBrick
   void constructFB64LHC2010();
   void constructFB64LHC2011();
 
-  bool FulfillsITSHitRequirements(uint8_t itsClusterMap);
+  bool fulfillsITSHitRequirements(uint8_t itsClusterMap);
 
   o2::aod::track::TrackTypeEnum mTrackType{o2::aod::track::TrackTypeEnum::Track};
 
@@ -606,9 +604,9 @@ class TrackSelectionBrick : public SpecialCutBrick
   float mMaxChi2PerClusterITS{1e10f};                 // max its fit chi2 per ITS cluster
   float mMinNCrossedRowsOverFindableClustersTPC{0.f}; // min ratio crossed rows / findable clusters
 
-  float mMaxDcaXY{1e10f};                       // max dca in xy plane
-  float mMaxDcaZ{1e10f};                        // max dca in z direction
-  std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
+  float mMaxDcaXY{1e10f};                     // max dca in xy plane
+  float mMaxDcaZ{1e10f};                      // max dca in z direction
+  std::function<float(float)> mMaxDcaXYPtDep; // max dca in xy plane as function of pT
 
   bool mRequireITSRefit{false};   // require refit in ITS
   bool mRequireTPCRefit{false};   // require refit in TPC
@@ -624,13 +622,11 @@ class TrackSelectionBrick : public SpecialCutBrick
   bool mCheckMaxDcaZ{true};                                // check max dca in z direction
 
   // vector of ITS requirements (minNRequiredHits in specific requiredLayers)
-  std::vector<std::pair<int8_t, std::set<uint8_t>>> mRequiredITSHits{};
+  std::vector<std::pair<int8_t, std::set<uint8_t>>> mRequiredITSHits;
 
-  ClassDef(TrackSelectionBrick, 1);
+  ClassDefOverride(TrackSelectionBrick, 1);
 };
 
-} // namespace PWGCF
-} // namespace analysis
-} // namespace o2
+} // namespace o2::analysis::pwgcf
 
 #endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_SKIMMINGCONFIGURABLECUTS_H_

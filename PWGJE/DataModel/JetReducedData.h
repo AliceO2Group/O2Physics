@@ -97,6 +97,10 @@ DECLARE_SOA_COLUMN(AmplitudesFT0A, amplitudesFT0A, std::vector<float>);
 DECLARE_SOA_COLUMN(AmplitudesFT0C, amplitudesFT0C, std::vector<float>);
 DECLARE_SOA_COLUMN(AmplitudesFDDA, amplitudesFDDA, std::vector<float>);
 DECLARE_SOA_COLUMN(AmplitudesFDDC, amplitudesFDDC, std::vector<float>);
+DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
+DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
+DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
+DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);
 DECLARE_SOA_COLUMN(Weight, weight, float);
 DECLARE_SOA_COLUMN(GetSubGeneratorId, getSubGeneratorId, int);
@@ -160,7 +164,11 @@ DECLARE_SOA_TABLE_STAGED(JCollisionUPCs, "JCOLLISIONUPC",
                          jcollision::AmplitudesFT0A,
                          jcollision::AmplitudesFT0C,
                          jcollision::AmplitudesFDDA,
-                         jcollision::AmplitudesFDDC);
+                         jcollision::AmplitudesFDDC,
+                         jcollision::EnergyCommonZNA,
+                         jcollision::EnergyCommonZNC,
+                         jcollision::TimeZNA,
+                         jcollision::TimeZNC);
 
 DECLARE_SOA_TABLE_STAGED(JCollisionMcInfos, "JCOLLISIONMCINFO",
                          jcollision::Weight,
@@ -366,6 +374,9 @@ DECLARE_SOA_COLUMN(E, e, float);
 DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
 DECLARE_SOA_COLUMN(StatusCode, statusCode, int);
 DECLARE_SOA_COLUMN(Flags, flags, uint8_t);
+DECLARE_SOA_COLUMN(Vx, vx, float);
+DECLARE_SOA_COLUMN(Vy, vy, float);
+DECLARE_SOA_COLUMN(Vz, vz, float);
 
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);
 DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters);
@@ -407,6 +418,9 @@ DECLARE_SOA_TABLE_STAGED(JMcParticles, "JMCPARTICLE",
                          jmcparticle::PdgCode,
                          jmcparticle::StatusCode,
                          jmcparticle::Flags,
+                         jmcparticle::Vx,
+                         jmcparticle::Vy,
+                         jmcparticle::Vz,
                          jmcparticle::MothersIds,
                          jmcparticle::DaughtersIdSlice,
                          jmcparticle::Px<jmcparticle::Pt, jmcparticle::Phi>,

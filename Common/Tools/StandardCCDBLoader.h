@@ -90,7 +90,7 @@ class StandardCCDBLoader
     } else {
       LOGF(info, "GRPMagField object returned nullptr, will attempt alternate method");
 
-      o2::parameters::GRPObject* grpo = 0x0;
+      o2::parameters::GRPObject* grpo = nullptr;
       grpo = ccdb->template getForRun<o2::parameters::GRPObject>(cGroup.grpPath.value, currentRunNumber);
       if (!grpo) {
         LOG(fatal) << "Alternate path failed! Got nullptr from CCDB for path " << cGroup.grpPath << " of object GRPObject for run " << currentRunNumber;
@@ -105,12 +105,8 @@ class StandardCCDBLoader
     }
 
     // load matLUT for this timestamp
-    if (!lut) {
-      LOG(info) << "Loading material look-up table for timestamp: " << currentRunNumber;
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->template getForRun<o2::base::MatLayerCylSet>(cGroup.lutPath.value, currentRunNumber));
-    } else {
-      LOG(info) << "Material look-up table already in place. Not reloading.";
-    }
+    LOG(info) << "Loading material look-up table for timestamp: " << currentRunNumber;
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->template getForRun<o2::base::MatLayerCylSet>(cGroup.lutPath.value, currentRunNumber));
     LOG(info) << "Setting global propagator material propagation LUT";
     o2::base::Propagator::Instance()->setMatLUT(lut);
 

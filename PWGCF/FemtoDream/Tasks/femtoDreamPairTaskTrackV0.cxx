@@ -115,7 +115,7 @@ struct femtoDreamPairTaskTrackV0 {
   } Track1;
 
   /// Partition for particle 1
-  Partition<FDParticles> PartitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+  Partition<FDParticles> PartitionTrk1 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                          (ncheckbit(aod::femtodreamparticle::cut, Track1.CutBit)) &&
                                          ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track1.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCBit) && ((aod::femtodreamparticle::pidcut & Track1.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCTOFBit)) &&
                                          (aod::femtodreamparticle::pt > Track1.PtMin) &&
@@ -126,7 +126,7 @@ struct femtoDreamPairTaskTrackV0 {
                                                 ((aod::femtodreamparticle::tempFitVar >= Track1.TempFitVarMin) &&
                                                  (aod::femtodreamparticle::tempFitVar <= Track1.TempFitVarMax)));
 
-  Partition<FDMCParts> PartitionMCTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+  Partition<FDMCParts> PartitionMCTrk1 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                          (ncheckbit(aod::femtodreamparticle::cut, Track1.CutBit)) &&
                                          ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track1.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCBit) && ((aod::femtodreamparticle::pidcut & Track1.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCTOFBit)) &&
                                          (aod::femtodreamparticle::pt > Track1.PtMin) &&
@@ -162,7 +162,7 @@ struct femtoDreamPairTaskTrackV0 {
   } V02;
 
   /// Partition for particle 2
-  Partition<FDParticles> PartitionV02 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+  Partition<FDParticles> PartitionV02 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0)) &&
                                         ((aod::femtodreamparticle::cut & V02.CutBit) == V02.CutBit) &&
                                         (aod::femtodreamparticle::pt > V02.PtMin) &&
                                         (aod::femtodreamparticle::pt < V02.PtMax) &&
@@ -173,7 +173,7 @@ struct femtoDreamPairTaskTrackV0 {
                                         (aod::femtodreamparticle::mAntiLambda > V02.InvMassAntiMin) &&
                                         (aod::femtodreamparticle::mAntiLambda < V02.InvMassAntiMax);
 
-  Partition<FDMCParts> PartitionMCV02 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+  Partition<FDMCParts> PartitionMCV02 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0)) &&
                                         ((aod::femtodreamparticle::cut & V02.CutBit) == V02.CutBit) &&
                                         (aod::femtodreamparticle::pt > V02.PtMin) &&
                                         (aod::femtodreamparticle::pt < V02.PtMax) &&
@@ -224,9 +224,9 @@ struct femtoDreamPairTaskTrackV0 {
     Configurable<int> Policy{"BinPolicy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
   } Mixing;
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.BinVztx, Mixing.BinMult}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.BinVztx, Mixing.BinMultPercentile}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.BinVztx, Mixing.BinMult, Mixing.BinMultPercentile}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.BinVztx, Mixing.BinMult}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.BinVztx, Mixing.BinMultPercentile}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.BinVztx, Mixing.BinMult, Mixing.BinMultPercentile}};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
@@ -240,9 +240,9 @@ struct femtoDreamPairTaskTrackV0 {
   void init(InitContext& context)
   {
     // setup binnnig policy for mixing
-    colBinningMult = {{Mixing.BinVztx, Mixing.BinMult}, true};
-    colBinningMultPercentile = {{Mixing.BinVztx, Mixing.BinMultPercentile}, true};
-    colBinningMultMultPercentile = {{Mixing.BinVztx, Mixing.BinMult, Mixing.BinMultPercentile}, true};
+    colBinningMult = {{Mixing.BinVztx, Mixing.BinMult}};
+    colBinningMultPercentile = {{Mixing.BinVztx, Mixing.BinMultPercentile}};
+    colBinningMultMultPercentile = {{Mixing.BinVztx, Mixing.BinMult, Mixing.BinMultPercentile}};
 
     eventHisto.init(&Registry, Option.IsMC);
     trackHistoPartOne.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.pTTrack, Option.Dummy, Option.Dummy, Binning.TempFitVarTrack, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track1.PDGCode);
@@ -388,7 +388,7 @@ struct femtoDreamPairTaskTrackV0 {
   PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEventMCMasked, "Enable processing same event MC with masks", false);
 
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
-  void doMixedEvent_Masked(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
+  void doMixedEvent_Masked(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, const BinningType& policy)
   {
 
     if (Option.MixEventWithPairs.value) {

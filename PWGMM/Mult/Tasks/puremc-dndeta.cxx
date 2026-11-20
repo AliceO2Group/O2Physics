@@ -31,6 +31,7 @@
 #include <cstdlib>
 #include <iterator>
 #include <memory>
+#include <string>
 #include <vector>
 
 using namespace o2;

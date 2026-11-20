@@ -18,8 +18,11 @@
 #include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
+#include "PWGCF/Femto/Core/collisionTagger.h"
+#include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairBuilder.h"
+#include "PWGCF/Femto/Core/pairCleaner.h"
 #include "PWGCF/Femto/Core/pairHistManager.h"
 #include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
@@ -31,11 +34,13 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
+#include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 
 #include <map>
@@ -67,12 +72,19 @@ struct FemtoPairD0D0 {
 
   using FemtoMcParticlesWithLabel = o2::soa::Join<o2::aod::FMcParticles, o2::aod::FMcMotherLabels>;
 
+  // opt-in: carries FColTags, only needed by processMixedEventWithTagging.
+  using FemtoCollisionsWithTags = o2::soa::Join<FemtoCollisions, o2::aod::FColTags>;
+  using FilteredFemtoCollisionsWithTags = o2::soa::Filtered<FemtoCollisionsWithTags>;
+
   o2::framework::SliceCache cache;
 
   // setup collisions
   collisionbuilder::ConfCollisionSelection collisionSelection;
   o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::ConfCollisionBinning confCollisionBinning;
+
+  // opt-in, only needed by processMixedEventWithTagging below.
+  collisiontagger::ConfTagging<collisiontagger::role::D0D0Pair> confTaggingD0D0;
 
   // setup for daughters
   // separate binning per d0 slot, so that both hypotheses can be binned independently
@@ -100,14 +112,21 @@ struct FemtoPairD0D0 {
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
   pairhistmanager::ConfPairCuts confPairCuts;
+  paircleaner::ConfPairCleanerBinning confPairCleaner;
 
   pairbuilder::PairD0D0Builder<
-    charmhadronhistmanager::PrefixD01,
-    trackhistmanager::PrefixD01PosDaughter,
-    trackhistmanager::PrefixD01NegDaughter,
-    charmhadronhistmanager::PrefixD02,
-    trackhistmanager::PrefixD02PosDaughter,
-    trackhistmanager::PrefixD02NegDaughter,
+    charmhadronhistmanager::PrefixD01Se,
+    trackhistmanager::PrefixD01PosDaughterSe,
+    trackhistmanager::PrefixD01NegDaughterSe,
+    charmhadronhistmanager::PrefixD02Se,
+    trackhistmanager::PrefixD02PosDaughterSe,
+    trackhistmanager::PrefixD02NegDaughterSe,
+    charmhadronhistmanager::PrefixD01Me,
+    trackhistmanager::PrefixD01PosDaughterMe,
+    trackhistmanager::PrefixD01NegDaughterMe,
+    charmhadronhistmanager::PrefixD02Me,
+    trackhistmanager::PrefixD02PosDaughterMe,
+    trackhistmanager::PrefixD02NegDaughterMe,
     pairhistmanager::PrefixD0D0Se,
     pairhistmanager::PrefixD0D0Me,
     closepairrejection::PrefixD0D0PosSe,
@@ -122,9 +141,9 @@ struct FemtoPairD0D0 {
   std::vector<double> defaultVtxBins{10, -10, 10};
   std::vector<double> defaultMultBins{50, 0, 200};
   std::vector<double> defaultCentBins{10, 0, 100};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}};
   pairhistmanager::ConfMixing confMixing;
 
   o2::framework::HistogramRegistry hRegistry{"FemtoD0D0", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
@@ -133,9 +152,9 @@ struct FemtoPairD0D0 {
   closepairrejection::ConfCprD0DaugherD0DaughterPos confCprPos;
   closepairrejection::ConfCprD0DaugherD0DaughterNeg confCprNeg;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
-    bool processData = doprocessSameEvent || doprocessMixedEvent;
+    bool processData = doprocessSameEvent || doprocessMixedEvent || doprocessMixedEventWithTagging;
     bool processMc = doprocessSameEventMc || doprocessMixedEventMc;
 
     if (processData && processMc) {
@@ -145,11 +164,24 @@ struct FemtoPairD0D0 {
       LOG(fatal) << "Neither data nor mc processing is enabled. Breaking...";
     }
 
+    if (doprocessMixedEventWithTagging) {
+      auto const& workflows = context.services().get<o2::framework::RunningWorkflowInfo const>();
+      auto const& ownDevice = context.services().get<o2::framework::DeviceSpec const>();
+      auto roles = collisiontagger::discoverTaggedRoles(workflows);
+      int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingD0D0.Role);
+      if (bit < 0) {
+        LOG(fatal) << "processMixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                   << "(with processD0D0 enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+      }
+      confTaggingD0D0.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+      LOG(info) << "Collision tagger bit for " << ownDevice.name << " (D0D0): " << bit;
+    }
+
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
-    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}, true};
-    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
-    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
+    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}};
+    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}};
+    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}};
 
     // setup histograms
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
@@ -162,6 +194,7 @@ struct FemtoPairD0D0 {
     std::map<pairhistmanager::PairHist, std::vector<o2::framework::AxisSpec>> pairD0D0HistSpec;
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> cprHistSpecPos = closepairrejection::makeCprHistSpecMap(confCprPos);
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> cprHistSpecNeg = closepairrejection::makeCprHistSpecMap(confCprNeg);
+    std::map<paircleaner::PairCleanerHist, std::vector<o2::framework::AxisSpec>> pairCleanerHistSpec = paircleaner::makePairCleanerHistSpecMap(confPairCleaner);
 
     if (processData) {
       colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
@@ -169,21 +202,22 @@ struct FemtoPairD0D0 {
       negDauSpec1 = trackhistmanager::makeTrackHistSpecMap(confD01NegDauBinning);
       posDauSpec2 = trackhistmanager::makeTrackHistSpecMap(confD02PosDauBinning);
       negDauSpec2 = trackhistmanager::makeTrackHistSpecMap(confD02NegDauBinning);
-      d0HistSpec1 = charmhadronhistmanager::makeD0HistSpecMap(confD0Binning1);
-      d0HistSpec2 = charmhadronhistmanager::makeD0HistSpecMap(confD0Binning2);
+      d0HistSpec1 = charmhadronhistmanager::makeCharmHadronHistSpecMap(confD0Binning1);
+      d0HistSpec2 = charmhadronhistmanager::makeCharmHadronHistSpecMap(confD0Binning2);
       pairD0D0HistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confMixing);
-      pairD0D0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confD0Selection1, confD0Selection2, confD0Cleaner1, confD0Cleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, d0HistSpec1, d0HistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairD0D0HistSpec, cprHistSpecPos, cprHistSpecNeg);
+      pairD0D0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confD0Selection1, confD0Selection2, confD0Cleaner1, confD0Cleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, d0HistSpec1, d0HistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairD0D0HistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
       posDauSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confD01PosDauBinning);
       negDauSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confD01NegDauBinning);
       posDauSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confD02PosDauBinning);
       negDauSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confD02NegDauBinning);
-      d0HistSpec1 = charmhadronhistmanager::makeD0McHistSpecMap(confD0Binning1);
-      d0HistSpec2 = charmhadronhistmanager::makeD0McHistSpecMap(confD0Binning2);
+      d0HistSpec1 = charmhadronhistmanager::makeCharmHadronMcHistSpecMap(confD0Binning1);
+      d0HistSpec2 = charmhadronhistmanager::makeCharmHadronMcHistSpecMap(confD0Binning2);
       pairD0D0HistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning, confMixing);
-      pairD0D0Builder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confD0Selection1, confD0Selection2, confD0Cleaner1, confD0Cleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, d0HistSpec1, d0HistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairD0D0HistSpec, cprHistSpecPos, cprHistSpecNeg);
+      pairD0D0Builder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confD0Selection1, confD0Selection2, confD0Cleaner1, confD0Cleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, d0HistSpec1, d0HistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairD0D0HistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
     }
+    hRegistry.print();
   }
 
   void processSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoD0s const& d0s)
@@ -197,6 +231,16 @@ struct FemtoPairD0D0 {
     pairD0D0Builder.processSameEvent<modes::Mode::kSe_Reco_Mc>(col, mcCols, tracks, d0s, d0WithLabelPartition1, d0WithLabelPartition2, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
   PROCESS_SWITCH(FemtoPairD0D0, processSameEventMc, "Enable processing same event processing for d0-d0 with mc information", false);
+
+  // Opt-in counterpart of processMixedEvent() below -- same "Partition declared and bound inside
+  // process()" idiom as femtoPairTrackTrack.cxx's processMixedEventWithTagging.
+  void processMixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoD0s const& /*d0s*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingD0D0.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairD0D0Builder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, d0Partition1, d0Partition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairD0D0, processMixedEventWithTagging, "Enable processing mixed event processing for d0-d0, pre-filtered using the collision tagger", false);
 
   void processMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoD0s const& /*d0s*/)
   {

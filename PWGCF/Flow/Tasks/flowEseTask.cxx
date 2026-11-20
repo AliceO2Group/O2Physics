@@ -9,12 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \author Junlee Kim (jikim1290@gmail.com)
+/// \author Junlee Kim (jikim1290@gmail.com) & Shiqi Wang(shiqi.wang@cern.ch)
 /// \file flowEseTask.cxx
 /// \brief Task for flow and event shape engineering correlation with other observation.
 /// \since 2023-05-15
 /// \version 1.0
 
+#include "PWGCF/GenericFramework/Core/GFW.h"
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
 
@@ -46,7 +48,9 @@
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TF1.h>
+#include <TH1.h>
 #include <TH2.h>
+#include <TH3.h>
 #include <THnSparse.h>
 #include <TObject.h>
 #include <TProfile2D.h>
@@ -59,6 +63,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <complex>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -146,6 +151,16 @@ struct FlowEseTask {
   Configurable<bool> cfgAccCor{"cfgAccCor", false, "flag to apply acceptance correction"};
   Configurable<std::string> cfgAccCorPath{"cfgAccCorPath", "", "path for pseudo acceptance correction"};
 
+  struct : ConfigurableGroup {
+    Configurable<float> cfgGfwPtMin{"cfgGfwPtMin", 0.2f, "Lower inclusive pT limit for GFW reference and POI tracks"};
+    Configurable<float> cfgGfwPtMax{"cfgGfwPtMax", 3.0f, "Upper exclusive pT limit for GFW reference and POI tracks"};
+    Configurable<double> cfgGfwEtaGap{"cfgGfwEtaGap", 0.3, "Full eta gap between the GFW subevents for v2 and v3"};
+    Configurable<bool> cfgGfwEffCor{"cfgGfwEffCor", false, "flag to apply charged-track efficiency correction for EP and GFW"};
+    Configurable<std::string> cfgGfwEffCorPath{"cfgGfwEffCorPath", "", "CCDB path to charged-track efficiency correction for EP and GFW"};
+    Configurable<bool> cfgGfwAccCor{"cfgGfwAccCor", false, "flag to apply charged-track acceptance correction for EP and GFW"};
+    Configurable<std::string> cfgGfwAccCorPath{"cfgGfwAccCorPath", "", "CCDB path to charged-track acceptance correction for EP and GFW"};
+  } cfgGfwParam;
+
   Configurable<bool> cfgCalcCum{"cfgCalcCum", false, "flag to calculate cumulants of cossin"};
   Configurable<bool> cfgCalcCum1{"cfgCalcCum1", false, "flag to calculate cumulants of coscos"};
 
@@ -177,6 +192,9 @@ struct FlowEseTask {
 
   static constexpr float MinAmplitudeThreshold = 1e-5f;
   static constexpr int ShiftLevel = 10;
+  static constexpr int CorrectionWeightBins = 100;
+  static constexpr int CorrectionSummaryBins = 8;
+  static constexpr double LargeNUAWeightThreshold = 10.0;
   static constexpr int LambdaId = 3122;
   static constexpr int SecondHarmonic = 2;
   static constexpr int ThirdHarmonic = 3;
@@ -188,6 +206,8 @@ struct FlowEseTask {
   static constexpr int NEseCentBins = 8;
   static constexpr int NEseGroups = 10;
   static constexpr int NEseCutsPerCentBin = NEseGroups - 1;
+  static constexpr int GFWRefMask = 1;
+  static constexpr int GFWPoiMask = 2;
   static constexpr float EseCentMin = 0.0f;
   static constexpr float EseCentMax = 80.0f;
   static constexpr float EseCentBinWidth = 10.0f;
@@ -220,6 +240,21 @@ struct FlowEseTask {
   std::vector<TProfile3D*> shiftprofile;
   TProfile2D* effMap = nullptr;
   TProfile2D* accMap = nullptr;
+  struct {
+    int lastGfwCorrectionRunNumber = -999;
+    TH1D* gfwEffMap = nullptr;
+    GFWWeights* gfwAccWeights = nullptr;
+    TProfile2D* histRefQn = nullptr;
+    TProfile3D* histPoiNQn = nullptr;
+    TProfile3D* histPoiPQn = nullptr;
+    GFW* fGFW = new GFW();
+    GFW::CorrConfig corrRef22;
+    GFW::CorrConfig corrPoiN22;
+    GFW::CorrConfig corrPoiP22;
+    GFW::CorrConfig corrRef32;
+    GFW::CorrConfig corrPoiN32;
+    GFW::CorrConfig corrPoiP32;
+  } gfwState;
 
   std::string fullCCDBShiftCorrPath;
 
@@ -353,6 +388,7 @@ struct FlowEseTask {
     for (int iGroup = 0; iGroup < NEseGroups; ++iGroup) {
       const auto suffix = eseGroupSuffix(iGroup);
       addEseHistogram<THnSparse>(Form("histV%d_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTHnSparseF, {centAxis, ptAxis, cosAxis});
+      getEseHistogram<THnSparse>(Form("histV%d_%s", cfgEseHarmonic.value, suffix.c_str()))->Sumw2();
       addEseHistogram<THnSparse>(Form("psi%d/h_lambda_cos_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis});
       addEseHistogram<THnSparse>(Form("psi%d/h_alambda_cos_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis});
       addEseHistogram<THnSparse>(Form("psi%d/h_lambda_cos2_%s", cfgEseHarmonic.value, suffix.c_str()), HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis});
@@ -362,6 +398,37 @@ struct FlowEseTask {
     }
     histos.add("QA/CentDist", "", {HistType::kTH1F, {centQaAxis}});
     histos.add("QA/PVzDist", "", {HistType::kTH1F, {pVzQaAxis}});
+    AxisSpec phiQaAxis = {72, 0.0, o2::constants::math::TwoPI};
+    AxisSpec correctionStageAxis = {3, -0.5, 2.5, "0: raw, 1: NUE, 2: NUE*NUA"};
+    AxisSpec weightTypeAxis = {3, -0.5, 2.5, "0: NUE, 1: NUA, 2: total"};
+    std::vector<double> weightBins;
+    for (int i = 0; i <= CorrectionWeightBins; ++i) {
+      weightBins.push_back(std::pow(10.0, -2.0 + 0.06 * i));
+    }
+    AxisSpec weightAxis = {weightBins, "Correction weight"};
+    histos.add("QA/hPhiRaw", ";#varphi;Counts", {HistType::kTH1D, {phiQaAxis}});
+    histos.add("QA/hPhiNUA", ";#varphi;Weighted counts", {HistType::kTH1D, {phiQaAxis}});
+    histos.add("QA/hPtCentStage", "", {HistType::kTH3D, {ptAxis, centAxis, correctionStageAxis}});
+    histos.add("QA/hWeightPtType", "", {HistType::kTH3D, {ptAxis, weightAxis, weightTypeAxis}});
+    histos.add("QA/hCorrectionSummary", "", {HistType::kTH1D, {{8, 0.5, 8.5}}});
+    const char* correctionLabels[] = {"selected", "ptOutsideEffAxis", "invalidEfficiency", "accepted", "sumW", "sumW2", "NUAWeightAbove10", "invalidWeight"};
+    for (int i = 0; i < CorrectionSummaryBins; ++i) {
+      histos.get<TH1>(HIST("QA/hCorrectionSummary"))->GetXaxis()->SetBinLabel(i + 1, correctionLabels[i]);
+    }
+    histos.get<TH1>(HIST("QA/hPhiNUA"))->Sumw2();
+    histos.get<TH3>(HIST("QA/hPtCentStage"))->Sumw2();
+    histos.get<TH1>(HIST("QA/hCorrectionSummary"))->Sumw2();
+    histos.add("psi2/h_Ref03Gap22PtPt", "Inclusive pair correlation;p_{T}^{-#eta};p_{T}^{+#eta};Centrality (%)", {HistType::kTProfile3D, {ptAxis, ptAxis, centAxis}});
+    histos.add("psi3/h_Ref03Gap32PtPt", "Inclusive pair correlation;p_{T}^{-#eta};p_{T}^{+#eta};Centrality (%)", {HistType::kTProfile3D, {ptAxis, ptAxis, centAxis}});
+    histos.add("psi2/h_Ref03Gap22", "", {HistType::kTProfile, {centAxis}});
+    histos.add("psi2/h_PoiN03Gap22", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
+    histos.add("psi2/h_PoiP03Gap22", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
+    histos.add("psi3/h_Ref03Gap32", "", {HistType::kTProfile, {centAxis}});
+    histos.add("psi3/h_PoiN03Gap32", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
+    histos.add("psi3/h_PoiP03Gap32", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
+    gfwState.histRefQn = histos.add<TProfile2D>(Form("psi%d/h_Ref03Gap%d2VsQ%d", cfgEseHarmonic.value, cfgEseHarmonic.value, cfgEseHarmonic.value), "", HistType::kTProfile2D, {centAxis, eseGroupAxis}).get();
+    gfwState.histPoiNQn = histos.add<TProfile3D>(Form("psi%d/h_PoiN03Gap%d2VsQ%d", cfgEseHarmonic.value, cfgEseHarmonic.value, cfgEseHarmonic.value), "", HistType::kTProfile3D, {ptAxis, centAxis, eseGroupAxis}).get();
+    gfwState.histPoiPQn = histos.add<TProfile3D>(Form("psi%d/h_PoiP03Gap%d2VsQ%d", cfgEseHarmonic.value, cfgEseHarmonic.value, cfgEseHarmonic.value), "", HistType::kTProfile3D, {ptAxis, centAxis, eseGroupAxis}).get();
 
     for (auto i = 2; i < cfgnMods + 2; i++) {
       histos.add(Form("psi%d/h_lambda_cos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
@@ -532,6 +599,25 @@ struct FlowEseTask {
     fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
     fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
     fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
+
+    const int nPtBins = histos.get<TProfile2D>(HIST("psi2/h_PoiN03Gap22"))->GetXaxis()->GetNbins();
+    if (!(cfgGfwParam.cfgGfwPtMin.value >= 0.f && cfgGfwParam.cfgGfwPtMin.value < cfgGfwParam.cfgGfwPtMax.value)) {
+      LOGF(fatal, "GFW requires 0 <= cfgGfwPtMin < cfgGfwPtMax");
+    }
+    const double halfEtaGap = cfgGfwParam.cfgGfwEtaGap.value / 2.0;
+    gfwState.fGFW->AddRegion("refN03", -0.8, -halfEtaGap, 1, GFWRefMask);
+    gfwState.fGFW->AddRegion("refP03", halfEtaGap, 0.8, 1, GFWRefMask);
+    gfwState.fGFW->AddRegion("poiN03", -0.8, -halfEtaGap, nPtBins + 1, GFWPoiMask);
+    gfwState.fGFW->AddRegion("poiP03", halfEtaGap, 0.8, nPtBins + 1, GFWPoiMask);
+
+    gfwState.corrRef22 = gfwState.fGFW->GetCorrelatorConfig("refN03 {2} refP03 {-2}", "Ref03Gap22", false);
+    gfwState.corrPoiN22 = gfwState.fGFW->GetCorrelatorConfig("poiN03 {2} refP03 {-2}", "PoiN03Gap22", true);
+    gfwState.corrPoiP22 = gfwState.fGFW->GetCorrelatorConfig("poiP03 {2} refN03 {-2}", "PoiP03Gap22", true);
+    gfwState.corrRef32 = gfwState.fGFW->GetCorrelatorConfig("refN03 {3} refP03 {-3}", "Ref03Gap32", false);
+    gfwState.corrPoiN32 = gfwState.fGFW->GetCorrelatorConfig("poiN03 {3} refP03 {-3}", "PoiN03Gap32", true);
+    gfwState.corrPoiP32 = gfwState.fGFW->GetCorrelatorConfig("poiP03 {3} refN03 {-3}", "PoiP03Gap32", true);
+
+    gfwState.fGFW->CreateRegions();
 
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdbApi.init("http://alice-ccdb.cern.ch");
@@ -878,24 +964,185 @@ struct FlowEseTask {
   }
 
   template <typename TCollision, typename V0, typename TrackType>
-  void fillHistograms(TCollision const& collision, V0 const& V0s, TrackType const& track, int nmode, int eseGroupIndex = -1, bool fillRegular = true)
+  void fillHistograms(TCollision const& collision, V0 const& V0s, TrackType const& track, int nmode, int eseGroupIndex = -1, bool fillRegular = true, bool fillGfw = false)
   {
     qvecDetInd = detId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
     qvecRefAInd = refAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
     qvecRefBInd = refBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
     const bool fillEse = eseGroupIndex >= 0 && nmode == cfgEseHarmonic.value;
 
+    THnSparse* histEseVn = nullptr;
+    double esePlane = 0.0;
     if (fillEse) {
       const auto suffix = eseGroupSuffix(eseGroupIndex);
-      auto* histEseVn = getEseHistogram<THnSparse>(Form("histV%d_%s", cfgEseHarmonic.value, suffix.c_str()));
+      histEseVn = getEseHistogram<THnSparse>(Form("histV%d_%s", cfgEseHarmonic.value, suffix.c_str()));
       const int harmonicIndex = nmode - 2;
-      const double esePlane = helperEP.GetEventPlane(collision.qvecFT0CReVec()[harmonicIndex], collision.qvecFT0CImVec()[harmonicIndex], nmode);
+      esePlane = helperEP.GetEventPlane(collision.qvecFT0CReVec()[harmonicIndex], collision.qvecFT0CImVec()[harmonicIndex], nmode);
+    }
+
+    struct PairBin {
+      double weight = 0.;
+      std::complex<double> q2{}, q3{};
+    };
+    std::vector<PairBin> negative, positive;
+    const double halfGap = cfgGfwParam.cfgGfwEtaGap.value / 2.;
+    TProfile2D* histPoiN22 = nullptr;
+    if (fillGfw) {
+      gfwState.fGFW->Clear();
+      histPoiN22 = histos.get<TProfile2D>(HIST("psi2/h_PoiN03Gap22")).get();
+      negative.resize(histPoiN22->GetNbinsX());
+      positive.resize(negative.size());
+    }
+    if (fillEse || fillGfw) {
       for (const auto& trk : track) {
         if (!selectionTrack(trk)) {
           continue;
         }
-        const std::array<double, 3> values = {centrality, trk.pt(), std::cos(static_cast<float>(nmode) * (trk.phi() - esePlane))};
-        histEseVn->Fill(values.data());
+        if (fillGfw) {
+          histos.fill(HIST("QA/hCorrectionSummary"), 1.0);
+        }
+        double weff = 1.0;
+        double wacc = 1.0;
+        if (cfgGfwParam.cfgGfwEffCor && gfwState.gfwEffMap != nullptr) {
+          if (fillGfw && (trk.pt() < gfwState.gfwEffMap->GetXaxis()->GetXmin() || trk.pt() >= gfwState.gfwEffMap->GetXaxis()->GetXmax())) {
+            histos.fill(HIST("QA/hCorrectionSummary"), 2.0);
+          }
+          const double efficiency = gfwState.gfwEffMap->GetBinContent(gfwState.gfwEffMap->FindBin(trk.pt()));
+          if (efficiency <= 0.0) {
+            if (fillGfw) {
+              histos.fill(HIST("QA/hCorrectionSummary"), 3.0);
+            }
+            continue;
+          }
+          weff = 1.0 / efficiency;
+        }
+        if (cfgGfwParam.cfgGfwAccCor && gfwState.gfwAccWeights != nullptr) {
+          wacc = gfwState.gfwAccWeights->getNUA(trk.phi(), trk.eta(), collision.posZ());
+        }
+        const double trackWeight = weff * wacc;
+        if (fillEse) {
+          const std::array<double, 3> values = {centrality, trk.pt(), std::cos(static_cast<float>(nmode) * (trk.phi() - esePlane))};
+          histEseVn->Fill(values.data(), trackWeight);
+        }
+        if (!fillGfw) {
+          continue;
+        }
+        if (std::isfinite(trackWeight) && trackWeight > 0.0) {
+          histos.fill(HIST("QA/hPhiRaw"), trk.phi());
+          histos.fill(HIST("QA/hPhiNUA"), trk.phi(), wacc);
+          histos.fill(HIST("QA/hPtCentStage"), trk.pt(), centrality, 0.0);
+          histos.fill(HIST("QA/hPtCentStage"), trk.pt(), centrality, 1.0, weff);
+          histos.fill(HIST("QA/hPtCentStage"), trk.pt(), centrality, 2.0, trackWeight);
+          histos.fill(HIST("QA/hWeightPtType"), trk.pt(), weff, 0.0);
+          histos.fill(HIST("QA/hWeightPtType"), trk.pt(), wacc, 1.0);
+          histos.fill(HIST("QA/hWeightPtType"), trk.pt(), trackWeight, 2.0);
+          histos.fill(HIST("QA/hCorrectionSummary"), 4.0);
+          histos.fill(HIST("QA/hCorrectionSummary"), 5.0, trackWeight);
+          histos.fill(HIST("QA/hCorrectionSummary"), 6.0, trackWeight * trackWeight);
+          if (wacc > LargeNUAWeightThreshold) {
+            histos.fill(HIST("QA/hCorrectionSummary"), 7.0);
+          }
+        } else {
+          histos.fill(HIST("QA/hCorrectionSummary"), 8.0);
+        }
+        const int ptBin = histPoiN22->GetXaxis()->FindBin(trk.pt()) - 1;
+        // Keep the full pT axis for offline windows on both subevents.
+        const double eta = trk.eta();
+        if (ptBin >= 0 && ptBin < histPoiN22->GetNbinsX() &&
+            std::abs(eta) < 0.8 && std::abs(eta) > halfGap &&
+            std::isfinite(trackWeight) && trackWeight > 0.) {
+          auto& bin = eta < 0. ? negative[ptBin] : positive[ptBin];
+          bin.weight += trackWeight;
+          bin.q2 += std::polar(trackWeight, 2. * trk.phi());
+          bin.q3 += std::polar(trackWeight, 3. * trk.phi());
+        }
+        if (trk.pt() < cfgGfwParam.cfgGfwPtMin.value || trk.pt() >= cfgGfwParam.cfgGfwPtMax.value) {
+          continue;
+        }
+        gfwState.fGFW->Fill(trk.eta(), ptBin, trk.phi(), trackWeight, GFWRefMask);
+        gfwState.fGFW->Fill(trk.eta(), ptBin, trk.phi(), trackWeight, GFWPoiMask);
+      }
+    }
+
+    if (fillGfw) {
+      for (size_t i = 0; i < negative.size(); ++i) {
+        if (negative[i].weight == 0.) {
+          continue;
+        }
+        for (size_t j = 0; j < positive.size(); ++j) {
+          const double pairs = negative[i].weight * positive[j].weight;
+          if (pairs == 0.) {
+            continue;
+          }
+          const double ptN = histPoiN22->GetXaxis()->GetBinCenter(i + 1);
+          const double ptP = histPoiN22->GetXaxis()->GetBinCenter(j + 1);
+          histos.fill(HIST("psi2/h_Ref03Gap22PtPt"), ptN, ptP, centrality, std::real(negative[i].q2 * std::conj(positive[j].q2)) / pairs, pairs);
+          histos.fill(HIST("psi3/h_Ref03Gap32PtPt"), ptN, ptP, centrality, std::real(negative[i].q3 * std::conj(positive[j].q3)) / pairs, pairs);
+        }
+      }
+      double denominator = gfwState.fGFW->Calculate(gfwState.corrRef22, 0, true).real();
+      if (denominator > 0.0) {
+        const double correlation = gfwState.fGFW->Calculate(gfwState.corrRef22, 0, false).real() / denominator;
+        if (std::abs(correlation) < 1.0) {
+          histos.fill(HIST("psi2/h_Ref03Gap22"), centrality, correlation, denominator);
+          if (fillEse && cfgEseHarmonic.value == SecondHarmonic) {
+            gfwState.histRefQn->Fill(centrality, eseGroupIndex + 0.5, correlation, denominator);
+          }
+        }
+      }
+      denominator = gfwState.fGFW->Calculate(gfwState.corrRef32, 0, true).real();
+      if (denominator > 0.0) {
+        const double correlation = gfwState.fGFW->Calculate(gfwState.corrRef32, 0, false).real() / denominator;
+        if (std::abs(correlation) < 1.0) {
+          histos.fill(HIST("psi3/h_Ref03Gap32"), centrality, correlation, denominator);
+          if (fillEse && cfgEseHarmonic.value == ThirdHarmonic) {
+            gfwState.histRefQn->Fill(centrality, eseGroupIndex + 0.5, correlation, denominator);
+          }
+        }
+      }
+
+      for (int iPt = 1; iPt <= histPoiN22->GetXaxis()->GetNbins(); ++iPt) {
+        const double pt = histPoiN22->GetXaxis()->GetBinCenter(iPt);
+        denominator = gfwState.fGFW->Calculate(gfwState.corrPoiN22, iPt - 1, true).real();
+        if (denominator > 0.0) {
+          const double correlation = gfwState.fGFW->Calculate(gfwState.corrPoiN22, iPt - 1, false).real() / denominator;
+          if (std::abs(correlation) < 1.0) {
+            histos.fill(HIST("psi2/h_PoiN03Gap22"), pt, centrality, correlation, denominator);
+            if (fillEse && cfgEseHarmonic.value == SecondHarmonic) {
+              gfwState.histPoiNQn->Fill(pt, centrality, eseGroupIndex + 0.5, correlation, denominator);
+            }
+          }
+        }
+        denominator = gfwState.fGFW->Calculate(gfwState.corrPoiP22, iPt - 1, true).real();
+        if (denominator > 0.0) {
+          const double correlation = gfwState.fGFW->Calculate(gfwState.corrPoiP22, iPt - 1, false).real() / denominator;
+          if (std::abs(correlation) < 1.0) {
+            histos.fill(HIST("psi2/h_PoiP03Gap22"), pt, centrality, correlation, denominator);
+            if (fillEse && cfgEseHarmonic.value == SecondHarmonic) {
+              gfwState.histPoiPQn->Fill(pt, centrality, eseGroupIndex + 0.5, correlation, denominator);
+            }
+          }
+        }
+        denominator = gfwState.fGFW->Calculate(gfwState.corrPoiN32, iPt - 1, true).real();
+        if (denominator > 0.0) {
+          const double correlation = gfwState.fGFW->Calculate(gfwState.corrPoiN32, iPt - 1, false).real() / denominator;
+          if (std::abs(correlation) < 1.0) {
+            histos.fill(HIST("psi3/h_PoiN03Gap32"), pt, centrality, correlation, denominator);
+            if (fillEse && cfgEseHarmonic.value == ThirdHarmonic) {
+              gfwState.histPoiNQn->Fill(pt, centrality, eseGroupIndex + 0.5, correlation, denominator);
+            }
+          }
+        }
+        denominator = gfwState.fGFW->Calculate(gfwState.corrPoiP32, iPt - 1, true).real();
+        if (denominator > 0.0) {
+          const double correlation = gfwState.fGFW->Calculate(gfwState.corrPoiP32, iPt - 1, false).real() / denominator;
+          if (std::abs(correlation) < 1.0) {
+            histos.fill(HIST("psi3/h_PoiP03Gap32"), pt, centrality, correlation, denominator);
+            if (fillEse && cfgEseHarmonic.value == ThirdHarmonic) {
+              gfwState.histPoiPQn->Fill(pt, centrality, eseGroupIndex + 0.5, correlation, denominator);
+            }
+          }
+        }
       }
     }
 
@@ -1261,12 +1508,28 @@ struct FlowEseTask {
     if (cfgAccCor) {
       accMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
     }
+    if (bc.runNumber() != gfwState.lastGfwCorrectionRunNumber) {
+      if (cfgGfwParam.cfgGfwEffCor && !cfgGfwParam.cfgGfwEffCorPath.value.empty()) {
+        gfwState.gfwEffMap = ccdb->getForTimeStamp<TH1D>(cfgGfwParam.cfgGfwEffCorPath.value, bc.timestamp());
+        if (gfwState.gfwEffMap == nullptr) {
+          LOGF(fatal, "Could not load charged-track efficiency histogram from %s", cfgGfwParam.cfgGfwEffCorPath.value.c_str());
+        }
+      }
+      if (cfgGfwParam.cfgGfwAccCor && !cfgGfwParam.cfgGfwAccCorPath.value.empty()) {
+        gfwState.gfwAccWeights = ccdb->getForTimeStamp<GFWWeights>(cfgGfwParam.cfgGfwAccCorPath.value, bc.timestamp());
+        if (gfwState.gfwAccWeights == nullptr) {
+          LOGF(fatal, "Could not load charged-track acceptance weights from %s", cfgGfwParam.cfgGfwAccCorPath.value.c_str());
+        }
+      }
+      gfwState.lastGfwCorrectionRunNumber = bc.runNumber();
+    }
+
     fillEseEPQA(collision, eseGroupIndex);
     if (cfgShiftCorrDef && cfgEseHarmonic.value >= cfgnMods.value + 2) {
       fillShiftCorrection(collision, cfgEseHarmonic.value);
     }
     if (eseGroupIndex >= 0 && cfgEseHarmonic.value >= cfgnMods.value + 2) {
-      fillHistograms(collision, V0s, tracks, cfgEseHarmonic.value, eseGroupIndex, false);
+      fillHistograms(collision, V0s, tracks, cfgEseHarmonic.value, eseGroupIndex, false, true);
     }
     for (int i = 2; i < cfgnMods + 2; i++) {
       if (cfgShiftCorrDef) {
@@ -1275,7 +1538,8 @@ struct FlowEseTask {
       if (cfgQAv0) {
         fillEPQA(collision, i);
       }
-      fillHistograms(collision, V0s, tracks, i, i == cfgEseHarmonic.value ? eseGroupIndex : -1);
+      const bool fillGfw = eseGroupIndex >= 0 ? i == cfgEseHarmonic.value : i == SecondHarmonic;
+      fillHistograms(collision, V0s, tracks, i, i == cfgEseHarmonic.value ? eseGroupIndex : -1, true, fillGfw);
     } // FIXME: need to fill different histograms for different harmonic
   }
   PROCESS_SWITCH(FlowEseTask, processData, "Process Event for data", true);

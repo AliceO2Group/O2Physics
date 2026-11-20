@@ -62,7 +62,7 @@ DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);             //!
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t); //!
 DECLARE_SOA_COLUMN(TPCNClsPID, tpcNClsPID, uint8_t);                 //!
 DECLARE_SOA_COLUMN(IsForValidation, isForValidation, bool);          //!
-DECLARE_SOA_COLUMN(Sign, sign, short);                               //!
+DECLARE_SOA_COLUMN(Sign, sign, int16_t);                             //!
 DECLARE_SOA_COLUMN(P, p, float);                                     //!
 DECLARE_SOA_COLUMN(PtGen, ptGen, float);                             //!
 DECLARE_SOA_COLUMN(EtaGen, etaGen, float);                           //!

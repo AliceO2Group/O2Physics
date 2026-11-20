@@ -30,9 +30,15 @@ namespace antin_cex
 DECLARE_SOA_COLUMN(IsCex, isCex, bool);            // 1=CEX (from antin), 0=BG
 DECLARE_SOA_COLUMN(MotherPdg, motherPdg, int32_t); // mother PDG
 DECLARE_SOA_COLUMN(MotherP, motherP, float);       // mother P
-DECLARE_SOA_COLUMN(ColId, colId, int32_t);         // mcCollisionId
-DECLARE_SOA_COLUMN(PId, pId, int32_t);             // proton MC id
-DECLARE_SOA_COLUMN(AntipId, antipId, int32_t);     // antiproton MC id
+DECLARE_SOA_COLUMN(MotherPt, motherPt, float);
+DECLARE_SOA_COLUMN(MotherPz, motherPz, float);
+DECLARE_SOA_COLUMN(MotherEta, motherEta, float);
+DECLARE_SOA_COLUMN(MotherVz, motherVz, float);
+DECLARE_SOA_COLUMN(HasPi0, hasPi0, bool);
+DECLARE_SOA_COLUMN(AntipProcess, antipProcess, int32_t);
+DECLARE_SOA_COLUMN(ColId, colId, int64_t);
+DECLARE_SOA_COLUMN(PId, pId, int64_t);
+DECLARE_SOA_COLUMN(AntipId, antipId, int64_t);
 
 // MC (pair)
 DECLARE_SOA_COLUMN(McPairP, mcPairP, float);
@@ -104,6 +110,8 @@ DECLARE_SOA_COLUMN(SVDeltaRToLayer, svDeltaRToLayer, float);
 DECLARE_SOA_COLUMN(PTrkItsHitMap, pTrkItsHitMap, uint16_t);
 DECLARE_SOA_COLUMN(APTrkItsHitMap, apTrkItsHitMap, uint16_t);
 
+DECLARE_SOA_COLUMN(PVtxX, pVtxX, float);
+DECLARE_SOA_COLUMN(PVtxY, pVtxY, float);
 DECLARE_SOA_COLUMN(PVtxZ, pVtxZ, float);
 
 // Proton ITS PID
@@ -115,29 +123,105 @@ DECLARE_SOA_COLUMN(PTrkTgl, pTrkTgl, float);
 DECLARE_SOA_COLUMN(AntipTrkItsNSigmaPr, antipTrkItsNSigmaPr, float);
 DECLARE_SOA_COLUMN(AntipTrkItsPidValid, antipTrkItsPidValid, int8_t);
 DECLARE_SOA_COLUMN(AntipTrkTgl, antipTrkTgl, float);
+
+// Proton track quality
+DECLARE_SOA_COLUMN(PTrkTpcNClsCrossedRows, pTrkTpcNClsCrossedRows, int);
+DECLARE_SOA_COLUMN(PTrkTpcCrossedRowsOverFindableCls, pTrkTpcCrossedRowsOverFindableCls, float);
+DECLARE_SOA_COLUMN(PTrkTpcChi2NCl, pTrkTpcChi2NCl, float);
+DECLARE_SOA_COLUMN(PTrkItsChi2NCl, pTrkItsChi2NCl, float);
+
+// Antiproton track quality
+DECLARE_SOA_COLUMN(AntipTrkTpcNClsCrossedRows, antipTrkTpcNClsCrossedRows, int);
+DECLARE_SOA_COLUMN(AntipTrkTpcCrossedRowsOverFindableCls, antipTrkTpcCrossedRowsOverFindableCls, float);
+DECLARE_SOA_COLUMN(AntipTrkTpcChi2NCl, antipTrkTpcChi2NCl, float);
+DECLARE_SOA_COLUMN(AntipTrkItsChi2NCl, antipTrkItsChi2NCl, float);
 } // namespace antin_cex
 
 // Table
 DECLARE_SOA_TABLE(AntinCexPairs, "AOD", "ANTINCEX",
                   antin_cex::IsCex,
-                  antin_cex::MotherPdg, antin_cex::MotherP, antin_cex::ColId, antin_cex::PId, antin_cex::AntipId,
-                  antin_cex::McPairP, antin_cex::McPairPt, antin_cex::McPairPz,
-                  antin_cex::McDplane, antin_cex::McAngleDeg, antin_cex::McVtxX, antin_cex::McVtxY, antin_cex::McVtxZ,
-                  antin_cex::TrkPairP, antin_cex::TrkPairPt, antin_cex::TrkPairPz, antin_cex::TrkAngleDeg,
-                  antin_cex::TrkVtxfitDcaPair, antin_cex::TrkVtxfitR, antin_cex::TrkVtxfitDistToPv,
-                  antin_cex::TrkVtxfitSecVtxX, antin_cex::TrkVtxfitSecVtxY, antin_cex::TrkVtxfitSecVtxZ,
-                  antin_cex::VtxfitChi2, antin_cex::VtxfitStatus, antin_cex::NCand,
-                  antin_cex::VtxfitDX, antin_cex::VtxfitDY, antin_cex::VtxfitDZ, antin_cex::VtxfitD3D,
-                  antin_cex::PTrkP, antin_cex::PTrkPx, antin_cex::PTrkPy, antin_cex::PTrkPz, antin_cex::PTrkEta, antin_cex::PTrkTpcSignal, antin_cex::PTrkNClsIts,
-                  antin_cex::AntipTrkP, antin_cex::AntipTrkPx, antin_cex::AntipTrkPy, antin_cex::AntipTrkPz, antin_cex::AntipTrkEta, antin_cex::AntipTrkTpcSignal, antin_cex::AntipTrkNClsIts,
+                  antin_cex::MotherPdg,
+                  antin_cex::MotherP,
+                  antin_cex::MotherPt,
+                  antin_cex::MotherPz,
+                  antin_cex::MotherEta,
+                  antin_cex::MotherVz,
+                  antin_cex::HasPi0,
+                  antin_cex::AntipProcess,
+                  antin_cex::ColId,
+                  antin_cex::PId,
+                  antin_cex::AntipId,
+                  antin_cex::McPairP,
+                  antin_cex::McPairPt,
+                  antin_cex::McPairPz,
+                  antin_cex::McDplane,
+                  antin_cex::McAngleDeg,
+                  antin_cex::McVtxX,
+                  antin_cex::McVtxY,
+                  antin_cex::McVtxZ,
+                  antin_cex::TrkPairP,
+                  antin_cex::TrkPairPt,
+                  antin_cex::TrkPairPz,
+                  antin_cex::TrkAngleDeg,
+                  antin_cex::TrkVtxfitDcaPair,
+                  antin_cex::TrkVtxfitR,
+                  antin_cex::TrkVtxfitDistToPv,
+                  antin_cex::TrkVtxfitSecVtxX,
+                  antin_cex::TrkVtxfitSecVtxY,
+                  antin_cex::TrkVtxfitSecVtxZ,
+                  antin_cex::VtxfitChi2,
+                  antin_cex::VtxfitStatus,
+                  antin_cex::NCand,
+                  antin_cex::VtxfitDX,
+                  antin_cex::VtxfitDY,
+                  antin_cex::VtxfitDZ,
+                  antin_cex::VtxfitD3D,
+                  antin_cex::PTrkP,
+                  antin_cex::PTrkPx,
+                  antin_cex::PTrkPy,
+                  antin_cex::PTrkPz,
+                  antin_cex::PTrkEta,
+                  antin_cex::PTrkTpcSignal,
+                  antin_cex::PTrkNClsIts,
+                  antin_cex::AntipTrkP,
+                  antin_cex::AntipTrkPx,
+                  antin_cex::AntipTrkPy,
+                  antin_cex::AntipTrkPz,
+                  antin_cex::AntipTrkEta,
+                  antin_cex::AntipTrkTpcSignal,
+                  antin_cex::AntipTrkNClsIts,
                   antin_cex::SelMask,
-                  antin_cex::PairPointingAngleDeg, antin_cex::PvsvThetaDeg, antin_cex::PvsvPhiDeg, antin_cex::PairPBalance, antin_cex::PairPtBalance, antin_cex::PairQ,
-                  antin_cex::DPairP, antin_cex::DPairPt, antin_cex::DPairPz, antin_cex::DOpenAngle,
-                  antin_cex::SVNearestLayerId, antin_cex::SVDeltaRToLayer,
-                  antin_cex::PTrkItsHitMap, antin_cex::APTrkItsHitMap,
+                  antin_cex::PairPointingAngleDeg,
+                  antin_cex::PvsvThetaDeg,
+                  antin_cex::PvsvPhiDeg,
+                  antin_cex::PairPBalance,
+                  antin_cex::PairPtBalance,
+                  antin_cex::PairQ,
+                  antin_cex::DPairP,
+                  antin_cex::DPairPt,
+                  antin_cex::DPairPz,
+                  antin_cex::DOpenAngle,
+                  antin_cex::SVNearestLayerId,
+                  antin_cex::SVDeltaRToLayer,
+                  antin_cex::PTrkItsHitMap,
+                  antin_cex::APTrkItsHitMap,
+                  antin_cex::PVtxX,
+                  antin_cex::PVtxY,
                   antin_cex::PVtxZ,
-                  antin_cex::PTrkItsNSigmaPr, antin_cex::PTrkItsPidValid, antin_cex::PTrkTgl,
-                  antin_cex::AntipTrkItsNSigmaPr, antin_cex::AntipTrkItsPidValid, antin_cex::AntipTrkTgl);
+                  antin_cex::PTrkItsNSigmaPr,
+                  antin_cex::PTrkItsPidValid,
+                  antin_cex::PTrkTgl,
+                  antin_cex::AntipTrkItsNSigmaPr,
+                  antin_cex::AntipTrkItsPidValid,
+                  antin_cex::AntipTrkTgl,
+                  antin_cex::PTrkTpcNClsCrossedRows,
+                  antin_cex::PTrkTpcCrossedRowsOverFindableCls,
+                  antin_cex::PTrkTpcChi2NCl,
+                  antin_cex::PTrkItsChi2NCl,
+                  antin_cex::AntipTrkTpcNClsCrossedRows,
+                  antin_cex::AntipTrkTpcCrossedRowsOverFindableCls,
+                  antin_cex::AntipTrkTpcChi2NCl,
+                  antin_cex::AntipTrkItsChi2NCl);
 
 } // namespace o2::aod
 

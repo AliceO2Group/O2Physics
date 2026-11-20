@@ -62,14 +62,16 @@
         "frac": false,
         "eff": false,
         "cov": false,
-        "unc": true
+        "unc": true,
+        "relunc": true
     },
     "is_save_canvas_as_macro": {
         "rawy": false,
         "frac": false,
         "eff": false,
         "cov": false,
-        "unc": false
+        "unc": false,
+        "relunc": false
     },
     "is_save_to_root_file": {
         "canvas": true,
@@ -95,5 +97,8 @@
     "output": {
         "directory": ".",
         "file": "CutVarDplus_pp13TeV_MB.root"
-    }
+    },
+    "zero_eff_unc": false,
+    "effp_shift_nsigma": 0,
+    "effnp_shift_nsigma": 0
 }

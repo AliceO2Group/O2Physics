@@ -88,7 +88,7 @@ class FemtoWorldV0Selection : public FemtoWorldObjectSelection<float, femtoWorld
                             fInvMassUpLimit(1.3),
                             fRejectKaon(false),
                             fInvMassKaonLowLimit(0.48),
-                            fInvMassKaonUpLimit(0.515) {};
+                            fInvMassKaonUpLimit(0.515) {}
   /// Initializes histograms for the task
   template <o2::aod::femtoworldparticle::ParticleType part, o2::aod::femtoworldparticle::ParticleType daugh, typename cutContainerType>
   void init(o2::framework::HistogramRegistry* registry);
@@ -472,9 +472,7 @@ std::array<cutContainerType, 5> FemtoWorldV0Selection::getCutContainer(C const& 
     sign = -1.;
   } else if (abs(nSigmaPrPos) < nSigmaPIDMax && abs(nSigmaPiNeg) < nSigmaPIDMax && diffAntiLambda < diffLambda) {
     sign = 1.;
-  }
-  // if it happens that none of these are true, ignore the invariant mass
-  else {
+  } else { // if it happens that none of these are true, ignore the invariant mass
     if (abs(nSigmaPrNeg) < nSigmaPIDMax && abs(nSigmaPiPos) < nSigmaPIDMax) {
       sign = -1.;
     } else if (abs(nSigmaPrPos) < nSigmaPIDMax && abs(nSigmaPiNeg) < nSigmaPIDMax) {

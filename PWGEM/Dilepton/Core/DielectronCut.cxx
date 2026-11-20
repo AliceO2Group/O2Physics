@@ -63,7 +63,7 @@ void DielectronCut::SetPairOpAng(float minOpAng, float maxOpAng)
 }
 void DielectronCut::SetMaxMeePhiVDep(std::function<float(float)> phivDepCut, float min_phiv, float max_phiv)
 {
-  mMaxMeePhiVDep = phivDepCut;
+  mMaxMeePhiVDep = std::move(phivDepCut);
   mMinPhivPair = min_phiv;
   mMaxPhivPair = max_phiv;
   LOG(info) << "Dielectron Cut, set max mee phiv dep: " << mMaxMeePhiVDep(2.5);
@@ -194,7 +194,7 @@ void DielectronCut::SetTrackMaxDcaZ(float maxDcaZ)
 
 void DielectronCut::SetTrackMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
 {
-  mMaxDcaXYPtDep = ptDepCut;
+  mMaxDcaXYPtDep = std::move(ptDepCut);
   LOG(info) << "Dielectron Cut, set max DCA xy pt dep: " << mMaxDcaXYPtDep(1.0);
 }
 void DielectronCut::ApplyPhiV(bool flag)
@@ -206,7 +206,7 @@ void DielectronCut::ApplyPhiV(bool flag)
 void DielectronCut::SetPIDScheme(int scheme)
 {
   mPIDScheme = scheme;
-  LOG(info) << "Dielectron Cut, PID scheme: " << static_cast<int>(mPIDScheme);
+  LOG(info) << "Dielectron Cut, PID scheme: " << mPIDScheme;
 }
 void DielectronCut::SetMinPinTOF(float min)
 {
@@ -233,12 +233,12 @@ void DielectronCut::SetTPCNsigmaElRange(float min, float max)
   mMaxTPCNsigmaEl = max;
   LOG(info) << "Dielectron Cut, set TPC n sigma El range: " << mMinTPCNsigmaEl << " - " << mMaxTPCNsigmaEl;
 }
-// void DielectronCut::SetTPCNsigmaMuRange(float min, float max)
-// {
-//   mMinTPCNsigmaMu = min;
-//   mMaxTPCNsigmaMu = max;
-//   LOG(info) << "Dielectron Cut, set TPC n sigma Mu range: " << mMinTPCNsigmaMu << " - " << mMaxTPCNsigmaMu;
-// }
+void DielectronCut::SetTPCNsigmaMuRange(float min, float max)
+{
+  mMinTPCNsigmaMu = min;
+  mMaxTPCNsigmaMu = max;
+  LOG(info) << "Dielectron Cut, set TPC n sigma Mu range: " << mMinTPCNsigmaMu << " - " << mMaxTPCNsigmaMu;
+}
 void DielectronCut::SetTPCNsigmaPiRange(float min, float max)
 {
   mMinTPCNsigmaPi = min;

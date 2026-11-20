@@ -122,9 +122,18 @@ auto makeTwoTrackResonanceQaHistSpecMap(const T& confBinningAnalysis)
 #undef TWOTRACKRESONANCE_HIST_ANALYSIS_MAP
 #undef TWOTRACKRESONANCE_HIST_QA_MAP
 
+// used only by the standalone QA task
 constexpr char PrefixRho[] = "Rho0/";
 constexpr char PrefixPhi[] = "Phi/";
 constexpr char PrefixKstar[] = "Kstar0/";
+// same-event siblings, used only by a pair builder's same-event resonance manager
+constexpr char PrefixRhoSe[] = "Rho0/SE/";
+constexpr char PrefixPhiSe[] = "Phi/SE/";
+constexpr char PrefixKstarSe[] = "Kstar0/SE/";
+// mixed-event siblings, used only by a pair builder's mixed-event resonance manager
+constexpr char PrefixRhoMe[] = "Rho0/ME/";
+constexpr char PrefixPhiMe[] = "Phi/ME/";
+constexpr char PrefixKstarMe[] = "Kstar0/ME/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
@@ -216,8 +225,8 @@ class TwoTrackResonanceHistManager
         negDauPdgCodeAbs = std::abs(PDG_t::kPiMinus);
       } else {
         mPdgCode = -1 * mPdgCode;
-        posDauPdgCodeAbs = std::abs(PDG_t::kKMinus);
-        negDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
+        posDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
+        negDauPdgCodeAbs = std::abs(PDG_t::kKMinus);
       }
     } else {
       LOG(fatal) << "PDG code for TwoTrackResonance has to be either Rho, Phi or K^0*(892)";

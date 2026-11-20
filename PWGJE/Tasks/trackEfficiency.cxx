@@ -34,9 +34,11 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <TMCProcess.h>
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -55,6 +57,7 @@ struct TrackEfficiency {
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections; other option: uniformTracks"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events"};
   Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
+  Configurable<std::string> rctSelection{"rctSelection", "CBT", "RCT selection to apply if applyRCTSelections is set to true"};
 
   // Tracking efficiency process function configurables:
   Configurable<bool> checkPrimaryPart{"checkPrimaryPart", true, "0: doesn't check mcparticle.isPhysicalPrimary() - 1: checks particle.isPhysicalPrimary()"};
@@ -67,7 +70,9 @@ struct TrackEfficiency {
   Configurable<float> centralityMax{"centralityMax", 999, ""};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> trackDcaZmax{"trackDcaZmax", 99, "additional cut on dcaZ to PV for tracks; uniformTracks in particular don't cut on this at all"};
-  Configurable<int> nBinsLowPt{"nBinsLowPt", 200, "number of pt bins for low pt (below 10GeV) efficiency histograms"};
+  Configurable<float> ptHighEffMax{"ptHighEffMax", 100., "maximum pT in efficiency histograms for high pT (minimum is set by upper limit of ptLowEffBinning parameter)"};
+  Configurable<int> ptHighEffNBins{"ptHighEffNBins", 18, "number of pt bins in efficiency histograms for high pT"};
+  ConfigurableAxis ptLowEffBinning{"ptLowEffBinning", {200, 0., 10.}, "binning of low pT axis in efficiency histograms"};
 
   // Track QA process function configurables:
   Configurable<float> trackQAEtaMin{"trackQAEtaMin", -0.9, "minimum eta acceptance for tracks in the processTracks QA"};
@@ -77,11 +82,10 @@ struct TrackEfficiency {
   Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range; only applied for reconstructed tracks, not mc particles"};
   Configurable<int> trackOccupancyInTimeRangeMin{"trackOccupancyInTimeRangeMin", -999999, "minimum occupancy of tracks in neighbouring collisions in a given time range; only applied for reconstructed tracks, not mc particles"};
 
-  Configurable<std::vector<double>> centralityBinning{"centralityBinning", {0., 10., 50., 70., 100}, "binning of centrality histograms"};
-  Configurable<int> intRateNBins{"intRateNBins", 50, "number of bins for interaction rate axis"};
-  Configurable<float> intRateMax{"intRateMax", 50000.0, "maximum value of interaction rate axis"};
-  Configurable<int> phiEffNBins{"phiEffNBins", 200, "number of bins for phi axis in efficiency plots"};
-  Configurable<int> etaEffNBins{"etaEffNBins", 200, "number of bins for eta axis in efficiency plots"};
+  ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0., 10., 50., 70., 100}, "binning of centrality histograms"};
+  ConfigurableAxis intRateBinning{"intRateBinning", {50, 0., 50000.0}, "binning for interaction rate axis"};
+  ConfigurableAxis phiEffBinning{"phiEffBinning", {200, -1., 7.}, "binning for phi axis in efficiency histograms"};
+  ConfigurableAxis etaEffBinning{"etaEffBinning", {200, -1., 1.}, "binning for eta axis in efficiency histograms"};
 
   Configurable<float> ptHatMin{"ptHatMin", -999, "min pT hat of collisions"};
   Configurable<float> ptHatMax{"ptHatMax", 999, "max pT hat of collisions"};
@@ -91,6 +95,32 @@ struct TrackEfficiency {
   Configurable<float> pTHatMaxFractionMCP{"pTHatMaxFractionMCP", 999.0, "maximum fraction of hard scattering for particle acceptance in MC"};
 
   Configurable<bool> useTrueTrackWeight{"useTrueTrackWeight", true, "test configurable, should be set to 1 then config removed once well tested"};
+
+  // Normalization FT0 by means
+  struct FT0A : ConfigurableGroup {
+    std::string prefix = "ft0a";
+    Configurable<float> mean{"mean", 3499., "Mean FT0A signal"};
+    Configurable<float> meanMCDetLevel{"meanMCDetLevel", 2640., "Mean FT0A signal at MC detector level"};
+  } ft0a;
+
+  struct FT0C : ConfigurableGroup {
+    std::string prefix = "ft0c";
+    Configurable<float> mean{"mean", 844.6, "Mean FT0C signal"};
+    Configurable<float> meanMCDetLevel{"meanMCDetLevel", 802.9, "Mean FT0C signal at MC detector level"};
+  } ft0c;
+
+  // FT0C event activity thresholds
+  struct Hist : ConfigurableGroup {
+    std::string prefix = "hist";
+
+    // Raw data
+    ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0.0, 0.109421, 0.215022, 0.343214, 0.50515, 0.712277, 0.978245, 1.3189, 1.75744, 2.36001, 3.59696, 25.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
+    ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0.0, 0.130987, 0.237916, 0.36664, 0.528441, 0.734705, 0.996611, 1.32785, 1.74896, 2.31024, 3.37852, 25.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
+
+    // MC detector-level data
+    ConfigurableAxis multFT0CThreshMCDetLevel{"multFT0CThreshMCDetLevel", {VARIABLE_WIDTH, 0.0, 0.124992, 0.243769, 0.380291, 0.543998, 0.748078, 1.00424, 1.3237, 1.72648, 2.27373, 3.43144, 25.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
+    ConfigurableAxis multFT0MThreshMCDetLevel{"multFT0MThreshMCDetLevel", {VARIABLE_WIDTH, 0.0, 0.142622, 0.262095, 0.397069, 0.558622, 0.762008, 1.01685, 1.33219, 1.72377, 2.24008, 3.26309, 25.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
+  } hist;
 
   // systematics variation - Run 2 guidelines: https://twiki.cern.ch/twiki/bin/view/ALICE/AliDPGtoolsTrackSystematicUncertainty
   TrackSelection customTrackSelection;
@@ -114,6 +144,11 @@ struct TrackEfficiency {
     SplitOkCheckFirstAssocCollOnly // 2
   };
 
+  enum class TrackSample {
+    Data,
+    MCDetLevel
+  };
+
   template <typename TJetTrack>
   bool isAcceptedTrack(TJetTrack const& jetTrack)
   {
@@ -123,7 +158,7 @@ struct TrackEfficiency {
       }
     } else {
       const auto& aodTrack = jetTrack.template track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>>();
-      if (effSystMinNCrossedRowsTPCUseAlternateCut && (aodTrack.tpcNClsCrossedRows() < 120 - 5. / aodTrack.pt())) {
+      if (effSystMinNCrossedRowsTPCUseAlternateCut && (aodTrack.tpcNClsCrossedRows() < 120 - 5. / aodTrack.pt())) { // o2-linter: disable=magic-number (TPC nCrossedRows calculation)
         return false;
       }
       if (customTrackSelection.IsSelected(aodTrack)) {
@@ -144,16 +179,17 @@ struct TrackEfficiency {
     return std::abs(charge) >= chargeUnit;
   }
 
-  template <typename TCollision, typename TJetTracks>
+  template <TrackSample sample, typename TCollision, typename TJetTracks>
   void fillTrackHistograms(TCollision const& collision, TJetTracks const& jetTracks, float weight = 1.0)
   {
+    const float meanFT0A = sample == TrackSample::Data ? ft0a.mean.value : ft0a.meanMCDetLevel.value;
+    const float meanFT0C = sample == TrackSample::Data ? ft0c.mean.value : ft0c.meanMCDetLevel.value;
+    const auto ft0Metrics = getFT0Metrics(collision, meanFT0A, meanFT0C);
+    const auto scaledFT0C = ft0Metrics.scaledFT0C;
+    const auto scaledFT0M = ft0Metrics.scaledFT0M;
+
     for (auto const& track : jetTracks) {
       if (!isAcceptedTrack(track)) {
-        continue;
-      }
-
-      float pTHat = simPtRef / (std::pow(weight, 1.0 / pTHatExponent));
-      if (track.pt() > pTHatMaxFractionMCD * pTHat) {
         continue;
       }
 
@@ -168,11 +204,20 @@ struct TrackEfficiency {
       registry.fill(HIST("h2_track_pt_high_track_sigma1overpt"), track.pt(), track.sigma1Pt(), weight);
       registry.fill(HIST("h2_track_pt_high_track_sigmapt"), track.pt(), track.sigma1Pt() * track.pt(), weight);
       registry.fill(HIST("h3_intrate_centrality_track_pt"), collision.hadronicRate(), centrality, track.pt(), weight);
+      registry.fill(HIST("h3_track_pt_track_eta_track_phi"), track.pt(), track.eta(), track.phi(), weight);
+
+      if constexpr (sample == TrackSample::Data) {
+        registry.fill(HIST("hScaledFT0CTrackPt"), scaledFT0C, track.pt(), weight);
+        registry.fill(HIST("hScaledFT0MTrackPt"), scaledFT0M, track.pt(), weight);
+      } else {
+        registry.fill(HIST("hScaledFT0CTrackPt_MCDetLevel"), scaledFT0C, track.pt(), weight);
+        registry.fill(HIST("hScaledFT0MTrackPt_MCDetLevel"), scaledFT0M, track.pt(), weight);
+      }
     }
   }
 
   template <typename TMCCollision, typename TCollisions, typename TParticles, typename TTracks>
-  void fillParticlesHistograms(TMCCollision const& /*mcCollision*/, TCollisions const& collisions, TParticles const& mcparticles, TTracks tracks, float weight = 1.0)
+  void fillParticlesHistograms(TMCCollision const& /*mcCollision*/, TCollisions const& collisions, TParticles const& mcparticles, const TTracks& tracks, float weight = 1.0)
   {
     // float centrality = checkCentFT0M ? mcCollision.centFT0M() : mcCollision.centFT0C(); mcCollision.centFT0C() isn't filled at the moment; can be added back when it is
     float centrality = checkCentFT0M ? collisions.begin().centFT0M() : collisions.begin().centFT0C();
@@ -201,8 +246,14 @@ struct TrackEfficiency {
       LOGP(fatal, "Configurable acceptSplitCollisions has wrong input value; stopping workflow");
     }
 
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    constexpr float minFT0Mean = std::numeric_limits<float>::epsilon();
+    if (std::fabs(ft0a.mean.value) <= minFT0Mean || std::fabs(ft0c.mean.value) <= minFT0Mean ||
+        std::fabs(ft0a.meanMCDetLevel.value) <= minFT0Mean || std::fabs(ft0c.meanMCDetLevel.value) <= minFT0Mean) {
+      LOGP(fatal, "FT0A and FT0C means must have magnitude greater than {} to avoid near-zero denominators; stopping workflow", minFT0Mean);
+    }
+
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
 
     if (useCustomTrackSelection) {
       // Custom track cuts
@@ -245,18 +296,22 @@ struct TrackEfficiency {
       LOGP(info, "Using standard track selection: %s", trackSelections.value);
     }
 
-    AxisSpec ptAxisEff = {nBinsLowPt, 0., 10., "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec ptAxisHighEff = {18, 10., 100., "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec etaAxisEff = {etaEffNBins, -1.0, 1.0, "#eta"};
-    AxisSpec phiAxisEff = {phiEffNBins, -1.0, 7., "#phi"};
+    AxisSpec ptAxisEff = {ptLowEffBinning, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec ptAxisHighEff = {ptHighEffNBins, ptAxisEff.binEdges.back(), ptHighEffMax, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec etaAxisEff{etaEffBinning, "#eta"};
+    AxisSpec phiAxisEff{phiEffBinning, "#phi"};
     AxisSpec centAxis = {centralityBinning, "centrality (%)"};
-    AxisSpec intRateAxis = {intRateNBins, 0., intRateMax, "int. rate (kHz)"};
+    AxisSpec scaledFT0C{hist.multFT0CThresh, "FT0C / #LT FT0C #GT"};
+    AxisSpec scaledFT0M{hist.multFT0MThresh, "FT0M^{*}"};
+    AxisSpec scaledFT0CMCDetLevel{hist.multFT0CThreshMCDetLevel, "FT0C / #LT FT0C #GT"};
+    AxisSpec scaledFT0MMCDetLevel{hist.multFT0MThreshMCDetLevel, "FT0M^{*}"};
+    AxisSpec intRateAxis = {intRateBinning, "int. rate (kHz)"};
     AxisSpec occupancyAxis = {140, -0.5, 13999.5, "occupancy"};
     AxisSpec nTracksAxis = {16001, -1., 16000, "n tracks"};
     AxisSpec dcaxyAxis = {1000, -1.0, 1.0, "dca_{xy}"};
     AxisSpec dcazAxis = {4000, -4.0, 4.0, "dca_{z}"};
 
-    if (doprocessEFficiencyPurity || doprocessEFficiencyPurityWeighted) {
+    if (doprocessEfficiencyPurity || doprocessEfficiencyPurityWeighted || doprocessQcCheck) {
 
       registry.add("hMcCollCutsCounts", "McColl cuts count checks", {HistType::kTH1F, {{10, 0., 10.}}});
       registry.get<TH1>(HIST("hMcCollCutsCounts"))->GetXaxis()->SetBinLabel(1, "allMcColl");
@@ -281,16 +336,22 @@ struct TrackEfficiency {
       registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(2, "trackSel");
       registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(3, "hasMcParticle");
 
-      if (doprocessEFficiencyPurity) {
+      if (doprocessEfficiencyPurity || doprocessQcCheck) {
         registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(4, "mcPartIsPrimary");
         registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(5, "etaAcc"); // not actually applied here but it will give an idea of what will be done in the post processing
       }
-      if (doprocessEFficiencyPurityWeighted) {
+      if (doprocessEfficiencyPurityWeighted) {
         registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(4, "ptHatMaxFraction");
         registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(5, "mcPartIsPrimary");
         registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(6, "etaAcc"); // not actually applied here but it will give an idea of what will be done in the post processing
       }
-
+      if (doprocessQcCheck) {
+        registry.add("h_ntrack_nonassociatedtrack", "Non-associated tracks;N_{tracks};counts", {HistType::kTH1I, {nTracksAxis}});
+        registry.add("h_ntrack_associatedtrack_primary", "Associated tracks, primary;N_{tracks};counts", {HistType::kTH1I, {nTracksAxis}});
+        registry.add("h_ntrack_associatedtrack_nonprimary", "Associated tracks, non-primary;N_{tracks};counts", {HistType::kTH1I, {nTracksAxis}});
+        registry.add("h_ntrack_associatedtrack_split_primary", "Associated split tracks, primary;N_{tracks};counts", {HistType::kTH1I, {nTracksAxis}});
+        registry.add("h_ntrack_associatedtrack_split_nonprimary", "Associated split tracks, non-primary;N_{tracks};counts", {HistType::kTH1I, {nTracksAxis}});
+      }
       // ptAxisLow
       registry.add("h3_particle_pt_particle_eta_particle_phi_mcpartofinterest", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxisEff, etaAxisEff, phiAxisEff}});
       registry.add("h3_particle_pt_particle_eta_particle_phi_mcpart_nonprimary", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxisEff, etaAxisEff, phiAxisEff}});
@@ -335,6 +396,13 @@ struct TrackEfficiency {
       registry.add("h2_track_pt_track_sigma1overpt", "#sigma(1/#it{p}_{T}); #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 10.}, {10000, 0.0, 1.0}}});
       registry.add("h2_track_pt_high_track_sigma1overpt", "#sigma(1/#it{p}_{T}); #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{90, 10., 100.}, {10000, 0.0, 1.0}}});
       registry.add("h3_intrate_centrality_track_pt", "interaction rate vs centrality vs track pT; int. rate; centrality; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH3F, {intRateAxis, centAxis, {200, 0., 200.}}});
+      registry.add("h3_track_pt_track_eta_track_phi", "track pT vs track #eta vs track #varphi; #it{p}_{T,track} (GeV/#it{c}); #eta_{track}; #varphi_{track}", {HistType::kTH3F, {{200, 0., 200.}, {100, -1.0, 1.0}, {160, -1.0, 7.}}});
+
+      // EA analysis
+      registry.add("hScaledFT0CTrackPt", "scaled FT0C vs track pT; FT0C / #LT FT0C #GT; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {scaledFT0C, {200, 0., 200.}}});
+      registry.add("hScaledFT0MTrackPt", "scaled FT0M vs track pT; FT0M^{*}; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {scaledFT0M, {200, 0., 200.}}});
+      registry.add("hScaledFT0CTrackPt_MCDetLevel", "MC detector-level scaled FT0C vs track pT; FT0C / #LT FT0C #GT; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {scaledFT0CMCDetLevel, {200, 0., 200.}}});
+      registry.add("hScaledFT0MTrackPt_MCDetLevel", "MC detector-level scaled FT0M vs track pT; FT0M^{*}; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {scaledFT0MMCDetLevel, {200, 0., 200.}}});
     }
 
     if (doprocessParticles || doprocessParticlesWeighted) {
@@ -448,7 +516,7 @@ struct TrackEfficiency {
   Filter particleCuts = (aod::jmcparticle::pt >= trackQAPtMin && aod::jmcparticle::pt < trackQAPtMax && aod::jmcparticle::eta > trackQAEtaMin && aod::jmcparticle::eta < trackQAEtaMax);
   Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut);
 
-  void processEFficiencyPurity(aod::JetMcCollisions::iterator const& mcCollision,
+  void processEfficiencyPurity(aod::JetMcCollisions::iterator const& mcCollision,
                                soa::SmallGroups<aod::JetCollisionsMCD> const& collisions, // smallgroups gives only the collisions associated to the current mccollision, thanks to the mccollisionlabel pre-integrated in jetcollisionsmcd
                                soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs> const& jetTracks,
                                soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const&,
@@ -480,8 +548,8 @@ struct TrackEfficiency {
     bool hasSel8Coll = false;
     bool centralityCheck = false;
     bool occupancyCheck = false;
-    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                        // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
-      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have their first associated collision not reconstructed
+    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                                      // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
+      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) { // Skipping MC events that have their first associated collision not reconstructed
         hasSel8Coll = true;
       }
       if (!checkOccupancy || ((trackOccupancyInTimeRangeMin < collisions.begin().trackOccupancyInTimeRange()) && (collisions.begin().trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax))) { // check occupancy only in GP Pb-Pb MC
@@ -493,7 +561,7 @@ struct TrackEfficiency {
       }
     } else if (acceptSplitCollisions == SplitOkCheckAnyAssocColl) { // check that at least one of the reconstructed collisions passes the checks
       for (auto const& collision : collisions) {
-        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
           hasSel8Coll = true;
         }
         if (!checkOccupancy || ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax))) { // check occupancy only in GP Pb-Pb MC
@@ -565,7 +633,7 @@ struct TrackEfficiency {
         return;
       }
 
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections) || !(std::abs(collision.posZ()) < vertexZCut)) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection) || !(std::abs(collision.posZ()) < vertexZCut)) {
         continue;
       }
 
@@ -580,7 +648,6 @@ struct TrackEfficiency {
 
         if (!track.has_mcParticle()) {
           registry.fill(HIST("h3_track_pt_track_eta_track_phi_nonassociatedtrack"), track.pt(), track.eta(), track.phi());
-
           registry.fill(HIST("h3_track_pt_high_track_eta_track_phi_nonassociatedtrack"), track.pt(), track.eta(), track.phi());
           continue;
         }
@@ -595,6 +662,8 @@ struct TrackEfficiency {
           registry.fill(HIST("h3_particle_pt_high_particle_eta_particle_phi_associatedtrack_nonprimary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
 
           if (std::find(seenMcParticlesVector.begin(), seenMcParticlesVector.end(), jMcParticleFromTrack.globalIndex()) != seenMcParticlesVector.end()) {
+            // occasionally, one particle can match to two reconstructed tracks
+            // since this particle will appear again in this loop over tracks, these histograms keep track of the extra entries from this duplication
             registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_split_nonprimary"), track.pt(), track.eta(), track.phi());
             registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split_nonprimary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
 
@@ -618,6 +687,8 @@ struct TrackEfficiency {
         registry.fill(HIST("h2_particle_pt_high_track_pt_high_residual_associatedtrack_primary"), jMcParticleFromTrack.pt(), (jMcParticleFromTrack.pt() - track.pt()) / jMcParticleFromTrack.pt());
 
         if (std::find(seenMcParticlesVector.begin(), seenMcParticlesVector.end(), jMcParticleFromTrack.globalIndex()) != seenMcParticlesVector.end()) {
+          // same as above, but doesn't overlap with the previous std::find call since we looked at non-physical primaries before and now we are only looking at physical primaries
+          // to get a histogram corrected for the duplication (e.g. for efficiency/resolution studies), you should subtract these histograms below from the corresponding histograms right before this if block
           registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_split_primary"), track.pt(), track.eta(), track.phi());
           registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split_primary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
 
@@ -633,9 +704,9 @@ struct TrackEfficiency {
       }
     }
   }
-  PROCESS_SWITCH(TrackEfficiency, processEFficiencyPurity, "Histograms for efficiency and purity quantities", true);
+  PROCESS_SWITCH(TrackEfficiency, processEfficiencyPurity, "Histograms for efficiency and purity quantities", true);
 
-  void processEFficiencyPurityWeighted(aod::JetMcCollisions::iterator const& mcCollision,
+  void processEfficiencyPurityWeighted(aod::JetMcCollisions::iterator const& mcCollision,
                                        soa::SmallGroups<aod::JetCollisionsMCD> const& collisions, // smallgroups gives only the collisions associated to the current mccollision, thanks to the mccollisionlabel pre-integrated in jetcollisionsmcd
                                        soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs> const& jetTracks,
                                        soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const&,
@@ -666,8 +737,8 @@ struct TrackEfficiency {
     float centrality = -1;
     bool hasSel8Coll = false;
     bool centralityCheck = false;
-    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                        // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
-      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have their first associated collision not reconstructed
+    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                                      // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
+      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) { // Skipping MC events that have their first associated collision not reconstructed
         hasSel8Coll = true;
       }
       centrality = checkCentFT0M ? collisions.begin().centFT0M() : collisions.begin().centFT0C();
@@ -676,7 +747,7 @@ struct TrackEfficiency {
       }
     } else if (acceptSplitCollisions == SplitOkCheckAnyAssocColl) { // check that at least one of the reconstructed collisions passes the checks
       for (auto const& collision : collisions) {
-        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
           hasSel8Coll = true;
         }
         centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
@@ -742,7 +813,7 @@ struct TrackEfficiency {
         return;
       }
 
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections) || !(std::abs(collision.posZ()) < vertexZCut)) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection) || !(std::abs(collision.posZ()) < vertexZCut)) {
         continue;
       }
 
@@ -822,13 +893,13 @@ struct TrackEfficiency {
       }
     }
   }
-  PROCESS_SWITCH(TrackEfficiency, processEFficiencyPurityWeighted, "Histograms for efficiency and purity quantities for weighted simulations", false);
+  PROCESS_SWITCH(TrackEfficiency, processEfficiencyPurityWeighted, "Histograms for efficiency and purity quantities for weighted simulations", false);
 
   void processTracksFromData(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                              soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>> const& jetTracks,
                              soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const&)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) {
       return;
     }
     float centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
@@ -839,7 +910,7 @@ struct TrackEfficiency {
       return;
     }
 
-    fillTrackHistograms(collision, jetTracks);
+    fillTrackHistograms<TrackSample::Data>(collision, jetTracks);
   }
   PROCESS_SWITCH(TrackEfficiency, processTracksFromData, "QA for charged tracks in data", false);
 
@@ -851,7 +922,7 @@ struct TrackEfficiency {
     if (!collision.has_mcCollision()) { // the collision is fake and has no associated mc coll; skip as .mccollision() cannot be called
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) {
       return;
     }
     float centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
@@ -867,11 +938,11 @@ struct TrackEfficiency {
       return;
     }
 
-    fillTrackHistograms(collision, jetTracks);
+    fillTrackHistograms<TrackSample::MCDetLevel>(collision, jetTracks);
   }
   PROCESS_SWITCH(TrackEfficiency, processTracksFromMc, "QA for charged tracks in MC without weights", false);
 
-  void processTracksFromMcWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
+  void processTracksFromMcWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionOutliers>>::iterator const& collision,
                                    aod::JetMcCollisions const&,
                                    soa::Filtered<soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>> const& jetTracks,
                                    soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const&)
@@ -879,10 +950,14 @@ struct TrackEfficiency {
     if (!collision.has_mcCollision()) { // the collision is fake and has no associated mc coll; skip as .mccollision() cannot be called
       return;
     }
-    float eventWeight = collision.mcCollision().weight();
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) {
       return;
     }
+
+    if (collision.isOutlier()) {
+      return;
+    }
+
     float centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
     if (cutCentrality && (centrality < centralityMin || centralityMax < centrality)) {
       return;
@@ -891,12 +966,13 @@ struct TrackEfficiency {
       return;
     }
 
+    float eventWeight = collision.mcCollision().weight();
     float pTHat = collision.mcCollision().ptHard() < pTHatSettingSentinelValue ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
 
-    fillTrackHistograms(collision, jetTracks, eventWeight);
+    fillTrackHistograms<TrackSample::MCDetLevel>(collision, jetTracks, eventWeight);
   }
   PROCESS_SWITCH(TrackEfficiency, processTracksFromMcWeighted, "QA for charged tracks in weighted MC", false);
 
@@ -924,8 +1000,8 @@ struct TrackEfficiency {
     float centrality = -1;
     bool hasSel8Coll = false;
     bool centralityCheck = false;
-    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                        // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
-      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have their first associated collision not reconstructed
+    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                                      // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
+      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) { // Skipping MC events that have their first associated collision not reconstructed
         hasSel8Coll = true;
       }
       centrality = checkCentFT0M ? collisions.begin().centFT0M() : collisions.begin().centFT0C();
@@ -934,7 +1010,7 @@ struct TrackEfficiency {
       }
     } else if (acceptSplitCollisions == SplitOkCheckAnyAssocColl) { // check that at least one of the reconstructed collisions passes the checks
       for (auto const& collision : collisions) {
-        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
           hasSel8Coll = true;
         }
         centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
@@ -987,8 +1063,8 @@ struct TrackEfficiency {
     float centrality = -1;
     bool hasSel8Coll = false;
     bool centralityCheck = false;
-    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                        // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
-      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have their first associated collision not reconstructed
+    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                                      // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
+      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) { // Skipping MC events that have their first associated collision not reconstructed
         hasSel8Coll = true;
       }
       centrality = checkCentFT0M ? collisions.begin().centFT0M() : collisions.begin().centFT0C();
@@ -997,7 +1073,7 @@ struct TrackEfficiency {
       }
     } else if (acceptSplitCollisions == SplitOkCheckAnyAssocColl) { // check that at least one of the reconstructed collisions passes the checks
       for (auto const& collision : collisions) {
-        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
           hasSel8Coll = true;
         }
         centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
@@ -1028,7 +1104,7 @@ struct TrackEfficiency {
 
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h2_centrality_collisions"), centrality, 0.5);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
@@ -1057,7 +1133,7 @@ struct TrackEfficiency {
     }
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h2_centrality_collisions"), centrality, 0.5);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
@@ -1094,7 +1170,7 @@ struct TrackEfficiency {
     float eventWeight = collision.mcCollision().weight();
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
@@ -1131,9 +1207,9 @@ struct TrackEfficiency {
     float centrality = -1;
     bool hasSel8Coll = false;
     bool centralityCheck = false;
-    if (collisions.size() > 1) {                                                                                                     // remove and move the if block below under if (collisions.size() < 1) { when mccoll.centFt0C has been fixed
-      if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                        // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
-        if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have their first associated collision not reconstructed
+    if (collisions.size() > 1) {                                                                                                                   // remove and move the if block below under if (collisions.size() < 1) { when mccoll.centFt0C has been fixed
+      if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                                      // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
+        if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) { // Skipping MC events that have their first associated collision not reconstructed
           hasSel8Coll = true;
         }
         centrality = checkCentFT0M ? collisions.begin().centFT0M() : collisions.begin().centFT0C();
@@ -1142,7 +1218,7 @@ struct TrackEfficiency {
         }
       } else if (acceptSplitCollisions == SplitOkCheckAnyAssocColl) { // check that at least one of the reconstructed collisions passes the checks
         for (auto const& collision : collisions) {
-          if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+          if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
             hasSel8Coll = true;
           }
           centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
@@ -1204,9 +1280,9 @@ struct TrackEfficiency {
     float centrality = -1;
     bool hasSel8Coll = false;
     bool centralityCheck = false;
-    if (collisions.size() > 1) {                                                                                                     // remove and move the if block below under if (collisions.size() < 1) { when mccoll.centFt0C has been fixed
-      if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                        // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
-        if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have their first associated collision not reconstructed
+    if (collisions.size() > 1) {                                                                                                                   // remove and move the if block below under if (collisions.size() < 1) { when mccoll.centFt0C has been fixed
+      if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                                      // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
+        if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) { // Skipping MC events that have their first associated collision not reconstructed
           hasSel8Coll = true;
         }
         centrality = checkCentFT0M ? collisions.begin().centFT0M() : collisions.begin().centFT0C();
@@ -1215,7 +1291,7 @@ struct TrackEfficiency {
         }
       } else if (acceptSplitCollisions == SplitOkCheckAnyAssocColl) { // check that at least one of the reconstructed collisions passes the checks
         for (auto const& collision : collisions) {
-          if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+          if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
             hasSel8Coll = true;
           }
           centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
@@ -1267,7 +1343,7 @@ struct TrackEfficiency {
 
   void processTrackSelectionHistograms(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::JTrackPIs> const& jetTracks, soa::Join<aod::Tracks, aod::TracksExtra, o2::aod::TracksDCA> const&)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) {
       return;
     }
     float centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
@@ -1321,7 +1397,7 @@ struct TrackEfficiency {
     registry.fill(HIST("h2_occupancy_ntracksall_presel"), occupancy, nTracksAll);
     registry.fill(HIST("h2_occupancy_ntrackssel_presel"), occupancy, nTracksAllAcceptanceAndSelected);
     registry.fill(HIST("h2_occupancy_ntracksselptetacuts_presel"), occupancy, nTracksInAcceptanceAndSelected);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) {
       return;
     }
     registry.fill(HIST("h2_occupancy_ntracksall_postsel"), occupancy, nTracksAll);
@@ -1332,7 +1408,7 @@ struct TrackEfficiency {
 
   void processItsTpcMatchingData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::JTrackPIs> const& jetTracks, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension> const&)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) {
       return;
     }
     float centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
@@ -1395,7 +1471,7 @@ struct TrackEfficiency {
   void processItsTpcMatchingMC(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::JTrackPIs> const& jetTracks, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels, aod::TrackSelectionExtension> const&, aod::McParticles const&)
   {
     // could be added in future: pions+kaons vs protons distinction; easy in MC but what is the procedure for data?
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) {
       return;
     }
     float centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
@@ -1497,6 +1573,244 @@ struct TrackEfficiency {
     }
   }
   PROCESS_SWITCH(TrackEfficiency, processItsTpcMatchingMC, "fills histograms for ITS-TPC matching analysis - MC study, true primary and true secondary separated", false);
+
+  void processQcCheck(aod::JetMcCollisions::iterator const& mcCollision,
+                      soa::SmallGroups<aod::JetCollisionsMCD> const& collisions, // smallgroups gives only the collisions associated to the current mccollision, thanks to the mccollisionlabel pre-integrated in jetcollisionsmcd
+                      soa::Filtered<soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>> const& jetTracks,
+                      soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const&,
+                      JetParticlesWithOriginal const& jMcParticles)
+  {
+    registry.fill(HIST("hMcCollCutsCounts"), 0.5); // all mcCollisions
+
+    if (!(std::abs(mcCollision.posZ()) < vertexZCut)) {
+      return;
+    }
+    registry.fill(HIST("hMcCollCutsCounts"), 1.5); // mcCollision.posZ() condition
+
+    if (collisions.size() < 1) {
+      return;
+    }
+    registry.fill(HIST("hMcCollCutsCounts"), 2.5); // mcCollisions with at least one reconstructed collision
+
+    if (acceptSplitCollisions == NonSplitOnly && collisions.size() > 1) {
+      return;
+    }
+    registry.fill(HIST("hMcCollCutsCounts"), 3.5); // split mcCollisions condition
+
+    float centrality = -1;
+    bool hasSel8Coll = false;
+    bool centralityCheck = false;
+    bool occupancyCheck = false;
+    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                                      // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
+      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) { // Skipping MC events that have their first associated collision not reconstructed
+        hasSel8Coll = true;
+      }
+      if (!checkOccupancy || ((trackOccupancyInTimeRangeMin < collisions.begin().trackOccupancyInTimeRange()) && (collisions.begin().trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax))) { // check occupancy only in GP Pb-Pb MC
+        occupancyCheck = true;
+      }
+      centrality = checkCentFT0M ? collisions.begin().centFT0M() : collisions.begin().centFT0C();
+      if (!cutCentrality || ((centralityMin < centrality) && (centrality < centralityMax))) { // mcCollision.centFT0C() isn't filled at the moment; can use it instead when it is added to O2Physics
+        centralityCheck = true;
+      }
+    } else if (acceptSplitCollisions == SplitOkCheckAnyAssocColl) { // check that at least one of the reconstructed collisions passes the checks
+      for (auto const& collision : collisions) {
+        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+          hasSel8Coll = true;
+        }
+        if (!checkOccupancy || ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax))) { // check occupancy only in GP Pb-Pb MC
+          occupancyCheck = true;
+        }
+        centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
+        if (!cutCentrality || ((centralityMin < centrality) && (centrality < centralityMax))) { // effect unclear if mcColl is split
+          centralityCheck = true;
+        }
+      }
+    }
+    if (!hasSel8Coll) {
+      return;
+    }
+    registry.fill(HIST("hMcCollCutsCounts"), 4.5); // at least one of the reconstructed collisions associated with this mcCollision is selected
+
+    // float centrality = checkCentFT0M ? mcCollision.centFT0M() : mcCollision.centFT0C(); mcCollision.centFT0C() isn't filled at the moment; can be added back when it is
+    // if (cutCentrality && (centrality < centralityMin || centralityMax < centrality)) {
+    //   return;
+    // }
+    if (!centralityCheck) {
+      return;
+    }
+    registry.fill(HIST("hMcCollCutsCounts"), 5.5); // at least one of the reconstructed collisions associated with this mcCollision is selected with regard to centrality
+
+    float pTHat = mcCollision.ptHard() < pTHatSettingSentinelValue ? mcCollision.ptHard() : simPtRef / (std::pow(mcCollision.weight(), 1.0 / pTHatExponent));
+    if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
+      return;
+    }
+    registry.fill(HIST("hMcCollCutsCounts"), 6.5); // ptHat condition
+
+    if (checkOccupancy) {
+      if (!occupancyCheck) {
+        return;
+      }
+      registry.fill(HIST("hMcCollCutsCounts"), 7.5);
+    }
+
+    for (auto const& jMcParticle : jMcParticles) {
+      registry.fill(HIST("hMcPartCutsCounts"), 0.5); // allPartsInSelMcColl
+
+      if (!isChargedParticle(jMcParticle.pdgCode())) {
+        continue;
+      }
+      registry.fill(HIST("hMcPartCutsCounts"), 1.5); // isCharged
+
+      registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_mcpart_nonprimary"), jMcParticle.pt(), jMcParticle.eta(), jMcParticle.phi());
+
+      if (checkPrimaryPart && !jMcParticle.isPhysicalPrimary()) { // global tracks should be mostly primaries
+        continue;
+      }
+      registry.fill(HIST("hMcPartCutsCounts"), 2.5); // isPrimary
+
+      registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_mcpartofinterest"), jMcParticle.pt(), jMcParticle.eta(), jMcParticle.phi());
+
+      registry.fill(HIST("h3_particle_pt_high_particle_eta_particle_phi_mcpartofinterest"), jMcParticle.pt(), jMcParticle.eta(), jMcParticle.phi());
+
+      if ((std::abs(jMcParticle.eta()) < trackEtaAcceptanceCountQA)) { // removed from actual cuts for now because all the histograms have an eta axis
+        registry.fill(HIST("hMcPartCutsCounts"), 3.5);                 // etaAccept // not actually applied here but it will give an idea of what will be done in the post processing
+      }
+    }
+
+    std::vector<int> seenMcParticlesVector; // is reset every mc collision
+
+    int splitCollCounter = 0;
+    for (auto const& collision : collisions) {
+      splitCollCounter++;
+      if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly && splitCollCounter > 1) {
+        return;
+      }
+
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, rctSelection) || !(std::abs(collision.posZ()) < vertexZCut)) {
+        continue;
+      }
+
+      auto collTracks = jetTracks.sliceBy(tracksPerJCollision, collision.globalIndex());
+      int nTrackNonassociatedTrack = 0;
+      int nTrackAssociatedTrackNonprimary = 0;
+      int nTrackAssociatedTrackPrimary = 0;
+      int nTrackAssociatedTrackSplitNonprimary = 0;
+      int nTrackAssociatedTrackSplitPrimary = 0;
+      for (auto const& track : collTracks) {
+        registry.fill(HIST("hTrackCutsCounts"), 0.5);
+
+        if (!isAcceptedTrack(track)) {
+          continue;
+        }
+        registry.fill(HIST("hTrackCutsCounts"), 1.5);
+
+        if (!track.has_mcParticle()) {
+          nTrackNonassociatedTrack += 1;
+
+          registry.fill(HIST("h3_track_pt_track_eta_track_phi_nonassociatedtrack"), track.pt(), track.eta(), track.phi());
+
+          registry.fill(HIST("h3_track_pt_high_track_eta_track_phi_nonassociatedtrack"), track.pt(), track.eta(), track.phi());
+          continue;
+        }
+        registry.fill(HIST("hTrackCutsCounts"), 2.5);
+
+        auto jMcParticleFromTrack = track.mcParticle_as<JetParticlesWithOriginal>();
+        if (!jMcParticleFromTrack.isPhysicalPrimary()) {
+          nTrackAssociatedTrackNonprimary += 1;
+
+          registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_nonprimary"), track.pt(), track.eta(), track.phi());
+          registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_nonprimary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
+
+          registry.fill(HIST("h3_track_pt_high_track_eta_track_phi_associatedtrack_nonprimary"), track.pt(), track.eta(), track.phi());
+          registry.fill(HIST("h3_particle_pt_high_particle_eta_particle_phi_associatedtrack_nonprimary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
+
+          if (std::find(seenMcParticlesVector.begin(), seenMcParticlesVector.end(), jMcParticleFromTrack.globalIndex()) != seenMcParticlesVector.end()) {
+            nTrackAssociatedTrackSplitNonprimary += 1;
+
+            registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_split_nonprimary"), track.pt(), track.eta(), track.phi());
+            registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split_nonprimary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
+
+            registry.fill(HIST("h3_track_pt_high_track_eta_track_phi_associatedtrack_split_nonprimary"), track.pt(), track.eta(), track.phi());
+            registry.fill(HIST("h3_particle_pt_high_particle_eta_particle_phi_associatedtrack_split_nonprimary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
+          } else {
+            seenMcParticlesVector.push_back(jMcParticleFromTrack.globalIndex());
+          }
+
+          continue;
+        }
+
+        registry.fill(HIST("hTrackCutsCounts"), 3.5);
+
+        nTrackAssociatedTrackPrimary += 1;
+        registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_primary"), track.pt(), track.eta(), track.phi());
+        registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_primary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
+        registry.fill(HIST("h2_particle_pt_track_pt_residual_associatedtrack_primary"), jMcParticleFromTrack.pt(), (jMcParticleFromTrack.pt() - track.pt()) / jMcParticleFromTrack.pt());
+
+        registry.fill(HIST("h3_track_pt_high_track_eta_track_phi_associatedtrack_primary"), track.pt(), track.eta(), track.phi());
+        registry.fill(HIST("h3_particle_pt_high_particle_eta_particle_phi_associatedtrack_primary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
+        registry.fill(HIST("h2_particle_pt_high_track_pt_high_residual_associatedtrack_primary"), jMcParticleFromTrack.pt(), (jMcParticleFromTrack.pt() - track.pt()) / jMcParticleFromTrack.pt());
+
+        if (std::find(seenMcParticlesVector.begin(), seenMcParticlesVector.end(), jMcParticleFromTrack.globalIndex()) != seenMcParticlesVector.end()) {
+          nTrackAssociatedTrackSplitPrimary += 1;
+          registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_split_primary"), track.pt(), track.eta(), track.phi());
+          registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split_primary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
+
+          registry.fill(HIST("h3_track_pt_high_track_eta_track_phi_associatedtrack_split_primary"), track.pt(), track.eta(), track.phi());
+          registry.fill(HIST("h3_particle_pt_high_particle_eta_particle_phi_associatedtrack_split_primary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
+        } else {
+          seenMcParticlesVector.push_back(jMcParticleFromTrack.globalIndex());
+        }
+
+        if (std::abs(jMcParticleFromTrack.eta()) < trackEtaAcceptanceCountQA) { // not actually applied here but it will give an idea of what will be done in the post processing
+          registry.fill(HIST("hTrackCutsCounts"), 4.5);
+        }
+      }
+      registry.fill(HIST("h_ntrack_nonassociatedtrack"), nTrackNonassociatedTrack);
+      registry.fill(HIST("h_ntrack_associatedtrack_nonprimary"), nTrackAssociatedTrackNonprimary);
+      registry.fill(HIST("h_ntrack_associatedtrack_split_nonprimary"), nTrackAssociatedTrackSplitNonprimary);
+      registry.fill(HIST("h_ntrack_associatedtrack_primary"), nTrackAssociatedTrackPrimary);
+      registry.fill(HIST("h_ntrack_associatedtrack_split_primary"), nTrackAssociatedTrackSplitPrimary);
+    }
+  }
+  PROCESS_SWITCH(TrackEfficiency, processQcCheck, "Histograms for QC checks", false);
+
+  // FT0 event activity helpers
+  struct FT0Metrics {
+    float multFT0A = 0.f;
+    float multFT0C = 0.f;
+    float multFT0M = 0.f;
+    float scaledFT0A = 0.f;
+    float scaledFT0C = 0.f;
+    float scaledFT0M = 0.f;
+  };
+
+  float getScaledFT0(const float& multFT0, const float& meanFT0)
+  {
+    return multFT0 / meanFT0;
+  }
+
+  float getScaledFT0M(const float& scaledMultFT0A, const float& scaledMultFT0C)
+  {
+    return 0.5 * (scaledMultFT0A + scaledMultFT0C);
+  }
+
+  FT0Metrics makeFT0Metrics(float multFT0A, float multFT0C, float meanFT0A, float meanFT0C)
+  {
+    FT0Metrics values;
+    values.multFT0A = multFT0A;
+    values.multFT0C = multFT0C;
+    values.multFT0M = multFT0A + multFT0C;
+    values.scaledFT0A = getScaledFT0(values.multFT0A, meanFT0A);
+    values.scaledFT0C = getScaledFT0(values.multFT0C, meanFT0C);
+    values.scaledFT0M = getScaledFT0M(values.scaledFT0A, values.scaledFT0C);
+    return values;
+  }
+
+  template <typename Collision>
+  FT0Metrics getFT0Metrics(const Collision& collision, float meanFT0A, float meanFT0C)
+  {
+    return makeFT0Metrics(collision.multFT0A(), collision.multFT0C(), meanFT0A, meanFT0C);
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

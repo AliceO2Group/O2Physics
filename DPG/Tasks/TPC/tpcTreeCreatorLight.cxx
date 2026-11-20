@@ -87,7 +87,7 @@ struct TreeWriterTPCTOF {
     const double p = track.tpcInnerParam();
     const int multTPC = collision.multTPC();
 
-    const double pseudoRndm = track.pt() * 1000. - (int64_t)(track.pt() * 1000);
+    const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
       rowTPCTOFTree(track.tpcSignal(),
                     p,

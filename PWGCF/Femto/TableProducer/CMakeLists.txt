@@ -14,6 +14,11 @@ o2physics_add_dpl_workflow(femto-producer
           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femto-producer-collision-tagger
+          SOURCES ./femtoProducerCollisionTagger.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femto-producer-derived-to-derived
           SOURCES ./femtoProducerDerivedToDerived.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
@@ -36,5 +41,15 @@ o2physics_add_dpl_workflow(femto-producer-mask-converter-001-to-002
 
 o2physics_add_dpl_workflow(femto-producer-resonances
           SOURCES ./femtoProducerResonances.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-producer-two-photon-resonances
+          SOURCES ./femtoProducerTwoPhotonResonances.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-producer-track-track-two-photon-resonances
+          SOURCES ./femtoProducerTrackTrackTwoPhotonResonances.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)

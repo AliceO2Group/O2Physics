@@ -77,7 +77,7 @@ struct femtoDreamTripletTaskTrackTrackCascade {
   Configurable<bool> ConfUse3D{"ConfUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
   Configurable<bool> ConfDCACutPtDep{"ConfDCACutPtDep", false, "Use pt dependent dca cut for tracks"};
   /// Partition for selected particles
-  Partition<aod::FDParticles> SelectedParts = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+  Partition<aod::FDParticles> SelectedParts = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                               ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfPIDthrMom, ncheckbit(aod::femtodreamparticle::pidcut, ConfTPCPIDBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTPCTOFPIDBit)) &&
                                               (ncheckbit(aod::femtodreamparticle::cut, ConfCutPart)) &&
                                               (aod::femtodreamparticle::pt < ConfMaxpT) &&
@@ -104,7 +104,7 @@ struct femtoDreamTripletTaskTrackTrackCascade {
   Configurable<float> Conf_minPt_Cascade{"Conf_minPt_Cascade", 0., "Minimum pT of Cascade"};
   Configurable<float> Conf_maxPt_Cascade{"Conf_maxPt_Cascade", 999., "Maximum pT of Cascade"};
   // Partition for selected particles
-  Partition<aod::FDParticles> SelectedCascades = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kCascade)) &&
+  Partition<aod::FDParticles> SelectedCascades = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kCascade)) &&
                                                  (ncheckbit(aod::femtodreamparticle::cut, ConfCutCascade)) &&
                                                  (aod::femtodreamparticle::mLambda > Conf_minInvMass_Cascade) &&
                                                  (aod::femtodreamparticle::mLambda < Conf_maxInvMass_Cascade) &&
@@ -131,7 +131,7 @@ struct femtoDreamTripletTaskTrackTrackCascade {
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis ConfQ3Bins{"ConfQ3Bins", {2000, 0., 8.}, "binning Q3"};
   ConfigurableAxis ConfQ3BinsFor4D{"ConfQ3BinsFor4D", {500, 0., 2.}, "binning Q3 for 4D hist"};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}};
   Configurable<int> ConfNEventsMix{"ConfNEventsMix", 5, "Number of events for mixing"};
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfFillCPRQA{"ConfFillCPRQA", false, "Fill Close Pair Rejection plots as a function of eta and phi"};
@@ -157,7 +157,7 @@ struct femtoDreamTripletTaskTrackTrackCascade {
   void init(InitContext& context)
   {
     eventHisto.init(&qaRegistry, false);
-    colBinning = {{ConfVtxBins, ConfMultBins}, true};
+    colBinning = {{ConfVtxBins, ConfMultBins}};
     trackHistoSelectedParts.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTBins, ConfDummy, ConfDummy, ConfTempFitVarBinsTrack, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfPDGCodePart);
     particleHistoSelectedCascades.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTV0Bins, ConfDummy, ConfDummy, ConfTempFitVarBinsCascade, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfInvMassBins, ConfDummy, ConfIsMC, ConfPDGCodeCascade);
     particleHistoPosChild.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTV0Child, ConfDummy, ConfDummy, ConfTempFitVarBinsCascadeChild, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, 0);
@@ -248,7 +248,7 @@ struct femtoDreamTripletTaskTrackTrackCascade {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupSelectedTracks, PartitionType groupSelectedCascades, PartType parts, float magFieldTesla, int multCol, float centCol)
+  void doSameEvent(const PartitionType& groupSelectedTracks, const PartitionType& groupSelectedCascades, const PartType& parts, float magFieldTesla, int multCol, float centCol)
   {
     /// Histograming tracks
     for (auto& part : groupSelectedTracks) {
@@ -357,7 +357,7 @@ struct femtoDreamTripletTaskTrackTrackCascade {
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartitionType groupPartsThree, PartType parts, float magFieldTesla, int multCol)
+  void doMixedEvent(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, const PartitionType& groupPartsThree, const PartType& parts, float magFieldTesla, int multCol)
   {
     for (auto& [T1, T2, casc] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo, groupPartsThree))) {
       const auto& posChild = parts.iteratorAt(casc.globalIndex() - 3);

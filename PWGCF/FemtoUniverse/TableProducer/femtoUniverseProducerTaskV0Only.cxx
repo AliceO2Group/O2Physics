@@ -476,9 +476,9 @@ struct femtoUniverseProducerTaskV0Only {
                       indexChildID, v0.mLambda(), v0.mAntiLambda());
           if (ConfDebugOutput) {
             outputDebugParts(
-              postrack.sign(), (uint8_t)postrack.tpcNClsFound(),
+              postrack.sign(), static_cast<uint8_t>(postrack.tpcNClsFound()),
               postrack.tpcNClsFindable(),
-              (uint8_t)postrack.tpcNClsCrossedRows(),
+              static_cast<uint8_t>(postrack.tpcNClsCrossedRows()),
               postrack.tpcNClsShared(), postrack.tpcFractionSharedCls(), postrack.tpcInnerParam(),
               postrack.itsNCls(), postrack.itsNClsInnerBarrel(),
               postrack.dcaXY(), postrack.dcaZ(), postrack.tpcSignal(),
@@ -490,9 +490,9 @@ struct femtoUniverseProducerTaskV0Only {
               -999., -999., -999., -999.,
               -999.); // QA for positive daughter
             outputDebugParts(
-              negtrack.sign(), (uint8_t)negtrack.tpcNClsFound(),
+              negtrack.sign(), static_cast<uint8_t>(negtrack.tpcNClsFound()),
               negtrack.tpcNClsFindable(),
-              (uint8_t)negtrack.tpcNClsCrossedRows(),
+              static_cast<uint8_t>(negtrack.tpcNClsCrossedRows()),
               negtrack.tpcNClsShared(), negtrack.tpcFractionSharedCls(), negtrack.tpcInnerParam(),
               negtrack.itsNCls(), negtrack.itsNClsInnerBarrel(),
               negtrack.dcaXY(), negtrack.dcaZ(), negtrack.tpcSignal(),

@@ -241,7 +241,7 @@ struct TwoTracksEventTableProducer {
 
   std::vector<std::pair<int8_t, std::set<uint8_t>>> cutMyRequiredITSHits{};
 
-  void mySetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers)
+  void mySetRequireHitsInITSLayers(int8_t minNRequiredHits, const std::set<uint8_t>& requiredLayers)
   {
     // layer 0 corresponds to the the innermost ITS layer
     cutMyRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers));
@@ -577,7 +577,7 @@ struct TwoTracksEventTableProducer {
           if (verboseInfo)
             printLargeMessage("Truth collision has more than 1 reco collision. Skipping this event.");
           histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(1);
-          problem = true;
+          // problem = true; // FIXME: unused
           continue;
         }
         // grap reco-level collision
