@@ -18,6 +18,8 @@
 /// Pairs are ORDERED, as in dpt-dpt-correlations: every particle takes the role of particle 1 in turn.
 /// Each of ++, +-, -+, -- is filled; an unordered like-sign pair therefore enters twice, an unordered
 /// opposite-sign pair once in +- and once in -+. OS = (+-) + (-+) and LS = (++) + (--) are comparable.
+/// At generator level every pair is also classified by the mother particles of the two kaons:
+/// phi pair (same mother, mother is a phi(1020)), other common mother, or no common mother.
 
 #include "PWGCF/DataModel/DptDptFiltered.h"
 #include "PWGCF/TwoParticleCorrelations/Core/QSpaceKinematics.h"
@@ -41,7 +43,9 @@
 
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <memory>
 #include <string>
 #include <vector>
@@ -58,6 +62,26 @@ enum IdCheckBin {
   kIdCheckGood = 1,
   kIdCheckNotKaonId,
   kIdCheckWrongPdg
+};
+/// Pair origin classes from the MC mother of the two kaons
+enum PairOrigin {
+  kPairPhi = 0,
+  kPairOtherCommonMother,
+  kPairNoCommonMother,
+  NPairOrigins
+};
+const std::array<std::string, NPairOrigins> pairOriginTags{"phi", "otherMother", "noCommonMother"};
+/// PDG codes above this value are hadrons; below are quarks, leptons, gauge bosons and generator-internal codes
+static constexpr int KPdgHadronThreshold = 100; // o2-linter: disable=pdg/explicit-code (not a PDG code)
+/// Generator status codes of beam and event-setup entries (PYTHIA 11-19) and the HepMC beam status (4).
+/// Same criterion as PWGCF/TwoParticleCorrelations/Tasks/particleOriginAnalysis.cxx (V. Gonzalez)
+static constexpr int KBeamStatusCodeMin = 11;
+static constexpr int KBeamStatusCodeMax = 19;
+static constexpr int KHepMCBeamStatusCode = 4;
+/// Mother of a particle: global index (-1 if none) and PDG code (0 if none)
+struct MotherInfo {
+  int64_t index = -1;
+  int pdgCode = 0;
 };
 } // namespace
 
@@ -82,6 +106,10 @@ struct QSpaceBalanceFunction {
   HistoPerCharge fhEta, fhPhi;
   Histo2DPerPair fhQinv, fhQlong, fhQout, fhQside;
   HistoPerPair fhMass, fhSumRuleResidual, fhMassRuleResidual;
+  /// pair histograms split by pair origin (generator level only): [origin][charge1][charge2]
+  std::array<Histo2DPerPair, NPairOrigins> fhQinvOrigin, fhQlongOrigin, fhQoutOrigin, fhQsideOrigin;
+  HistoPerCharge fhPtFromPhi;
+  std::shared_ptr<TH1> fhCommonMotherPdg;
 
   Filter onlyAcceptedCollisions = (aod::dptdptfilter::collisionaccepted == uint8_t(true));
   Filter onlyAcceptedTracks = (aod::dptdptfilter::trackacceptedid >= int8_t(0));
@@ -122,17 +150,65 @@ struct QSpaceBalanceFunction {
         fhMassRuleResidual[charge1][charge2] = registry.add<TH1>(("checks/hMassRuleResidual_" + tag).c_str(), "M^{2}-4m^{2}-Q_{inv}^{2}", kTH1D, {axisResidual});
       }
     }
+    if (doprocessGenLevelNotStored.value) {
+      for (int origin = 0; origin < NPairOrigins; ++origin) {
+        for (int charge1 = 0; charge1 < NCharges; ++charge1) {
+          for (int charge2 = 0; charge2 < NCharges; ++charge2) {
+            const std::string tag = chargeTags[charge1] + chargeTags[charge2] + "_" + pairOriginTags[origin];
+            fhQinvOrigin[origin][charge1][charge2] = registry.add<TH2>(("pairsByOrigin/hQinv_" + tag).c_str(), "ordered pairs", kTH2F, {axisCent, axisQinv});
+            fhQlongOrigin[origin][charge1][charge2] = registry.add<TH2>(("pairsByOrigin/hQlong_" + tag).c_str(), "ordered pairs", kTH2F, {axisCent, axisQlong});
+            fhQoutOrigin[origin][charge1][charge2] = registry.add<TH2>(("pairsByOrigin/hQout_" + tag).c_str(), "ordered pairs", kTH2F, {axisCent, axisQout});
+            fhQsideOrigin[origin][charge1][charge2] = registry.add<TH2>(("pairsByOrigin/hQside_" + tag).c_str(), "ordered pairs", kTH2F, {axisCent, axisQside});
+          }
+        }
+      }
+      for (int charge = 0; charge < NCharges; ++charge) {
+        fhPtFromPhi[charge] = registry.add<TH1>(("singles/hPtFromPhi_" + chargeTags[charge]).c_str(), "kaons whose mother is a #phi(1020)", kTH1D, {axisPt});
+      }
+      fhCommonMotherPdg = registry.add<TH1>("pairsByOrigin/hCommonMotherPdg", "|PDG code| of the common mother, ordered pairs (overflow = |PDG| >= 10000)", kTH1D, {{10000, 0., 10000.}});
+    }
+  }
+
+  /// Decay mother of a generated particle, looked up in the unfiltered particle table of the same MC collision.
+  /// Only hadronic, non-beam mothers count: in the stored MC record, hadrons produced directly in string fragmentation
+  /// point to a beam proton, which would otherwise make unrelated kaons share a "mother".
+  template <typename TParticle, typename TAllParticles>
+  static MotherInfo findMother(TParticle const& particle, TAllParticles const& allParticles)
+  {
+    MotherInfo info;
+    const auto& motherIds = particle.mothersIds();
+    if (motherIds.size() == 0 || motherIds[0] < 0) {
+      return info;
+    }
+    const int64_t localIndex = motherIds[0] - static_cast<int64_t>(allParticles.offset());
+    if (localIndex < 0 || localIndex >= static_cast<int64_t>(allParticles.size())) {
+      return info; // mother outside this MC collision: treat as unknown
+    }
+    const auto mother = allParticles.rawIteratorAt(localIndex);
+    const int genStatus = mother.getGenStatusCode();
+    const bool isBeam = (genStatus >= KBeamStatusCodeMin && genStatus <= KBeamStatusCodeMax) || mother.getHepMCStatusCode() == KHepMCBeamStatusCode;
+    if (isBeam || std::abs(mother.pdgCode()) <= KPdgHadronThreshold) {
+      return info; // beam particle or parton/string entry: not a decay mother, the particle counts as having no mother
+    }
+    info.index = motherIds[0];
+    info.pdgCode = mother.pdgCode();
+    return info;
   }
 
   /// Fills singles and ordered pair histograms for one collision
+  /// mothers is empty when the mother information is not available (detector level); otherwise mothers[i] belongs to
+  /// the i-th particle of the iteration
   template <typename TCollision, typename TParticles>
-  void fillCollision(TCollision const& collision, TParticles const& particles)
+  void fillCollision(TCollision const& collision, TParticles const& particles, std::vector<MotherInfo> const& mothers)
   {
     const float centMult = collision.centmult();
     const double massKaon = constants::physics::MassKaonCharged;
+    const bool withOrigin = !mothers.empty();
     fhEvents->Fill(centMult, collision.posZ());
 
+    std::size_t position1 = 0;
     for (auto const& particle1 : particles) {
+      const std::size_t index1 = position1++;
       const int charge1 = particle1.trackacceptedid();
       if (charge1 >= NCharges) {
         fhIdCheck->Fill(kIdCheckNotKaonId);
@@ -142,8 +218,13 @@ struct QSpaceBalanceFunction {
       fhPtVsCent[charge1]->Fill(centMult, particle1.pt());
       fhEta[charge1]->Fill(particle1.eta());
       fhPhi[charge1]->Fill(particle1.phi());
+      if (withOrigin && mothers[index1].pdgCode == o2::constants::physics::Pdg::kPhi) {
+        fhPtFromPhi[charge1]->Fill(particle1.pt());
+      }
 
+      std::size_t position2 = 0;
       for (auto const& particle2 : particles) {
+        const std::size_t index2 = position2++;
         const int charge2 = particle2.trackacceptedid();
         if (charge2 >= NCharges || particle1.globalIndex() == particle2.globalIndex()) {
           continue;
@@ -158,14 +239,33 @@ struct QSpaceBalanceFunction {
         const double qInvSquared = pair.qInv * pair.qInv;
         fhSumRuleResidual[charge1][charge2]->Fill(pair.qLong * pair.qLong + pair.qOut * pair.qOut + pair.qSide * pair.qSide - qInvSquared);
         fhMassRuleResidual[charge1][charge2]->Fill(pair.mass * pair.mass - 4. * massKaon * massKaon - qInvSquared);
+        if (withOrigin) {
+          const MotherInfo& mother1 = mothers[index1];
+          const bool commonMother = (mother1.index >= 0) && (mother1.index == mothers[index2].index);
+          int origin = kPairNoCommonMother;
+          if (commonMother) {
+            origin = (mother1.pdgCode == o2::constants::physics::Pdg::kPhi) ? kPairPhi : kPairOtherCommonMother;
+            fhCommonMotherPdg->Fill(std::abs(mother1.pdgCode));
+          }
+          fhQinvOrigin[origin][charge1][charge2]->Fill(centMult, pair.qInv);
+          fhQlongOrigin[origin][charge1][charge2]->Fill(centMult, pair.qLong);
+          fhQoutOrigin[origin][charge1][charge2]->Fill(centMult, pair.qOut);
+          fhQsideOrigin[origin][charge1][charge2]->Fill(centMult, pair.qSide);
+        }
       }
     }
   }
 
   void processGenLevelNotStored(soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>::iterator const& collision,
-                                soa::Filtered<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>> const& particles)
+                                soa::Filtered<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>> const& particles,
+                                soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo> const& allParticles)
   {
-    fillCollision(collision, particles);
+    std::vector<MotherInfo> mothers;
+    mothers.reserve(particles.size());
+    for (auto const& particle : particles) {
+      mothers.push_back(findMother(particle, allParticles));
+    }
+    fillCollision(collision, particles, mothers);
   }
   PROCESS_SWITCH(QSpaceBalanceFunction, processGenLevelNotStored, "Generator level, filter tables made in the same workflow", true);
 };
