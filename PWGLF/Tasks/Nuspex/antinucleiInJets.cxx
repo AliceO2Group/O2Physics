@@ -532,6 +532,9 @@ struct AntinucleiInJets {
       registryMC.add("antideuteron_coal_ue_noweights", "antideuteron_coal_ue_noweights", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_coal_jet_noweights", "antiproton_coal_jet_noweights", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_coal_ue_noweights", "antiproton_coal_ue_noweights", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+
+      registryMC.add("jetEffAreaOverPiR2_MC", "jet effective area / piR^2", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});
+      registryMC.add("jetArea_MC", "jet area", HistType::kTH1F, {{5000, 0, 5, "area"}});
     }
 
     // jet pt resolution
@@ -3141,6 +3144,10 @@ struct AntinucleiInJets {
         if (applyAreaCut && (jet.area() < cfgAreaFrac * PI * rJet * rJet))
           continue;
         isAtLeastOneJetSelected = true;
+
+        // Fill histograms with jet effective area / piR^2 for normalization
+        registryMC.fill(HIST("jetEffAreaOverPiR2_MC"), jet.area() / (PI * rJet * rJet));
+        registryMC.fill(HIST("jetArea_MC"), jet.area());
 
         // Analyze jet constituents
         std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
