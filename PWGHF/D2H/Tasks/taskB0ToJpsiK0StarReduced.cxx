@@ -668,7 +668,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
 
     if (sampleReflections && statusB0KPi >= selectionFlagB0 && statusB0PiK >= selectionFlagB0) {
       float const pseudoRndmB = ptCandB0 * 1000. - static_cast<int64_t>(ptCandB0 * 1000);
-      if (pseudoRndm < 0.5) {
+      if (pseudoRndmB < 0.5) {
         statusB0KPi = -1;
       } else {
         statusB0PiK = -1;
