@@ -22,6 +22,16 @@
 /// other common mother, or no common mother. At detector level (processRecLevelMcNotStored) the mothers come from the
 /// MC particles matched to the tracks, the true species gives the pair purity, and the true momenta give the
 /// resolution Q_rec - Q_true. Detector-level histograms are stored under rec/, generator-level ones at the top level.
+///
+/// Balance-function inputs (folder bf/, rec/bf/): events are sorted into classes of (z_vtx, multiplicity percentile)
+/// with the binning policy of the event mixing, class = iz + nz * imult. Per class the task stores
+///  - same-event ordered pairs i != j (both orders, as above) vs Q: summed over events, their integral is
+///    sum N_a (N_b - delta_ab), i.e. factorial moments for like-sign pairs;
+///  - mixed-event ordered pairs: each unordered pair of events (e1, e2) of one class is filled in BOTH orders,
+///    (a from e1, b from e2) and (a from e2, b from e1), so the reference per event is mixed / (2 x number of event pairs),
+///    whose integral is <N_a><N_b>, the uncorrelated product rho1 x rho1;
+///  - events, event pairs, kaons per charge and sum N_a (N_b - delta_ab), for the normalisation and the integral checks.
+/// Then rho2 = same / N_events, rho1rho1 = mixed / (2 N_eventPairs), C2 = rho2 - rho1rho1, A2^ab = C2^ab / <N_b>, done offline.
 
 #include "PWGCF/DataModel/DptDptFiltered.h"
 #include "PWGCF/TwoParticleCorrelations/Core/QSpaceKinematics.h"
@@ -32,7 +42,9 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -50,6 +62,7 @@
 #include <cstdlib>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <vector>
 
 using namespace o2;
@@ -103,6 +116,20 @@ struct TruthInfo {
   float phi = 0.f;
   MotherInfo mother;
 };
+/// Combination index of the per-class factorial moments sum N_a (N_b - delta_ab): PP, PM, MP, MM
+constexpr int NChargeCombinations = NCharges * NCharges;
+/// Balance-function inputs of one level, per event class (z_vtx, multiplicity)
+struct BfHistos {
+  using Histo2DPerCharge = std::array<std::shared_ptr<TH2>, NCharges>;
+  using Histo2DPerPair = std::array<Histo2DPerCharge, NCharges>;
+  std::shared_ptr<TH1> fhEventsPerClass;          ///< accepted events per class
+  std::shared_ptr<TH1> fhEventsOutsideClasses;    ///< events outside the class binning (not used in bf/)
+  std::shared_ptr<TH1> fhMixedEventPairsPerClass; ///< unordered pairs of events mixed, per class
+  std::shared_ptr<TH2> fhKaonsPerClass;           ///< sum over events of N_a, per class and charge
+  std::shared_ptr<TH2> fhFactorialPerClass;       ///< sum over events of N_a (N_b - delta_ab), per class and charge combination
+  Histo2DPerPair fhSameQinv, fhSameQlong, fhSameQout, fhSameQside;
+  Histo2DPerPair fhMixedQinv, fhMixedQlong, fhMixedQout, fhMixedQside;
+};
 /// All histograms of one level (generator or detector)
 struct PairHistos {
   using HistoPerCharge = std::array<std::shared_ptr<TH1>, NCharges>;
@@ -123,6 +150,7 @@ struct PairHistos {
   /// detector level only: pair truth status and resolution (Q_true, Q_rec - Q_true) for pairs of two true kaons
   HistoPerPair fhPairTruth;
   Histo2DPerPair fhResQinv, fhResQlong, fhResQout, fhResQside;
+  BfHistos bf;
 };
 } // namespace
 
@@ -136,6 +164,22 @@ struct QSpaceBalanceFunction {
   ConfigurableAxis cfgBinsQinvTrue{"cfgBinsQinvTrue", {50, 0., 1.}, "true Q_inv binning of the resolution maps (GeV/c)"};
   ConfigurableAxis cfgBinsQComponentTrue{"cfgBinsQComponentTrue", {50, -1., 1.}, "true Q component binning of the resolution maps (GeV/c)"};
   ConfigurableAxis cfgBinsQResolution{"cfgBinsQResolution", {200, -0.05, 0.05}, "Q_rec - Q_true binning (GeV/c)"};
+  ConfigurableAxis cfgMixBinsZ{"cfgMixBinsZ", {VARIABLE_WIDTH, -7., -5., -3., -1., 1., 3., 5., 7.}, "z_vtx edges of the event classes (cm), same and mixed events"};
+  ConfigurableAxis cfgMixBinsMult{"cfgMixBinsMult", {VARIABLE_WIDTH, 0., 1., 2., 5., 10., 15., 20., 30., 40., 50., 60., 70., 80., 90., 100.1}, "multiplicity percentile edges of the event classes, same and mixed events (the filter accepts 0-100%)"};
+  Configurable<int> cfgMixDepth{"cfgMixDepth", 10, "each event is mixed with the next cfgMixDepth events of its class"};
+
+  using BinningZMultGen = ColumnBinningPolicy<aod::mccollision::PosZ, aod::dptdptfilter::DptDptCFCollisionCentMult>;
+  using BinningZMultRec = ColumnBinningPolicy<aod::collision::PosZ, aod::dptdptfilter::DptDptCFCollisionCentMult>;
+  /// Plain members (not std::optional: the framework counts task members by brace initialisation, which std::optional breaks).
+  /// Built here with the configurable defaults and rebuilt in init from the configured values; under/overflow give class -1.
+  BinningZMultGen binningGen{{std::vector<double>{VARIABLE_WIDTH, -7., 7.}, std::vector<double>{VARIABLE_WIDTH, 0., 100.1}}, true};
+  BinningZMultRec binningRec{{std::vector<double>{VARIABLE_WIDTH, -7., 7.}, std::vector<double>{VARIABLE_WIDTH, 0., 100.1}}, true};
+  SliceCache cache;
+
+  using GenCollisions = soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>;
+  using GenParticles = soa::Filtered<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>>;
+  using RecCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>;
+  using RecTracks = soa::Filtered<soa::Join<aod::Tracks, aod::DptDptCFTracksInfo>>;
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -206,17 +250,109 @@ struct QSpaceBalanceFunction {
       }
     }
     histos.fhCommonMotherPdg = registry.add<TH1>((prefix + "pairsByOrigin/hCommonMotherPdg").c_str(), "|PDG code| of the common mother, ordered pairs (overflow = |PDG| >= 10000)", kTH1D, {{10000, 0., 10000.}});
+    bookBfHistos(histos.bf, prefix + "bf/", axisQinv, axisQlong, axisQout, axisQside);
     histos.booked = true;
+  }
+
+  /// Books the balance-function inputs of one level; the class axis follows the mixing binning
+  void bookBfHistos(BfHistos& bf, const std::string& prefix, const AxisSpec& axisQinv, const AxisSpec& axisQlong, const AxisSpec& axisQout, const AxisSpec& axisQside)
+  {
+    const int nClasses = binningGen.getAllBinsCount();
+    const AxisSpec axisClass{nClasses, -0.5, nClasses - 0.5, "event class (iz + n_{z} imult)"};
+    bf.fhEventsPerClass = registry.add<TH1>((prefix + "hEventsPerClass").c_str(), "accepted events", kTH1D, {axisClass});
+    bf.fhEventsOutsideClasses = registry.add<TH1>((prefix + "hEventsOutsideClasses").c_str(), "events outside the class binning", kTH1D, {{1, 0.5, 1.5}});
+    bf.fhMixedEventPairsPerClass = registry.add<TH1>((prefix + "hMixedEventPairsPerClass").c_str(), "unordered event pairs mixed (each filled in both orders)", kTH1D, {axisClass});
+    bf.fhKaonsPerClass = registry.add<TH2>((prefix + "hKaonsPerClass").c_str(), "#sum N_{a}", kTH2D, {axisClass, {NCharges, -0.5, NCharges - 0.5, "charge (0 = K^{+}, 1 = K^{-})"}});
+    bf.fhFactorialPerClass = registry.add<TH2>((prefix + "hFactorialPerClass").c_str(), "#sum N_{a}(N_{b}-#delta_{ab})", kTH2D, {axisClass, {NChargeCombinations, -0.5, NChargeCombinations - 0.5, "ab (0 = PP, 1 = PM, 2 = MP, 3 = MM)"}});
+    for (int charge1 = 0; charge1 < NCharges; ++charge1) {
+      for (int charge2 = 0; charge2 < NCharges; ++charge2) {
+        const std::string tag = chargeTags[charge1] + chargeTags[charge2];
+        bf.fhSameQinv[charge1][charge2] = registry.add<TH2>((prefix + "same/hQinv_" + tag).c_str(), "same-event ordered pairs", kTH2F, {axisClass, axisQinv});
+        bf.fhSameQlong[charge1][charge2] = registry.add<TH2>((prefix + "same/hQlong_" + tag).c_str(), "same-event ordered pairs", kTH2F, {axisClass, axisQlong});
+        bf.fhSameQout[charge1][charge2] = registry.add<TH2>((prefix + "same/hQout_" + tag).c_str(), "same-event ordered pairs", kTH2F, {axisClass, axisQout});
+        bf.fhSameQside[charge1][charge2] = registry.add<TH2>((prefix + "same/hQside_" + tag).c_str(), "same-event ordered pairs", kTH2F, {axisClass, axisQside});
+        bf.fhMixedQinv[charge1][charge2] = registry.add<TH2>((prefix + "mixed/hQinv_" + tag).c_str(), "mixed-event ordered pairs, both orders of each event pair", kTH2F, {axisClass, axisQinv});
+        bf.fhMixedQlong[charge1][charge2] = registry.add<TH2>((prefix + "mixed/hQlong_" + tag).c_str(), "mixed-event ordered pairs, both orders of each event pair", kTH2F, {axisClass, axisQlong});
+        bf.fhMixedQout[charge1][charge2] = registry.add<TH2>((prefix + "mixed/hQout_" + tag).c_str(), "mixed-event ordered pairs, both orders of each event pair", kTH2F, {axisClass, axisQout});
+        bf.fhMixedQside[charge1][charge2] = registry.add<TH2>((prefix + "mixed/hQside_" + tag).c_str(), "mixed-event ordered pairs, both orders of each event pair", kTH2F, {axisClass, axisQside});
+      }
+    }
   }
 
   void init(InitContext const&)
   {
-    if (doprocessGenLevelNotStored.value) {
+    binningGen = BinningZMultGen{{cfgMixBinsZ.value, cfgMixBinsMult.value}, true};
+    binningRec = BinningZMultRec{{cfgMixBinsZ.value, cfgMixBinsMult.value}, true};
+    if (doprocessGenLevelNotStored.value || doprocessGenLevelMixedNotStored.value) {
       bookHistos(genHistos, "", false);
     }
-    if (doprocessRecLevelMcNotStored.value) {
+    if (doprocessRecLevelMcNotStored.value || doprocessRecLevelMixedNotStored.value) {
       bookHistos(recHistos, "rec/", true);
     }
+  }
+
+  /// Fills ordered pairs (a from tracksA, b from tracksB) of one event class; for the same event the pair of a
+  /// particle with itself is skipped, so like-sign pairs count N(N-1)
+  template <bool sameEvent, typename TTracksA, typename TTracksB>
+  void fillBfPairs(BfHistos& bf, int eventClass, TTracksA const& tracksA, TTracksB const& tracksB)
+  {
+    const double massKaon = constants::physics::MassKaonCharged;
+    for (auto const& particle1 : tracksA) {
+      const int charge1 = particle1.trackacceptedid();
+      if (charge1 >= NCharges) {
+        continue;
+      }
+      for (auto const& particle2 : tracksB) {
+        const int charge2 = particle2.trackacceptedid();
+        if (charge2 >= NCharges) {
+          continue;
+        }
+        if constexpr (sameEvent) {
+          if (particle1.globalIndex() == particle2.globalIndex()) {
+            continue;
+          }
+        }
+        const auto pair = analysis::qspace::computePairQ(particle1.pt(), particle1.eta(), particle1.phi(), massKaon,
+                                                         particle2.pt(), particle2.eta(), particle2.phi(), massKaon);
+        if constexpr (sameEvent) {
+          bf.fhSameQinv[charge1][charge2]->Fill(eventClass, pair.qInv);
+          bf.fhSameQlong[charge1][charge2]->Fill(eventClass, pair.qLong);
+          bf.fhSameQout[charge1][charge2]->Fill(eventClass, pair.qOut);
+          bf.fhSameQside[charge1][charge2]->Fill(eventClass, pair.qSide);
+        } else {
+          bf.fhMixedQinv[charge1][charge2]->Fill(eventClass, pair.qInv);
+          bf.fhMixedQlong[charge1][charge2]->Fill(eventClass, pair.qLong);
+          bf.fhMixedQout[charge1][charge2]->Fill(eventClass, pair.qOut);
+          bf.fhMixedQside[charge1][charge2]->Fill(eventClass, pair.qSide);
+        }
+      }
+    }
+  }
+
+  /// Same-event balance-function inputs of one collision: event and kaon counters, factorial moments, pairs
+  template <typename TParticles>
+  void fillBfSameEvent(BfHistos& bf, int eventClass, TParticles const& particles)
+  {
+    if (eventClass < 0) {
+      bf.fhEventsOutsideClasses->Fill(1.);
+      return;
+    }
+    std::array<int, NCharges> nKaons{0, 0};
+    for (auto const& particle : particles) {
+      const int charge = particle.trackacceptedid();
+      if (charge < NCharges) {
+        nKaons[charge]++;
+      }
+    }
+    bf.fhEventsPerClass->Fill(eventClass);
+    for (int charge1 = 0; charge1 < NCharges; ++charge1) {
+      bf.fhKaonsPerClass->Fill(eventClass, charge1, nKaons[charge1]);
+      for (int charge2 = 0; charge2 < NCharges; ++charge2) {
+        const int pairsInEvent = nKaons[charge1] * (nKaons[charge2] - (charge1 == charge2 ? 1 : 0));
+        bf.fhFactorialPerClass->Fill(eventClass, charge1 * NCharges + charge2, pairsInEvent);
+      }
+    }
+    fillBfPairs<true>(bf, eventClass, particles, particles);
   }
 
   /// Decay mother of an MC particle, looked up in the particle table given (one MC collision or the whole table).
@@ -353,6 +489,7 @@ struct QSpaceBalanceFunction {
       truth.push_back(truthOf(particle, allParticles));
     }
     fillCollision(genHistos, collision, particles, truth);
+    fillBfSameEvent(genHistos.bf, binningGen.getBin(std::make_tuple(collision.posZ(), collision.centmult())), particles);
   }
   PROCESS_SWITCH(QSpaceBalanceFunction, processGenLevelNotStored, "Generator level, filter tables made in the same workflow", true);
 
@@ -370,8 +507,41 @@ struct QSpaceBalanceFunction {
       }
     }
     fillCollision(recHistos, collision, tracks, truth);
+    fillBfSameEvent(recHistos.bf, binningRec.getBin(std::make_tuple(collision.posZ(), collision.centmult())), tracks);
   }
   PROCESS_SWITCH(QSpaceBalanceFunction, processRecLevelMcNotStored, "Detector level of MC (tracks with MC labels), filter tables made in the same workflow", false);
+
+  /// Mixed events: SameKindPair pairs each accepted collision with the next cfgMixDepth collisions of the same class
+  /// (unordered, without repetition; collisions without kaons are paired too, so the event-pair count is unbiased)
+  template <typename TPairs, typename TBinning>
+  void mixEvents(BfHistos& bf, TPairs& eventPairs, TBinning const& binning)
+  {
+    for (auto const& [collision1, tracks1, collision2, tracks2] : eventPairs) {
+      const int eventClass = binning.getBin(std::make_tuple(collision1.posZ(), collision1.centmult()));
+      if (eventClass < 0) {
+        continue;
+      }
+      bf.fhMixedEventPairsPerClass->Fill(eventClass);
+      fillBfPairs<false>(bf, eventClass, tracks1, tracks2);
+      fillBfPairs<false>(bf, eventClass, tracks2, tracks1);
+    }
+  }
+
+  void processGenLevelMixedNotStored(GenCollisions const& collisions, GenParticles const& particles)
+  {
+    auto particlesTuple = std::make_tuple(particles);
+    SameKindPair<GenCollisions, GenParticles, BinningZMultGen> eventPairs{binningGen, cfgMixDepth.value, -1, collisions, particlesTuple, &cache};
+    mixEvents(genHistos.bf, eventPairs, binningGen);
+  }
+  PROCESS_SWITCH(QSpaceBalanceFunction, processGenLevelMixedNotStored, "Generator level mixed events, filter tables made in the same workflow", false);
+
+  void processRecLevelMixedNotStored(RecCollisions const& collisions, RecTracks const& tracks)
+  {
+    auto tracksTuple = std::make_tuple(tracks);
+    SameKindPair<RecCollisions, RecTracks, BinningZMultRec> eventPairs{binningRec, cfgMixDepth.value, -1, collisions, tracksTuple, &cache};
+    mixEvents(recHistos.bf, eventPairs, binningRec);
+  }
+  PROCESS_SWITCH(QSpaceBalanceFunction, processRecLevelMixedNotStored, "Detector level mixed events, filter tables made in the same workflow", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
