@@ -26,7 +26,9 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <vector>
 
 using namespace o2;
@@ -262,19 +264,30 @@ struct MultAndPtFluctuations {
       a++; // A-nch, B =pt
       b += track.pt();
     }
-    static constexpr float cent10 = 10.f;
+    static constexpr float Cent10 = 10.f;
     histos.fill(HIST("Nch/hNch"), a);
-    if (cent < cent10) histos.fill(HIST("Nch/hNch_0_10"), a);
-    else if (cent < cent10*2) histos.fill(HIST("Nch/hNch_10_20"), a);
-    else if (cent < cent10*3) histos.fill(HIST("Nch/hNch_20_30"), a);
-    else if (cent < cent10*4) histos.fill(HIST("Nch/hNch_30_40"), a);
-    else if (cent < cent10*5) histos.fill(HIST("Nch/hNch_40_50"), a);
-    else if (cent < cent10*6) histos.fill(HIST("Nch/hNch_50_60"), a);
-    else if (cent < cent10*7) histos.fill(HIST("Nch/hNch_60_70"), a);
-    else if (cent < cent10*8) histos.fill(HIST("Nch/hNch_70_80"), a);
-    else if (cent < cent10*9) histos.fill(HIST("Nch/hNch_80_90"), a);
-    else if (cent < cent10*10) histos.fill(HIST("Nch/hNch_90_100"), a);
 
+    if (cent < Cent10) {
+      histos.fill(HIST("Nch/hNch_0_10"), a);
+    } else if (cent < Cent10 * 2) {
+      histos.fill(HIST("Nch/hNch_10_20"), a);
+    } else if (cent < Cent10 * 3) {
+      histos.fill(HIST("Nch/hNch_20_30"), a);
+    } else if (cent < Cent10 * 4) {
+      histos.fill(HIST("Nch/hNch_30_40"), a);
+    } else if (cent < Cent10 * 5) {
+      histos.fill(HIST("Nch/hNch_40_50"), a);
+    } else if (cent < Cent10 * 6) {
+      histos.fill(HIST("Nch/hNch_50_60"), a);
+    } else if (cent < Cent10 * 7) {
+      histos.fill(HIST("Nch/hNch_60_70"), a);
+    } else if (cent < Cent10 * 8) {
+      histos.fill(HIST("Nch/hNch_70_80"), a);
+    } else if (cent < Cent10 * 9) {
+      histos.fill(HIST("Nch/hNch_80_90"), a);
+    } else if (cent < Cent10 * 10) {
+      histos.fill(HIST("Nch/hNch_90_100"), a);
+    }
     // ---- Fill TProfiles (once per event)
     histos.fill(HIST("p_a"), cent, a);
     histos.fill(HIST("p_b"), cent, b);
