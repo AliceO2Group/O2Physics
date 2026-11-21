@@ -19,17 +19,17 @@ o2physics_add_dpl_workflow(pid-its
 o2physics_add_dpl_workflow(pid-tof-base
                     SOURCES pidTOFBase.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFBase
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(pid-tof
                     SOURCES pidTOF.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFWorkflowUtils
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(pid-tof-merge
                     SOURCES pidTOFMerge.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFWorkflowUtils
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(pid-tof-beta
                     SOURCES pidTOFbeta.cxx
@@ -46,12 +46,12 @@ o2physics_add_dpl_workflow(pid-tof-full
 o2physics_add_dpl_workflow(pid-tpc-service
                     SOURCES pidTPCService.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(pid-tpc-service-run2
                     SOURCES pidTPCServiceRun2.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(pid-tpc-base
                     SOURCES pidTPCBase.cxx

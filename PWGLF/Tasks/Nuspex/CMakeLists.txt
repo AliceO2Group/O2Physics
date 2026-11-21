@@ -63,7 +63,7 @@ o2physics_add_dpl_workflow(spectra-tof-light
 o2physics_add_dpl_workflow(spectra-tof-run2
     SOURCES spectraTOFRun2.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
+    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(spectra-tpc
     SOURCES spectraTPC.cxx
@@ -78,7 +78,7 @@ o2physics_add_dpl_workflow(spectra-tpc-pikapr
 o2physics_add_dpl_workflow(spectra-tpc-tiny
     SOURCES spectraTPCtiny.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
+    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(nuclei-tpcspectra
     SOURCES nucleitpcPbPb.cxx
