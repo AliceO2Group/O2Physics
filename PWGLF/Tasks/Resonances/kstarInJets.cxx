@@ -161,7 +161,7 @@ struct kstarInJets {
     const AxisSpec axisEta{30, -1.5, 1.5, "#eta"};
     const AxisSpec axisPhi{200, -1, 7, "#phi"};
     const AxisSpec axisPt{100, 0, 100, "#it{p}_{T}"}; // Jet pT
-    const AxisSpec ptAxis = {100, 0, 100.0};          // Particle pT
+    const AxisSpec ptAxis = {1000, 0, 100};           // Particle pT
     const AxisSpec pidAxis = {120, -6, 6};
     const AxisSpec minvAxis = {cfgMinvNBins, cfgMinvMin, cfgMinvMax};
     const AxisSpec axisDCAz{binsDCAz, "DCA_{z}"};
@@ -1629,6 +1629,7 @@ struct kstarInJets {
       */
 
       if (cfgJetMCHistos) {
+        histos.fill(HIST("nEvents_Gen"), 3.5);
         histos.fill(HIST("hRec_pT_Kstar"), particle.pt()); // SL: numerator and eff: denominator
       }
     } // loop over particles
