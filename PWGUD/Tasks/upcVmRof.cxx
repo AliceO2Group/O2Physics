@@ -101,6 +101,8 @@ DECLARE_SOA_COLUMN(ChannelsFT0C, channelsFT0C, int);
 DECLARE_SOA_COLUMN(ChannelsFV0A, channelsFV0A, int);
 DECLARE_SOA_COLUMN(ChannelsFDDA, channelsFDDA, int);
 DECLARE_SOA_COLUMN(ChannelsFDDC, channelsFDDC, int);
+DECLARE_SOA_COLUMN(PerROFFT0Low, perROFFT0Low, int);
+DECLARE_SOA_COLUMN(PerROFFT0High, perROFFT0High, int);
 
 // ZDC info
 DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
@@ -196,7 +198,7 @@ DECLARE_SOA_TABLE(TwoTrkTable, "AOD", "TWOTRKTABLE",
                   datarows::EnergyCommonZNA, datarows::EnergyCommonZNC, datarows::TimeZNA, datarows::TimeZNC,
                   datarows::Pt1, datarows::Eta1, datarows::Phi1, datarows::Q1, datarows::PidPion1, datarows::PidElectron1, datarows::PidKaon1, datarows::PidProton1,
                   datarows::Pt2, datarows::Eta2, datarows::Phi2, datarows::Q2, datarows::PidPion2, datarows::PidElectron2, datarows::PidKaon2, datarows::PidProton2,
-                  datarows::HasTof1, datarows::HasTof2);
+                  datarows::HasTof1, datarows::HasTof2, datarows::PerROFFT0Low, datarows::PerROFFT0High);
 DECLARE_SOA_TABLE(FourTrkTable, "AOD", "FOURTRKTABLE",
                   datarows::RunNumber, datarows::PosX, datarows::PosY, datarows::PosZ, datarows::Chi2,
                   datarows::LocalBC, datarows::NearestBCB, datarows::LocalTF, datarows::LocalROF, datarows::UpcFlag,
@@ -208,7 +210,7 @@ DECLARE_SOA_TABLE(FourTrkTable, "AOD", "FOURTRKTABLE",
                   datarows::Pt2, datarows::Eta2, datarows::Phi2, datarows::Q2, datarows::PidPion2, datarows::PidElectron2, datarows::PidKaon2, datarows::PidProton2,
                   datarows::Pt3, datarows::Eta3, datarows::Phi3, datarows::Q3, datarows::PidPion3, datarows::PidElectron3, datarows::PidKaon3, datarows::PidProton3,
                   datarows::Pt4, datarows::Eta4, datarows::Phi4, datarows::Q4, datarows::PidPion4, datarows::PidElectron4, datarows::PidKaon4, datarows::PidProton4,
-                  datarows::HasTof1, datarows::HasTof2, datarows::HasTof3, datarows::HasTof4);
+                  datarows::HasTof1, datarows::HasTof2, datarows::HasTof3, datarows::HasTof4, datarows::PerROFFT0Low, datarows::PerROFFT0High);
 
 DECLARE_SOA_TABLE(TwoTrkRecGenTable, "AOD", "TWOTRKRECGEN",
                   mcgen::McMotherPdg, mcgen::McMotherPt, mcgen::McMotherPhi, mcgen::McMotherMass, mcgen::McMotherRapidity,
@@ -305,6 +307,8 @@ struct UpcVmRof {
   Configurable<float> maxAbsPosZ{"maxAbsPosZ", 10.0, "max |Z| position of vtx"};
   Configurable<float> maxAbsTimeFT0{"maxAbsTimeFT0", 4.0, "max |time| in a FT0 side"};
   Configurable<float> maxAmpFT0{"maxAmpFT0", 150.0, "max amplitude for signals in a FT0 side"};
+  Configurable<float> minAmpFT0Low{"minAmpFT0Low", 50.0, "min amplitude for signals in a FT0 side to define an interaction, low threshold"};
+  Configurable<float> minAmpFT0High{"minAmpFT0High", 100.0, "min amplitude for signals in a FT0 side to define an interaction, high threshold"};
   Configurable<float> maxTrkTpcChi2{"maxTrkTpcChi2", 4.0, "max chi2 of TPC track"};
   Configurable<float> maxTrkItsChi2{"maxTrkItsChi2", 36.0, "max chi2 of ITS track"};
   Configurable<float> minTrkTpcClusters{"minTrkTpcClusters", 70.0, "minimum number of TPC clusters associated to the track"};
@@ -562,13 +566,16 @@ struct UpcVmRof {
     colTH1Pointers[Form("col/%d/trkSel_H", run)] = colTH1Registry.add<TH1>(Form("col/%d/trkSel_H", run),
                                                                            "track selection counter; selID; Counter",
                                                                            {HistType::kTH1D, {{10, -0.5, 9.5}}});
-    // track properties
+    // track properties before selection
     colTH1Pointers[Form("col/%d/tpcChi2_H", run)] = colTH1Registry.add<TH1>(Form("col/%d/tpcChi2_H", run),
                                                                             "track #chi^2 in TPC; #chi^2; Entries",
                                                                             {HistType::kTH1D, {{100, 0, 5}}});
     colTH1Pointers[Form("col/%d/itsChi2_H", run)] = colTH1Registry.add<TH1>(Form("col/%d/itsChi2_H", run),
                                                                             "track #chi^2 in ITS; #chi^2; Entries",
                                                                             {HistType::kTH1D, {{120, 0, 40}}});
+    colTH1Pointers[Form("col/%d/tofChi2_H", run)] = colTH1Registry.add<TH1>(Form("col/%d/tofChi2_H", run),
+                                                                            "track #chi^2 in Tof; #chi^2; Entries",
+                                                                            {HistType::kTH1D, {{100, 0, 10}}});
     colTH1Pointers[Form("col/%d/tpcNcls_H", run)] = colTH1Registry.add<TH1>(Form("col/%d/tpcNcls_H", run),
                                                                             "track clusters in TPC; n-clusters; Entries",
                                                                             {HistType::kTH1D, {{160, 0, 160}}});
@@ -581,6 +588,29 @@ struct UpcVmRof {
     colTH1Pointers[Form("col/%d/trkDcaXY_H", run)] = colTH1Registry.add<TH1>(Form("col/%d/trkDcaXY_H", run),
                                                                              "track xy-DCA; xy-dca (cm); Entries",
                                                                              {HistType::kTH1D, {{100, -0.1, 0.1}}});
+    // track properties after selection
+    colTH1Pointers[Form("colSel/%d/tpcChi2_H", run)] = colTH1Registry.add<TH1>(Form("colSel/%d/tpcChi2_H", run),
+                                                                               "track #chi^2 in TPC; #chi^2; Entries",
+                                                                               {HistType::kTH1D, {{100, 0, 5}}});
+    colTH1Pointers[Form("colSel/%d/itsChi2_H", run)] = colTH1Registry.add<TH1>(Form("colSel/%d/itsChi2_H", run),
+                                                                               "track #chi^2 in ITS; #chi^2; Entries",
+                                                                               {HistType::kTH1D, {{120, 0, 40}}});
+    colTH1Pointers[Form("colSel/%d/tofChi2_H", run)] = colTH1Registry.add<TH1>(Form("colSel/%d/tofChi2_H", run),
+                                                                               "track #chi^2 in Tof; #chi^2; Entries",
+                                                                               {HistType::kTH1D, {{100, 0, 10}}});
+    colTH1Pointers[Form("colSel/%d/tpcNcls_H", run)] = colTH1Registry.add<TH1>(Form("colSel/%d/tpcNcls_H", run),
+                                                                               "track clusters in TPC; n-clusters; Entries",
+                                                                               {HistType::kTH1D, {{160, 0, 160}}});
+    colTH1Pointers[Form("colSel/%d/tpcXoF_H", run)] = colTH1Registry.add<TH1>(Form("colSel/%d/tpcXoF_H", run),
+                                                                              "track crossed rows over findable TPC clusters; XoF; Entries",
+                                                                              {HistType::kTH1D, {{150, 0.5, 2.0}}});
+    colTH1Pointers[Form("colSel/%d/trkDcaZ_H", run)] = colTH1Registry.add<TH1>(Form("colSel/%d/trkDcaZ_H", run),
+                                                                               "track z-DCA; z-dca (cm); Entries",
+                                                                               {HistType::kTH1D, {{100, -0.5, 0.5}}});
+    colTH1Pointers[Form("colSel/%d/trkDcaXY_H", run)] = colTH1Registry.add<TH1>(Form("colSel/%d/trkDcaXY_H", run),
+                                                                                "track xy-DCA; xy-dca (cm); Entries",
+                                                                                {HistType::kTH1D, {{100, -0.1, 0.1}}});
+
     // selected events per TF
     colTH1Pointers[Form("col/%d/twoTrkTF_H", run)] = colTH1Registry.add<TH1>(Form("col/%d/twoTrkTF_H", run), "Number of selected 2-trk events per;TF;Entries",
                                                                              {HistType::kTH1D, {{static_cast<int>(nTF / tfPerBin), -0.5, static_cast<double>(nTF) - 0.5}}});
@@ -792,8 +822,6 @@ struct UpcVmRof {
       setNearestBCB();
     }
     int64_t thisBC = getBcWithinOrbit(bc.globalBC());
-    int64_t thisTF = getTimeFrame(bc.globalBC());
-    int64_t thisROF = getRof(thisBC);
 
     // select collision
     if (!checkColFlags(col, runNumberCol)) {
@@ -838,6 +866,8 @@ struct UpcVmRof {
       colTH1Pointers[Form("col/%d/trkSel_H", runNumberCol)]->Fill(3);
       colTH1Pointers[Form("col/%d/tpcChi2_H", runNumberCol)]->Fill(track.tpcChi2NCl());
       colTH1Pointers[Form("col/%d/itsChi2_H", runNumberCol)]->Fill(track.itsChi2NCl());
+      if (track.hasTOF())
+        colTH1Pointers[Form("col/%d/tofChi2_H", runNumberCol)]->Fill(track.tofChi2());
       colTH1Pointers[Form("col/%d/tpcNcls_H", runNumberCol)]->Fill(track.tpcNClsFindable());
       colTH1Pointers[Form("col/%d/tpcXoF_H", runNumberCol)]->Fill(track.tpcCrossedRowsOverFindableCls());
       colTH1Pointers[Form("col/%d/trkDcaZ_H", runNumberCol)]->Fill(track.dcaZ());
@@ -912,6 +942,10 @@ struct UpcVmRof {
         } // end while
       }
     } // end search in past direction
+    // update the TF and ROF
+    int64_t nearbcbLocalBC = getBcWithinOrbit(nearbcb.globalBC());
+    int64_t nearbcbTF = getTimeFrame(nearbcb.globalBC());
+    int64_t nearbcbROF = getRof(nearbcbLocalBC);
 
     // FT0 selection
     float aFT0A = 0;
@@ -1042,6 +1076,60 @@ struct UpcVmRof {
       }
     } // ZDC info
 
+    // track histos after all selections
+    int ntrk = selTrks.size();
+    for (int itrk = 0; itrk < ntrk; itrk++) {
+      colTH1Pointers[Form("colSel/%d/tpcChi2_H", runNumberCol)]->Fill(selTrks[itrk].tpcChi2NCl());
+      colTH1Pointers[Form("colSel/%d/itsChi2_H", runNumberCol)]->Fill(selTrks[itrk].itsChi2NCl());
+      if (selTrks[itrk].hasTOF())
+        colTH1Pointers[Form("colSel/%d/tofChi2_H", runNumberCol)]->Fill(selTrks[itrk].tofChi2());
+      colTH1Pointers[Form("colSel/%d/tpcNcls_H", runNumberCol)]->Fill(selTrks[itrk].tpcNClsFindable());
+      colTH1Pointers[Form("colSel/%d/tpcXoF_H", runNumberCol)]->Fill(selTrks[itrk].tpcCrossedRowsOverFindableCls());
+      colTH1Pointers[Form("colSel/%d/trkDcaZ_H", runNumberCol)]->Fill(selTrks[itrk].dcaZ());
+      colTH1Pointers[Form("colSel/%d/trkDcaXY_H", runNumberCol)]->Fill(selTrks[itrk].dcaXY());
+    }
+
+    // compute the number of FT0 interactions in this ROF
+    int nPerROFFT0Low = 0;
+    int nPerROFFT0High = 0;
+    // -- FT0: find interactions in the same ROF
+    auto fwdbc = bcs.iteratorAt(nearbcb.globalIndex());
+    // -- FT0: find later interactions in the same ROF
+    while (fwdbc != bcs.end()) {
+      ++fwdbc;
+      int64_t tmpLocalBC = getBcWithinOrbit(fwdbc.globalBC());
+      int64_t tmpTF = getTimeFrame(fwdbc.globalBC());
+      int64_t tmpROF = getRof(tmpLocalBC);
+      if (tmpTF != nearbcbTF)
+        break;
+      if (tmpROF != nearbcbROF)
+        break;
+      if (fwdbc.has_foundFT0()) {
+        if (fwdbc.foundFT0().sumAmpA() > minAmpFT0Low && fwdbc.foundFT0().sumAmpC() > minAmpFT0Low)
+          nPerROFFT0Low++;
+        if (fwdbc.foundFT0().sumAmpA() > minAmpFT0High && fwdbc.foundFT0().sumAmpC() > minAmpFT0High)
+          nPerROFFT0High++;
+      }
+    }
+    // -- FT0: find earlier interactions in the same ROF
+    auto bwdbc = bcs.iteratorAt(nearbcb.globalIndex());
+    while (bwdbc != bcs.iteratorAt(0)) {
+      --bwdbc;
+      int64_t tmpLocalBC = getBcWithinOrbit(bwdbc.globalBC());
+      int64_t tmpTF = getTimeFrame(bwdbc.globalBC());
+      int64_t tmpROF = getRof(tmpLocalBC);
+      if (tmpTF != nearbcbTF)
+        break;
+      if (tmpROF != nearbcbROF)
+        break;
+      if (bwdbc.has_foundFT0()) {
+        if (bwdbc.foundFT0().sumAmpA() > minAmpFT0Low && bwdbc.foundFT0().sumAmpC() > minAmpFT0Low)
+          nPerROFFT0Low++;
+        if (bwdbc.foundFT0().sumAmpA() > minAmpFT0High && bwdbc.foundFT0().sumAmpC() > minAmpFT0High)
+          nPerROFFT0High++;
+      }
+    }
+
     // fill output table
     const int recoFlag = ((col.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0) ? upcReco : stdReco;
     int tof[4] = {0, 0, 0, 0};
@@ -1052,15 +1140,15 @@ struct UpcVmRof {
       if (selTrks[1].hasTOF()) {
         tof[1] = 1;
       }
-      colTH1Pointers[Form("col/%d/twoTrkTF_H", runNumberCol)]->Fill(thisTF);
-      twoTrkTable(runNumberCol, col.posX(), col.posY(), col.posZ(), col.chi2(), thisBC, vecNearestBCB[thisBC], thisTF, thisROF, recoFlag,
+      colTH1Pointers[Form("col/%d/twoTrkTF_H", runNumberCol)]->Fill(nearbcbTF);
+      twoTrkTable(runNumberCol, col.posX(), col.posY(), col.posZ(), col.chi2(), thisBC, vecNearestBCB[thisBC], nearbcbTF, nearbcbROF, recoFlag,
                   aFT0A, aFT0C, aFV0A, aFDDA, aFDDC, tFT0A, tFT0C, tFV0A, tFDDA, tFDDC, nFT0A, nFT0C, nFV0A, nFDDA, nFDDC,
                   eZNA, eZNC, tZNA, tZNC,
                   selTrks[0].pt(), selTrks[0].eta(), selTrks[0].phi(), selTrks[0].sign(),
                   selTrks[0].tpcNSigmaPi(), selTrks[0].tpcNSigmaEl(), selTrks[0].tpcNSigmaKa(), selTrks[0].tpcNSigmaPr(),
                   selTrks[1].pt(), selTrks[1].eta(), selTrks[1].phi(), selTrks[1].sign(),
                   selTrks[1].tpcNSigmaPi(), selTrks[1].tpcNSigmaEl(), selTrks[1].tpcNSigmaKa(), selTrks[1].tpcNSigmaPr(),
-                  tof[0], tof[1]);
+                  tof[0], tof[1], nPerROFFT0Low, nPerROFFT0High);
     }
     if (isFourBody) {
       if (selTrks[0].hasTOF()) {
@@ -1075,8 +1163,8 @@ struct UpcVmRof {
       if (selTrks[3].hasTOF()) {
         tof[3] = 1;
       }
-      colTH1Pointers[Form("col/%d/fourTrkTF_H", runNumberCol)]->Fill(thisTF);
-      fourTrkTable(runNumberCol, col.posX(), col.posY(), col.posZ(), col.chi2(), thisBC, vecNearestBCB[thisBC], thisTF, thisROF, recoFlag,
+      colTH1Pointers[Form("col/%d/fourTrkTF_H", runNumberCol)]->Fill(nearbcbTF);
+      fourTrkTable(runNumberCol, col.posX(), col.posY(), col.posZ(), col.chi2(), thisBC, vecNearestBCB[thisBC], nearbcbTF, nearbcbROF, recoFlag,
                    aFT0A, aFT0C, aFV0A, aFDDA, aFDDC, tFT0A, tFT0C, tFV0A, tFDDA, tFDDC, nFT0A, nFT0C, nFV0A, nFDDA, nFDDC,
                    eZNA, eZNC, tZNA, tZNC,
                    selTrks[0].pt(), selTrks[0].eta(), selTrks[0].phi(), selTrks[0].sign(),
@@ -1087,7 +1175,7 @@ struct UpcVmRof {
                    selTrks[2].tpcNSigmaPi(), selTrks[2].tpcNSigmaEl(), selTrks[2].tpcNSigmaKa(), selTrks[2].tpcNSigmaPr(),
                    selTrks[3].pt(), selTrks[3].eta(), selTrks[3].phi(), selTrks[3].sign(),
                    selTrks[3].tpcNSigmaPi(), selTrks[3].tpcNSigmaEl(), selTrks[3].tpcNSigmaKa(), selTrks[3].tpcNSigmaPr(),
-                   tof[0], tof[1], tof[2], tof[3]);
+                   tof[0], tof[1], tof[2], tof[3], nPerROFFT0Low, nPerROFFT0High);
     }
 
     outIsTwoBody = isTwoBody;
