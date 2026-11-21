@@ -48,3 +48,8 @@ o2physics_add_dpl_workflow(dndeta-hi
     SOURCES dndetaHi.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::Framework
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(heat-capacity
+                  SOURCES heatcapacity.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)
