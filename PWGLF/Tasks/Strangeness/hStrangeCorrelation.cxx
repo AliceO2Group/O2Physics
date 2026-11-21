@@ -1700,7 +1700,7 @@ struct HStrangeCorrelation {
           }
           std::array<double, 6> binFillThn = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
           if (TESTBIT(doCorrelation, Index) && (!efficiencyFlags.applyEfficiencyCorrection || efficiency != 0) && (masterConfigurations.doPPAnalysis || (TESTBIT(selMap, Index) && TESTBIT(selMap, Index + 3)))) {
-            if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!masterConfigurations.doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing &&
+            if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!masterConfigurations.doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && masterConfigurations.doMassSpectrumCheck &&
                 ((-massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma) ||
                  (-massWindowConfigurations.maxPeakNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxPeakNSigma) ||
                  (+massWindowConfigurations.minBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxBgNSigma))) {
@@ -3359,7 +3359,7 @@ struct HStrangeCorrelation {
     if ((doprocessMixedEventHV0sInBuffer || doprocessMixedEventHCascadesInBuffer || doprocessMixedEventHV0s || doprocessMixedEventHCascades || doprocessMixedEventHPions || doprocessMixedEventHHadrons) && masterConfigurations.doFullCorrelationStudy) {
       histos.addClone("sameEvent/", "mixedEvent/");
     }
-    if (masterConfigurations.doFullCorrelationStudy && (doprocessSameEventHV0s || doprocessPairLossK0MC)) {
+    if (masterConfigurations.doFullCorrelationStudy && masterConfigurations.doMassSpectrumCheck && (doprocessSameEventHV0s || doprocessPairLossK0MC)) {
       if (TESTBIT(doCorrelation, 0)) {
         histos.add("sameEvent/InvariantMass/K0Short/hNearSide", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisK0ShortMass});
         histos.add("sameEvent/InvariantMass/K0Short/hAwaySide", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisK0ShortMass});
