@@ -9,854 +9,607 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Common/DataModel/MatchMFTFT0.h"
+/// \file match-mft-mch-data-mc.cxx
+/// \brief MC entry point and truth annotation for shared MFT MCH matching.
+/// \author Satoshi Yano <satoshi.yano@cern.ch>
+
+// o2-linter: disable=name/workflow-file (Thin entry point delegates to the shared workflow factory.)
+// o2-linter: disable=name/file-cpp (Preserve the established matching task source path.)
+
+#include "Common/Core/MftMchMatching.h"
 #include "Common/DataModel/MatchMFTMuonData.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
-#include <DataFormatsGlobalTracking/RecoContainer.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DetectorsBase/GeometryManager.h>
-#include <DetectorsBase/Propagator.h>
-#include <Field/MagneticField.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Variant.h>
+void customize(std::vector<o2::framework::ConfigParamSpec>& options)
+{
+  options.push_back({"matching-output-mode", o2::framework::VariantType::String, "auto", {"auto reads matching-output.cfgOutputMode from local JSON; tree, sparse or both overrides it"}});
+}
+
 #include <Framework/runDataProcessing.h>
-#include <GlobalTracking/MatchGlobalFwd.h>
-#include <MCHTracking/TrackExtrap.h>
-#include <ReconstructionDataFormats/TrackFwd.h>
 
-#include <Math/MatrixRepresentationsStatic.h>
-#include <Math/SMatrix.h>
-#include <Math/SVector.h>
-#include <TDatabasePDG.h>
-#include <TGeoGlobalMagField.h>
-#include <TLorentzVector.h>
-#include <TVector2.h>
+#include <TMCProcess.h>
+#include <TNamed.h>
+#include <TPDGCode.h>
 
-#include <RtypesCore.h>
-
+#include <algorithm>
+#include <array>
+#include <cinttypes>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <limits>
 #include <map>
-#include <string>
+#include <set>
+#include <tuple>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
-using namespace std;
-
 using namespace o2;
-using namespace o2::soa;
-using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::framework::expressions;
 
-using MyCollisions = aod::Collisions;
-using MyBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedToFT0>;
-using MyMUONs = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels>;
-using MyMFTs = soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>;
-
-using MyCollision = MyCollisions::iterator;
-using MyBC = MyBCs::iterator;
-using MyMUON = MyMUONs::iterator;
-using MyMFT = MyMFTs::iterator;
-
-using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
-using SMatrix5 = ROOT::Math::SVector<Double_t, 5>;
-
-float mMu = TDatabasePDG::Instance()->GetParticle(13)->Mass();
-int mRunNumber;
-/*
-  TLorentzVector muon1LV;
-  TLorentzVector muon2LV;
-  TLorentzVector dimuonLV;
-*/
-unordered_map<int, vector<int64_t>> map_mfttracks;
-unordered_map<int, vector<int64_t>> map_muontracks;
-unordered_map<int, bool> map_collisions;
-unordered_map<int, bool> map_has_mfttracks_collisions;
-unordered_map<int, bool> map_has_muontracks_collisions;
-unordered_map<int, float> map_vtxz;
-unordered_map<int, int> map_nmfttrack;
-
-struct match_mft_mch_data_mc {
-
-  ////  Variables for matching method
-  Configurable<int> fMatchingMethod{"cfgMatchingMethod", 0, ""};
-
-  ////   Variables for selecting muon tracks
-  Configurable<float> fEtaMchLow{"cfgEtaMchLow", -4.0f, ""};
-  Configurable<float> fEtaMchUp{"cfgEtaMchUp", -2.5f, ""};
-  Configurable<float> fRabsLow1{"cfgRabsLow1", 17.6f, ""};
-  Configurable<float> fRabsUp1{"cfgRabsUp1", 26.5f, ""};
-  Configurable<float> fRabsLow2{"cfgRabsLow2", 26.5f, ""};
-  Configurable<float> fRabsUp2{"cfgRabsUp2", 89.5f, ""};
-  Configurable<float> fPdcaUp1{"cfgPdcaUp1", 594.f, ""};
-  Configurable<float> fPdcaUp2{"cfgPdcaUp2", 324.f, ""};
-  Configurable<float> fTrackChi2MchUp{"cfgTrackChi2MchUp", 5.f, ""};
-  Configurable<float> fMatchingChi2MchMidUp{"cfgMatchingChi2MchMidUp", 999.f, ""};
-
-  ////   Variables for selecting mft tracks
-  Configurable<float> fEtaMftLow{"cfgEtaMftlow", -3.6f, ""};
-  Configurable<float> fEtaMftUp{"cfgEtaMftup", -2.5f, ""};
-  Configurable<int> fTrackNClustMftLow{"cfgTrackNClustMftLow", 7, ""};
-  Configurable<float> fTrackChi2MftUp{"cfgTrackChi2MftUp", 999.f, ""};
-
-  ///    Variables to add preselection for the matching table
-  Configurable<float> fPreselectMatchingX{"cfgPreselectMatchingX", 15.f, ""};
-  Configurable<float> fPreselectMatchingY{"cfgPreselectMatchingY", 15.f, ""};
-
-  ///    Variables to event mixing criteria
-  Configurable<float> fSaveMixedMatchingParamsRate{"cfgSaveMixedMatchingParamsRate", 0.002f, ""};
-  Configurable<int> fEventMaxDeltaNMFT{"cfgEventMaxDeltaNMFT", 1, ""};
-  Configurable<float> fEventMaxDeltaVtxZ{"cfgEventMaxDeltaVtxZ", 1.f, ""};
-
-  ////   Variables for selecting tag muon
-  Configurable<float> fTagMassWindowMin{"cfgTagMassWindowMin", 2.8f, ""};
-  Configurable<float> fTagMassWindowMax{"cfgTagMassWindowMax", 3.3f, ""};
-
-  ////   Variables for ccdb
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-
-  ////   Variables for Tag matching criteria
-  Configurable<float> fSigmaXTagMuonCut{"cfgSigmaXTagMuonCut", 1.f, ""};
-  Configurable<float> fMeanXTagMuonCut{"cfgMeanXTagMuonCut", 0.f, ""};
-  Configurable<float> fSigmaYTagMuonCut{"cfgSigmaYTagMuonCut", 1.f, ""};
-  Configurable<float> fMeanYTagMuonCut{"cfgMeanYTagMuonCut", 1.f, ""};
-
-  Configurable<float> fSigmaEtaTagMuonCut{"cfgSigmaEtaTagMuonCut", 0.2f, ""};
-  Configurable<float> fMeanEtaTagMuonCut{"cfgMeanEtaTagMuonCut", 0.f, ""};
-  Configurable<float> fSigmaPhiTagMuonCut{"cfgSigmaPhiTagMuonCut", 0.2f, ""};
-  Configurable<float> fMeanPhiTagMuonCut{"cfgMeanPhiTagMuonCut", 0.f, ""};
-
-  template <typename MUON, typename Collision>
-  class FindTagAndProbe
+// This device only annotates final residual rows. No matching/propagation here.
+template <bool Sparse, bool InternalPopulation = false>
+struct MftMchMcTruth {
+  template <typename T>
+  using Input = o2::analysis::mftmch::MatchingAuditInput<T, Sparse, InternalPopulation ? 1 : 0>;
+  Produces<aod::MftMchMatchTruths> truths;
+  o2::analysis::mftmch::MatchingAuditOutput<aod::MatchingCandidateTruths> candidateTruths;
+  o2::analysis::mftmch::MatchingAuditOutput<aod::MatchingCandidateRelations> candidateRelations;
+  o2::analysis::mftmch::MatchingAuditOutput<aod::MatchingMchTruths> mchTruths;
+  Produces<aod::MixedMatchPlaneResiduals> mixedResiduals;
+  o2::analysis::mftmch::MatchingAuditOutput<aod::MixedMftMchMatchTruths> mixedTruths;
+  Produces<aod::MftMchMatchRelations> relations;
+  o2::analysis::mftmch::MixedPairSampler mixedSampler;
+  OutputObj<TNamed> samplingMetadata{TNamed("MixedPairSampling", "")};
+  Configurable<int> cfgMcAncestryMaxDepth{"cfgMcAncestryMaxDepth", 128, "Maximum stored MC mother-graph depth; truncation is explicitly flagged"};
+  Configurable<int> cfgMcAncestryMaxNodes{"cfgMcAncestryMaxNodes", 4096, "Maximum mother-graph states expanded per distinct MCH MC particle"};
+  void init(InitContext&)
   {
-   private:
-    o2::dataformats::GlobalFwdTrack muontrack_at_pv[2];
-
-    TLorentzVector mDimuon;
-    MUON muontrack1;
-    MUON muontrack2;
-    Collision collision;
-    int tagIdx, probeIdx;
-
-    int16_t mQ;
-
-    inline void fillCovarianceArray(MUON const& muontrack, float cov[15]) const
-    {
-      cov[0] = muontrack.cXX();
-      cov[1] = muontrack.cXY();
-      cov[2] = muontrack.cYY();
-      cov[3] = muontrack.cPhiX();
-      cov[4] = muontrack.cPhiY();
-      cov[5] = muontrack.cPhiPhi();
-      cov[6] = muontrack.cTglX();
-      cov[7] = muontrack.cTglY();
-      cov[8] = muontrack.cTglPhi();
-      cov[9] = muontrack.cTglTgl();
-      cov[10] = muontrack.c1PtX();
-      cov[11] = muontrack.c1PtY();
-      cov[12] = muontrack.c1PtPhi();
-      cov[13] = muontrack.c1PtTgl();
-      cov[14] = muontrack.c1Pt21Pt2();
+    samplingMetadata->SetTitle(mixedSampler.metadata().c_str());
+    if (cfgMcAncestryMaxDepth < 1 || cfgMcAncestryMaxNodes < 1) {
+      LOGF(fatal, "MC ancestry limits must be positive");
     }
-
-    inline o2::dataformats::GlobalFwdTrack propagateMUONtoPV(MUON const& muontrack) const
-    {
-      const double mz = muontrack.z();
-      const double mchi2 = muontrack.chi2();
-      const float mx = muontrack.x();
-      const float my = muontrack.y();
-      const float mphi = muontrack.phi();
-      const float mtgl = muontrack.tgl();
-      const float m1pt = muontrack.signed1Pt();
-
-      float cov[15];
-      fillCovarianceArray(muontrack, cov);
-      SMatrix5 tpars(mx, my, mphi, mtgl, m1pt);
-      SMatrix55 tcovs(cov, cov + 15);
-
-      o2::track::TrackParCovFwd parcovmuontrack{mz, tpars, tcovs, mchi2};
-
-      o2::dataformats::GlobalFwdTrack gtrack;
-      gtrack.setParameters(tpars);
-      gtrack.setZ(parcovmuontrack.getZ());
-      gtrack.setCovariances(tcovs);
-
-      o2::globaltracking::MatchGlobalFwd mMatching;
-      auto mchtrack = mMatching.FwdtoMCH(gtrack);
-
-      o2::mch::TrackExtrap::extrapToVertex(mchtrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
-
-      auto fwdtrack = mMatching.MCHtoFwd(mchtrack);
-      o2::dataformats::GlobalFwdTrack extrap_muontrack;
-      extrap_muontrack.setParameters(fwdtrack.getParameters());
-      extrap_muontrack.setZ(fwdtrack.getZ());
-      extrap_muontrack.setCovariances(fwdtrack.getCovariances());
-
-      return extrap_muontrack;
-    }
-
-    inline void setTagAndProbe()
-    {
-      if (muontrack1.pt() > muontrack2.pt()) {
-        tagIdx = 0;
-        probeIdx = 1;
-      } else {
-        tagIdx = 1;
-        probeIdx = 0;
-      }
-    }
-
-   public:
-    inline FindTagAndProbe(const MUON& muon1, const MUON& muon2, const Collision& coll)
-      : muontrack_at_pv(), mDimuon(), muontrack1(muon1), muontrack2(muon2), collision(coll), tagIdx(-1), probeIdx(-1), mQ(0)
-    {
-      mQ = muontrack1.sign() + muontrack2.sign();
-      setTagAndProbe();
-    }
-
-    void calcMuonPairAtPV()
-    {
-      muontrack_at_pv[0] = propagateMUONtoPV(muontrack1);
-      muontrack_at_pv[1] = propagateMUONtoPV(muontrack2);
-      TLorentzVector vMuon1, vMuon2;
-      vMuon1.SetPtEtaPhiM(muontrack_at_pv[0].getPt(), muontrack_at_pv[0].getEta(), muontrack_at_pv[0].getPhi(), mMu);
-      vMuon2.SetPtEtaPhiM(muontrack_at_pv[1].getPt(), muontrack_at_pv[1].getEta(), muontrack_at_pv[1].getPhi(), mMu);
-      mDimuon = vMuon1 + vMuon2;
-    }
-    inline int getTagMuonIndex() const { return tagIdx; }
-    inline int getProbeMuonIndex() const { return probeIdx; }
-    inline float getMass() const { return mDimuon.M(); }
-    inline float getPt() const { return mDimuon.Pt(); }
-    inline float getRap() const { return mDimuon.Rapidity(); }
-    inline int16_t getCharge() const { return mQ; }
-    inline const o2::dataformats::GlobalFwdTrack& getMuonAtPV(int idx) const { return muontrack_at_pv[idx]; }
-  }; // end of class FindTagAndProbe
-
-  template <typename MUON, typename MFT, typename Collision>
-  class MatchingParamsML
-  {
-   private:
-    MUON muontrack;
-    MFT mfttrack;
-    Collision collision;
-
-    float mDX, mDY, mDPt, mDPhi, mDEta;
-    float mGlobalMuonPtAtDCA, mGlobalMuonEtaAtDCA, mGlobalMuonPhiAtDCA, mGlobalMuonDCAx, mGlobalMuonDCAy, mGlobalMuonQ;
-    int mMatchingType;
-
-    o2::field::MagneticField* fieldB;
-    o2::globaltracking::MatchGlobalFwd mMatching;
-
-    inline o2::track::TrackParCovFwd propagateMFTtoMatchingPlane()
-    {
-      double covArr[15]{0.0};
-      SMatrix55 tmftcovs(covArr, covArr + 15);
-
-      SMatrix5 tmftpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
-      o2::track::TrackParCovFwd extrap_mfttrack{mfttrack.z(), tmftpars, tmftcovs, mfttrack.chi2()};
-
-      double propVec[3] = {0.};
-      float zPlane = 0.f;
-      if (mMatchingType == MCH_FIRST_CLUSTER) {
-        propVec[0] = muontrack.x() - mfttrack.x();
-        propVec[1] = muontrack.y() - mfttrack.y();
-        propVec[2] = muontrack.z() - mfttrack.z();
-        zPlane = muontrack.z();
-      } else if (mMatchingType == END_OF_ABSORBER || mMatchingType == BEGINING_OF_ABSORBER) {
-        auto extrap_muontrack = propagateMUONtoMatchingPlane();
-        propVec[0] = extrap_muontrack.getX() - mfttrack.x();
-        propVec[1] = extrap_muontrack.getY() - mfttrack.y();
-        propVec[2] = extrap_muontrack.getZ() - mfttrack.z();
-        zPlane = (mMatchingType == END_OF_ABSORBER) ? -505.f : -90.f;
-      } else {
-        zPlane = mfttrack.z();
-      }
-
-      double centerZ[3] = {mfttrack.x() + propVec[0] / 2., mfttrack.y() + propVec[1] / 2., mfttrack.z() + propVec[2] / 2.};
-      float Bz = fieldB->getBz(centerZ);
-      extrap_mfttrack.propagateToZ(zPlane, Bz); // z in cm
-      return extrap_mfttrack;
-    }
-
-    inline o2::dataformats::GlobalFwdTrack propagateMUONtoMatchingPlane()
-    {
-      float cov[15] = {
-        muontrack.cXX(), muontrack.cXY(), muontrack.cYY(),
-        muontrack.cPhiX(), muontrack.cPhiY(), muontrack.cPhiPhi(),
-        muontrack.cTglX(), muontrack.cTglY(), muontrack.cTglPhi(),
-        muontrack.cTglTgl(), muontrack.c1PtX(), muontrack.c1PtY(),
-        muontrack.c1PtPhi(), muontrack.c1PtTgl(), muontrack.c1Pt21Pt2()};
-
-      SMatrix5 tpars(muontrack.x(), muontrack.y(), muontrack.phi(), muontrack.tgl(), muontrack.signed1Pt());
-      SMatrix55 tcovs(cov, cov + 15);
-      double chi2 = muontrack.chi2();
-
-      o2::track::TrackParCovFwd parcovmuontrack{muontrack.z(), tpars, tcovs, chi2};
-
-      o2::dataformats::GlobalFwdTrack gtrack;
-      gtrack.setParameters(tpars);
-      gtrack.setZ(parcovmuontrack.getZ());
-      gtrack.setCovariances(tcovs);
-
-      auto mchtrack = mMatching.FwdtoMCH(gtrack);
-
-      if (mMatchingType == MFT_LAST_CLUSTR) {
-        o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchtrack, mfttrack.z());
-      } else if (mMatchingType == END_OF_ABSORBER) {
-        o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchtrack, -505.);
-      } else if (mMatchingType == BEGINING_OF_ABSORBER) {
-        o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchtrack, -90.);
-      }
-
-      auto fwdtrack = mMatching.MCHtoFwd(mchtrack);
-
-      o2::dataformats::GlobalFwdTrack extrap_muontrack;
-      extrap_muontrack.setParameters(fwdtrack.getParameters());
-      extrap_muontrack.setZ(fwdtrack.getZ());
-      extrap_muontrack.setCovariances(fwdtrack.getCovariances());
-      return extrap_muontrack;
-    }
-
-    inline o2::track::TrackParCovFwd propagateMFTtoDCA()
-    {
-      double covArr[15]{0.0};
-      SMatrix55 tmftcovs(covArr, covArr + 15);
-
-      SMatrix5 tmftpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
-      o2::track::TrackParCovFwd extrap_mfttrack{mfttrack.z(), tmftpars, tmftcovs, mfttrack.chi2()};
-
-      double propVec[3] = {};
-      propVec[0] = collision.posX() - mfttrack.x();
-      propVec[1] = collision.posY() - mfttrack.y();
-      propVec[2] = collision.posZ() - mfttrack.z();
-
-      double centerZ[3] = {mfttrack.x() + propVec[0] / 2., mfttrack.y() + propVec[1] / 2., mfttrack.z() + propVec[2] / 2.};
-      float Bz = fieldB->getBz(centerZ);
-      extrap_mfttrack.propagateToZ(collision.posZ(), Bz); // z in cm
-      return extrap_mfttrack;
-    }
-
-    inline o2::dataformats::GlobalFwdTrack propagateMUONtoPV()
-    {
-      float cov[15] = {
-        muontrack.cXX(), muontrack.cXY(), muontrack.cYY(),
-        muontrack.cPhiX(), muontrack.cPhiY(), muontrack.cPhiPhi(),
-        muontrack.cTglX(), muontrack.cTglY(), muontrack.cTglPhi(),
-        muontrack.cTglTgl(), muontrack.c1PtX(), muontrack.c1PtY(),
-        muontrack.c1PtPhi(), muontrack.c1PtTgl(), muontrack.c1Pt21Pt2()};
-
-      SMatrix5 tpars(muontrack.x(), muontrack.y(), muontrack.phi(), muontrack.tgl(), muontrack.signed1Pt());
-      SMatrix55 tcovs(cov, cov + 15);
-      double chi2 = muontrack.chi2();
-
-      o2::track::TrackParCovFwd parcovmuontrack{muontrack.z(), tpars, tcovs, chi2};
-
-      o2::dataformats::GlobalFwdTrack gtrack;
-      gtrack.setParameters(tpars);
-      gtrack.setZ(parcovmuontrack.getZ());
-      gtrack.setCovariances(tcovs);
-
-      auto mchtrack = mMatching.FwdtoMCH(gtrack);
-      o2::mch::TrackExtrap::extrapToVertex(mchtrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
-
-      auto fwdtrack = mMatching.MCHtoFwd(mchtrack);
-      o2::dataformats::GlobalFwdTrack extrap_muontrack;
-      extrap_muontrack.setParameters(fwdtrack.getParameters());
-      extrap_muontrack.setZ(fwdtrack.getZ());
-      extrap_muontrack.setCovariances(fwdtrack.getCovariances());
-
-      return extrap_muontrack;
-    }
-
-   public:
-    enum MATCHING_TYPE { MCH_FIRST_CLUSTER,
-                         MFT_LAST_CLUSTR,
-                         END_OF_ABSORBER,
-                         BEGINING_OF_ABSORBER };
-
-    MatchingParamsML(MUON const& muon, MFT const& mft, Collision const& coll, int MType, o2::field::MagneticField* field) : muontrack(muon), mfttrack(mft), collision(coll), mDX(0.f), mDY(0.f), mDPt(0.f), mDPhi(0.f), mDEta(0.f), mGlobalMuonPtAtDCA(0.f), mGlobalMuonEtaAtDCA(0.f), mGlobalMuonPhiAtDCA(0.f), mGlobalMuonDCAx(0.f), mGlobalMuonDCAy(0.f), mGlobalMuonQ(0.f), mMatchingType(MType), fieldB(field) {}
-    void calcMatchingParams()
-    {
-      auto mfttrack_on_matchingP = propagateMFTtoMatchingPlane();
-      auto muontrack_on_matchingP = propagateMUONtoMatchingPlane();
-
-      float dphiRaw = mfttrack_on_matchingP.getPhi() - muontrack_on_matchingP.getPhi();
-      float dphi = TVector2::Phi_mpi_pi(dphiRaw);
-      float deta = mfttrack_on_matchingP.getEta() - muontrack_on_matchingP.getEta();
-
-      mDX = mfttrack_on_matchingP.getX() - muontrack_on_matchingP.getX();
-      mDY = mfttrack_on_matchingP.getY() - muontrack_on_matchingP.getY();
-      mDPt = mfttrack_on_matchingP.getPt() - muontrack_on_matchingP.getPt();
-      mDPhi = dphi;
-      mDEta = deta;
-    }
-
-    void calcGlobalMuonParams()
-    {
-      auto mfttrack_at_dca = propagateMFTtoDCA();
-      auto muontrack_at_pv = propagateMUONtoPV();
-
-      float momentum = muontrack_at_pv.getP();
-      float theta = mfttrack_at_dca.getTheta();
-      float phiTrack = mfttrack_at_dca.getPhi();
-      float px = momentum * std::sin(theta) * std::cos(phiTrack);
-      float py = momentum * std::sin(theta) * std::sin(phiTrack);
-
-      mGlobalMuonQ = muontrack.sign() + mfttrack.sign();
-      mGlobalMuonPtAtDCA = std::sqrt(px * px + py * py);
-      mGlobalMuonEtaAtDCA = mfttrack_at_dca.getEta();
-      mGlobalMuonPhiAtDCA = mfttrack_at_dca.getPhi();
-      mGlobalMuonDCAx = mfttrack_at_dca.getX() - collision.posX();
-      mGlobalMuonDCAy = mfttrack_at_dca.getY() - collision.posY();
-    }
-
-    inline float getDx() const { return mDX; }
-    inline float getDy() const { return mDY; }
-    inline float getDphi() const { return mDPhi; }
-    inline float getDeta() const { return mDEta; }
-    inline float getDpt() const { return mDPt; }
-    inline float getGMPtAtDCA() const { return mGlobalMuonPtAtDCA; }
-    inline float getGMEtaAtDCA() const { return mGlobalMuonEtaAtDCA; }
-    inline float getGMPhiAtDCA() const { return mGlobalMuonPhiAtDCA; }
-    inline float getGMDcaX() const { return mGlobalMuonDCAx; }
-    inline float getGMDcaY() const { return mGlobalMuonDCAy; }
-    inline float getGMDcaXY() const { return std::sqrt(mGlobalMuonDCAx * mGlobalMuonDCAx + mGlobalMuonDCAy * mGlobalMuonDCAy); }
-    inline int16_t getGMQ() const { return static_cast<int16_t>(mGlobalMuonQ); }
-
-  }; // end of class MatchingParamsML
-
-  template <typename MUON, typename Collisions>
-  o2::dataformats::GlobalFwdTrack propagateMUONtoPV(MUON const& muontrack, Collisions const& collisions)
-  {
-    auto collision = collisions.rawIteratorAt(muontrack.collisionId());
-    o2::globaltracking::MatchGlobalFwd mMatching;
-    o2::dataformats::GlobalFwdTrack extrap_muontrack;
-
-    SMatrix5 tpars(muontrack.x(), muontrack.y(), muontrack.phi(), muontrack.tgl(), muontrack.signed1Pt());
-    std::vector<float> v1{muontrack.cXX(), muontrack.cXY(), muontrack.cYY(),
-                          muontrack.cPhiX(), muontrack.cPhiY(), muontrack.cPhiPhi(),
-                          muontrack.cTglX(), muontrack.cTglY(), muontrack.cTglPhi(),
-                          muontrack.cTglTgl(), muontrack.c1PtX(), muontrack.c1PtY(),
-                          muontrack.c1PtPhi(), muontrack.c1PtTgl(), muontrack.c1Pt21Pt2()};
-    SMatrix55 tcovs(v1.begin(), v1.end());
-    double chi2 = muontrack.chi2();
-    o2::track::TrackParCovFwd parcovmuontrack{muontrack.z(), tpars, tcovs, chi2};
-
-    o2::dataformats::GlobalFwdTrack gtrack;
-    gtrack.setParameters(tpars);
-    gtrack.setZ(parcovmuontrack.getZ());
-    gtrack.setCovariances(tcovs);
-    auto mchtrack = mMatching.FwdtoMCH(gtrack);
-
-    o2::mch::TrackExtrap::extrapToVertex(mchtrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
-
-    auto fwdtrack = mMatching.MCHtoFwd(mchtrack);
-    extrap_muontrack.setParameters(fwdtrack.getParameters());
-    extrap_muontrack.setZ(fwdtrack.getZ());
-    extrap_muontrack.setCovariances(fwdtrack.getCovariances());
-
-    return extrap_muontrack;
   }
-
-  inline bool isGoodTagDimuon(float M)
-  {
-    return !(M < fTagMassWindowMin || M > fTagMassWindowMax);
-  }
-
-  inline bool isGoodTagMatching(float mDX, float mDY, float mDEta, float mDPhi)
-  {
-    float dxNorm = (mDX - fMeanXTagMuonCut) / (fSigmaXTagMuonCut * 3);
-    float dyNorm = (mDY - fMeanYTagMuonCut) / (fSigmaYTagMuonCut * 3);
-    float detaNorm = (mDEta - fMeanEtaTagMuonCut) / (fSigmaEtaTagMuonCut * 3);
-    float dphiNorm = (mDPhi - fMeanPhiTagMuonCut) / (fSigmaPhiTagMuonCut * 3);
-
-    float rTagXY = dxNorm * dxNorm + dyNorm * dyNorm;
-    float rTagEtaPhi = detaNorm * detaNorm + dphiNorm * dphiNorm;
-
-    return (rTagXY < 1.f && rTagEtaPhi > 0.f);
-  }
-
-  template <typename MUON, typename MFT>
-  bool isCorrectMatching(MUON const& muontrack, MFT const& mfttrack)
-  {
-
-    int idmuon = muontrack.mcParticleId();
-    int idmft = mfttrack.mcParticleId();
-
-    if (idmuon == -1 || idmft == -1)
-      return false;
-    if (idmuon != idmft)
-      return false;
-    else
-      return true;
+  using MchLabels = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
+  using MftLabels = soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>;
+  struct ParticleInfo {
+    int64_t id = -1, collision = -1;
+    int pdg = 0;
+    bool valid = false, primary = false;
+    float px = std::numeric_limits<float>::quiet_NaN();
+    float py = std::numeric_limits<float>::quiet_NaN();
+    float pz = std::numeric_limits<float>::quiet_NaN();
   };
-
-  template <typename MUON>
-  bool isGoodMuonQuality(const MUON& muontrack)
+  static ParticleInfo particle(int64_t id, aod::McParticles const& particles)
   {
-    if (!muontrack.has_collision())
-      return false;
-    if (muontrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)
-      return false;
-    if (muontrack.chi2() > fTrackChi2MchUp)
-      return false;
-    if (fRabsLow1 > muontrack.rAtAbsorberEnd() || muontrack.rAtAbsorberEnd() > fRabsUp2)
-      return false;
-    if (muontrack.rAtAbsorberEnd() < fRabsUp1 && fPdcaUp1 < muontrack.pDca())
-      return false;
-    if (muontrack.rAtAbsorberEnd() > fRabsLow2 && fPdcaUp2 < muontrack.pDca())
-      return false;
-    return true;
+    ParticleInfo out;
+    out.id = id;
+    const auto offset = static_cast<int64_t>(particles.offset());
+    if (id < offset || id - offset >= particles.size()) {
+      return out;
+    }
+    const auto p = particles.rawIteratorAt(id - offset);
+    out.valid = true;
+    out.collision = p.mcCollisionId();
+    out.pdg = p.pdgCode();
+    out.px = p.px();
+    out.py = p.py();
+    out.pz = p.pz();
+    out.primary = p.isPhysicalPrimary();
+    return out;
   }
-
-  template <typename MUON>
-  bool isGoodMuonKine(const MUON& muontrack)
+  template <typename Rows, typename TruthOutput, typename RelationOutput>
+  void annotate(Rows const& residuals, MchLabels const& mchTracks,
+                MftLabels const& mftTracks, aod::McParticles const& particles,
+                TruthOutput& truthOutput, RelationOutput& relationOutput)
   {
-    if (fEtaMchLow > muontrack.getEta() || muontrack.getEta() > fEtaMchUp)
-      return false;
-    return true;
-  }
-
-  template <typename MFT>
-  bool isGoodMFTQuality(const MFT& mfttrack)
-  {
-    if (!mfttrack.has_collision())
-      return false;
-    if (mfttrack.chi2() > fTrackChi2MftUp)
-      return false;
-    if (mfttrack.nClusters() < fTrackNClustMftLow)
-      return false;
-    return true;
-  }
-
-  template <typename MFT>
-  bool isGoodMFTKine(const MFT& mfttrack)
-  {
-    if (fEtaMftLow > mfttrack.getEta() || mfttrack.getEta() > fEtaMftUp)
-      return false;
-    return true;
-  }
-
-  inline bool isPassMatchingPreselection(float Dx, float Dy)
-  {
-    return !(std::abs(Dx) > fPreselectMatchingX || std::abs(Dy) > fPreselectMatchingY);
-  }
-
-  template <typename MUONs, typename Collisions>
-  void setMUONs(MUONs const& muontracks, Collisions const& collisions)
-  {
-    for (const auto& muontrack : muontracks) {
-      if (!isGoodMuonQuality(muontrack))
-        continue;
-      o2::dataformats::GlobalFwdTrack muontrack_at_pv = propagateMUONtoPV(muontrack, collisions);
-      if (!isGoodMuonKine(muontrack_at_pv))
-        continue;
-
-      auto collision = collisions.rawIteratorAt(muontrack.collisionId());
-
-      bool& has = map_has_muontracks_collisions[muontrack.collisionId()];
-      has = true;
-
-      vector<int64_t>& arr_muontracks = map_muontracks[collision.globalIndex()];
-      arr_muontracks.push_back(muontrack.globalIndex());
+    using namespace o2::analysis::mftmch::truth;
+    // Local caches must not cross DF boundaries: MC IDs are DF scoped.
+    std::unordered_map<int64_t, Node> nodes;
+    std::unordered_map<int64_t, Search> searches;
+    auto node = [&](int64_t id) -> Node {
+      auto cached = nodes.find(id);
+      if (cached != nodes.end()) {
+        return cached->second;
+      }
+      Node n;
+      n.id = id;
+      const auto offset = static_cast<int64_t>(particles.offset());
+      if (id >= offset && id - offset < particles.size()) {
+        const auto p = particles.rawIteratorAt(id - offset);
+        n.valid = true;
+        n.pdg = p.pdgCode();
+        n.process = p.getProcess();
+        n.generator = p.producedByGenerator();
+        n.vx = p.vx();
+        n.vy = p.vy();
+        n.vz = p.vz();
+        for (auto const& mother : p.mothersIds()) {
+          n.mothers.push_back(mother);
+        }
+      }
+      nodes.emplace(id, n);
+      return n;
+    };
+    auto motherPdgs = [&](const Node& n) {
+      std::vector<int> pdgs;
+      for (auto const& id : n.mothers) {
+        auto p = node(id);
+        pdgs.push_back(p.valid ? p.pdg : 0);
+      }
+      return pdgs;
+    };
+    int64_t residualRow = residuals.offset();
+    for (const auto& row : residuals) {
+      const auto mch = mchTracks.rawIteratorAt(row.mchTrackId() - mchTracks.offset());
+      const auto mft = mftTracks.rawIteratorAt(row.mftTrackId() - mftTracks.offset());
+      const auto a = particle(mch.mcParticleId(), particles);
+      const auto b = particle(mft.mcParticleId(), particles);
+      // Strict truth policy is annotation-only; it never changes matching.
+      const bool labelsValid = a.valid && b.valid;
+      const bool fake = hasFakeLabel(mch.mcMask(), mft.mcMask());
+      const auto matchStatus = matchingTruthStatus(a.valid, b.valid, a.id, b.id, mch.mcMask(), mft.mcMask());
+      const bool correct = matchStatus == MatchStatus::Correct;
+      const bool falseMatch = matchStatus == MatchStatus::False;
+      const auto status = static_cast<int8_t>(matchStatus);
+      truthOutput(residualRow, row.mchTrackId(), row.mftTrackId(), a.id, b.id,
+                  a.valid, b.valid, correct, mch.mcMask(), mft.mcMask(),
+                  a.collision, b.collision, a.pdg, b.pdg,
+                  a.px, a.py, a.pz, b.px, b.py, b.pz, a.primary, b.primary, falseMatch, status);
+      const Node mchNode = node(a.id), mftNode = node(b.id);
+      const Search* search = nullptr;
+      if (labelsValid && !correct && (a.pdg == kMuonMinus || a.pdg == -kMuonMinus)) {
+        auto cached = searches.find(a.id);
+        if (cached == searches.end()) {
+          cached = searches.emplace(a.id, findAncestors(mchNode, node, static_cast<int>(TMCProcess::kPDecay), cfgMcAncestryMaxDepth, cfgMcAncestryMaxNodes)).first;
+        }
+        search = &cached->second;
+      }
+      auto relation = classify(mchNode, mftNode, search);
+      if (fake) {
+        // Keep genealogy/quality columns, but do not call a fake pair correct.
+        relation.origin = 4;
+      }
+      std::vector<int64_t> pathIds;
+      std::vector<int> pathPdgs, pathProcesses;
+      std::vector<uint8_t> pathGenerator;
+      std::vector<float> pathX, pathY, pathZ;
+      for (const auto& n : relation.parentToChild) {
+        pathIds.push_back(n.id);
+        pathPdgs.push_back(n.pdg);
+        pathProcesses.push_back(n.process);
+        pathGenerator.push_back(static_cast<uint8_t>(n.generator));
+        pathX.push_back(n.vx);
+        pathY.push_back(n.vy);
+        pathZ.push_back(n.vz);
+      }
+      const float nan = std::numeric_limits<float>::quiet_NaN();
+      relationOutput(residualRow++, row.mchTrackId(), row.mftTrackId(),
+                     static_cast<int8_t>(relation.origin), relation.status, relation.status == Complete,
+                     a.valid && (a.pdg == kMuonMinus || a.pdg == -kMuonMinus), relation.ancestor, relation.decay,
+                     relation.decay && relation.depth == 1, relation.depth,
+                     mchNode.process, mftNode.process, mchNode.generator, mftNode.generator,
+                     mchNode.valid ? mchNode.vx : nan, mchNode.valid ? mchNode.vy : nan, mchNode.valid ? mchNode.vz : nan,
+                     mftNode.valid ? mftNode.vx : nan, mftNode.valid ? mftNode.vy : nan, mftNode.valid ? mftNode.vz : nan,
+                     mchNode.mothers, motherPdgs(mchNode), mftNode.mothers, motherPdgs(mftNode),
+                     pathIds, pathPdgs, pathProcesses, pathGenerator, pathX, pathY, pathZ);
     }
   }
-
-  template <typename MFT, typename Collisions>
-  o2::track::TrackParCovFwd PropagateMFTtoDCA(MFT const& mfttrack, Collisions const& collisions, o2::field::MagneticField* field)
+  void process(aod::MatchPlaneResiduals const& residuals, MchLabels const& mchTracks,
+               MftLabels const& mftTracks, aod::McParticles const& particles)
   {
-    auto collision = collisions.rawIteratorAt(mfttrack.collisionId());
-    std::vector<double> mftv1;
-    SMatrix55 mftcovs{mftv1.begin(), mftv1.end()};
-    SMatrix5 mftpars = {mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt()};
-    o2::track::TrackParCovFwd mftpartrack = {mfttrack.z(), mftpars, mftcovs, mfttrack.chi2()};
-    double propVec[3] = {fabs(mfttrack.x() - collision.posX()),
-                         fabs(mfttrack.y() - collision.posY()),
-                         fabs(mfttrack.z() - collision.posZ())};
-    double centerZ[3] = {mfttrack.x() - propVec[0] / 2.,
-                         mfttrack.y() - propVec[1] / 2.,
-                         mfttrack.z() - propVec[2] / 2.};
-    float Bz = field->getBz(centerZ);
-    mftpartrack.propagateToZ(collision.posZ(), Bz);
-    return mftpartrack;
+    annotate(residuals, mchTracks, mftTracks, particles, truths, relations);
   }
-
-  template <typename MFTs, typename Collisions>
-  void setMFTs(MFTs const& mfttracks, Collisions const& collisions, o2::field::MagneticField* field)
+  void processCandidates(Input<aod::MatchingCandidates> const& candidates, Input<aod::MatchingMchPopulation> const& population,
+                         MchLabels const& mchTracks, MftLabels const& mftTracks, aod::McParticles const& particles)
   {
-    for (const auto& mfttrack : mfttracks) {
-      if (!isGoodMFTQuality(mfttrack))
-        continue;
-
-      o2::track::TrackParCovFwd mfttrack_at_dca = PropagateMFTtoDCA(mfttrack, collisions, field);
-      if (!isGoodMFTKine(mfttrack_at_dca))
-        continue;
-
-      auto collision = collisions.rawIteratorAt(mfttrack.collisionId());
-
-      map_vtxz[mfttrack.collisionId()] = collision.posZ();
-      map_nmfttrack[mfttrack.collisionId()] += 1;
-
-      bool& has = map_has_mfttracks_collisions[mfttrack.collisionId()];
-      has = true;
-
-      vector<int64_t>& arr_mfttracks = map_mfttracks[collision.globalIndex()];
-      arr_mfttracks.push_back(mfttrack.globalIndex());
-    }
-  }
-
-  Produces<o2::aod::MatchParams> tableMatchingParams;
-  Produces<o2::aod::TagMatchParams> tableTagMatchingParams;
-  Produces<o2::aod::ProbeMatchParams> tableProbeMatchingParams;
-  Produces<o2::aod::MixMatchParams> tableMixMatchingParams;
-  Produces<o2::aod::MuonPair> tableMuonPair;
-
-  Service<o2::ccdb::BasicCCDBManager> ccdbManager;
-
-  o2::field::MagneticField* fieldB;
-  o2::ccdb::CcdbApi ccdbApi;
-
-  template <typename BC>
-  void initCCDB(BC const& bc)
-  {
-    if (mRunNumber == bc.runNumber())
-      return;
-
-    mRunNumber = bc.runNumber();
-    std::map<std::string, std::string> metadata;
-    auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdbApi, mRunNumber);
-    auto ts = soreor.first;
-    auto grpmag = ccdbApi.retrieveFromTFileAny<o2::parameters::GRPMagField>(grpmagPath, metadata, ts);
-    o2::base::Propagator::initFieldFromGRP(grpmag);
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdbManager->get<TGeoManager>(geoPath);
-    }
-    o2::mch::TrackExtrap::setField();
-    fieldB = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
-  }
-
-  void init(o2::framework::InitContext&)
-  {
-    ccdbManager->setURL(ccdburl);
-    ccdbManager->setCaching(true);
-    ccdbManager->setLocalObjectValidityChecking();
-    ccdbManager->setFatalWhenNull(false);
-    ccdbApi.init(ccdburl);
-    mRunNumber = 0;
-  }
-
-  void process(MyCollisions const& collisions,
-               MyBCs const& bcs,
-               MyMUONs const& muontracks,
-               MyMFTs const& mfttracks)
-  {
-    LOG(info) << "Process()  ";
-    map_muontracks.clear();
-    map_mfttracks.clear();
-    map_collisions.clear();
-    map_has_muontracks_collisions.clear();
-    map_has_mfttracks_collisions.clear();
-
-    initCCDB(bcs.begin());
-    setMUONs(muontracks, collisions);
-    setMFTs(mfttracks, collisions, fieldB);
-
-    for (auto map_has_muontracks_collision : map_has_muontracks_collisions) {
-      auto idmuontrack_collisions = map_has_muontracks_collision.first;
-      for (auto map_has_mfttracks_collision : map_has_mfttracks_collisions) {
-        auto idmfttrack_collisions = map_has_mfttracks_collision.first;
-        if (idmuontrack_collisions != idmfttrack_collisions)
-          continue;
-        map_collisions[idmfttrack_collisions] = true;
+    using namespace o2::analysis::mftmch::truth;
+    annotate(candidates, mchTracks, mftTracks, particles, candidateTruths, candidateRelations);
+    std::unordered_map<int64_t, int> trueCounts;
+    std::set<std::pair<int64_t, int64_t>> seen;
+    for (auto const& row : candidates) {
+      if (!seen.emplace(row.mchTrackId(), row.mftTrackId()).second) {
+        LOGF(fatal, "Duplicate candidate pair would corrupt N_pairable");
+      }
+      auto mch = mchTracks.rawIteratorAt(row.mchTrackId() - mchTracks.offset());
+      auto mft = mftTracks.rawIteratorAt(row.mftTrackId() - mftTracks.offset());
+      auto a = particle(mch.mcParticleId(), particles), b = particle(mft.mcParticleId(), particles);
+      if (matchingTruthStatus(a.valid, b.valid, a.id, b.id, mch.mcMask(), mft.mcMask()) == MatchStatus::Correct) {
+        ++trueCounts[row.mchTrackId()];
       }
     }
-
-    for (auto const& map_collision : map_collisions) {
-      auto const& collision = collisions.rawIteratorAt(map_collision.first);
-
-      for (auto const& imuontrack1 : map_muontracks[map_collision.first]) {
-        auto const& muontrack1 = muontracks.rawIteratorAt(imuontrack1);
-
-        for (auto const& imfttrack1 : map_mfttracks[map_collision.first]) {
-          auto const& mfttrack1 = mfttracks.rawIteratorAt(imfttrack1);
-
-          MatchingParamsML<MyMUON, MyMFT, MyCollision> matching(muontrack1, mfttrack1, collision, fMatchingMethod, fieldB);
-          matching.calcMatchingParams();
-
-          if (!isPassMatchingPreselection(matching.getDx(), matching.getDy()))
-            continue;
-
-          matching.calcGlobalMuonParams();
-
-          bool isTrue = isCorrectMatching(muontrack1, mfttrack1);
-
-          tableMatchingParams(matching.getGMPtAtDCA(),
-                              matching.getGMEtaAtDCA(),
-                              matching.getGMQ(),
-                              matching.getDpt(),
-                              matching.getDx(),
-                              matching.getDy(),
-                              matching.getDeta(),
-                              matching.getDphi(),
-                              isTrue);
+    auto getNode = [&](int64_t id) {
+      Node n;
+      const auto info = particle(id, particles);
+      n.id = id;
+      n.pdg = info.pdg;
+      n.valid = info.valid;
+      if (info.valid) {
+        auto p = particles.rawIteratorAt(id - particles.offset());
+        n.process = p.getProcess();
+        n.generator = p.producedByGenerator();
+        n.vx = p.vx();
+        n.vy = p.vy();
+        n.vz = p.vz();
+        for (auto const& mother : p.mothersIds()) {
+          n.mothers.push_back(mother);
         }
-
-        for (auto const& map_mfttrack : map_mfttracks) {
-          if (map_mfttrack.first == map_collision.first)
-            continue;
-          if (fabs(map_vtxz[map_mfttrack.first] - map_vtxz[map_collision.first]) > fEventMaxDeltaVtxZ)
-            continue;
-          if (fabs(map_nmfttrack[map_mfttrack.first] - map_nmfttrack[map_collision.first]) > fEventMaxDeltaNMFT)
-            continue;
-
-          for (auto const& imfttrack1 : map_mfttrack.second) {
-            auto const& mfttrack1 = mfttracks.rawIteratorAt(imfttrack1);
-            MatchingParamsML<MyMUON, MyMFT, MyCollision> matching(muontrack1, mfttrack1, collision, fMatchingMethod, fieldB);
-            matching.calcMatchingParams();
-            if (!isPassMatchingPreselection(matching.getDx(), matching.getDy()))
-              continue;
-            matching.calcGlobalMuonParams();
-
-            bool isTrue = isCorrectMatching(muontrack1, mfttrack1);
-
-            tableMixMatchingParams(matching.getGMPtAtDCA(),
-                                   matching.getGMEtaAtDCA(),
-                                   matching.getGMQ(),
-                                   matching.getDpt(),
-                                   matching.getDx(),
-                                   matching.getDy(),
-                                   matching.getDeta(),
-                                   matching.getDphi(),
-                                   isTrue);
+      }
+      return n;
+    };
+    int64_t populationRow = population.offset();
+    for (auto const& row : population) {
+      auto mch = mchTracks.rawIteratorAt(row.mchTrackId() - mchTracks.offset());
+      auto info = particle(mch.mcParticleId(), particles);
+      std::vector<int64_t> ancestorIds;
+      std::vector<int> ancestorPdgs;
+      int status = info.valid ? Complete : MissingLabel;
+      auto hfOrigin = o2::analysis::mftmch::MuonHfOrigin::Unknown;
+      if (info.valid && std::abs(info.pdg) == kMuonMinus) {
+        auto search = findAncestors(getNode(info.id), getNode, static_cast<int>(TMCProcess::kPDecay), cfgMcAncestryMaxDepth, cfgMcAncestryMaxNodes);
+        status = search.status;
+        hfOrigin = classifyHfOrigin(getNode(info.id), search);
+        for (auto const& [id, path] : search.ancestors) {
+          auto ancestor = getNode(id);
+          if (std::abs(ancestor.pdg) == kPiPlus || std::abs(ancestor.pdg) == kKPlus) {
+            ancestorIds.push_back(id);
+            ancestorPdgs.push_back(ancestor.pdg);
           }
         }
-
-        for (auto const& imuontrack2 : map_muontracks[map_collision.first]) {
-
-          if (imuontrack1 >= imuontrack2)
-            continue;
-
-          auto const& muontrack2 = muontracks.rawIteratorAt(imuontrack2);
-
-          FindTagAndProbe<MyMUON, MyCollision> tagdimuon(muontrack1, muontrack2, collision);
-          tagdimuon.calcMuonPairAtPV();
-          tableMuonPair(tagdimuon.getCharge(), tagdimuon.getMass(), tagdimuon.getPt(), tagdimuon.getRap());
-
-          if (!isGoodTagDimuon(tagdimuon.getMass()))
-            continue;
-
-          auto tagmuontrack = muontrack1;
-          auto probemuontrack = muontrack2;
-
-          if (tagdimuon.getTagMuonIndex() == 1) {
-            tagmuontrack = muontrack2;
-            probemuontrack = muontrack1;
-          }
-
-          int nTagMFTCand = 0;
-          int nProbeMFTCand = 0;
-
-          int IndexTagMFTCand = -1;
-          float tagGMPtAtDCA = 0;
-          // float tagGMEtaAtDCA = 0;
-
-          float minimumR = 9999.;
-          int minimumIndexProbeMFTCand = -1;
-
-          unordered_map<int, vector<float>> map_tagMatchingParams;
-          unordered_map<int, vector<float>> map_probeMatchingParams;
-
-          for (auto const& imfttrack1 : map_mfttracks[map_collision.first]) {
-            auto const& mfttrack1 = mfttracks.rawIteratorAt(imfttrack1);
-            MatchingParamsML<MyMUON, MyMFT, MyCollision> matchingTag(tagmuontrack, mfttrack1, collision, fMatchingMethod, fieldB);
-            matchingTag.calcMatchingParams();
-            matchingTag.calcGlobalMuonParams();
-            if (isGoodTagMatching(matchingTag.getDx(), matchingTag.getDy(), matchingTag.getDeta(), matchingTag.getDphi()) &&
-                isPassMatchingPreselection(matchingTag.getDx(), matchingTag.getDy())) {
-              bool isTrue = isCorrectMatching(tagmuontrack, mfttrack1);
-              tableTagMatchingParams(matchingTag.getGMPtAtDCA(),
-                                     matchingTag.getGMEtaAtDCA(),
-                                     matchingTag.getGMQ(),
-                                     matchingTag.getDpt(),
-                                     matchingTag.getDx(),
-                                     matchingTag.getDy(),
-                                     matchingTag.getDeta(),
-                                     matchingTag.getDphi(),
-                                     isTrue);
-              IndexTagMFTCand = mfttrack1.globalIndex();
-              tagGMPtAtDCA = matchingTag.getGMPtAtDCA();
-              // tagGMEtaAtDCA = matchingTag.getGMEtaAtDCA();
-              ++nTagMFTCand;
-            }
-          } // end of loop imfttrack1
-
-          if (nTagMFTCand != 1)
-            continue;
-          for (auto const& imfttrack1 : map_mfttracks[map_collision.first]) {
-            auto const& mfttrack1 = mfttracks.rawIteratorAt(imfttrack1);
-            if (mfttrack1.globalIndex() == IndexTagMFTCand)
-              continue;
-            MatchingParamsML<MyMUON, MyMFT, MyCollision> matchingProbe(probemuontrack, mfttrack1, collision, fMatchingMethod, fieldB);
-            matchingProbe.calcMatchingParams();
-            if (isPassMatchingPreselection(matchingProbe.getDx(), matchingProbe.getDy())) {
-              float R = sqrt(matchingProbe.getDx() * matchingProbe.getDx() + matchingProbe.getDy() * matchingProbe.getDy());
-              bool isTrue = isCorrectMatching(probemuontrack, mfttrack1);
-              matchingProbe.calcGlobalMuonParams();
-              vector<float>& probeMatchingParams = map_probeMatchingParams[nProbeMFTCand];
-              probeMatchingParams.push_back(tagGMPtAtDCA);
-              probeMatchingParams.push_back(matchingProbe.getGMPtAtDCA());
-              probeMatchingParams.push_back(matchingProbe.getGMEtaAtDCA());
-              probeMatchingParams.push_back(matchingProbe.getGMQ());
-              probeMatchingParams.push_back(matchingProbe.getDpt());
-              probeMatchingParams.push_back(matchingProbe.getDx());
-              probeMatchingParams.push_back(matchingProbe.getDy());
-              probeMatchingParams.push_back(matchingProbe.getDeta());
-              probeMatchingParams.push_back(matchingProbe.getDphi());
-              probeMatchingParams.push_back(isTrue);
-              if (R < minimumR) {
-                minimumIndexProbeMFTCand = nProbeMFTCand;
-                minimumR = R;
-              }
-              ++nProbeMFTCand;
-            }
-          } // end of loop imfttrack1
-
-          if (nProbeMFTCand < 1)
-            continue;
-
-          if (minimumIndexProbeMFTCand > -1) {
-            vector<float>& probeMatchingParams = map_probeMatchingParams[minimumIndexProbeMFTCand];
-            tableProbeMatchingParams(probeMatchingParams[0],
-                                     probeMatchingParams[1],
-                                     probeMatchingParams[2],
-                                     static_cast<int16_t>(probeMatchingParams[3]),
-                                     probeMatchingParams[4],
-                                     probeMatchingParams[5],
-                                     probeMatchingParams[6],
-                                     probeMatchingParams[7],
-                                     probeMatchingParams[8],
-                                     static_cast<bool>(probeMatchingParams[9]));
-          }
-
-        } // end of loop imuontrack2
-      } // end of loop imuontrack1
-    } // end of loop map_collision
-
-  } // end of processMC
+      }
+      mchTruths(populationRow++, row.mchTrackId(), info.id, mch.mcMask(), info.valid, info.pdg, info.collision,
+                trueCounts[row.mchTrackId()], !ancestorIds.empty(), status, ancestorIds, ancestorPdgs,
+                static_cast<int8_t>(classifySignalOrigin(getNode(info.id), getNode, cfgMcAncestryMaxDepth, cfgMcAncestryMaxNodes)), static_cast<int8_t>(hfOrigin));
+    }
+  }
+  PROCESS_SWITCH(MftMchMcTruth, processCandidates, "Truth for ALL candidate identities and all MCHs before matching selection", true);
+  // Only MC-independent matching is done upstream. This publication guard makes
+  // the MC mixed sample strictly different generator collisions and particles.
+  // Labels are never forced false to hide a true/unknown pair.
+  struct CachedMftTruth {
+    ParticleInfo info;
+    uint16_t mask = 0;
+  };
+  // MC particle/collision IDs are only comparable within the same source frame.
+  std::map<uint64_t, std::unordered_map<int64_t, CachedMftTruth>> mixedLabelFrames;
+  void processMixed(aod::RawMixedMatchPlaneResiduals const& rows, MchLabels const& mchTracks,
+                    MftLabels const& mftTracks, aod::McParticles const& particles,
+                    aod::MftMchMixingPoolStates const& poolStates)
+  {
+    if (poolStates.size() == 0) {
+      if (rows.size() != 0) {
+        LOGF(fatal, "Missing mixed-event source-frame metadata");
+      }
+      mixedLabelFrames.clear();
+      return;
+    }
+    if (poolStates.size() != 1) {
+      LOGF(fatal, "Expected one pool state per DF");
+    }
+    const auto state = poolStates.begin();
+    const auto frame = state.targetFrameId();
+    auto& current = mixedLabelFrames[frame];
+    current.clear();
+    for (const auto& mft : mftTracks) {
+      current.emplace(mft.globalIndex(), CachedMftTruth{.info = particle(mft.mcParticleId(), particles), .mask = mft.mcMask()});
+    }
+    auto donorTruth = [&](const auto& row) -> const CachedMftTruth& {
+      if (row.targetFrameId() != frame || row.mixingStreamId() != state.mixingStreamId()) {
+        LOGF(fatal, "Mixed source frame/stream mismatch");
+      }
+      const auto source = mixedLabelFrames.find(row.donorFrameId());
+      if (source == mixedLabelFrames.end()) {
+        LOGF(fatal, "Historical MFT label frame is unavailable");
+      }
+      const auto track = source->second.find(row.mftTrackId());
+      if (track == source->second.end()) {
+        LOGF(fatal, "Historical MFT label ID is unavailable");
+      }
+      return track->second;
+    };
+    std::set<int64_t> eligible;
+    std::map<int64_t, std::set<int>> groups;
+    size_t rejectedUnknown = 0, rejectedSameMcEvent = 0;
+    int64_t sourceIndex = 0;
+    for (const auto& row : rows) {
+      const auto sourceRow = sourceIndex++;
+      const auto mch = mchTracks.rawIteratorAt(row.mchTrackId() - mchTracks.offset());
+      const auto a = particle(mch.mcParticleId(), particles);
+      const auto& b = donorTruth(row).info;
+      if (!a.valid || !b.valid || a.collision < 0 || b.collision < 0) {
+        ++rejectedUnknown;
+        continue;
+      }
+      if (row.targetFrameId() == row.donorFrameId() && (a.id == b.id || a.collision == b.collision)) {
+        ++rejectedSameMcEvent;
+        continue;
+      }
+      eligible.insert(sourceRow);
+      groups[row.mchTrackId()].insert(row.mixedGroupIndex());
+    }
+    int64_t index = 0;
+    sourceIndex = 0;
+    mixedSampler.decisions.clear();
+    for (const auto& row : rows) {
+      if (!eligible.contains(sourceIndex++)) {
+        continue;
+      }
+      if (!mixedSampler.keep(row)) {
+        continue;
+      }
+      const auto mch = mchTracks.rawIteratorAt(row.mchTrackId() - mchTracks.offset());
+      const auto a = particle(mch.mcParticleId(), particles);
+      const auto& donor = donorTruth(row);
+      const auto& b = donor.info;
+      o2::analysis::mftmch::copyMixedResidual(row, mixedResiduals, groups.at(row.mchTrackId()).size());
+      mixedTruths(index++, row.mchTrackId(), row.mftTrackId(), a.id, b.id,
+                  true, true, false, mch.mcMask(), donor.mask, a.collision, b.collision, a.pdg, b.pdg,
+                  a.px, a.py, a.pz, b.px, b.py, b.pz, a.primary, b.primary, true, static_cast<int8_t>(0));
+    }
+    samplingMetadata->SetTitle(mixedSampler.metadata().c_str());
+    // Evicted upstream frames may still have been used in the current rows.
+    // Prune only after publication, against the exact retained-frame set.
+    const auto retained = state.retainedFrames();
+    std::set<uint64_t> keep(retained.begin(), retained.end());
+    for (auto it = mixedLabelFrames.begin(); it != mixedLabelFrames.end();) {
+      if (!keep.contains(it->first)) {
+        it = mixedLabelFrames.erase(it);
+      } else {
+        ++it;
+      }
+    }
+    LOGF(info, "Mixed MC publication: saved=%" PRId64 ", unknown rejected=%zu, same-MC-event/particle rejected=%zu, retained label frames=%zu",
+         static_cast<int64_t>(index), rejectedUnknown, rejectedSameMcEvent, mixedLabelFrames.size());
+  }
+  PROCESS_SWITCH(MftMchMcTruth, processMixed, "Publish mixed rows only for valid, distinct MC collisions/particles", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+// This device adds a separate MC-annotated output. The shared reconstruction,
+// inclusive dimuons and pre-selection MCH denominator remain independent of MC.
+template <bool Sparse>
+struct McDimuonTruth {
+  template <typename T>
+  using Input = o2::analysis::mftmch::MatchingAuditInput<T, Sparse>;
+  o2::analysis::mftmch::MatchingAuditOutput<aod::McDimuonTruths> pairs;
+  Configurable<bool> cfgEnableMcDimuonTruth{"cfgEnableMcDimuonTruth", false, "Save MC-annotated MCH-PV and selected chi2/ML dimuons; matched methods require cfgSaveSelectedMuonTable"};
+  Configurable<int> cfgMcAncestryMaxDepth{"cfgMcAncestryMaxDepth", 128, "Maximum MC ancestor depth; incomplete ancestry is flagged without rejecting the dimuon"};
+  Configurable<int> cfgMcAncestryMaxNodes{"cfgMcAncestryMaxNodes", 4096, "Maximum distinct MC ancestor nodes per muon"};
+  Configurable<std::vector<double>> cfgDimuonMassAxis{"cfgDimuonMassAxis", {600, 0., 12.}, "Sparse mass: nbins,min,max GeV/c^2"};
+  Configurable<std::vector<double>> cfgDimuonPtAxis{"cfgDimuonPtAxis", {200, 0., 20.}, "Sparse dimuon pT: nbins,min,max GeV/c"};
+  Configurable<std::vector<double>> cfgDimuonRapidityAxis{"cfgDimuonRapidityAxis", {80, -5., -1.}, "Sparse dimuon rapidity: nbins,min,max"};
+  static AxisSpec axis(std::vector<double> const& v, char const* title)
+  {
+    if (v.size() != 3 || !std::isfinite(v[0]) || v[0] < 1 || v[0] > 1000000 || v[0] != std::floor(v[0]) || !std::isfinite(v[1]) || !std::isfinite(v[2]) || v[1] >= v[2]) {
+      LOGF(fatal, "Invalid MC dimuon axis: require positive integer nbins,min,max");
+    }
+    return {static_cast<int>(v[0]), v[1], v[2], title};
+  }
+  void init(InitContext&)
+  {
+    if (!cfgEnableMcDimuonTruth) {
+      return;
+    }
+    if (cfgMcAncestryMaxDepth < 1 || cfgMcAncestryMaxNodes < 1) {
+      LOGF(fatal, "MC dimuon ancestry limits must be positive");
+    }
+  }
+  struct Ancestry {
+    std::set<int64_t> jpsis;
+    bool complete = true;
+  };
+  void process(Input<aod::MchDimuonsPV> const& mchPairs, Input<aod::SelectedMatchingMuons> const& muons, Input<aod::MatchingDimuonVertices> const& vertices,
+               typename MftMchMcTruth<Sparse>::MchLabels const& mchTracks, typename MftMchMcTruth<Sparse>::MftLabels const& mftTracks,
+               aod::McParticles const& particles)
+  {
+    if (!cfgEnableMcDimuonTruth) {
+      return;
+    }
+    std::map<std::tuple<int64_t, int8_t, int64_t, int64_t>, bool> vertexCuts;
+    for (auto const& vertex : vertices) {
+      vertexCuts[{vertex.collisionId(), vertex.method(), std::min(vertex.mchTrackId1(), vertex.mchTrackId2()), std::max(vertex.mchTrackId1(), vertex.mchTrackId2())}] = vertex.passesVertexCuts();
+    }
+    auto inRange = [](int64_t id, auto const& table) { return id >= static_cast<int64_t>(table.offset()) && id - static_cast<int64_t>(table.offset()) < table.size(); };
+    auto particle = [&](int64_t id) {
+      typename MftMchMcTruth<Sparse>::ParticleInfo info;
+      info.id = id;
+      if (inRange(id, particles)) {
+        auto p = particles.rawIteratorAt(id - particles.offset());
+        info.valid = true;
+        info.pdg = p.pdgCode();
+        info.collision = p.mcCollisionId();
+      }
+      return info;
+    };
+    auto label = [&](int64_t id, auto const& tracks) -> int64_t {
+      if (!inRange(id, tracks)) {
+        return -1;
+      }
+      auto t = tracks.rawIteratorAt(id - tracks.offset());
+      if ((t.mcMask() & 128) != 0 || !particle(t.mcParticleId()).valid) {
+        return -1;
+      }
+      return t.mcParticleId();
+    };
+    // MC IDs and caches are local to one process call / DF.
+    std::map<int64_t, Ancestry> cache;
+    auto ancestors = [&](int64_t id) -> Ancestry const& {
+      auto found = cache.find(id);
+      if (found != cache.end()) {
+        return found->second;
+      }
+      Ancestry result;
+      std::vector<std::pair<int64_t, int>> todo{{id, 0}};
+      std::set<int64_t> seen;
+      for (size_t i = 0; i < todo.size(); ++i) {
+        auto [current, depth] = todo[i];
+        if (!seen.insert(current).second) {
+          continue;
+        }
+        if (seen.size() > static_cast<size_t>(cfgMcAncestryMaxNodes.value) || !inRange(current, particles)) {
+          result.complete = false;
+          break;
+        }
+        auto p = particles.rawIteratorAt(current - particles.offset());
+        if (p.pdgCode() == 443) {
+          result.jpsis.insert(current);
+        }
+        for (auto mother : p.mothersIds()) {
+          if (depth >= cfgMcAncestryMaxDepth) {
+            result.complete = false;
+          } else {
+            todo.emplace_back(mother, depth + 1);
+          }
+        }
+      }
+      return cache.emplace(id, std::move(result)).first->second;
+    };
+    auto save = [&](int64_t collision, int8_t method, int64_t mch1, int64_t mft1, int64_t mch2, int64_t mft2,
+                    int8_t charge, double score1, double score2, double mass, double pt, double rapidity) {
+      if (!std::isfinite(mass) || !std::isfinite(pt) || !std::isfinite(rapidity)) {
+        return;
+      }
+      if (vertices.size() != 0) {
+        auto vertex = vertexCuts.find({collision, method, std::min(mch1, mch2), std::max(mch1, mch2)});
+        if (vertex == vertexCuts.end() || !vertex->second) {
+          return;
+        }
+      }
+      const auto id1 = label(mch1, mchTracks), id2 = label(mch2, mchTracks);
+      const auto p1 = particle(id1), p2 = particle(id2);
+      const bool oppositeMuons = p1.valid && p2.valid && std::abs(p1.pdg) == 13 && p1.pdg == -p2.pdg;
+      bool complete = false;
+      int64_t jpsi = -1;
+      if (oppositeMuons && p1.collision >= 0 && p1.collision == p2.collision) {
+        auto const& a = ancestors(id1);
+        auto const& b = ancestors(id2);
+        complete = a.complete && b.complete;
+        if (complete) {
+          for (auto ancestor : a.jpsis) {
+            if (b.jpsis.contains(ancestor)) {
+              jpsi = ancestor;
+              break;
+            }
+          }
+        }
+      }
+      const bool commonJpsi = jpsi >= 0;
+      const int8_t correct = method == 0 ? -1 : static_cast<int8_t>((id1 >= 0 && id1 == label(mft1, mftTracks)) + (id2 >= 0 && id2 == label(mft2, mftTracks)));
+      std::array<std::vector<int64_t>, 2> motherIds;
+      std::array<std::vector<int>, 2> motherPdgs;
+      std::vector<int64_t> commonMotherIds;
+      std::vector<int> commonMotherPdgs;
+      bool mothersComplete = charge == 0 && p1.valid && p2.valid;
+      if (charge == 0) {
+        const std::array<int64_t, 2> childIds{id1, id2};
+        for (size_t leg = 0; leg < childIds.size(); ++leg) {
+          if (!inRange(childIds[leg], particles)) {
+            continue;
+          }
+          const auto child = particles.rawIteratorAt(childIds[leg] - particles.offset());
+          for (auto mother : child.mothersIds()) {
+            motherIds[leg].push_back(mother);
+            const auto info = particle(mother);
+            motherPdgs[leg].push_back(info.valid ? info.pdg : 0);
+            mothersComplete = mothersComplete && info.valid;
+          }
+        }
+        // Compare particle IDs, never just PDG codes. Preserve multiple mothers.
+        std::set<int64_t> shared;
+        for (auto mother : motherIds[0]) {
+          if (inRange(mother, particles) && std::find(motherIds[1].begin(), motherIds[1].end(), mother) != motherIds[1].end()) {
+            shared.insert(mother);
+          }
+        }
+        for (auto mother : shared) {
+          commonMotherIds.push_back(mother);
+          commonMotherPdgs.push_back(particle(mother).pdg);
+        }
+      }
+
+      uint16_t resonanceMask = 0;
+      std::vector<int64_t> resonanceIds;
+      std::vector<int> resonancePdgs;
+      // The tag depends ONLY on the MCH particles, not on selected MFT labels.
+      // A pion/kaon at either MCH leg or a merely common remote ancestor fails.
+      if (charge == 0 && mothersComplete && std::abs(p1.pdg) == 13 && std::abs(p2.pdg) == 13) {
+        for (size_t i = 0; i < commonMotherIds.size(); ++i) {
+          const auto bit = aod::mcdimuontruth::resonanceMotherBit(commonMotherPdgs[i]);
+          if (bit != 0) {
+            resonanceMask |= bit;
+            resonanceIds.push_back(commonMotherIds[i]);
+            resonancePdgs.push_back(commonMotherPdgs[i]);
+          }
+        }
+      }
+      pairs(collision, method, mch1, mft1, mch2, mft2, id1, id2, jpsi, oppositeMuons, commonJpsi, complete,
+            correct, charge, score1, score2, mass, pt, rapidity,
+            motherIds[0], motherPdgs[0], motherIds[1], motherPdgs[1], commonMotherIds, commonMotherPdgs, mothersComplete, resonanceMask, resonanceIds, resonancePdgs);
+    };
+    // MCH-only Same/Mixed dimuons are written once by mch-dimuon-output.
+    (void)mchPairs;
+    using MuonRow = typename Input<aod::SelectedMatchingMuons>::iterator;
+    std::map<std::tuple<uint64_t, int64_t, int8_t>, std::vector<MuonRow>> groups;
+    for (auto const& muon : muons) {
+      if (muon.method() == 1 || muon.method() == 2) {
+        groups[{muon.frameId(), muon.collisionId(), muon.method()}].push_back(muon);
+      }
+    }
+    for (auto const& [key, rows] : groups) {
+      for (size_t i = 0; i < rows.size(); ++i) {
+        for (size_t j = i + 1; j < rows.size(); ++j) {
+          auto const& a = rows[i];
+          auto const& b = rows[j];
+          if (a.mchTrackId() == b.mchTrackId() || a.mftTrackId() == b.mftTrackId()) {
+            continue;
+          }
+          auto p = o2::analysis::mftmch::muonMomentum(a.px(), a.py(), a.pz(), o2::constants::physics::MassMuon) + o2::analysis::mftmch::muonMomentum(b.px(), b.py(), b.pz(), o2::constants::physics::MassMuon);
+          save(std::get<1>(key), std::get<2>(key), a.mchTrackId(), a.mftTrackId(), b.mchTrackId(), b.mftTrackId(),
+               static_cast<int8_t>(a.charge() + b.charge()), a.score(), b.score(), p.M(), p.Pt(), p.Rapidity());
+        }
+      }
+    }
+  }
+};
+
+// Consume optional legacy MC audit transport without duplicating sparse output.
+// The unified GlobalMuon dimuon sparse is filled independently of these tables.
+template <bool Sparse, uint8_t Mask = 0>
+struct MatchingMcOutputSparse {
+  template <typename T>
+  using Input = o2::analysis::mftmch::MatchingAuditInput<T, Sparse, Mask>;
+  void process(Input<aod::McDimuonTruths> const&, Input<aod::MatchingDimuonVertices> const&) {}
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<match_mft_mch_data_mc>(cfgc)};
+  auto workflow = o2::analysis::mftmch::makeMatchingWorkflow<true>(context, true);
+  const auto mode = o2::analysis::mftmch::matchingOutputMode(context);
+  if (mode == "sparse") {
+    workflow.push_back(adaptAnalysisTask<MftMchMcTruth<true>>(context, TaskName{"mft-mch-mc-truth"}));
+    workflow.push_back(adaptAnalysisTask<McDimuonTruth<true>>(context, TaskName{"mc-dimuon-truth"}));
+    workflow.push_back(adaptAnalysisTask<MatchingMcOutputSparse<true>>(context, TaskName{"matching-mc-output"}));
+  } else {
+    if (o2::analysis::mftmch::matchingTreeStorage().mchPopulation) {
+      workflow.push_back(adaptAnalysisTask<MftMchMcTruth<false>>(context, TaskName{"mft-mch-mc-truth"}));
+    } else {
+      workflow.push_back(adaptAnalysisTask<MftMchMcTruth<false, true>>(context, TaskName{"mft-mch-mc-truth"}));
+    }
+    workflow.push_back(adaptAnalysisTask<McDimuonTruth<false>>(context, TaskName{"mc-dimuon-truth"}));
+    if (mode == "both") {
+      workflow.push_back(o2::analysis::mftmch::withMatchingAuditStorageMask(o2::analysis::mftmch::matchingAuditStorageMask(), [&]<uint8_t Mask>() {
+        return adaptAnalysisTask<MatchingMcOutputSparse<false, Mask>>(context, TaskName{"matching-mc-output"});
+      }));
+    }
+  }
+  o2::analysis::mftmch::configureMatchingWriter(context, workflow, mode);
+  return workflow;
 }
