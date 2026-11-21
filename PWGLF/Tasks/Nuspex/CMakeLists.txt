@@ -217,3 +217,8 @@ o2physics_add_dpl_workflow(pcc-mc-spectra
     COMPONENT_NAME Analysis)
 
 endif()
+
+o2physics_add_dpl_workflow(tpc-dedx-antili6-search
+    SOURCES tpcDedxAntiLi6Search.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB
+    COMPONENT_NAME Analysis)
