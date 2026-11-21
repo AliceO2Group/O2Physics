@@ -21,6 +21,7 @@
 #include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -48,7 +49,7 @@ struct NonLinProducer {
 
   enum CentralityEstimator : uint8_t {
     None = 0,
-    CFT0A = 1,
+    CFT0A,
     CFT0C,
     CFT0M,
     NCentralityEstimators
@@ -77,7 +78,7 @@ struct NonLinProducer {
   EMNonLin::Context emNonLinContextEMC;
   EMNonLin::Context emNonLinContextPCM;
 
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   TMatrixD* emcalMatrix = nullptr;
   TMatrixD* pcmMatrix = nullptr;
@@ -246,8 +247,8 @@ struct NonLinProducer {
   PROCESS_SWITCH(NonLinProducer, processPCMDummy, "Createdumy  Non Lin table for PCM.", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<NonLinProducer>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<NonLinProducer>(context)};
   return workflow;
 }

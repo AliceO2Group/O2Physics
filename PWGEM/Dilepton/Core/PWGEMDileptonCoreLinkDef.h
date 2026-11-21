@@ -9,8 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGEM_DILEPTON_CORE_PWGEMDILEPTONCORELINKDEF_H_
-#define PWGEM_DILEPTON_CORE_PWGEMDILEPTONCORELINKDEF_H_
+// NOLINT(build/header_guard)
 
 #pragma link off all globals;
 #pragma link off all classes;
@@ -20,5 +19,3 @@
 #pragma link C++ class DielectronCut + ;
 #pragma link C++ class DimuonCut + ;
 #pragma link C++ class EMTrackCut + ;
-
-#endif // PWGEM_DILEPTON_CORE_PWGEMDILEPTONCORELINKDEF_H_

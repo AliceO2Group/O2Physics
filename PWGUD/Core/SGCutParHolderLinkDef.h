@@ -9,12 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGUD_CORE_SGCUTPARHOLDERLINKDEF_H_
-#define PWGUD_CORE_SGCUTPARHOLDERLINKDEF_H_
+// NOLINT(build/header_guard)
 
 #pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
 #pragma link C++ class SGCutParHolder + ;
-
-#endif // PWGUD_CORE_SGCUTPARHOLDERLINKDEF_H_

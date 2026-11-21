@@ -85,6 +85,7 @@ struct singleTrackSelector {
   Configurable<std::vector<float>> keepWithinNsigmaTPC{"keepWithinNsigmaTPC", std::vector<float>{-4.0f, 4.0f}, "TPC range for preselection of particles specified with PDG"};
   Configurable<std::vector<int>> _particlesToReject{"particlesToRejectPDGs", std::vector<int>{211, 321, 1000020030}, "PDG codes of particles that will be rejected with TOF (only pion, kaon, proton and deurton are supported now)"};
   Configurable<std::vector<float>> rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", std::vector<float>{-5.0f, 5.0f}, "TOF rejection Nsigma range for particles specified with PDG to be rejected"};
+  Configurable<std::vector<float>> rejectWithinNsigmaTPC{"rejectWithinNsigmaTPC", std::vector<float>{-5.0f, 5.0f}, "TPC Nsigma range required together with rejectWithinNsigmaTOF for particles specified with PDG to be rejected"};
 
   Configurable<float> _pRemoveTofOutOfRange{"pRemoveTofOutOfRange", 100.f, "momentum starting from which request TOF nSigma to be within the stored range (-10 < Nsigma < 10)"};
   Configurable<std::array<float, 3>> _ptRemoveTofOutOfRange{"ptRemoveTofOutOfRange", {100.f, -10.f, 10.f}, "transverse momentum starting from which request TOF nSigma to be within the stored range (-10 < Nsigma < 10)"};
@@ -247,7 +248,7 @@ struct singleTrackSelector {
       for (auto i : particlesToReject) {
         // if satisfied, want to continue in the upper loop (over tracks) -- skip the current track
         // cannot use simple 'continue' since it will be applied to the current loop, so have to use a flag
-        if (o2::aod::singletrackselector::TOFselection(track, std::make_pair(i, rejectWithinNsigmaTOF))) {
+        if (o2::aod::singletrackselector::TOFselection(track, std::make_pair(i, rejectWithinNsigmaTOF), rejectWithinNsigmaTPC.value)) {
           skip_track = true;
           break;
         }
@@ -259,7 +260,7 @@ struct singleTrackSelector {
 
       for (auto ii : particlesToKeep)
         if (o2::aod::singletrackselector::TPCselection<false>(track, std::make_pair(ii, keepWithinNsigmaTPC))) {
-          if (track.p() > _pRemoveTofOutOfRange && !o2::aod::singletrackselector::TOFselection(track, std::make_pair(ii, std::vector<float>{-10.0, 10.0}), std::vector<float>{-10.0, 10.0}))
+          if (track.p() > _pRemoveTofOutOfRange && !o2::aod::singletrackselector::TOFselection(track, std::make_pair(ii, std::vector<float>{-6.0, 6.0}), std::vector<float>{-10.0, 10.0}))
             continue;
           if (track.pt() > _ptRemoveTofOutOfRange.value[0] && !o2::aod::singletrackselector::TOFselection(track, std::make_pair(ii, std::vector<float>{_ptRemoveTofOutOfRange.value[1], _ptRemoveTofOutOfRange.value[2]}), std::vector<float>{-10.f, +10.f}))
             continue;

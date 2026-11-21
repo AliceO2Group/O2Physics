@@ -92,7 +92,7 @@ o2physics_add_dpl_workflow(spectra-tpc-tiny-pikapr
 
 o2physics_add_dpl_workflow(charged-particles
     SOURCES chargedParticles.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(pcc-qa
@@ -155,6 +155,11 @@ o2physics_add_dpl_workflow(nuclei-from-hypertriton-map
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(antinuclei-in-jets-cdf
+    SOURCES antinucleiInJetsCDF.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
 if(FastJet_FOUND)
 o2physics_add_dpl_workflow(angular-correlations-in-jets
     SOURCES angularCorrelationsInJets.cxx
@@ -196,9 +201,19 @@ o2physics_add_dpl_workflow(multiplicity-pt
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(flattenicity-pt-spectra
+                    SOURCES flattenicityPtSpectra.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(deuteron-in-jets-trg-pt
-    SOURCES DeuteronInJetsTrgPt.cxx
+    SOURCES deuteronInJetsTrgPt.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(pcc-mc-spectra
+    SOURCES pccMcSpectra.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
 endif()

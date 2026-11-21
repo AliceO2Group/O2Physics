@@ -13,25 +13,29 @@
 /// \brief This code produces EmMc tables were the McParticleIds get reshuffled due to not storing all McParticles
 /// \author Daiki Sekihata (daiki.sekihata@cern.ch), Marvin Hemmer (marvin.hemmer@cern.ch), Nicolas Strangmann (nicolas.strangmann@cern.ch)
 
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/DalitzBinning.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
 #include "Common/DataModel/EventSelection.h"
 
 #include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
 #include <TH2.h>
+#include <TH3.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
@@ -46,6 +50,7 @@
 #include <map>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace o2;
@@ -55,7 +60,7 @@ using namespace o2::soa;
 using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
 using namespace o2::constants::physics;
 
-using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::EMEvSels>;
+using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PMEvSels, aod::EMEoIs>;
 using TracksMC = soa::Join<aod::TracksIU, aod::McTrackLabels>;
 using FwdTracksMC = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
 using MyEMCClusters = soa::Join<aod::MinClusters, aod::EMCClusterMCLabels_001>;
@@ -79,10 +84,12 @@ struct AssociateMCInfoPhoton {
   Produces<o2::aod::EMMCEventLabels> mceventlabels;
   Produces<o2::aod::EMMCParticles> emmcparticles;
   Produces<o2::aod::V0LegMCLabels> v0legmclabels;
+  Produces<o2::aod::PCMFreeLegMCLabels> pcmfreelegmclabels;
   Produces<o2::aod::EMPrimaryElectronMCLabels> emprimaryelectronmclabels;
   Produces<o2::aod::EMEMCClusterMCLabels_001> ememcclustermclabels;
 
   Produces<o2::aod::BinnedGenPts> binnedGenPt;
+  Produces<o2::aod::BinnedGenDalitzs> binnedGenDalitz;
 
   Configurable<float> max_eta_gen_secondary{"max_eta_gen_secondary", 0.9, "max eta to store generated information"};
   Configurable<float> margin_z_gen{"margin_z_gen", 15.f, "margin for Z of true photon conversion point to store generated information"};
@@ -91,8 +98,14 @@ struct AssociateMCInfoPhoton {
   Configurable<float> cfg_max_eta_photon{"cfg_max_eta_gamma", 0.8, "max eta for photons at PV"};
   Configurable<float> maxPt{"maxPt", 20.f, "max pT for BinnedGenPts table"};
   Configurable<float> maxY{"maxY", 0.9f, "max |rapidity| for BinnedGenPts table"};
+  Configurable<bool> fillBinnedGenDalitz{"fillBinnedGenDalitz", false, "produce binned generated Dalitz decays and QA histograms"};
   Configurable<bool> doStoreAllDaughters{"doStoreAllDaughters", false, "flag to enable storing of all photon, pi0, eta, eta' and omega daughters. This will increase the dervied data size!"};
   Configurable<bool> useIsSelected{"useIsSelected", true, "flag to enable the usage of isSelected from our EM event selection. Disabling this will increase the derived data size!"};
+  Configurable<bool> useIsEOI{"useIsEOI", true, "flag to enable the usage of the EOI table"};
+
+  Configurable<bool> fillBremsChain{"fillBremsChain", false, "MC truth histograms of the bremsstrahlung chain: photon conversion, radiation by a leg, conversion of the radiated photon (BremsChain/)"};
+  Configurable<float> bremsChainMaxR{"bremsChainMaxR", 90.f, "max conversion radius (cm) for the bremsstrahlung chain histograms"};
+  Configurable<float> bremsChainMinX{"bremsChainMinX", 0.05f, "min energy fraction E(radiated photon) / E(parent photon) for the bremsstrahlung chain histograms"};
 
   HistogramRegistry registry{"EMMCEvent"};
 
@@ -130,12 +143,37 @@ struct AssociateMCInfoPhoton {
       registry.add<TH2>(Form("Generated/h2PtY_Accepted_%s", ParticleNames[i].data()), Form("Generated %s", ParticleNames[i].data()), kTH2F, {axisPt, axisRapidity}, true);
     }
 
+    if (fillBremsChain) {
+      const AxisSpec axR{45, 0.f, 90.f, "#it{R}_{conv}(A) (cm)"};
+      const AxisSpec axPhi{360, 0.f, 360.f, "#varphi_{conv}(A) (deg)"};
+      const AxisSpec axPtA{{0.1, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 10.0}, "#it{p}_{T}(A) (GeV/#it{c})"};
+      const AxisSpec axX{{0.05, 0.1, 0.3, 0.5, 1.0}, "#it{E}(B) / #it{E}(A)"};
+      registry.add("BremsChain/hGenPhiPt", "generated primary photons, |#eta| < cfg_max_eta_gamma;#varphi of the momentum (deg);#it{p}_{T} (GeV/#it{c})", kTH2F, {{360, 0.f, 360.f}, axPtA}, false);
+      registry.add("BremsChain/hConvA", "true conversions of primary photons", kTH3F, {axR, axPhi, axPtA}, false);
+      registry.add("BremsChain/hConvARec", "true conversions of primary photons, photon reconstructed", kTH3F, {axR, axPhi, axPtA}, false);
+      registry.add("BremsChain/hChain", "photons radiated by a leg of A, cumulative stages", kTHnSparseF, {axR, axPhi, axPtA, axX, {4, -0.5f, 3.5f, "stage: 0 radiated (in the MC stack), 1 B converts, 2 B reconstructed, 3 B and A reconstructed"}}, false);
+      registry.add("BremsChain/hGeometry", "radiated photons that convert: where, relative to A", kTHnSparseF, {{18, 0.f, 90.f, "#it{R}_{conv}(A) (cm)"}, {40, -5.f, 95.f, "#it{R}_{conv}(B) #minus #it{R}_{conv}(A) (cm)"}, {40, -20.f, 20.f, "#varphi_{conv}(B) #minus #varphi_{conv}(A) (deg)"}, axX, {3, 0.5f, 3.5f, "stage: 1 B converts, 2 B reconstructed, 3 B and A reconstructed"}}, false);
+      registry.add("BremsChain/hEmission", "radiated photons with #it{E}(B) / #it{E}(A) > 0.1: emission point;#it{R}_{conv}(A) (cm);#it{R}_{emission} #minus #it{R}_{conv}(A) (cm)", kTH2F, {axR, {50, 0.f, 100.f}}, false);
+    }
+
     // reserve space for generated vectors if that process enabled
     auto hBinFinder = registry.get<TH2>(HIST("Generated/h2PtY_Pi0"));
     LOGF(info, "Binned generated processing enabled. Initialising with %i elements...", hBinFinder->GetNcells());
     genGamma.resize(hBinFinder->GetNcells(), 0);
     genPi0.resize(hBinFinder->GetNcells(), 0);
     genEta.resize(hBinFinder->GetNcells(), 0);
+
+    if (fillBinnedGenDalitz) {
+      namespace dalitzbinning = o2::aod::pwgem::photonmeson::utils::dalitzbinning;
+      const AxisSpec axisPtDalitz{dalitzbinning::ptBins(), "p_{T} (GeV/c)"};
+      const AxisSpec axisYDalitz{dalitzbinning::yBins(), "rapidity |y|"};
+      const AxisSpec axisMee{dalitzbinning::meeBins(), "m_{ee} (GeV/c^{2})"};
+      registry.add<TH3>("Generated/h3PtYMee_Pi0Dalitz", "Generated #pi^{0} #rightarrow e^{+}e^{-}#gamma", kTH3F, {axisPtDalitz, axisYDalitz, axisMee}, true);
+      registry.add<TH3>("Generated/h3PtYMee_EtaDalitz", "Generated #eta #rightarrow e^{+}e^{-}#gamma", kTH3F, {axisPtDalitz, axisYDalitz, axisMee}, true);
+      const auto ncellsDalitz = registry.get<TH3>(HIST("Generated/h3PtYMee_Pi0Dalitz"))->GetNcells();
+      genPi0Dalitz.resize(ncellsDalitz, 0);
+      genEtaDalitz.resize(ncellsDalitz, 0);
+    }
   }
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
@@ -144,10 +182,44 @@ struct AssociateMCInfoPhoton {
   Preslice<aod::PHOSClusters> perCollisionPHOS = aod::skimmedcluster::collisionId;
   Preslice<MyEMCClusters> perCollisionEMC = aod::skimmedcluster::collisionId;
 
-  std::vector<uint16_t> genGamma; // primary, pt, y
-  std::vector<uint16_t> genPi0;   // primary, pt, y
-  std::vector<uint16_t> genEta;   // primary, pt, y
+  std::vector<uint16_t> genGamma;     // primary, pt, y
+  std::vector<uint16_t> genPi0;       // primary, pt, y
+  std::vector<uint16_t> genEta;       // primary, pt, y
+  std::vector<uint16_t> genPi0Dalitz; // primary, pt, y, mee
+  std::vector<uint16_t> genEtaDalitz; // primary, pt, y, mee
 
+  // invariant mass of the e+e- pair of a Dalitz decay (daughters: gamma, e+, e-); false for any other decay
+  template <typename TMCParticle, typename TMCParticles>
+  bool getDalitzMee(TMCParticle const& mother, TMCParticles const& mcParticles, float& mee)
+  {
+    if (!mother.has_daughters()) {
+      return false;
+    }
+    int ngamma = 0, npos = 0, nele = 0;
+    float e = 0.f, px = 0.f, py = 0.f, pz = 0.f;
+    for (int id = mother.daughtersIds()[0]; id <= mother.daughtersIds()[1]; ++id) {
+      if (id < 0 || id >= mcParticles.size()) {
+        return false;
+      }
+      const auto d = mcParticles.rawIteratorAt(id);
+      if (d.pdgCode() == PDG_t::kGamma) {
+        ngamma++;
+      } else if (d.pdgCode() == PDG_t::kElectron || d.pdgCode() == PDG_t::kPositron) {
+        (d.pdgCode() == PDG_t::kElectron) ? nele++ : npos++;
+        e += d.e();
+        px += d.px();
+        py += d.py();
+        pz += d.pz();
+      } else {
+        return false;
+      }
+    }
+    if (ngamma != 1 || npos != 1 || nele != 1) {
+      return false;
+    }
+    mee = std::sqrt(std::max(0.f, e * e - px * px - py * py - pz * pz));
+    return true;
+  }
   template <o2::soa::is_iterator TMCParticle, o2::soa::is_iterator TMCDaughter>
   void selectDaughtersToStore(TMCParticle& particle, int64_t mcParticleSize, TMCDaughter& daughterIter, int eventIdx, std::unordered_map<uint64_t, int>& fNewLabels, std::map<uint64_t, int>& fNewLabelsReversed, std::unordered_map<uint64_t, int>& fEventIdx, Counter& fCounter)
   {
@@ -170,10 +242,14 @@ struct AssociateMCInfoPhoton {
   template <soa::is_iterator TCollision>
   bool passesCollisionGate(TCollision const& collisionIter)
   {
+    // event selection same as in createEMEventPhoton
     if (!collisionIter.has_mcCollision()) {
       return false;
     }
     if (useIsSelected.value && !collisionIter.isSelected()) {
+      return false;
+    }
+    if (useIsEOI.value && !collisionIter.isEoI()) {
       return false;
     }
     return true;
@@ -223,8 +299,110 @@ struct AssociateMCInfoPhoton {
     } // end of mother chain loop
   }
 
+  // conversion point of a photon: production vertex of its e+ e- daughters; false if the photon did not convert into e+ e- (in the MC stack)
+  template <typename TMCParticle, typename TMCParticles>
+  bool conversionPoint(TMCParticle const& photon, TMCParticles const& mcParticles, float& vx, float& vy, int64_t& idEle, int64_t& idPos)
+  {
+    idEle = -1;
+    idPos = -1;
+    if (!photon.has_daughters()) {
+      return false;
+    }
+    for (int id = photon.daughtersIds()[0]; id <= photon.daughtersIds()[1]; ++id) {
+      if (id < 0 || id >= mcParticles.size()) {
+        continue;
+      }
+      const auto d = mcParticles.rawIteratorAt(id);
+      if (d.pdgCode() == PDG_t::kElectron && idEle < 0) {
+        idEle = id;
+        vx = d.vx();
+        vy = d.vy();
+      } else if (d.pdgCode() == PDG_t::kPositron && idPos < 0) {
+        idPos = id;
+      }
+    }
+    return idEle >= 0 && idPos >= 0;
+  }
+
+  // MC truth of the bremsstrahlung chain for one MC collision (see the histogram definitions in init)
+  template <typename TGroupedMCParticles, typename TMCParticles>
+  void fillBremsChainTruth(TGroupedMCParticles const& groupedMcParticles, TMCParticles const& mcParticles, std::unordered_set<int64_t> const& recoPhotons)
+  {
+    static constexpr float RadToDeg = 57.29578f;
+    static constexpr float FullTurn = 360.f, HalfTurn = 180.f;
+    auto phiDeg = [](float y, float x) {
+      const float phi = std::atan2(y, x) * RadToDeg;
+      return phi < 0.f ? phi + FullTurn : phi;
+    };
+    for (const auto& photon : groupedMcParticles) {
+      if (photon.pdgCode() != PDG_t::kGamma || !(photon.isPhysicalPrimary() || photon.producedByGenerator()) || std::fabs(photon.eta()) > cfg_max_eta_photon) {
+        continue;
+      }
+      registry.fill(HIST("BremsChain/hGenPhiPt"), phiDeg(photon.py(), photon.px()), photon.pt());
+      float vxA = 0.f, vyA = 0.f;
+      int64_t idEle = -1, idPos = -1;
+      if (!conversionPoint(photon, mcParticles, vxA, vyA, idEle, idPos)) {
+        continue;
+      }
+      const float rA = std::hypot(vxA, vyA);
+      if (rA > bremsChainMaxR) {
+        continue;
+      }
+      const float phiA = phiDeg(vyA, vxA);
+      const bool recA = recoPhotons.contains(photon.globalIndex());
+      registry.fill(HIST("BremsChain/hConvA"), rA, phiA, photon.pt());
+      if (recA) {
+        registry.fill(HIST("BremsChain/hConvARec"), rA, phiA, photon.pt());
+      }
+      for (const auto& idLeg : {idEle, idPos}) {
+        const auto leg = mcParticles.rawIteratorAt(idLeg);
+        if (!leg.has_daughters()) {
+          continue;
+        }
+        for (int id = leg.daughtersIds()[0]; id <= leg.daughtersIds()[1]; ++id) {
+          if (id < 0 || id >= mcParticles.size()) {
+            continue;
+          }
+          const auto radiated = mcParticles.rawIteratorAt(id);
+          if (radiated.pdgCode() != PDG_t::kGamma) {
+            continue;
+          }
+          const float x = std::min(radiated.e() / std::max(photon.e(), 1.e-6f), 0.9999f);
+          if (x < bremsChainMinX) {
+            continue;
+          }
+          registry.fill(HIST("BremsChain/hChain"), rA, phiA, photon.pt(), x, 0.f);
+          if (x > 0.1f) { // o2-linter: disable=magic-number (energy fraction of the calculation)
+            registry.fill(HIST("BremsChain/hEmission"), rA, std::hypot(radiated.vx(), radiated.vy()) - rA);
+          }
+          float vxB = 0.f, vyB = 0.f;
+          int64_t idEleB = -1, idPosB = -1;
+          if (!conversionPoint(radiated, mcParticles, vxB, vyB, idEleB, idPosB)) {
+            continue;
+          }
+          const float rB = std::hypot(vxB, vyB);
+          if (rB > bremsChainMaxR) {
+            continue;
+          }
+          float dPhi = phiDeg(vyB, vxB) - phiA;
+          if (dPhi > HalfTurn) {
+            dPhi -= FullTurn;
+          } else if (dPhi < -HalfTurn) {
+            dPhi += FullTurn;
+          }
+          const bool recB = recoPhotons.contains(radiated.globalIndex());
+          const int lastStage = recB ? (recA ? 3 : 2) : 1;
+          for (int stage = 1; stage <= lastStage; ++stage) {
+            registry.fill(HIST("BremsChain/hChain"), rA, phiA, photon.pt(), x, static_cast<float>(stage));
+            registry.fill(HIST("BremsChain/hGeometry"), rA, std::clamp(rB - rA, -4.99f, 94.99f), std::clamp(dPhi, -19.99f, 19.99f), x, static_cast<float>(stage));
+          }
+        }
+      }
+    }
+  }
+
   template <uint8_t system, typename TTracks, typename TFwdTracks, typename TPCMs, typename TPCMLegs, typename TPHOSs, typename TEMCs, typename TEMPrimaryElectrons>
-  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles, TTracks const& o2tracks, TFwdTracks const&, TPCMs const& v0photons, TPCMLegs const& legs, TPHOSs const&, TEMCs const& emcclusters, TEMPrimaryElectrons const& emprimaryelectrons)
+  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles, TTracks const& o2tracks, TFwdTracks const&, TPCMs const& v0photons, TPCMLegs const& legs, TPHOSs const&, TEMCs const& emcclusters, TEMPrimaryElectrons const& emprimaryelectrons, aod::PCMFreeLegs const* freeLegs = nullptr)
   {
     // temporary variables used for the indexing of the skimmed MC stack
     std::unordered_map<uint64_t, int> fNewLabels;
@@ -234,6 +412,7 @@ struct AssociateMCInfoPhoton {
     std::unordered_map<uint64_t, int> fEventLabels;
     Counter fCounter{.particles = 0, .events = 0}; //! [0] - particle counter, [1] - event counter
     auto hBinFinder = registry.get<TH2>(HIST("Generated/h2PtY_Gamma"));
+    auto hBinFinderDalitz = fillBinnedGenDalitz ? registry.get<TH3>(HIST("Generated/h3PtYMee_Pi0Dalitz")) : nullptr;
 
     // collision iterator from EMCal cluster
     auto collisionIter = collisions.begin();
@@ -251,6 +430,33 @@ struct AssociateMCInfoPhoton {
     // mc collision iter
     auto mcCollisionIter = mcCollisions.begin();
 
+    // MC photons reconstructed as a stored V0 photon (both legs point to the same photon), for the bremsstrahlung chain histograms
+    std::unordered_set<int64_t> recoPhotons;
+    if constexpr (static_cast<bool>(system & kPCM) && !std::is_same_v<TPCMLegs, std::nullptr_t>) {
+      if (fillBremsChain) {
+        auto legIter = legs.begin();
+        auto trackIter = o2tracks.begin();
+        for (const auto& v0 : v0photons) {
+          std::array<int64_t, 2> mother{-1, -2};
+          int i = 0;
+          for (const auto& legId : {v0.posTrackId(), v0.negTrackId()}) {
+            legIter.setCursor(legId);
+            trackIter.setCursor(legIter.trackId());
+            if (trackIter.has_mcParticle()) {
+              mcParticleIter.setCursor(trackIter.mcParticleId());
+              if (mcParticleIter.has_mothers()) {
+                mother[i] = mcParticleIter.mothersIds()[0];
+              }
+            }
+            ++i;
+          }
+          if (mother[0] == mother[1] && mother[0] >= 0) {
+            recoPhotons.insert(mother[0]);
+          }
+        }
+      }
+    }
+
     for (const auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
 
@@ -263,7 +469,8 @@ struct AssociateMCInfoPhoton {
       std::fill(genGamma.begin(), genGamma.end(), 0);
       std::fill(genPi0.begin(), genPi0.end(), 0);
       std::fill(genEta.begin(), genEta.end(), 0);
-
+      std::fill(genPi0Dalitz.begin(), genPi0Dalitz.end(), 0);
+      std::fill(genEtaDalitz.begin(), genEtaDalitz.end(), 0);
       mcCollisionIter.setCursor(collision.mcCollisionId());
       // store mc particles
       auto groupedMcParticles = mcParticles.sliceBy(perMcCollision, mcCollisionIter.globalIndex());
@@ -286,6 +493,10 @@ struct AssociateMCInfoPhoton {
               genGamma[binNumber]++;
               break;
             case PDG_t::kPi0:
+              if (float meeDalitz = 0.f; fillBinnedGenDalitz && getDalitzMee(mcParticle, mcParticles, meeDalitz)) {
+                registry.fill(HIST("Generated/h3PtYMee_Pi0Dalitz"), mcParticle.pt(), std::fabs(mcParticle.y()), meeDalitz);
+                genPi0Dalitz[hBinFinderDalitz->FindBin(mcParticle.pt(), std::fabs(mcParticle.y()), meeDalitz)]++;
+              }
               if (requireGammaGammaDecay && !isGammaGammaDecay(mcParticle, mcParticles)) {
                 continue;
               }
@@ -296,6 +507,10 @@ struct AssociateMCInfoPhoton {
               }
               break;
             case Pdg::kEta:
+              if (float meeDalitz = 0.f; fillBinnedGenDalitz && getDalitzMee(mcParticle, mcParticles, meeDalitz)) {
+                registry.fill(HIST("Generated/h3PtYMee_EtaDalitz"), mcParticle.pt(), std::fabs(mcParticle.y()), meeDalitz);
+                genEtaDalitz[hBinFinderDalitz->FindBin(mcParticle.pt(), std::fabs(mcParticle.y()), meeDalitz)]++;
+              }
               if (requireGammaGammaDecay && !isGammaGammaDecay(mcParticle, mcParticles)) {
                 continue;
               }
@@ -313,10 +528,16 @@ struct AssociateMCInfoPhoton {
 
       // make an entry for this MC event only if it was not already added to the table
       if (!fEventLabels.contains(mcCollisionIter.globalIndex())) {
+        if (fillBremsChain) {
+          fillBremsChainTruth(groupedMcParticles, mcParticles, recoPhotons);
+        }
         mcevents(mcCollisionIter.globalIndex(), mcCollisionIter.generatorsID(), mcCollisionIter.posX(), mcCollisionIter.posY(), mcCollisionIter.posZ(), mcCollisionIter.impactParameter(), mcCollisionIter.eventPlaneAngle());
         fEventLabels[mcCollisionIter.globalIndex()] = fCounter.events;
         fCounter.events++;
         binnedGenPt(genGamma, genPi0, genEta);
+        if (fillBinnedGenDalitz) {
+          binnedGenDalitz(genPi0Dalitz, genEtaDalitz);
+        }
       }
 
       // LOGF(info, "collision.globalIndex() = %d , mceventlabels.lastIndex() = %d", collision.globalIndex(), mceventlabels.lastIndex());
@@ -417,6 +638,40 @@ struct AssociateMCInfoPhoton {
           }
         } // end of loop over legs {pos, ele}
       } // end of v0 loop
+
+      // for each free leg, check if it has a valid MC particle. If yes, store it in the skimmed MC stack and also store its mother chain. If not, just store a row with -1 and kNoMcParticleMask.
+      if (freeLegs != nullptr) {
+        for (const auto& freeLeg : *freeLegs) {
+          collisionIter.setCursor(freeLeg.collisionId());
+          bool validMc = false;
+          if (passesCollisionGate(collisionIter)) {
+            mcCollisionIter.setCursor(collisionIter.mcCollisionId());
+            o2TrackIter.setCursor(freeLeg.trackId());
+            validMc = o2TrackIter.has_mcParticle();
+          }
+          if (!validMc) {
+            pcmfreelegmclabels(-1, kNoMcParticleMask); // the row must exist
+            continue;
+          }
+          mcParticleIter.setCursor(o2TrackIter.mcParticleId());
+          auto [iter, isNew] = fNewLabels.try_emplace(mcParticleIter.globalIndex(), fCounter.particles);
+          if (isNew) {
+            fNewLabelsReversed[fCounter.particles] = mcParticleIter.globalIndex();
+            auto evIt = fEventLabels.find(mcCollisionIter.globalIndex());
+            if (evIt != fEventLabels.end()) {
+              fEventIdx[mcParticleIter.globalIndex()] = evIt->second;
+            }
+            fCounter.particles++;
+          }
+          pcmfreelegmclabels(iter->second, o2TrackIter.mcMask());
+          int motherid = -999;
+          if (mcParticleIter.has_mothers()) {
+            motherid = mcParticleIter.mothersIds()[0];
+          }
+          selectMothersToStore(motherid, mcParticles.size(), motherParticle, daughterIter, mcCollisionIter,
+                               fNewLabels, fNewLabelsReversed, fEventIdx, fEventLabels, fCounter);
+        }
+      }
     }
 
     if constexpr (static_cast<bool>(system & kElectron)) {
@@ -587,6 +842,12 @@ struct AssociateMCInfoPhoton {
     skimmingMC<kPCM>(collisions, bcs, mccollisions, mcParticles, o2tracks, nullptr, v0photons, v0legs, nullptr, nullptr, nullptr);
   }
   PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM, "create em mc event table for PCM", false);
+
+  void processMC_PCM_FreeLegs(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::PCMFreeLegs const& freeLegs)
+  {
+    skimmingMC<kPCM>(collisions, bcs, mccollisions, mcParticles, o2tracks, nullptr, v0photons, v0legs, nullptr, nullptr, nullptr, &freeLegs);
+  }
+  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM_FreeLegs, "create em mc event table for PCM incl. the free legs of run 1 (PCMFreeLegs -> PCMFreeLegMCLabels)", false);
 
   void processMC_PCM_Electron(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::EMPrimaryElectronsFromDalitz const& emprimaryelectrons)
   {

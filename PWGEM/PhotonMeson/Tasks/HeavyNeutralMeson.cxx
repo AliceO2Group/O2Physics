@@ -31,6 +31,7 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -90,10 +91,10 @@ enum PIDLimits { kTPCMin,
 const std::vector<std::string> speciesName{"pion"}; // ToDo include charged pions
 const std::vector<std::string> pTCutsName{"Pt min", "Pt max", "P TOF thres"};
 const std::vector<std::string> pidCutsName{"TPC min", "TPC max", "TPCTOF max", "ITS min", "ITS max"};
-const float pidcutsTable[kNTracksPID][kNPIDLimits]{{-4.f, 4.f, 4.f, -99.f, 99.f}};
-const float ptcutsTable[kNTracksPID][3]{{0.35f, 6.f, 0.75f}};
-const float nClusterMinTPC[1][kNTracksPID]{{80.0f}};
-const float nClusterMinITS[1][kNTracksPID]{{4}};
+constexpr std::array<std::array<float, kNPIDLimits>, kNTracksPID> pidcutsTable{{{-4.f, 4.f, 4.f, -99.f, 99.f}}};
+constexpr std::array<std::array<float, 3>, kNTracksPID> ptcutsTable{{{0.35f, 6.f, 0.75f}}};
+constexpr std::array<std::array<float, kNTracksPID>, 1> nClusterMinTPC{{{80.0f}}};
+constexpr std::array<std::array<float, kNTracksPID>, 1> nClusterMinITS{{{4.f}}};
 
 } // namespace hnm
 
@@ -111,19 +112,19 @@ struct HeavyNeutralMeson {
   Configurable<bool> confEvtRequireSel8{"confEvtRequireSel8", false, "Evt sel: check for offline selection (sel8)"};
 
   // ---> Track selection
-  Configurable<LabeledArray<float>> cfgPtCuts{"cfgPtCuts", {hnm::ptcutsTable[0], 1, 3, hnm::speciesName, hnm::pTCutsName}, "Track pT selections"};
+  Configurable<LabeledArray<float>> cfgPtCuts{"cfgPtCuts", {hnm::ptcutsTable[0].data(), 1, 3, hnm::speciesName, hnm::pTCutsName}, "Track pT selections"};
   Configurable<float> cfgTrkEta{"cfgTrkEta", 0.9, "Eta"};
-  Configurable<LabeledArray<float>> cfgTPCNClustersMin{"cfgTPCNClustersMin", {hnm::nClusterMinTPC[0], 1, 1, std::vector<std::string>{"TPCNClusMin"}, hnm::speciesName}, "Mininum of TPC Clusters"};
+  Configurable<LabeledArray<float>> cfgTPCNClustersMin{"cfgTPCNClustersMin", {hnm::nClusterMinTPC[0].data(), 1, 1, std::vector<std::string>{"TPCNClusMin"}, hnm::speciesName}, "Mininum of TPC Clusters"};
   Configurable<float> cfgTrkTPCfCls{"cfgTrkTPCfCls", 0.83, "Minimum fraction of crossed rows over findable clusters"};
   Configurable<float> cfgTrkTPCcRowsMin{"cfgTrkTPCcRowsMin", 70, "Minimum number of crossed TPC rows"};
   Configurable<float> cfgTrkTPCsClsSharedFrac{"cfgTrkTPCsClsSharedFrac", 1.f, "Fraction of shared TPC clusters"};
-  Configurable<LabeledArray<float>> cfgTrkITSnclsMin{"cfgTrkITSnclsMin", {hnm::nClusterMinITS[0], 1, 1, std::vector<std::string>{"Cut"}, hnm::speciesName}, "Minimum number of ITS clusters"};
+  Configurable<LabeledArray<float>> cfgTrkITSnclsMin{"cfgTrkITSnclsMin", {hnm::nClusterMinITS[0].data(), 1, 1, std::vector<std::string>{"Cut"}, hnm::speciesName}, "Minimum number of ITS clusters"};
   Configurable<float> cfgTrkDCAxyMax{"cfgTrkDCAxyMax", 0.15, "Maximum DCA_xy"};
   Configurable<float> cfgTrkDCAzMax{"cfgTrkDCAzMax", 0.3, "Maximum DCA_z"};
   Configurable<float> cfgTrkMaxChi2PerClusterTPC{"cfgTrkMaxChi2PerClusterTPC", 4.0f, "Minimal track selection: max allowed chi2 per TPC cluster"};  // 4.0 is default of global tracks on 20.01.2023
   Configurable<float> cfgTrkMaxChi2PerClusterITS{"cfgTrkMaxChi2PerClusterITS", 36.0f, "Minimal track selection: max allowed chi2 per ITS cluster"}; // 36.0 is default of global tracks on 20.01.2023
 
-  Configurable<LabeledArray<float>> cfgPIDCuts{"cfgPIDCuts", {hnm::pidcutsTable[0], 1, hnm::kNPIDLimits, hnm::speciesName, hnm::pidCutsName}, "Femtopartner PID nsigma selections"}; // PID selections
+  Configurable<LabeledArray<float>> cfgPIDCuts{"cfgPIDCuts", {hnm::pidcutsTable[0].data(), 1, hnm::kNPIDLimits, hnm::speciesName, hnm::pidCutsName}, "Femtopartner PID nsigma selections"}; // PID selections
 
   // ---> Configurables to allow for a shift in eta/phi of EMCal clusters to better align with extrapolated TPC tracks
   Configurable<bool> cfgDoEMCShift{"cfgDoEMCShift", false, "Apply SM-wise shift in eta and phi to EMCal clusters to align with TPC tracks"};
@@ -137,9 +138,9 @@ struct HeavyNeutralMeson {
   Configurable<int> cfgHNMMassCorrection{"cfgHNMMassCorrection", 1, "Use GG PDG mass to correct HNM mass (0 = off, 1 = subDeltaPi0, 2 = subLambda)"};
 
   // ---> Mass windows for the selection of heavy neutral mesons (also based on mass of their light neutral meson decay daughter)
-  static constexpr float DefaultMassWindows[2][4] = {{0., 0.4, 0.6, 1.}, {0.4, 0.8, 0.8, 1.2}};
-  Configurable<LabeledArray<float>> cfgMassWindowOmega{"cfgMassWindowOmega", {DefaultMassWindows[0], 4, {"pi0_min", "pi0_max", "omega_min", "omega_max"}}, "Mass window for selected omegas and their decay pi0"};
-  Configurable<LabeledArray<float>> cfgMassWindowEtaPrime{"cfgMassWindowEtaPrime", {DefaultMassWindows[1], 4, {"eta_min", "eta_max", "etaprime_min", "etaprime_max"}}, "Mass window for selected eta' and their decay eta"};
+  static constexpr std::array<std::array<float, 4>, 2> DefaultMassWindows{{{0., 0.4, 0.6, 1.}, {0.4, 0.8, 0.8, 1.2}}};
+  Configurable<LabeledArray<float>> cfgMassWindowOmega{"cfgMassWindowOmega", {DefaultMassWindows[0].data(), 4, {"pi0_min", "pi0_max", "omega_min", "omega_max"}}, "Mass window for selected omegas and their decay pi0"};
+  Configurable<LabeledArray<float>> cfgMassWindowEtaPrime{"cfgMassWindowEtaPrime", {DefaultMassWindows[1].data(), 4, {"eta_min", "eta_max", "etaprime_min", "etaprime_max"}}, "Mass window for selected eta' and their decay eta"};
 
   Configurable<float> cfgMaxMultiplicity{"cfgMaxMultiplicity", 5000, "Maximum number of tracks in a collision (can be used to increase the S/B -> Very experimental)"};
   Configurable<float> cfgMinGGPtOverHNMPt{"cfgMinGGPtOverHNMPt", 0., "Minimum ratio of the pT of the gamma gamma pair over the pT of the HNM (can be used to increase the S/B)"};
@@ -147,9 +148,9 @@ struct HeavyNeutralMeson {
   HistogramRegistry mHistManager{"HeavyNeutralMesonHistograms", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Prepare vectors for different species
-  std::vector<hnmutilities::GammaGammaPair> vGGs;
-  std::vector<hnmutilities::HeavyNeutralMeson> vHNMs;
-  std::vector<ROOT::Math::PtEtaPhiMVector> etaPrimeEMC, etaPrimePCM, omegaEMC, omegaPCM, proton, antiproton, deuteron, antideuteron, pion, antipion;
+  std::vector<hnmutilities::GammaGammaPair> mvGGs;
+  std::vector<hnmutilities::HeavyNeutralMeson> mvHNMs;
+  std::vector<ROOT::Math::PtEtaPhiMVector> etaPrimeEMC, etaPrimePCM, omegaEMC, omegaPCM, pion, antipion;
   float mMassProton = constants::physics::MassProton;
   float mMassDeuteron = constants::physics::MassDeuteron;
   float mMassOmega = 0.782;
@@ -162,30 +163,42 @@ struct HeavyNeutralMeson {
   template <typename T>
   bool isSelectedTrack(T const& track, hnm::TracksPID partSpecies)
   {
-    if (track.pt() < cfgPtCuts->get(partSpecies, "Pt min"))
+    if (track.pt() < cfgPtCuts->get(partSpecies, "Pt min")) {
       return false;
-    if (track.pt() > cfgPtCuts->get(partSpecies, "Pt max"))
+    }
+    if (track.pt() > cfgPtCuts->get(partSpecies, "Pt max")) {
       return false;
-    if (std::abs(track.eta()) > cfgTrkEta)
+    }
+    if (std::abs(track.eta()) > cfgTrkEta) {
       return false;
-    if (track.tpcNClsFound() < cfgTPCNClustersMin->get("TPCNClusMin", partSpecies))
+    }
+    if (track.tpcNClsFound() < cfgTPCNClustersMin->get("TPCNClusMin", partSpecies)) {
       return false;
-    if (track.tpcCrossedRowsOverFindableCls() < cfgTrkTPCfCls)
+    }
+    if (track.tpcCrossedRowsOverFindableCls() < cfgTrkTPCfCls) {
       return false;
-    if (track.tpcNClsCrossedRows() < cfgTrkTPCcRowsMin)
+    }
+    if (track.tpcNClsCrossedRows() < cfgTrkTPCcRowsMin) {
       return false;
-    if (track.tpcFractionSharedCls() > cfgTrkTPCsClsSharedFrac)
+    }
+    if (track.tpcFractionSharedCls() > cfgTrkTPCsClsSharedFrac) {
       return false;
-    if (track.itsNCls() < cfgTrkITSnclsMin->get(static_cast<uint>(0), partSpecies))
+    }
+    if (track.itsNCls() < cfgTrkITSnclsMin->get(static_cast<uint>(0), partSpecies)) {
       return false;
-    if (std::abs(track.dcaXY()) > cfgTrkDCAxyMax)
+    }
+    if (std::abs(track.dcaXY()) > cfgTrkDCAxyMax) {
       return false;
-    if (std::abs(track.dcaZ()) > cfgTrkDCAzMax)
+    }
+    if (std::abs(track.dcaZ()) > cfgTrkDCAzMax) {
       return false;
-    if (track.tpcChi2NCl() > cfgTrkMaxChi2PerClusterTPC)
+    }
+    if (track.tpcChi2NCl() > cfgTrkMaxChi2PerClusterTPC) {
       return false;
-    if (track.itsChi2NCl() > cfgTrkMaxChi2PerClusterITS)
+    }
+    if (track.itsChi2NCl() > cfgTrkMaxChi2PerClusterITS) {
       return false;
+    }
     return true;
   }
 
@@ -237,8 +250,9 @@ struct HeavyNeutralMeson {
     mHistManager.add("Event/nClustersVsV0s", "Number of clusters and V0s in the collision;#bf{#it{N}_{clusters}};#bf{#it{N}_{V0s}}", HistType::kTH2F, {{26, -0.5, 25.5}, {26, -0.5, 25.5}});
     mHistManager.add("Event/nEMCalEvents", "Number of collisions with a certain combination of EMCal triggers;;#bf{#it{N}_{collisions}}", HistType::kTH1F, {{5, -0.5, 4.5}});
     std::vector<std::string> nEventTitles = {"Cells & kTVXinEMC", "Cells & L0", "Cells & !kTVXinEMC & !L0", "!Cells & kTVXinEMC", "!Cells & L0"};
-    for (size_t iBin = 0; iBin < nEventTitles.size(); iBin++)
+    for (size_t iBin = 0; iBin < nEventTitles.size(); iBin++) {
       mHistManager.get<TH1>(HIST("Event/nEMCalEvents"))->GetXaxis()->SetBinLabel(iBin + 1, nEventTitles[iBin].data());
+    }
     mHistManager.add("Event/fMultiplicityBefore", "Multiplicity of all processed events;#bf{#it{N}_{tracks}};#bf{#it{N}_{collisions}}", HistType::kTH1F, {{500, 0, 500}});
     mHistManager.add("Event/fMultiplicityAfter", "Multiplicity after event cuts;#bf{#it{N}_{tracks}};#bf{#it{N}_{collisions}}", HistType::kTH1F, {{500, 0, 500}});
     mHistManager.add("Event/fZvtxBefore", "Zvtx of all processed events;#bf{z_{vtx} (cm)};#bf{#it{N}_{collisions}}", HistType::kTH1F, {{500, -15, 15}});
@@ -265,8 +279,8 @@ struct HeavyNeutralMeson {
     mHistManager.add("TrackCuts/TPCSignal/fTPCSignalAnti", "TPCSignalP;#bf{#it{p} (GeV/#it{c})};dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {2000, -100.f, 500.f}}});
 
     const int nTrackSpecies = 2; // x2 because of anti particles
-    const char* particleSpecies[nTrackSpecies] = {"Pion", "AntiPion"};
-    const char* particleSpeciesLatex[nTrackSpecies] = {"#pi^{+}", "#pi^{-}"};
+    std::array<const char*, nTrackSpecies> particleSpecies = {"Pion", "AntiPion"};
+    std::array<const char*, nTrackSpecies> particleSpeciesLatex = {"#pi^{+}", "#pi^{-}"};
 
     for (int iParticle = 0; iParticle < nTrackSpecies; iParticle++) {
       mHistManager.add(Form("TrackCuts/TracksBefore/fMomCorrelationAfterCuts%s", particleSpecies[iParticle]), "fMomCorrelation;#bf{#it{p} (GeV/#it{c})};#bf{#it{p}_{TPC} (GeV/#it{c})}", {HistType::kTH2F, {{500, 0.0f, 20.0f}, {500, 0.0f, 20.0f}}});
@@ -346,8 +360,9 @@ struct HeavyNeutralMeson {
     mHistManager.fill(HIST("Event/fZvtxBefore"), collision.posZ());
 
     // Ensure evts are consistent with Sel8 and Vtx-z selection
-    if (!isSelectedEvent(collision))
+    if (!isSelectedEvent(collision)) {
       return;
+    }
 
     // QA accepted evts
     mHistManager.fill(HIST("Event/fMultiplicityAfter"), collision.multNTracksPV());
@@ -356,7 +371,7 @@ struct HeavyNeutralMeson {
     // clean vecs
     pion.clear();
     antipion.clear();
-    vHNMs.clear();
+    mvHNMs.clear();
     // vGGs vector is cleared in reconstructGGs.
 
     // ---------------------------------> EMCal event QA <----------------------------------
@@ -366,16 +381,21 @@ struct HeavyNeutralMeson {
     bool iskTVXinEMC = collision.foundBC_as<aod::MyBCs>().alias_bit(kTVXinEMC);
     bool isL0Triggered = collision.foundBC_as<aod::MyBCs>().alias_bit(kEMC7) || collision.foundBC_as<aod::MyBCs>().alias_bit(kEG1) || collision.foundBC_as<aod::MyBCs>().alias_bit(kEG2);
 
-    if (bcHasEMCCells && iskTVXinEMC)
+    if (bcHasEMCCells && iskTVXinEMC) {
       mHistManager.fill(HIST("Event/nEMCalEvents"), 0);
-    if (bcHasEMCCells && isL0Triggered)
+    }
+    if (bcHasEMCCells && isL0Triggered) {
       mHistManager.fill(HIST("Event/nEMCalEvents"), 1);
-    if (bcHasEMCCells && !iskTVXinEMC && !isL0Triggered)
+    }
+    if (bcHasEMCCells && !iskTVXinEMC && !isL0Triggered) {
       mHistManager.fill(HIST("Event/nEMCalEvents"), 2);
-    if (!bcHasEMCCells && iskTVXinEMC)
+    }
+    if (!bcHasEMCCells && iskTVXinEMC) {
       mHistManager.fill(HIST("Event/nEMCalEvents"), 3);
-    if (!bcHasEMCCells && isL0Triggered)
+    }
+    if (!bcHasEMCCells && isL0Triggered) {
       mHistManager.fill(HIST("Event/nEMCalEvents"), 4);
+    }
 
     // --------------------------------> Process Photons <----------------------------------
     // - Slice clusters and V0s by collision ID to get the ones in this collision
@@ -388,9 +408,9 @@ struct HeavyNeutralMeson {
 
     std::vector<hnmutilities::Photon> vGammas;
     hnmutilities::storeGammasInVector(clustersInThisCollision, v0sInThisCollision, vGammas, emcEtaShift, emcPhiShift);
-    hnmutilities::reconstructGGs(vGammas, vGGs);
+    hnmutilities::reconstructGGs(vGammas, mvGGs);
     vGammas.clear();
-    processGGs(vGGs);
+    processGGs(mvGGs);
 
     // ------------------------------> Loop over all tracks <-------------------------------
     // - Sort them into vectors based on PID ((anti)protons, (anti)deuterons, (anti)pions)
@@ -482,7 +502,7 @@ struct HeavyNeutralMeson {
     for (const auto& posPion : pion) {
       for (const auto& negPion : antipion) {
         ROOT::Math::PtEtaPhiMVector vecPiPlPiMi = posPion + negPion;
-        hnmutilities::reconstructHeavyNeutralMesons(vecPiPlPiMi, vGGs, vHNMs);
+        hnmutilities::reconstructHeavyNeutralMesons(vecPiPlPiMi, mvGGs, mvHNMs);
 
         mHistManager.fill(HIST("HNM/Before/PiPlPiMi/fInvMassVsPt"), vecPiPlPiMi.M(), vecPiPlPiMi.pt());
         mHistManager.fill(HIST("HNM/Before/PiPlPiMi/fEta"), vecPiPlPiMi.eta());
@@ -503,7 +523,7 @@ struct HeavyNeutralMeson {
     // ---------------------------> Process HNM candidates <--------------------------------
     // - Fill invMassVsPt histograms separated into HNM types (based on GG mass) and gamma reco method
     // -------------------------------------------------------------------------------------
-    processHNMs(vHNMs);
+    processHNMs(mvHNMs);
   }
 
   /// \brief Loop over the GG candidates, fill the mass/pt histograms and set the isPi0/isEta flags based on the reconstructed mass
@@ -607,4 +627,7 @@ struct HeavyNeutralMeson {
   }
 };
 
-WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<HeavyNeutralMeson>(cfgc)}; }
+WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
+{
+  return WorkflowSpec{adaptAnalysisTask<HeavyNeutralMeson>(context)};
+}

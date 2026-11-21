@@ -384,7 +384,7 @@ struct cksspinalignder {
                         aod::KShortTracks const& k0sTracks,
                         aod::PionTracks const& pionTracks)
   {
-    BinningType colBinning{{cfgVtxBins, cfgCentBins}, true};
+    BinningType colBinning{{cfgVtxBins, cfgCentBins}};
 
     for (const auto& [collision1, collision2] :
          selfCombinations(colBinning, nEvtMixing.value, -1, collisions, collisions)) {

@@ -25,7 +25,7 @@
 class ExpPdf : public RooAbsPdf
 {
  public:
-  ExpPdf(){};
+  ExpPdf() {}
   ExpPdf(const char* name, const char* title,
          RooAbsReal& _x,
          RooAbsReal& _A,

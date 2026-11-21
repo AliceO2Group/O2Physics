@@ -21,8 +21,58 @@ o2physics_add_library(AnalysisCore
         TableHelper.cxx
         MetadataHelper.cxx
         CollisionTypeHelper.cxx
-        FFitWeights.cxx
         PUBLIC_LINK_LIBRARIES O2::Framework O2::DataFormatsParameters ROOT::EG O2::CCDB ROOT::Physics O2::FT0Base O2::FV0Base O2::DataFormatsParamTOF)
+
+# Precompiled header shared by DPL analysis workflows. Parsing the framework
+# headers dominates the cost of a workflow translation unit, and there are
+# ~1500 of them; o2physics_add_dpl_workflow reuses this by default.
+#
+# Skipped under recc, which caches compilations remotely instead -- the two do
+# not combine, as a PCH is a local artefact of one compiler invocation.
+#
+# The reusing targets must compile with the same preprocessor state as this
+# carrier, which does not follow from the link list: AnalysisCore reaches
+# O2::rANS and its INTERFACE -DRANS_ENABLE_JSON, whereas a bare workflow links
+# only O2::Framework. o2physics_add_dpl_workflow therefore copies this target's
+# compile definitions onto every consumer; keep that in mind when changing what
+# is linked here.
+add_library(AnalysisPCH OBJECT analysisPCH.cxx)
+target_link_libraries(AnalysisPCH PUBLIC O2::Framework O2Physics::AnalysisCore)
+# The PCH compile is one of the heaviest translation units in the tree -- it
+# instantiates the whole data model up front -- but add_library() does not
+# put it in the 'analysis' job pool the way o2physics_add_dpl_workflow() does
+# for the workflows. Left out, it runs unthrottled next to the pooled
+# compilations and blows past the per-job memory budget the pool exists to
+# enforce.
+set_property(TARGET AnalysisPCH PROPERTY JOB_POOL_COMPILE analysis)
+if(NOT DEFINED ENV{USE_RECC})
+  target_precompile_headers(AnalysisPCH PRIVATE
+    <Framework/ASoA.h>
+    <Framework/AnalysisTask.h>
+    <Framework/ConfigContext.h>
+    <Framework/DataProcessorSpec.h>
+    # Measured over all 1463 workflow translation units in the tree: these are
+    # the framework headers a large majority include and that were not
+    # precompiled here. Percentages are of those 1463.
+    <Framework/Configurable.h>        # 78%
+    <Framework/InitContext.h>         # 78%
+    <Framework/AnalysisDataModel.h>   # 76%
+    <Framework/HistogramRegistry.h>   # 70%
+    <Framework/AnalysisHelpers.h>     # 69%
+    <Framework/HistogramSpec.h>       # 67%
+    # NOT runDataProcessing.h. It states the contract itself: "we need to
+    # declare the customize method before include this file". Precompiling it
+    # makes it the first include in every workflow, so a source's customize() is
+    # never seen, its options are never registered, and the binary aborts at
+    # --dump-workflow with "missing option: ...". The link succeeds, so this
+    # surfaces as a runtime failure with no hint that a PCH caused it.
+
+    <cstdint>                         # 51%
+    <memory>
+    <string>
+    <vector>
+  )
+endif()
 
 o2physics_target_root_dictionary(AnalysisCore
         HEADERS TrackSelection.h
@@ -37,7 +87,6 @@ o2physics_target_root_dictionary(AnalysisCore
         PID/TPCPIDResponse.h
         PID/PIDTOFParamService.h
         CollisionTypeHelper.h
-        FFitWeights.h
         LINKDEF AnalysisCoreLinkDef.h)
 
 o2physics_add_library(EventFilteringUtils
@@ -52,3 +101,12 @@ o2physics_target_root_dictionary(EventFilteringUtils
 o2physics_add_header_only_library(TPCDriftManager
         HEADERS TPCVDriftManager.h
         INTERFACE_LINK_LIBRARIES)
+
+o2physics_add_library(FFitWeights
+        SOURCES FFitWeights.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2::CCDB ROOT::Physics)
+
+o2physics_target_root_dictionary(FFitWeights
+        HEADERS FFitWeights.h
+        LINKDEF FFitWeightsLinkDef.h)
+

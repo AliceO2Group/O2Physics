@@ -55,6 +55,10 @@ struct MetadataHelper {
   /// @return the O2 version from the metadata
   std::string getO2Version() const;
 
+  /// @brief Function to get the MC generator name from the metadata
+  /// @return the generator name (e.g. "PYTHIA", "EPOS"), "PYTHIA" for MC if it cannot be determined, or an empty string for data
+  std::string getGenerator() const;
+
   /// @brief Function to get the metadata value for a given key
   /// @param key the key of the metadata
   /// @return the value of the metadata. Throws an exception if the key is not found

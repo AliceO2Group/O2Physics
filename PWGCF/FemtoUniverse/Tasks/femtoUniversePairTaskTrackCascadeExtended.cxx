@@ -31,6 +31,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
@@ -124,6 +125,8 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
     Configurable<bool> confCPRPlotPerRadii{"confCPRPlotPerRadii", false, "Plot CPR per radii"};
     Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.0, "Delta Eta cut for Close Pair Rejection"};
     Configurable<bool> confIsSameSignCPR{"confIsSameSignCPR", false, "Close Pair Rejection for same sign children of cascades"};
+    Configurable<LabeledArray<double>> confCPRTrackCascCuts{"confCPRTrackCascCuts", {cpr_track_cascade_cuts::Cuts[0].data(), cpr_track_cascade_cuts::NDaughters, cpr_track_cascade_cuts::NCutVars, cpr_track_cascade_cuts::labelsDaughter, cpr_track_cascade_cuts::labelsCutVar}, "Per-daughter CPR DeltaPhi*/DeltaEta cuts for track-cascade (rows: posChild/negChild/bachelor, cols: dPhiStarMin/dPhiStarMax/dEtaMin/dEtaMax). A row left at all zeros falls back to the scalar confCPRdeltaPhi/dEtaCutMin/Max; when a row is used, all four of its columns apply"};
+    Configurable<LabeledArray<double>> confCPRCascCascCuts{"confCPRCascCascCuts", {cpr_cascade_cascade_cuts::Cuts[0].data(), cpr_cascade_cascade_cuts::NPairs, cpr_cascade_cascade_cuts::NCutVars, cpr_cascade_cascade_cuts::labelsPair, cpr_cascade_cascade_cuts::labelsCutVar}, "Per-pair CPR DeltaPhi*/DeltaEta cuts for cascade-cascade (rows: pos-pos/pos-bach/neg-neg/neg-bach/bach-bach/bach-neg/bach-pos, cols: dPhiStarMin/dPhiStarMax/dEtaMin/dEtaMax). A row left at all zeros falls back to the scalar confCPRdeltaPhi/dEtaCutMin/Max; when a row is used, all four of its columns apply"};
   } cprconfigs;
 
   /// configurations for correlation part
@@ -161,28 +164,28 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
   using FilteredFDCollision = FilteredFDCollisions::iterator;
 
   /// Partition for the first track particle using extended table
-  Partition<FemtoFullParticles> partsTrackOneFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1); // used for track - cascade and track - track correlations
+  Partition<FemtoFullParticles> partsTrackOneFull = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1); // used for track - cascade and track - track correlations
   /// Partition for MC QA of track using partone configs
-  Partition<FemtoRecoFullParticles> partsTrackOneFullMc = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
+  Partition<FemtoRecoFullParticles> partsTrackOneFullMc = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
   /// Partition for the first track particle using bitmask (without extended table)
-  Partition<aod::FDParticles> partsTrackOneBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
-  Partition<aod::FDParticles> partsTrackOneMCgenBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
+  Partition<aod::FDParticles> partsTrackOneBasic = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
+  Partition<aod::FDParticles> partsTrackOneMCgenBasic = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
 
   /// Partition for the second track particle using extended table
-  Partition<FemtoFullParticles> partsTrackTwoFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart2) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1); // used for track - track correlations
+  Partition<FemtoFullParticles> partsTrackTwoFull = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart2) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1); // used for track - track correlations
 
   /// Partition for the second track particle using bitmask (without extended table)
-  Partition<aod::FDParticles> partsTrackTwoBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart2) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
+  Partition<aod::FDParticles> partsTrackTwoBasic = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == trackparticleconfigs.confChargePart2) && (nabs(aod::femtouniverseparticle::eta) < narrowcuts.confEta) && (aod::femtouniverseparticle::pt < trackparticleconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackparticleconfigs.confLPtPart1);
 
   /// Partition for cascades using extended table
-  Partition<FemtoFullParticles> partsTwoFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
+  Partition<FemtoFullParticles> partsTwoFull = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
 
   /// Partition for cascades using extended MC reco table
-  Partition<FemtoRecoFullParticles> partsTwoMCrecoFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
+  Partition<FemtoRecoFullParticles> partsTwoMCrecoFull = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
 
   /// Partition for cascades using bitmask (without extended table)
-  Partition<aod::FDParticles> partsTwoBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
-  Partition<aod::FDParticles> partsTwoMCgenBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
+  Partition<aod::FDParticles> partsTwoBasic = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
+  Partition<aod::FDParticles> partsTwoMCgenBasic = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < cascparticleconfigs.confHPtPart2) && (aod::femtouniverseparticle::pt > cascparticleconfigs.confLPtPart2);
 
   /// Histogramming for track particle
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 3> trackHistoPartOnePos;
@@ -390,12 +393,16 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
     pairCleanerCasc.init(&qaRegistry);
 
     if (cprconfigs.confIsCPR.value) {
-      if (doprocessSameEvent || doprocessSameEventBitmask || doprocessMixedEvent || doprocessMixedEventBitmask)
+      if (doprocessSameEvent || doprocessSameEventBitmask || doprocessMixedEvent || doprocessMixedEventBitmask) {
         pairCloseRejection.init(&resultRegistry, &qaRegistry, twotracksconfigs.confDeltaEtaAxis, twotracksconfigs.confDeltaPhiStarAxis, cprconfigs.confCPRdeltaPhiCutMin.value, cprconfigs.confCPRdeltaPhiCutMax.value, cprconfigs.confCPRdeltaEtaCutMin.value, cprconfigs.confCPRdeltaEtaCutMax.value, cprconfigs.confCPRChosenRadii.value, cprconfigs.confCPRPlotPerRadii.value, 0, 0, cprconfigs.confIsSameSignCPR.value);
+        pairCloseRejection.setCPRCuts(cprconfigs.confCPRTrackCascCuts.value);
+      }
       if (doprocessSameEventTrack || doprocessSameEventTrackBitmask || doprocessMixedEventTrack || doprocessMixedEventTrackBitmask)
         pairCloseRejectionTrack.init(&resultRegistry, &qaRegistry, twotracksconfigs.confDeltaEtaAxis, twotracksconfigs.confDeltaPhiStarAxis, cprconfigs.confCPRdeltaPhiCutMin.value, cprconfigs.confCPRdeltaPhiCutMax.value, cprconfigs.confCPRdeltaEtaCutMin.value, cprconfigs.confCPRdeltaEtaCutMax.value, cprconfigs.confCPRChosenRadii.value, cprconfigs.confCPRPlotPerRadii.value, 0, 0, cprconfigs.confIsSameSignCPR.value);
-      if (doprocessSameEventCasc || doprocessSameEventCascBitmask || doprocessMixedEventCasc || doprocessMixedEventCascBitmask)
+      if (doprocessSameEventCasc || doprocessSameEventCascBitmask || doprocessMixedEventCasc || doprocessMixedEventCascBitmask) {
         pairCloseRejectionCasc.init(&resultRegistry, &qaRegistry, twotracksconfigs.confDeltaEtaAxis, twotracksconfigs.confDeltaPhiStarAxis, cprconfigs.confCPRdeltaPhiCutMin.value, cprconfigs.confCPRdeltaPhiCutMax.value, cprconfigs.confCPRdeltaEtaCutMin.value, cprconfigs.confCPRdeltaEtaCutMax.value, cprconfigs.confCPRChosenRadii.value, cprconfigs.confCPRPlotPerRadii.value, 0, 0, cprconfigs.confIsSameSignCPR.value);
+        pairCloseRejectionCasc.setCPRCuts(cprconfigs.confCPRCascCascCuts.value);
+      }
     }
 
     if (!ccdbEffLoader.confLocalEfficiency.value.empty()) {
@@ -1033,8 +1040,8 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
   template <class TableType, typename PartitionType, typename MCParticles = std::nullptr_t>
   void doMixedEvent(const FilteredFDCollisions& cols, const TableType& parts, PartitionType& partsOne, PartitionType& partsTwo, [[maybe_unused]] const MCParticles& mcParts = nullptr)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
       const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : static_cast<int>(collision1.multNtr());
@@ -1132,7 +1139,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
   template <class TableType, typename PartitionType>
   void doMixedEventCasc(const FilteredFDCollisions& cols, const TableType& parts, PartitionType& partsTwo)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
       const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : static_cast<int>(collision1.multNtr());
@@ -1229,7 +1236,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
   template <class TableType, typename PartitionType>
   void doMixedEventTrack(const FilteredFDCollisions& cols, const TableType& parts, PartitionType& partsOne, PartitionType& partsTwo)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
       const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : static_cast<int>(collision1.multNtr());
@@ -1379,7 +1386,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
   // MC truth for track - cascade
   void processMixedEventMCgen(const FilteredFDCollisions& cols, [[maybe_unused]] const aod::FDParticles& parts)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
       const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : static_cast<int>(collision1.multNtr());
@@ -1408,7 +1415,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
   // MC truth for cascade - cascade
   void processMixedEventCascMCgen(const FilteredFDCollisions& cols, [[maybe_unused]] const aod::FDParticles& parts)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
       const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : static_cast<int>(collision1.multNtr());
@@ -1453,7 +1460,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
   void processMCgen(aod::FDParticles const& parts)
   {
     for (const auto& part : parts) {
-      if (part.partType() != uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack))
+      if (part.partType() != static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack))
         continue;
 
       int pdgCode = static_cast<int>(part.pidCut());

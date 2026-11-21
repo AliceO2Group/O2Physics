@@ -618,7 +618,7 @@ struct AngularCorrelationsInJets {
     }
   }
 
-  void fillMixedEventDeltas(const auto& track, const auto& buffer, int particleType, const TVector3 jetAxis) // correlate tracks from current event with tracks from buffer, i.e. other events
+  void fillMixedEventDeltas(const auto& track, const auto& buffer, int particleType, const TVector3& jetAxis) // correlate tracks from current event with tracks from buffer, i.e. other events
   {
     if (buffer.size() == 0)
       return;
@@ -680,7 +680,7 @@ struct AngularCorrelationsInJets {
     } // for (int i = 0; i < static_cast<int>(buffer.size()); i++)
   }
 
-  void doCorrelations(const auto& particleVector, const auto& buffer, auto& tempBuffer, int particleType, const TVector3 jetAxis)
+  void doCorrelations(const auto& particleVector, const auto& buffer, auto& tempBuffer, int particleType, const TVector3& jetAxis)
   {
     if (std::isnan(jetAxis.Phi()))
       return;
@@ -743,7 +743,7 @@ struct AngularCorrelationsInJets {
     } // for (int i = 0; i < static_cast<int>(particleVector.size()); i++)
   }
 
-  void doCorrelationsAnti(const auto& particleVector, const auto& particleVectorAnti, const auto& bufferAnti, auto& tempBuffer, const TVector3 jetAxis) // correlations between proton/antiproton - same story as doCorrelations but different track vectors are correlated
+  void doCorrelationsAnti(const auto& particleVector, const auto& particleVectorAnti, const auto& bufferAnti, auto& tempBuffer, const TVector3& jetAxis) // correlations between proton/antiproton - same story as doCorrelations but different track vectors are correlated
   {
     if (std::isnan(jetAxis.Phi()))
       return;
@@ -775,7 +775,7 @@ struct AngularCorrelationsInJets {
     }
   }
 
-  void getPerpendicularAxis(TVector3 p, TVector3& u, double sign)
+  void getPerpendicularAxis(const TVector3& p, TVector3& u, double sign)
   {
     // Initialization
     double ux(0), uy(0), uz(0);
@@ -822,7 +822,7 @@ struct AngularCorrelationsInJets {
     return;
   }
 
-  int analyseJet(int jetCounter, fastjet::PseudoJet jet, const auto& particles, auto& jetProtons, auto& jetAntiprotons, auto& jetPiPlus, auto& jetPiMinus, auto& jetAll, double rhoPerp, double rhoMPerp)
+  int analyseJet(int jetCounter, const fastjet::PseudoJet& jet, const auto& particles, auto& jetProtons, auto& jetAntiprotons, auto& jetPiPlus, auto& jetPiMinus, auto& jetAll, double rhoPerp, double rhoMPerp)
   {
     if (!jet.has_constituents())
       return jetCounter;

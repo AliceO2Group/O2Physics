@@ -257,7 +257,7 @@ struct matchingMFT {
     }
     o2::mch::TrackExtrap::setField();
     const double centerMFT[3] = {0, 0, -61.4};
-    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    o2::field::MagneticField* field = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     mBz = field->getBz(centerMFT); // Get field at centre of MFT
     LOGF(info, "Bz at center of MFT = %f kZG", mBz);
 
@@ -515,7 +515,7 @@ struct matchingMFT {
   }
 
   template <bool withMFTCov = false, typename TCollision, typename TFwdTrack, typename TFwdTracks, typename TMFTTracks, typename TMFTTracksCov>
-  void fillHistograms(TCollision const& collision, TFwdTrack fwdtrack, TFwdTracks const&, TMFTTracks const&, TMFTTracksCov const& mftCovs)
+  void fillHistograms(TCollision const& collision, const TFwdTrack& fwdtrack, TFwdTracks const&, TMFTTracks const&, TMFTTracksCov const& mftCovs)
   {
     if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) { // only for protection
       return;

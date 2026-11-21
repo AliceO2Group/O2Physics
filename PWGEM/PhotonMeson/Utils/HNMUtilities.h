@@ -21,7 +21,6 @@
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
 #include <CommonConstants/PhysicsConstants.h>
-#include <Framework/ASoA.h>
 #include <Framework/Concepts.h>
 #include <Framework/runDataProcessing.h>
 

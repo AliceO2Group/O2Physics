@@ -255,8 +255,9 @@ struct DqCumulantFlow {
     fGFW->CreateRegions();
   }
 
-  template <char... chars>
-  void FillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& axis)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void FillProfile(const GFW::CorrConfig& corrconf, const TName& tarName, const double& axis)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -286,7 +287,7 @@ struct DqCumulantFlow {
     float weff = 1.0, wacc = 1.0;
 
     if (dileptons.size() > 0) {
-      for (auto track : tracks) {
+      for (const auto& track : tracks) {
         trackGlobalIndexes.push_back(track.globalIndex());
       }
 
@@ -316,7 +317,7 @@ struct DqCumulantFlow {
         }
       }
 
-      for (auto dilepton : dileptons) {
+      for (const auto& dilepton : dileptons) {
         registry.fill(HIST("dimuon_mass"), dilepton.mass());
 
         VarManager::FillTrack<fgDimuonsFillMap>(dilepton, fValuesDilepton);

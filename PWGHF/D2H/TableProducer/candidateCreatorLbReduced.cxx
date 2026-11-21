@@ -64,6 +64,7 @@ struct HfCandidateCreatorLbReduced {
   Configurable<float> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<float> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any Lb is smaller than this"};
   Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<float> maxChi2{"maxChi2", 1.e9, "maximum chi2 for vertex reconstruction"};
   // selection
   Configurable<float> invMassWindowLcPiTolerance{"invMassWindowLcPiTolerance", 0.01, "invariant-mass window tolerance for LcPi pair preselections (GeV/c2)"};
 
@@ -96,6 +97,7 @@ struct HfCandidateCreatorLbReduced {
     df2.setMinRelChi2Change(minRelChi2Change);
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
+    df2.setMaxChi2(maxChi2);
 
     // histograms
     registry.add("hMassLambdaB0ToLcPi", "2-prong candidates;inv. mass (#Lambda_{b}^{0} #rightarrow #Lambda_{c}^{#plus}#pi^{#minus} #rightarrow pK^{#minus}#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});

@@ -58,8 +58,8 @@ enum EventSelectionFlags {
   kNsel                  // counter
 };
 
-DECLARE_SOA_COLUMN(TotalNbrOfCollisions, totalNbrOfCollisions, int);       //! total number of analysed collisions
-DECLARE_SOA_COLUMN(TotalNbrOfSelCollisions, totalNbrOfSelCollisions, int); //! total number of selected collisions
+DECLARE_SOA_COLUMN(TotalNbrOfCollisions, totalNbrOfCollisions, int);                   //! total number of analysed collisions
+DECLARE_SOA_COLUMN(TotalNbrOfSelCollisions, totalNbrOfSelCollisions, int);             //! total number of selected collisions
 DECLARE_SOA_COLUMN(TotalIsTriggerTVXCollisions, totalIsTriggerTVXCollisions, int);     //! N selected collisions after applying IsTriggerTVX
 DECLARE_SOA_COLUMN(TotalNoITSROFBorderCollisions, totalNoITSROFBorderCollisions, int); //! N selected collisions after applying IsTriggerTVX, NoITSROF
 DECLARE_SOA_COLUMN(TotalNoTFBorderCollisions, totalNoTFBorderCollisions, int);         //! N selected collisions after applying IsTriggerTVX, NoITSROF, NoTF
@@ -440,8 +440,10 @@ DECLARE_SOA_TABLE(StraMCCollMults_000, "AOD", "STRAMCCOLLMULTS", //! MC collisio
                   mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, o2::soa::Marker<2>);
 DECLARE_SOA_TABLE_VERSIONED(StraMCCollMults_001, "AOD", "STRAMCCOLLMULTS", 1, //! MC collision multiplicities
                             mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, stramccollision::TotalMultMCParticles);
+DECLARE_SOA_TABLE_VERSIONED(StraMCCollMults_002, "AOD", "STRAMCCOLLMULTS", 2, //! MC collision multiplicities
+                            mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCFV0A, mult::MultMCFDDA, mult::MultMCFDDC, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, stramccollision::TotalMultMCParticles);
 
-using StraMCCollMults = StraMCCollMults_001;
+using StraMCCollMults = StraMCCollMults_002;
 
 namespace dautrack
 {
@@ -583,7 +585,7 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_003, "AOD", "DAUTRACKEXTRA", 3, //! d
                             track::v001::ITSClsSizeInLayer<track::ITSClusterSizes>,
                             track::v001::ITSClusterMap<track::ITSClusterSizes>,
                             track::v001::ITSNCls<track::ITSClusterSizes>,
-                            track::v001::IsITSAfterburner<track::v001::DetectorMap, track::ITSChi2NCl>,
+                            track::v001::IsITSAfterburner<dautrack::DetectorMap, track::ITSChi2NCl>,
                             /*compatibility*/ dautrack::HasITSTracker<dautrack::DetectorMap, track::ITSChi2NCl>,
                             /*compatibility*/ dautrack::HasITSAfterburner<dautrack::DetectorMap, track::ITSChi2NCl>,
 

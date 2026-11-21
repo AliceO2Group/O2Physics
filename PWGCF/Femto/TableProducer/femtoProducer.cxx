@@ -19,8 +19,10 @@
 #include "PWGCF/Femto/Core/kinkBuilder.h"
 #include "PWGCF/Femto/Core/mcBuilder.h"
 #include "PWGCF/Femto/Core/modes.h"
+#include "PWGCF/Femto/Core/photonBuilder.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
 #include "PWGCF/Femto/Core/v0Builder.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGLF/DataModel/LFKinkDecayTables.h"
@@ -84,10 +86,16 @@ using Run3RecoVzeros = o2::soa::Join<Run3Vzeros, o2::aod::McV0Labels>;
 using Run3D0s = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>;
 using Run3RecoD0s = soa::Join<Run3D0s, aod::HfCand2ProngMcRec>;
 
+using Run3Lcs = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi>;
+using Run3RecoLcs = soa::Join<Run3Lcs, aod::HfCand3ProngMcRec>;
+
 using Run3Cascades = o2::soa::Join<o2::aod::CascDatas, o2::aod::CascTOFPIDs, o2::aod::CascTOFNSigmas>;
 using Run3RecoCascades = o2::soa::Join<Run3Cascades, o2::aod::McCascLabels>;
 
 using Run3Kinks = o2::aod::KinkCands;
+
+using Run3SigmaPlusPcms = o2::aod::SigmaPlusCands;
+using Run3RecoSigmaPlusPcms = o2::aod::SigmaPlusCandsMC;
 
 using Run3McGenParticles = o2::aod::McParticles;
 
@@ -95,12 +103,44 @@ using Run3McGenParticles = o2::aod::McParticles;
 
 struct FemtoProducer {
 
-  o2::framework::Preslice<rawinputs::Run3McGenParticles> perMcCollision = o2::aod::mcparticle::mcCollisionId;
-  o2::framework::Preslice<rawinputs::Run3McRecoTracks> perColRecoTracks = o2::aod::track::collisionId;
-  o2::framework::Preslice<rawinputs::Run3RecoVzeros> perColRecoV0s = o2::aod::v0data::collisionId;
-  o2::framework::Preslice<rawinputs::Run3RecoCascades> perColRecoCascades = o2::aod::cascdata::collisionId;
-  o2::framework::Preslice<rawinputs::Run3Kinks> perColRecoKinks = o2::aod::kinkcand::collisionId;
-  o2::framework::Preslice<rawinputs::Run3RecoD0s> perColRecoD0s = o2::aod::hf_cand::collisionId;
+  // all Preslice declarations, grouped into a single data member
+  struct : public o2::framework::PresliceGroup {
+    o2::framework::Preslice<rawinputs::Run3McGenParticles> perMcCollision = o2::aod::mcparticle::mcCollisionId;
+    o2::framework::Preslice<rawinputs::Run3FullPidTracks> perColTracks = o2::aod::track::collisionId;
+    o2::framework::Preslice<rawinputs::Run3McRecoTracks> perColRecoTracks = o2::aod::track::collisionId;
+    o2::framework::Preslice<rawinputs::Run3Vzeros> perColV0s = o2::aod::v0data::collisionId;
+    o2::framework::Preslice<rawinputs::Run3RecoVzeros> perColRecoV0s = o2::aod::v0data::collisionId;
+    o2::framework::Preslice<o2::aod::V0PhotonsKF> perColRecoPCMPhotons = o2::aod::v0photonkf::collisionId;
+    o2::framework::Preslice<rawinputs::Run3Cascades> perColCascades = o2::aod::cascdata::collisionId;
+    o2::framework::Preslice<rawinputs::Run3RecoCascades> perColRecoCascades = o2::aod::cascdata::collisionId;
+    o2::framework::Preslice<rawinputs::Run3Kinks> perColRecoKinks = o2::aod::kinkcand::collisionId;
+    o2::framework::Preslice<rawinputs::Run3SigmaPlusPcms> perColSigmaPlusPcms = o2::aod::sigmapluscand::collisionId;
+    o2::framework::Preslice<rawinputs::Run3RecoSigmaPlusPcms> perColRecoSigmaPlusPcms = o2::aod::sigmapluscand::collisionId;
+    o2::framework::Preslice<rawinputs::Run3D0s> perColD0s = o2::aod::hf_cand::collisionId;
+    o2::framework::Preslice<rawinputs::Run3RecoD0s> perColRecoD0s = o2::aod::hf_cand::collisionId;
+    o2::framework::Preslice<rawinputs::Run3Lcs> perColLcs = o2::aod::hf_cand::collisionId;
+    o2::framework::Preslice<rawinputs::Run3RecoLcs> perColRecoLcs = o2::aod::hf_cand::collisionId;
+  } preslices;
+
+  // plain builder helper objects, grouped into a single data member
+  struct {
+    collisionbuilder::CollisionBuilder<collisionbuilder::ColSelHistName, collisionbuilder::CollisionFilterHistName> collisionBuilder;
+    trackbuilder::TrackBuilder<trackbuilder::TrackSelHistName, trackbuilder::TrackFilterHistName> trackBuilder;
+    v0builder::V0Builder<modes::V0::kK0short, v0builder::K0shortSelHistName, v0builder::K0shortFilterHistName> k0shortBuilder;
+    v0builder::V0Builder<modes::V0::kLambda, v0builder::LambdaSelHistName, v0builder::LambdaFilterHistName> lambdaBuilder;
+    v0builder::V0Builder<modes::V0::kAntiLambda, v0builder::AntilambdaSelHistName, v0builder::AntiLambdaFilterHistName> antilambdaBuilder;
+    photonbuilder::PhotonBuilder photonBuilder;
+    charmhadronbuilder::CharmHadronBuilder<modes::CharmHadron::kD0, charmhadronbuilder::D0SelHistName, charmhadronbuilder::D0FilterHistName> d0Builder;
+    charmhadronbuilder::CharmHadronBuilder<modes::CharmHadron::kD0Bar, charmhadronbuilder::D0barSelHistName, charmhadronbuilder::D0barFilterHistName> d0barBuilder;
+    charmhadronbuilder::CharmHadronBuilder<modes::CharmHadron::kLc, charmhadronbuilder::LcSelHistName, charmhadronbuilder::LcFilterHistName> lcBuilder;
+    charmhadronbuilder::CharmHadronBuilder<modes::CharmHadron::kLcBar, charmhadronbuilder::LcBarSelHistName, charmhadronbuilder::LcBarFilterHistName> lcBarBuilder;
+    cascadebuilder::CascadeBuilder<modes::Cascade::kXi, cascadebuilder::XiSelHistName, cascadebuilder::XiFilterHistName> xiBuilder;
+    cascadebuilder::CascadeBuilder<modes::Cascade::kOmega, cascadebuilder::OmegaSelHistName, cascadebuilder::OmegaFilterHistName> omegaBuilder;
+    kinkbuilder::KinkBuilder<modes::Kink::kSigma, kinkbuilder::SigmaSelHistName, kinkbuilder::SigmaFilterHistName> sigmaBuilder;
+    kinkbuilder::KinkBuilder<modes::Kink::kSigmaPlus, kinkbuilder::SigmaPlusSelHistName, kinkbuilder::SigmaPlusFilterHistName> sigmaPlusBuilder;
+    kinkbuilder::SigmaPlusPcmBuilder<kinkbuilder::SigmaPlusPcmSelHistName, kinkbuilder::SigmaPlusPcmFilterHistName> sigmaPlusPcmBuilder;
+    mcbuilder::McBuilder mcBuilder;
+  } builders;
 
   // ccdb config
   collisionbuilder::ConfCcdb confCcdb;
@@ -111,12 +151,10 @@ struct FemtoProducer {
   collisionbuilder::ConfCollisionFilters confCollisionFilters;
   collisionbuilder::ConfCollisionBits confCollisionBits;
   collisionbuilder::ConfCollisionRctFlags confCollisionRctFlags;
-  collisionbuilder::CollisionBuilder<collisionbuilder::ColSelHistName, collisionbuilder::CollisionFilterHistName> collisionBuilder;
 
   // track builder
   trackbuilder::TrackBuilderProducts trackBuilderProducts;
   trackbuilder::ConfTrackTables confTrackTables;
-  trackbuilder::TrackBuilder<trackbuilder::TrackSelHistName, trackbuilder::TrackFilterHistName> trackBuilder;
   trackbuilder::ConfTrackBits confTrackBits;
   trackbuilder::ConfTrackFilters confTrackFilters;
 
@@ -125,42 +163,40 @@ struct FemtoProducer {
   v0builder::ConfV0Tables confV0Tables;
   v0builder::ConfV0Filters confV0Filters;
   v0builder::ConfK0shortBits confK0shortBits;
-  v0builder::V0Builder<modes::V0::kK0short, v0builder::K0shortSelHistName, v0builder::K0shortFilterHistName> k0shortBuilder;
   v0builder::ConfLambdaBits confLambdaBits;
-  v0builder::V0Builder<modes::V0::kLambda, v0builder::LambdaSelHistName, v0builder::LambdaFilterHistName> lambdaBuilder;
-  v0builder::V0Builder<modes::V0::kAntiLambda, v0builder::AntilambdaSelHistName, v0builder::AntiLambdaFilterHistName> antilambdaBuilder;
+
+  // photon (PCM) builder
+  photonbuilder::PhotonBuilderProducts photonBuilderProducts;
+  photonbuilder::ConfPhotonTables confPhotonTables;
+  photonbuilder::ConfPhotonFilters confPhotonFilters;
+  photonbuilder::ConfPhotonBits confPhotonBits;
 
   // charm hadron builder
   charmhadronbuilder::CharmHadronBuilderProducts charmHadronBuilderProducts;
-  charmhadronbuilder::ConfD0Filters confD0Filters;
+  charmhadronbuilder::ConfCharmHadronFilters confCharmHadronFilters;
+  charmhadronbuilder::ConfCharmHadronTables confCharmHadronTables;
   charmhadronbuilder::ConfD0Bits confD0Bits;
-  charmhadronbuilder::ConfD0Tables confD0Tables;
-  charmhadronbuilder::CharmHadronBuilder<modes::CharmHadron::kD0, charmhadronbuilder::D0SelHistName, charmhadronbuilder::D0FilterHistName> d0Builder;
-  charmhadronbuilder::CharmHadronBuilder<modes::CharmHadron::kD0Bar, charmhadronbuilder::D0barSelHistName, charmhadronbuilder::D0barFilterHistName> d0barBuilder;
+  charmhadronbuilder::ConfLcBits confLcBits;
 
   // cascade builder
   cascadebuilder::CascadeBuilderProducts cascadeBuilderProducts;
   cascadebuilder::ConfCascadeTables confCascadeTables;
   cascadebuilder::ConfCascadeFilters confCascadeFilters;
   cascadebuilder::ConfXiBits confXiBits;
-  cascadebuilder::CascadeBuilder<modes::Cascade::kXi, cascadebuilder::XiSelHistName, cascadebuilder::XiFilterHistName> xiBuilder;
   cascadebuilder::ConfOmegaBits confOmegaBits;
-  cascadebuilder::CascadeBuilder<modes::Cascade::kOmega, cascadebuilder::OmegaSelHistName, cascadebuilder::OmegaFilterHistName> omegaBuilder;
 
   // kink builder
   kinkbuilder::KinkBuilderProducts kinkBuilderProducts;
   kinkbuilder::ConfKinkTables confKinkTables;
   kinkbuilder::ConfKinkFilters confKinkFilters;
   kinkbuilder::ConfSigmaBits confSigmaBits;
-  kinkbuilder::KinkBuilder<modes::Kink::kSigma, kinkbuilder::SigmaSelHistName, kinkbuilder::SigmaFilterHistName> sigmaBuilder;
   kinkbuilder::ConfSigmaPlusBits confSigmaPlusBits;
-  kinkbuilder::KinkBuilder<modes::Kink::kSigmaPlus, kinkbuilder::SigmaPlusSelHistName, kinkbuilder::SigmaPlusFilterHistName> sigmaPlusBuilder;
+  kinkbuilder::ConfSigmaPlusPcmBits confSigmaPlusPcmBits;
 
   // mc builder
   mcbuilder::ConfMc confMc;
   mcbuilder::ConfMcTables confMcTables;
   mcbuilder::McBuilderProducts mcProducts;
-  mcbuilder::McBuilder mcBuilder;
 
   // histogramming
   o2::framework::HistogramRegistry hRegistry{"FemtoProducer", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
@@ -181,60 +217,86 @@ struct FemtoProducer {
 
     // ---- builders -----------------------------------------------------------
     // Order matters here: CollisionBuilder must init before TrackBuilder (which checks
-    // collisionBuilder.producingCollisions()/producingLiteCollisions()), and TrackBuilder
+    // builders.collisionBuilder.producingCollisions()/producingLiteCollisions()), and TrackBuilder
     // must init before the V0/Cascade/Kink builders (which check
-    // trackBuilder.producingTracks()/producingLiteTracks()).
-    collisionBuilder.init(&hRegistry, confCollisionFilters, confCollisionBits, confCollisionRctFlags, confCcdb, confCollisionTables, context);
-    trackBuilder.init(&hRegistry, confTrackBits, confTrackFilters, confTrackTables, context, collisionBuilder);
+    // builders.trackBuilder.producingTracks()/producingLiteTracks()).
+    builders.collisionBuilder.init(&hRegistry, confCollisionFilters, confCollisionBits, confCollisionRctFlags, confCcdb, confCollisionTables, context);
+    builders.trackBuilder.init(&hRegistry, confTrackBits, confTrackFilters, confTrackTables, context, builders.collisionBuilder);
 
-    k0shortBuilder.init(&hRegistry, confK0shortBits, confV0Filters, confV0Tables, context, trackBuilder);
-    lambdaBuilder.init(&hRegistry, confLambdaBits, confV0Filters, confV0Tables, context, trackBuilder);
-    antilambdaBuilder.init(&hRegistry, confLambdaBits, confV0Filters, confV0Tables, context, trackBuilder);
+    builders.k0shortBuilder.init(&hRegistry, confK0shortBits, confV0Filters, confV0Tables, context, builders.trackBuilder);
+    builders.lambdaBuilder.init(&hRegistry, confLambdaBits, confV0Filters, confV0Tables, context, builders.trackBuilder);
+    builders.antilambdaBuilder.init(&hRegistry, confLambdaBits, confV0Filters, confV0Tables, context, builders.trackBuilder);
 
-    d0Builder.init(&hRegistry, confD0Bits, confD0Filters, confD0Tables, context);
-    d0barBuilder.init(&hRegistry, confD0Bits, confD0Filters, confD0Tables, context);
+    builders.photonBuilder.init(&hRegistry, confPhotonBits, confPhotonFilters, confPhotonTables, context);
 
-    sigmaBuilder.init(&hRegistry, confSigmaBits, confKinkFilters, confKinkTables, context, trackBuilder);
-    sigmaPlusBuilder.init(&hRegistry, confSigmaPlusBits, confKinkFilters, confKinkTables, context, trackBuilder);
+    builders.d0Builder.init(&hRegistry, confD0Bits, confCharmHadronFilters, confCharmHadronTables, context);
+    builders.d0barBuilder.init(&hRegistry, confD0Bits, confCharmHadronFilters, confCharmHadronTables, context);
 
-    xiBuilder.init(&hRegistry, confXiBits, confCascadeFilters, confCascadeTables, context, trackBuilder);
-    omegaBuilder.init(&hRegistry, confOmegaBits, confCascadeFilters, confCascadeTables, context, trackBuilder);
+    builders.lcBuilder.init(&hRegistry, confLcBits, confCharmHadronFilters, confCharmHadronTables, context);
+    builders.lcBarBuilder.init(&hRegistry, confLcBits, confCharmHadronFilters, confCharmHadronTables, context);
 
-    mcBuilder.init(confMc, confMcTables, context);
+    builders.sigmaBuilder.init(&hRegistry, confSigmaBits, confKinkFilters, confKinkTables, context, builders.trackBuilder);
+    builders.sigmaPlusBuilder.init(&hRegistry, confSigmaPlusBits, confKinkFilters, confKinkTables, context, builders.trackBuilder);
+    builders.sigmaPlusPcmBuilder.init(&hRegistry, confSigmaPlusPcmBits, confKinkFilters, confKinkTables, context, builders.trackBuilder);
+
+    builders.xiBuilder.init(&hRegistry, confXiBits, confCascadeFilters, confCascadeTables, context, builders.trackBuilder);
+    builders.omegaBuilder.init(&hRegistry, confOmegaBits, confCascadeFilters, confCascadeTables, context, builders.trackBuilder);
+
+    builders.mcBuilder.init(confMc, confMcTables, context);
 
     // ---- guard: enabled tables vs. enabled process function ------------------
-    if ((xiBuilder.fillAnyTable() || omegaBuilder.fillAnyTable()) &&
+    if ((builders.xiBuilder.fillAnyTable() || builders.omegaBuilder.fillAnyTable()) &&
         (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sCascadesRun3PbPb &&
          !doprocessTracksV0sCascadesRun3PbPbWithEventShape &&
-         !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesRun3ppMc &&
+         !doprocessTracksV0sCascadesPhotonsRun3PbPbWithEventShape &&
+         !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesKinksPhotonsRun3pp &&
+         !doprocessTracksV0sCascadesRun3ppMc &&
          !doprocessTracksV0sCascadesRun3PbPbMc)) {
       LOG(fatal) << "At least one cascade table is enabled, but wrong process function is enabled. Breaking...";
     }
-    if ((lambdaBuilder.fillAnyTable() || antilambdaBuilder.fillAnyTable() || k0shortBuilder.fillAnyTable()) &&
+    if ((builders.lambdaBuilder.fillAnyTable() || builders.antilambdaBuilder.fillAnyTable() || builders.k0shortBuilder.fillAnyTable()) &&
         (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sCascadesRun3PbPb &&
-         !doprocessTracksV0sRun3pp && !doprocessTracksV0sCascadesKinksRun3pp &&
-         !doprocessTracksV0sCascadesRun3PbPbWithEventShape &&
+         !doprocessTracksV0sRun3pp && !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesKinksPhotonsRun3pp &&
+         !doprocessTracksV0sCascadesRun3PbPbWithEventShape && !doprocessTracksV0sCascadesPhotonsRun3PbPbWithEventShape &&
          !doprocessTracksV0sRun3ppMc && !doprocessTracksV0sRun3PbPb && !doprocessTracksV0sRun3PbPbMc &&
          !doprocessTracksV0sCascadesRun3ppMc && !doprocessTracksV0sCascadesRun3PbPbMc &&
          !doprocessTracksV0sKinksRun3ppMc)) {
       LOG(fatal) << "At least one v0 table is enabled, but wrong process function is enabled. Breaking...";
     }
-    if ((sigmaBuilder.fillAnyTable() || sigmaPlusBuilder.fillAnyTable()) &&
-        (!doprocessTracksKinksRun3pp && !doprocessTracksV0sCascadesKinksRun3pp &&
-         !doprocessTracksKinksRun3ppMc && !doprocessTracksV0sKinksRun3ppMc)) {
+    if (builders.photonBuilder.fillAnyTable() &&
+        (!doprocessTracksPhotonsRun3pp && !doprocessTracksPhotonsRun3PbPb &&
+         !doprocessTracksV0sCascadesKinksPhotonsRun3pp && !doprocessTracksV0sCascadesPhotonsRun3PbPbWithEventShape)) {
+      LOG(fatal) << "At least one photon table is enabled, but wrong process function is enabled. Breaking...";
+    }
+    if ((builders.sigmaBuilder.fillAnyTable() || builders.sigmaPlusBuilder.fillAnyTable()) &&
+        (!doprocessTracksKinksRun3pp && !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesKinksPhotonsRun3pp &&
+         !doprocessTracksKinksRun3ppMc && !doprocessTracksV0sKinksRun3ppMc &&
+         !doprocessTracksKinksSigmaPlusPcmsRun3pp && !doprocessTracksKinksSigmaPlusPcmsRun3ppMc)) {
       LOG(fatal) << "At least one kink table is enabled, but wrong process function is enabled. Breaking...";
     }
-    if ((d0Builder.fillAnyTable() || d0barBuilder.fillAnyTable()) &&
+    if (builders.sigmaPlusPcmBuilder.fillAnyTable() &&
+        (!doprocessTracksSigmaPlusPcmsRun3pp && !doprocessTracksSigmaPlusPcmsRun3ppMc &&
+         !doprocessTracksKinksSigmaPlusPcmsRun3pp && !doprocessTracksKinksSigmaPlusPcmsRun3ppMc)) {
+      LOG(fatal) << "At least one sigma plus (PCM) table is enabled, but wrong process function is enabled. Breaking...";
+    }
+    if ((builders.d0Builder.fillAnyTable() || builders.d0barBuilder.fillAnyTable()) &&
         (!doprocessTracksD0sRun3pp && !doprocessTracksD0sRun3PbPb &&
          !doprocessTracksD0sRun3ppMc && !doprocessTracksD0sRun3PbPbMc)) {
       LOG(fatal) << "At least one d0 table is enabled, but wrong process function is enabled. Breaking...";
     }
-    if (mcBuilder.fillAnyTable() &&
+    if ((builders.lcBuilder.fillAnyTable() || builders.lcBarBuilder.fillAnyTable()) &&
+        (!doprocessTracksLcsRun3pp && !doprocessTracksLcsRun3PbPb &&
+         !doprocessTracksLcsRun3ppMc && !doprocessTracksLcsRun3PbPbMc)) {
+      LOG(fatal) << "At least one lc table is enabled, but wrong process function is enabled. Breaking...";
+    }
+    if (builders.mcBuilder.fillAnyTable() &&
         (!doprocessTracksRun3ppMc && !doprocessTracksRun3PbPbMc &&
          !doprocessTracksV0sRun3ppMc && !doprocessTracksV0sRun3PbPbMc &&
          !doprocessTracksV0sCascadesRun3ppMc && !doprocessTracksV0sCascadesRun3PbPbMc &&
          !doprocessTracksKinksRun3ppMc && !doprocessTracksV0sKinksRun3ppMc &&
+         !doprocessTracksSigmaPlusPcmsRun3ppMc && !doprocessTracksKinksSigmaPlusPcmsRun3ppMc &&
          !doprocessTracksD0sRun3ppMc && !doprocessTracksD0sRun3PbPbMc &&
+         !doprocessTracksLcsRun3ppMc && !doprocessTracksLcsRun3PbPbMc &&
          !doprocessMcOnly)) {
       LOG(fatal) << "At least one mc table is enabled, but wrong process function is enabled. Breaking...";
     }
@@ -248,18 +310,22 @@ struct FemtoProducer {
         }
       };
       // substitute the real accessors if they live on the builders rather than the conf groups
-      add("collision", collisionBuilder.fillAnyTable(), collisionBuilder.isPassThrough());
-      add("track", trackBuilder.fillAnyTable(), trackBuilder.isPassThrough());
-      add("k0short", k0shortBuilder.fillAnyTable(), k0shortBuilder.isPassThrough());
-      add("lambda", lambdaBuilder.fillAnyTable(), lambdaBuilder.isPassThrough());
-      add("antilambda", antilambdaBuilder.fillAnyTable(), antilambdaBuilder.isPassThrough());
-      add("d0", d0Builder.fillAnyTable(), d0Builder.isPassThrough());
-      add("d0bar", d0barBuilder.fillAnyTable(), d0barBuilder.isPassThrough());
-      add("sigma", sigmaBuilder.fillAnyTable(), sigmaBuilder.isPassThrough());
-      add("sigmaplus", sigmaPlusBuilder.fillAnyTable(), sigmaPlusBuilder.isPassThrough());
-      add("xi", xiBuilder.fillAnyTable(), xiBuilder.isPassThrough());
-      add("omega", omegaBuilder.fillAnyTable(), omegaBuilder.isPassThrough());
-      add("mc", mcBuilder.fillAnyTable(), mcBuilder.isPassThrough());
+      add("collision", builders.collisionBuilder.fillAnyTable(), builders.collisionBuilder.isPassThrough());
+      add("track", builders.trackBuilder.fillAnyTable(), builders.trackBuilder.isPassThrough());
+      add("k0short", builders.k0shortBuilder.fillAnyTable(), builders.k0shortBuilder.isPassThrough());
+      add("lambda", builders.lambdaBuilder.fillAnyTable(), builders.lambdaBuilder.isPassThrough());
+      add("antilambda", builders.antilambdaBuilder.fillAnyTable(), builders.antilambdaBuilder.isPassThrough());
+      add("photon", builders.photonBuilder.fillAnyTable(), builders.photonBuilder.isPassThrough());
+      add("d0", builders.d0Builder.fillAnyTable(), builders.d0Builder.isPassThrough());
+      add("d0bar", builders.d0barBuilder.fillAnyTable(), builders.d0barBuilder.isPassThrough());
+      add("lc", builders.lcBuilder.fillAnyTable(), builders.lcBuilder.isPassThrough());
+      add("lcbar", builders.lcBarBuilder.fillAnyTable(), builders.lcBarBuilder.isPassThrough());
+      add("sigma", builders.sigmaBuilder.fillAnyTable(), builders.sigmaBuilder.isPassThrough());
+      add("sigmaplus", builders.sigmaPlusBuilder.fillAnyTable(), builders.sigmaPlusBuilder.isPassThrough());
+      add("sigmapluspcm", builders.sigmaPlusPcmBuilder.fillAnyTable(), builders.sigmaPlusPcmBuilder.isPassThrough());
+      add("xi", builders.xiBuilder.fillAnyTable(), builders.xiBuilder.isPassThrough());
+      add("omega", builders.omegaBuilder.fillAnyTable(), builders.omegaBuilder.isPassThrough());
+      add("mc", builders.mcBuilder.fillAnyTable(), builders.mcBuilder.isPassThrough());
 
       const bool anyPassThrough = std::any_of(passThroughFlags.begin(), passThroughFlags.end(),
                                               [](const auto& f) { return f.second; });
@@ -277,6 +343,25 @@ struct FemtoProducer {
         LOG(warn) << "  - particles in pass-through, collisions not: the extra particle rows hang off "
                   << "a candidate-biased event sample, which will bias event-normalised observables.";
       }
+
+      // in mc pass-through every generated collision is written, but reco collisions of other
+      // sub-generators are still rejected in checkCollision -> biased event-loss denominator
+      if (builders.mcBuilder.isPassThrough() && builders.collisionBuilder.isPassThrough() && builders.collisionBuilder.subGeneratorId() >= 0) {
+        LOG(warn) << "MC and collision pass-through are enabled, but CollisionFilter.subGeneratorId = "
+                  << builders.collisionBuilder.subGeneratorId() << " still rejects reconstructed collisions of other sub-generators, "
+                  << "while all generated collisions are written. Set it to -1 for unbiased event/signal-loss corrections.";
+      }
+
+      // daughter tracks can be written a second time under the collision of their mother candidate;
+      // without FTrackExtras (fillType) these rows cannot be told apart from selected tracks downstream
+      const bool anyDaughterBuilder = builders.k0shortBuilder.fillAnyTable() || builders.lambdaBuilder.fillAnyTable() || builders.antilambdaBuilder.fillAnyTable() ||
+                                      builders.xiBuilder.fillAnyTable() || builders.omegaBuilder.fillAnyTable() ||
+                                      builders.sigmaBuilder.fillAnyTable() || builders.sigmaPlusBuilder.fillAnyTable() || builders.sigmaPlusPcmBuilder.fillAnyTable() ||
+                                      builders.d0Builder.fillAnyTable() || builders.d0barBuilder.fillAnyTable() || builders.lcBuilder.fillAnyTable() || builders.lcBarBuilder.fillAnyTable();
+      if (builders.trackBuilder.isPassThrough() && anyDaughterBuilder && !builders.trackBuilder.producingTrackExtras()) {
+        LOG(warn) << "Track pass-through is enabled together with candidates that register daughter tracks, but FTrackExtras is not produced. "
+                  << "Daughter-only track rows cannot be identified downstream (enable TrackTables.produceTrackExtras).";
+      }
     }
 
     // ---- guard: exactly one process function ---------------------------------
@@ -285,12 +370,18 @@ struct FemtoProducer {
       static_cast<int>(doprocessTracksRun3PbPb) +
       static_cast<int>(doprocessTracksRun3PbPbWithEventShape) +
       static_cast<int>(doprocessTracksV0sRun3pp) +
+      static_cast<int>(doprocessTracksPhotonsRun3pp) +
+      static_cast<int>(doprocessTracksPhotonsRun3PbPb) +
       static_cast<int>(doprocessTracksV0sRun3PbPb) +
       static_cast<int>(doprocessTracksV0sCascadesRun3pp) +
       static_cast<int>(doprocessTracksV0sCascadesRun3PbPb) +
       static_cast<int>(doprocessTracksV0sCascadesRun3PbPbWithEventShape) +
+      static_cast<int>(doprocessTracksV0sCascadesPhotonsRun3PbPbWithEventShape) +
       static_cast<int>(doprocessTracksKinksRun3pp) +
       static_cast<int>(doprocessTracksV0sCascadesKinksRun3pp) +
+      static_cast<int>(doprocessTracksV0sCascadesKinksPhotonsRun3pp) +
+      static_cast<int>(doprocessTracksSigmaPlusPcmsRun3pp) +
+      static_cast<int>(doprocessTracksKinksSigmaPlusPcmsRun3pp) +
       static_cast<int>(doprocessTracksD0sRun3pp) +
       static_cast<int>(doprocessTracksD0sRun3PbPb) +
       static_cast<int>(doprocessTracksRun3ppMc) +
@@ -301,8 +392,14 @@ struct FemtoProducer {
       static_cast<int>(doprocessTracksV0sCascadesRun3PbPbMc) +
       static_cast<int>(doprocessTracksKinksRun3ppMc) +
       static_cast<int>(doprocessTracksV0sKinksRun3ppMc) +
+      static_cast<int>(doprocessTracksSigmaPlusPcmsRun3ppMc) +
+      static_cast<int>(doprocessTracksKinksSigmaPlusPcmsRun3ppMc) +
       static_cast<int>(doprocessTracksD0sRun3ppMc) +
       static_cast<int>(doprocessTracksD0sRun3PbPbMc) +
+      static_cast<int>(doprocessTracksLcsRun3pp) +
+      static_cast<int>(doprocessTracksLcsRun3PbPb) +
+      static_cast<int>(doprocessTracksLcsRun3ppMc) +
+      static_cast<int>(doprocessTracksLcsRun3PbPbMc) +
       static_cast<int>(doprocessMcOnly);
 
     if (nProcesses != 1) {
@@ -316,303 +413,548 @@ struct FemtoProducer {
   template <modes::System system, typename T1, typename T2, typename T3>
   bool processCollisions(T1 const& col, T2 const& /* bcs*/, T3 const& tracks)
   {
-    collisionBuilder.reset();
+    builders.collisionBuilder.reset();
     auto bc = col.template bc_as<T2>();
-    collisionBuilder.initCollision<system>(bc, col, tracks, ccdb, hRegistry);
-    if (!collisionBuilder.checkCollision(col)) {
+    builders.collisionBuilder.initCollision<system>(bc, col, tracks, ccdb, hRegistry);
+    if (!builders.collisionBuilder.checkCollision(col)) {
       return false;
     }
     // Normally the collision row is written lazily, once a candidate is found. In
     // pass-through we need every accepted collision, including those with no candidate,
     // otherwise event-normalised observables lose exactly those events.
-    if (collisionBuilder.isPassThrough()) {
-      collisionBuilder.fillCollision<system>(collisionBuilderProducts, col);
+    if (builders.collisionBuilder.isPassThrough()) {
+      builders.collisionBuilder.fillCollision<system>(collisionBuilderProducts, col);
     }
     return true;
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  bool processMcCollisions(T1 const& col, T2 const& mcCols, T3 const& /* bcs*/, T4 const& tracks, T5 const& mcParticles)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
+  bool processMcCollisions(T1 const& col, T2 const& mcCols, T3 const& /* bcs*/, T4 const& tracks)
   {
-    collisionBuilder.reset();
-    // in pass-through the maps are built once per timeframe
-    // resetting here would wipe them and duplicate every mc collision and particle
-    if (!mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-    }
+    builders.collisionBuilder.reset();
+    // builders.mcBuilder.reset() runs once per timeframe in the calling processTracksXXXMc function
+    // (both pass-through and lazy-fill mode); resetting here on every reco collision would
+    // wipe the dedup maps and duplicate every mc collision/particle referenced by more than
+    // one reco collision (e.g. split-vertex reconstruction under pileup)
     auto bc = col.template bc_as<T3>();
-    collisionBuilder.initCollision<system>(bc, col, tracks, ccdb, hRegistry);
-    if (!collisionBuilder.checkCollision(col, mcCols)) {
+    builders.collisionBuilder.initCollision<system>(bc, col, tracks, ccdb, hRegistry);
+    if (!builders.collisionBuilder.checkCollision(col, mcCols)) {
       return false;
     }
     // NOTE: must be fillMcCollision, not fillCollision - fillMcCollision returns early on
     //       mCollisionAlreadyFilled, so filling the collision first would permanently skip
     //       the collision label
-    if (collisionBuilder.isPassThrough()) {
-      collisionBuilder.fillMcCollision<system>(collisionBuilderProducts, col, mcCols, mcProducts, mcBuilder);
+    if (builders.collisionBuilder.isPassThrough()) {
+      builders.collisionBuilder.fillMcCollision<system>(collisionBuilderProducts, col, mcCols, mcProducts, builders.mcBuilder);
     }
     return true;
   }
 
   // processing tracks
+  // NOTE: trackBuilder.reset() is NOT called here. It must happen exactly once per dataframe
+  // (in the calling processTracksXXX/processTracksXXXMc function, before the reco-collision
+  // loop), not once per collision, so that fillTrack()'s "protect against double filling" dedup
+  // (indexMap) can actually catch a track referenced from more than one collision in the same
+  // dataframe instead of being wiped before it gets the chance.
   template <modes::System system, typename T1, typename T2>
   void processTracks(T1 const& col, T2 const& tracksWithItsPid)
   {
-    trackBuilder.reset(tracksWithItsPid);
-    trackBuilder.fillTracks<system>(col, collisionBuilder, collisionBuilderProducts, tracksWithItsPid, trackBuilderProducts);
+    builders.trackBuilder.fillTracks<system>(col, builders.collisionBuilder, collisionBuilderProducts, tracksWithItsPid, trackBuilderProducts);
   }
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
   void processMcTracks(T1 const& col, T2 const& mcCols, T3 const& tracks, T4 const& tracksWithItsPid, T5 const& mcParticles)
   {
-    trackBuilder.reset(tracksWithItsPid);
-    trackBuilder.fillMcTracks<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, tracks, tracksWithItsPid, trackBuilderProducts, mcParticles, mcBuilder, mcProducts);
+    builders.trackBuilder.fillMcTracks<system>(col, builders.collisionBuilder, collisionBuilderProducts, mcCols, tracks, tracksWithItsPid, trackBuilderProducts, mcParticles, builders.mcBuilder, mcProducts);
   }
 
   // processing v0s
   template <modes::System system, typename T1, typename T2, typename T3>
   void processV0s(T1 const& col, T2 const& tracks, T3 const& v0s)
   {
-    lambdaBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder);
-    antilambdaBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder);
-    k0shortBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder);
+    builders.lambdaBuilder.fillV0s<system>(col, builders.collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, builders.trackBuilder);
+    builders.antilambdaBuilder.fillV0s<system>(col, builders.collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, builders.trackBuilder);
+    builders.k0shortBuilder.fillV0s<system>(col, builders.collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, builders.trackBuilder);
   }
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
   void processMcV0s(T1 const& col, T2 const& mcCols, T3 const& tracks, T4 const& v0s, T5 const& mcParticles)
   {
-    lambdaBuilder.fillMcV0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
-    antilambdaBuilder.fillMcV0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
-    k0shortBuilder.fillMcV0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
+    builders.lambdaBuilder.fillMcV0s<system>(col, builders.collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, builders.trackBuilder, mcParticles, builders.mcBuilder, mcProducts);
+    builders.antilambdaBuilder.fillMcV0s<system>(col, builders.collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, builders.trackBuilder, mcParticles, builders.mcBuilder, mcProducts);
+    builders.k0shortBuilder.fillMcV0s<system>(col, builders.collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, builders.trackBuilder, mcParticles, builders.mcBuilder, mcProducts);
+  }
+
+  // processing photons (PCM)
+  template <modes::System system, typename T1, typename T2, typename T3>
+  void processPhotons(T1 const& col, T2 const& photons, T3 const& v0legs)
+  {
+    builders.photonBuilder.fillPhotons<system>(col, builders.collisionBuilder, collisionBuilderProducts, photonBuilderProducts, photons, v0legs);
   }
 
   // processing kinks
   template <modes::System system, typename T1, typename T2, typename T3>
   void processKinks(T1 const& col, T2 const& tracks, T3 const& kinks)
   {
-    sigmaBuilder.fillKinks<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder);
-    sigmaPlusBuilder.fillKinks<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder);
+    builders.sigmaBuilder.fillKinks<system>(col, builders.collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, builders.trackBuilder);
+    builders.sigmaPlusBuilder.fillKinks<system>(col, builders.collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, builders.trackBuilder);
   }
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
   void processMcKinks(T1 const& col, T2 const& mcCols, T3 const& tracks, T4 const& kinks, T5 const& mcParticles)
   {
-    sigmaBuilder.fillMcKinks<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
-    sigmaPlusBuilder.fillMcKinks<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
+    builders.sigmaBuilder.fillMcKinks<system>(col, builders.collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, builders.trackBuilder, mcParticles, builders.mcBuilder, mcProducts);
+    builders.sigmaPlusBuilder.fillMcKinks<system>(col, builders.collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, builders.trackBuilder, mcParticles, builders.mcBuilder, mcProducts);
+  }
+
+  // processing sigma plus reconstructed with a PCM photon
+  template <modes::System system, typename T1, typename T2, typename T3>
+  void processSigmaPlusPcms(T1 const& col, T2 const& tracks, T3 const& sigmaPlusPcms)
+  {
+    builders.sigmaPlusPcmBuilder.fillSigmaPlusPcms<system>(col, builders.collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, sigmaPlusPcms, tracks, builders.trackBuilder);
+  }
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void processMcSigmaPlusPcms(T1 const& col, T2 const& mcCols, T3 const& tracks, T4 const& sigmaPlusPcms, T5 const& mcParticles)
+  {
+    builders.sigmaPlusPcmBuilder.fillMcSigmaPlusPcms<system>(col, builders.collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, kinkBuilderProducts, sigmaPlusPcms, tracks, builders.trackBuilder, mcParticles, builders.mcBuilder, mcProducts);
   }
 
   // processing cascades
   template <modes::System system, typename T1, typename T2, typename T3>
   void processCascades(T1 const& col, T2 const& tracks, T3 const& cascades)
   {
-    xiBuilder.fillCascades<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, cascadeBuilderProducts,
-                                   cascades, tracks, trackBuilder);
-    omegaBuilder.fillCascades<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, cascadeBuilderProducts,
-                                      cascades, tracks, trackBuilder);
+    builders.xiBuilder.fillCascades<system>(col, builders.collisionBuilder, collisionBuilderProducts, trackBuilderProducts, cascadeBuilderProducts,
+                                            cascades, tracks, builders.trackBuilder);
+    builders.omegaBuilder.fillCascades<system>(col, builders.collisionBuilder, collisionBuilderProducts, trackBuilderProducts, cascadeBuilderProducts,
+                                               cascades, tracks, builders.trackBuilder);
   }
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
   void processMcCascades(T1 const& col, T2 const& mcCols, T3 const& tracks, T4 const& cascades, T5 const& mcParticles)
   {
-    xiBuilder.fillMcCascades<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, cascadeBuilderProducts, cascades, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
-    omegaBuilder.fillMcCascades<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, cascadeBuilderProducts, cascades, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
+    builders.xiBuilder.fillMcCascades<system>(col, builders.collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, cascadeBuilderProducts, cascades, tracks, builders.trackBuilder, mcParticles, builders.mcBuilder, mcProducts);
+    builders.omegaBuilder.fillMcCascades<system>(col, builders.collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, cascadeBuilderProducts, cascades, tracks, builders.trackBuilder, mcParticles, builders.mcBuilder, mcProducts);
   }
 
   // processing D0s
   template <modes::System system, typename T1, typename T2, typename T3>
   void processD0s(T1 const& col, T2 const& tracks, T3 const& candidates)
   {
-    d0Builder.fillD0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, trackBuilder);
-    d0barBuilder.fillD0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, trackBuilder);
+    builders.d0Builder.fillCharmHadrons<system>(col, builders.collisionBuilder, collisionBuilderProducts, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, builders.trackBuilder);
+    builders.d0barBuilder.fillCharmHadrons<system>(col, builders.collisionBuilder, collisionBuilderProducts, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, builders.trackBuilder);
   }
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
   void processMcD0s(T1 const& col, T2 const& mcCols, T3 const& tracks, T4 const& candidates, T5 const& mcParticles)
   {
-    d0Builder.fillMcD0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
-    d0barBuilder.fillMcD0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
+    builders.d0Builder.fillMcCharmHadrons<system>(col, builders.collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, builders.trackBuilder, mcParticles, builders.mcBuilder, mcProducts);
+    builders.d0barBuilder.fillMcCharmHadrons<system>(col, builders.collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, builders.trackBuilder, mcParticles, builders.mcBuilder, mcProducts);
+  }
+
+  // processing Lcs
+  template <modes::System system, typename T1, typename T2, typename T3>
+  void processLcs(T1 const& col, T2 const& tracks, T3 const& candidates)
+  {
+    builders.lcBuilder.fillCharmHadrons<system>(col, builders.collisionBuilder, collisionBuilderProducts, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, builders.trackBuilder);
+    builders.lcBarBuilder.fillCharmHadrons<system>(col, builders.collisionBuilder, collisionBuilderProducts, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, builders.trackBuilder);
+  }
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void processMcLcs(T1 const& col, T2 const& mcCols, T3 const& tracks, T4 const& candidates, T5 const& mcParticles)
+  {
+    builders.lcBuilder.fillMcCharmHadrons<system>(col, builders.collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, builders.trackBuilder, mcParticles, builders.mcBuilder, mcProducts);
+    builders.lcBarBuilder.fillMcCharmHadrons<system>(col, builders.collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, builders.trackBuilder, mcParticles, builders.mcBuilder, mcProducts);
   }
 
   // ==========================================================================
   //  process functions - data
   // ==========================================================================
 
-  void processTracksRun3pp(rawinputs::Run3PpCollisions::iterator const& col,
+  void processTracksRun3pp(rawinputs::Run3PpCollisions const& cols,
                            o2::aod::BCsWithTimestamps const& bcs,
                            rawinputs::Run3FullPidTracks const& tracks)
   {
-    if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks)) {
-      return;
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
     }
-    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
-                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
-    processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksRun3pp, "Provide tracks", true);
 
-  void processTracksRun3PbPb(rawinputs::Run3PbPbCollisions::iterator const& col,
+  void processTracksRun3PbPb(rawinputs::Run3PbPbCollisions const& cols,
                              o2::aod::BCsWithTimestamps const& bcs,
                              rawinputs::Run3FullPidTracks const& tracks)
   {
-    if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracks)) {
-      return;
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
     }
-    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
-                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
-    processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksRun3PbPb, "Provide tracks in PbPb collisions", false);
 
-  void processTracksRun3PbPbWithEventShape(rawinputs::Run3PbPbCollisionsWithEventShape::iterator const& col,
+  void processTracksRun3PbPbWithEventShape(rawinputs::Run3PbPbCollisionsWithEventShape const& cols,
                                            o2::aod::BCsWithTimestamps const& bcs,
                                            rawinputs::Run3FullPidTracks const& tracks)
   {
-    if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracks)) {
-      return;
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
     }
-    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
-                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
-    processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksRun3PbPbWithEventShape, "Provide tracks in PbPb collisions with event shape information", false);
 
-  void processTracksV0sRun3pp(rawinputs::Run3PpCollisions::iterator const& col,
+  void processTracksV0sRun3pp(rawinputs::Run3PpCollisions const& cols,
                               o2::aod::BCsWithTimestamps const& bcs,
                               rawinputs::Run3FullPidTracks const& tracks,
                               rawinputs::Run3Vzeros const& v0s)
   {
-    if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks)) {
-      return;
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+      auto v0sThisCol = v0s.sliceBy(preslices.perColV0s, col.globalIndex());
+      processV0s<modes::System::kPP_Run3>(col, tracksThisCol, v0sThisCol);
     }
-    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
-                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
-    processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
-    processV0s<modes::System::kPP_Run3>(col, tracks, v0s);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sRun3pp, "Provide tracks and v0s", false);
 
-  void processTracksV0sRun3PbPb(rawinputs::Run3PbPbCollisions::iterator const& col,
+  void processTracksPhotonsRun3pp(rawinputs::Run3PpCollisions const& cols,
+                                  o2::aod::BCsWithTimestamps const& bcs,
+                                  rawinputs::Run3FullPidTracks const& tracks,
+                                  o2::aod::V0PhotonsKF const& photons,
+                                  o2::aod::V0Legs const& v0legs)
+  {
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+      // V0PhotonsKF/V0Legs carry a plain CollisionId column (not a framework index column), so they
+      // are not auto-grouped by the DPL binder and must be sliced manually, same as EMPhotonFilter.cxx
+      auto photonsThisCol = photons.sliceBy(preslices.perColRecoPCMPhotons, col.globalIndex());
+      processPhotons<modes::System::kPP_Run3>(col, photonsThisCol, v0legs);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksPhotonsRun3pp, "Provide tracks and PCM photons", false);
+
+  void processTracksPhotonsRun3PbPb(rawinputs::Run3PbPbCollisions const& cols,
+                                    o2::aod::BCsWithTimestamps const& bcs,
+                                    rawinputs::Run3FullPidTracks const& tracks,
+                                    o2::aod::V0PhotonsKF const& photons,
+                                    o2::aod::V0Legs const& v0legs)
+  {
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
+      auto photonsThisCol = photons.sliceBy(preslices.perColRecoPCMPhotons, col.globalIndex());
+      processPhotons<modes::System::kPbPb_Run3>(col, photonsThisCol, v0legs);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksPhotonsRun3PbPb, "Provide tracks and PCM photons in PbPb collisions", false);
+
+  void processTracksV0sRun3PbPb(rawinputs::Run3PbPbCollisions const& cols,
                                 o2::aod::BCsWithTimestamps const& bcs,
                                 rawinputs::Run3FullPidTracks const& tracks,
                                 rawinputs::Run3Vzeros const& v0s)
   {
-    if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracks)) {
-      return;
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
+      auto v0sThisCol = v0s.sliceBy(preslices.perColV0s, col.globalIndex());
+      processV0s<modes::System::kPbPb_Run3>(col, tracksThisCol, v0sThisCol);
     }
-    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
-                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
-    processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
-    processV0s<modes::System::kPbPb_Run3>(col, tracks, v0s);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sRun3PbPb, "Provide tracks and v0s in PbPb collisions", false);
 
-  void processTracksV0sCascadesRun3pp(rawinputs::Run3PpCollisions::iterator const& col,
+  void processTracksV0sCascadesRun3pp(rawinputs::Run3PpCollisions const& cols,
                                       o2::aod::BCsWithTimestamps const& bcs,
                                       rawinputs::Run3FullPidTracks const& tracks,
                                       rawinputs::Run3Vzeros const& v0s,
                                       rawinputs::Run3Cascades const& cascades)
   {
-    if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks)) {
-      return;
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+      auto v0sThisCol = v0s.sliceBy(preslices.perColV0s, col.globalIndex());
+      processV0s<modes::System::kPP_Run3>(col, tracksThisCol, v0sThisCol);
+      auto cascadesThisCol = cascades.sliceBy(preslices.perColCascades, col.globalIndex());
+      processCascades<modes::System::kPP_Run3>(col, tracksThisCol, cascadesThisCol);
     }
-    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
-                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
-    processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
-    processV0s<modes::System::kPP_Run3>(col, tracks, v0s);
-    processCascades<modes::System::kPP_Run3>(col, tracks, cascades);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesRun3pp, "Provide tracks, v0s and cascades", false);
 
-  void processTracksV0sCascadesRun3PbPb(rawinputs::Run3PbPbCollisions::iterator const& col,
+  void processTracksV0sCascadesRun3PbPb(rawinputs::Run3PbPbCollisions const& cols,
                                         o2::aod::BCsWithTimestamps const& bcs,
                                         rawinputs::Run3FullPidTracks const& tracks,
                                         rawinputs::Run3Vzeros const& v0s,
                                         rawinputs::Run3Cascades const& cascades)
   {
-    if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracks)) {
-      return;
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
+      auto v0sThisCol = v0s.sliceBy(preslices.perColV0s, col.globalIndex());
+      processV0s<modes::System::kPbPb_Run3>(col, tracksThisCol, v0sThisCol);
+      auto cascadesThisCol = cascades.sliceBy(preslices.perColCascades, col.globalIndex());
+      processCascades<modes::System::kPbPb_Run3>(col, tracksThisCol, cascadesThisCol);
     }
-    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
-                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
-    processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
-    processV0s<modes::System::kPbPb_Run3>(col, tracks, v0s);
-    processCascades<modes::System::kPbPb_Run3>(col, tracks, cascades);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesRun3PbPb, "Provide tracks, v0s and cascades in PbPb collisions", false);
 
-  void processTracksV0sCascadesRun3PbPbWithEventShape(rawinputs::Run3PbPbCollisionsWithEventShape::iterator const& col,
+  void processTracksV0sCascadesRun3PbPbWithEventShape(rawinputs::Run3PbPbCollisionsWithEventShape const& cols,
                                                       o2::aod::BCsWithTimestamps const& bcs,
                                                       rawinputs::Run3FullPidTracks const& tracks,
                                                       rawinputs::Run3Vzeros const& v0s,
                                                       rawinputs::Run3Cascades const& cascades)
   {
-    if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracks)) {
-      return;
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
+      auto v0sThisCol = v0s.sliceBy(preslices.perColV0s, col.globalIndex());
+      processV0s<modes::System::kPbPb_Run3>(col, tracksThisCol, v0sThisCol);
+      auto cascadesThisCol = cascades.sliceBy(preslices.perColCascades, col.globalIndex());
+      processCascades<modes::System::kPbPb_Run3>(col, tracksThisCol, cascadesThisCol);
     }
-    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
-                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
-    processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
-    processV0s<modes::System::kPbPb_Run3>(col, tracks, v0s);
-    processCascades<modes::System::kPbPb_Run3>(col, tracks, cascades);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesRun3PbPbWithEventShape, "Provide tracks, v0s and cascades in PbPb collisions with event shape information", false);
 
-  void processTracksKinksRun3pp(rawinputs::Run3PpCollisions::iterator const& col,
+  void processTracksV0sCascadesPhotonsRun3PbPbWithEventShape(rawinputs::Run3PbPbCollisionsWithEventShape const& cols,
+                                                             o2::aod::BCsWithTimestamps const& bcs,
+                                                             rawinputs::Run3FullPidTracks const& tracks,
+                                                             rawinputs::Run3Vzeros const& v0s,
+                                                             rawinputs::Run3Cascades const& cascades,
+                                                             o2::aod::V0PhotonsKF const& photons,
+                                                             o2::aod::V0Legs const& v0legs)
+  {
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
+      auto v0sThisCol = v0s.sliceBy(preslices.perColV0s, col.globalIndex());
+      processV0s<modes::System::kPbPb_Run3>(col, tracksThisCol, v0sThisCol);
+      auto cascadesThisCol = cascades.sliceBy(preslices.perColCascades, col.globalIndex());
+      processCascades<modes::System::kPbPb_Run3>(col, tracksThisCol, cascadesThisCol);
+      // V0PhotonsKF/V0Legs carry a plain CollisionId column (not a framework index column), so they
+      // are not auto-grouped by the DPL binder and must be sliced manually, same as EMPhotonFilter.cxx
+      auto photonsThisCol = photons.sliceBy(preslices.perColRecoPCMPhotons, col.globalIndex());
+      processPhotons<modes::System::kPbPb_Run3>(col, photonsThisCol, v0legs);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesPhotonsRun3PbPbWithEventShape, "Provide tracks, v0s, cascades and PCM photons in PbPb collisions with event shape information", false);
+
+  void processTracksKinksRun3pp(rawinputs::Run3PpCollisions const& cols,
                                 o2::aod::BCsWithTimestamps const& bcs,
                                 rawinputs::Run3FullPidTracks const& tracks,
                                 rawinputs::Run3Kinks const& kinks)
   {
-    if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks)) {
-      return;
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+      auto kinksThisCol = kinks.sliceBy(preslices.perColRecoKinks, col.globalIndex());
+      processKinks<modes::System::kPP_Run3>(col, tracksThisCol, kinksThisCol);
     }
-    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
-                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
-    processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
-    processKinks<modes::System::kPP_Run3>(col, tracks, kinks);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksKinksRun3pp, "Provide tracks and kinks", false);
 
-  void processTracksV0sCascadesKinksRun3pp(rawinputs::Run3PpCollisions::iterator const& col,
+  void processTracksSigmaPlusPcmsRun3pp(rawinputs::Run3PpCollisions const& cols,
+                                        o2::aod::BCsWithTimestamps const& bcs,
+                                        rawinputs::Run3FullPidTracks const& tracks,
+                                        rawinputs::Run3SigmaPlusPcms const& sigmaPlusPcms)
+  {
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+      auto sigmaPlusPcmsThisCol = sigmaPlusPcms.sliceBy(preslices.perColSigmaPlusPcms, col.globalIndex());
+      processSigmaPlusPcms<modes::System::kPP_Run3>(col, tracksThisCol, sigmaPlusPcmsThisCol);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksSigmaPlusPcmsRun3pp, "Provide tracks and sigma plus reconstructed with a PCM photon", false);
+
+  void processTracksKinksSigmaPlusPcmsRun3pp(rawinputs::Run3PpCollisions const& cols,
+                                             o2::aod::BCsWithTimestamps const& bcs,
+                                             rawinputs::Run3FullPidTracks const& tracks,
+                                             rawinputs::Run3Kinks const& kinks,
+                                             rawinputs::Run3SigmaPlusPcms const& sigmaPlusPcms)
+  {
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+      auto kinksThisCol = kinks.sliceBy(preslices.perColRecoKinks, col.globalIndex());
+      processKinks<modes::System::kPP_Run3>(col, tracksThisCol, kinksThisCol);
+      auto sigmaPlusPcmsThisCol = sigmaPlusPcms.sliceBy(preslices.perColSigmaPlusPcms, col.globalIndex());
+      processSigmaPlusPcms<modes::System::kPP_Run3>(col, tracksThisCol, sigmaPlusPcmsThisCol);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksKinksSigmaPlusPcmsRun3pp, "Provide tracks, kinks and sigma plus reconstructed with a PCM photon", false);
+
+  void processTracksV0sCascadesKinksRun3pp(rawinputs::Run3PpCollisions const& cols,
                                            o2::aod::BCsWithTimestamps const& bcs,
                                            rawinputs::Run3FullPidTracks const& tracks,
                                            rawinputs::Run3Vzeros const& v0s,
                                            rawinputs::Run3Cascades const& cascades,
                                            rawinputs::Run3Kinks const& kinks)
   {
-    if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks)) {
-      return;
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+      auto v0sThisCol = v0s.sliceBy(preslices.perColV0s, col.globalIndex());
+      processV0s<modes::System::kPP_Run3>(col, tracksThisCol, v0sThisCol);
+      auto cascadesThisCol = cascades.sliceBy(preslices.perColCascades, col.globalIndex());
+      processCascades<modes::System::kPP_Run3>(col, tracksThisCol, cascadesThisCol);
+      auto kinksThisCol = kinks.sliceBy(preslices.perColRecoKinks, col.globalIndex());
+      processKinks<modes::System::kPP_Run3>(col, tracksThisCol, kinksThisCol);
     }
-    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
-                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
-    processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
-    processV0s<modes::System::kPP_Run3>(col, tracks, v0s);
-    processCascades<modes::System::kPP_Run3>(col, tracks, cascades);
-    processKinks<modes::System::kPP_Run3>(col, tracks, kinks);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesKinksRun3pp, "Provide tracks, v0s, cascades and kinks", false);
 
-  void processTracksD0sRun3pp(rawinputs::Run3PpCollisions::iterator const& col,
+  void processTracksV0sCascadesKinksPhotonsRun3pp(rawinputs::Run3PpCollisions const& cols,
+                                                  o2::aod::BCsWithTimestamps const& bcs,
+                                                  rawinputs::Run3FullPidTracks const& tracks,
+                                                  rawinputs::Run3Vzeros const& v0s,
+                                                  rawinputs::Run3Cascades const& cascades,
+                                                  rawinputs::Run3Kinks const& kinks,
+                                                  o2::aod::V0PhotonsKF const& photons,
+                                                  o2::aod::V0Legs const& v0legs)
+  {
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+      auto v0sThisCol = v0s.sliceBy(preslices.perColV0s, col.globalIndex());
+      processV0s<modes::System::kPP_Run3>(col, tracksThisCol, v0sThisCol);
+      auto cascadesThisCol = cascades.sliceBy(preslices.perColCascades, col.globalIndex());
+      processCascades<modes::System::kPP_Run3>(col, tracksThisCol, cascadesThisCol);
+      auto kinksThisCol = kinks.sliceBy(preslices.perColRecoKinks, col.globalIndex());
+      processKinks<modes::System::kPP_Run3>(col, tracksThisCol, kinksThisCol);
+      // V0PhotonsKF/V0Legs carry a plain CollisionId column (not a framework index column), so they
+      // are not auto-grouped by the DPL binder and must be sliced manually, same as EMPhotonFilter.cxx
+      auto photonsThisCol = photons.sliceBy(preslices.perColRecoPCMPhotons, col.globalIndex());
+      processPhotons<modes::System::kPP_Run3>(col, photonsThisCol, v0legs);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesKinksPhotonsRun3pp, "Provide tracks, v0s, cascades, kinks and PCM photons", false);
+
+  void processTracksD0sRun3pp(rawinputs::Run3PpCollisions const& cols,
                               o2::aod::BCsWithTimestamps const& bcs,
                               rawinputs::Run3FullPidTracks const& tracks,
                               rawinputs::Run3D0s const& candidates)
   {
-    if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks)) {
-      return;
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+      auto candidatesThisCol = candidates.sliceBy(preslices.perColD0s, col.globalIndex());
+      processD0s<modes::System::kPP_Run3>(col, tracksThisCol, candidatesThisCol);
     }
-    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
-                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
-    processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
-    processD0s<modes::System::kPP_Run3>(col, tracks, candidates);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksD0sRun3pp, "Provide tracks and D0s", false);
 
-  void processTracksD0sRun3PbPb(rawinputs::Run3PbPbCollisions::iterator const& col,
+  void processTracksD0sRun3PbPb(rawinputs::Run3PbPbCollisions const& cols,
                                 o2::aod::BCsWithTimestamps const& bcs,
                                 rawinputs::Run3FullPidTracks const& tracks,
                                 rawinputs::Run3D0s const& candidates)
   {
-    if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracks)) {
-      return;
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
+      auto candidatesThisCol = candidates.sliceBy(preslices.perColD0s, col.globalIndex());
+      processD0s<modes::System::kPbPb_Run3>(col, tracksThisCol, candidatesThisCol);
     }
-    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
-                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
-    processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
-    processD0s<modes::System::kPbPb_Run3>(col, tracks, candidates);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksD0sRun3PbPb, "Provide tracks and D0s in PbPb collisions", false);
 
@@ -623,8 +965,10 @@ struct FemtoProducer {
   //  does no auto-grouping. Tables that are iterated over (tracks, v0s, cascades,
   //  kinks) are sliced per collision; the full track table is passed alongside so
   //  the v0/cascade/kink builders can resolve their daughter indices.
-  //  These functions own the per-timeframe reset of the mc builder maps, which is
-  //  why processMcCollisions skips its own reset in pass-through mode.
+  //  These functions own the per-timeframe reset of the mc builder maps AND of trackBuilder
+  //  (once, before the reco-collision loop, in both pass-through and lazy-fill mode); neither
+  //  processMcCollisions nor processMcTracks resets them, since they run once per reco collision
+  //  and the dedup maps have to survive across all reco collisions in the timeframe.
   // ==========================================================================
 
   void processTracksRun3ppMc(rawinputs::Run3PpMcGenCollisions const& mcCols,
@@ -633,14 +977,15 @@ struct FemtoProducer {
                              rawinputs::Run3McRecoTracks const& tracks,
                              rawinputs::Run3McGenParticles const& mcParticles)
   {
-    if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    if (builders.mcBuilder.isPassThrough()) {
+      builders.mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, preslices.perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
-      auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColRecoTracks, col.globalIndex());
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
@@ -656,14 +1001,15 @@ struct FemtoProducer {
                                rawinputs::Run3McRecoTracks const& tracks,
                                rawinputs::Run3McGenParticles const& mcParticles)
   {
-    if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    if (builders.mcBuilder.isPassThrough()) {
+      builders.mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, preslices.perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
-      auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColRecoTracks, col.globalIndex());
+      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
@@ -680,21 +1026,22 @@ struct FemtoProducer {
                                 rawinputs::Run3RecoVzeros const& v0s,
                                 rawinputs::Run3McGenParticles const& mcParticles)
   {
-    if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    if (builders.mcBuilder.isPassThrough()) {
+      builders.mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, preslices.perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
-      auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColRecoTracks, col.globalIndex());
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                               o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
       processMcTracks<modes::System::kPP_Run3_MC>(col, mcCols, tracksThisCol, tracksWithItsPid, mcParticles);
 
-      auto v0sThisCol = v0s.sliceBy(perColRecoV0s, col.globalIndex());
+      auto v0sThisCol = v0s.sliceBy(preslices.perColRecoV0s, col.globalIndex());
       processMcV0s<modes::System::kPP_Run3_MC>(col, mcCols, tracks, v0sThisCol, mcParticles);
     }
   }
@@ -707,21 +1054,22 @@ struct FemtoProducer {
                                   rawinputs::Run3RecoVzeros const& v0s,
                                   rawinputs::Run3McGenParticles const& mcParticles)
   {
-    if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    if (builders.mcBuilder.isPassThrough()) {
+      builders.mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, preslices.perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
-      auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColRecoTracks, col.globalIndex());
+      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                               o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
       processMcTracks<modes::System::kPbPb_Run3_MC>(col, mcCols, tracksThisCol, tracksWithItsPid, mcParticles);
 
-      auto v0sThisCol = v0s.sliceBy(perColRecoV0s, col.globalIndex());
+      auto v0sThisCol = v0s.sliceBy(preslices.perColRecoV0s, col.globalIndex());
       processMcV0s<modes::System::kPbPb_Run3_MC>(col, mcCols, tracks, v0sThisCol, mcParticles);
     }
   }
@@ -735,24 +1083,25 @@ struct FemtoProducer {
                                         rawinputs::Run3RecoCascades const& cascades,
                                         rawinputs::Run3McGenParticles const& mcParticles)
   {
-    if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    if (builders.mcBuilder.isPassThrough()) {
+      builders.mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, preslices.perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
-      auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColRecoTracks, col.globalIndex());
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                               o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
       processMcTracks<modes::System::kPP_Run3_MC>(col, mcCols, tracksThisCol, tracksWithItsPid, mcParticles);
 
-      auto v0sThisCol = v0s.sliceBy(perColRecoV0s, col.globalIndex());
+      auto v0sThisCol = v0s.sliceBy(preslices.perColRecoV0s, col.globalIndex());
       processMcV0s<modes::System::kPP_Run3_MC>(col, mcCols, tracks, v0sThisCol, mcParticles);
 
-      auto cascadesThisCol = cascades.sliceBy(perColRecoCascades, col.globalIndex());
+      auto cascadesThisCol = cascades.sliceBy(preslices.perColRecoCascades, col.globalIndex());
       processMcCascades<modes::System::kPP_Run3_MC>(col, mcCols, tracks, cascadesThisCol, mcParticles);
     }
   }
@@ -766,24 +1115,25 @@ struct FemtoProducer {
                                           rawinputs::Run3RecoCascades const& cascades,
                                           rawinputs::Run3McGenParticles const& mcParticles)
   {
-    if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    if (builders.mcBuilder.isPassThrough()) {
+      builders.mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, preslices.perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
-      auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColRecoTracks, col.globalIndex());
+      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                               o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
       processMcTracks<modes::System::kPbPb_Run3_MC>(col, mcCols, tracksThisCol, tracksWithItsPid, mcParticles);
 
-      auto v0sThisCol = v0s.sliceBy(perColRecoV0s, col.globalIndex());
+      auto v0sThisCol = v0s.sliceBy(preslices.perColRecoV0s, col.globalIndex());
       processMcV0s<modes::System::kPbPb_Run3_MC>(col, mcCols, tracks, v0sThisCol, mcParticles);
 
-      auto cascadesThisCol = cascades.sliceBy(perColRecoCascades, col.globalIndex());
+      auto cascadesThisCol = cascades.sliceBy(preslices.perColRecoCascades, col.globalIndex());
       processMcCascades<modes::System::kPbPb_Run3_MC>(col, mcCols, tracks, cascadesThisCol, mcParticles);
     }
   }
@@ -796,25 +1146,85 @@ struct FemtoProducer {
                                   rawinputs::Run3Kinks const& kinks,
                                   rawinputs::Run3McGenParticles const& mcParticles)
   {
-    if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    if (builders.mcBuilder.isPassThrough()) {
+      builders.mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, preslices.perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
-      auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColRecoTracks, col.globalIndex());
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                               o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
       processMcTracks<modes::System::kPP_Run3_MC>(col, mcCols, tracksThisCol, tracksWithItsPid, mcParticles);
 
-      auto kinksThisCol = kinks.sliceBy(perColRecoKinks, col.globalIndex());
+      auto kinksThisCol = kinks.sliceBy(preslices.perColRecoKinks, col.globalIndex());
       processMcKinks<modes::System::kPP_Run3_MC>(col, mcCols, tracks, kinksThisCol, mcParticles);
     }
   }
   PROCESS_SWITCH(FemtoProducer, processTracksKinksRun3ppMc, "Provide reconstructed and generated tracks and kinks", false);
+
+  void processTracksSigmaPlusPcmsRun3ppMc(rawinputs::Run3PpMcGenCollisions const& mcCols,
+                                          rawinputs::Run3PpMcRecoCollisions const& cols,
+                                          o2::aod::BCsWithTimestamps const& bcs,
+                                          rawinputs::Run3McRecoTracks const& tracks,
+                                          rawinputs::Run3RecoSigmaPlusPcms const& sigmaPlusPcms,
+                                          rawinputs::Run3McGenParticles const& mcParticles)
+  {
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    if (builders.mcBuilder.isPassThrough()) {
+      builders.mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, preslices.perMcCollision, mcProducts);
+    }
+
+    for (const auto& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColRecoTracks, col.globalIndex());
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processMcTracks<modes::System::kPP_Run3_MC>(col, mcCols, tracksThisCol, tracksWithItsPid, mcParticles);
+
+      auto sigmaPlusPcmsThisCol = sigmaPlusPcms.sliceBy(preslices.perColRecoSigmaPlusPcms, col.globalIndex());
+      processMcSigmaPlusPcms<modes::System::kPP_Run3_MC>(col, mcCols, tracks, sigmaPlusPcmsThisCol, mcParticles);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksSigmaPlusPcmsRun3ppMc, "Provide reconstructed and generated tracks and sigma plus reconstructed with a PCM photon", false);
+
+  void processTracksKinksSigmaPlusPcmsRun3ppMc(rawinputs::Run3PpMcGenCollisions const& mcCols,
+                                               rawinputs::Run3PpMcRecoCollisions const& cols,
+                                               o2::aod::BCsWithTimestamps const& bcs,
+                                               rawinputs::Run3McRecoTracks const& tracks,
+                                               rawinputs::Run3Kinks const& kinks,
+                                               rawinputs::Run3RecoSigmaPlusPcms const& sigmaPlusPcms,
+                                               rawinputs::Run3McGenParticles const& mcParticles)
+  {
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    if (builders.mcBuilder.isPassThrough()) {
+      builders.mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, preslices.perMcCollision, mcProducts);
+    }
+
+    for (const auto& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColRecoTracks, col.globalIndex());
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processMcTracks<modes::System::kPP_Run3_MC>(col, mcCols, tracksThisCol, tracksWithItsPid, mcParticles);
+
+      auto kinksThisCol = kinks.sliceBy(preslices.perColRecoKinks, col.globalIndex());
+      processMcKinks<modes::System::kPP_Run3_MC>(col, mcCols, tracks, kinksThisCol, mcParticles);
+      auto sigmaPlusPcmsThisCol = sigmaPlusPcms.sliceBy(preslices.perColRecoSigmaPlusPcms, col.globalIndex());
+      processMcSigmaPlusPcms<modes::System::kPP_Run3_MC>(col, mcCols, tracks, sigmaPlusPcmsThisCol, mcParticles);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksKinksSigmaPlusPcmsRun3ppMc, "Provide reconstructed and generated tracks, kinks and sigma plus reconstructed with a PCM photon", false);
 
   void processTracksV0sKinksRun3ppMc(rawinputs::Run3PpMcGenCollisions const& mcCols,
                                      rawinputs::Run3PpMcRecoCollisions const& cols,
@@ -824,24 +1234,25 @@ struct FemtoProducer {
                                      rawinputs::Run3Kinks const& kinks,
                                      rawinputs::Run3McGenParticles const& mcParticles)
   {
-    if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    if (builders.mcBuilder.isPassThrough()) {
+      builders.mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, preslices.perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
-      auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColRecoTracks, col.globalIndex());
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                               o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
       processMcTracks<modes::System::kPP_Run3_MC>(col, mcCols, tracksThisCol, tracksWithItsPid, mcParticles);
 
-      auto v0sThisCol = v0s.sliceBy(perColRecoV0s, col.globalIndex());
+      auto v0sThisCol = v0s.sliceBy(preslices.perColRecoV0s, col.globalIndex());
       processMcV0s<modes::System::kPP_Run3_MC>(col, mcCols, tracks, v0sThisCol, mcParticles);
 
-      auto kinksThisCol = kinks.sliceBy(perColRecoKinks, col.globalIndex());
+      auto kinksThisCol = kinks.sliceBy(preslices.perColRecoKinks, col.globalIndex());
       processMcKinks<modes::System::kPP_Run3_MC>(col, mcCols, tracks, kinksThisCol, mcParticles);
     }
   }
@@ -854,21 +1265,22 @@ struct FemtoProducer {
                                 rawinputs::Run3RecoD0s const& d0s,
                                 rawinputs::Run3McGenParticles const& mcParticles)
   {
-    if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    if (builders.mcBuilder.isPassThrough()) {
+      builders.mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, preslices.perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
-      auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColRecoTracks, col.globalIndex());
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                               o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
       processMcTracks<modes::System::kPP_Run3_MC>(col, mcCols, tracksThisCol, tracksWithItsPid, mcParticles);
 
-      auto d0sThisCol = d0s.sliceBy(perColRecoD0s, col.globalIndex());
+      auto d0sThisCol = d0s.sliceBy(preslices.perColRecoD0s, col.globalIndex());
       processMcD0s<modes::System::kPP_Run3_MC>(col, mcCols, tracks, d0sThisCol, mcParticles);
     }
   }
@@ -881,25 +1293,122 @@ struct FemtoProducer {
                                   rawinputs::Run3RecoD0s const& d0s,
                                   rawinputs::Run3McGenParticles const& mcParticles)
   {
-    if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    if (builders.mcBuilder.isPassThrough()) {
+      builders.mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, preslices.perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
-      auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColRecoTracks, col.globalIndex());
+      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                               o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
       processMcTracks<modes::System::kPbPb_Run3_MC>(col, mcCols, tracksThisCol, tracksWithItsPid, mcParticles);
 
-      auto d0sThisCol = d0s.sliceBy(perColRecoD0s, col.globalIndex());
+      auto d0sThisCol = d0s.sliceBy(preslices.perColRecoD0s, col.globalIndex());
       processMcD0s<modes::System::kPbPb_Run3_MC>(col, mcCols, tracks, d0sThisCol, mcParticles);
     }
   }
   PROCESS_SWITCH(FemtoProducer, processTracksD0sRun3PbPbMc, "Provide reconstructed and generated tracks and D0s in PbPb collisions", false);
+
+  void processTracksLcsRun3pp(rawinputs::Run3PpCollisions const& cols,
+                              o2::aod::BCsWithTimestamps const& bcs,
+                              rawinputs::Run3FullPidTracks const& tracks,
+                              rawinputs::Run3Lcs const& candidates)
+  {
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+      auto candidatesThisCol = candidates.sliceBy(preslices.perColLcs, col.globalIndex());
+      processLcs<modes::System::kPP_Run3>(col, tracksThisCol, candidatesThisCol);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksLcsRun3pp, "Provide tracks and Lcs", false);
+
+  void processTracksLcsRun3PbPb(rawinputs::Run3PbPbCollisions const& cols,
+                                o2::aod::BCsWithTimestamps const& bcs,
+                                rawinputs::Run3FullPidTracks const& tracks,
+                                rawinputs::Run3Lcs const& candidates)
+  {
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
+      auto candidatesThisCol = candidates.sliceBy(preslices.perColLcs, col.globalIndex());
+      processLcs<modes::System::kPbPb_Run3>(col, tracksThisCol, candidatesThisCol);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksLcsRun3PbPb, "Provide tracks and Lcs in PbPb collisions", false);
+
+  void processTracksLcsRun3ppMc(rawinputs::Run3PpMcGenCollisions const& mcCols,
+                                rawinputs::Run3PpMcRecoCollisions const& cols,
+                                o2::aod::BCsWithTimestamps const& bcs,
+                                rawinputs::Run3McRecoTracks const& tracks,
+                                rawinputs::Run3RecoLcs const& lcs,
+                                rawinputs::Run3McGenParticles const& mcParticles)
+  {
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    if (builders.mcBuilder.isPassThrough()) {
+      builders.mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, preslices.perMcCollision, mcProducts);
+    }
+
+    for (const auto& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColRecoTracks, col.globalIndex());
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processMcTracks<modes::System::kPP_Run3_MC>(col, mcCols, tracksThisCol, tracksWithItsPid, mcParticles);
+
+      auto lcsThisCol = lcs.sliceBy(preslices.perColRecoLcs, col.globalIndex());
+      processMcLcs<modes::System::kPP_Run3_MC>(col, mcCols, tracks, lcsThisCol, mcParticles);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksLcsRun3ppMc, "Provide reconstructed and generated tracks and Lcs", false);
+
+  void processTracksLcsRun3PbPbMc(rawinputs::Run3PbPbMcGenCollisions const& mcCols,
+                                  rawinputs::Run3PbPbMcRecoCollisions const& cols,
+                                  o2::aod::BCsWithTimestamps const& bcs,
+                                  rawinputs::Run3McRecoTracks const& tracks,
+                                  rawinputs::Run3RecoLcs const& lcs,
+                                  rawinputs::Run3McGenParticles const& mcParticles)
+  {
+    builders.mcBuilder.reset(mcCols, mcParticles);
+    builders.trackBuilder.reset(tracks);
+    if (builders.mcBuilder.isPassThrough()) {
+      builders.mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, preslices.perMcCollision, mcProducts);
+    }
+
+    for (const auto& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColRecoTracks, col.globalIndex());
+      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processMcTracks<modes::System::kPbPb_Run3_MC>(col, mcCols, tracksThisCol, tracksWithItsPid, mcParticles);
+
+      auto lcsThisCol = lcs.sliceBy(preslices.perColRecoLcs, col.globalIndex());
+      processMcLcs<modes::System::kPbPb_Run3_MC>(col, mcCols, tracks, lcsThisCol, mcParticles);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksLcsRun3PbPbMc, "Provide reconstructed and generated tracks and Lcs in PbPb collisions", false);
 
   // ==========================================================================
   //  process functions - generator level only (for MCGEN datasets)
@@ -908,12 +1417,12 @@ struct FemtoProducer {
   // do not preslice the mcParticles table passed to fillMcParticle, otherwise the finding of the partonic mother can fail
   void processMcOnly(o2::aod::McCollisions const& mcCols, o2::aod::McParticles const& mcParticles)
   {
-    mcBuilder.reset(mcCols, mcParticles);
+    builders.mcBuilder.reset(mcCols, mcParticles);
     for (const auto& mcCol : mcCols) {
-      auto particlesThisCollision = mcParticles.sliceBy(perMcCollision, mcCol.globalIndex());
-      mcBuilder.fillMcCollision(mcCol, particlesThisCollision, mcProducts, pdgDb);
+      auto particlesThisCollision = mcParticles.sliceBy(preslices.perMcCollision, mcCol.globalIndex());
+      builders.mcBuilder.fillMcCollision(mcCol, particlesThisCollision, mcProducts, pdgDb);
       for (const auto& mcParticle : particlesThisCollision) {
-        mcBuilder.fillMcParticle<modes::System::kMC>(mcParticle, mcParticles, mcCol, mcProducts);
+        builders.mcBuilder.fillMcParticle<modes::System::kMC>(mcParticle, mcParticles, mcCol, mcProducts);
       }
     }
   }

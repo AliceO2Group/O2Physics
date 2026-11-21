@@ -176,7 +176,7 @@ struct FemtoDreamPairTaskV0Reso {
   } Reso2;
 
   /// Partition for particle Lambda
-  Partition<aod::FDParticles> partitionV01 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+  Partition<aod::FDParticles> partitionV01 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0)) &&
                                              ((aod::femtodreamparticle::cut & V01.cutBit) == V01.cutBit) &&
                                              (aod::femtodreamparticle::pt > V01.ptMin) &&
                                              (aod::femtodreamparticle::pt < V01.ptMax) &&
@@ -188,10 +188,10 @@ struct FemtoDreamPairTaskV0Reso {
                                              (aod::femtodreamparticle::mAntiLambda < V01.invMassAntiMax);
 
   /// Partition for particle Phi
-  Partition<aod::FDParticles> partitionReso2 = (ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCBit), false) ||
-                                                ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCTOFBit), false) ||
-                                                ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCBit), false) ||
-                                                ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCTOFBit), false)) &&
+  Partition<aod::FDParticles> partitionReso2 = (ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCBit), false) ||
+                                                ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCTOFBit), false) ||
+                                                ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCBit), false) ||
+                                                ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCTOFBit), false)) &&
                                                (aod::femtodreamparticle::pt < Reso2.ptMax) &&
                                                (aod::femtodreamparticle::eta > Reso2.etaMin) &&
                                                (aod::femtodreamparticle::eta < Reso2.etaMax) &&
@@ -201,7 +201,7 @@ struct FemtoDreamPairTaskV0Reso {
   /// Partitions for K0Short and KStar
 
   /// Partition for particle K0Short
-  Partition<aod::FDParticles> partitionK0Short1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0K0Short)) &&
+  Partition<aod::FDParticles> partitionK0Short1 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kV0K0Short)) &&
                                                   ((aod::femtodreamparticle::cut & V01.cutBit) == V01.cutBit) &&
                                                   (aod::femtodreamparticle::pt > V01.ptMin) &&
                                                   (aod::femtodreamparticle::pt < V01.ptMax) &&
@@ -213,19 +213,19 @@ struct FemtoDreamPairTaskV0Reso {
                                                   (aod::femtodreamparticle::mAntiLambda < V01.invMassAntiMax);
 
   /// Partition for particle KStar
-  Partition<aod::FDParticles> partitionKStar2 = (ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCBit), false) ||
-                                                 ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTOF_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCTOFBit), false) ||
-                                                 ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTOF_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCBit), false) ||
-                                                 ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCTOFBit), false)) &&
+  Partition<aod::FDParticles> partitionKStar2 = (ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCBit), false) ||
+                                                 ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTOF_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCTOFBit), false) ||
+                                                 ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTOF_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCBit), false) ||
+                                                 ifnode(aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCTOFBit), false)) &&
                                                 (aod::femtodreamparticle::pt < Reso2.ptMax) &&
                                                 (aod::femtodreamparticle::eta > Reso2.etaMin) &&
                                                 (aod::femtodreamparticle::eta < Reso2.etaMax) &&
                                                 (aod::femtodreamparticle::mLambda > Reso2.invMassMin) &&
                                                 (aod::femtodreamparticle::mLambda < Reso2.invMassMax);
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.binVztx, Mixing.binMult}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.binVztx, Mixing.binMultPercentile}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.binVztx, Mixing.binMult, Mixing.binMultPercentile}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.binVztx, Mixing.binMult}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.binVztx, Mixing.binMultPercentile}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.binVztx, Mixing.binMult, Mixing.binMultPercentile}};
 
   Filter eventMultiplicity = aod::femtodreamcollision::multNtr >= EventSel.multMin && aod::femtodreamcollision::multNtr <= EventSel.multMax;
   Filter eventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= EventSel.multPercentileMin && aod::femtodreamcollision::multV0M <= EventSel.multPercentileMax;
@@ -251,9 +251,9 @@ struct FemtoDreamPairTaskV0Reso {
   {
 
     // setup binnnig policy for mixing
-    colBinningMult = {{Mixing.binVztx, Mixing.binMult}, true};
-    colBinningMultPercentile = {{Mixing.binVztx, Mixing.binMultPercentile}, true};
-    colBinningMultMultPercentile = {{Mixing.binVztx, Mixing.binMult, Mixing.binMultPercentile}, true};
+    colBinningMult = {{Mixing.binVztx, Mixing.binMult}};
+    colBinningMultPercentile = {{Mixing.binVztx, Mixing.binMultPercentile}};
+    colBinningMultMultPercentile = {{Mixing.binVztx, Mixing.binMult, Mixing.binMultPercentile}};
 
     eventHisto.init(&registry, Option.isMC);
 
@@ -367,7 +367,7 @@ struct FemtoDreamPairTaskV0Reso {
   }
 
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
-  void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
+  void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, const BinningType& policy)
   {
 
     if (Option.mixEventWithPairs.value) {

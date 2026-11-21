@@ -53,10 +53,10 @@ DECLARE_SOA_TABLE_STAGED(JV0CollisionIds, "JV0COLLID",
 DECLARE_SOA_TABLE_STAGED(JV0McCollisionIds, "JV0MCCOLLID",
                          jv0indices::JMcCollisionId);
 
-DECLARE_SOA_TABLE(JV0Ids, "AOD", "JV0ID",
-                  jv0indices::JCollisionId,
-                  jv0indices::PosTrackId,
-                  jv0indices::NegTrackId);
+DECLARE_SOA_TABLE_STAGED(JV0Ids, "JV0ID",
+                         jv0indices::JCollisionId,
+                         jv0indices::PosTrackId,
+                         jv0indices::NegTrackId);
 
 namespace jv0mc
 {

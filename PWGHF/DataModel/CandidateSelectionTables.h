@@ -309,6 +309,7 @@ DECLARE_SOA_TABLE(HfSelToOmegaKaKf, "AOD", "HFSELTOOMEGAKAKF",
 
 DECLARE_SOA_TABLE(HfMlSelOmegacToOmegaPi, "AOD", "HFMLOMEGAC", //!
                   hf_sel_toomegapi::MlProbOmegac);
+
 namespace hf_sel_toomegaka
 {
 DECLARE_SOA_COLUMN(StatusPidLambda, statusPidLambda, bool);
@@ -336,6 +337,30 @@ DECLARE_SOA_TABLE(HfSelToOmegaKa, "AOD", "HFSELTOOMEKA",
                   hf_sel_toomegaka::ResultSelections, hf_sel_toomegaka::PidTpcInfoStored, hf_sel_toomegaka::PidTofInfoStored,
                   hf_sel_toomegaka::TpcNSigmaKaFromCharmBaryon, hf_sel_toomegaka::TpcNSigmaKaFromCasc, hf_sel_toomegaka::TpcNSigmaPiFromLambda, hf_sel_toomegaka::TpcNSigmaPrFromLambda,
                   hf_sel_toomegaka::TofNSigmaKaFromCharmBaryon, hf_sel_toomegaka::TofNSigmaKaFromCasc, hf_sel_toomegaka::TofNSigmaPiFromLambda, hf_sel_toomegaka::TofNSigmaPrFromLambda)
+
+namespace hf_sel_candidate_omegac0_qa
+{
+DECLARE_SOA_COLUMN(IsSelOmegaC0ToOmegaPi, isSelOmegaC0ToOmegaPi, int);                  //!
+DECLARE_SOA_COLUMN(MlProbOmegaC0ToOmegaPi, mlProbOmegaC0ToOmegaPi, std::vector<float>); //!
+} // namespace hf_sel_candidate_omegac0_qa
+
+DECLARE_SOA_TABLE(HfSelOmegaC0ToOmegaPi, "AOD", "HFSELOMEGAC0QA", //!
+                  hf_sel_candidate_omegac0_qa::IsSelOmegaC0ToOmegaPi);
+
+DECLARE_SOA_TABLE(HfMlOmegaC0ToOmegaPi, "AOD", "HFMLOMEGAC0QA", //!
+                  hf_sel_candidate_omegac0_qa::MlProbOmegaC0ToOmegaPi);
+
+namespace hf_sel_candidate_to_xi_pi_qa
+{
+DECLARE_SOA_COLUMN(IsSelToXiPi, isSelToXiPi, int);                  //!
+DECLARE_SOA_COLUMN(MlProbToXiPi, mlProbToXiPi, std::vector<float>); //!
+} // namespace hf_sel_candidate_to_xi_pi_qa
+
+DECLARE_SOA_TABLE(HfSelToXiPiQa, "AOD", "HFSELTOXIPIQA", //!
+                  hf_sel_candidate_to_xi_pi_qa::IsSelToXiPi);
+
+DECLARE_SOA_TABLE(HfMlToXiPiQa, "AOD", "HFMLTOXIPIQA", //!
+                  hf_sel_candidate_to_xi_pi_qa::MlProbToXiPi);
 
 } // namespace o2::aod
 

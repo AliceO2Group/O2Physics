@@ -9,8 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef ALICE3_CORE_FASTTRACKERLINKDEF_H_
-#define ALICE3_CORE_FASTTRACKERLINKDEF_H_
+// NOLINT(build/header_guard)
 
 #pragma link off all globals;
 #pragma link off all classes;
@@ -19,5 +18,3 @@
 #pragma link C++ class o2::fastsim::GeometryContainer + ;
 #pragma link C++ class o2::fastsim::FastTracker + ;
 #pragma link C++ class o2::fastsim::FlatLutWriter + ;
-
-#endif // ALICE3_CORE_FASTTRACKERLINKDEF_H_

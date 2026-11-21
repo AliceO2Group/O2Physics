@@ -53,7 +53,7 @@ struct ExclusiveTwoProtonsSG {
   // defining histograms using histogram registry
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   //_____________________________________________________________________________
-  Double_t CosThetaHelicityFrame(TLorentzVector posDaughter, TLorentzVector negDaughter, TLorentzVector mother)
+  Double_t CosThetaHelicityFrame(const TLorentzVector& posDaughter, const TLorentzVector& negDaughter, const TLorentzVector& mother)
   {
 
     Double_t HalfSqrtSnn = 2680.;
@@ -80,7 +80,7 @@ struct ExclusiveTwoProtonsSG {
     return CosThetaHE;
   }
   //------------------------------------------------------------------------------------------------------
-  Double_t PhiHelicityFrame(TLorentzVector posDaughter, TLorentzVector negDaughter, TLorentzVector mother)
+  Double_t PhiHelicityFrame(const TLorentzVector& posDaughter, const TLorentzVector& negDaughter, const TLorentzVector& mother)
   {
 
     // Half of the energy per pair of the colliding nucleons.
@@ -211,7 +211,7 @@ struct ExclusiveTwoProtonsSG {
     std::vector<decltype(tracks.begin())> rawProtonTracks;
     std::vector<decltype(tracks.begin())> rawProtonTracksTOF;
 
-    for (auto trk : tracks) {
+    for (const auto& trk : tracks) {
       if (!trk.isPVContributor()) {
         continue;
       }
@@ -311,7 +311,7 @@ struct ExclusiveTwoProtonsSG {
         resonance += onlyProtonTracksTOF[0];
         a = onlyProtonTracks[0];
         b = onlyProtonTracksTOF[0];
-        sigmaTotal = 0;
+        // sigmaTotal = 0; // FIXME: unused
         sigmaTotal = onlyProtonSigma[0] * onlyProtonSigma[0] + onlyProtonSigmaTOF[0] * onlyProtonSigmaTOF[0];
         ;
         registry.fill(HIST("hNsigEvsKa1"), onlyProtonSigma[0], onlyProtonSigmaTOF[0]);
@@ -355,7 +355,7 @@ struct ExclusiveTwoProtonsSG {
         resonance += onlyProtonTracksTOF[1];
         a = onlyProtonTracksTOF[0];
         b = onlyProtonTracksTOF[1];
-        sigmaTotal = 0;
+        // sigmaTotal = 0; // FIXME: unused
         sigmaTotal = onlyProtonSigmaTOF[0] * onlyProtonSigmaTOF[0] + onlyProtonSigmaTOF[1] * onlyProtonSigmaTOF[1];
         ;
         registry.fill(HIST("hNsigEvsKa1"), onlyProtonSigmaTOF[0], onlyProtonSigmaTOF[1]);

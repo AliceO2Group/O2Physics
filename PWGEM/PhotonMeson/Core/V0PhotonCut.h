@@ -36,6 +36,7 @@
 #include <sys/types.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <concepts>
 #include <cstddef>
@@ -245,8 +246,10 @@ class V0PhotonCut : public TNamed
       fRegistry->add("QA/V0Photon/before/hConvZR", "Conversion point ZR", o2::framework::HistType::kTH2F, {thAxisConvZ, thAxisConvR}, true);
       fRegistry->add("QA/V0Photon/before/hChi2", "Chi2/ndf from KFParticle;#chi^{2}_{KF}/ndf;counts", o2::framework::HistType::kTH1D, {thAxisChi2}, true);
 
-      // TODO: add psi_pair once available
-      // fRegistry->add("QA/V0Photon/before/hPsiPair", "Psi pair;#Psi_{pair};counts", o2::framework::HistType::kTH1D, {thAxisPsiPair}, true);
+      // psi_pair (V0PhotonsPhiVPsi) and the KF chi2 split (V0PhotonsKFChi2), filled only if the photon table joins them
+      fRegistry->add("QA/V0Photon/before/hPsiPair", "Psi pair;#Psi_{pair};counts", o2::framework::HistType::kTH1D, {thAxisPsiPair}, true);
+      fRegistry->add("QA/V0Photon/before/hChi2Vtx", "KF chi2/ndf of the conversion-vertex fit;#chi^{2}_{vtx}/ndf;counts", o2::framework::HistType::kTH1D, {thAxisChi2}, true);
+      fRegistry->add("QA/V0Photon/before/hChi2PV", "KF chi2 to the primary vertex;#chi^{2}_{PV};counts", o2::framework::HistType::kTH1D, {{100, 0., 200.}}, true);
 
       fRegistry->add("QA/V0Photon/before/Pos/NSigmaE", "NSigmaE of pos leg vs momentum", o2::framework::HistType::kTH2F, {thAxisMomentum, thAxisNSigmaE}, true);
       fRegistry->add("QA/V0Photon/before/Pos/NSigmaPi", "NSigmaE of pos leg vs momentum", o2::framework::HistType::kTH2F, {thAxisMomentum, thAxisNSigmaPi}, true);
@@ -315,8 +318,13 @@ class V0PhotonCut : public TNamed
     fRegistry->fill(HIST("QA/V0Photon/before/hConvZR"), v0.vz(), v0.v0radius());
     fRegistry->fill(HIST("QA/V0Photon/before/hChi2"), v0.chiSquareNDF());
 
-    // TODO: add psi_pair once available
-    // fRegistry->fill(HIST("QA/V0Photon/before/hPsiPair"), v0.psiPair());
+    if constexpr (requires { v0.psipair(); }) {
+      fRegistry->fill(HIST("QA/V0Photon/before/hPsiPair"), v0.psipair());
+    }
+    if constexpr (requires { v0.chi2PV(); }) {
+      fRegistry->fill(HIST("QA/V0Photon/before/hChi2Vtx"), v0.chi2NDFVtx());
+      fRegistry->fill(HIST("QA/V0Photon/before/hChi2PV"), v0.chi2PV());
+    }
 
     fRegistry->fill(HIST("QA/V0Photon/before/Pos/NSigmaE"), pos.p(), pos.tpcNSigmaEl());
     fRegistry->fill(HIST("QA/V0Photon/before/Pos/NSigmaPi"), pos.p(), pos.tpcNSigmaPi());
@@ -345,8 +353,13 @@ class V0PhotonCut : public TNamed
     fRegistry->fill(HIST("QA/V0Photon/after/hConvZR"), v0.vz(), v0.v0radius());
     fRegistry->fill(HIST("QA/V0Photon/after/hChi2"), v0.chiSquareNDF());
 
-    // TODO: add psi_pair once available
-    // fRegistry->fill(HIST("QA/V0Photon/after/hPsiPair"), v0.psiPair());
+    if constexpr (requires { v0.psipair(); }) {
+      fRegistry->fill(HIST("QA/V0Photon/after/hPsiPair"), v0.psipair());
+    }
+    if constexpr (requires { v0.chi2PV(); }) {
+      fRegistry->fill(HIST("QA/V0Photon/after/hChi2Vtx"), v0.chi2NDFVtx());
+      fRegistry->fill(HIST("QA/V0Photon/after/hChi2PV"), v0.chi2PV());
+    }
 
     fRegistry->fill(HIST("QA/V0Photon/after/Pos/NSigmaE"), pos.p(), pos.tpcNSigmaEl());
     fRegistry->fill(HIST("QA/V0Photon/after/Pos/NSigmaPi"), pos.p(), pos.tpcNSigmaPi());
@@ -837,23 +850,20 @@ class V0PhotonCut : public TNamed
         return std::pow(v0.alpha() / mMaxAlpha, 2) + std::pow(v0.qtarm() / mMaxQt, 2) < 1.0;
 
       // TODO: implement fully
-      case V0PhotonCuts::kPsiPair: {
-        if constexpr (requires { v0.psipair(); }) {
-          // return (std::fabs(v0.psipair() < 0.18f * std::exp( -0.55f * v0.chiSquareNDF())));
-          return true;
-        } else {
-          return true;
-        }
-      }
-
+      case V0PhotonCuts::kPsiPair:
+        // if constexpr (requires { v0.psipair(); }) {
+        //   return (std::fabs(v0.psipair() < 0.18f * std::exp( -0.55f * v0.chiSquareNDF())));
+        // } else {
+        //   return true;
+        // }
       // TODO: implement fully
-      case V0PhotonCuts::kPhiV: {
-        if constexpr (requires { v0.phiv(); }) {
-          return true;
-        } else {
-          return true;
-        }
-      }
+      case V0PhotonCuts::kPhiV:
+        return true;
+        // if constexpr (requires { v0.phiv(); }) {
+        //   return true;
+        // } else {
+        //   return true;
+        // }
 
       case V0PhotonCuts::kRxy: {
         if (v0.v0radius() < mMinRxy || mMaxRxy < v0.v0radius()) {
@@ -922,7 +932,7 @@ class V0PhotonCut : public TNamed
         return !(dxy > margin_xy);
       }
       case V0PhotonCuts::kIsTooClose: {
-        if (mRejectMask.size() == 0) {
+        if (mRejectMask.empty()) {
           return true;
         }
         return (mRejectMask[v0.globalIndex()] == 0);

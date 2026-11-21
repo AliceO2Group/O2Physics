@@ -53,15 +53,22 @@ enum class Mode : uint32_t {
   kMc = bit<Mode>(2),
   kSe = bit<Mode>(3),
   kMe = bit<Mode>(4),
+  kFitVars = bit<Mode>(5), // purity/fraction histograms (tracks: packed nSigma tables; V0s: cpa) -- gates booking at init time
   kReco_Qa = kReco | kQa,
   kReco_Mc = kReco | kMc,
   kReco_Qa_Mc = kReco | kQa | kMc,
+  kReco_Qa_FitVars = kReco | kQa | kFitVars,
+  kReco_Qa_Mc_FitVars = kReco | kQa | kMc | kFitVars,
   kSe_Reco = kSe | kReco,
   kMe_Reco = kMe | kReco,
   kSe_Reco_Mc = kSe | kReco | kMc,
   kMe_Reco_Mc = kMe | kReco | kMc,
   kSe_Mc = kSe | kMc,
   kMe_Mc = kMe | kMc,
+  kSe_Reco_FitVars = kSe | kReco | kFitVars,
+  kMe_Reco_FitVars = kMe | kReco | kFitVars,
+  kSe_Reco_Mc_FitVars = kSe | kReco | kMc | kFitVars,
+  kMe_Reco_Mc_FitVars = kMe | kReco | kMc | kFitVars,
 };
 
 enum class System : uint32_t {
@@ -84,6 +91,21 @@ enum class MomentumType : o2::analysis::femto::datatypes::MomentumType {
   kPTpc = 2,  // momentum at inner wall of tpc
 };
 
+/// axis title for the momentum used on the x axis of PID histograms
+constexpr const char* momentumTypeToAxisTitle(MomentumType type)
+{
+  switch (type) {
+    case MomentumType::kPt:
+      return "p_{T} (GeV/#it{c})";
+    case MomentumType::kPAtPv:
+      return "p (GeV/#it{c})";
+    case MomentumType::kPTpc:
+      return "p_{TPC} (GeV/#it{c})";
+    default:
+      return "p (GeV/#it{c})";
+  }
+}
+
 enum class TransverseMassType : o2::analysis::femto::datatypes::TransverseMassType {
   kAveragePdgMass = 0,
   kReducedPdgMass = 1,
@@ -98,6 +120,7 @@ enum class Particle : o2::analysis::femto::datatypes::ParticleType {
   kKink = 4,
   kCascade = 5,
   kCharmHadron = 6,
+  kTwoPhotonResonance = 7,
 };
 
 enum class McOrigin : o2::analysis::femto::datatypes::McOriginType {
@@ -144,8 +167,56 @@ enum class Track : o2::analysis::femto::datatypes::TrackType {
   kCascadeBachelor,
   kResonanceDaughter,
   kKinkDaughter,
-  kCharmDaughter
+  kCharmDaughter,
+  kTrackTypeLast
 };
+
+constexpr const char* trackTypeToString(Track type)
+{
+  switch (type) {
+    case Track::kTrack:
+      return "Track";
+    case Track::kV0Daughter:
+      return "V0Daughter";
+    case Track::kCascadeBachelor:
+      return "CascadeBachelor";
+    case Track::kResonanceDaughter:
+      return "ResonanceDaughter";
+    case Track::kKinkDaughter:
+      return "KinkDaughter";
+    case Track::kCharmDaughter:
+      return "CharmDaughter";
+    default:
+      return "UnknownTrackType";
+  }
+}
+
+enum class Trigger : uint8_t {
+  kMinimumBias,
+  kTrackTrack,
+  kTrackV0,
+  kTrackTrackTrack,
+  kTrackTrackV0,
+  kTriggerLast
+};
+
+constexpr const char* triggerToString(Trigger trigger)
+{
+  switch (trigger) {
+    case Trigger::kMinimumBias:
+      return "MinimumBias";
+    case Trigger::kTrackTrack:
+      return "TrackTrack";
+    case Trigger::kTrackV0:
+      return "TrackV0";
+    case Trigger::kTrackTrackTrack:
+      return "TrackTrackTrack";
+    case Trigger::kTrackTrackV0:
+      return "TrackTrackV0";
+    default:
+      return "UnknownTrigger";
+  }
+}
 
 enum class V0 : o2::analysis::femto::datatypes::V0Type {
   kLambda,
@@ -155,7 +226,8 @@ enum class V0 : o2::analysis::femto::datatypes::V0Type {
 
 enum class Kink : o2::analysis::femto::datatypes::KinkType {
   kSigma,
-  kSigmaPlus
+  kSigmaPlus,
+  kSigmaPlusPcm
 };
 
 enum class Cascade : o2::analysis::femto::datatypes::CascadeType {
@@ -171,17 +243,29 @@ enum class TwoTrackResonance : o2::analysis::femto::datatypes::TwoTrackResonance
   kKstar0Bar
 };
 
+// resonances reconstructed from two photons (PCM), e.g. pi0 -> gamma gamma, eta -> gamma gamma
+enum class TwoPhotonResonance : o2::analysis::femto::datatypes::TwoPhotonResonanceType {
+  kPi0,
+  kEta
+};
+
+// resonances reconstructed from two tracks and a two-photon resonance, e.g. omega(782) -> pi+ pi- pi0.
+// Named kOmegaMeson (not kOmega) to not collide with Cascade::kOmega, the Omega- baryon.
+enum class TrackTrackTwoPhotonResonance : o2::analysis::femto::datatypes::TrackTrackTwoPhotonResonanceType {
+  kOmegaMeson
+};
+
 enum class CharmHadron : o2::analysis::femto::datatypes::CharmHadronType {
   kD0,
   kD0Bar,
-  kDplus,
-  kLc
+  kLc,
+  kLcBar
 };
 
-enum class QvecDetector : o2::analysis::femto::datatypes::QvecDetectorType {
+enum class EventShapeDetector : o2::analysis::femto::datatypes::EventShapeDetectorType {
   kFT0C = 0,
   kFT0A = 1,
-  kQvecDetectorLast = 2
+  kEventShapeDetectorLast = 2
 };
 
 enum class QvecHarmonic : o2::analysis::femto::datatypes::QvecHarmonicType {
@@ -189,6 +273,31 @@ enum class QvecHarmonic : o2::analysis::femto::datatypes::QvecHarmonicType {
   kN3 = 3,
   kQvecHarmonicLast = 4
 };
+
+enum class KinematicVariable : o2::analysis::femto::datatypes::KinematicVariableType {
+  kKstar = 0,
+  kKt = 1,
+  kMt = 2,
+  kQ3 = 3,
+  kKinematicVariableLast = 4
+};
+
+/// axis title for the kinematic variable plotted by CPR / pair- and triplet-cleaner QA histograms
+constexpr const char* kinematicVariableToAxisTitle(KinematicVariable type)
+{
+  switch (type) {
+    case KinematicVariable::kKstar:
+      return "k* (GeV/#it{c})";
+    case KinematicVariable::kKt:
+      return "k_{T} (GeV/#it{c})";
+    case KinematicVariable::kMt:
+      return "m_{T} (GeV/#it{c}^{2})";
+    case KinematicVariable::kQ3:
+      return "Q_{3} (GeV/#it{c})";
+    default:
+      return "kinematic variable (GeV/#it{c})";
+  }
+}
 
 }; // namespace o2::analysis::femto::modes
 #endif // PWGCF_FEMTO_CORE_MODES_H_

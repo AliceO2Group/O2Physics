@@ -809,6 +809,8 @@ struct k892hadronphoton {
     int trkCode = 10; // 1: TPC-only, 2: TPC+Something, 3: ITS-Only, 4: ITS+TPC + Something, 10: anything else
     auto photonPosTrackCode = kstar.photonPosTrackCode();
     auto photonNegTrackCode = kstar.photonNegTrackCode();
+    auto kshortPosTrackCode = kstar.kshortPosTrackCode();
+    auto kshortNegTrackCode = kstar.kshortNegTrackCode();
 
     if (isGamma) {
       if (photonPosTrackCode == DauTPCOnly && photonNegTrackCode == DauTPCOnly)
@@ -820,13 +822,13 @@ struct k892hadronphoton {
       if (photonPosTrackCode == DauITSTrackerOnly || photonNegTrackCode == DauITSTrackerOnly)
         trkCode = 4;
     } else {
-      if (photonPosTrackCode == DauTPCOnly && photonNegTrackCode == DauTPCOnly)
+      if (kshortPosTrackCode == DauTPCOnly && kshortNegTrackCode == DauTPCOnly)
         trkCode = 1;
-      if ((photonPosTrackCode != DauTPCOnly && photonNegTrackCode == DauTPCOnly) || (photonPosTrackCode == DauTPCOnly && photonNegTrackCode != DauTPCOnly))
+      if ((kshortPosTrackCode != DauTPCOnly && kshortNegTrackCode == DauTPCOnly) || (kshortPosTrackCode == DauTPCOnly && kshortNegTrackCode != DauTPCOnly))
         trkCode = 2;
-      if (photonPosTrackCode == DauITSTPC && photonNegTrackCode == DauITSTPC)
+      if (kshortPosTrackCode == DauITSTPC && kshortNegTrackCode == DauITSTPC)
         trkCode = 3;
-      if (photonPosTrackCode == DauITSTrackerOnly || photonNegTrackCode == DauITSTrackerOnly)
+      if (kshortPosTrackCode == DauITSTrackerOnly || kshortNegTrackCode == DauITSTrackerOnly)
         trkCode = 4;
     }
 
@@ -899,7 +901,7 @@ struct k892hadronphoton {
       if (std::abs(kshortPDGCodeGrandMother) == o2::constants::physics::Pdg::kK0Star892 && std::abs(photonPDGCodeGrandMother) == o2::constants::physics::Pdg::kK0Star892 && (photonGlobalIndexGrandMother == kshortGlobalIndexGrandMother)) // K*(892)0
         histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_KStarPionKaon"), kstarpT, kstarMass);
 
-      if (photonGlobalIndexGrandMother == kshortGlobalIndexGrandMother) {
+      if ((photonGlobalIndexGrandMother == kshortGlobalIndexGrandMother) && (photonPDGCodeGrandMother != o2::constants::physics::Pdg::kK0Star892) && (photonPDGCodeGrandMother != PDG_t::kProton)) {
         histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_PionKaon"), kstarpT, kstarMass);
         histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPionKaonMother"), kshortPDGCodeGrandMother, photonPDGCodeGrandMother);
       }

@@ -351,7 +351,7 @@ struct strangenessderivedbinnedinfo {
   }
 
   template <typename TCollision>
-  bool isEventAccepted(TCollision collision, bool fillHists)
+  bool isEventAccepted(const TCollision& collision, bool fillHists)
   // check whether the collision passes our collision selections
   {
     if (fillHists)
@@ -499,7 +499,7 @@ struct strangenessderivedbinnedinfo {
   }
 
   template <typename TCollision>
-  void fillEventHistograms(TCollision collision, float& centrality, float& occupancy)
+  void fillEventHistograms(const TCollision& collision, float& centrality, float& occupancy)
   {
     if (isPP) { //
       centrality = collision.centFT0M();
@@ -516,7 +516,7 @@ struct strangenessderivedbinnedinfo {
   }
 
   template <typename TV0, typename TCollision>
-  bool isV0Selected(TV0 v0, TCollision collision, float rapidity)
+  bool isV0Selected(const TV0& v0, const TCollision& collision, float rapidity)
   // precalculate this information so that a check is one mask operation, not many
   {
     //
@@ -644,7 +644,7 @@ struct strangenessderivedbinnedinfo {
   }
 
   template <typename TCascade, typename TCollision>
-  bool isCascadeSelected(TCascade casc, TCollision collision, float rapidity)
+  bool isCascadeSelected(const TCascade& casc, const TCollision& collision, float rapidity)
   // precalculate this information so that a check is one mask operation, not many
   {
     //

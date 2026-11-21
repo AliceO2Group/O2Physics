@@ -16,6 +16,7 @@
 #include "PWGEM/Dilepton/Utils/MlResponseO2Track.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
+#include "Common/Core/PID/PIDTOFParamService.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
@@ -45,7 +46,6 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/Utils.h>
-#include <PID/PIDTOFParamService.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
 
@@ -76,7 +76,7 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
 using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 
 using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
-                           aod::pidTPCFullEl, /*aod::pidTPCFullMu,*/ aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                            aod::pidTOFFullEl, /*aod::pidTOFFullMu,*/ aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::TOFSignal, aod::TOFEvTime>;
 using MyTrack = MyTracks::iterator;
 using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels, aod::mcTPCTuneOnData>;
@@ -144,6 +144,8 @@ struct skimmerPrimaryElectron {
   Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.5, "min. TPC n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.5, "max. TPC n sigma for electron inclusion"};
   Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 3.5, "max. TOF n sigma for electron inclusion"};
+  Configurable<float> minTPCNsigmaMu{"minTPCNsigmaMu", 0.0, "min. TPC n sigma for muon exclusion"};
+  Configurable<float> maxTPCNsigmaMu{"maxTPCNsigmaMu", 0.0, "max. TPC n sigma for muon exclusion"};
   Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 2.5, "max. TPC n sigma for pion exclusion"};
   Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", -1e+10, "min. TPC n sigma for pion exclusion"}; // set to -2 for lowB, -1e+10 for nominalB
   Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 2.5, "max. TPC n sigma for kaon exclusion"};
@@ -221,7 +223,7 @@ struct skimmerPrimaryElectron {
       fRegistry.add("Track/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
       fRegistry.add("Track/hTPCdEdxMC", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
       fRegistry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-      // fRegistry.add("Track/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+      fRegistry.add("Track/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -523,6 +525,9 @@ struct skimmerPrimaryElectron {
     if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
       return false;
     }
+    if (track.tpcNSigmaMu() < minTPCNsigmaMu || maxTPCNsigmaMu < track.tpcNSigmaMu()) {
+      return false;
+    }
     if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi && track.tpcInnerParam() < max_pin_for_pion_rejection) {
       return false;
     }
@@ -586,7 +591,7 @@ struct skimmerPrimaryElectron {
                          dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
                          track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusPID(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
                          track.tpcChi2NCl(), track.tpcInnerParam(),
-                         track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                         track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                          beta, tofNSigmaEl,
                          track.itsClusterSizes(),
                          track.itsChi2NCl(), track.tofChi2(), track.detectorMap(),
@@ -666,7 +671,7 @@ struct skimmerPrimaryElectron {
         fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
         fRegistry.fill(HIST("Track/hTPCdEdxMC"), track.tpcInnerParam(), mcTunedTPCSignal);
         fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-        // fRegistry.fill(HIST("Track/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
+        fRegistry.fill(HIST("Track/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
         fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
         fRegistry.fill(HIST("Track/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
         fRegistry.fill(HIST("Track/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
@@ -1181,6 +1186,8 @@ struct prefilterPrimaryElectron {
   Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.0, "max. TPC n sigma for electron inclusion"};
   Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 3.0, "max. TOF n sigma for electron inclusion"}; // TOFif
+  Configurable<float> minTPCNsigmaMu{"minTPCNsigmaMu", 0.0, "min. TPC n sigma for muon exclusion"};
+  Configurable<float> maxTPCNsigmaMu{"maxTPCNsigmaMu", 0.0, "max. TPC n sigma for muon exclusion"};
   Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 0, "max. TPC n sigma for pion exclusion"};
   Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", 0, "min. TPC n sigma for pion exclusion"};
   Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 0, "max. TPC n sigma for kaon exclusion"};
@@ -1463,6 +1470,9 @@ struct prefilterPrimaryElectron {
     if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
       return false;
     }
+    if (track.tpcNSigmaMu() < minTPCNsigmaMu || maxTPCNsigmaMu < track.tpcNSigmaMu()) {
+      return false;
+    }
     if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi && track.tpcInnerParam() < max_pin_for_pion_rejection) {
       return false;
     }
@@ -1547,8 +1557,8 @@ struct prefilterPrimaryElectron {
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
 
-  Partition<aod::EMPrimaryElectrons> positrons = o2::aod::emprimaryelectron::sign > int8_t(0);
-  Partition<aod::EMPrimaryElectrons> electrons = o2::aod::emprimaryelectron::sign < int8_t(0);
+  Partition<aod::EMPrimaryElectrons> positrons = o2::aod::emprimaryelectron::sign > static_cast<int8_t>(0);
+  Partition<aod::EMPrimaryElectrons> electrons = o2::aod::emprimaryelectron::sign < static_cast<int8_t>(0);
 
   void processPrefilter_TTCA(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyTracks const&, aod::EMPrimaryElectrons const& primaryelectrons, aod::TrackAssoc const& trackIndices, aod::EMTOFNSigmas const& emtofs, aod::EMMLPIDs const& emmlpids)
   {
@@ -1632,12 +1642,12 @@ struct prefilterPrimaryElectron {
           }
           for (int i = 0; i < static_cast<int>(max_mee_vec.size()); i++) {
             if (v12.M() < max_mee_vec.at(i)) {
-              pfb_map[empos.globalIndex()] |= (uint8_t(1) << (static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV) + i));
+              pfb_map[empos.globalIndex()] |= (static_cast<uint8_t>(1) << (static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV) + i));
             }
           }
 
           if (v12.M() < slope * phiv + intercept) {
-            pfb_map[empos.globalIndex()] |= (uint8_t(1) << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC));
+            pfb_map[empos.globalIndex()] |= (static_cast<uint8_t>(1) << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC));
           }
 
         } // end of signal positon loop
@@ -1674,12 +1684,12 @@ struct prefilterPrimaryElectron {
           }
           for (int i = 0; i < static_cast<int>(max_mee_vec.size()); i++) {
             if (v12.M() < max_mee_vec.at(i)) {
-              pfb_map[emele.globalIndex()] |= (uint8_t(1) << (static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV) + i));
+              pfb_map[emele.globalIndex()] |= (static_cast<uint8_t>(1) << (static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV) + i));
             }
           }
 
           if (v12.M() < slope * phiv + intercept) {
-            pfb_map[emele.globalIndex()] |= (uint8_t(1) << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC));
+            pfb_map[emele.globalIndex()] |= (static_cast<uint8_t>(1) << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC));
           }
         } // end of signal electron loop
       } // end of loose positon loop
@@ -1866,12 +1876,12 @@ struct prefilterPrimaryElectron {
         }
         for (int i = 0; i < static_cast<int>(max_mee_vec.size()); i++) {
           if (v12.M() < max_mee_vec.at(i)) {
-            pfb_map[empos.globalIndex()] |= (uint8_t(1) << (static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV) + i));
+            pfb_map[empos.globalIndex()] |= (static_cast<uint8_t>(1) << (static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV) + i));
           }
         }
 
         if (v12.M() < slope * phiv + intercept) {
-          pfb_map[empos.globalIndex()] |= (uint8_t(1) << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC));
+          pfb_map[empos.globalIndex()] |= (static_cast<uint8_t>(1) << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC));
         }
 
       } // end of ULS pairing
@@ -1898,12 +1908,12 @@ struct prefilterPrimaryElectron {
         }
         for (int i = 0; i < static_cast<int>(max_mee_vec.size()); i++) {
           if (v12.M() < max_mee_vec.at(i)) {
-            pfb_map[emele.globalIndex()] |= (uint8_t(1) << (static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV) + i));
+            pfb_map[emele.globalIndex()] |= (static_cast<uint8_t>(1) << (static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV) + i));
           }
         }
 
         if (v12.M() < slope * phiv + intercept) {
-          pfb_map[emele.globalIndex()] |= (uint8_t(1) << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC));
+          pfb_map[emele.globalIndex()] |= (static_cast<uint8_t>(1) << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC));
         }
 
       } // end of ULS pairing

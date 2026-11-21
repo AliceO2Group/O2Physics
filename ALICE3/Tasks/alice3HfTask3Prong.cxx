@@ -58,7 +58,6 @@ struct Alice3HfTask3Prong {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  HfHelperAlice3 hfHelper;
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -119,7 +118,7 @@ struct Alice3HfTask3Prong {
       registry.add(("MC/gen/nonprompt/" + histoName + "GenNonPrompt").c_str(), ("MC particles (matched, non-prompt);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
     };
 
-    auto vbins = (std::vector<double>)binsPt;
+    auto vbins = std::vector<double>(binsPt);
 
     /// Reconstructed Histograms
     addHistogramsRec("hMass", "inv. mass (p K #pi) (GeV/#it{c}^{2})", "", {HistType::kTH1F, {{600, 1.98, 2.58}}});
@@ -271,7 +270,7 @@ struct Alice3HfTask3Prong {
     for (const auto& candidate : candidates) {
       registry.fill(HIST("MC/rec/hCandidateCounter"), 1.);
       /// rapidity selection
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.getCandY<CharmHad>(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelperAlice3::getCandY<CharmHad>(candidate)) > yCandRecoMax) {
         continue;
       }
       registry.fill(HIST("MC/rec/hCandidateCounter"), 2.);
@@ -311,7 +310,7 @@ struct Alice3HfTask3Prong {
 
         if (candidate.isSelMassHypo0()) {
           registry.fill(HIST("hSelectionStatus"), 0., pt);
-          double mass = hfHelper.getCandMass<CharmHad, false>(candidate);
+          double mass = HfHelperAlice3::getCandMass<CharmHad, false>(candidate);
           /// Fill histograms
           fillHistogramsRecSig<CharmHad, SignalClasses::Signal>(candidate, mass, false);
           if (originType == RecoDecay::OriginType::Prompt) {
@@ -334,7 +333,7 @@ struct Alice3HfTask3Prong {
         if (fillSwapMassHypo) {
           if (candidate.isSelMassHypo1()) {
             registry.fill(HIST("hSelectionStatus"), 1., pt);
-            double mass = hfHelper.getCandMass<CharmHad, true>(candidate);
+            double mass = HfHelperAlice3::getCandMass<CharmHad, true>(candidate);
             /// Fill histograms
             fillHistogramsRecSig<CharmHad, SignalClasses::Signal>(candidate, mass, true);
             if (originType == RecoDecay::OriginType::Prompt) {
@@ -357,12 +356,12 @@ struct Alice3HfTask3Prong {
         }
       } else { // Background
         if (candidate.isSelMassHypo0()) {
-          double mass = hfHelper.getCandMass<CharmHad, false>(candidate);
+          double mass = HfHelperAlice3::getCandMass<CharmHad, false>(candidate);
           fillHistogramsRecSig<CharmHad, SignalClasses::Bkg>(candidate, mass, false);
         }
         if (fillSwapMassHypo) {
           if (candidate.isSelMassHypo1()) {
-            double mass = hfHelper.getCandMass<CharmHad, true>(candidate);
+            double mass = HfHelperAlice3::getCandMass<CharmHad, true>(candidate);
             fillHistogramsRecSig<CharmHad, SignalClasses::Bkg>(candidate, mass, true);
           }
         }
@@ -385,10 +384,10 @@ struct Alice3HfTask3Prong {
     static constexpr auto histoSuffix = HIST("Gen") + HIST(SignalSuffixes[SignalType]);
     registry.fill(histoPrefix + HIST("hPt") + histoSuffix, particle.pt());
     registry.fill(histoPrefix + HIST("hEta") + histoSuffix, particle.eta());
-    registry.fill(histoPrefix + HIST("hY") + histoSuffix, hfHelper.getCandY<CharmHad>(particle));
+    registry.fill(histoPrefix + HIST("hY") + histoSuffix, HfHelperAlice3::getCandY<CharmHad>(particle));
     registry.fill(histoPrefix + HIST("hPhi") + histoSuffix, particle.phi());
     registry.fill(histoPrefix + HIST("hEtaVsPt") + histoSuffix, particle.eta(), particle.pt());
-    registry.fill(histoPrefix + HIST("hYVsPt") + histoSuffix, hfHelper.getCandY<CharmHad>(particle), particle.pt());
+    registry.fill(histoPrefix + HIST("hYVsPt") + histoSuffix, HfHelperAlice3::getCandY<CharmHad>(particle), particle.pt());
     registry.fill(histoPrefix + HIST("hPhiVsPt") + histoSuffix, particle.phi(), particle.pt());
     if (particle.has_daughters()) {
       const auto firstDauIdx = particle.daughtersIds().front();
@@ -424,7 +423,7 @@ struct Alice3HfTask3Prong {
     // MC gen.
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcGen()) == selectedPdg) {
-        double yGen = hfHelper.getCandY<CharmHad>(particle);
+        double yGen = HfHelperAlice3::getCandY<CharmHad>(particle);
         if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
           continue;
         }

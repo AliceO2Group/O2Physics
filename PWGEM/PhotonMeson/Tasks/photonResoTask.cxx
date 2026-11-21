@@ -21,17 +21,15 @@
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
 #include "Common/Core/RecoDecay.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Concepts.h>
@@ -65,9 +63,9 @@ using namespace o2::aod::pwgem::photon;
 enum CentralityEstimator {
   None = 0,
   CFT0A = 1,
-  CFT0C,
-  CFT0M,
-  NCentralityEstimators
+  CFT0C = 2,
+  CFT0M = 3,
+  NCentralityEstimators = 4
 };
 
 enum class MapLevel {
@@ -78,11 +76,7 @@ enum class MapLevel {
 };
 
 struct PhotonResoTask {
-  static constexpr float MinEnergy = 0.7f;
-
   o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   o2::framework::Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
 
   // configurable axis
@@ -94,7 +88,7 @@ struct PhotonResoTask {
   ConfigurableAxis thnConfigAxisPhiRelative{"thnConfigAxisPhiRelative", {300, -1., 2.}, "(phi rec - phi true) / phi true axis"};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {20, 0., 100.}, "centrality axis for the current event"};
   ConfigurableAxis thnConfigAxisMult{"thnConfigAxisMult", {60, 0., 60000.}, "multiplicity axis for the current event"};
-  Configurable<bool> useCent{"useCent", 0, "flag to enable usage of centrality instead of multiplicity as axis."};
+  Configurable<bool> useCent{"useCent", false, "flag to enable usage of centrality instead of multiplicity as axis."};
 
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -182,12 +176,12 @@ struct PhotonResoTask {
 
   SliceCache cache;
 
-  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::EMEMCClusterMCLabels>;
+  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::EMEMCClusterMCLabels_001>;
   using PcmPhotons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 
   using PcmMcLegs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 
-  using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels>;
+  using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels, aod::EmMagFields>;
 
   using McColls = o2::soa::Join<o2::aod::EMMCEvents, o2::aod::BinnedGenPts>;
   using McParticles = EMMCParticles;
@@ -199,7 +193,7 @@ struct PhotonResoTask {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   int mRunNumber{-1};
   float dBz{0.f};
 
@@ -216,6 +210,7 @@ struct PhotonResoTask {
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
+    fEMEventCut.SetFT0COccupancyRange(eventcuts.cfgFT0COccupancyMin, eventcuts.cfgFT0COccupancyMax);
   }
 
   void defineEMCCut()
@@ -288,7 +283,7 @@ struct PhotonResoTask {
     fEMCCut.addQAHistograms(&registry);
     definePCMCut();
     fV0PhotonCut.addQAHistograms(&registry);
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&registry);
+    fEMEventCut.addEventHistograms(&registry);
 
     const AxisSpec thnAxisPtGen{thnConfigAxisPt, "#it{p}_{T,Gen} (GeV/#it{c})"};
     const AxisSpec thnAxisPtRec{thnConfigAxisPt, "#it{p}_{T,Rec} (GeV/#it{c})"};
@@ -362,27 +357,11 @@ struct PhotonResoTask {
     if (mRunNumber == collision.runNumber()) {
       return;
     }
-
-    auto run3GrpTimestamp = collision.timestamp();
-    o2::parameters::GRPObject* grpo = nullptr;
-    o2::parameters::GRPMagField* grpmag = nullptr;
-    if (!skipGRPOquery)
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3GrpTimestamp);
-    if (grpo) {
-      // Fetch magnetic field from ccdb for current collision
-      dBz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3GrpTimestamp << " with magnetic field of " << dBz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3GrpTimestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3GrpTimestamp;
-      }
-      // Fetch magnetic field from ccdb for current collision
-      dBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3GrpTimestamp << " with magnetic field of " << dBz << " kZG";
-    }
-    fV0PhotonCut.SetD_Bz(dBz);
     mRunNumber = collision.runNumber();
+
+    dBz = collision.grpMagField().getNominalL3Field();
+    LOG(info) << "Retrieved GRP for timestamp " << collision.timestamp() << " with magnetic field of " << dBz << " kZG";
+    fV0PhotonCut.SetD_Bz(dBz);
   }
 
   template <o2::soa::is_iterator TCollision>
@@ -426,14 +405,10 @@ struct PhotonResoTask {
   bool isFullEventSelected(TCollision const& collision, bool fillHisto = false)
   {
     if (fillHisto) {
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&registry, collision);
+      fEMEventCut.fillEventInfo<0>(&registry, collision);
     }
     if (!(fEMEventCut.IsSelected(collision))) {
       // general event selection
-      return false;
-    }
-    if (!(eventcuts.cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
-      // occupancy selection
       return false;
     }
     float centOrMult = getCentralityOrMultiplicity(collision);
@@ -442,9 +417,8 @@ struct PhotonResoTask {
       return false;
     }
     if (fillHisto) {
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&registry, collision);
-      registry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
-      registry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
+      fEMEventCut.fillEventInfo<1>(&registry, collision);
+      fEMEventCut.fillAccepted(&registry);
     }
     return true;
   }
@@ -491,7 +465,7 @@ struct PhotonResoTask {
         if (!(emcFlags.test(photonEMC.globalIndex()))) {
           continue;
         }
-        if (photonEMC.emmcparticleIds().size() <= 0) {
+        if (photonEMC.emmcparticleIds().empty()) {
           // this is a cluster with just noise, skip
           continue;
         }
@@ -602,7 +576,7 @@ struct PhotonResoTask {
           registry.fill(HIST("mesonQA/hInvMassPt"), vMeson.M(), vMeson.Pt());
         }
 
-        if (g1.emmcparticleIds().size() <= 0 || g2.emmcparticleIds().size() <= 0) {
+        if (g1.emmcparticleIds().empty() || g2.emmcparticleIds().empty()) {
           // there is a cluster which is just noise, skip
           continue;
         }
@@ -642,7 +616,7 @@ struct PhotonResoTask {
 
 }; // End struct PhotonResoTask
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<PhotonResoTask>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<PhotonResoTask>(context)};
 }

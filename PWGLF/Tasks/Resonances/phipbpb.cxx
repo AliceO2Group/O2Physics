@@ -635,7 +635,7 @@ struct phipbpb {
     int Npostrack = 0;
     float weight1 = 1.0;
     float weight2 = 1.0;
-    for (auto track1 : posThisColl) {
+    for (const auto& track1 : posThisColl) {
       // track selection
       if (!selectionTrack(track1)) {
         continue;
@@ -673,7 +673,7 @@ struct phipbpb {
           weight1 = 1;
         }
       }
-      for (auto track2 : negThisColl) {
+      for (const auto& track2 : negThisColl) {
         // track selection
         if (!selectionTrack(track2)) {
           continue;
@@ -862,7 +862,7 @@ struct phipbpb {
     }
 
     int Npostrack = 0;
-    for (auto track1 : posThisColl) {
+    for (const auto& track1 : posThisColl) {
       // track selection
       if (!selectionTrack(track1)) {
         continue;
@@ -881,7 +881,7 @@ struct phipbpb {
         continue;
       }
       auto track1ID = track1.globalIndex();
-      for (auto track2 : negThisColl) {
+      for (const auto& track2 : negThisColl) {
         // track selection
         if (!selectionTrack(track2)) {
           continue;
@@ -941,8 +941,8 @@ struct phipbpb {
   }
   PROCESS_SWITCH(phipbpb, processSameEventv1, "Process Same event for v1", false);
 
-  BinningTypeVertexContributor binningOnEPAngle{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
-  BinningTypeVertexContributorv1 binningOnSPAngle{{axisVertex, axisMultiplicityClass, axisSPAngle}, true};
+  BinningTypeVertexContributor binningOnEPAngle{{axisVertex, axisMultiplicityClass, axisEPAngle}};
+  BinningTypeVertexContributorv1 binningOnSPAngle{{axisVertex, axisMultiplicityClass, axisSPAngle}};
   Preslice<aod::Tracks> tracksPerCollision = aod::track::collisionId;
   void processMEAcc(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
@@ -1188,7 +1188,7 @@ struct phipbpb {
   void processMixedEventOpti(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
       // if (!collision1.sel8() || !collision1.triggereventep() || !collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
@@ -1310,7 +1310,7 @@ struct phipbpb {
   void processMixedEventOptiv1(EventCandidatesv1 const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeVertexContributorv1 binningOnPositions{{axisVertex, axisMultiplicityClass, axisSPAngle}, true};
+    BinningTypeVertexContributorv1 binningOnPositions{{axisVertex, axisMultiplicityClass, axisSPAngle}};
     SameKindPair<EventCandidatesv1, TrackCandidates, BinningTypeVertexContributorv1> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
       if (!collision1.sel8() || !collision1.triggereventsp() || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup)) {
@@ -1465,7 +1465,7 @@ struct phipbpb {
       auto oldindex = -999;
       auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
       // loop over reconstructed particle
-      for (auto track1 : Rectrackspart) {
+      for (const auto& track1 : Rectrackspart) {
         if (!selectionTrack(track1)) {
           continue;
         }
@@ -1479,7 +1479,7 @@ struct phipbpb {
           continue;
         }
         auto track1ID = track1.index();
-        for (auto track2 : Rectrackspart) {
+        for (const auto& track2 : Rectrackspart) {
           auto track2ID = track2.index();
           if (track2ID <= track1ID) {
             continue;
@@ -1576,7 +1576,7 @@ struct phipbpb {
         }
         auto daughtp = false;
         auto daughtm = false;
-        for (auto kCurrentDaughter : kDaughters) {
+        for (const auto& kCurrentDaughter : kDaughters) {
           if (!kCurrentDaughter.isPhysicalPrimary()) {
             continue;
           }
@@ -1760,7 +1760,7 @@ struct phipbpb {
       auto oldindex = -999;
       auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
       // loop over reconstructed particle
-      for (auto track1 : Rectrackspart) {
+      for (const auto& track1 : Rectrackspart) {
         if (!track1.has_mcParticle()) {
           continue;
         }
@@ -1775,7 +1775,7 @@ struct phipbpb {
           histos.fill(HIST("hSparsePhiMCRecKaonMissMatchWeight"), centclass, GetPhiInRange(mctrack1.phi() - psiFT0C), TMath::Power(TMath::Cos(4.0 * GetPhiInRange(mctrack1.phi() - psiFT0C)), 1.0), mctrack1.pt(), mctrack1.eta());
         }
         auto track1ID = track1.index();
-        for (auto track2 : Rectrackspart) {
+        for (const auto& track2 : Rectrackspart) {
           if (!track2.has_mcParticle()) {
             continue;
           }
@@ -1854,7 +1854,7 @@ struct phipbpb {
         }
         auto daughtp = false;
         auto daughtm = false;
-        for (auto kCurrentDaughter : kDaughters) {
+        for (const auto& kCurrentDaughter : kDaughters) {
           if (!kCurrentDaughter.isPhysicalPrimary()) {
             continue;
           }

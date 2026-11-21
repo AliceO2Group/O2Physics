@@ -89,13 +89,13 @@ struct DGFilterRun3 {
   {
     // reset collision counter
     collCounter = 0;
-    verbose = (int64_t)Verbose;
+    verbose = static_cast<int64_t>(Verbose);
     if (verbose <= 0) {
       verbose = 1000000000000;
     }
 
     // cut holder
-    diffCuts = (DGCutparHolder)diffCutsHolder;
+    diffCuts = DGCutparHolder(diffCutsHolder);
 
     // create histograms
     // stat
@@ -284,7 +284,7 @@ struct DGFilterRun3 {
 
     // forward tracks
     int nforwardTracks[5] = {0};
-    for (auto track : fwdtracks) {
+    for (const auto& track : fwdtracks) {
       nforwardTracks[track.trackType()]++;
       registry.fill(HIST("forwardTracks/timeResolution"), track.trackType(), track.trackTimeRes());
     }

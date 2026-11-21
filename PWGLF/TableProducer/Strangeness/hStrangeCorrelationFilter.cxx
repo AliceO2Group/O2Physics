@@ -25,6 +25,7 @@
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
@@ -82,6 +83,8 @@ struct HStrangeCorrelationFilter {
   Configurable<float> strangedEdxNSigmaTight{"strangedEdxNSigmaTight", 3, "Nsigmas for strange decay daughters"};
   Configurable<std::string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
   Configurable<float> nSigmaNearXiMassCenter{"nSigmaNearXiMassCenter", 0, "for Oemga analysis only, to check if candidate mass is around Xi"};
+  Configurable<bool> rejectAmbiguousTracks{"rejectAmbiguousTracks", false, "reject tracks compatible with more than one collision (requires track-to-collision-associator with fillTableOfCollIdsPerTrack)"};
+  Configurable<bool> rejectAmbiguousAssoc{"rejectAmbiguousAssoc", false, "reject V0/cascade candidates having at least one ambiguous daughter track"};
 
   // used for event selections in Pb-Pb
   Configurable<int> cfgCutOccupancyHigh{"cfgCutOccupancyHigh", 3000, "High cut on TPC occupancy"};
@@ -135,6 +138,10 @@ struct HStrangeCorrelationFilter {
     // formula: |DCAxy| <  0.004f + (0.013f / pt)
     Configurable<float> dcaXYconstant{"dcaXYconstant", 0.004, "[0] in |DCAxy| < [0]+[1]/pT"};
     Configurable<float> dcaXYpTdep{"dcaXYpTdep", 0.013, "[1] in |DCAxy| < [0]+[1]/pT"};
+
+    // perform P-Lambda correlation analysis
+    Configurable<float> performPLambdacorrelation{"performPLambdacorrelation", 3, "do p-Lambda correlation study"};
+    Configurable<float> triggerProtonNSigmaTPCFOF{"triggerProtonNSigmaTPCFOF", 3, "minimal n sigma in TOF and TPC for Proton ID"};
   } trackSelections;
   struct : ConfigurableGroup {
     // V0 selections
@@ -210,10 +217,10 @@ struct HStrangeCorrelationFilter {
 
   // using V0LinkedTagged = soa::Join<aod::V0sLinked, aod::V0Tags>;
   // using CascadesLinkedTagged = soa::Join<aod::CascadesLinked, aod::CascTags>;
-  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
-  using FullTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
-  using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA>;
-  using DauTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA, aod::McTrackLabels>;
+  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackCompColls>;
+  using FullTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackCompColls>;
+  using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA, aod::TrackCompColls>;
+  using DauTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA, aod::McTrackLabels, aod::TrackCompColls>;
   // using IDTracks= soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::TOFSignal>; // prepared for Bayesian PID
   using IDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::TOFSignal, aod::TracksDCA>;
   using IDTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::TOFSignal, aod::TracksDCA, aod::McTrackLabels>;
@@ -300,11 +307,20 @@ struct HStrangeCorrelationFilter {
       histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisLambdaMass, axesConfigurations.axisMult});
       histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisLambdaMass, axesConfigurations.axisMult});
     }
+    if (rejectAmbiguousAssoc && (doprocessV0s || doprocessV0sMC)) {
+      histos.add("hAmbiguousV0Pt", "hAmbiguousV0Pt", kTH1F, {axesConfigurations.axisPtQA});
+    }
+    if (rejectAmbiguousTracks && (doprocessTriggers || doprocessTriggersMC)) {
+      histos.add("hAmbiguousTriggerPt", "hAmbiguousTriggerPt", kTH1F, {axesConfigurations.axisPtQA});
+    }
     if (doprocessCascades || doprocessCascadesMC) {
       histos.add("h3dMassXiMinus", "h3dMassXiMinus", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisXiMass, axesConfigurations.axisMult});
       histos.add("h3dMassXiPlus", "h3dMassXiPlus", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisXiMass, axesConfigurations.axisMult});
       histos.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisOmegaMass, axesConfigurations.axisMult});
       histos.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisOmegaMass, axesConfigurations.axisMult});
+    }
+    if (rejectAmbiguousAssoc && (doprocessCascades || doprocessCascadesMC)) {
+      histos.add("hAmbiguousCascadePt", "hAmbiguousCascadePt", kTH1F, {axesConfigurations.axisPtQA});
     }
   }
 
@@ -410,6 +426,20 @@ struct HStrangeCorrelationFilter {
     return true;
   }
 
+  // ambiguous track check: the track is compatible with more than one collision,
+  // or with a collision different from the one it is assigned to (see PWGCF/TableProducer/dptDptFilter.cxx)
+  template <class TTrack>
+  bool isAmbiguousTrack(TTrack const& track)
+  {
+    if (track.compatibleCollIds().size() == 0) {
+      return false; // no collision association information: not ambiguous
+    }
+    if (track.compatibleCollIds().size() == 1) {
+      return track.collisionId() != track.compatibleCollIds()[0];
+    }
+    return true; // associated to more than one collision
+  }
+
   // reco-level trigger quality checks (N.B.: DCA is filtered, not selected)
   template <class TTrack>
   bool isValidTrigger(TTrack const& track)
@@ -421,7 +451,8 @@ struct HStrangeCorrelationFilter {
     if (track.pt() > generalSelections.triggerPtCutMax || track.pt() < generalSelections.triggerPtCutMin) {
       return false;
     }
-    if (track.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+    // hasTPC() is needed: since O2-7038 (Oct 2026) tracks without TPC report 256 crossed rows
+    if (!track.hasTPC() || track.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
       return false; // crossed rows
     }
     if (!track.hasITS() && trackSelections.triggerRequireITS) {
@@ -432,6 +463,13 @@ struct HStrangeCorrelationFilter {
     }
     if (!(TESTBIT(track.itsClusterMap(), 0)) && trackSelections.triggerRequireL0) {
       return false; // skip, doesn't have cluster in ITS L0
+    }
+    bool isProton = std::sqrt(track.tofNSigmaPr() * track.tofNSigmaPr() + track.tpcNSigmaPr() * track.tpcNSigmaPr()) <= trackSelections.triggerProtonNSigmaTPCFOF;
+    if (trackSelections.performPLambdacorrelation <= 1 && !isProton) {
+      return false;
+    }
+    if (trackSelections.performPLambdacorrelation == 2 && isProton) {
+      return false;
     }
     return true;
   }
@@ -444,7 +482,7 @@ struct HStrangeCorrelationFilter {
     if (assoc.pt() > generalSelections.assocPtCutMax || assoc.pt() < generalSelections.assocPtCutMin) {
       return false;
     }
-    if (assoc.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+    if (!assoc.hasTPC() || assoc.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
       return false; // crossed rows
     }
     if (!assoc.hasITS() && trackSelections.assocRequireITS) {
@@ -593,6 +631,10 @@ struct HStrangeCorrelationFilter {
       if (!isValidTrigger(track)) {
         continue;
       }
+      if (rejectAmbiguousTracks && isAmbiguousTrack(track)) {
+        histos.fill(HIST("hAmbiguousTriggerPt"), track.pt());
+        continue;
+      }
       TriggCandidate thisTrigg{};
       thisTrigg.pt = track.pt();
       thisTrigg.trackId = track.globalIndex();
@@ -632,6 +674,10 @@ struct HStrangeCorrelationFilter {
     int leadingId = -1;
     for (auto const& track : tracks) {
       if (!isValidTrigger(track)) {
+        continue;
+      }
+      if (rejectAmbiguousTracks && isAmbiguousTrack(track)) {
+        histos.fill(HIST("hAmbiguousTriggerPt"), track.pt());
         continue;
       }
       TriggCandidate thisTrigg{};
@@ -803,13 +849,17 @@ struct HStrangeCorrelationFilter {
       auto posdau = v0.posTrack_as<DauTracks>();
       auto negdau = v0.negTrack_as<DauTracks>();
 
-      if (negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!negdau.hasTPC() || negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!posdau.hasTPC() || posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
       if (trackSelections.requireClusterInITS && (posdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks)) {
+        continue;
+      }
+      if (rejectAmbiguousAssoc && (isAmbiguousTrack(posdau) || isAmbiguousTrack(negdau))) {
+        histos.fill(HIST("hAmbiguousV0Pt"), v0.pt());
         continue;
       }
 
@@ -938,13 +988,17 @@ struct HStrangeCorrelationFilter {
       auto posdau = v0.posTrack_as<DauTracksMC>();
       auto negdau = v0.negTrack_as<DauTracksMC>();
 
-      if (negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!negdau.hasTPC() || negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!posdau.hasTPC() || posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
       if (trackSelections.requireClusterInITS && (posdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks)) {
+        continue;
+      }
+      if (rejectAmbiguousAssoc && (isAmbiguousTrack(posdau) || isAmbiguousTrack(negdau))) {
+        histos.fill(HIST("hAmbiguousV0Pt"), v0.pt());
         continue;
       }
 
@@ -1092,13 +1146,17 @@ struct HStrangeCorrelationFilter {
       auto negTrackCast = casc.negTrack_as<DauTracks>();
 
       // minimum TPC crossed rows
-      if (bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!bachTrackCast.hasTPC() || bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!posTrackCast.hasTPC() || posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!negTrackCast.hasTPC() || negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+        continue;
+      }
+      if (rejectAmbiguousAssoc && (isAmbiguousTrack(bachTrackCast) || isAmbiguousTrack(posTrackCast) || isAmbiguousTrack(negTrackCast))) {
+        histos.fill(HIST("hAmbiguousCascadePt"), casc.pt());
         continue;
       }
       if (!doPPAnalysis && !cascadeSelectedPbPb(casc, collision.posX(), collision.posY(), collision.posZ())) {
@@ -1261,13 +1319,17 @@ struct HStrangeCorrelationFilter {
       auto negTrackCast = casc.negTrack_as<DauTracks>();
 
       // minimum TPC crossed rows
-      if (bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!bachTrackCast.hasTPC() || bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!posTrackCast.hasTPC() || posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!negTrackCast.hasTPC() || negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+        continue;
+      }
+      if (rejectAmbiguousAssoc && (isAmbiguousTrack(bachTrackCast) || isAmbiguousTrack(posTrackCast) || isAmbiguousTrack(negTrackCast))) {
+        histos.fill(HIST("hAmbiguousCascadePt"), casc.pt());
         continue;
       }
       if (!doPPAnalysis && !cascadeSelectedPbPb(casc, collision.posX(), collision.posY(), collision.posZ())) {

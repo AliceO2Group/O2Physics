@@ -355,11 +355,11 @@ struct FullJetSpectra {
   void init(o2::framework::InitContext&)
   {
 
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
-    particleSelection = static_cast<std::string>(particleSelections);
-    jetRadiiValues = (std::vector<double>)jetRadii;
+    particleSelection = particleSelections;
+    jetRadiiValues = jetRadii;
     doSumw2 = doMBGapTrigger;
     /*  if (doMcClosure) {
     // randGen.SetSeed(mcSplitSeed);
@@ -391,7 +391,7 @@ struct FullJetSpectra {
     for (std::size_t iJetRadius = 0; iJetRadius < jetRadiiValues.size(); iJetRadius++) {
       filledJetR.push_back(0.0);
     }
-    auto jetRadiiBins = (std::vector<double>)jetRadii;
+    auto jetRadiiBins = jetRadii.value;
     if (jetRadiiBins.size() > 1) {
       jetRadiiBins.push_back(jetRadiiBins[jetRadiiBins.size() - 1] + (std::abs(jetRadiiBins[jetRadiiBins.size() - 1] - jetRadiiBins[jetRadiiBins.size() - 2])));
     } else {
@@ -783,7 +783,7 @@ struct FullJetSpectra {
   Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centFT0M >= centralityMin && aod::jcollision::centFT0M < centralityMax);
   // Filter EMCeventCuts = (nabs(aod::collision::posZ) < vertexZCut && aod::collision::centrality >= centralityMin && aod::collision::centrality < centralityMax);
   Filter trackCuts = (aod::jtrack::pt >= trackpTMin && aod::jtrack::pt < trackpTMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax && aod::jtrack::phi >= trackPhiMin && aod::jtrack::phi <= trackPhiMax);
-  aod::EMCALClusterDefinition clusterDefinition = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
+  aod::EMCALClusterDefinition clusterDefinition = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS);
   Filter clusterFilter = (aod::jcluster::definition == static_cast<int>(clusterDefinition) && aod::jcluster::eta > clusterEtaMin && aod::jcluster::eta < clusterEtaMax && aod::jcluster::phi >= clusterPhiMin && aod::jcluster::phi <= clusterPhiMax && aod::jcluster::energy >= clusterEnergyMin && aod::jcluster::time > clusterTimeMin && aod::jcluster::time < clusterTimeMax && (clusterRejectExotics && aod::jcluster::isExotic != true));
   Preslice<JetTableMCPMatchedJoined> JetMCPPerMcCollision = aod::jet::mcCollisionId;
   PresliceUnsorted<soa::Filtered<aod::JetCollisionsMCD>> CollisionsPerMCPCollision = aod::jmccollisionlb::mcCollisionId;
@@ -1185,7 +1185,7 @@ struct FullJetSpectra {
     if (bcs.size() == 0) {
       return;
     }
-    for (auto bc : bcs) {
+    for (const auto& bc : bcs) {
       registry.fill(HIST("hBCCounter"), 0.5); // All BC
       if (bc.selection_bit(aod::evsel::EventSelectionFlags::kIsTriggerTVX)) {
         registry.fill(HIST("hBCCounter"), 1.5); // BC+TVX
@@ -1197,7 +1197,7 @@ struct FullJetSpectra {
         }
       }
       auto collisionsInBC = collisions.sliceBy(perFoundBC, bc.globalIndex());
-      for (auto collision : collisionsInBC) {
+      for (const auto& collision : collisionsInBC) {
         registry.fill(HIST("hBCCounter"), 4.5); // CollinBC
         if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
           registry.fill(HIST("hBCCounter"), 5.5); // CollinBC+TVX
@@ -1381,16 +1381,16 @@ struct FullJetSpectra {
 
     if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChLowPt)) {
       registry.fill(HIST("hDetTrigcollisionCounter"), 13.5); // EMCAcceptedDetTrigCollWithLowChargedJetTriggers
-      eventAccepted = true;
+      // eventAccepted = true; // FIXME: unused
     }
     if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChHighPt)) {
       registry.fill(HIST("hDetTrigcollisionCounter"), 14.5); // EMCAcceptedDetTrigCollWithHighChargedJetTriggers
-      eventAccepted = true;
+      // eventAccepted = true; // FIXME: unused
     }
 
     if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetFullLowPt) && jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetFullHighPt)) {
       registry.fill(HIST("hDetTrigcollisionCounter"), 15.5); // EMCAcceptedDetTrigCollWithLow+HighFullJetTriggers
-      eventAccepted = true;
+      // eventAccepted = true; // FIXME: unused
     }
 
     for (auto const& jet : jets) {

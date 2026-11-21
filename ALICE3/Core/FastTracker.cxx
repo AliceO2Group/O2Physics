@@ -9,6 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file FastTracker.cxx
+/// \brief On the fly implementation of DelphesO2 solveTrack
+/// \author David Dobrigkeit Chinellato
+/// \author Nicolò Jacazio
+/// \author Jesper Karlsson Gumprecht
+
 #include "FastTracker.h"
 
 #include "DetLayer.h"
@@ -34,7 +40,6 @@
 #include <TVectorDfwd.h>
 
 #include <Rtypes.h>
-#include <RtypesCore.h>
 
 #include <array>
 #include <cmath>
@@ -44,14 +49,12 @@
 #include <string>
 #include <vector>
 
-namespace o2
-{
-namespace fastsim
+namespace o2::fastsim
 {
 
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
 
-DetLayer* FastTracker::AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi, float resZ, float eff, int type)
+DetLayer* FastTracker::addLayer(const TString& name, float r, float z, float x0, float xrho, float resRPhi, float resZ, float eff, int type)
 {
   LOG(debug) << "Adding layer " << name << " r=" << r << " z=" << z << " x0=" << x0 << " xrho=" << xrho << " resRPhi=" << resRPhi << " resZ=" << resZ << " eff=" << eff << " type=" << type;
   DetLayer newLayer(name, r, z, x0, xrho, resRPhi, resZ, eff, type);
@@ -77,7 +80,7 @@ DetLayer* FastTracker::AddLayer(TString name, float r, float z, float x0, float 
 
 void FastTracker::addDeadPhiRegionInLayer(const std::string& layerName, float phiStart, float phiEnd)
 {
-  const int layerIdx = GetLayerIndex(layerName);
+  const int layerIdx = getLayerIndex(layerName);
   if (layerIdx < 0) {
     LOG(fatal) << "Cannot add dead phi region to non-existing layer " << layerName;
     return;
@@ -85,7 +88,7 @@ void FastTracker::addDeadPhiRegionInLayer(const std::string& layerName, float ph
   layers[layerIdx].addDeadPhiRegion(phiStart, phiEnd);
 }
 
-int FastTracker::GetLayerIndex(const std::string& name) const
+int FastTracker::getLayerIndex(const std::string& name) const
 {
   int i = 0;
   for (const auto& layer : layers) {
@@ -98,7 +101,7 @@ int FastTracker::GetLayerIndex(const std::string& name) const
   return -1;
 }
 
-void FastTracker::Print()
+void FastTracker::print()
 {
   // print out layer setup
   LOG(info) << "+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+";
@@ -109,7 +112,7 @@ void FastTracker::Print()
   LOG(info) << "+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+";
 }
 
-void FastTracker::AddTPC(float phiResMean, float zResMean)
+void FastTracker::addTPC(float phiResMean, float zResMean)
 {
   LOG(info) << " Adding standard time projection chamber";
 
@@ -118,12 +121,11 @@ void FastTracker::AddTPC(float phiResMean, float zResMean)
   // https://github.com/AliceO2Group/DelphesO2/blob/master/src/DetectorK/DetectorK.cxx#L522
   // % Radiation Lengths ... Average per TPC row  (i.e. total/159 )
   const int kNPassiveBound = 2;
-  const float radLBoundary[kNPassiveBound] = {1.692612e-01, 8.711904e-02};
-  const float xrhoBoundary[kNPassiveBound] = {6.795774e+00, 3.111401e+00};
-  const float rBoundary[kNPassiveBound] = {50, 70.0}; // cm
+  const std::array<float, kNPassiveBound> radLBoundary = {1.692612e-01, 8.711904e-02};
+  const std::array<float, kNPassiveBound> xrhoBoundary = {6.795774e+00, 3.111401e+00};
+  const std::array<float, kNPassiveBound> rBoundary = {50, 70.0}; // cm
 
   float radLPerRow = 0.000036;
-
   float tpcInnerRadialPitch = 0.75; // cm
   float tpcMiddleRadialPitch = 1.0; // cm
   float tpcOuterRadialPitch = 1.5;  // cm
@@ -139,22 +141,23 @@ void FastTracker::AddTPC(float phiResMean, float zResMean)
 
   // add boundaries between ITS and TPC
   for (int i = 0; i < kNPassiveBound; i++) {
-    AddLayer(Form("tpc_boundary%d", i), rBoundary[i], zLength, radLBoundary[i], xrhoBoundary[i], 0); // dummy errors
+    addLayer(Form("tpc_boundary%d", i), rBoundary[i], zLength, radLBoundary[i], xrhoBoundary[i], 0); // dummy errors
   }
-  for (Int_t k = 0; k < tpcRows; k++) {
-    Float_t rowRadius = 0;
-    if (k < innerRows)
+  for (int k = 0; k < tpcRows; k++) {
+    float rowRadius = 0;
+    if (k < innerRows) {
       rowRadius = rowOneRadius + k * tpcInnerRadialPitch;
-    else if (k >= innerRows && k < (innerRows + middleRows))
+    } else if (k >= innerRows && k < (innerRows + middleRows)) {
       rowRadius = row64Radius + (k - innerRows + 1) * tpcMiddleRadialPitch;
-    else if (k >= (innerRows + middleRows) && k < tpcRows)
+    } else if (k >= (innerRows + middleRows) && k < tpcRows) {
       rowRadius = row128Radius + (k - innerRows - middleRows + 1) * tpcOuterRadialPitch;
+    }
 
-    AddLayer(Form("tpc_%d", k), rowRadius, zLength, radLPerRow, 0, phiResMean, zResMean, 1.0f, 2);
+    addLayer(Form("tpc_%d", k), rowRadius, zLength, radLPerRow, 0, phiResMean, zResMean, 1.0f, 2);
   }
 }
 
-void FastTracker::AddGenericDetector(o2::fastsim::GeometryEntry configMap, o2::ccdb::BasicCCDBManager* ccdbManager)
+void FastTracker::addGenericDetector(const o2::fastsim::GeometryEntry& configMap, o2::ccdb::BasicCCDBManager* ccdbManager)
 {
   // Layers
   for (const auto& layer : configMap.getLayerNames()) {
@@ -175,19 +178,17 @@ void FastTracker::AddGenericDetector(o2::fastsim::GeometryEntry configMap, o2::c
     const int type = configMap.getIntValue(layer, "type");
     const std::string deadPhiRegions = configMap.getValue(layer, "deadPhiRegions", false);
 
-    // void AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
     LOG(info) << " Adding layer " << layer << " r=" << r << " z=" << z << " x0=" << x0 << " xrho=" << xrho << " resRPhi=" << resRPhi << " resZ=" << resZ << " eff=" << eff << " type=" << type << " deadPhiRegions=" << deadPhiRegions;
-
-    DetLayer* addedLayer = AddLayer(layer.c_str(), r, z, x0, xrho, resRPhi, resZ, eff, type);
+    DetLayer* addedLayer = addLayer(layer.c_str(), r, z, x0, xrho, resRPhi, resZ, eff, type);
     if (!deadPhiRegions.empty()) { // Taking it as ccdb path or local file
                                    // Check if it begins with ccdb:
-      if (std::string(deadPhiRegions).rfind("ccdb:", 0) == 0) {
-        std::string ccdbPath = std::string(deadPhiRegions).substr(5); // remove "ccdb:" prefix
+      if (deadPhiRegions.starts_with("ccdb:")) {
+        std::string ccdbPath = deadPhiRegions.substr(5); // remove "ccdb:" prefix
         if (ccdbManager == nullptr) {
           LOG(fatal) << "CCDB manager is null, cannot retrieve file " << ccdbPath;
           return;
         }
-        TGraph* g = ccdbManager->getForTimeStamp<TGraph>(ccdbPath, 1);
+        auto g = ccdbManager->getForTimeStamp<TGraph>(ccdbPath, 1);
         addedLayer->setDeadPhiRegions(g);
       } else {
         // Taking it as local file
@@ -196,7 +197,7 @@ void FastTracker::AddGenericDetector(o2::fastsim::GeometryEntry configMap, o2::c
           LOG(fatal) << "Cannot open dead phi regions file " << deadPhiRegions;
           return;
         }
-        TGraph* g = reinterpret_cast<TGraph*>(infile.Get(infile.GetListOfKeys()->At(0)->GetName()));
+        auto g = dynamic_cast<TGraph*>(infile.Get(infile.GetListOfKeys()->At(0)->GetName()));
         infile.Close();
         addedLayer->setDeadPhiRegions(g);
       }
@@ -206,111 +207,118 @@ void FastTracker::AddGenericDetector(o2::fastsim::GeometryEntry configMap, o2::c
   }
 }
 
-float FastTracker::Dist(float z, float r)
+float FastTracker::dist(float z, float r)
 {
   // porting of DetektorK::Dist
   // see here:
   // https://github.com/AliceO2Group/DelphesO2/blob/master/src/DetectorK/DetectorK.cxx#L743
   int index = 1;
   int nSteps = 301;
+  const int nSigma = 4;
   float dist = 0.0;
-  float dz0 = (4 * sigmaD - (-4) * sigmaD / (nSteps = 1));
+  float dz0 = (nSigma * sigmaD - (-nSigma) * sigmaD) / (nSteps - 1);
   float z0 = 0.0;
   for (int i = 0; i < nSteps; i++) {
-    if (i == nSteps - 1)
+    if (i == nSteps - 1) {
       index = 1;
+    }
     z0 = -4 * sigmaD + i * dz0;
     dist += index * (dz0 / 3.) * (1 / o2::math_utils::sqrt(o2::constants::math::TwoPI) / sigmaD) * std::exp(-z0 * z0 / 2. / sigmaD / sigmaD) * (1 / o2::math_utils::sqrt((z - z0) * (z - z0) + r * r));
-    if (index != 4)
-      index = 4;
-    else
+    if (index != nSigma) {
+      index = nSigma;
+    } else {
       index = 2;
+    }
   }
   return dist;
 }
 
-float FastTracker::OneEventHitDensity(float multiplicity, float radius)
+float FastTracker::oneEventHitDensity(float multiplicity, float radius)
 {
-  // porting of DetektorK::OneEventHitDensity
+  // porting of DetektorK::oneEventHitDensity
   // see here:
   // https://github.com/AliceO2Group/DelphesO2/blob/master/src/DetectorK/DetectorK.cxx#L694
   float den = multiplicity / (o2::constants::math::TwoPI * radius * radius);
-  float tg = o2::math_utils::tan(2. * o2::math_utils::atan(-avgRapidity));
+  float tg = o2::math_utils::tan(2. * o2::math_utils::atan(std::exp(-avgRapidity))); // theta = 2 atan(exp(-eta))
   den = den / o2::math_utils::sqrt(1 + 1 / (tg * tg));
   return den;
 }
 
-float FastTracker::IntegratedHitDensity(float multiplicity, float radius)
+float FastTracker::integratedHitDensity(float multiplicity, float radius)
 {
   // porting of DetektorK::IntegratedHitDensity
   // see here:
   // https://github.com/AliceO2Group/DelphesO2/blob/master/src/DetectorK/DetectorK.cxx#L712
-  float zdcHz = luminosity * 1.e24 * mCrossSectionMinB;
-  float den = zdcHz * integrationTime / 1000. * multiplicity * Dist(0., radius) / (o2::constants::math::TwoPI * radius);
-  if (den < OneEventHitDensity(multiplicity, radius))
-    den = OneEventHitDensity(multiplicity, radius);
+  float zdcHz = luminosity * 1.e-24 * mCrossSectionMinB; // cm^-2 s^-1 * barn (1 b = 1e-24 cm^2)
+  float den = zdcHz * integrationTime / 1000. * multiplicity * dist(0., radius) / (o2::constants::math::TwoPI * radius);
+  if (den < oneEventHitDensity(multiplicity, radius)) {
+    den = oneEventHitDensity(multiplicity, radius);
+  }
   return den;
 }
 
-float FastTracker::UpcHitDensity(float radius)
+float FastTracker::upcHitDensity(float radius)
 {
   // porting of DetektorK::UpcHitDensity
   // see here:
   // https://github.com/AliceO2Group/DelphesO2/blob/master/src/DetectorK/DetectorK.cxx#L727
-  float mUPCelectrons = 0;
-  mUPCelectrons = lhcUPCScale * 5456 / (radius * radius) / dNdEtaMinB;
-  if (mUPCelectrons < 0)
+  float mUPCelectrons = lhcUPCScale * 5456 / (radius * radius) / dNdEtaMinB;
+  if (mUPCelectrons < 0) {
     mUPCelectrons = 0.0;
-  mUPCelectrons *= IntegratedHitDensity(dNdEtaMinB, radius);
+  }
+  mUPCelectrons *= integratedHitDensity(dNdEtaMinB, radius);
   mUPCelectrons *= upcBackgroundMultiplier;
   return mUPCelectrons;
 }
 
-float FastTracker::HitDensity(float radius)
+float FastTracker::hitDensity(float radius)
 {
   // porting of DetektorK::HitDensity
   // see here:
   // https://github.com/AliceO2Group/DelphesO2/blob/master/src/DetectorK/DetectorK.cxx#L663
   float arealDensity = 0.;
   if (radius > maxRadiusSlowDet) {
-    arealDensity = OneEventHitDensity(dNdEtaCent, radius);
-    arealDensity += otherBackground * OneEventHitDensity(dNdEtaMinB, radius);
+    arealDensity = oneEventHitDensity(dNdEtaCent, radius);
+    arealDensity += otherBackground * oneEventHitDensity(dNdEtaMinB, radius);
   }
 
   // In the version of Delphes used to produce
   // Look-up tables, UpcHitDensity(radius) always returns 0,
   // hence it is left commented out for now
   if (radius < maxRadiusSlowDet) {
-    arealDensity = OneEventHitDensity(dNdEtaCent, radius);
-    arealDensity += otherBackground * OneEventHitDensity(dNdEtaMinB, radius) + IntegratedHitDensity(dNdEtaMinB, radius);
+    arealDensity = oneEventHitDensity(dNdEtaCent, radius) + integratedHitDensity(dNdEtaMinB, radius);
     // +UpcHitDensity(radius);
+    arealDensity += otherBackground * integratedHitDensity(dNdEtaMinB, radius);
   }
   return arealDensity;
 }
 
-float FastTracker::ProbGoodChiSqHit(float radius, float searchRadiusRPhi, float searchRadiusZ)
+float FastTracker::probGoodChiSqHit(float radius, float searchRadiusRPhi, float searchRadiusZ)
 {
   // porting of DetektorK::ProbGoodChiSqHit
   // see here:
   // https://github.com/AliceO2Group/DelphesO2/blob/master/src/DetectorK/DetectorK.cxx#L629
-  float sx, goodHit;
-  sx = o2::constants::math::TwoPI * searchRadiusRPhi * searchRadiusZ * HitDensity(radius);
-  goodHit = 1. / (1 + sx);
+  const float sx = o2::constants::math::TwoPI * searchRadiusRPhi * searchRadiusZ * hitDensity(radius);
+  const float goodHit = 1. / (1 + sx);
   return goodHit;
 }
 
 // function to provide a reconstructed track from a perfect input track
 // returns number of intercepts (generic for now)
-int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, const float nch, const float maxRadius)
+int FastTracker::fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, const float nch, const float maxRadius)
 {
   dNdEtaCent = nch; // set the number of charged particles per unit rapidity
   hits.clear();
   nIntercepts = 0;
   nSiliconPoints = 0;
   nGasPoints = 0;
-  std::array<float, 3> posIni; // provision for != PV
+  trackIU = -1.f;
+  trackOU = -1.f;
+  std::array<float, 3> posIni{}; // provision for != PV
   inputTrack.getXYZGlo(posIni);
   const float initialRadius = std::hypot(posIni[0], posIni[1]);
+  const float initialX = inputTrack.getX();         // local X of the input track, used for back-propagation
+  const float initialAlpha = inputTrack.getAlpha(); // frame of the input track
   const float kTrackingMargin = 0.1;
 
   int firstActiveLayer = -1; // first layer that is not inert
@@ -326,6 +334,7 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   }
   const int xrhosteps = 100;
   const bool applyAngularCorrection = true;
+  static constexpr float InterceptFailed = 999.f;
 
   // Delphes sets this to 20 instead of the number of layers,
   // but does not count all points in the tpc as layers which we do here
@@ -358,8 +367,10 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
 
     // check if layer is reached
     float targetX = 1e+3;
-    inputTrack.getXatLabR(layers[il].getRadius(), targetX, magneticField);
-    if (targetX > 999.f) {
+    // propagate outward: for a track starting at the vertex both crossings of the cylinder are at about the same
+    // distance and DirAuto may pick the one behind the vertex, i.e. propagate the track backwards
+    inputTrack.getXatLabR(layers[il].getRadius(), targetX, magneticField, o2::track::DirOutward);
+    if (targetX > InterceptFailed) {
       LOGF(debug, "Failed to find intercept for layer %d at radius %.2f cm", il, layers[il].getRadius());
       break; // failed to find intercept
     }
@@ -369,24 +380,32 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       ok = inputTrack.correctForMaterial(layers[il].getRadiationLength(), 0, applyAngularCorrection);
     }
     if (ok && mApplyElossCorrection && layers[il].getDensity() > 0) { // correct in small steps
-      for (int ise = xrhosteps; ise--;) {
+      for (int ise = xrhosteps; ise > 0; --ise) {
         ok = inputTrack.correctForMaterial(0, -layers[il].getDensity() / xrhosteps, applyAngularCorrection);
-        if (!ok)
+        if (!ok) {
           break;
+        }
       }
+    }
+    // as in DetectorK::SolveTrack: in the frame of an active layer the track must have |sin(phi)| < mMaxSnp,
+    // otherwise the layer is considered not reached (avoids grazing crossings)
+    if (ok && !layers[il].isInert()) {
+      std::array<float, 3> posLayer{};
+      inputTrack.getXYZGlo(posLayer);
+      o2::track::TrackParCov trackInLayerFrame(inputTrack);
+      ok = trackInLayerFrame.rotate(std::atan2(posLayer[1], posLayer[0])) && std::abs(trackInLayerFrame.getSnp()) < mMaxSnp;
     }
     LOGF(debug, "Propagation was %s up to layer %d", ok ? "successful" : "unsuccessful", il);
 
     // was there a problem on this layer?
     if (!ok && il > 0) { // may fail to reach target layer due to the eloss
-      float rad2 = inputTrack.getX() * inputTrack.getX() + inputTrack.getY() * inputTrack.getY();
-      float maxR = layers[il - 1].getRadius() + kTrackingMargin * 2;
-      float minRad = (fMinRadTrack > 0 && fMinRadTrack < maxR) ? fMinRadTrack : maxR;
+      const float rad2 = inputTrack.getX() * inputTrack.getX() + inputTrack.getY() * inputTrack.getY();
+      const float maxR = layers[il - 1].getRadius() + kTrackingMargin * 2;
+      const float minRad = (fMinRadTrack > 0 && fMinRadTrack < maxR) ? fMinRadTrack : maxR;
       if (rad2 - minRad * minRad < kTrackingMargin * kTrackingMargin) { // check previously reached layer
         return -5;                                                      // did not reach min requested layer
-      } else {
-        break;
       }
+      break;
     }
 
     if (std::abs(inputTrack.getZ()) > layers[il].getZ() && mApplyZacceptance) {
@@ -411,6 +430,9 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       firstLayerReached = il;
     }
     lastLayerReached = il;
+    if (layers[il].isTOF()) {
+      continue; // TOF layers are not used for tracking, but are kept in range for the innermost/outermost update
+    }
     nIntercepts++;
   }
 
@@ -419,32 +441,46 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   o2::track::TrackParCov inwardTrack(inputTrack);
 
   // Enlarge covariance matrix
-  std::array<float, o2::track::kNParams> trPars = {0.};
-  for (int ip = 0; ip < o2::track::kNParams; ip++) {
-    trPars[ip] = outputTrack.getParam(ip);
-  }
-  static constexpr float kLargeErr2Coord = 5 * 5;
-  static constexpr float kLargeErr2Dir = 0.7 * 0.7;
-  static constexpr float kLargeErr2PtI = 30.5 * 30.5;
-  std::array<float, o2::track::kCovMatSize> largeCov = {0.};
-  for (int ic = o2::track::kCovMatSize; ic--;) {
-    largeCov[ic] = 0.;
-  }
-  largeCov[o2::track::CovLabels::kSigY2] = largeCov[o2::track::CovLabels::kSigZ2] = kLargeErr2Coord;
-  largeCov[o2::track::CovLabels::kSigSnp2] = largeCov[o2::track::CovLabels::kSigTgl2] = kLargeErr2Dir;
-  largeCov[o2::track::CovLabels::kSigQ2Pt2] = kLargeErr2PtI * trPars[o2::track::ParLabels::kQ2Pt] * trPars[o2::track::ParLabels::kQ2Pt];
+  static constexpr float LargeErr2Coord = 5 * 5;
+  static constexpr float LargeErr2Dir = 0.7 * 0.7;
+  static constexpr float LargeErr2PtI = 30.5 * 30.5;
+  auto resetToLargeCovariance = [](o2::track::TrackParCov& trk) {
+    std::array<float, o2::track::kCovMatSize> largeCov{}; // zero-initialised
+    largeCov[o2::track::CovLabels::kSigY2] = largeCov[o2::track::CovLabels::kSigZ2] = LargeErr2Coord;
+    largeCov[o2::track::CovLabels::kSigSnp2] = largeCov[o2::track::CovLabels::kSigTgl2] = LargeErr2Dir;
+    largeCov[o2::track::CovLabels::kSigQ2Pt2] = LargeErr2PtI * trk.getQ2Pt() * trk.getQ2Pt();
+    trk.setCov(largeCov);
+    trk.checkCovariance();
+  };
+  resetToLargeCovariance(inwardTrack);
 
-  inwardTrack.setCov(largeCov);
-  inwardTrack.checkCovariance();
+  // as in DetectorK, radius and search radii are scaled by 100 in the good-hit probability: the scaling
+  // cancels in the probability, but it means that all layers are treated as fast detectors (r * 100 > maxRadiusSlowDet)
+  static constexpr float DelphesScale = 100.f;
+
+  // bookkeeping of the layer crossings of the inward pass, re-used by the second outward pass
+  struct LayerCrossing {
+    bool crossed = false;    // the layer was crossed in the inward pass
+    bool trackerHit = false; // a tracker measurement was added on this layer
+    bool tofHit = false;     // TOF layer crossed (probability computed, but no measurement)
+    float phi = 0.f;         // azimuth of the crossing point (frame of the layer)
+    float r = 0.f;           // radius of the crossing point
+    float z = 0.f;           // z of the crossing point
+    float sigY2Inw = 0.f;    // inward prediction before the update
+    float sigZ2Inw = 0.f;
+  };
+  std::vector<LayerCrossing> crossings(layers.size());
 
   // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
   // Inward pass to calculate covariances
+  // As in DetectorK::SolveTrack, the track is rotated to the frame of each layer (X axis normal to the layer)
   for (int il = lastLayerReached; il >= firstLayerReached; il--) {
 
     float targetX = 1e+3;
     inputTrack.getXatLabR(layers[il].getRadius(), targetX, magneticField);
-    if (targetX > 999)
+    if (targetX > InterceptFailed) {
       continue; // failed to find intercept
+    }
 
     if (!inputTrack.propagateTo(targetX, magneticField)) {
       continue; // failed to propagate
@@ -455,25 +491,34 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
     }
 
     // get perfect data point position
-    std::array<float, 3> spacePoint;
+    std::array<float, 3> spacePoint{};
     inputTrack.getXYZGlo(spacePoint);
     std::vector<float> thisHit = {spacePoint[0], spacePoint[1], spacePoint[2]};
+    const float phiHit = std::atan2(spacePoint[1], spacePoint[0]);
+    const float rHit = std::hypot(spacePoint[0], spacePoint[1]);
 
-    // towards adding cluster: move to track alpha
-    float alpha = inwardTrack.getAlpha();
-    float xyz1[3]{
-      std::cos(alpha) * spacePoint[0] + std::sin(alpha) * spacePoint[1],
-      -std::sin(alpha) * spacePoint[0] + std::cos(alpha) * spacePoint[1],
-      spacePoint[2]};
-
-    if (!inwardTrack.propagateTo(xyz1[0], magneticField)) {
+    // move to the frame of the layer at the crossing point, where the hit is at local (rHit, 0, z)
+    if (!inwardTrack.rotate(phiHit) || !inwardTrack.propagateTo(rHit, magneticField)) {
       continue;
     }
 
-    if (!layers[il].isInert()) { // only update covm for tracker hits
-      const o2::track::TrackParametrization<float>::dim2_t hitpoint = {
-        static_cast<float>(xyz1[1]),
-        static_cast<float>(xyz1[2])};
+    // dead phi regions produce no hit (as in the outward pass), but their material is still traversed
+    const bool inDeadRegion = layers[il].isInDeadPhiRegion(inputTrack.getPhi());
+    const bool isTrackerHit = !layers[il].isInert() && !layers[il].isTOF() && !inDeadRegion;
+
+    LayerCrossing& crossing = crossings[il];
+    crossing.crossed = true;
+    crossing.trackerHit = isTrackerHit;
+    crossing.tofHit = layers[il].isTOF() && !inDeadRegion;
+    crossing.phi = phiHit;
+    crossing.r = rHit;
+    crossing.z = spacePoint[2];
+    // save the inward prediction before the update (DetectorK: saveParInward)
+    crossing.sigY2Inw = inwardTrack.getSigmaY2();
+    crossing.sigZ2Inw = inwardTrack.getSigmaZ2();
+
+    if (isTrackerHit) { // only update covm for tracker hits
+      const o2::track::TrackParametrization<float>::dim2_t hitpoint = {0.f, spacePoint[2]};
       const o2::track::TrackParametrization<float>::dim3_t hitpointcov = {layers[il].getResolutionRPhi() * layers[il].getResolutionRPhi(), 0.f, layers[il].getResolutionZ() * layers[il].getResolutionZ()};
 
       inwardTrack.update(hitpoint, hitpointcov);
@@ -489,7 +534,7 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       }
     }
     if (mApplyElossCorrection && layers[il].getDensity() > 0) {
-      for (int ise = xrhosteps; ise--;) { // correct in small steps
+      for (int ise = xrhosteps; ise > 0; --ise) { // correct in small steps
         if (!inputTrack.correctForMaterial(0, layers[il].getDensity() / xrhosteps, applyAngularCorrection)) {
           return -7;
         }
@@ -497,6 +542,10 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
           return -7;
         }
       }
+    }
+
+    if (inDeadRegion) {
+      continue; // no hit in dead region, material already accounted for
     }
 
     if (layers[il].isSilicon()) {
@@ -507,41 +556,86 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
     }
 
     hits.push_back(thisHit);
-    if (!layers[il].isInert()) { // good hit probability calculation
-      float sigYCmb = o2::math_utils::sqrt(inwardTrack.getSigmaY2() + layers[il].getResolutionRPhi() * layers[il].getResolutionRPhi());
-      float sigZCmb = o2::math_utils::sqrt(inwardTrack.getSigmaZ2() + layers[il].getResolutionZ() * layers[il].getResolutionZ());
-      goodHitProbability[il] = ProbGoodChiSqHit(layers[il].getRadius() * 100, sigYCmb * 100, sigZCmb * 100);
-      goodHitProbability[0] *= goodHitProbability[il];
+    if (!layers[il].isInert()) {
+      trackIU = std::hypot(spacePoint[0], spacePoint[1]);
+      if (trackOU < 0.f) {
+        trackOU = trackIU;
+      }
     }
   }
 
-  // backpropagate to original radius
-  float finalX = 1e+3;
-  bool inPropStatus = inwardTrack.getXatLabR(initialRadius, finalX, magneticField);
-  if (finalX > 999) {
-    LOG(debug) << "Failed to find intercept for initial radius " << initialRadius << " cm, x = " << finalX << " and status " << inPropStatus << " and sn = " << inwardTrack.getSnp() << " r = " << inwardTrack.getY() * inwardTrack.getY();
-    return -3; // failed to find intercept
+  // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
+  // Second outward pass for the good hit probabilities (DetectorK "backward tracking"):
+  // the search window at each layer is the combination of the inward and outward predictions,
+  // both taken before the update with the hit on that layer
+  o2::track::TrackParCov outwardTrack(inwardTrack);
+  resetToLargeCovariance(outwardTrack);
+  for (int il = firstLayerReached; il <= lastLayerReached; il++) {
+    const LayerCrossing& crossing = crossings[il];
+    if (!crossing.crossed) {
+      continue;
+    }
+    if (!outwardTrack.rotate(crossing.phi) || !outwardTrack.propagateTo(crossing.r, magneticField)) {
+      LOGF(debug, "Second outward pass: failed to reach layer %d", il);
+      break; // the remaining layers keep goodHitProbability = -1 (not used)
+    }
+
+    if (crossing.trackerHit || crossing.tofHit) {
+      const float sigY2Out = outwardTrack.getSigmaY2();
+      const float sigZ2Out = outwardTrack.getSigmaZ2();
+      const float sigY2Cmb = crossing.sigY2Inw * sigY2Out / (crossing.sigY2Inw + sigY2Out);
+      const float sigZ2Cmb = crossing.sigZ2Inw * sigZ2Out / (crossing.sigZ2Inw + sigZ2Out);
+      const float sigYCmb = o2::math_utils::sqrt(sigY2Cmb + layers[il].getResolutionRPhi() * layers[il].getResolutionRPhi());
+      const float sigZCmb = o2::math_utils::sqrt(sigZ2Cmb + layers[il].getResolutionZ() * layers[il].getResolutionZ());
+      const float layerGoodHitProbability = probGoodChiSqHit(layers[il].getRadius() * DelphesScale, sigYCmb * DelphesScale, sigZCmb * DelphesScale);
+      if (il > 0) { // index 0 holds the accumulated product, do not overwrite it
+        goodHitProbability[il] = layerGoodHitProbability;
+      }
+      if (crossing.trackerHit) { // TOF layers are not part of the tracking efficiency
+        goodHitProbability[0] *= layerGoodHitProbability;
+      }
+    }
+
+    if (crossing.trackerHit) {
+      const o2::track::TrackParametrization<float>::dim2_t hitpoint = {0.f, crossing.z};
+      const o2::track::TrackParametrization<float>::dim3_t hitpointcov = {layers[il].getResolutionRPhi() * layers[il].getResolutionRPhi(), 0.f, layers[il].getResolutionZ() * layers[il].getResolutionZ()};
+      outwardTrack.update(hitpoint, hitpointcov);
+      outwardTrack.checkCovariance();
+    }
+
+    bool ok = true;
+    if (mApplyMSCorrection && layers[il].getRadiationLength() > 0) {
+      ok = outwardTrack.correctForMaterial(layers[il].getRadiationLength(), 0, applyAngularCorrection);
+    }
+    if (ok && mApplyElossCorrection && layers[il].getDensity() > 0) {
+      for (int ise = xrhosteps; ise > 0; --ise) { // correct in small steps, energy loss going outward
+        ok = outwardTrack.correctForMaterial(0, -layers[il].getDensity() / xrhosteps, applyAngularCorrection);
+        if (!ok) {
+          break;
+        }
+      }
+    }
+    if (!ok) {
+      LOGF(debug, "Second outward pass: material correction failed at layer %d", il);
+      break;
+    }
   }
 
-  if (!inwardTrack.propagateTo(finalX, magneticField)) {
+  // backpropagate to the original position: rotate back to the frame of the input track and
+  // propagate to its initial local X. Searching for an intercept at initialRadius fails when the
+  // refitted track's DCA exceeds it (e.g. initialRadius ~ 0 for tracks at the PV)
+  if (!inwardTrack.rotate(initialAlpha) || !inwardTrack.propagateTo(initialX, magneticField)) {
     return -4; // failed to propagate
   }
 
   // only attempt to continue if intercepts are at least four
-  if (nIntercepts < 4) {
+  static constexpr int MinIntercepts = 4;
+  if (nIntercepts < MinIntercepts) {
     return nIntercepts;
   }
 
-  // generate efficiency
-  float eff = 1.;
-  for (size_t i = 0; i < layers.size(); i++) {
-    float iGoodHit = goodHitProbability[i];
-    if (iGoodHit <= 0) {
-      continue;
-    }
-
-    eff *= iGoodHit;
-  }
+  // generate efficiency: product of the good-hit probabilities, accumulated in index 0
+  const float eff = goodHitProbability[0];
   if (mApplyEffCorrection) {
     if (gRandom->Uniform() > eff) {
       return -8;
@@ -556,41 +650,44 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   for (int ii = 0; ii < o2::track::kCovMatSize; ii++) {
     covMat[ii] = outputTrack.getCov()[ii];
   }
-  TMatrixDSym m(5);
-  double fcovm[5][5]; // double precision is needed for regularisation
 
-  for (int ii = 0, k = 0; ii < 5; ++ii) {
-    for (int j = 0; j < ii + 1; ++j, ++k) {
-      fcovm[ii][j] = covMat[k];
-      fcovm[j][ii] = covMat[k];
+  std::array<std::array<double, o2::track::kNParams>, o2::track::kNParams> fcovm{}; // double precision is needed for regularisation
+  TMatrixDSym m(o2::track::kNParams);
+  for (int ii = 0, k = 0; ii < o2::track::kNParams; ++ii) {
+    for (int jj = 0; jj < ii + 1; ++jj, ++k) {
+      fcovm[ii][jj] = covMat[k];
+      fcovm[jj][ii] = covMat[k];
     }
   }
 
   // evaluate ruben's conditional, regularise
-  const bool makePositiveDefinite = (covMatFactor > -1e-5); // apply fix
+  static constexpr float CovMatFactorThreshold = -1e-5;
+  const bool makePositiveDefinite = (covMatFactor > CovMatFactorThreshold); // apply fix
   bool rubenConditional = false;
-  for (int ii = 0; ii < 5; ii++) {
-    for (int jj = 0; jj < 5; jj++) {
-      if (ii == jj)
+  for (int ii = 0; ii < o2::track::kNParams; ii++) {
+    for (int jj = 0; jj < o2::track::kNParams; jj++) {
+      if (ii == jj) {
         continue; // don't evaluate diagonals
+      }
       if (fcovm[ii][jj] * fcovm[ii][jj] > std::abs(fcovm[ii][ii] * fcovm[jj][jj])) {
         rubenConditional = true;
         if (makePositiveDefinite) {
-          fcovm[ii][jj] = TMath::Sign(1, fcovm[ii][jj]) * covMatFactor * sqrt(std::abs(fcovm[ii][ii] * fcovm[jj][jj]));
+          fcovm[ii][jj] = TMath::Sign(1, fcovm[ii][jj]) * covMatFactor * std::sqrt(std::abs(fcovm[ii][ii] * fcovm[jj][jj]));
         }
       }
     }
   }
 
   // Should have a valid cov matrix now
-  m.SetMatrixArray(reinterpret_cast<double*>(fcovm));
+  m.SetMatrixArray(fcovm[0].data());
   TMatrixDSymEigen eigen(m);
   TMatrixD eigVec = eigen.GetEigenVectors();
-  TVectorD eigVal = eigen.GetEigenValues();
+  const TVectorD& eigVal = eigen.GetEigenValues();
   bool negEigVal = false;
-  for (int ii = 0; ii < 5; ii++) {
-    if (eigVal[ii] < 0.0f)
+  for (int ii = 0; ii < o2::track::kNParams; ii++) {
+    if (eigVal[ii] < 0.0f) {
       negEigVal = true;
+    }
   }
 
   if (negEigVal && rubenConditional && makePositiveDefinite) {
@@ -608,26 +705,28 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   covMatOK++;
 
   // transform parameter vector and smear
-  float params_[5];
-  for (int ii = 0; ii < 5; ++ii) {
+  std::array<float, o2::track::kNParams> transformedParams{};
+  for (int ii = 0; ii < o2::track::kNParams; ++ii) {
     float val = 0.;
-    for (int j = 0; j < 5; ++j)
-      val += eigVec[j][ii] * outputTrack.getParam(j);
+    for (int jj = 0; jj < o2::track::kNParams; ++jj) {
+      val += eigVec[jj][ii] * outputTrack.getParam(jj);
+    }
     // smear parameters according to eigenvalues
-    params_[ii] = gRandom->Gaus(val, sqrt(eigVal[ii]));
+    transformedParams[ii] = gRandom->Gaus(val, std::sqrt(eigVal[ii]));
   }
 
   // invert eigenvector matrix
   eigVec.Invert();
   // transform back params vector
-  for (int ii = 0; ii < 5; ++ii) {
+  for (int ii = 0; ii < o2::track::kNParams; ++ii) {
     float val = 0.;
-    for (int j = 0; j < 5; ++j)
-      val += eigVec[j][ii] * params_[j];
+    for (int jj = 0; jj < o2::track::kNParams; ++jj) {
+      val += eigVec[jj][ii] * transformedParams[jj];
+    }
     outputTrack.setParam(val, ii);
   }
   // should make a sanity check that par[2] sin(phi) is in [-1, 1]
-  if (fabs(outputTrack.getParam(2)) > 1.) {
+  if (std::abs(outputTrack.getParam(2)) > 1.) {
     LOG(info) << " --- smearTrack failed sin(phi) sanity check: " << outputTrack.getParam(2);
     return -2;
   }
@@ -636,7 +735,6 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
 }
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
 
-} /* namespace fastsim */
-} /* namespace o2 */
+} // namespace o2::fastsim
 
 ClassImp(o2::fastsim::FastTracker);

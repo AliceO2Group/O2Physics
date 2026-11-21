@@ -402,8 +402,9 @@ struct FlowQa {
     }
   }
 
-  template <char... chars>
-  void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfile(const GFW::CorrConfig& corrconf, const TName& tarName, const double& cent)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -459,7 +460,7 @@ struct FlowQa {
       }
       LOGF(info, "Loaded acceptance weights list from %s (%p)", cfgAcceptanceList.value.c_str(), (void*)mAcceptanceList);
 
-      mAcceptance = static_cast<GFWWeights*>(mAcceptanceList->FindObject(Form("%d", runNumber)));
+      mAcceptance = dynamic_cast<GFWWeights*>(mAcceptanceList->FindObject(Form("%d", runNumber)));
       if (mAcceptance == nullptr) {
         LOGF(fatal, "Could not find acceptance weights for run %d in acceptance list", runNumber);
       }
@@ -494,7 +495,7 @@ struct FlowQa {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision)
+  bool eventSelected(const TCollision& collision)
   {
     registry.fill(HIST("hEventCountSpecific"), 0.5);
     if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
@@ -546,7 +547,7 @@ struct FlowQa {
   }
 
   template <typename TCollision>
-  void eventCounterQA(TCollision collision)
+  void eventCounterQA(const TCollision& collision)
   {
     registry.fill(HIST("hEventCountTentative"), 0.5);
     // Regradless of the event selection, fill the event counter histograms
@@ -568,7 +569,7 @@ struct FlowQa {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     // track type selection
     bool passTrackTypeSelection = false;

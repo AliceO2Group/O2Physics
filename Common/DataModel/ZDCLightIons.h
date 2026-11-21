@@ -56,7 +56,8 @@ DECLARE_SOA_COLUMN(CentralityFt0c, centralityFt0c, float); //! Centrality
 DECLARE_SOA_COLUMN(CentralityFt0a, centralityFt0a, float); //! Centrality
 DECLARE_SOA_COLUMN(CentralityFt0m, centralityFt0m, float); //! Centrality
 DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);        //! Timestamp
-DECLARE_SOA_COLUMN(SelectionBits, selectionBits, uint8_t); //! Selection Flags
+DECLARE_SOA_COLUMN(SelectionBits, selectionBits, uint8_t); //! Selection flags x collisions
+DECLARE_SOA_COLUMN(BcMask, bcMask, uint8_t);               //! Selection flags x BC
 } // namespace zdclightions
 
 DECLARE_SOA_TABLE(ZDCLightIons, "AOD", "ZDCTABLELIGHTIONS",
@@ -92,7 +93,8 @@ DECLARE_SOA_TABLE(ZDCLightIons, "AOD", "ZDCTABLELIGHTIONS",
                   zdclightions::CentralityFt0a,
                   zdclightions::CentralityFt0m,
                   zdclightions::Timestamp,
-                  zdclightions::SelectionBits);
+                  zdclightions::SelectionBits,
+                  zdclightions::BcMask);
 } // namespace o2::aod
 
 #endif // COMMON_DATAMODEL_ZDCLIGHTIONS_H_

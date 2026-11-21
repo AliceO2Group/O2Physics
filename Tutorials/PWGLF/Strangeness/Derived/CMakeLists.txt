@@ -11,3 +11,4 @@
 
 add_subdirectory(Analysis)
 # add_subdirectory(DerivedDataProduction)
+add_subdirectory(AnalysisV0)

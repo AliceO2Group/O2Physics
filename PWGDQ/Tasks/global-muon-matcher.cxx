@@ -26,6 +26,7 @@
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/MathConstants.h>
+#include <CommonUtils/ConfigurableParam.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
@@ -226,7 +227,7 @@ struct GlobalMuonMatching {
   struct : ConfigurableGroup {
     Configurable<int> cfgMixingDepth{"cfgMixingDepth", -1, "Maximum number of mixed candidate groups per MCH track (-1: no limit)"};
     Configurable<int64_t> cfgMinDeltaBc{"cfgMinDeltaBc", 3564, "Minimum DeltaBc between mixed collisions"};
-    Configurable<float> cfgMaxDeltaPhi{"cfgMaxDeltaPhi", static_cast<float>(o2::constants::math::PI / 10), "Maximum DelptaPhi between mixed MCH tracks (rad)"};
+    Configurable<float> cfgMaxDeltaPhi{"cfgMaxDeltaPhi", o2::constants::math::PI / 10.f, "Maximum DelptaPhi between mixed MCH tracks (rad)"};
     Configurable<float> cfgMaxDeltaR{"cfgMaxDeltaR", 10.f, "Maximum DeltaR between mixed MCH tracks"};
     Configurable<float> cfgMaxDeltaAttempts{"cfgMaxDeltaAttempts", 0.1f, "Maximum relative difference in match attempts"};
     Configurable<float> cfgMaxDeltaZ{"cfgMaxDeltaZ", 1.f, "Maximum deltaZ between mixed collisions"};

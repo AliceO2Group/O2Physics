@@ -16,6 +16,7 @@
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_
 
+#include "GFW.h"
 #include "GFWConfig.h"
 
 #include <Framework/HistogramSpec.h>
@@ -28,8 +29,10 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <array>
 #include <complex>
 #include <cstdint>
+#include <string>
 #include <variant>
 #include <vector>
 
@@ -41,22 +44,61 @@ enum EventWeight {
 };
 };
 
+namespace o2::analysis::genericframework::flowptcontainer
+{
+struct PtProfileConfig {
+  GFW::CorrConfig config;
+  std::vector<std::vector<bool>> isPt;
+  std::vector<std::vector<int>> factors;
+  std::uint64_t activeFactors{}; // Flow, when present, is bit 0; pT terms follow in expression order.
+  bool usesFullTopology{};
+};
+
+struct PtCorrConfig {
+  std::string head;
+  std::uint64_t allFactors{};
+  bool hasFlow{};
+  std::vector<PtProfileConfig> profiles;
+  std::vector<std::string> meanProfiles;
+};
+
+struct PtRegionMoments {
+  int maxOrder{};
+  std::vector<double> values;
+};
+
+struct PtMomentGroup {
+  std::string region;
+  int order{};
+  std::string meanProfile;
+  ClassDefNV(PtMomentGroup, 1);
+};
+
+struct PtMomentConfig {
+  std::string head;
+  std::vector<PtMomentGroup> groups;
+  ClassDefNV(PtMomentConfig, 1);
+};
+} // namespace o2::analysis::genericframework::flowptcontainer
+
 class FlowPtContainer : public TNamed
 {
  public:
   using FillType = std::variant<std::complex<double>, double>;
   FlowPtContainer();
   explicit FlowPtContainer(const char* name);
-  ~FlowPtContainer();
+  ~FlowPtContainer() override;
   FlowPtContainer(const char* name, const char* title);
-  void initialise(const o2::framework::AxisSpec axis, const int& maxOrder, const o2::analysis::genericframework::GFWCorrConfigs& configs, const int& nsub = 10);
+  void initialise(const o2::framework::AxisSpec& axis, const o2::analysis::genericframework::GFWRegions& regions, const o2::analysis::genericframework::GFWCorrConfigs& configs, const int& nsub = 10);
+  void initialise(const o2::framework::AxisSpec& axis, const int& maxOrder, const o2::analysis::genericframework::GFWCorrConfigs& configs, const int& nsub = 10);
   void initialise(int nbinsx, double* xbins, const int& maxOrder, const o2::analysis::genericframework::GFWCorrConfigs& configs, const int& nsub = 10);
   void initialise(int nbinsx, double xlow, double xhigh, const int& maxOrder, const o2::analysis::genericframework::GFWCorrConfigs& configs, const int& nsub = 10);
   // initial pt-pt correlations with two subevents
-  void initialiseSubevent(const o2::framework::AxisSpec axis, const int& maxOrder, const int& nsubev = 2, const int& nsub = 10);
+  void initialiseSubevent(const o2::framework::AxisSpec& axis, const int& maxOrder, const int& nsubev = 2, const int& nsub = 10);
   void initialiseSubevent(int nbinsx, double* xbins, const int& maxOrder, const int& nsubev = 2, const int& nsub = 10);
   void initialiseSubevent(int nbinsx, double xlow, double xhigh, const int& maxOrder, const int& nsubev = 2, const int& nsub = 10);
   void fill(const double& w, const double& pt);
+  void fill(const double& eta, const double& w, const double& pt, int mask);
   void fillSub(const double& w, const double& pt, int subIndex);
   void fillSub1(const double& w, const double& pt) { fillSub(w, pt, 0); }
   void fillSub2(const double& w, const double& pt) { fillSub(w, pt, nSubevents - 1); }
@@ -66,32 +108,39 @@ class FlowPtContainer : public TNamed
   void calculateCorrelations();
   void calculateSubeventCorrelations();
   void calculateCMTerms();
-  void fillPtProfiles(const double& lMult, const double& rn);
-  void fillSubeventPtProfiles(const double& lMult, const double& rn);
-  void fillVnPtCorrProfiles(const double& lMult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
+  void fillPtProfiles(const double& centmult, const double& rn);
+  void fillPtProfiles(GFW& gfw, const double& centmult, const double& rn);
+  // Book and fill a separate pT observable with a weight calculated by the task.
+  // The task can supply a separate event weight for the same observable.
+  bool addPtProfile(const char* name, int observableOrder);
+  bool fillPtProfile(const char* name, int observableOrder, double mult, double eventWeight, double rn);
+  void fillSubeventPtProfiles(const double& centmult, const double& rn);
+  void fillVnPtCorrProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
   void fillVnDeltaPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
-  void fillVnPtCorrProfiles(const int configIndex, const double& lMult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
+  void fillVnPtCorrProfiles(const int configIndex, const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
   void fillVnDeltaPtProfiles(const int configIndex, const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
   void fillVnDeltaPtStdProfiles(const double& centmult, const double& rn);
   void fillVnPtCorrStdProfiles(const double& centmult, const double& rn);
   void fillVnPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
   {
-    if (fUseCentralMoments)
+    if (fUseCentralMoments) {
       fillVnDeltaPtProfiles(centmult, flowval, flowtuples, rn, mask);
-    else
+    } else {
       fillVnPtCorrProfiles(centmult, flowval, flowtuples, rn, mask);
+    }
   }
   void fillVnPtProfiles(const int configIndex, const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
   {
-    if (fUseCentralMoments)
+    if (fUseCentralMoments) {
       fillVnDeltaPtProfiles(configIndex, centmult, flowval, flowtuples, rn, mask);
-    else
+    } else {
       fillVnPtCorrProfiles(configIndex, centmult, flowval, flowtuples, rn, mask);
+    }
   }
   void skipVnPtProfiles(uint8_t mask)
   {
     for (auto m(1); m <= mpar; ++m) {
-      if (!(mask & (1 << (m - 1)))) {
+      if ((mask & (1 << (m - 1))) == 0) {
         continue;
       }
       if (fUseCentralMoments) {
@@ -102,17 +151,17 @@ class FlowPtContainer : public TNamed
         ++fillCounter;
       }
     }
-    return;
   }
   void fillVnPtStdProfiles(const double& centmult, const double& rn)
   {
-    if (fUseCentralMoments)
+    if (fUseCentralMoments) {
       fillVnDeltaPtStdProfiles(centmult, rn);
-    else
+    } else {
       fillVnPtCorrStdProfiles(centmult, rn);
+    }
   }
-  void fillCMProfiles(const double& lMult, const double& rn);
-  void fillCMSubeventProfiles(const double& lMult, const double& rn);
+  void fillCMProfiles(const double& centmult, const double& rn);
+  void fillCMSubeventProfiles(const double& centmult, const double& rn);
   TList* getCorrList() { return fCorrList; }
   TList* getCMTermList() { return fCMTermList; }
   TList* getCovList() { return fCovList; }
@@ -126,6 +175,9 @@ class FlowPtContainer : public TNamed
   TH1* getCentralMomentHist(int ind, int m);
   TH1* getCumulantHist(int ind, int m);
   TH1* getCorrHist(int ind, int m);
+  // Postprocess a pure-pT configuration by head. ind = -1 selects the main profile.
+  TH1* getPtCentralMomentHist(const char* head, int ind = -1);
+  TH1* getPtCumulantHist(const char* head, int ind = -1);
   int getMpar() { return mpar; }
   Long64_t Merge(TCollection* collist);
   double orderedAddition(std::vector<double> vec);
@@ -150,6 +202,7 @@ class FlowPtContainer : public TNamed
     arr.resize(3 * 3 * 5 * 5, {0.0, 0.0});
     warr.clear();
     warr.resize(3 * 3 * 5 * 5, 0.0);
+    clearPtRegionMoments();
   };
 
   TList* fCMTermList;
@@ -222,10 +275,20 @@ class FlowPtContainer : public TNamed
 
  private:
   static const int centralMomentMaxOrder = 4;
-  std::vector<std::vector<int>> subevents;
+  o2::analysis::genericframework::GFWRegions fPtRegions;                                          //!
+  std::vector<o2::analysis::genericframework::flowptcontainer::PtCorrConfig> fPtCorrConfigs;      //!
+  std::vector<o2::analysis::genericframework::flowptcontainer::PtRegionMoments> fPtRegionMoments; //!
+  std::vector<o2::analysis::genericframework::flowptcontainer::PtMomentConfig> fPtMomentConfigs;
+  TList* fPtCentralMomentList;             //!
+  TList* fPtCumulantList;                  //!
+  std::vector<std::vector<int>> subevents; //!
+  void clearPtPostprocessLists();
+  void clearPtRegionMoments();
+  [[nodiscard]] double getPtMoment(int region, int weightPower, int ptPower) const;
+  double recursivePtCorrelation(int poi, int ref, int overlap, std::vector<int>& weightPowers, std::vector<int>& ptPowers) const;
   void getSubevents(int k, int n, std::vector<int>& current, std::vector<std::vector<int>>& subevents);
-  static constexpr float FactorialArray[9] = {1., 1., 2., 6., 24., 120., 720., 5040., 40320.};
-  static constexpr int SignArray[9] = {1, -1, 1, -1, 1, -1, 1, -1, 1};
-  ClassDef(FlowPtContainer, 2);
+  static constexpr std::array<float, 9> FactorialArray = {1., 1., 2., 6., 24., 120., 720., 5040., 40320.};
+  static constexpr std::array<int, 9> SignArray = {1, -1, 1, -1, 1, -1, 1, -1, 1};
+  ClassDefOverride(FlowPtContainer, 3);
 };
 #endif // PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_

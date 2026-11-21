@@ -192,13 +192,13 @@ struct HfTaskDs {
   template <typename CandDs>
   using MemberFunctionPointer = bool (HfTaskDs::*)(const CandDs&);
 
-  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs>;
-  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentFT0Ms>;
+  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::FT0Mults, aod::CentFT0Cs>;
+  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::FT0Mults, aod::CentFT0Ms>;
   using CollisionsWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentNTPVs>;
 
-  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
-  using CollisionsMcWithFT0C = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs>;
-  using CollisionsMcWithFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::CentFT0Ms>;
+  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults>;
+  using CollisionsMcWithFT0C = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::FT0Mults, aod::CentFT0Cs>;
+  using CollisionsMcWithFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::FT0Mults, aod::CentFT0Ms>;
   using CollisionsMcWithNTracksPV = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::CentNTPVs>;
 
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
@@ -1122,7 +1122,7 @@ struct HfTaskDs {
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithCentNTracksPV, "Process data w/o ML information on Ds, with information on centrality from NTracksPV", false);
 
-  void processData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                    CandDsData const& candsDs,
                    aod::BCs const&,
                    aod::Tracks const&)
@@ -1158,7 +1158,7 @@ struct HfTaskDs {
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCentNTracksPV, "Process data with ML information on Ds, with information on centrality", false);
 
-  void processDataWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processDataWithMl(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                          CandDsDataWithMl const& candsDs,
                          aod::BCs const&,
                          aod::Tracks const&)

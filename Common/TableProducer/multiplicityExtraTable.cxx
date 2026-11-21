@@ -44,7 +44,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using BCPattern = std::bitset<o2::constants::lhc::LHCMaxBunches>;
-const int nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 
 struct MultiplicityExtraTable {
   Produces<aod::MultBCs> multBC;
@@ -62,6 +61,7 @@ struct MultiplicityExtraTable {
   Configurable<float> bcDownscaleFactor{"bcDownscaleFactor", 2, "Downscale factor for BC table (0: save nothing, 1: save all)"};
   Configurable<float> minFT0CforBCTable{"minFT0CforBCTable", 25.0f, "Minimum FT0C amplitude to fill BC table to reduce data"};
   Configurable<bool> saveOnlyBCsWithCollisions{"saveOnlyBCsWithCollisions", true, "save only BCs with collisions in them"};
+  Configurable<bool> requestMinSignalForFT0C{"requestMinSignalForFT0C", true, "save only BCs with minimum FT0C signal"};
 
   Configurable<float> bcTableFloatPrecision{"bcTableFloatPrecision", 0.1, "float precision in bc table for data reduction"};
 
@@ -126,14 +126,14 @@ struct MultiplicityExtraTable {
       float multFT0C = 0.f;
       if (bc.has_ft0()) {
         auto ft0 = bc.ft0();
-        for (const auto amplitude : ft0.amplitudeC()) {
+        for (const auto amplitude : ft0.amplitudeC()) { // o2-linter: disable=const-ref-in-for-loop (cheap float copy)
           multFT0C += amplitude;
         }
       } else {
         multFT0C = -999.0f;
       }
 
-      if (multFT0C < minFT0CforBCTable) {
+      if (requestMinSignalForFT0C && multFT0C < minFT0CforBCTable) {
         continue; // skip this event
       }
 
@@ -166,6 +166,7 @@ struct MultiplicityExtraTable {
       float multFDDA = 0.f;
       float multFDDC = 0.f;
       float multFT0AOuter = 0.f;
+      float multFT0COuter = 0.f;
       float multFV0AOuter = 0.f;
 
       // ZDC amplitudes
@@ -196,7 +197,7 @@ struct MultiplicityExtraTable {
 
       // initialize - from Arvind
       newRunNumber = bc.runNumber();
-      int localBC = bc.globalBC() % nBCsPerOrbit;
+      int localBC = bc.globalBC() % o2::constants::lhc::LHCMaxBunches;
 
       if (newRunNumber != oldRunNumber) {
         auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdbApi, newRunNumber);
@@ -224,8 +225,12 @@ struct MultiplicityExtraTable {
             multFT0AOuter += ft0.amplitudeA()[ii];
           }
         }
-        for (const auto amplitude : ft0.amplitudeC()) {
-          multFT0C += amplitude;
+        for (size_t ii = 0; ii < ft0.amplitudeC().size(); ++ii) {
+          multFT0C += ft0.amplitudeC()[ii];
+          static constexpr int MaxChannelIdInnerRingFT0C = 48;
+          if (ft0.channelC()[ii] > MaxChannelIdInnerRingFT0C) {
+            multFT0COuter += ft0.amplitudeC()[ii];
+          }
         }
         posZFT0 = ft0.posZ();
         posZFT0valid = ft0.isValidTime();
@@ -261,10 +266,10 @@ struct MultiplicityExtraTable {
         std::bitset<8> fFDDTriggers = fdd.triggerMask();
         multFDDTriggerBits = static_cast<uint8_t>(fFDDTriggers.to_ulong());
 
-        for (const auto amplitude : fdd.chargeA()) {
+        for (const auto amplitude : fdd.chargeA()) { // o2-linter: disable=const-ref-in-for-loop (cheap float copy)
           multFDDA += amplitude;
         }
-        for (const auto amplitude : fdd.chargeC()) {
+        for (const auto amplitude : fdd.chargeC()) { // o2-linter: disable=const-ref-in-for-loop (cheap float copy)
           multFDDC += amplitude;
         }
 
@@ -313,7 +318,8 @@ struct MultiplicityExtraTable {
         tru(multZPA),
         tru(multZPC),
         tru(multFV0AOuter),
-        tru(multFT0AOuter));
+        tru(multFT0AOuter),
+        tru(multFT0COuter));
 
       multBcSel(
         bc.selection_raw(),

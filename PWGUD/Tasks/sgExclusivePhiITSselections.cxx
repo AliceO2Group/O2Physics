@@ -168,7 +168,7 @@ struct sgExclusivePhiITSselections {
       std::vector<TLorentzVector> allTracksAreKaons;
       std::vector<TLorentzVector> allTracksAreKaonsBandPID;
       std::vector<TLorentzVector> allTracksAreITSonlyAndFourITSclusters;
-      for (auto t : tracks) {
+      for (const auto& t : tracks) {
         registry.fill(HIST("hSelectionCounter2"), 0);
         if (!t.isPVContributor()) {
           continue;
@@ -267,7 +267,7 @@ struct sgExclusivePhiITSselections {
       // in the case that there are ONLY 2 PV
       if (allTracksAreKaons.size() == 2) {
         registry.fill(HIST("hSelectionCounter2"), 7);
-        for (auto kaon : allTracksAreKaons) {
+        for (const auto& kaon : allTracksAreKaons) {
           phiWithoutPID += kaon;
         }
         registry.fill(HIST("hTracksKaons"), allTracksAreKaons.size());
@@ -314,7 +314,7 @@ struct sgExclusivePhiITSselections {
       if (allTracksAreKaonsBandPID.size() == 2) {
         registry.fill(HIST("hTracksKaons"), allTracksAreKaonsBandPID.size() + 10);
         TLorentzVector reallyPhi;
-        for (auto kaon : allTracksAreKaonsBandPID) {
+        for (const auto& kaon : allTracksAreKaonsBandPID) {
           reallyPhi += kaon;
         }
         registry.fill(HIST("KaonBandPHI/hPtPhiIdentifiedKaons"), reallyPhi.Pt());
