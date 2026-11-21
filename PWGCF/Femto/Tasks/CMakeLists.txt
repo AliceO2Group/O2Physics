@@ -129,6 +129,11 @@ o2physics_add_dpl_workflow(femto-triplet-track-track-cascade
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femto-triplet-track-track-sigma0
+          SOURCES femtoTripletTrackTrackSigma0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femto-triplet-mc-particle-mc-particle-mc-particle
           SOURCES femtoTripletMcParticleMcParticleMcParticle.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore

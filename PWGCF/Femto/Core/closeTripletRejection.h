@@ -30,12 +30,14 @@ namespace o2::analysis::femto::closetripletrejection
 constexpr const char PrefixCtrTrackTrackTrack[] = "CtrTrackTrackTrack";
 constexpr const char PrefixCtrTrackTrackV0[] = "CtrTrackTrackV0";
 constexpr const char PrefixCtrTrackTrackCascade[] = "CtrTrackTrackCascade";
+constexpr const char PrefixCtrTrackTrackSigma0[] = "CtrTrackTrackSigma0";
 constexpr const char PrefixCtrMcParticleMcParticleMcParticle[] = "CtrMcParticleMcParticleMcParticle";
 
 // Q3 (not kstar) is the natural kinematic variable for triplets, so it is the default here
 using ConfCtrTrackTrackTrack = closepairrejection::ConfCpr<PrefixCtrTrackTrackTrack, true, modes::KinematicVariable::kQ3>;
 using ConfCtrTrackTrackV0 = closepairrejection::ConfCpr<PrefixCtrTrackTrackV0, true, modes::KinematicVariable::kQ3>;
 using ConfCtrTrackTrackCascade = closepairrejection::ConfCpr<PrefixCtrTrackTrackCascade, true, modes::KinematicVariable::kQ3>;
+using ConfCtrTrackTrackSigma0 = closepairrejection::ConfCpr<PrefixCtrTrackTrackSigma0>;
 // generated particles, no cut by default (close triplet rejection corrects a detector effect)
 using ConfCtrMcParticleMcParticleMcParticle = closepairrejection::ConfCpr<PrefixCtrMcParticleMcParticleMcParticle, false, modes::KinematicVariable::kQ3>;
 
@@ -73,6 +75,11 @@ constexpr char PrefixTrack1CascadeBachelorSe[] = "CPR_Track1CascadeBachelor/SE/"
 constexpr char PrefixTrack2CascadeBachelorSe[] = "CPR_Track2CascadeBachelor/SE/";
 constexpr char PrefixTrack1CascadeBachelorMe[] = "CPR_Track1CascadeBachelor/ME/";
 constexpr char PrefixTrack2CascadeBachelorMe[] = "CPR_Track2CascadeBachelor/ME/";
+
+constexpr char PrefixTrack1Sigma0Se[] = "CPR_Track1Sigma0/SE/";
+constexpr char PrefixTrack2Sigma0Se[] = "CPR_Track2Sigma0/SE/";
+constexpr char PrefixTrack1Sigma0Me[] = "CPR_Track1Sigma0/ME/";
+constexpr char PrefixTrack2Sigma0Me[] = "CPR_Track2Sigma0/ME/";
 
 template <auto& prefixTrack1Track2,
           auto& prefixTrack2Track3,
@@ -215,6 +222,49 @@ class CloseTripletRejectionTrackTrackCascade
   closepairrejection::ClosePairRejectionTrackTrack<prefixTrack1Track2> mCtrTrack12;
   closepairrejection::ClosePairRejectionTrackCascade<prefixTrack1Bachelor, prefixTrack1V0Daughter> mCtrTrack1Cascade;
   closepairrejection::ClosePairRejectionTrackCascade<prefixTrack2Bachelor, prefixTrack2V0Daughter> mCtrTrack2Cascade;
+};
+
+template <auto& prefixTrack1Track2, auto& prefixTrack1Sigma0, auto& prefixTrack2Sigma0>
+class CloseTripletRejectionTrackTrackSigma0
+{
+ public:
+  CloseTripletRejectionTrackTrackSigma0() = default;
+  ~CloseTripletRejectionTrackTrackSigma0() = default;
+
+  template <typename T1>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
+            T1 const& confCpr,
+            int absChargeTrack1,
+            int absChargeTrack2)
+  {
+    mCtrTrack12.init(registry, specs, confCpr, absChargeTrack1, absChargeTrack2);
+    mCtrTrack1Sigma0.init(registry, specs, confCpr, absChargeTrack1);
+    mCtrTrack2Sigma0.init(registry, specs, confCpr, absChargeTrack2);
+  }
+
+  void setMagField(float magField)
+  {
+    mCtrTrack12.setMagField(magField);
+    mCtrTrack1Sigma0.setMagField(magField);
+    mCtrTrack2Sigma0.setMagField(magField);
+  }
+
+  // checks track1-track2, track1-v0 and track2-v0 (from sigma0); fills the deta-dphi/kinematic
+  // histograms of each pair internally and returns whether the triplet is rejected.
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  [[nodiscard]] bool isCloseTriplet(T1 const& track1, T2 const& track2, T3 const& sigma0, T4 const& trackTable, T5 const& tripletHistManager)
+  {
+    bool isClose12 = mCtrTrack12.isClosePair(track1, track2, trackTable, tripletHistManager);
+    bool isClose1Sigma0 = mCtrTrack1Sigma0.isClosePair(track1, sigma0, trackTable, tripletHistManager);
+    bool isClose2Sigma0 = mCtrTrack2Sigma0.isClosePair(track2, sigma0, trackTable, tripletHistManager);
+    return isClose12 || isClose1Sigma0 || isClose2Sigma0;
+  }
+
+ private:
+  closepairrejection::ClosePairRejectionTrackTrack<prefixTrack1Track2> mCtrTrack12;
+  closepairrejection::ClosePairRejectionTrackSigma0<prefixTrack1Sigma0> mCtrTrack1Sigma0;
+  closepairrejection::ClosePairRejectionTrackSigma0<prefixTrack2Sigma0> mCtrTrack2Sigma0;
 };
 
 // close triplet rejection for triplets of generated particles; checks all three constituent pairs

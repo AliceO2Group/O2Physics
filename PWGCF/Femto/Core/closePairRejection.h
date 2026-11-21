@@ -750,6 +750,44 @@ class ClosePairRejectionTrackKink
   CloseTrackRejection<prefix> mCtr;
 };
 
+// photon legs are not in the Track table so Sigma0 pairs only need to cross-check aganist dau lambda
+template <auto& prefixV0Daughter>
+class ClosePairRejectionTrackSigma0
+{
+ public:
+  template <typename T1>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specsV0Daughter,
+            T1 const& confCprV0Daughter,
+            int absChargeTrack)
+  {
+    mCtrV0Daughter.init(registry, specsV0Daughter, confCprV0Daughter, absChargeTrack, 1);
+  }
+
+  void setMagField(float magField)
+  {
+    mCtrV0Daughter.setMagField(magField);
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  [[nodiscard]] bool isClosePair(T1 const& track, T2 const& sigma0, T3 const& trackTable, T4 const& pairHistManager)
+  {
+    bool isCloseV0Daughter = false;
+    if (track.sign() > 0) {
+      auto posDau = trackTable.rawIteratorAt(sigma0.posDauId() - trackTable.offset());
+      isCloseV0Daughter = mCtrV0Daughter.isClosePair(track, posDau, pairHistManager);
+    } else {
+      auto negDau = trackTable.rawIteratorAt(sigma0.negDauId() - trackTable.offset());
+      isCloseV0Daughter = mCtrV0Daughter.isClosePair(track, negDau, pairHistManager);
+    }
+
+    return isCloseV0Daughter;
+  }
+
+ private:
+  CloseTrackRejection<prefixV0Daughter> mCtrV0Daughter;
+};
+
 // PCM photon daughters are, for now, not indexed into the track table (see photonBuilder.h):
 // they are TPC-only tracks, so they cannot be confused for a global track the way two V0
 // daughters or a track and a V0 daughter can -- there is no detector-overlap effect to correct
