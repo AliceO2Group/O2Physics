@@ -81,6 +81,7 @@ struct HfTaskDplus {
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
+  Configurable<bool> storeRecRapidity{"storeRecRapidity", false, "Flag to store rec. rapidity information in MC THnSparse"};
   Configurable<bool> storeCentrality{"storeCentrality", false, "Flag to store centrality information"};
   Configurable<bool> storeOccupancy{"storeOccupancy", false, "Flag to store occupancy information"};
   Configurable<bool> storeIR{"storeIR", false, "Flag to store interaction rate information"};
@@ -260,6 +261,10 @@ struct HfTaskDplus {
         axes.insert(axes.end(), {thnAxisMlScore0, thnAxisMlScore1, thnAxisMlScore2});
         axesFD.insert(axesFD.end(), {thnAxisMlScore0, thnAxisMlScore1, thnAxisMlScore2});
       }
+      if (storeRecRapidity) {
+        axes.push_back(thnAxisY);
+        axesFD.push_back(thnAxisY);
+      }
       if (storeCentrality) {
         axes.push_back(thnAxisCent);
         axesFD.push_back(thnAxisCent);
@@ -367,6 +372,8 @@ struct HfTaskDplus {
             registry.fill(HIST("hSparseMassPrompt"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
           } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
             registry.fill(HIST("hSparseMassPrompt"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors);
+          } else if (!storeCentrality && !storeOccupancy && storeRecRapidity) {
+            registry.fill(HIST("hSparseMassPrompt"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], HfHelper::yDplus(candidate));
           } else {
             registry.fill(HIST("hSparseMassPrompt"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
           }
@@ -381,6 +388,8 @@ struct HfTaskDplus {
             registry.fill(HIST("hSparseMassFD"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy, ptbhad, flagBHad);
           } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
             registry.fill(HIST("hSparseMassFD"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors, ptbhad, flagBHad);
+          } else if (!storeCentrality && !storeOccupancy && storeRecRapidity) {
+            registry.fill(HIST("hSparseMassFD"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors, ptbhad, flagBHad, HfHelper::yDplus(candidate));
           } else {
             registry.fill(HIST("hSparseMassFD"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], ptbhad, flagBHad);
           }
@@ -395,6 +404,8 @@ struct HfTaskDplus {
               registry.fill(HIST("hSparseMassBkg"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
             } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
               registry.fill(HIST("hSparseMassBkg"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors);
+            } else if (!storeCentrality && !storeOccupancy && storeRecRapidity) {
+              registry.fill(HIST("hSparseMassBkg"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], HfHelper::yDplus(candidate));
             } else {
               registry.fill(HIST("hSparseMassBkg"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
             }
@@ -409,6 +420,8 @@ struct HfTaskDplus {
           registry.fill(HIST("hSparseMassNotMatched"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
         } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
           registry.fill(HIST("hSparseMassNotMatched"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors);
+        } else if (!storeCentrality && !storeOccupancy && storeRecRapidity) {
+          registry.fill(HIST("hSparseMassNotMatched"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], HfHelper::yDplus(candidate));
         } else {
           registry.fill(HIST("hSparseMassNotMatched"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
         }
