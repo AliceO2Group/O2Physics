@@ -212,17 +212,17 @@ struct AnalysisEnergyCorrelator {
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigEventOptions.fConfigEventCuts.value;
     if (eventCutStr != "") {
-      AnalysisCut* cut = dqcuts::GetAnalysisCut(eventCutStr.Data());
+      AnalysisCut* cut = dqcuts::getAnalysisCut(eventCutStr.Data());
       if (cut != nullptr) {
-        fEventCut->AddCut(cut);
+        fEventCut->addCut(cut);
       }
     }
     // Additional cuts via JSON
     TString eventCutJSONStr = fConfigEventOptions.fConfigEventCutsJSON.value;
     if (eventCutJSONStr != "") {
-      std::vector<AnalysisCut*> jsonCuts = dqcuts::GetCutsFromJSON(eventCutJSONStr.Data());
+      std::vector<AnalysisCut*> jsonCuts = dqcuts::getCutsFromJSON(eventCutJSONStr.Data());
       for (auto& cutIt : jsonCuts) {
-        fEventCut->AddCut(cutIt);
+        fEventCut->addCut(cutIt);
       }
     }
 
@@ -231,14 +231,14 @@ struct AnalysisEnergyCorrelator {
     if (!trackCutStr.IsNull()) {
       std::unique_ptr<TObjArray> objArrayTrack(trackCutStr.Tokenize(","));
       for (int icut = 0; icut < objArrayTrack->GetEntries(); ++icut) {
-        fTrackCuts.push_back(dqcuts::GetCompositeCut(objArrayTrack->At(icut)->GetName()));
+        fTrackCuts.push_back(dqcuts::getCompositeCut(objArrayTrack->At(icut)->GetName()));
         fTrackCutNames.push_back(objArrayTrack->At(icut)->GetName());
       }
     }
 
     TString trackCutsJSON = fConfigTrackOptions.fConfigTrackCutsJSON.value;
     if (trackCutsJSON != "") {
-      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(trackCutsJSON.Data());
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::getCutsFromJSON(trackCutsJSON.Data());
       for (auto& t : addTrackCuts) {
         fTrackCuts.push_back(t);
         fTrackCutNames.push_back(t->GetName());
@@ -305,13 +305,13 @@ struct AnalysisEnergyCorrelator {
       std::unique_ptr<TObjArray> objArrayHadron(hadronCutStr.Tokenize(","));
       for (int icut = 0; icut < objArrayHadron->GetEntries(); ++icut) {
         TString cutName = objArrayHadron->At(icut)->GetName();
-        fHadronCuts.push_back(dqcuts::GetCompositeCut(cutName.Data()));
+        fHadronCuts.push_back(dqcuts::getCompositeCut(cutName.Data()));
         fHadronCutNames.push_back(cutName);
       }
     }
     TString hadronCutsJSON = fConfigDileptonHadronOptions.fConfigHadronCutsJSON.value;
     if (hadronCutsJSON != "") {
-      std::vector<AnalysisCut*> addHadronCuts = dqcuts::GetCutsFromJSON(hadronCutsJSON.Data());
+      std::vector<AnalysisCut*> addHadronCuts = dqcuts::getCutsFromJSON(hadronCutsJSON.Data());
       for (auto& t : addHadronCuts) {
         fHadronCuts.push_back(t);
         fHadronCutNames.push_back(t->GetName());
@@ -606,7 +606,7 @@ struct AnalysisEnergyCorrelator {
 
     int iHadronCut = 0;
     for (auto hCut = fHadronCuts.begin(); hCut != fHadronCuts.end(); hCut++, iHadronCut++) {
-      if (!(*hCut)->IsSelected(VarManager::fgValues)) {
+      if (!(*hCut)->isSelected(VarManager::fgValues)) {
         continue;
       }
       // Fill the corresponding histogram
@@ -716,7 +716,7 @@ struct AnalysisEnergyCorrelator {
       }
 
       // Event selection
-      if (!fEventCut->IsSelected(VarManager::fgValues))
+      if (!fEventCut->isSelected(VarManager::fgValues))
         continue;
 
       if (fConfigEventOptions.fConfigEventQA) {
@@ -762,7 +762,7 @@ struct AnalysisEnergyCorrelator {
         // Apply electron cuts and fill histograms
         int iCut1 = 0;
         for (auto cut1 = fTrackCuts.begin(); cut1 != fTrackCuts.end(); cut1++, iCut1++) {
-          if ((*cut1)->IsSelected(VarManager::fgValues)) {
+          if ((*cut1)->isSelected(VarManager::fgValues)) {
             filter1 |= (static_cast<uint32_t>(1) << iCut1);
             if (fConfigTrackOptions.fConfigTrackQA) {
               fHistMan->FillHistClass(fHistNamesReco[iCut1], VarManager::fgValues);
@@ -791,7 +791,7 @@ struct AnalysisEnergyCorrelator {
           uint32_t filter2 = 0;
           int iCut2 = 0;
           for (auto cut2 = fTrackCuts.begin(); cut2 != fTrackCuts.end(); cut2++, iCut2++) {
-            if ((*cut2)->IsSelected(VarManager::fgValues)) {
+            if ((*cut2)->isSelected(VarManager::fgValues)) {
               filter2 |= (static_cast<uint32_t>(1) << iCut2);
             }
           }
@@ -863,7 +863,7 @@ struct AnalysisEnergyCorrelator {
         VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(event.mcCollision());
       }
       bool decision = false;
-      if (fEventCut->IsSelected(VarManager::fgValues)) {
+      if (fEventCut->isSelected(VarManager::fgValues)) {
         decision = true;
       }
       fSelMap[event.globalIndex()] = decision;
@@ -900,7 +900,7 @@ struct AnalysisEnergyCorrelator {
         // Apply electron cuts and fill histograms
         int iCut1 = 0;
         for (auto cut1 = fTrackCuts.begin(); cut1 != fTrackCuts.end(); cut1++, iCut1++) {
-          if ((*cut1)->IsSelected(VarManager::fgValues)) {
+          if ((*cut1)->isSelected(VarManager::fgValues)) {
             filter1 |= (static_cast<uint32_t>(1) << iCut1);
           }
         }
@@ -921,7 +921,7 @@ struct AnalysisEnergyCorrelator {
           uint32_t filter2 = 0;
           int iCut2 = 0;
           for (auto cut2 = fTrackCuts.begin(); cut2 != fTrackCuts.end(); cut2++, iCut2++) {
-            if ((*cut2)->IsSelected(VarManager::fgValues)) {
+            if ((*cut2)->isSelected(VarManager::fgValues)) {
               filter2 |= (static_cast<uint32_t>(1) << iCut2);
             }
           }
@@ -1060,7 +1060,7 @@ struct AnalysisEnergyCorrelator {
       // Fill event variables first
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<gkEventFillMapWithMults>(event);
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->isSelected(VarManager::fgValues)) {
         continue;
       }
       if (!event.has_mcCollision()) {
@@ -1090,11 +1090,11 @@ struct AnalysisEnergyCorrelator {
     for (auto& [event1, event2] : selfCombinations(*fMixingBinning, fConfigEventOptions.fConfigMixingDepth.value, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<gkEventFillMapWithMults>(event1);
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->isSelected(VarManager::fgValues)) {
         continue;
       }
       VarManager::FillEvent<gkEventFillMapWithMults>(event2);
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->isSelected(VarManager::fgValues)) {
         continue;
       }
       if (!event1.has_mcCollision() || !event2.has_mcCollision()) {
@@ -1124,7 +1124,7 @@ struct AnalysisEnergyCorrelator {
       // Fill event variables first
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<gkEventFillMapWithMults>(event);
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->isSelected(VarManager::fgValues)) {
         continue;
       }
       if (!event.has_mcCollision()) {
@@ -1154,11 +1154,11 @@ struct AnalysisEnergyCorrelator {
     for (auto& [event1, event2] : selfCombinations(*fMixingBinning, fConfigEventOptions.fConfigMixingDepth.value, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<gkEventFillMapWithMults>(event1);
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->isSelected(VarManager::fgValues)) {
         continue;
       }
       VarManager::FillEvent<gkEventFillMapWithMults>(event2);
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->isSelected(VarManager::fgValues)) {
         continue;
       }
       if (!event1.has_mcCollision() || !event2.has_mcCollision()) {

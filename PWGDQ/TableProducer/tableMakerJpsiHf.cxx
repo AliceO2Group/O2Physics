@@ -191,7 +191,7 @@ struct tableMakerJpsiHf {
       if (!cutNamesMuon.IsNull()) {
         std::unique_ptr<TObjArray> objArray(cutNamesMuon.Tokenize(","));
         for (int iCut{0}; iCut < objArray->GetEntries(); ++iCut) {
-          fMuonCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(iCut)->GetName()));
+          fMuonCuts.push_back(*dqcuts::getCompositeCut(objArray->At(iCut)->GetName()));
         }
       }
     }
@@ -200,7 +200,7 @@ struct tableMakerJpsiHf {
       if (!cutNamesElectron.IsNull()) { // if track cuts
         std::unique_ptr<TObjArray> objArray(cutNamesElectron.Tokenize(","));
         for (int iCut{0}; iCut < objArray->GetEntries(); ++iCut) {
-          fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(iCut)->GetName()));
+          fTrackCuts.push_back(*dqcuts::getCompositeCut(objArray->At(iCut)->GetName()));
         }
       }
     }
@@ -210,7 +210,7 @@ struct tableMakerJpsiHf {
     // if (!cutNamesPair.IsNull()) {
     //   std::unique_ptr<TObjArray> objArray(cutNamesPair.Tokenize(","));
     //   for (int iCut{0}; iCut < objArray->GetEntries(); ++iCut) {
-    //     fPairCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(iCut)->GetName()));
+    //     fPairCuts.push_back(*dqcuts::getCompositeCut(objArray->At(iCut)->GetName()));
     //   }
     // }
   }
@@ -223,14 +223,14 @@ struct tableMakerJpsiHf {
     if constexpr (TPairType == VarManager::kDecayToEE) {
       VarManager::FillTrack<TTrackFillMap>(lepton);
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++) {
-        if (!(*cut).IsSelected(VarManager::fgValues)) {
+        if (!(*cut).isSelected(VarManager::fgValues)) {
           return false;
         }
       }
     } else if constexpr (TPairType == VarManager::kDecayToMuMu) {
       VarManager::FillTrack<TTrackFillMap>(lepton);
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++) {
-        if (!(*cut).IsSelected(VarManager::fgValues)) {
+        if (!(*cut).isSelected(VarManager::fgValues)) {
           return false;
         }
       }

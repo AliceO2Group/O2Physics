@@ -351,14 +351,14 @@ struct TableMaker {
     // Event cuts
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = configCuts.fConfigEventCuts.value;
-    fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+    fEventCut->addCut(dqcuts::getAnalysisCut(eventCutStr.Data()));
 
     // Barrel track cuts
     TString cutNamesStr = configCuts.fConfigTrackCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
 
@@ -367,7 +367,7 @@ struct TableMaker {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fMuonCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fMuonCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
 
@@ -459,11 +459,11 @@ struct TableMaker {
       if (zorroSel) {
         tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
       }
-      if (useZorro.fConfigRunZorroSel && (!zorroSel || !fEventCut->IsSelected(VarManager::fgValues))) {
+      if (useZorro.fConfigRunZorroSel && (!zorroSel || !fEventCut->isSelected(VarManager::fgValues))) {
         return;
       }
     } else {
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->isSelected(VarManager::fgValues)) {
         return;
       }
     }
@@ -546,7 +546,7 @@ struct TableMaker {
         // apply track cuts and fill stats histogram
         int i = 0;
         for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
-          if ((*cut).IsSelected(VarManager::fgValues)) {
+          if ((*cut).isSelected(VarManager::fgValues)) {
             trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
             if (fConfigQA) {
               fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
@@ -714,7 +714,7 @@ struct TableMaker {
         // check the cuts and filters
         int i = 0;
         for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, i++) {
-          if ((*cut).IsSelected(VarManager::fgValues))
+          if ((*cut).isSelected(VarManager::fgValues))
             trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
         }
 
@@ -758,7 +758,7 @@ struct TableMaker {
         // apply the muon selection cuts and fill the stats histogram
         int i = 0;
         for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, i++) {
-          if ((*cut).IsSelected(VarManager::fgValues)) {
+          if ((*cut).isSelected(VarManager::fgValues)) {
             trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
             if (fConfigQA) {
               fHistMan->FillHistClass(Form("Muons_%s", (*cut).GetName()), VarManager::fgValues);
@@ -931,11 +931,11 @@ struct TableMaker {
       if (zorroSel) {
         tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
       }
-      if (useZorro.fConfigRunZorroSel && (!zorroSel || !fEventCut->IsSelected(VarManager::fgValues))) {
+      if (useZorro.fConfigRunZorroSel && (!zorroSel || !fEventCut->isSelected(VarManager::fgValues))) {
         return;
       }
     } else {
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->isSelected(VarManager::fgValues)) {
         return;
       }
     }
@@ -1011,7 +1011,7 @@ struct TableMaker {
         // apply track cuts and fill stats histogram
         int i = 0;
         for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
-          if ((*cut).IsSelected(VarManager::fgValues)) {
+          if ((*cut).isSelected(VarManager::fgValues)) {
             trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
             if (fConfigQA) {
               fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
@@ -1132,7 +1132,7 @@ struct TableMaker {
         // check the cuts and filters
         int i = 0;
         for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, i++) {
-          if ((*cut).IsSelected(VarManager::fgValues))
+          if ((*cut).isSelected(VarManager::fgValues))
             trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
         }
 
@@ -1178,7 +1178,7 @@ struct TableMaker {
         // apply the muon selection cuts and fill the stats histogram
         int i = 0;
         for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, i++) {
-          if ((*cut).IsSelected(VarManager::fgValues)) {
+          if ((*cut).isSelected(VarManager::fgValues)) {
             trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
             if (fConfigQA) {
               fHistMan->FillHistClass(Form("Muons_%s", (*cut).GetName()), VarManager::fgValues);

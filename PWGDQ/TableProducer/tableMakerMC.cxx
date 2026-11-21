@@ -205,14 +205,14 @@ struct TableMakerMC {
     // Define cuts --------------------------------------------------------------------------------------------
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigEventCuts.value;
-    fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+    fEventCut->addCut(dqcuts::getAnalysisCut(eventCutStr.Data()));
 
     // Barrel track cuts
     TString cutNamesStr = fConfigTrackCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
 
@@ -221,7 +221,7 @@ struct TableMakerMC {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fMuonCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fMuonCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -437,7 +437,7 @@ struct TableMakerMC {
       }
       (dynamic_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
 
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->isSelected(VarManager::fgValues)) {
         continue;
       }
 
@@ -577,7 +577,7 @@ struct TableMakerMC {
           // apply track cuts and fill stats histogram
           int i = 0;
           for (auto& cut : fTrackCuts) {
-            if (cut.IsSelected(VarManager::fgValues)) {
+            if (cut.isSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
               if (fConfigQA) {
                 fHistMan->FillHistClass(Form("TrackBarrel_%s", cut.GetName()), VarManager::fgValues); // fill the reconstructed truth
@@ -774,7 +774,7 @@ struct TableMakerMC {
           // check the cuts and filters
           int i = 0;
           for (auto& cut : fMuonCuts) {
-            if (cut.IsSelected(VarManager::fgValues)) {
+            if (cut.isSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
             }
             i++;
@@ -822,7 +822,7 @@ struct TableMakerMC {
           // apply the muon selection cuts and fill the stats histogram
           int i = 0;
           for (auto& cut : fMuonCuts) {
-            if (cut.IsSelected(VarManager::fgValues)) {
+            if (cut.isSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
               if (fIsAmbiguous && isAmbiguous == 1) {
                 fHistMan->FillHistClass(Form("Ambiguous_Muons_%s", cut.GetName()), VarManager::fgValues);
@@ -1072,7 +1072,7 @@ struct TableMakerMC {
       }
       (dynamic_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
 
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->isSelected(VarManager::fgValues)) {
         continue;
       }
 
@@ -1200,7 +1200,7 @@ struct TableMakerMC {
           // apply track cuts and fill stats histogram
           int i = 0;
           for (auto& cut : fTrackCuts) {
-            if (cut.IsSelected(VarManager::fgValues)) {
+            if (cut.isSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
               if (fConfigQA) {
                 fHistMan->FillHistClass(Form("TrackBarrel_%s", cut.GetName()), VarManager::fgValues); // fill the reconstructed truth
@@ -1333,7 +1333,7 @@ struct TableMakerMC {
           // check the cuts and filters
           int i = 0;
           for (auto& cut : fMuonCuts) {
-            if (cut.IsSelected(VarManager::fgValues)) {
+            if (cut.isSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
             }
             i++;
@@ -1378,7 +1378,7 @@ struct TableMakerMC {
           // apply the muon selection cuts and fill the stats histogram
           int i = 0;
           for (auto& cut : fMuonCuts) {
-            if (cut.IsSelected(VarManager::fgValues)) {
+            if (cut.isSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
               fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
               if (fIsAmbiguous && isAmbiguous == 1) {

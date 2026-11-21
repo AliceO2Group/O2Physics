@@ -587,14 +587,14 @@ struct TableMaker {
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigCuts.fConfigEventCuts.value;
     if (eventCutStr != "") {
-      fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+      fEventCut->addCut(dqcuts::getAnalysisCut(eventCutStr.Data()));
     }
     // Extra event cuts via JSON
     TString addEvCutsStr = fConfigCuts.fConfigEventCutsJSON.value;
     if (addEvCutsStr != "") {
-      std::vector<AnalysisCut*> addEvCuts = dqcuts::GetCutsFromJSON(addEvCutsStr.Data());
+      std::vector<AnalysisCut*> addEvCuts = dqcuts::getCutsFromJSON(addEvCutsStr.Data());
       for (const auto& cutIt : addEvCuts) {
-        fEventCut->AddCut(cutIt);
+        fEventCut->addCut(cutIt);
       }
     }
 
@@ -603,13 +603,13 @@ struct TableMaker {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.push_back(dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     // extra cuts via JSON
     TString addTrackCutsStr = fConfigCuts.fConfigTrackCutsJSON.value;
     if (addTrackCutsStr != "") {
-      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::getCutsFromJSON(addTrackCutsStr.Data());
       for (const auto& t : addTrackCuts) {
         fTrackCuts.push_back(t);
       }
@@ -618,7 +618,7 @@ struct TableMaker {
     // EMCal cluster cuts, via JSON only (there are no named EMCal cluster cuts in the CutsLibrary yet)
     TString addEMCalCutsStr = fConfigCuts.fConfigEMCalCutsJSON.value;
     if (addEMCalCutsStr != "") {
-      std::vector<AnalysisCut*> addEMCalCuts = dqcuts::GetCutsFromJSON(addEMCalCutsStr.Data());
+      std::vector<AnalysisCut*> addEMCalCuts = dqcuts::getCutsFromJSON(addEMCalCutsStr.Data());
       for (const auto& t : addEMCalCuts) {
         fEMCalCuts.push_back(t);
       }
@@ -629,13 +629,13 @@ struct TableMaker {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fMuonCuts.push_back(dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fMuonCuts.push_back(dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     // Extra cuts via JSON
     TString addMuonCutsStr = fConfigCuts.fConfigMuonCutsJSON.value;
     if (addMuonCutsStr != "") {
-      std::vector<AnalysisCut*> addMuonCuts = dqcuts::GetCutsFromJSON(addMuonCutsStr.Data());
+      std::vector<AnalysisCut*> addMuonCuts = dqcuts::getCutsFromJSON(addMuonCutsStr.Data());
       for (const auto& t : addMuonCuts) {
         fMuonCuts.push_back(t);
       }
@@ -1132,7 +1132,7 @@ struct TableMaker {
         zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorro.fConfigZorroTrigMask.value);
         zorro.populateExternalHists(fCurrentRun, dynamic_cast<TH2D*>(fStatsList->At(kStatsZorroInfo)), dynamic_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
 
-        if (!fEventCut->IsSelected(dqtablemaker_helpers::varValues()) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(collision))) {
+        if (!fEventCut->isSelected(dqtablemaker_helpers::varValues()) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(collision))) {
           continue;
         }
 
@@ -1144,7 +1144,7 @@ struct TableMaker {
           continue;
         }
       } else {
-        if (!fEventCut->IsSelected(dqtablemaker_helpers::varValues()) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(collision))) {
+        if (!fEventCut->isSelected(dqtablemaker_helpers::varValues()) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(collision))) {
           continue;
         }
       }
@@ -1307,7 +1307,7 @@ struct TableMaker {
       // apply track cuts and fill stats histogram
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
-        if ((*cut)->IsSelected(dqtablemaker_helpers::varValues())) {
+        if ((*cut)->isSelected(dqtablemaker_helpers::varValues())) {
           trackTempFilterMap |= (static_cast<uint32_t>(1) << i);
           // NOTE: the QA is filled here just for the first occurence of this track.
           //    So if there are histograms of quantities which depend on the collision association, these will not be accurate
@@ -1457,7 +1457,7 @@ struct TableMaker {
         auto clusterTempFilterMap = static_cast<uint32_t>(0);
         int i = 0;
         for (auto cut = fEMCalCuts.begin(); cut != fEMCalCuts.end(); cut++, i++) {
-          if ((*cut)->IsSelected(dqtablemaker_helpers::varValues())) {
+          if ((*cut)->isSelected(dqtablemaker_helpers::varValues())) {
             clusterTempFilterMap |= (static_cast<uint32_t>(1) << i);
             if (fConfigHistOutput.fConfigQA) {
               fHistMan->FillHistClass(Form("EMCalClusters_%s", (*cut)->GetName()), dqtablemaker_helpers::varValues());
@@ -1657,7 +1657,7 @@ struct TableMaker {
       // check the cuts and filters
       int i = 0;
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, i++) {
-        if ((*cut)->IsSelected(dqtablemaker_helpers::varValues())) {
+        if ((*cut)->isSelected(dqtablemaker_helpers::varValues())) {
           trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
           // NOTE: the QA is filled here just for the first occurence of this muon, which means the current association
           //     will be skipped from histograms if this muon was already filled in the skimming map.

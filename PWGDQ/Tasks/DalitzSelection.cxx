@@ -176,7 +176,7 @@ struct DalitzSelection {
     // Event cuts
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigCuts.fConfigEventCuts.value;
-    fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+    fEventCut->addCut(dqcuts::getAnalysisCut(eventCutStr.Data()));
 
     // Barrel track cuts
     // Tag cuts or symmetric cuts
@@ -184,13 +184,13 @@ struct DalitzSelection {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     // extra cuts via JSON
     TString addTrackCutsStr = fConfigCuts.fConfigTrackCutsJSON.value;
     if (addTrackCutsStr != "") {
-      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::getCutsFromJSON(addTrackCutsStr.Data());
       for (const auto& t : addTrackCuts) {
         fTrackCuts.push_back(*dynamic_cast<AnalysisCompositeCut*>(t));
       }
@@ -202,13 +202,13 @@ struct DalitzSelection {
     if (!cutNamesProbeStr.IsNull() && (cutNamesProbeStr.CompareTo(cutNamesStr) != 0 || addTrackCutsProbeStr.CompareTo(addTrackCutsStr) != 0)) {
       std::unique_ptr<TObjArray> objArray(cutNamesProbeStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCutsProbe.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCutsProbe.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
       fIsTagAndProbe = true;
     }
     // extra cuts via JSON
     if (addTrackCutsProbeStr != "" && (cutNamesProbeStr.CompareTo(cutNamesStr) != 0 || addTrackCutsProbeStr.CompareTo(addTrackCutsStr) != 0)) {
-      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsProbeStr.Data());
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::getCutsFromJSON(addTrackCutsProbeStr.Data());
       for (const auto& t : addTrackCuts) {
         fTrackCutsProbe.push_back(*dynamic_cast<AnalysisCompositeCut*>(t));
       }
@@ -220,13 +220,13 @@ struct DalitzSelection {
     if (!cutNamesPairStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesPairStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fPairCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fPairCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     // extra cuts via JSON
     TString addPairCutsStr = fConfigCuts.fConfigPairCutsJSON.value;
     if (addPairCutsStr != "") {
-      std::vector<AnalysisCut*> addPairCuts = dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
+      std::vector<AnalysisCut*> addPairCuts = dqcuts::getCutsFromJSON(addPairCutsStr.Data());
       for (const auto& t : addPairCuts) {
         fPairCuts.push_back(*dynamic_cast<AnalysisCompositeCut*>(t));
       }
@@ -416,7 +416,7 @@ struct DalitzSelection {
       }
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
-        if ((*cut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
+        if ((*cut).isSelected(static_cast<float*>(VarManager::fgValues))) {
           filterMap |= (static_cast<uint8_t>(1) << i);
           fSkipEvent = false;
         }
@@ -424,7 +424,7 @@ struct DalitzSelection {
       if (fIsTagAndProbe) {
         i = 0;
         for (auto cut = fTrackCutsProbe.begin(); cut != fTrackCutsProbe.end(); ++cut, ++i) {
-          if ((*cut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
+          if ((*cut).isSelected(static_cast<float*>(VarManager::fgValues))) {
             filterMapProbe |= (static_cast<uint8_t>(1) << i);
           }
         }
@@ -535,7 +535,7 @@ struct DalitzSelection {
           if (!(twoTracksFilterMap & (static_cast<uint8_t>(1) << icut))) {
             continue;
           }
-          if ((*pairCut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
+          if ((*pairCut).isSelected(static_cast<float*>(VarManager::fgValues))) {
             fSkipEvent = false;
             bool isPairAlreadySelected = false;
             if (isReassoc & fConfigOptions.fRemoveDoubleCounting) {
@@ -703,7 +703,7 @@ struct DalitzSelection {
           }
           bool isLS = (t1.filteringFlags & (static_cast<uint32_t>(1) << 8)) == (t2.filteringFlags & (static_cast<uint32_t>(1) << 8));
           for (uint32_t icut = 0; icut < fPairCuts.size(); icut++) {
-            if (((mixedTwoTrackFilter & (static_cast<uint8_t>(1) << icut)) != 0) && fPairCuts.at(icut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
+            if (((mixedTwoTrackFilter & (static_cast<uint8_t>(1) << icut)) != 0) && fPairCuts.at(icut).isSelected(static_cast<float*>(VarManager::fgValues))) {
               if (fIsTagAndProbe) {
                 if (!isLS) {
                   fHistMan->FillHistClass(Form("PairME_%s_%s_%s", fTrackCuts.at(icut).GetName(), fTrackCutsProbe.at(icut).GetName(), fPairCuts.at(icut).GetName()), static_cast<float*>(VarManager::fgValues));
@@ -741,7 +741,7 @@ struct DalitzSelection {
             }
             bool isLS = (t1.filteringFlags & (static_cast<uint32_t>(1) << 8)) == (t2.filteringFlags & (static_cast<uint32_t>(1) << 8));
             for (uint32_t icut = 0; icut < fPairCuts.size(); icut++) {
-              if (((mixedTwoTrackFilter & (static_cast<uint8_t>(1) << icut)) != 0) && fPairCuts.at(icut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
+              if (((mixedTwoTrackFilter & (static_cast<uint8_t>(1) << icut)) != 0) && fPairCuts.at(icut).isSelected(static_cast<float*>(VarManager::fgValues))) {
                 if (!isLS) {
                   fHistMan->FillHistClass(Form("PairME_%s_%s_%s", fTrackCuts.at(icut).GetName(), fTrackCutsProbe.at(icut).GetName(), fPairCuts.at(icut).GetName()), static_cast<float*>(VarManager::fgValues));
                 } else {
@@ -818,7 +818,7 @@ struct DalitzSelection {
       fTrackmapProbe.clear();
       VarManager::ResetValues(VarManager::kNRunWiseVariables, VarManager::kNBarrelTrackVariables);
       VarManager::FillEvent<EventFillMapWithCent>(collision);
-      bool isEventSelected = fEventCut->IsSelected(static_cast<float*>(VarManager::fgValues));
+      bool isEventSelected = fEventCut->isSelected(static_cast<float*>(VarManager::fgValues));
 
       if (isEventSelected) {
         dynamic_cast<TH1I*>(fStatsList->At(0))->Fill(0);
@@ -892,7 +892,7 @@ struct DalitzSelection {
       fTrackmapProbe.clear();
       VarManager::ResetValues(VarManager::kNRunWiseVariables, VarManager::kNBarrelTrackVariables);
       VarManager::FillEvent<EventFillMapWithCent>(collision);
-      bool isEventSelected = fEventCut->IsSelected(static_cast<float*>(VarManager::fgValues));
+      bool isEventSelected = fEventCut->isSelected(static_cast<float*>(VarManager::fgValues));
 
       if (isEventSelected) {
 
@@ -967,7 +967,7 @@ struct DalitzSelection {
       fTrackmapProbe.clear();
       VarManager::ResetValues(VarManager::kNRunWiseVariables, VarManager::kNBarrelTrackVariables);
       VarManager::FillEvent<EventFillMapWithCent>(collision);
-      bool isEventSelected = fEventCut->IsSelected(static_cast<float*>(VarManager::fgValues));
+      bool isEventSelected = fEventCut->isSelected(static_cast<float*>(VarManager::fgValues));
 
       if (isEventSelected) {
 

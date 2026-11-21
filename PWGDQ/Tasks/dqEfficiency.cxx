@@ -114,7 +114,7 @@ struct AnalysisEventSelection {
 
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigEventCuts.value;
-    fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+    fEventCut->addCut(dqcuts::getAnalysisCut(eventCutStr.Data()));
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
 
     VarManager::SetDefaultVarNames();
@@ -144,7 +144,7 @@ struct AnalysisEventSelection {
     if (fConfigQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues); // automatically fill all the histograms in the class Event
     }
-    if (fEventCut->IsSelected(VarManager::fgValues)) {
+    if (fEventCut->isSelected(VarManager::fgValues)) {
       if (fConfigQA) {
         fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
       }
@@ -191,7 +191,7 @@ struct AnalysisTrackSelection {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -272,7 +272,7 @@ struct AnalysisTrackSelection {
       // compute track selection and publish the bit map
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
-        if ((*cut).IsSelected(VarManager::fgValues)) {
+        if ((*cut).isSelected(VarManager::fgValues)) {
           filterMap |= (static_cast<uint32_t>(1) << i);
           if (fConfigQA) {
             fHistMan->FillHistClass(fHistNamesReco[i].Data(), VarManager::fgValues);
@@ -360,7 +360,7 @@ struct AnalysisMuonSelection {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -442,7 +442,7 @@ struct AnalysisMuonSelection {
       // compute the cut selections and publish the filter bit map
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
-        if ((*cut).IsSelected(VarManager::fgValues)) {
+        if ((*cut).isSelected(VarManager::fgValues)) {
           filterMap |= (static_cast<uint32_t>(1) << i);
           if (fConfigQA) {
             fHistMan->FillHistClass(fHistNamesReco[i].Data(), VarManager::fgValues);
@@ -1400,7 +1400,7 @@ struct AnalysisDileptonTrackTrack {
 
     // dilepton cut
     TString configDileptonCutNamesStr = fConfigDileptonCut.value;
-    fDileptonCut = *dqcuts::GetCompositeCut(configDileptonCutNamesStr.Data());
+    fDileptonCut = *dqcuts::getCompositeCut(configDileptonCutNamesStr.Data());
 
     // dilepton-track-track cuts
     TString configQuadruletCutNamesStr = fConfigQuadrupletCuts.value;
@@ -1408,7 +1408,7 @@ struct AnalysisDileptonTrackTrack {
     for (Int_t icut = 0; icut < objArray->GetEntries(); ++icut) {
       TString cutName = objArray->At(icut)->GetName();
       fQuadrupletCutNames.push_back(cutName);
-      fQuadrupletCuts.push_back(*dqcuts::GetCompositeCut(cutName.Data()));
+      fQuadrupletCuts.push_back(*dqcuts::getCompositeCut(cutName.Data()));
     }
 
     // reconstructible MC signals
@@ -1513,7 +1513,7 @@ struct AnalysisDileptonTrackTrack {
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesQuadruplet);
 
       // apply the dilepton cut
-      if (!fDileptonCut.IsSelected(fValuesQuadruplet))
+      if (!fDileptonCut.isSelected(fValuesQuadruplet))
         continue;
 
       // get the index of the electron legs
@@ -1556,7 +1556,7 @@ struct AnalysisDileptonTrackTrack {
         uint32_t mcDecision = 0;
         int iCut = 0;
         for (auto cut = fQuadrupletCuts.begin(); cut != fQuadrupletCuts.end(); cut++, iCut++) {
-          if (cut->IsSelected(fValuesQuadruplet)) {
+          if (cut->isSelected(fValuesQuadruplet)) {
             CutDecision |= (static_cast<uint32_t>(1) << iCut);
             if (fIsSameTrackCut) {
               if (t1.sign() * t2.sign() < 0) {
