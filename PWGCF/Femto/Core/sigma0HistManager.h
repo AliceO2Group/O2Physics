@@ -135,10 +135,10 @@ constexpr std::array<histmanager::HistInfo<Sigma0Hist>, kSigma0HistLast> HistTab
    {kPtVsOpeningAngle, o2::framework::HistType::kTH2F, "hPtVsOpeningAngle", "p_{T} vs opening angle; p_{T} (GeV/#it{c}); #theta_{#Lambda#gamma}"},
    {kLambdaPtVsPhotonPt, o2::framework::HistType::kTH2F, "hLambdaPtVsPhotonPt", "p_{T} of daughter #Lambda vs p_{T} of daughter #gamma; p_{T,#Lambda dau} (GeV/#it{c}); p_{T,#gamma dau} (GeV/#it{c})"},
    {kOrigin, o2::framework::HistType::kTH1F, "hOrigin", "Status Codes (=Origin); Status Code; Entries"},
-   {kPdg, o2::framework::HistType::kTH1F, "hPdg", "PDG Codes of reconstructed #Sigma^{0}; PDG Code; Entries"},
-   {kPdgMother, o2::framework::HistType::kTH1F, "hPdgMother", "PDG Codes of mother of reconstructed #Sigma^{0}; PDG Code; Entries"},
+   {kPdg, o2::framework::HistType::kTH1F, "hPdg", "PDG Codes of the #Lambda daughter the #Sigma^{0} is labelled with; PDG Code; Entries"},
+   {kPdgMother, o2::framework::HistType::kTH1F, "hPdgMother", "PDG Codes of mother of the #Lambda daughter (#Sigma^{0} for true candidates); PDG Code; Entries"},
    {kPdgPartonicMother, o2::framework::HistType::kTH1F, "hPdgPartonicMother", "PDG Codes of partonic mother of reconstructed #Sigma^{0}; PDG Code; Entries"},
-   {kTruePtVsPt, o2::framework::HistType::kTH2F, "hTruePtVsPt", "True transverse momentum vs transverse momentum; p_{T,True} (GeV/#it{c}); p_{T} (GeV/#it{c})"},
+   {kTruePtVsPt, o2::framework::HistType::kTH2F, "hTruePtVsPt", "True transverse momentum vs transverse momentum (true #Sigma^{0} only); p_{T,True} (GeV/#it{c}); p_{T} (GeV/#it{c})"},
    {kTrueEtaVsEta, o2::framework::HistType::kTH2F, "hTrueEtaVsEta", "True pseudorapdity vs pseudorapdity; #eta_{True}; #eta"},
    {kTruePhiVsPhi, o2::framework::HistType::kTH2F, "hTruePhiVsPhi", "True azimuthal angle vs azimuthal angle; #varphi_{True}; #varphi"}},
 };
@@ -230,6 +230,8 @@ constexpr std::string_view McDir = "MC/";
 /// The Sigma0 tables store only the indices of the Lambda daughter tracks (and of the photon), so the
 /// daughter tracks are histogrammed with track histogram managers. QA of the Lambda and photon
 /// daughters is read from FSigma0Extras, which needs to be joined to the Sigma0 table for QA modes.
+/// FSigma0Labels point to the mc particle of the Lambda daughter; a true Sigma0 is identified by the
+/// mother of that Lambda (see fillMc).
 template <auto& sigma0Prefix,
           auto& posDauPrefix,
           auto& negDauPrefix>
@@ -449,34 +451,37 @@ class Sigma0HistManager
       return;
     }
 
-    // Retrieve MC particle
+    // The Sigma0 is labelled with the mc particle of its Lambda daughter (photons carry no mc labels and the
+    // Sigma0 is not stored as a femto mc particle). A candidate is a true Sigma0 if the mother of that Lambda
+    // is a Sigma0 of the selected charge; the photon is not truth-matched.
     auto mcParticle = sigma0Candidate.template fMcParticle_as<TMcParticles>();
 
     // whether a particle is associated to a wrong collision or not cannot be known by the producer so we check it here
     bool fromWrongCollision = mcParticle.fMcColId() != col.fMcColId();
 
-    // whether a particle is missidentfied or not cannot be known by the producer so we check it here
-    bool isMissidentified = mcParticle.pdgCode() != mPdgCode;
-
-    mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kTruePtVsPt, HistTable)), mcParticle.pt(), sigma0Candidate.pt());
-    mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kTrueEtaVsEta, HistTable)), mcParticle.eta(), sigma0Candidate.eta());
-    mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kTruePhiVsPhi, HistTable)), mcParticle.phi(), sigma0Candidate.phi());
-    if (fromWrongCollision) {
-      mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kFromWrongCollision));
-    } else if (isMissidentified) {
-      mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kMissidentified));
-    } else {
-      mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), mcParticle.origin());
-    }
-    mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), mcParticle.pdgCode());
-
-    // get mother
+    bool isTrueSigma0 = false;
     if (mcParticle.has_fMcMother()) {
       auto mother = mcParticle.template fMcMother_as<TMcMothers>();
       mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());
+      isTrueSigma0 = mother.pdgCode() == mPdgCode;
+      if (isTrueSigma0) {
+        // true kinematics are the ones of the Sigma0, i.e. the mother of the Lambda label
+        mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kTruePtVsPt, HistTable)), mother.pt(), sigma0Candidate.pt());
+        mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kTrueEtaVsEta, HistTable)), mother.eta(), sigma0Candidate.eta());
+        mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kTruePhiVsPhi, HistTable)), mother.phi(), sigma0Candidate.phi());
+      }
+      if (fromWrongCollision) {
+        mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kFromWrongCollision));
+      } else if (!isTrueSigma0) {
+        mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kMissidentified));
+      } else {
+        mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), mother.origin());
+      }
     } else {
       mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
+      mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(fromWrongCollision ? modes::McOrigin::kFromWrongCollision : modes::McOrigin::kMissidentified));
     }
+    mHistogramRegistry->fill(HIST(sigma0Prefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), mcParticle.pdgCode());
 
     // get partonic mother
     if (mcParticle.has_fMcPartMoth()) {

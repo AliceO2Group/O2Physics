@@ -16,6 +16,7 @@
 /// producer ran with LambdaTables.produceLambdas and PhotonTables.producePhotons, not the Lite variants,
 /// or the Lite tables were converted back before running this task).
 /// FSigma0Extras additionally needs FLambdaExtras and FPhotonExtras (processWithExtras).
+/// TODO: FSigma0Labels: the Sigma0 currently gets the label of its Lambda daughter since photons are not implemented for femto MC.
 /// \author Yakiv Paroviak, CTU in Prague, yakiv.paroviak@cern.ch
 
 #include "PWGCF/Femto/Core/collisionBuilder.h"
@@ -42,6 +43,8 @@ struct FemtoProducerSigma0 {
   using FemtoPhotons = o2::soa::Join<o2::aod::FPhotons, o2::aod::FPhotonMasks>;
   using FemtoLambdasWithExtras = o2::soa::Join<FemtoLambdas, o2::aod::FLambdaExtras>;
   using FemtoPhotonsWithExtras = o2::soa::Join<FemtoPhotons, o2::aod::FPhotonExtras>;
+  using FemtoLambdasWithLabel = o2::soa::Join<FemtoLambdas, o2::aod::FLambdaLabels>;
+  using FemtoLambdasWithExtrasWithLabel = o2::soa::Join<FemtoLambdasWithExtras, o2::aod::FLambdaLabels>;
 
   o2::framework::SliceCache cache;
 
@@ -55,6 +58,10 @@ struct FemtoProducerSigma0 {
   o2::framework::Partition<FemtoLambdasWithExtras> lambdaWithExtrasPartition = MAKE_LAMBDA_PARTITION(confLambdaSelection);
   o2::framework::Preslice<FemtoLambdas> perColLambdas = o2::aod::femtobase::stored::fColId;
   o2::framework::Preslice<FemtoLambdasWithExtras> perColLambdasWithExtras = o2::aod::femtobase::stored::fColId;
+  o2::framework::Partition<FemtoLambdasWithLabel> lambdaWithLabelPartition = MAKE_LAMBDA_PARTITION(confLambdaSelection);
+  o2::framework::Partition<FemtoLambdasWithExtrasWithLabel> lambdaWithExtrasWithLabelPartition = MAKE_LAMBDA_PARTITION(confLambdaSelection);
+  o2::framework::Preslice<FemtoLambdasWithLabel> perColLambdasWithLabel = o2::aod::femtobase::stored::fColId;
+  o2::framework::Preslice<FemtoLambdasWithExtrasWithLabel> perColLambdasWithExtrasWithLabel = o2::aod::femtobase::stored::fColId;
 
   // setup for photon daughters
   sigma0builder::ConfSigma0PhotonSelection confPhotonSelection;
@@ -71,8 +78,8 @@ struct FemtoProducerSigma0 {
 
   void init(o2::framework::InitContext& context)
   {
-    if (doprocess && doprocessWithExtras) {
-      LOG(fatal) << "Enable only one of process and processWithExtras";
+    if (static_cast<int>(doprocess) + static_cast<int>(doprocessWithExtras) + static_cast<int>(doprocessMc) + static_cast<int>(doprocessMcWithExtras) > 1) {
+      LOG(fatal) << "Enable only one of process, processWithExtras, processMc and processMcWithExtras";
     }
     sigma0Builder.init(confSigma0Filter, confSigma0Tables, context);
   }
@@ -83,12 +90,25 @@ struct FemtoProducerSigma0 {
   }
   PROCESS_SWITCH(FemtoProducerSigma0, process, "Build Sigma0 candidates", true);
 
-  // needed to fill FSigma0Extras, which copies QA information of the Lambda and photon daughters
+  // copies QA information of the Lambda and photon daughters
   void processWithExtras(FilteredFemtoCollision const& col, FemtoLambdasWithExtras const& /*lambdas*/, FemtoPhotonsWithExtras const& /*photons*/)
   {
     sigma0Builder.fillSigma0s(col, sigma0BuilderProducts, lambdaWithExtrasPartition, photonWithExtrasPartition, cache);
   }
   PROCESS_SWITCH(FemtoProducerSigma0, processWithExtras, "Build Sigma0 candidates and fill FSigma0Extras (needs FLambdaExtras and FPhotonExtras)", false);
+
+  // the Sigma0 is labelled with the mc particle of its Lambda daughter
+  void processMc(FilteredFemtoCollision const& col, FemtoLambdasWithLabel const& /*lambdas*/, FemtoPhotons const& /*photons*/)
+  {
+    sigma0Builder.fillSigma0s(col, sigma0BuilderProducts, lambdaWithLabelPartition, photonPartition, cache);
+  }
+  PROCESS_SWITCH(FemtoProducerSigma0, processMc, "Build Sigma0 candidates and fill FSigma0Labels (needs FLambdaLabels)", false);
+
+  void processMcWithExtras(FilteredFemtoCollision const& col, FemtoLambdasWithExtrasWithLabel const& /*lambdas*/, FemtoPhotonsWithExtras const& /*photons*/)
+  {
+    sigma0Builder.fillSigma0s(col, sigma0BuilderProducts, lambdaWithExtrasWithLabelPartition, photonWithExtrasPartition, cache);
+  }
+  PROCESS_SWITCH(FemtoProducerSigma0, processMcWithExtras, "Build Sigma0 candidates and fill FSigma0Extras and FSigma0Labels (needs FLambdaExtras, FPhotonExtras and FLambdaLabels)", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)

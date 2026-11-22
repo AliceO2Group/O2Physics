@@ -93,6 +93,7 @@ struct Sigma0BuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FLiteSigma0s> producedLiteSigma0s;
   o2::framework::Produces<o2::aod::FSigma0Masks> producedSigma0Masks;
   o2::framework::Produces<o2::aod::FSigma0Extras> producedSigma0Extras;
+  o2::framework::Produces<o2::aod::FSigma0Labels> producedSigma0Labels;
 };
 
 struct ConfSigma0Tables : o2::framework::ConfigurableGroup {
@@ -101,6 +102,7 @@ struct ConfSigma0Tables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceLiteSigma0s{"produceLiteSigma0s", -1, "Produce LiteSigma0s (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceSigma0Masks{"produceSigma0Masks", -1, "Produce Sigma0Masks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceSigma0Extras{"produceSigma0Extras", -1, "Produce Sigma0Extras (-1: auto; 0 off; 1 on). Needs FLambdaExtras and FPhotonExtras as input"};
+  o2::framework::Configurable<int> produceSigma0Labels{"produceSigma0Labels", -1, "Produce Sigma0Labels (-1: auto; 0 off; 1 on). Needs FLambdaLabels as input"};
 };
 
 /// \brief Builder for Sigma0 <- Lambda + PCM gamma candidates
@@ -128,13 +130,14 @@ class Sigma0Builder
     mProduceLiteSigma0s = utils::enableTable("FLiteSigma0s_001", confTable.produceLiteSigma0s.value, initContext);
     mProduceSigma0Masks = utils::enableTable("FSigma0Masks_001", confTable.produceSigma0Masks.value, initContext);
     mProduceSigma0Extras = utils::enableTable("FSigma0Extras_001", confTable.produceSigma0Extras.value, initContext);
+    mProduceSigma0Labels = utils::enableTable("FSigma0Labels_001", confTable.produceSigma0Labels.value, initContext);
 
     if (mProduceSigma0s && mProduceLiteSigma0s) {
       LOG(fatal) << "FSigma0s and FLiteSigma0s are mutually exclusive -- enable only one. "
                  << "FLiteSigma0s is meant to replace FSigma0s at the producer stage for better compression in derived data.";
     }
 
-    mFillAnyTable = mProduceSigma0s || mProduceLiteSigma0s || mProduceSigma0Masks || mProduceSigma0Extras;
+    mFillAnyTable = mProduceSigma0s || mProduceLiteSigma0s || mProduceSigma0Masks || mProduceSigma0Extras || mProduceSigma0Labels;
     if (!mFillAnyTable) {
       LOG(info) << "No tables configured...";
     }
@@ -228,6 +231,16 @@ class Sigma0Builder
         LOG(fatal) << "FSigma0Extras requested, but FLambdaExtras/FPhotonExtras are not joined to the input Lambda/photon tables";
       }
     }
+    if (mProduceSigma0Labels) {
+      // PCM photons carry no MC labels and the Sigma0 itself is not stored as a femto mc particle, so the
+      // Sigma0 is labelled with the mc particle of its Lambda daughter. A true Sigma0 is a Lambda whose
+      // mc mother is a Sigma0 (see Sigma0HistManager); the photon is not truth-matched.
+      if constexpr (requires { lambda.fMcParticleId(); }) {
+        products.producedSigma0Labels(lambda.fMcParticleId());
+      } else {
+        LOG(fatal) << "FSigma0Labels requested, but FLambdaLabels are not joined to the input Lambda table";
+      }
+    }
   }
 
   // cached kinematics of the daughters and the Sigma0
@@ -252,6 +265,7 @@ class Sigma0Builder
   bool mProduceLiteSigma0s = false;
   bool mProduceSigma0Masks = false;
   bool mProduceSigma0Extras = false;
+  bool mProduceSigma0Labels = false;
 };
 
 } // namespace o2::analysis::femto::sigma0builder
