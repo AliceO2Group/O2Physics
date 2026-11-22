@@ -155,7 +155,7 @@ inline void initAdaptDwnsplHistograms(const std::string& ccdbPathForAdaptDwnsplF
   o2::ccdb::CcdbApi ccdbApi;
   ccdbApi.init("http://alice-ccdb.cern.ch");
   const std::map<std::string, std::string> metadata;
-  if (std::filesystem::exists(adaptDwnsplFileName.c_str())) {
+  if (!std::filesystem::exists(adaptDwnsplFileName.c_str())) {
     // Retrieve the file from CCDB
     const bool isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForAdaptDwnsplFile, ".", metadata, -1, false, adaptDwnsplFileName);
     if (!isFileAvailable) {
