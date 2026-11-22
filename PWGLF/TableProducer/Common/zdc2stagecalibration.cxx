@@ -39,9 +39,6 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
-// No high-dimensional THnSparse: compact 2D QA only.
-#include <TProfile2D.h>
-#include <TProfile3D.h>
 
 #include <array>
 #include <chrono>
