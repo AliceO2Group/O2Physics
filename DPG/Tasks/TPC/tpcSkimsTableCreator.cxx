@@ -688,6 +688,7 @@ struct TreeWriterTpcTof {
   Configurable<float> nSigmaTofTpctofDe{"nSigmaTofTpctofDe", 3., "number of sigma for TOF cut for TPC and TOF combined deuteron"};
   /// Proton
   Configurable<float> maxMomTPCOnlyPr{"maxMomTPCOnlyPr", 0.6, "Maximum momentum for TPC only cut proton"};
+  Configurable<float> maxMomHardCutOnlyPr{"maxMomHardCutOnlyPr", 50, "Maximum TPC inner momentum for proton"};
   Configurable<float> nSigmaTPCOnlyPr{"nSigmaTPCOnlyPr", 4., "number of sigma for TPC only cut proton"};
   Configurable<float> nSigmaTpcTpctofPr{"nSigmaTpcTpctofPr", 4., "number of sigma for TPC cut for TPC and TOF combined proton"};
   Configurable<float> nSigmaTofTpctofPr{"nSigmaTofTpctofPr", 3., "number of sigma for TOF cut for TPC and TOF combined proton"};
@@ -699,6 +700,7 @@ struct TreeWriterTpcTof {
   Configurable<float> nSigmaTofTpctofKa{"nSigmaTofTpctofKa", 3., "number of sigma for TOF cut for TPC and TOF combined kaon"};
   /// Pion
   Configurable<float> maxMomTPCOnlyPi{"maxMomTPCOnlyPi", 0.5, "Maximum momentum for TPC only cut pion"};
+  Configurable<float> maxMomHardCutOnlyPi{"maxMomHardCutOnlyPi", 50, "Maximum TPC inner momentum for pion"};
   Configurable<float> nSigmaTPCOnlyPi{"nSigmaTPCOnlyPi", 4., "number of sigma for TPC only cut pion"};
   Configurable<float> nSigmaTpcTpctofPi{"nSigmaTpcTpctofPi", 4., "number of sigma for TPC cut for TPC and TOF combined pion"};
   Configurable<float> nSigmaTofTpctofPi{"nSigmaTofTpctofPi", 4., "number of sigma for TOF cut for TPC and TOF combined pion"};
@@ -728,7 +730,6 @@ struct TreeWriterTpcTof {
   HistogramRegistry registry{"registry", {}};
 
   struct TofTrack {
-    bool isApplyHardCutOnly{false};
     double maxMomHardCutOnly{UndefValueDouble};
     double maxMomTPCOnly{UndefValueDouble};
     double tpcNSigma{UndefValueDouble};
@@ -978,15 +979,15 @@ struct TreeWriterTpcTof {
           trackQA = tracksQA.iteratorAt(trkIndex);
         }
 
-        TofTrack tofTriton(true, maxMomHardCutOnlyTr, maxMomTPCOnlyTr, trk.tpcNSigmaTr(), nSigmaTPCOnlyTr, trk.tofNSigmaTr(), trk.itsNSigmaTr(), trk.tpcExpSignalTr(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidTriton, nSigmaTofTpctofTr, nSigmaTpcTpctofTr);
+        TofTrack tofTriton(maxMomHardCutOnlyTr, maxMomTPCOnlyTr, trk.tpcNSigmaTr(), nSigmaTPCOnlyTr, trk.tofNSigmaTr(), trk.itsNSigmaTr(), trk.tpcExpSignalTr(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidTriton, nSigmaTofTpctofTr, nSigmaTpcTpctofTr);
 
-        TofTrack tofDeuteron(true, maxMomHardCutOnlyDe, maxMomTPCOnlyDe, trk.tpcNSigmaDe(), nSigmaTPCOnlyDe, trk.tofNSigmaDe(), trk.itsNSigmaDe(), trk.tpcExpSignalDe(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidDeuteron, nSigmaTofTpctofDe, nSigmaTpcTpctofDe);
+        TofTrack tofDeuteron(maxMomHardCutOnlyDe, maxMomTPCOnlyDe, trk.tpcNSigmaDe(), nSigmaTPCOnlyDe, trk.tofNSigmaDe(), trk.itsNSigmaDe(), trk.tpcExpSignalDe(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidDeuteron, nSigmaTofTpctofDe, nSigmaTpcTpctofDe);
 
-        TofTrack tofProton(false, UndefValueDouble, maxMomTPCOnlyPr, trk.tpcNSigmaPr(), nSigmaTPCOnlyPr, trk.tofNSigmaPr(), trk.itsNSigmaPr(), trk.tpcExpSignalPr(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidProton, nSigmaTofTpctofPr, nSigmaTpcTpctofPr);
+        TofTrack tofProton(maxMomHardCutOnlyPr, maxMomTPCOnlyPr, trk.tpcNSigmaPr(), nSigmaTPCOnlyPr, trk.tofNSigmaPr(), trk.itsNSigmaPr(), trk.tpcExpSignalPr(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidProton, nSigmaTofTpctofPr, nSigmaTpcTpctofPr);
 
-        TofTrack tofKaon(true, maxMomHardCutOnlyKa, maxMomTPCOnlyKa, trk.tpcNSigmaKa(), nSigmaTPCOnlyKa, trk.tofNSigmaKa(), trk.itsNSigmaKa(), trk.tpcExpSignalKa(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidKaon, nSigmaTofTpctofKa, nSigmaTpcTpctofKa);
+        TofTrack tofKaon(maxMomHardCutOnlyKa, maxMomTPCOnlyKa, trk.tpcNSigmaKa(), nSigmaTPCOnlyKa, trk.tofNSigmaKa(), trk.itsNSigmaKa(), trk.tpcExpSignalKa(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidKaon, nSigmaTofTpctofKa, nSigmaTpcTpctofKa);
 
-        TofTrack tofPion(false, UndefValueDouble, maxMomTPCOnlyPi, trk.tpcNSigmaPi(), nSigmaTPCOnlyPi, trk.tofNSigmaPi(), trk.itsNSigmaPi(), trk.tpcExpSignalPi(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidPion, nSigmaTofTpctofPi, nSigmaTpcTpctofPi);
+        TofTrack tofPion(maxMomHardCutOnlyPi, maxMomTPCOnlyPi, trk.tpcNSigmaPi(), nSigmaTPCOnlyPi, trk.tofNSigmaPi(), trk.itsNSigmaPi(), trk.tpcExpSignalPi(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidPion, nSigmaTofTpctofPi, nSigmaTpcTpctofPi);
 
         OccupancyValues occValues{};
         if constexpr (ModeId == ModeWithTrkQA) {
@@ -994,7 +995,7 @@ struct TreeWriterTpcTof {
         }
 
         for (const auto& tofTrack : {&tofTriton, &tofDeuteron, &tofProton, &tofKaon, &tofPion}) {
-          const bool passMomHardCut = !tofTrack->isApplyHardCutOnly || trk.tpcInnerParam() < tofTrack->maxMomHardCutOnly;
+          const bool passMomHardCut = trk.tpcInnerParam() < tofTrack->maxMomHardCutOnly;
           const bool passMomTpcOnly = trk.tpcInnerParam() <= tofTrack->maxMomTPCOnly && std::fabs(tofTrack->tpcNSigma) < tofTrack->nSigmaTPCOnly;
           const bool passMomTpcTof = trk.tpcInnerParam() > tofTrack->maxMomTPCOnly && std::fabs(tofTrack->tofNSigma) < tofTrack->nSigmaTofTpctof && std::fabs(tofTrack->tpcNSigma) < tofTrack->nSigmaTpcTpctof;
           if (passMomHardCut && (passMomTpcOnly || passMomTpcTof)) {
