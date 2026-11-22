@@ -1169,10 +1169,10 @@ struct ProbeThirdTrack {
   ConfigurableAxis axisPtMinTagdaught{"axisPtMinTagdaught", {10, 0.f, 1.f}, "Axis for Pt Min of Tag daughter"};
   ConfigurableAxis axisAbsEtaMaxTagdaught{"axisAbsEtaMaxTagdaught", {10, 0.f, 1.f}, "Axis for AbsEtaMax for Tag daughter"};
   ConfigurableAxis axisRadiusTag{"axisRadiusTag", {100, 0.f, 0.5f}, "Axis for Tag Radius (cm)"};
-  ConfigurableAxis axisMassDplusToKPiPi{"axisMassDplusToKPiPi", {225, 1.65f, 2.10f}, "Axis for Mass of D+ -> Kpi pi"};
-  ConfigurableAxis axisMassDsOrDplusToKKPi{"axisMassDsOrDplusToKKPi", {225, 1.65f, 2.10f}, "Axis for Tag Radius (cm)"};
-  ConfigurableAxis axisMassDstarToDzeroPi{"axisMassDstarToDzeroPi", {350, 0.135f, 0.17f}, "Axis for Tag Radius (cm)"};
-  ConfigurableAxis axisMassDstarToDzeroToKK{"axisMassDstarToDzeroToKK", {350, 0.135f, 0.17f}, "Axis for Tag Radius (cm)"};
+  ConfigurableAxis axisMassDplusToKPiPi{"axisMassDplusToKPiPi", {225, 1.65f, 2.10f}, "Axis for mass of D+ -> Kpipi"};
+  ConfigurableAxis axisMassDsOrDplusToKKPi{"axisMassDsOrDplusToKKPi", {225, 1.65f, 2.10f}, "Axis for mass of Ds+/D+ -> KKpi"};
+  ConfigurableAxis axisMassDstarToDzeroPi{"axisMassDstarToDzeroPi", {350, 0.135f, 0.17f}, "Axis for mass of D*+ -> D0 pi"};
+  ConfigurableAxis axisMassDstarToDzeroToKK{"axisMassDstarToDzeroToKK", {350, 0.135f, 0.17f}, "Axis for mass of D*+ -> D0 -> KK"};
 
   Filter tagMcFilter = aod::tagandprobe::isSignal > static_cast<uint8_t>(0);
 
