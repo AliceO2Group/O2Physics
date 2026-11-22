@@ -69,34 +69,6 @@ bool isEventSelected(const CollisionType& collision, const int applyEvSel)
   }
 };
 
-/// Random downsampling trigger function using Tsalis/Hagedorn spectra fit (sqrt(s) = 62.4 GeV to 13 TeV)
-/// as in https://iopscience.iop.org/article/10.1088/2399-6528/aab00f/pdf
-inline bool downsampleTsalisCharged(TRandom3* fRndm, const double pt, const double factor1Pt, const double mass, const double sqrtSNN, const double maxPt = 1e9)
-{
-  if (factor1Pt < 0. || pt > maxPt) {
-    return true;
-  }
-
-  auto tsalisCharged = [&](const double pT) {
-    const double a = 6.81, b = 59.24;
-    const double c = 0.082, d = 0.151;
-    const double mt = std::sqrt(mass * mass + pT * pT);
-    const double n = a + b / sqrtSNN;
-    const double t = c + d / sqrtSNN;
-    const double p0 = n * t;
-    const double result = std::pow((1. + mt / p0), -n);
-    return result;
-  };
-
-  const double prob = tsalisCharged(pt) * pt;
-  const double probNorm = tsalisCharged(1.);
-  if ((fRndm->Rndm() * ((prob / probNorm) * pt * pt)) > factor1Pt) {
-    return false;
-  } else {
-    return true;
-  }
-};
-
 // Track selection
 template <typename TrackType>
 bool isTrackSelected(const TrackType& track, const int trackSelection)
@@ -123,9 +95,10 @@ double tpcSignalGeneric(const TrkType& track)
   }
 }
 
-/// Determine interaction rate source and sqrtSNN from CCDB
-void evaluateIrSourceAndSqrtSnn(const o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, const std::string& ccdbPathGrpLhcIf, const uint64_t timestamp, std::string& irSource, float& sqrtSNN)
+/// Determine interaction rate source from CCDB
+std::string evaluateIrSource(const o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, const std::string& ccdbPathGrpLhcIf, const uint64_t timestamp)
 {
+  std::string irSource{""};
   o2::parameters::GRPLHCIFData* genRunParams = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(ccdbPathGrpLhcIf, timestamp);
   if (genRunParams != nullptr) {
     const auto collSys = CollisionSystemType::getCollisionTypeFromGrp(genRunParams);
@@ -134,14 +107,11 @@ void evaluateIrSourceAndSqrtSnn(const o2::framework::Service<o2::ccdb::BasicCCDB
     } else {
       irSource = "ZNC hadronic";
     }
-    sqrtSNN = genRunParams->getSqrtS();
     LOG(info) << "irSource determined from General Run Parameters: " << irSource;
-    LOG(info) << "sqrtSNN determined from General Run Parameters: " << sqrtSNN << " GeV";
   } else {
-    irSource = "";
-    sqrtSNN = 5360.f;
-    LOG(warning) << "No General Run Parameters object found. irSource will remain undefined, sqrtSNN defaulted to 5360 GeV";
+    LOG(warning) << "No General Run Parameters object found. irSource will remain undefined";
   }
+  return irSource;
 }
 
 struct OccupancyValues {
