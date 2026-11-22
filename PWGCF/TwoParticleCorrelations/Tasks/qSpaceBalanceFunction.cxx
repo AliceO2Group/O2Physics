@@ -146,9 +146,9 @@ struct BfHistos {
   Histo2DPerPair fhMixedQinv, fhMixedQlong, fhMixedQout, fhMixedQside;
   /// subsamples (only if cfgNSubsamples > 0): axes (class, subsample, ...)
   bool withSubsamples = false;
-  std::shared_ptr<TH2> fhSubEvents;      ///< events per (class, subsample)
-  std::shared_ptr<TH2> fhSubEventPairs;  ///< mixed event pairs per (class, subsample of the first event)
-  std::shared_ptr<TH3> fhSubKaons;       ///< sum N_a per (class, subsample, charge)
+  std::shared_ptr<TH2> fhSubEvents;                                                               ///< events per (class, subsample)
+  std::shared_ptr<TH2> fhSubEventPairs;                                                           ///< mixed event pairs per (class, subsample of the first event)
+  std::shared_ptr<TH3> fhSubKaons;                                                                ///< sum N_a per (class, subsample, charge)
   std::array<std::array<std::shared_ptr<TH3>, NCharges>, NCharges> fhSubSameQinv, fhSubMixedQinv; ///< (class, subsample, Q_inv)
   /// mixing pool: per class, the last cfgMixDepth events (newest first)
   std::vector<std::deque<MixEvent>> pool;
