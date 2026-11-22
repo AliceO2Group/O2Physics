@@ -188,28 +188,43 @@ inline void initAdaptDwnsplHistograms(const std::string& ccdbPathForAdaptDwnsplF
   const bool isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForAdaptDwnsplFile, ".", metadata, -1, false, adaptDwnsplFileName);
   if (!isFileAvailable) {
     LOGF(fatal, "Failed to retrieve expected-momentum histograms file from CCDB: %s/%s", ccdbPathForAdaptDwnsplFile.c_str(), adaptDwnsplFileName.c_str());
-    return;
   }
   TFile* adaptDwsplFile = TFile::Open(adaptDwnsplFileName.c_str(), "read");
   if (adaptDwsplFile == nullptr || adaptDwsplFile->IsZombie()) {
     LOGF(fatal, "Failed to open expected-momentum histograms file from CCDB: %s/%s", ccdbPathForAdaptDwnsplFile.c_str(), adaptDwnsplFileName.c_str());
-    return;
   }
   histoPos = dynamic_cast<TH2*>(adaptDwsplFile->Get<TH2>(adaptDwnsplHistoPosName.c_str())->Clone());
   histoNeg = dynamic_cast<TH2*>(adaptDwsplFile->Get<TH2>(adaptDwnsplHistoNegName.c_str())->Clone());
   if (histoPos == nullptr) {
     LOGF(fatal, "Histogram %s not found in expected-momentum histograms file!", adaptDwnsplHistoPosName.c_str());
-    return;
   }
   if (histoNeg == nullptr) {
     LOGF(fatal, "Histogram %s not found in expected-momentum histograms file!", adaptDwnsplHistoNegName.c_str());
-    return;
+  }
+  if (histoPos->GetXaxis()->IsVariableBinSize()) {
+    LOGF(fatal, "Histogram %s has variable bin size, which is not allowed!", adaptDwnsplHistoPosName.c_str());
+  }
+  if (histoNeg->GetXaxis()->IsVariableBinSize()) {
+    LOGF(fatal, "Histogram %s has variable bin size, which is not allowed!", adaptDwnsplHistoNegName.c_str());
   }
   histoPos->SetDirectory(nullptr);
   histoNeg->SetDirectory(nullptr);
   adaptDwsplFile->Close();
   delete adaptDwsplFile;
   adaptDwsplFile = nullptr;
+}
+
+inline bool performAdaptiveDownsampling(TRandom3* fRndm, const double p, const o2::track::PID::ID pid, const double targetYield, const TH2* histoExpected)
+{
+  const double targetYieldPerBin = targetYield * histoExpected->GetXaxis()->GetBinWidth(1);
+  const double yieldExpected = histoExpected->GetBinContent(histoExpected->GetXaxis()->FindBin(std::log10(p)), pid);
+  if (yieldExpected < targetYieldPerBin) {
+    return true;
+  }
+  if (fRndm->Uniform(1) > (targetYieldPerBin / yieldExpected)) {
+    return false;
+  }
+  return true;
 }
 
 } // namespace o2::dpg_tpcskimstablecreator

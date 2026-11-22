@@ -98,6 +98,7 @@ struct TreeWriterTpcV0 {
   Configurable<std::string> adaptDwnsplHistoPosName{"adaptDwnsplHistoPosName", "tree-writer-tpc-v0/hMomentumPos", "Name of the histogram with expected-momentum of positively charged particles"};
   Configurable<std::string> adaptDwnsplHistoNegName{"adaptDwnsplHistoNegName", "tree-writer-tpc-v0/hMomentumNeg", "Name of the histogram with expected-momentum of negatively charged particles"};
   Configurable<float> adaptDwnsplHistoScaleFactor{"adaptDwnsplHistoScaleFactor", 1.f, "Scaling factor for the histograms with expected-momentum"};
+  Configurable<float> adaptDwnsplTargetYield{"adaptDwnsplTargetYield", 5000000.f, "Target yield of each particle species per log10(p) unity"};
   /// Configurables downsampling
   Configurable<double> dwnSmplFactorPi{"dwnSmplFactorPi", 1., "downsampling factor for pions, default fraction to keep is 1."};
   Configurable<double> dwnSmplFactorPr{"dwnSmplFactorPr", 1., "downsampling factor for protons, default fraction to keep is 1."};
@@ -555,6 +556,10 @@ struct TreeWriterTpcV0 {
             }
           }
           if (saveTrees && passDownsamplig) {
+            const TH2* histoMomentum = isPositive ? mHistMomentumPos : mHistMomentumNeg;
+            if (applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, dauTrack.tpcInnerParam(), daughter.id, adaptDwnsplTargetYield, histoMomentum)) {
+              return false;
+            }
             OccupancyValues occValues{};
             if constexpr (ModeId == ModeWithTrkQA) {
               evaluateOccupancyVariables(dauTrack, occValues);
@@ -751,6 +756,7 @@ struct TreeWriterTpcTof {
   Configurable<std::string> adaptDwnsplHistoPosName{"adaptDwnsplHistoPosName", "tree-writer-tpc-tof/hMomentumPos", "Name of the histogram with expected-momentum of positively charged particles"};
   Configurable<std::string> adaptDwnsplHistoNegName{"adaptDwnsplHistoNegName", "tree-writer-tpc-tof/hMomentumNeg", "Name of the histogram with expected-momentum of negatively charged particles"};
   Configurable<float> adaptDwnsplHistoScaleFactor{"adaptDwnsplHistoScaleFactor", 1.f, "Scaling factor for the histograms with expected-momentum"};
+  Configurable<float> adaptDwnsplTargetYield{"adaptDwnsplTargetYield", 5000000.f, "Target yield of each particle species per log10(p) unity"};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -1043,6 +1049,10 @@ struct TreeWriterTpcTof {
               }
             }
             if (saveTrees && passDownsamplig) {
+              const TH2* histoMomentum = trk.signed1Pt() > 0 ? mHistMomentumPos : mHistMomentumNeg;
+              if (applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, trk.tpcInnerParam(), tofTrack->pid, adaptDwnsplTargetYield, histoMomentum)) {
+                continue;
+              }
               fillSkimmedTpcTofTable<IsCorrectedDeDx, ModeId>(trk, trackQA, existTrkQA, collision, tofTrack->tpcNSigma, tofTrack->tofNSigma, tofTrack->itsNSigma, tofTrack->tpcExpSignal, tofTrack->pid, runnumber, tofTrack->dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame, occValues, isGoodRctEvent);
             }
           }
