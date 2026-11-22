@@ -58,3 +58,9 @@ o2physics_add_dpl_workflow(femto-producer-sigma0
           SOURCES ./femtoProducerSigma0.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
+
+# TEST ONLY: LF sigma0builder -> femto tables converter for cross-checking femto-producer-sigma0
+o2physics_add_dpl_workflow(femto-producer-sigma0-from-lf
+          SOURCES ./femtoProducerSigma0FromLf.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+          COMPONENT_NAME Analysis)
