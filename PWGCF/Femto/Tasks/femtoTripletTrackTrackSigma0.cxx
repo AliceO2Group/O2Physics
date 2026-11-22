@@ -42,7 +42,6 @@
 #include <Framework/runDataProcessing.h>
 
 #include <map>
-#include <string>
 #include <vector>
 
 using namespace o2::analysis::femto;

@@ -37,7 +37,7 @@ constexpr const char PrefixCtrMcParticleMcParticleMcParticle[] = "CtrMcParticleM
 using ConfCtrTrackTrackTrack = closepairrejection::ConfCpr<PrefixCtrTrackTrackTrack, true, modes::KinematicVariable::kQ3>;
 using ConfCtrTrackTrackV0 = closepairrejection::ConfCpr<PrefixCtrTrackTrackV0, true, modes::KinematicVariable::kQ3>;
 using ConfCtrTrackTrackCascade = closepairrejection::ConfCpr<PrefixCtrTrackTrackCascade, true, modes::KinematicVariable::kQ3>;
-using ConfCtrTrackTrackSigma0 = closepairrejection::ConfCpr<PrefixCtrTrackTrackSigma0>;
+using ConfCtrTrackTrackSigma0 = closepairrejection::ConfCpr<PrefixCtrTrackTrackSigma0, true, modes::KinematicVariable::kQ3>;
 // generated particles, no cut by default (close triplet rejection corrects a detector effect)
 using ConfCtrMcParticleMcParticleMcParticle = closepairrejection::ConfCpr<PrefixCtrMcParticleMcParticleMcParticle, false, modes::KinematicVariable::kQ3>;
 

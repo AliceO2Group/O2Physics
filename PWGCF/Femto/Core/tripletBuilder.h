@@ -1244,7 +1244,7 @@ class TripletTrackTrackSigma0Builder
           tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner2, mSigma0Cleaner, mCtrMe, mTcMe, mEventStride, mTrackHistManager1Me, mTrackHistManager2Me, mSigma0HistManagerMe, mColHistManagerMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner2, mSigma0Cleaner, mCtrMe, mTcMe, mEventStride, mTrackHistManager2Me, mTrackHistManager1Me, mSigma0HistManagerMe, mColHistManagerMe);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner2, mSigma0Cleaner, mCtrMe, mTcMe, mEventStride, mTrackHistManager1Me, mTrackHistManager2Me, mSigma0HistManagerMe, mColHistManagerMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
           tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner2, mSigma0Cleaner, mCtrMe, mTcMe, mEventStride, mTrackHistManager1Me, mTrackHistManager2Me, mSigma0HistManagerMe, mColHistManagerMe);
