@@ -38,6 +38,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <filesystem>
 #include <map>
 #include <string>
 
@@ -154,10 +155,12 @@ inline void initAdaptDwnsplHistograms(const std::string& ccdbPathForAdaptDwnsplF
   o2::ccdb::CcdbApi ccdbApi;
   ccdbApi.init("http://alice-ccdb.cern.ch");
   const std::map<std::string, std::string> metadata;
-  // Retrieve the file from CCDB
-  const bool isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForAdaptDwnsplFile, ".", metadata, -1, false, adaptDwnsplFileName);
-  if (!isFileAvailable) {
-    LOGF(fatal, "Failed to retrieve expected-momentum histograms file from CCDB: %s/%s", ccdbPathForAdaptDwnsplFile.c_str(), adaptDwnsplFileName.c_str());
+  if (std::filesystem::exists(adaptDwnsplFileName.c_str())) {
+    // Retrieve the file from CCDB
+    const bool isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForAdaptDwnsplFile, ".", metadata, -1, false, adaptDwnsplFileName);
+    if (!isFileAvailable) {
+      LOGF(fatal, "Failed to retrieve expected-momentum histograms file from CCDB: %s/%s", ccdbPathForAdaptDwnsplFile.c_str(), adaptDwnsplFileName.c_str());
+    }
   }
   TFile* adaptDwsplFile = TFile::Open(adaptDwnsplFileName.c_str(), "read");
   if (adaptDwsplFile == nullptr || adaptDwsplFile->IsZombie()) {
