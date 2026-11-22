@@ -333,8 +333,8 @@ struct SingleTrackQC {
       fRegistry.add("Track/positive/hTrackType", "track type", o2::framework::HistType::kTH1F, {{6, -0.5f, 5.5}}, false);
       fRegistry.add("Track/positive/hDCAxy2D", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", o2::framework::HistType::kTH2F, {{200, -0.5f, 0.5f}, {200, -0.5f, 0.5f}}, false);
       fRegistry.add("Track/positive/hDCAxy2DinSigma", "DCA x vs. y;DCA_{x} (#sigma);DCA_{y} (#sigma)", o2::framework::HistType::kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
-      fRegistry.add("Track/positive/hDCAxy", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", o2::framework::HistType::kTH1F, {{1000, 0.f, 1.0f}}, false); // dummy comment
-      fRegistry.add("Track/positive/hDCAxyinSigma", "DCA x vs. y;DCA_{x} (#sigma);DCA_{y} (#sigma)", o2::framework::HistType::kTH1F, {{100, 0.0f, 10.0f}}, false);
+      fRegistry.add("Track/positive/hDCAxy", "DCAxy;DCA_{xy} (cm)", o2::framework::HistType::kTH1F, {{1000, 0.f, 1.0f}}, false);
+      fRegistry.add("Track/positive/hDCAxyinSigma", "DCAxy in sigma;DCA_{xy} (#sigma)", o2::framework::HistType::kTH1F, {{100, 0.0f, 10.0f}}, false);
       fRegistry.add("Track/positive/hDCAxRes_Pt", "DCA_{x} resolution vs. pT;p_{T} (GeV/c);DCA_{x} resolution (#mum)", o2::framework::HistType::kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
       fRegistry.add("Track/positive/hDCAyRes_Pt", "DCA_{y} resolution vs. pT;p_{T} (GeV/c);DCA_{y} resolution (#mum)", o2::framework::HistType::kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
       fRegistry.add("Track/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", o2::framework::HistType::kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
@@ -672,7 +672,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/positive/hDCAxy2DinSigma"), track.fwdDcaX() / std::sqrt(track.cXXatDCA()), track.fwdDcaY() / std::sqrt(track.cYYatDCA()));
       fRegistry.fill(HIST("Track/positive/hDCAxRes_Pt"), track.pt(), std::sqrt(track.cXXatDCA()) * 1e+4);
       fRegistry.fill(HIST("Track/positive/hDCAyRes_Pt"), track.pt(), std::sqrt(track.cYYatDCA()) * 1e+4);
-      fRegistry.fill(HIST("Track/positive/hDCAxyRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaFwdDcaXY(track) * 1e+4);
+      fRegistry.fill(HIST("Track/positive/hDCAxyRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaFwdDcaXY(track) * 1e+4 / std::sqrt(2.f));
       fRegistry.fill(HIST("Track/positive/hDCAx_PosZ"), collision.posZ(), track.fwdDcaX());
       fRegistry.fill(HIST("Track/positive/hDCAy_PosZ"), collision.posZ(), track.fwdDcaY());
       fRegistry.fill(HIST("Track/positive/hDCAx_Phi"), track.phi(), track.fwdDcaX());
@@ -699,7 +699,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/negative/hDCAxy2DinSigma"), track.fwdDcaX() / std::sqrt(track.cXXatDCA()), track.fwdDcaY() / std::sqrt(track.cYYatDCA()));
       fRegistry.fill(HIST("Track/negative/hDCAxRes_Pt"), track.pt(), std::sqrt(track.cXXatDCA()) * 1e+4);
       fRegistry.fill(HIST("Track/negative/hDCAyRes_Pt"), track.pt(), std::sqrt(track.cYYatDCA()) * 1e+4);
-      fRegistry.fill(HIST("Track/negative/hDCAxyRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaFwdDcaXY(track) * 1e+4);
+      fRegistry.fill(HIST("Track/negative/hDCAxyRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaFwdDcaXY(track) * 1e+4 / std::sqrt(2.f));
       fRegistry.fill(HIST("Track/negative/hDCAx_PosZ"), collision.posZ(), track.fwdDcaX());
       fRegistry.fill(HIST("Track/negative/hDCAy_PosZ"), collision.posZ(), track.fwdDcaY());
       fRegistry.fill(HIST("Track/negative/hDCAx_Phi"), track.phi(), track.fwdDcaX());
