@@ -322,13 +322,13 @@ struct HfTaskCharmHadronsV0FemtoDream {
 
   void init(InitContext& /*context*/)
   {
-    std::array<bool, 5> processes = {doprocessDataLcV0, doprocessDataDplusV0, doprocessDataD0V0, doprocessDataDstarV0, doprocessMcDplusV0};
+    std::array<bool, 6> processes = {doprocessDataLcV0, doprocessDataDplusV0, doprocessDataD0V0, doprocessDataDstarV0, doprocessMcDplusV0, doprocessMcDstarV0};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
     bool process3Prong = doprocessDataLcV0 || doprocessDataDplusV0 || doprocessMcDplusV0;
     bool process2Prong = doprocessDataD0V0;
-    bool processDstar = doprocessDataDstarV0;
+    bool processDstar = doprocessDataDstarV0 || doprocessMcDstarV0;
 
     // setup columnpolicy for binning
     colBinningMult = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult}};
