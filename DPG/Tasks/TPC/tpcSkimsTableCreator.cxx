@@ -76,18 +76,8 @@ using CascsWithID = soa::Join<aod::CascDatas, aod::CascMapID, aod::CascTOFNSigma
 template <typename T>
 concept V0OrCasc = std::same_as<T, V0sWithID::iterator> || std::same_as<T, CascsWithID::iterator>;
 
-struct TreeWriterTpcV0 {
-
-  Produces<o2::aod::SkimmedTPCV0Tree> rowTPCTree;
-  Produces<o2::aod::SkimmedTPCV0TreeWithTrkQA> rowTPCTreeWithTrkQA;
-
+struct CfgCommon : ConfigurableGroup {
   /// Configurables general
-  Configurable<float> nSigmaTofDauTrackPi{"nSigmaTofDauTrackPi", 999.f, "n-sigma TOF cut on the pion daughter tracks"};
-  Configurable<float> nSigmaTofDauTrackPr{"nSigmaTofDauTrackPr", 999.f, "n-sigma TOF cut on the proton daughter tracks"};
-  Configurable<float> nSigmaTofDauTrackKa{"nSigmaTofDauTrackKa", 999.f, "n-sigma TOF cut on the kaon daughter tracks"};
-  Configurable<bool> rejectNoTofDauTrackPi{"rejectNoTofDauTrackPi", false, "reject not matched to TOF pion daughter tracks"};
-  Configurable<bool> rejectNoTofDauTrackPr{"rejectNoTofDauTrackPr", false, "reject not matched to TOF proton daughter tracks"};
-  Configurable<bool> rejectNoTofDauTrackKa{"rejectNoTofDauTrackKa", false, "reject not matched to TOF kaon daughter tracks"};
   Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
@@ -95,13 +85,8 @@ struct TreeWriterTpcV0 {
   Configurable<bool> applyAdaptiveDownsampling{"applyAdaptiveDownsampling", false, "Apply downsampling driven by expected momentum distribution"};
   Configurable<std::string> ccdbPathForAdaptDwnsplFile{"ccdbPathForAdaptDwnsplFile", "", "CCDB path for file with expected-momentum histograms"};
   Configurable<std::string> adaptDwnsplFileName{"adaptDwnsplFileName", "AnalysisResults.root", "Name of the file with expected-momentum histograms"};
-  Configurable<std::string> adaptDwnsplHistoPosName{"adaptDwnsplHistoPosName", "tree-writer-tpc-v0/hMomentumPos", "Name of the histogram with expected-momentum of positively charged particles"};
-  Configurable<std::string> adaptDwnsplHistoNegName{"adaptDwnsplHistoNegName", "tree-writer-tpc-v0/hMomentumNeg", "Name of the histogram with expected-momentum of negatively charged particles"};
   Configurable<float> adaptDwnsplHistoScaleFactor{"adaptDwnsplHistoScaleFactor", 1.f, "Scaling factor for the histograms with expected-momentum"};
-  Configurable<float> adaptDwnsplTargetYield{"adaptDwnsplTargetYield", 5000000.f, "Target yield of each particle species per log10(p) unity"};
-  // Configurables for output tables reservation size
-  Configurable<float> reserveV0Ratio{"reserveV0Ratio", 0.05, "Ratio of how many tracks from V0s are expected in the output table to the input V0 table size"};
-  Configurable<float> reserveCascRatio{"reserveCascRatio", 0.0025, "Ratio of how many tracks from cascades are expected in the output table to the input Cascade table size"};
+  Configurable<float> adaptDwnsplTargetYieldsplHistoScaleFactor{"adaptDwnsplTargetYieldsplHistoScaleFactor", 5000000.f, "Target yield of each particle species per log10(p) unity"};
   Configurable<bool> saveReserveQaHisto{"saveReserveQaHisto", true, "Flag to save the DF-wise ratio of output table size to that of input table"};
   // Configurables for run condtion table
   Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
@@ -114,6 +99,29 @@ struct TreeWriterTpcV0 {
   Configurable<bool> saveTrees{"saveTrees", true, "Flag to save trees"};
   Configurable<bool> saveMomentumHistograms{"saveMomentumHistograms", false, "Flag to save momentum histograms"};
   ConfigurableAxis axisMomentumHistograms{"axisMomentumHistograms", {200, std::log10(0.1), std::log10(20.)}, "log_{10}(#it{p} / (GeV/#it{c}))"};
+};
+
+struct TreeWriterTpcV0 {
+
+  Produces<o2::aod::SkimmedTPCV0Tree> rowTPCTree;
+  Produces<o2::aod::SkimmedTPCV0TreeWithTrkQA> rowTPCTreeWithTrkQA;
+
+  CfgCommon cfgsCommon;
+
+  /// Configurables general
+  Configurable<float> nSigmaTofDauTrackPi{"nSigmaTofDauTrackPi", 999.f, "n-sigma TOF cut on the pion daughter tracks"};
+  Configurable<float> nSigmaTofDauTrackPr{"nSigmaTofDauTrackPr", 999.f, "n-sigma TOF cut on the proton daughter tracks"};
+  Configurable<float> nSigmaTofDauTrackKa{"nSigmaTofDauTrackKa", 999.f, "n-sigma TOF cut on the kaon daughter tracks"};
+  Configurable<bool> rejectNoTofDauTrackPi{"rejectNoTofDauTrackPi", false, "reject not matched to TOF pion daughter tracks"};
+  Configurable<bool> rejectNoTofDauTrackPr{"rejectNoTofDauTrackPr", false, "reject not matched to TOF proton daughter tracks"};
+  Configurable<bool> rejectNoTofDauTrackKa{"rejectNoTofDauTrackKa", false, "reject not matched to TOF kaon daughter tracks"};
+
+  /// Configurables adaptive downsampling
+  Configurable<std::string> adaptDwnsplHistoPosName{"adaptDwnsplHistoPosName", "tree-writer-tpc-v0/hMomentumPos", "Name of the histogram with expected-momentum of positively charged particles"};
+  Configurable<std::string> adaptDwnsplHistoNegName{"adaptDwnsplHistoNegName", "tree-writer-tpc-v0/hMomentumNeg", "Name of the histogram with expected-momentum of negatively charged particles"};
+  // Configurables for output tables reservation size
+  Configurable<float> reserveV0Ratio{"reserveV0Ratio", 0.05, "Ratio of how many tracks from V0s are expected in the output table to the input V0 table size"};
+  Configurable<float> reserveCascRatio{"reserveCascRatio", 0.0025, "Ratio of how many tracks from cascades are expected in the output table to the input Cascade table size"};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -184,7 +192,7 @@ struct TreeWriterTpcV0 {
       LOGP(fatal, "One and only one process function should be enabled");
     }
 
-    if (!(saveTrees || saveMomentumHistograms)) {
+    if (!(cfgsCommon.saveTrees || cfgsCommon.saveMomentumHistograms)) {
       LOGP(fatal, "At least one out of trees or momentum histograms should be saved");
     }
 
@@ -192,27 +200,27 @@ struct TreeWriterTpcV0 {
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
 
-    rctChecker.init(rctLabel, checkZdc, treatLimitedAcceptanceAsBad);
+    rctChecker.init(cfgsCommon.rctLabel, cfgsCommon.checkZdc, cfgsCommon.treatLimitedAcceptanceAsBad);
 
-    if (saveReserveQaHisto) {
+    if (cfgsCommon.saveReserveQaHisto) {
       registry.add("hV0OutputRatio", "V0 out/in ratio;V0 out/in ratio;Entries", {HistType::kTH1F, {{100, 0, reserveV0Ratio}}});
       registry.add("hCascOutputRatio", "Casc out/in ratio;Casc out/in ratio;Entries", {HistType::kTH1F, {{100, 0, reserveCascRatio}}});
     }
 
-    if (saveMomentumHistograms) {
-      registry.add("hMomentumPos", "hMomentumPos;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{axisMomentumHistograms}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
-      registry.add("hMomentumNeg", "hMomentumNeg;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{axisMomentumHistograms}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
+    if (cfgsCommon.saveMomentumHistograms) {
+      registry.add("hMomentumPos", "hMomentumPos;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{cfgsCommon.axisMomentumHistograms}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
+      registry.add("hMomentumNeg", "hMomentumNeg;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{cfgsCommon.axisMomentumHistograms}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
       for (int iParticle = 0; iParticle < o2::track::PID::NIDs; ++iParticle) {
         registry.get<TH2>(HIST("hMomentumPos"))->GetYaxis()->SetBinLabel(iParticle + 1, ParticleNames.at(iParticle).data());
         registry.get<TH2>(HIST("hMomentumNeg"))->GetYaxis()->SetBinLabel(iParticle + 1, ParticleNames.at(iParticle).data());
       }
     }
 
-    if (applyAdaptiveDownsampling) {
-      initAdaptDwnsplHistograms(ccdbPathForAdaptDwnsplFile, adaptDwnsplFileName, adaptDwnsplHistoPosName, adaptDwnsplHistoNegName, mHistMomentumPos, mHistMomentumNeg);
-      if (adaptDwnsplHistoScaleFactor != 1.f) {
-        mHistMomentumPos->Scale(adaptDwnsplHistoScaleFactor);
-        mHistMomentumNeg->Scale(adaptDwnsplHistoScaleFactor);
+    if (cfgsCommon.applyAdaptiveDownsampling) {
+      initAdaptDwnsplHistograms(cfgsCommon.ccdbPathForAdaptDwnsplFile, cfgsCommon.adaptDwnsplFileName, adaptDwnsplHistoPosName, adaptDwnsplHistoNegName, mHistMomentumPos, mHistMomentumNeg);
+      if (cfgsCommon.adaptDwnsplHistoScaleFactor != 1.f) {
+        mHistMomentumPos->Scale(cfgsCommon.adaptDwnsplHistoScaleFactor);
+        mHistMomentumNeg->Scale(cfgsCommon.adaptDwnsplHistoScaleFactor);
       }
     }
   }
@@ -330,7 +338,7 @@ struct TreeWriterTpcV0 {
                  mass,
                  bg,
                  multTPC / MultiplicityNorm,
-                 std::sqrt(nClNorm / ncl),
+                 std::sqrt(cfgsCommon.nClNorm / ncl),
                  nclPID,
                  id,
                  nSigmaTPC,
@@ -361,7 +369,7 @@ struct TreeWriterTpcV0 {
                           mass,
                           bg,
                           multTPC / MultiplicityNorm,
-                          std::sqrt(nClNorm / ncl),
+                          std::sqrt(cfgsCommon.nClNorm / ncl),
                           nclPID,
                           id,
                           nSigmaTPC,
@@ -471,11 +479,11 @@ struct TreeWriterTpcV0 {
     std::string irSource{};
     bool isFirstCollision{true};
     for (const auto& collision : collisions) {
-      if (!isEventSelected(collision, applyEvSel)) {
+      if (!isEventSelected(collision, cfgsCommon.applyEvSel)) {
         continue;
       }
       const bool isGoodRctEvent = rctChecker.checkTable(collision);
-      if (requireGoodRct && !isGoodRctEvent) {
+      if (cfgsCommon.requireGoodRct && !isGoodRctEvent) {
         continue;
       }
 
@@ -483,7 +491,7 @@ struct TreeWriterTpcV0 {
       const auto cascs = myCascs.sliceBy(perCollisionCascs, static_cast<int>(collision.globalIndex()));
       const auto bc = collision.bc_as<BCType>();
       if (isFirstCollision) {
-        irSource = evaluateIrSource(ccdb, ccdbPathGrpLhcIf, bc.timestamp());
+        irSource = evaluateIrSource(ccdb, cfgsCommon.ccdbPathGrpLhcIf, bc.timestamp());
       }
       isFirstCollision = false;
       const int runnumber = bc.runNumber();
@@ -521,11 +529,11 @@ struct TreeWriterTpcV0 {
         const auto daughterId = isPositive ? v0Mother.posDaughterId : v0Mother.negDaughterId;
         const V0Daughter daughter = createV0Daughter<IsCorrectedDeDx>(v0, dauTrackWithITSPid, v0Id, daughterId, isPositive);
 
-        const bool passTrackSelection = isTrackSelected(dauTrack, trackSelection);
+        const bool passTrackSelection = isTrackSelected(dauTrack, cfgsCommon.trackSelection);
         const bool passNSigmaTofCut = std::fabs(daughter.tofNSigma) < daughter.nSigmaTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) < nSigmaTofUnmatchedEqualityTolerance;
         const bool passMatchTofRequirement = !daughter.rejectNoTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) > nSigmaTofUnmatchedEqualityTolerance;
         if (passTrackSelection && passNSigmaTofCut && passMatchTofRequirement) {
-          if (saveMomentumHistograms) {
+          if (cfgsCommon.saveMomentumHistograms) {
             const double log10p = std::log10(dauTrack.tpcInnerParam());
             if (isPositive) {
               registry.fill(HIST("hMomentumPos"), log10p, daughter.id);
@@ -533,9 +541,9 @@ struct TreeWriterTpcV0 {
               registry.fill(HIST("hMomentumNeg"), log10p, daughter.id);
             }
           }
-          if (saveTrees) {
+          if (cfgsCommon.saveTrees) {
             const TH2* histoMomentum = isPositive ? mHistMomentumPos : mHistMomentumNeg;
-            if (applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, dauTrack.tpcInnerParam(), daughter.id, adaptDwnsplTargetYield, histoMomentum)) {
+            if (cfgsCommon.applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, dauTrack.tpcInnerParam(), daughter.id, cfgsCommon.adaptDwnsplTargetYieldsplHistoScaleFactor, histoMomentum)) {
               return false;
             }
             OccupancyValues occValues{};
@@ -588,7 +596,7 @@ struct TreeWriterTpcV0 {
     LOG(info) << "nV0Entries / V0 table size = " << static_cast<double>(nV0Entries) / myV0s.size();
     LOG(info) << "nCascEntries / Cascade table size = " << static_cast<double>(nCascEntries) / myCascs.size();
 
-    if (saveReserveQaHisto) {
+    if (cfgsCommon.saveReserveQaHisto) {
       registry.fill(HIST("hV0OutputRatio"), static_cast<double>(nV0Entries) / myV0s.size());
       registry.fill(HIST("hCascOutputRatio"), static_cast<double>(nCascEntries) / myCascs.size());
     }
@@ -670,10 +678,8 @@ struct TreeWriterTpcTof {
   Produces<o2::aod::SkimmedTPCTOFTree> rowTPCTOFTree;
   Produces<o2::aod::SkimmedTPCTOFTreeWithTrkQA> rowTPCTOFTreeWithTrkQA;
 
-  /// Configurables general
-  Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
-  Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
-  Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+  CfgCommon cfgsCommon;
+
   /// Triton
   Configurable<float> maxMomTPCOnlyTr{"maxMomTPCOnlyTr", 1.5, "Maximum momentum for TPC only cut triton"};
   Configurable<float> maxMomHardCutOnlyTr{"maxMomHardCutOnlyTr", 50, "Maximum TPC inner momentum for triton"};
@@ -706,26 +712,9 @@ struct TreeWriterTpcTof {
   Configurable<float> nSigmaTofTpctofPi{"nSigmaTofTpctofPi", 4., "number of sigma for TOF cut for TPC and TOF combined pion"};
   // Configurable for output table reservation size
   Configurable<float> reserveTrackRatio{"reserveTrackRatio", 0.003, "Ratio of how many tracks are expected in the output table to the input Tracks table size"};
-  Configurable<bool> saveReserveQaHisto{"saveReserveQaHisto", true, "Flag to save the DF-wise ratio of output table size to that of input table"};
   // Configurables for run condtion table
-  Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
-  Configurable<bool> checkZdc{"checkZdc", false, "set ZDC flag for PbPb"};
-  Configurable<bool> treatLimitedAcceptanceAsBad{"treatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
-  Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
-  // Configurable for the path of CCDB General Run Parameters LHC Interface information
-  Configurable<std::string> ccdbPathGrpLhcIf{"ccdbPathGrpLhcIf", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
-  // Configurables flagging saving trees and/or HistogramSpec
-  Configurable<bool> saveTrees{"saveTrees", true, "Flag to save trees"};
-  Configurable<bool> saveMomentumHistograms{"saveMomentumHistograms", false, "Flag to save momentum histograms"};
-  ConfigurableAxis axisMomentumHistograms{"axisMomentumHistograms", {200, std::log10(0.1), std::log10(20.)}, "log_{10}(#it{p} / (GeV/#it{c}))"};
-  /// Configurables adaptive downsampling
-  Configurable<bool> applyAdaptiveDownsampling{"applyAdaptiveDownsampling", false, "Apply downsampling driven by expected momentum distribution"};
-  Configurable<std::string> ccdbPathForAdaptDwnsplFile{"ccdbPathForAdaptDwnsplFile", "", "CCDB path for file with expected-momentum histograms"};
-  Configurable<std::string> adaptDwnsplFileName{"adaptDwnsplFileName", "AnalysisResults.root", "Name of the file with expected-momentum histograms"};
   Configurable<std::string> adaptDwnsplHistoPosName{"adaptDwnsplHistoPosName", "tree-writer-tpc-tof/hMomentumPos", "Name of the histogram with expected-momentum of positively charged particles"};
   Configurable<std::string> adaptDwnsplHistoNegName{"adaptDwnsplHistoNegName", "tree-writer-tpc-tof/hMomentumNeg", "Name of the histogram with expected-momentum of negatively charged particles"};
-  Configurable<float> adaptDwnsplHistoScaleFactor{"adaptDwnsplHistoScaleFactor", 1.f, "Scaling factor for the histograms with expected-momentum"};
-  Configurable<float> adaptDwnsplTargetYield{"adaptDwnsplTargetYield", 5000000.f, "Target yield of each particle species per log10(p) unity"};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -777,7 +766,7 @@ struct TreeWriterTpcTof {
       LOGP(fatal, "One and only one process function should be enabled");
     }
 
-    if (!(saveTrees || saveMomentumHistograms)) {
+    if (!(cfgsCommon.saveTrees || cfgsCommon.saveMomentumHistograms)) {
       LOGP(fatal, "At least one out of trees or momentum histograms should be saved");
     }
 
@@ -785,26 +774,26 @@ struct TreeWriterTpcTof {
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
 
-    rctChecker.init(rctLabel, checkZdc, treatLimitedAcceptanceAsBad);
+    rctChecker.init(cfgsCommon.rctLabel, cfgsCommon.checkZdc, cfgsCommon.treatLimitedAcceptanceAsBad);
 
-    if (saveReserveQaHisto) {
+    if (cfgsCommon.saveReserveQaHisto) {
       registry.add("hTrackOutputRatio", "Track out/in ratio;Track out/in ratio;Entries", {HistType::kTH1F, {{100, 0, reserveTrackRatio}}});
     }
 
-    if (saveMomentumHistograms) {
-      registry.add("hMomentumPos", "hMomentumPos;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{axisMomentumHistograms}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
-      registry.add("hMomentumNeg", "hMomentumNeg;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{axisMomentumHistograms}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
+    if (cfgsCommon.saveMomentumHistograms) {
+      registry.add("hMomentumPos", "hMomentumPos;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{cfgsCommon.axisMomentumHistograms}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
+      registry.add("hMomentumNeg", "hMomentumNeg;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{cfgsCommon.axisMomentumHistograms}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
       for (int iParticle = 0; iParticle < o2::track::PID::NIDs; ++iParticle) {
         registry.get<TH2>(HIST("hMomentumPos"))->GetYaxis()->SetBinLabel(iParticle + 1, ParticleNames.at(iParticle).data());
         registry.get<TH2>(HIST("hMomentumNeg"))->GetYaxis()->SetBinLabel(iParticle + 1, ParticleNames.at(iParticle).data());
       }
     }
 
-    if (applyAdaptiveDownsampling) {
-      initAdaptDwnsplHistograms(ccdbPathForAdaptDwnsplFile, adaptDwnsplFileName, adaptDwnsplHistoPosName, adaptDwnsplHistoNegName, mHistMomentumPos, mHistMomentumNeg);
-      if (adaptDwnsplHistoScaleFactor != 1.f) {
-        mHistMomentumPos->Scale(adaptDwnsplHistoScaleFactor);
-        mHistMomentumNeg->Scale(adaptDwnsplHistoScaleFactor);
+    if (cfgsCommon.applyAdaptiveDownsampling) {
+      initAdaptDwnsplHistograms(cfgsCommon.ccdbPathForAdaptDwnsplFile, cfgsCommon.adaptDwnsplFileName, adaptDwnsplHistoPosName, adaptDwnsplHistoNegName, mHistMomentumPos, mHistMomentumNeg);
+      if (cfgsCommon.adaptDwnsplHistoScaleFactor != 1.f) {
+        mHistMomentumPos->Scale(cfgsCommon.adaptDwnsplHistoScaleFactor);
+        mHistMomentumNeg->Scale(cfgsCommon.adaptDwnsplHistoScaleFactor);
       }
     }
   }
@@ -840,7 +829,7 @@ struct TreeWriterTpcTof {
                     mass,
                     bg,
                     multTPC / MultiplicityNorm,
-                    std::sqrt(nClNorm / ncl),
+                    std::sqrt(cfgsCommon.nClNorm / ncl),
                     nclPID,
                     id,
                     nSigmaTPC,
@@ -865,7 +854,7 @@ struct TreeWriterTpcTof {
                              mass,
                              bg,
                              multTPC / MultiplicityNorm,
-                             std::sqrt(nClNorm / ncl),
+                             std::sqrt(cfgsCommon.nClNorm / ncl),
                              nclPID,
                              id,
                              nSigmaTPC,
@@ -933,11 +922,11 @@ struct TreeWriterTpcTof {
     bool isFirstCollision{true};
     for (const auto& collision : collisions) {
       const auto tracks = myTracks.sliceBy(perCollisionTracksType, collision.globalIndex());
-      if (!isEventSelected(collision, applyEvSel)) {
+      if (!isEventSelected(collision, cfgsCommon.applyEvSel)) {
         continue;
       }
       const bool isGoodRctEvent = rctChecker.checkTable(collision);
-      if (requireGoodRct && !isGoodRctEvent) {
+      if (cfgsCommon.requireGoodRct && !isGoodRctEvent) {
         continue;
       }
 
@@ -951,7 +940,7 @@ struct TreeWriterTpcTof {
 
       const auto bc = collision.bc_as<BCType>();
       if (isFirstCollision) {
-        irSource = evaluateIrSource(ccdb, ccdbPathGrpLhcIf, bc.timestamp());
+        irSource = evaluateIrSource(ccdb, cfgsCommon.ccdbPathGrpLhcIf, bc.timestamp());
       }
       isFirstCollision = false;
       const int runnumber = bc.runNumber();
@@ -966,7 +955,7 @@ struct TreeWriterTpcTof {
         bcBcInTimeFrame = bc.bcInTF();
       }
       for (auto const& trk : tracksWithITSPid) {
-        if (!isTrackSelected(trk, trackSelection)) {
+        if (!isTrackSelected(trk, cfgsCommon.trackSelection)) {
           continue;
         }
         // get the corresponding trackQA using labelTracks2TracKQA and get variables of interest
@@ -999,7 +988,7 @@ struct TreeWriterTpcTof {
           const bool passMomTpcOnly = trk.tpcInnerParam() <= tofTrack->maxMomTPCOnly && std::fabs(tofTrack->tpcNSigma) < tofTrack->nSigmaTPCOnly;
           const bool passMomTpcTof = trk.tpcInnerParam() > tofTrack->maxMomTPCOnly && std::fabs(tofTrack->tofNSigma) < tofTrack->nSigmaTofTpctof && std::fabs(tofTrack->tpcNSigma) < tofTrack->nSigmaTpcTpctof;
           if (passMomHardCut && (passMomTpcOnly || passMomTpcTof)) {
-            if (saveMomentumHistograms) {
+            if (cfgsCommon.saveMomentumHistograms) {
               const double log10p = std::log10(trk.tpcInnerParam());
               const bool isPositive = (trk.signed1Pt() > 0);
               if (isPositive) {
@@ -1008,9 +997,9 @@ struct TreeWriterTpcTof {
                 registry.fill(HIST("hMomentumNeg"), log10p, tofTrack->pid);
               }
             }
-            if (saveTrees) {
+            if (cfgsCommon.saveTrees) {
               const TH2* histoMomentum = trk.signed1Pt() > 0 ? mHistMomentumPos : mHistMomentumNeg;
-              if (applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, trk.tpcInnerParam(), tofTrack->pid, adaptDwnsplTargetYield, histoMomentum)) {
+              if (cfgsCommon.applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, trk.tpcInnerParam(), tofTrack->pid, cfgsCommon.adaptDwnsplTargetYieldsplHistoScaleFactor, histoMomentum)) {
                 continue;
               }
               fillSkimmedTpcTofTable<IsCorrectedDeDx, ModeId>(trk, trackQA, existTrkQA, collision, tofTrack->tpcNSigma, tofTrack->tofNSigma, tofTrack->itsNSigma, tofTrack->tpcExpSignal, tofTrack->pid, runnumber, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame, occValues, isGoodRctEvent);
@@ -1024,7 +1013,7 @@ struct TreeWriterTpcTof {
     LOG(info) << "nTrackEntries = " << rowTPCTOFTree.lastIndex() + 1;
     LOG(info) << "nTrackEntries / Track table size = " << static_cast<double>((rowTPCTOFTree.lastIndex() + 1)) / myTracks.size();
 
-    if (saveReserveQaHisto) {
+    if (cfgsCommon.saveReserveQaHisto) {
       registry.fill(HIST("hTrackOutputRatio"), static_cast<double>((rowTPCTOFTree.lastIndex() + 1)) / myTracks.size());
     }
   } /// runTof
