@@ -86,7 +86,7 @@ struct CfgCommon : ConfigurableGroup {
   Configurable<std::string> ccdbPathForAdaptDwnsplFile{"ccdbPathForAdaptDwnsplFile", "", "CCDB path for file with expected-momentum histograms"};
   Configurable<std::string> adaptDwnsplFileName{"adaptDwnsplFileName", "AnalysisResults.root", "Name of the file with expected-momentum histograms"};
   Configurable<float> adaptDwnsplHistoScaleFactor{"adaptDwnsplHistoScaleFactor", 1.f, "Scaling factor for the histograms with expected-momentum"};
-  Configurable<float> adaptDwnsplTargetYieldsplHistoScaleFactor{"adaptDwnsplTargetYieldsplHistoScaleFactor", 5000000.f, "Target yield of each particle species per log10(p) unity"};
+  Configurable<float> adaptDwnsplTargetYield{"adaptDwnsplTargetYield", 5000000.f, "Target yield of each particle species per log10(p) unity"};
   Configurable<bool> saveReserveQaHisto{"saveReserveQaHisto", true, "Flag to save the DF-wise ratio of output table size to that of input table"};
   // Configurables for run condtion table
   Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
@@ -543,7 +543,7 @@ struct TreeWriterTpcV0 {
           }
           if (cfgsCommon.saveTrees) {
             const TH2* histoMomentum = isPositive ? mHistMomentumPos : mHistMomentumNeg;
-            if (cfgsCommon.applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, dauTrack.tpcInnerParam(), daughter.id, cfgsCommon.adaptDwnsplTargetYieldsplHistoScaleFactor, histoMomentum)) {
+            if (cfgsCommon.applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, dauTrack.tpcInnerParam(), daughter.id, cfgsCommon.adaptDwnsplTargetYield, histoMomentum)) {
               return false;
             }
             OccupancyValues occValues{};
@@ -999,7 +999,7 @@ struct TreeWriterTpcTof {
             }
             if (cfgsCommon.saveTrees) {
               const TH2* histoMomentum = trk.signed1Pt() > 0 ? mHistMomentumPos : mHistMomentumNeg;
-              if (cfgsCommon.applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, trk.tpcInnerParam(), tofTrack->pid, cfgsCommon.adaptDwnsplTargetYieldsplHistoScaleFactor, histoMomentum)) {
+              if (cfgsCommon.applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, trk.tpcInnerParam(), tofTrack->pid, cfgsCommon.adaptDwnsplTargetYield, histoMomentum)) {
                 continue;
               }
               fillSkimmedTpcTofTable<IsCorrectedDeDx, ModeId>(trk, trackQA, existTrkQA, collision, tofTrack->tpcNSigma, tofTrack->tofNSigma, tofTrack->itsNSigma, tofTrack->tpcExpSignal, tofTrack->pid, runnumber, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame, occValues, isGoodRctEvent);
