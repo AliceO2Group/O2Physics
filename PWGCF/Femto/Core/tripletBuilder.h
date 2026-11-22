@@ -1034,7 +1034,9 @@ class TripletTrackTrackSigma0Builder
             typename T15,
             typename T16,
             typename T17,
-            typename T18>
+            typename T18,
+            typename T19,
+            typename T20>
   void init(o2::framework::HistogramRegistry* registry,
             T1 const& confCollisionBinning,
             T2 const& confTrackSelection1,
@@ -1051,9 +1053,11 @@ class TripletTrackTrackSigma0Builder
             std::map<T13, std::vector<o2::framework::AxisSpec>> const& trackHistSpec1,
             std::map<T14, std::vector<o2::framework::AxisSpec>> const& trackHistSpec2,
             std::map<T15, std::vector<o2::framework::AxisSpec>> const& sigma0histSpec,
-            std::map<T16, std::vector<o2::framework::AxisSpec>> const& tripletHistSpec,
-            std::map<T17, std::vector<o2::framework::AxisSpec>> const& ctrHistSpec,
-            std::map<T18, std::vector<o2::framework::AxisSpec>> const& tripletCleanerHistSpec)
+            std::map<T16, std::vector<o2::framework::AxisSpec>> const& posDauHistSpec,
+            std::map<T17, std::vector<o2::framework::AxisSpec>> const& negDauHistSpec,
+            std::map<T18, std::vector<o2::framework::AxisSpec>> const& tripletHistSpec,
+            std::map<T19, std::vector<o2::framework::AxisSpec>> const& ctrHistSpec,
+            std::map<T20, std::vector<o2::framework::AxisSpec>> const& tripletCleanerHistSpec)
   {
     // check if correlating the same track species/selections or not
     mTrack1Track2AreSameSpecies = confMixing.particle12AreSameSpecies.value;
@@ -1072,14 +1076,14 @@ class TripletTrackTrackSigma0Builder
       // Track1 & Track2 are the same species and track 3 is Sigma0
       mCleaner1.init(confCleaner1);
       mTrackHistManager1Se.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
-      mSigma0HistManagerSe.template init<modeSe>(registry, sigma0histSpec, confSigma0Selection);
+      mSigma0HistManagerSe.template init<modeSe>(registry, sigma0histSpec, confSigma0Selection, posDauHistSpec, negDauHistSpec);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value, confSigma0Selection.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, 1);
       mCtrSe.init(registry, ctrHistSpec, confCtr, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
 
       mTrackHistManager1Me.template init<modeMe>(registry, trackHistSpec1, confTrackSelection1);
-      mSigma0HistManagerMe.template init<modeMe>(registry, sigma0histSpec, confSigma0Selection);
+      mSigma0HistManagerMe.template init<modeMe>(registry, sigma0histSpec, confSigma0Selection, posDauHistSpec, negDauHistSpec);
 
       mTripletHistManagerMe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value, confSigma0Selection.pdgCodeAbs.value);
       mTripletHistManagerMe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, 1);
@@ -1090,14 +1094,14 @@ class TripletTrackTrackSigma0Builder
       mCleaner2.init(confCleaner2);
       mTrackHistManager1Se.template init<modeSe>(registry, trackHistSpec1, confTrackSelection1);
       mTrackHistManager2Se.template init<modeSe>(registry, trackHistSpec2, confTrackSelection2);
-      mSigma0HistManagerSe.template init<modeSe>(registry, sigma0histSpec, confSigma0Selection);
+      mSigma0HistManagerSe.template init<modeSe>(registry, sigma0histSpec, confSigma0Selection, posDauHistSpec, negDauHistSpec);
 
       mTripletHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection2.pdgCodeAbs.value, confSigma0Selection.pdgCodeAbs.value);
       mTripletHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value, 1);
       mCtrSe.init(registry, ctrHistSpec, confCtr, confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value);
 
       mTrackHistManager1Me.template init<modeMe>(registry, trackHistSpec1, confTrackSelection1);
-      mSigma0HistManagerMe.template init<modeMe>(registry, sigma0histSpec, confSigma0Selection);
+      mSigma0HistManagerMe.template init<modeMe>(registry, sigma0histSpec, confSigma0Selection, posDauHistSpec, negDauHistSpec);
       mTrackHistManager2Me.template init<modeMe>(registry, trackHistSpec2, confTrackSelection2);
 
       mTripletHistManagerMe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection2.pdgCodeAbs.value, confSigma0Selection.pdgCodeAbs.value);
@@ -1256,12 +1260,12 @@ class TripletTrackTrackSigma0Builder
   colhistmanager::CollisionHistManager<colhistmanager::PrefixSe> mColHistManagerSe;
   trackhistmanager::TrackHistManager<trackhistmanager::PrefixTrack1Se> mTrackHistManager1Se;
   trackhistmanager::TrackHistManager<trackhistmanager::PrefixTrack2Se> mTrackHistManager2Se;
-  sigma0histmanager::Sigma0HistManager<sigma0histmanager::PrefixSigma0Se> mSigma0HistManagerSe;
+  sigma0histmanager::Sigma0HistManager<sigma0histmanager::PrefixSigma0Se, trackhistmanager::PrefixSigma0PosDaughterSe, trackhistmanager::PrefixSigma0NegDaughterSe> mSigma0HistManagerSe;
   // ME triplets
   colhistmanager::CollisionHistManager<colhistmanager::PrefixMe> mColHistManagerMe;
   trackhistmanager::TrackHistManager<trackhistmanager::PrefixTrack1Me> mTrackHistManager1Me;
   trackhistmanager::TrackHistManager<trackhistmanager::PrefixTrack2Me> mTrackHistManager2Me;
-  sigma0histmanager::Sigma0HistManager<sigma0histmanager::PrefixSigma0Me> mSigma0HistManagerMe;
+  sigma0histmanager::Sigma0HistManager<sigma0histmanager::PrefixSigma0Me, trackhistmanager::PrefixSigma0PosDaughterMe, trackhistmanager::PrefixSigma0NegDaughterMe> mSigma0HistManagerMe;
   particlecleaner::ParticleCleaner mCleaner1;
   particlecleaner::ParticleCleaner mCleaner2;
   particlecleaner::ParticleCleaner mSigma0Cleaner;

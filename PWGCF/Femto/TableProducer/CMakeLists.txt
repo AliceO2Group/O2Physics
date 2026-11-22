@@ -54,7 +54,7 @@ o2physics_add_dpl_workflow(femto-producer-track-track-two-photon-resonances
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(femto-sigma0-producer
-          SOURCES ./femtoSigma0Producer.cxx
+o2physics_add_dpl_workflow(femto-producer-sigma0
+          SOURCES ./femtoProducerSigma0.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)

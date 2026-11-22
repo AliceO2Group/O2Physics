@@ -1,0 +1,98 @@
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+/// \file femtoProducerSigma0.cxx
+/// \brief Derived-to-derived task: builds femto Sigma0 -> Lambda + gamma candidates from FLambdas and FPhotons
+///
+/// Needs the full-precision FLambdas, FLambdaMasks, FPhotons and FPhotonMasks as input (i.e. the
+/// producer ran with LambdaTables.produceLambdas and PhotonTables.producePhotons, not the Lite variants,
+/// or the Lite tables were converted back before running this task).
+/// FSigma0Extras additionally needs FLambdaExtras and FPhotonExtras (processWithExtras).
+/// \author Yakiv Paroviak, CTU in Prague, yakiv.paroviak@cern.ch
+
+#include "PWGCF/Femto/Core/collisionBuilder.h"
+#include "PWGCF/Femto/Core/partitions.h"
+#include "PWGCF/Femto/Core/sigma0Builder.h"
+#include "PWGCF/Femto/DataModel/FemtoTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+using namespace o2::analysis::femto;
+
+struct FemtoProducerSigma0 {
+
+  using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks>;
+  using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
+  using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
+
+  using FemtoLambdas = o2::soa::Join<o2::aod::FLambdas, o2::aod::FLambdaMasks>;
+  using FemtoPhotons = o2::soa::Join<o2::aod::FPhotons, o2::aod::FPhotonMasks>;
+  using FemtoLambdasWithExtras = o2::soa::Join<FemtoLambdas, o2::aod::FLambdaExtras>;
+  using FemtoPhotonsWithExtras = o2::soa::Join<FemtoPhotons, o2::aod::FPhotonExtras>;
+
+  o2::framework::SliceCache cache;
+
+  // setup collisions
+  collisionbuilder::ConfCollisionSelection collisionSelection;
+  o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
+
+  // setup for Lambda daughters
+  sigma0builder::ConfSigma0LambdaSelection confLambdaSelection;
+  o2::framework::Partition<FemtoLambdas> lambdaPartition = MAKE_LAMBDA_PARTITION(confLambdaSelection);
+  o2::framework::Partition<FemtoLambdasWithExtras> lambdaWithExtrasPartition = MAKE_LAMBDA_PARTITION(confLambdaSelection);
+  o2::framework::Preslice<FemtoLambdas> perColLambdas = o2::aod::femtobase::stored::fColId;
+  o2::framework::Preslice<FemtoLambdasWithExtras> perColLambdasWithExtras = o2::aod::femtobase::stored::fColId;
+
+  // setup for photon daughters
+  sigma0builder::ConfSigma0PhotonSelection confPhotonSelection;
+  o2::framework::Partition<FemtoPhotons> photonPartition = MAKE_PHOTON_PARTITION(confPhotonSelection);
+  o2::framework::Partition<FemtoPhotonsWithExtras> photonWithExtrasPartition = MAKE_PHOTON_PARTITION(confPhotonSelection);
+  o2::framework::Preslice<FemtoPhotons> perColPhotons = o2::aod::femtobase::stored::fColId;
+  o2::framework::Preslice<FemtoPhotonsWithExtras> perColPhotonsWithExtras = o2::aod::femtobase::stored::fColId;
+
+  // Sigma0 builder
+  sigma0builder::ConfSigma0Filters confSigma0Filter;
+  sigma0builder::ConfSigma0Tables confSigma0Tables;
+  sigma0builder::Sigma0BuilderProducts sigma0BuilderProducts;
+  sigma0builder::Sigma0Builder sigma0Builder;
+
+  void init(o2::framework::InitContext& context)
+  {
+    if (doprocess && doprocessWithExtras) {
+      LOG(fatal) << "Enable only one of process and processWithExtras";
+    }
+    sigma0Builder.init(confSigma0Filter, confSigma0Tables, context);
+  }
+
+  void process(FilteredFemtoCollision const& col, FemtoLambdas const& /*lambdas*/, FemtoPhotons const& /*photons*/)
+  {
+    sigma0Builder.fillSigma0s(col, sigma0BuilderProducts, lambdaPartition, photonPartition, cache);
+  }
+  PROCESS_SWITCH(FemtoProducerSigma0, process, "Build Sigma0 candidates", true);
+
+  // needed to fill FSigma0Extras, which copies QA information of the Lambda and photon daughters
+  void processWithExtras(FilteredFemtoCollision const& col, FemtoLambdasWithExtras const& /*lambdas*/, FemtoPhotonsWithExtras const& /*photons*/)
+  {
+    sigma0Builder.fillSigma0s(col, sigma0BuilderProducts, lambdaWithExtrasPartition, photonWithExtrasPartition, cache);
+  }
+  PROCESS_SWITCH(FemtoProducerSigma0, processWithExtras, "Build Sigma0 candidates and fill FSigma0Extras (needs FLambdaExtras and FPhotonExtras)", false);
+};
+
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
+{
+  o2::framework::WorkflowSpec workflow{adaptAnalysisTask<FemtoProducerSigma0>(context)};
+  return workflow;
+}

@@ -21,14 +21,12 @@
 #include "PWGCF/Femto/Core/pairCleaner.h"
 #include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
-// #include "PWGCF/Femto/Core/photonHistManager.h"
 #include "PWGCF/Femto/Core/sigma0Builder.h"
 #include "PWGCF/Femto/Core/sigma0HistManager.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/Core/tripletBuilder.h"
 #include "PWGCF/Femto/Core/tripletHistManager.h"
-// #include "PWGCF/Femto/Core/v0HistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include <Framework/ASoA.h>
@@ -94,13 +92,11 @@ struct FemtoTripletTrackTrackSigma0 {
   o2::framework::Partition<FemtoTracksWithLabel> trackWithLabelPartition2 = MAKE_TRACK_PARTITION(confTrackSelections2);
   o2::framework::Preslice<FemtoTracksWithLabel> perColtracksWithLabel = o2::aod::femtobase::stored::fColId;
 
-  // // setup for photon and lambda
-  // v0histmanager::ConfLambdaBinning1 confLambdaBinning;
-  // photonhistmanager::ConfPhotonBinning confPhotonBinning;
-
   // setup sigma0s
   sigma0builder::ConfSigma0SelectionDefault confSigma0Selection;
   sigma0histmanager::ConfSigma0BinningDefault confSigma0Binning;
+  trackhistmanager::ConfSigma0PosDauBinning confPosDauBinning;
+  trackhistmanager::ConfSigma0NegDauBinning confNegDauBinning;
 
   o2::framework::Partition<FemtoSigma0s> sigma0Partition = MAKE_SIGMA0_PARTITION(confSigma0Selection);
   o2::framework::Preslice<FemtoSigma0s> perColSigma0s = o2::aod::femtobase::stored::fColId;
@@ -114,8 +110,6 @@ struct FemtoTripletTrackTrackSigma0 {
   paircleaner::ConfPairCleanerBinning confTripletCleanerBinning;
 
   closetripletrejection::ConfCtrTrackTrackSigma0 confCtr;
-  // closepairrejection::ClosePairRejectionTrackTrack confCpr12;
-  // closepairrejection::ClosePairRejectionTrackSigma0 confCpr13;
 
   tripletbuilder::TripletTrackTrackSigma0Builder tripletTrackTrackSigma0Builder;
 
@@ -151,13 +145,11 @@ struct FemtoTripletTrackTrackSigma0 {
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
     std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> trackHistSpec1;
     std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> trackHistSpec2;
-
-    // std::map<v0histmanager::V0Hist, std::vector<o2::framework::AxisSpec>> lambdaSpec;
-    // std::map<photonhistmanager::PhotonHist, std::vector<o2::framework::AxisSpec>> photonSpec;
     std::map<sigma0histmanager::Sigma0Hist, std::vector<o2::framework::AxisSpec>> sigma0HistSpec;
+    std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> posDauHistSpec;
+    std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> negDauHistSpec;
     std::map<triplethistmanager::TripletHist, std::vector<o2::framework::AxisSpec>> tripletHistSpec;
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> ctrHistSpec = closepairrejection::makeCprHistSpecMap(confCtr);
-    // std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr12);
     std::map<paircleaner::PairCleanerHist, std::vector<o2::framework::AxisSpec>> tripletCleanerHistSpec = paircleaner::makePairCleanerHistSpecMap(confTripletCleanerBinning);
 
     if (processData) {
@@ -165,11 +157,19 @@ struct FemtoTripletTrackTrackSigma0 {
       trackHistSpec1 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning2);
       sigma0HistSpec = sigma0histmanager::makeSigma0HistSpecMap(confSigma0Binning);
-      // lambdaSpec = v0histmanager::makeV0HistSpecMap(confLambdaBinning);
-      // photonSpec = photonhistmanager::makePhotonHistSpecMap(confPhotonBinning);
+      posDauHistSpec = trackhistmanager::makeTrackHistSpecMap(confPosDauBinning);
+      negDauHistSpec = trackhistmanager::makeTrackHistSpecMap(confNegDauBinning);
       tripletHistSpec = triplethistmanager::makeTripletHistSpecMap(confTripletBinning, confMixing);
-      tripletTrackTrackSigma0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confSigma0Selection, confTrackCleaner1, confTrackCleaner2, confSigma0Cleaner, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, sigma0HistSpec, tripletHistSpec, ctrHistSpec, tripletCleanerHistSpec);
-    } else {
+      tripletTrackTrackSigma0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confSigma0Selection, confTrackCleaner1, confTrackCleaner2, confSigma0Cleaner, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, sigma0HistSpec, posDauHistSpec, negDauHistSpec, tripletHistSpec, ctrHistSpec, tripletCleanerHistSpec);
+    } else if (processMc) {
+      colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
+      trackHistSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning1);
+      trackHistSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning2);
+      sigma0HistSpec = sigma0histmanager::makeSigma0McHistSpecMap(confSigma0Binning);
+      posDauHistSpec = trackhistmanager::makeTrackMcHistSpecMap(confPosDauBinning);
+      negDauHistSpec = trackhistmanager::makeTrackMcHistSpecMap(confNegDauBinning);
+      tripletHistSpec = triplethistmanager::makeTripletMcHistSpecMap(confTripletBinning, confMixing);
+      tripletTrackTrackSigma0Builder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confSigma0Selection, confTrackCleaner1, confTrackCleaner2, confSigma0Cleaner, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, sigma0HistSpec, posDauHistSpec, negDauHistSpec, tripletHistSpec, ctrHistSpec, tripletCleanerHistSpec);
     }
     hRegistry.print();
   };

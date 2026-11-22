@@ -58,10 +58,6 @@ using CascadeMaskType = uint32_t;
 using CascadeMaskType001 = uint16_t; // old data type, was too narrow
 using CascadeType = uint16_t;
 
-// datatypes for sigma0
-using Sigma0MaskType = uint32_t;
-using Sigma0Type = uint16_t;
-
 // datatype for origin of mc particle
 using McOriginType = uint8_t;
 

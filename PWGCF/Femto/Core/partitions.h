@@ -271,7 +271,8 @@
     (o2::aod::femtobase::stored::phi < (selection).phiMax) &&                                                                                  \
     (o2::aod::femtobase::stored::mass > (selection).massMin) &&                                                                                \
     (o2::aod::femtobase::stored::mass < (selection).massMax) &&                                                                                \
-    ncheckbit(o2::aod::femtosigma0s::mask, (selection).mask)
+    ncheckbit(o2::aod::femtosigma0s::maskLambda, (selection).lambdaMask) &&                                                                    \
+    ncheckbit(o2::aod::femtosigma0s::maskPhoton, (selection).photonMask)
 
 // partition for D0
 // sign of signedPt encodes the hypothesis: D0 (+) / D0bar (-)
