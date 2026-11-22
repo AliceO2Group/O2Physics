@@ -58,7 +58,7 @@ class FlatLutRootWriter
                 int ptBin,
                 const lutEntry_t& entry);
 
-  bool writeToFile(const std::string& rootFileName) const;
+  [[nodiscard]] bool writeToFile(const std::string& rootFileName) const;
 
  private:
   lutHeader_t mHeader;

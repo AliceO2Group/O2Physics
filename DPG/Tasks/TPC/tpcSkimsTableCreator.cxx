@@ -166,7 +166,7 @@ struct TreeWriterTpcV0 {
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker{};
 
-  TRandom3* fRndm = new TRandom3(0);
+  TRandom3* fRndm = new TRandom3();
 
   using Trks = soa::Join<aod::Tracks, aod::V0Bits, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection>;
   using TrksWithDEdxCorrection = soa::Join<Trks, aod::DEdxsCorrected>;
@@ -420,6 +420,12 @@ struct TreeWriterTpcV0 {
   template <bool IsCorrectedDeDx, int ModeId, typename TrksType, typename BCType, typename TrkQAType>
   void runV0(Colls const& collisions, TrksType const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, TrkQAType const& tracksQA)
   {
+    if (collisions.size() != 0) {
+      const auto timestamp = collisions.begin().bc_as<BCType>().timestamp();
+      LOG(info) << "fRndm is seeded with timestamp of the 0-th bunch crossing (" << timestamp << ")";
+      fRndm->SetSeed(timestamp);
+    }
+
     constexpr bool IsWithTrackQa = ModeId != ModeStandard;
 
     std::vector<int64_t> labelTrack2TrackQA;
@@ -692,20 +698,20 @@ struct TreeWriterTpcTof {
   HistogramRegistry registry{"registry", {}};
 
   struct TofTrack {
-    bool isApplyHardCutOnly;
-    double maxMomHardCutOnly;
-    double maxMomTPCOnly;
-    double tpcNSigma;
-    double nSigmaTPCOnly;
-    double downsamplingTsalis;
-    double mass;
-    double tofNSigma;
-    double itsNSigma;
-    double tpcExpSignal;
-    o2::track::PID::ID pid;
-    double dwnSmplFactor;
-    double nSigmaTofTpctof;
-    double nSigmaTpcTpctof;
+    bool isApplyHardCutOnly{false};
+    double maxMomHardCutOnly{UndefValueDouble};
+    double maxMomTPCOnly{UndefValueDouble};
+    double tpcNSigma{UndefValueDouble};
+    double nSigmaTPCOnly{UndefValueDouble};
+    double downsamplingTsalis{UndefValueDouble};
+    double mass{UndefValueDouble};
+    double tofNSigma{UndefValueDouble};
+    double itsNSigma{UndefValueDouble};
+    double tpcExpSignal{UndefValueDouble};
+    o2::track::PID::ID pid{0};
+    double dwnSmplFactor{UndefValueDouble};
+    double nSigmaTofTpctof{UndefValueDouble};
+    double nSigmaTpcTpctof{UndefValueDouble};
   };
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
@@ -714,7 +720,7 @@ struct TreeWriterTpcTof {
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker{};
 
-  TRandom3* fRndm = new TRandom3(0);
+  TRandom3* fRndm = new TRandom3();
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra,
                          aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa,
@@ -850,6 +856,12 @@ struct TreeWriterTpcTof {
   template <bool IsCorrectedDeDx, int ModeId, typename TrksType, typename BCType, typename TrkQAType, typename TMOType>
   void runTof(Colls const& collisions, TrksType const& myTracks, TrkQAType const& tracksQA, Preslice<TrksType> const& perCollisionTracksType, TMOType const& trackMeanOccs)
   {
+    if (collisions.size() != 0) {
+      const auto timestamp = collisions.begin().bc_as<BCType>().timestamp();
+      LOG(info) << "fRndm is seeded with timestamp of the 0-th bunch crossing (" << timestamp << ")";
+      fRndm->SetSeed(timestamp);
+    }
+
     constexpr bool IsWithTrackQa = ModeId != ModeStandard;
 
     std::vector<int64_t> labelTrack2TrackQA;

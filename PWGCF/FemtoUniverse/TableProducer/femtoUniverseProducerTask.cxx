@@ -324,6 +324,7 @@ struct FemtoUniverseProducerTask {
     Configurable<float> confXiInvMassUpLimit{"confXiInvMassUpLimit", 1.40, "Upper limit of the Xi invariant mass"};
     Configurable<float> confOmegaInvMassLowLimit{"confOmegaInvMassLowLimit", 1.60, "Lower limit of the Omega invariant mass"};
     Configurable<float> confOmegaInvMassUpLimit{"confOmegaInvMassUpLimit", 1.80, "Upper limit of the Omega invariant mass"};
+    Configurable<bool> confRejectCompetingMassOmega{"confRejectCompetingMassOmega", false, "Switch to reject competing mass for Omega"};
   } ConfCascadeSelection;
 
   // PHI
@@ -692,15 +693,15 @@ struct FemtoUniverseProducerTask {
       cascadeCuts.setChildCuts(femto_universe_cascade_selection::kBachTrack, ConfCascadeSelection.confCascChildTPCnClsMin, femto_universe_track_selection::kTPCnClsMin, femto_universe_selection::kLowerLimit);
       cascadeCuts.setChildCuts(femto_universe_cascade_selection::kBachTrack, ConfCascadeSelection.confCascChildPIDnSigmaMax, femto_universe_track_selection::kPIDnSigmaMax, femto_universe_selection::kAbsUpperLimit);
 
-      // TODO
       cascadeCuts.setChildPIDSpecies(femto_universe_cascade_selection::kPosTrack, ConfV0Selection.confChildPIDspecies);
       cascadeCuts.setChildPIDSpecies(femto_universe_cascade_selection::kNegTrack, ConfV0Selection.confChildPIDspecies);
       cascadeCuts.setChildPIDSpecies(femto_universe_cascade_selection::kBachTrack, ConfCascadeSelection.confCascChildPIDspecies);
 
       // check if works correctly for bachelor track
       cascadeCuts.init<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::ParticleType::kCascadeBachelor, aod::femtouniverseparticle::CutContainerType>(&cascadeQaRegistry);
-      // invmass cuts
+      // invmass cuts & competing mass rejection
       cascadeCuts.setInvMassLimits(ConfCascadeSelection.confXiInvMassLowLimit, ConfCascadeSelection.confOmegaInvMassLowLimit, ConfCascadeSelection.confXiInvMassUpLimit, ConfCascadeSelection.confOmegaInvMassUpLimit);
+      cascadeCuts.setRejectCompetingMassOmega(ConfCascadeSelection.confRejectCompetingMassOmega);
     }
 
     if (ConfGeneral.confIsActivatePhi) {
@@ -761,9 +762,9 @@ struct FemtoUniverseProducerTask {
   {
     if constexpr (isTrackOrV0) {
       if constexpr (std::experimental::is_detected<HasStrangeTOFinV0, ParticleType>::value) {
-        outputDebugParts(particle.sign(), (uint8_t)particle.tpcNClsFound(),
+        outputDebugParts(particle.sign(), static_cast<uint8_t>(particle.tpcNClsFound()),
                          particle.tpcNClsFindable(),
-                         (uint8_t)particle.tpcNClsCrossedRows(),
+                         static_cast<uint8_t>(particle.tpcNClsCrossedRows()),
                          particle.tpcNClsShared(), particle.tpcFractionSharedCls(), particle.tpcInnerParam(),
                          particle.itsNCls(), particle.itsNClsInnerBarrel(),
                          particle.dcaXY(), particle.dcaZ(), particle.tpcSignal(),
@@ -775,9 +776,9 @@ struct FemtoUniverseProducerTask {
                          particle.tofNSigmaLaPr(), particle.tofNSigmaLaPi(), particle.tofNSigmaALaPr(),
                          particle.tofNSigmaALaPi(), particle.tofNSigmaK0PiPlus(), particle.tofNSigmaK0PiMinus());
       } else {
-        outputDebugParts(particle.sign(), (uint8_t)particle.tpcNClsFound(),
+        outputDebugParts(particle.sign(), static_cast<uint8_t>(particle.tpcNClsFound()),
                          particle.tpcNClsFindable(),
-                         (uint8_t)particle.tpcNClsCrossedRows(),
+                         static_cast<uint8_t>(particle.tpcNClsCrossedRows()),
                          particle.tpcNClsShared(), particle.tpcFractionSharedCls(), particle.tpcInnerParam(),
                          particle.itsNCls(), particle.itsNClsInnerBarrel(),
                          particle.dcaXY(), particle.dcaZ(), particle.tpcSignal(),
@@ -1304,9 +1305,9 @@ struct FemtoUniverseProducerTask {
 
       tmpIDtrack.push_back(track.globalIndex());
 
-      outputDebugParts(track.sign(), (uint8_t)track.tpcNClsFound(),
+      outputDebugParts(track.sign(), static_cast<uint8_t>(track.tpcNClsFound()),
                        track.tpcNClsFindable(),
-                       (uint8_t)track.tpcNClsCrossedRows(),
+                       static_cast<uint8_t>(track.tpcNClsCrossedRows()),
                        track.tpcNClsShared(), track.tpcFractionSharedCls(), track.tpcInnerParam(),
                        track.itsNCls(), track.itsNClsInnerBarrel(),
                        track.dcaXY(), track.dcaZ(), track.tpcSignal(),

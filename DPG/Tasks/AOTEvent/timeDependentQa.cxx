@@ -294,7 +294,7 @@ struct TimeDependentQaTask {
       // ### QA event selection bits
       int nEvSelBits = enNumEvSelBits;
       histos.add("hSecondsEventSelBits", "", kTH2F, {axisSecondsWideBins, {nEvSelBits, -0.5, nEvSelBits - 0.5, "Monitoring of event selection bits"}});
-      TAxis* axSelBits = reinterpret_cast<TAxis*>(histos.get<TH2>(HIST("hSecondsEventSelBits"))->GetYaxis());
+      TAxis* axSelBits = histos.get<TH2>(HIST("hSecondsEventSelBits"))->GetYaxis();
       axSelBits->SetBinLabel(1 + enCollisionsAll, "collisionsAll");
       axSelBits->SetBinLabel(1 + enIsTriggerTVX, "IsTriggerTVX");
       axSelBits->SetBinLabel(1 + enNoTimeFrameBorder, "NoTimeFrameBorder");
@@ -330,7 +330,7 @@ struct TimeDependentQaTask {
       // ### QA RCT flags
       int nRctFlagsTotal = enNumRctFlagsTotal;
       histos.add("hSecondsRCTflags", "", kTH2F, {axisSecondsWideBins, {nRctFlagsTotal + 2, -0.5, nRctFlagsTotal + 2 - 0.5, "Monitoring of RCT flags"}});
-      axRctFlags = reinterpret_cast<TAxis*>(histos.get<TH2>(HIST("hSecondsRCTflags"))->GetYaxis());
+      axRctFlags = histos.get<TH2>(HIST("hSecondsRCTflags"))->GetYaxis();
       axRctFlags->SetBinLabel(1, "NcollisionsSel8");
       axRctFlags->SetBinLabel(2, "CcdbNotFound");
       axRctFlags->SetBinLabel(3 + kCPVBad, "CPVBad");

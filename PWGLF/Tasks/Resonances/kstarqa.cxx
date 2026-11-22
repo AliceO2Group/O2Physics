@@ -194,6 +194,7 @@ struct Kstarqa {
   ConfigurableAxis configThnAxisPOL{"configThnAxisPOL", {20, -1.0, 1.0}, "Costheta axis"};
   ConfigurableAxis invMassKstarAxis{"invMassKstarAxis", {300, 0.7f, 1.3f}, "Kstar invariant mass axis"};
   ConfigurableAxis ptAxisKstar{"ptAxisKstar", {200, 0.0f, 20.0f}, "Kstar pT axis"};
+  ConfigurableAxis pxpxypzAxisKstar{"pxpxypzAxisKstar", {100, -10.0f, 10.0f}, "px, py, pz axis"};
   ConfigurableAxis binsImpactPar{"binsImpactPar", {100, 0, 25}, "Binning of the impact parameter axis"};
   ConfigurableAxis axisNch{"axisNch", {100, 0.0f, 100.0f}, "Number of charged particles in |y| < 0.5"};
   ConfigurableAxis etaAxis = {"etaAxis", {100, -1.0f, 1.0f}, "Eta axis"};
@@ -213,6 +214,7 @@ struct Kstarqa {
     // Axes
     AxisSpec vertexZAxis = {60, -15., 15., "vrtx_{Z} [cm] for plots"};
     AxisSpec ptAxis = {ptAxisKstar, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec pxpxypzAxis = {pxpxypzAxisKstar, "px, py, pz (GeV/#it{c})"};
     AxisSpec invmassAxis = {invMassKstarAxis, "Invariant mass (GeV/#it{c}^{2})"};
     AxisSpec thnAxisPOL{configThnAxisPOL, "cos(#theta)"};
     AxisSpec multiplicityAxis = {binsMultPlot, "Multiplicity Axis"};
@@ -379,23 +381,23 @@ struct Kstarqa {
     if (doprocessRecPhi) {
       hInvMass.add("PhiMCChecks", "PhiMCChecks", kTHnSparseF, {ptAxis, etaAxis, phiAxis, subAxis, subAxis, subAxis}); // pT, eta, phi, deltaEta, deltaPhi, deltaR
 
-      hShift.add("h2D_dpx_vs_px_KaonFromPhi", "Kaon from Phi: dpx vs px", kTH2F, {{subAxis}, {ptAxis}});
-      hShift.add("h2D_dpy_vs_py_KaonFromPhi", "Kaon from Phi: dpy vs py", kTH2F, {{subAxis}, {ptAxis}});
-      hShift.add("h2D_dpz_vs_pz_KaonFromPhi", "Kaon from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpx_vs_px_KaonFromPhi", "Kaon from Phi: dpx vs px", kTH2F, {{subAxis}, {pxpxypzAxis}});
+      hShift.add("h2D_dpy_vs_py_KaonFromPhi", "Kaon from Phi: dpy vs py", kTH2F, {{subAxis}, {pxpxypzAxis}});
+      hShift.add("h2D_dpz_vs_pz_KaonFromPhi", "Kaon from Phi: dpz vs pz", kTH2F, {{subAxis}, {pxpxypzAxis}});
       hShift.add("h2D_dpt_vs_pt_KaonFromPhi", "Kaon from Phi: dpt vs pt", kTH2F, {{subAxis}, {ptAxis}});
 
-      hShift.add("h2D_dpx_vs_px_AllKaons", "Kaon from Phi: dpx vs px", kTH2F, {{subAxis}, {ptAxis}});
-      hShift.add("h2D_dpy_vs_py_AllKaons", "Kaon from Phi: dpy vs py", kTH2F, {{subAxis}, {ptAxis}});
-      hShift.add("h2D_dpz_vs_pz_AllKaons", "Kaon from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpx_vs_px_AllKaons", "Kaon from Phi: dpx vs px", kTH2F, {{subAxis}, {pxpxypzAxis}});
+      hShift.add("h2D_dpy_vs_py_AllKaons", "Kaon from Phi: dpy vs py", kTH2F, {{subAxis}, {pxpxypzAxis}});
+      hShift.add("h2D_dpz_vs_pz_AllKaons", "Kaon from Phi: dpz vs pz", kTH2F, {{subAxis}, {pxpxypzAxis}});
       hShift.add("h2D_dpt_vs_pt_AllKaons", "Kaon from Phi: dpt vs pt", kTH2F, {{subAxis}, {ptAxis}});
 
-      hShift.add("h2D_dpx_vs_px_Phi", "Pion from Phi: dpx vs px", kTH2F, {{subAxis}, {ptAxis}});
-      hShift.add("h2D_dpy_vs_py_Phi", "Pion from Phi: dpy vs py", kTH2F, {{subAxis}, {ptAxis}});
-      hShift.add("h2D_dpz_vs_pz_Phi", "Pion from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpx_vs_px_Phi", "Pion from Phi: dpx vs px", kTH2F, {{subAxis}, {pxpxypzAxis}});
+      hShift.add("h2D_dpy_vs_py_Phi", "Pion from Phi: dpy vs py", kTH2F, {{subAxis}, {pxpxypzAxis}});
+      hShift.add("h2D_dpz_vs_pz_Phi", "Pion from Phi: dpz vs pz", kTH2F, {{subAxis}, {pxpxypzAxis}});
       hShift.add("h2D_dpt_vs_pt_Phi", "Pion from Phi: dpt vs pt", kTH2F, {{subAxis}, {ptAxis}});
 
-      hShift.add("h1D_MassPhiGen", "Invariant mass of generated Phi meson", kTH1F, {{300, 1.0, 1.06}});
-      hShift.add("h1D_MassPhiRec", "Invariant mass of reconstructed Phi meson", kTH1F, {{300, 1.0, 1.06}});
+      hShift.add("h2D_MassPhiGenVsPt", "Invariant mass of generated Phi meson", kTH2F, {{300, 1.0, 1.06}, {ptAxis}});
+      hShift.add("h2D_MassPhiRecVsPt", "Invariant mass of reconstructed Phi meson", kTH2F, {{300, 1.0, 1.06}, {ptAxis}});
       hShift.add("h2D_pt_massShiftPhi", "pT vs mass shift of Phi meson", kTH2F, {{ptAxis}, {300, -0.1, 0.1}});
     }
 
@@ -1991,32 +1993,32 @@ struct Kstarqa {
     }
 
     for (const auto& RecCollision : recCollisions) {
-      rEventSelection.fill(HIST("hEventSelectionMC"), 0.5);
+      rEventSelection.fill(HIST("hEventCutMC"), 0.5);
 
       if (!RecCollision.has_mcCollision())
         continue;
 
-      rEventSelection.fill(HIST("hEventSelectionMC"), 1.5);
+      rEventSelection.fill(HIST("hEventCutMC"), 1.5);
 
       if (configGp.isNoTimeFrameBorder && !RecCollision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         continue;
 
-      rEventSelection.fill(HIST("hEventSelectionMC"), 2.5);
+      rEventSelection.fill(HIST("hEventCutMC"), 2.5);
 
       if (configGp.isNoITSROFrameBorder && !RecCollision.selection_bit(aod::evsel::kNoITSROFrameBorder))
         continue;
 
-      rEventSelection.fill(HIST("hEventSelectionMC"), 3.5);
+      rEventSelection.fill(HIST("hEventCutMC"), 3.5);
 
       if (std::abs(RecCollision.posZ()) > configGp.cutzvertex)
         continue;
 
-      rEventSelection.fill(HIST("hEventSelectionMC"), 4.5);
+      rEventSelection.fill(HIST("hEventCutMC"), 4.5);
 
       if (configGp.isTriggerTVX && !RecCollision.selection_bit(aod::evsel::kIsTriggerTVX))
         continue;
 
-      rEventSelection.fill(HIST("hEventSelectionMC"), 5.5);
+      rEventSelection.fill(HIST("hEventCutMC"), 5.5);
     }
 
     bool isINELgt0true = false;
@@ -3294,8 +3296,8 @@ struct Kstarqa {
               recMass = mother.M();
               genMass = genMother.M();
 
-              hShift.fill(HIST("h1D_MassPhiGen"), genMass);
-              hShift.fill(HIST("h1D_MassPhiRec"), recMass);
+              hShift.fill(HIST("h2D_MassPhiGenVsPt"), genMass, genMother.pt());
+              hShift.fill(HIST("h2D_MassPhiRecVsPt"), recMass, mother.pt());
               hShift.fill(HIST("h2D_pt_massShiftPhi"), mother.pt(), genMass - recMass);
 
               auto genpTPhi = mothertrack1.pt();

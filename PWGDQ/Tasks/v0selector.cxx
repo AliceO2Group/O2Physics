@@ -387,8 +387,8 @@ struct v0selector {
           registry.fill(HIST("hV0Psi"), psipair, mGamma);
         }
         if (mGamma < v0max_mee && std::abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaEl()) < cutNsigmaElTPC && std::abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaEl()) < cutNsigmaElTPC && std::abs(psipair) < maxpsipair) {
-          pidmap[V0.posTrackId()] |= (uint8_t(1) << kGamma);
-          pidmap[V0.negTrackId()] |= (uint8_t(1) << kGamma);
+          pidmap[V0.posTrackId()] |= (static_cast<uint8_t>(1) << kGamma);
+          pidmap[V0.negTrackId()] |= (static_cast<uint8_t>(1) << kGamma);
           storeV0AddID(V0.globalIndex(), kGamma);
           if (fillhisto) {
             registry.fill(HIST("hGammaRxy"), V0.x(), V0.y());
@@ -402,8 +402,8 @@ struct v0selector {
           registry.fill(HIST("hMassK0SPhi"), V0.phi(), mK0S);
         }
         if ((0.48 < mK0S && mK0S < 0.51) && std::abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC && std::abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC) {
-          pidmap[V0.posTrackId()] |= (uint8_t(1) << kK0S);
-          pidmap[V0.negTrackId()] |= (uint8_t(1) << kK0S);
+          pidmap[V0.posTrackId()] |= (static_cast<uint8_t>(1) << kK0S);
+          pidmap[V0.negTrackId()] |= (static_cast<uint8_t>(1) << kK0S);
           storeV0AddID(V0.globalIndex(), kK0S);
         }
       } else if (v0id == kLambda) { // L->p + pi-
@@ -411,8 +411,8 @@ struct v0selector {
           registry.fill(HIST("hMassLambda"), V0radius, mLambda);
         }
         if (v0id == kLambda && (1.110 < mLambda && mLambda < 1.120) && std::abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPr()) < cutNsigmaPrTPC && std::abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC) {
-          pidmap[V0.posTrackId()] |= (uint8_t(1) << kLambda);
-          pidmap[V0.negTrackId()] |= (uint8_t(1) << kLambda);
+          pidmap[V0.posTrackId()] |= (static_cast<uint8_t>(1) << kLambda);
+          pidmap[V0.negTrackId()] |= (static_cast<uint8_t>(1) << kLambda);
           storeV0AddID(V0.globalIndex(), kLambda);
         }
       } else if (v0id == kAntiLambda) { // Lbar -> pbar + pi+
@@ -420,8 +420,8 @@ struct v0selector {
           registry.fill(HIST("hMassAntiLambda"), V0radius, mAntiLambda);
         }
         if ((1.110 < mAntiLambda && mAntiLambda < 1.120) && std::abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC && std::abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPr()) < cutNsigmaPrTPC) {
-          pidmap[V0.posTrackId()] |= (uint8_t(1) << kAntiLambda);
-          pidmap[V0.negTrackId()] |= (uint8_t(1) << kAntiLambda);
+          pidmap[V0.posTrackId()] |= (static_cast<uint8_t>(1) << kAntiLambda);
+          pidmap[V0.negTrackId()] |= (static_cast<uint8_t>(1) << kAntiLambda);
           storeV0AddID(V0.globalIndex(), kAntiLambda);
         }
       }
@@ -543,7 +543,7 @@ struct v0selector {
             registry.fill(HIST("hMassOmega"), cascRadius, mOmega);
           }
           if (cutMassOmegaLow < mOmega && mOmega < cutMassOmegaHigh && cutMassCascV0Low < mV0Lambda && mV0Lambda < cutMassCascV0High && std::abs(casc.posTrack_as<FullTracksExt>().tpcNSigmaPr()) < cutNsigmaPrTPC && std::abs(casc.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC && std::abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < cutNsigmaKaTPC) {
-            pidmap[casc.bachelorId()] |= (uint8_t(1) << kOmega);
+            pidmap[casc.bachelorId()] |= (static_cast<uint8_t>(1) << kOmega);
             storeCascAddID(casc.globalIndex(), kOmega);
           }
         } else if (cascid == kAntiOmega && v0id == kAntiLambda) {
@@ -551,7 +551,7 @@ struct v0selector {
             registry.fill(HIST("hMassAntiOmega"), cascRadius, mOmega);
           }
           if (cutMassOmegaLow < mOmega && mOmega < cutMassOmegaHigh && cutMassCascV0Low < mV0Lambda && mV0Lambda < cutMassCascV0High && std::abs(casc.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC && std::abs(casc.negTrack_as<FullTracksExt>().tpcNSigmaPr()) < cutNsigmaPrTPC && std::abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < cutNsigmaKaTPC) {
-            pidmap[casc.bachelorId()] |= (uint8_t(1) << kAntiOmega);
+            pidmap[casc.bachelorId()] |= (static_cast<uint8_t>(1) << kAntiOmega);
             storeCascAddID(casc.globalIndex(), kAntiOmega);
           }
         }

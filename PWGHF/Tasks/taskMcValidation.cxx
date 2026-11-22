@@ -224,7 +224,7 @@ struct HfTaskMcValidationGen {
   using CollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>;
   using CollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Cs>;
   using CollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Ms>;
-  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>;
   PresliceUnsorted<CollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<CollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<CollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
@@ -628,7 +628,7 @@ struct HfTaskMcValidationGen {
     registry.fill(HIST("Quarks/hCountBbar"), bBarPerCollision);
   }
 
-  void processNoCentSel(aod::McCollisions const& mcCollisions,
+  void processNoCentSel(soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
                         aod::McParticles const& mcParticles,
                         CollisionsNoCents const& recoCollisions,
                         BCsInfo const& bcInfo)
@@ -656,7 +656,7 @@ struct HfTaskMcValidationGen {
   } // end processNoCentSel
   PROCESS_SWITCH(HfTaskMcValidationGen, processNoCentSel, "Process generated collisions information without centrality selection", true);
 
-  void processCentFT0C(aod::McCollisions const& mcCollisions,
+  void processCentFT0C(soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions,
                        aod::McParticles const& mcParticles,
                        CollisionsFT0Cs const& recoCollisions,
                        BCsInfo const& bcInfo)

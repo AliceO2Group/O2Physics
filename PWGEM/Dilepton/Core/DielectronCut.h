@@ -350,12 +350,12 @@ class DielectronCut : public TNamed
   bool PassTPChadrej(T const& track) const
   {
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
-    // bool is_mu_excluded_TPC = mMuonExclusionTPC ? track.tpcNSigmaMu() < mMinTPCNsigmaMu || mMaxTPCNsigmaMu < track.tpcNSigmaMu() : true;
+    bool is_mu_excluded_TPC = mMuonExclusionTPC ? track.tpcNSigmaMu() < mMinTPCNsigmaMu || mMaxTPCNsigmaMu < track.tpcNSigmaMu() : true;
     bool is_pi_excluded_TPC = track.tpcInnerParam() < mMaxPinForPionRejectionTPC ? (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi()) : true;
     bool is_ka_excluded_TPC = track.tpcNSigmaKa() < mMinTPCNsigmaKa || mMaxTPCNsigmaKa < track.tpcNSigmaKa();
     bool is_pr_excluded_TPC = track.tpcNSigmaPr() < mMinTPCNsigmaPr || mMaxTPCNsigmaPr < track.tpcNSigmaPr();
     bool is_el_included_TOF = track.hasTOF() ? (mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl) : true;
-    return is_el_included_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC && is_el_included_TOF;
+    return is_el_included_TPC && is_mu_excluded_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC && is_el_included_TOF;
   }
 
   template <typename T>
@@ -369,11 +369,11 @@ class DielectronCut : public TNamed
   bool PassTPConlyhadrej(T const& track) const
   {
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
-    // bool is_mu_excluded_TPC = mMuonExclusionTPC ? track.tpcNSigmaMu() < mMinTPCNsigmaMu || mMaxTPCNsigmaMu < track.tpcNSigmaMu() : true;
+    bool is_mu_excluded_TPC = mMuonExclusionTPC ? track.tpcNSigmaMu() < mMinTPCNsigmaMu || mMaxTPCNsigmaMu < track.tpcNSigmaMu() : true;
     bool is_pi_excluded_TPC = track.tpcInnerParam() < mMaxPinForPionRejectionTPC ? (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi()) : true;
     bool is_ka_excluded_TPC = track.tpcNSigmaKa() < mMinTPCNsigmaKa || mMaxTPCNsigmaKa < track.tpcNSigmaKa();
     bool is_pr_excluded_TPC = track.tpcNSigmaPr() < mMinTPCNsigmaPr || mMaxTPCNsigmaPr < track.tpcNSigmaPr();
-    return is_el_included_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC;
+    return is_el_included_TPC && is_mu_excluded_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC;
   }
 
   template <typename T>
@@ -505,7 +505,7 @@ class DielectronCut : public TNamed
   void SetMuonExclusionTPC(bool flag);
   void SetTOFbetaRange(float min, float max);
   void SetTPCNsigmaElRange(float min, float max);
-  // void SetTPCNsigmaMuRange(float min, float max);
+  void SetTPCNsigmaMuRange(float min, float max);
   void SetTPCNsigmaPiRange(float min, float max);
   void SetTPCNsigmaKaRange(float min, float max);
   void SetTPCNsigmaPrRange(float min, float max);
@@ -609,7 +609,7 @@ class DielectronCut : public TNamed
   bool mMuonExclusionTPC{false}; // flag to reject muon in TPC for low B
   float mMinTOFbeta{-999}, mMaxTOFbeta{999};
   float mMinTPCNsigmaEl{-1e+10}, mMaxTPCNsigmaEl{+1e+10};
-  // float mMinTPCNsigmaMu{-1e+10}, mMaxTPCNsigmaMu{+1e+10};
+  float mMinTPCNsigmaMu{-1e+10}, mMaxTPCNsigmaMu{+1e+10};
   float mMinTPCNsigmaPi{-1e+10}, mMaxTPCNsigmaPi{+1e+10};
   float mMinTPCNsigmaKa{-1e+10}, mMaxTPCNsigmaKa{+1e+10};
   float mMinTPCNsigmaPr{-1e+10}, mMaxTPCNsigmaPr{+1e+10};

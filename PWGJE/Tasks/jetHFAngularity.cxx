@@ -253,6 +253,24 @@ struct JetHFAngularityTask {
                                             "Event selection string"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks",
                                             "Track selection string"};
+  Configurable<bool> rejectReflections{"rejectReflections", true,
+                                       "Exclude reflections from response matrices and efficiency numerators"};
+  // Shared axes
+  ConfigurableAxis binsMassD0{"binsMassD0", {500, 1.6f, 2.1f}, "m_{D^{0}} (GeV/#it{c}^{2})"};
+  ConfigurableAxis binsPtD0{"binsPtD0", {200, 0.f, 100.f}, "#it{p}_{T,D^{0}} (GeV/#it{c})"};
+  ConfigurableAxis binsZParallel{"binsZParallel", {200, 0.f, 2.f}, "z_{||}"};
+  ConfigurableAxis binsDeltaR{"binsDeltaR", {200, 0.f, 1.f}, "#DeltaR"};
+  ConfigurableAxis binsLambda11{"binsLambda11", {50, 0.f, 1.f}, "#lambda_{1}^{1}"};
+  ConfigurableAxis binsLambda12{"binsLambda12", {50, 0.f, 1.f}, "#lambda_{2}^{1}"};
+
+  // Jet pT: data sparse vs. MC / response
+  ConfigurableAxis binsPtJetData{"binsPtJetData", {200, 0.f, 100.f}, "#it{p}_{T,jet} (GeV/#it{c})"};
+  ConfigurableAxis binsPtJetMC{"binsPtJetMC", {40, 0.f, 200.f}, "#it{p}_{T,jet} (GeV/#it{c})"};
+
+  // Response-matrix axes
+  ConfigurableAxis binsPtD0Resp{"binsPtD0Resp", {50, 0.f, 50.f}, "#it{p}_{T,D^{0}} (GeV/#it{c})"};
+  ConfigurableAxis binsLambda11Resp{"binsLambda11Resp", {50, 0.f, 1.f}, "#lambda_{1}^{1}"};
+  ConfigurableAxis binsLambda12Resp{"binsLambda12Resp", {50, 0.f, 1.f}, "#lambda_{2}^{1}"};
 
   Produces<aod::D0JetObjTable> objJetTable;
   Produces<aod::D0JetMCDObjTable> objJetMCDTable;
@@ -328,8 +346,7 @@ struct JetHFAngularityTask {
                                            {"h_d0_mlscore1", ";ML score 1 (prompt);entries", {HistType::kTH1F, {{100, 0., 1.}}}},
                                            {"h_d0_mlscore2", ";ML score 2 (non-prompt);entries", {HistType::kTH1F, {{100, 0., 1.}}}},
 
-                                           // ----- Sparse: (m_D0, pT_D0, pT_jet, z_parallel, DeltaR) -----
-                                           {"hSparse_d0", ";m_{D^{0}};#it{p}_{T,D^{0}};#it{p}_{T,jet};z_{||};#DeltaR;#lambda_{1}^{1};#lambda_{2}^{1}", {HistType::kTHnSparseF, {{300, 1.7, 2.0}, {200, 0., 100.}, {200, 0., 100.}, {200, 0., 2.}, {200, 0., 1.}, {50, 0., 1.}, {50, 0., 1.}}}},
+                                           // hSparse_d0 is booked in init() (configurable axes)
 
                                            //               MC DETECTOR LEVEL (MCD)
 
@@ -355,14 +372,10 @@ struct JetHFAngularityTask {
 
                                            {"h_d0_origin_mcd", ";origin (0=none,1=prompt,2=non-prompt);entries", {HistType::kTH1F, {{3, 0., 3.}}}},
 
-                                           {"hSparse_d0_mcd", ";m_{D^{0}}^{det};#it{p}_{T,D^{0}}^{det};#it{p}_{T,jet}^{det};z_{||}^{det};#DeltaR^{det};#lambda_{1}^{1,det};#lambda_{2}^{1,det}", {HistType::kTHnSparseF, {{300, 1.7, 2.0}, {200, 0., 100.}, {200, 0., 100.}, {200, 0., 2.}, {200, 0., 1.}, {50, 0., 1.}, {50, 0., 1.}}}},
-
-                                           {"hSparse_d0_mcd_calib", ";m_{D^{0}}^{det};#it{p}_{T,D^{0}}^{det};#it{p}_{T,jet}^{det};z_{||}^{det};Origin(D^{0});#lambda_{1}^{1,det};#lambda_{2}^{1,det}", {HistType::kTHnSparseF, {{300, 1.7, 2.0}, {200, 0., 100.}, {200, 0., 100.}, {200, 0., 2.}, {3, -0.5, 2.5}, {50, 0., 1.}, {50, 0., 1.}}}},
+                                           // hSparse_d0_mcd, hSparse_d0_mcd_calib, hSparse_d0_mcd_reflection are booked in init()
 
                                            {"h_d0_mass_mcd_signal", ";m_{K#pi}^{det} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 1.7, 2.0}}}},
                                            {"h_d0_mass_mcd_reflection", ";m_{K#pi}^{det} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 1.7, 2.0}}}},
-
-                                           {"hSparse_d0_mcd_reflection", ";m_{D^{0}}^{det};#it{p}_{T,D^{0}}^{det};#it{p}_{T,jet}^{det};z_{||}^{det};Origin(D^{0});#lambda_{1}^{1,det};#lambda_{2}^{1,det}", {HistType::kTHnSparseF, {{300, 1.7, 2.0}, {200, 0., 100.}, {200, 0., 100.}, {200, 0., 2.}, {3, -0.5, 2.5}, {50, 0., 1.}, {50, 0., 1.}}}},
 
                                            //                    MC PARTICLE LEVEL (MCP)
 
@@ -406,14 +419,7 @@ struct JetHFAngularityTask {
                                            {"h_jet_pt_response_matrix_allcand", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,jet}^{part} (GeV/#it{c}) (all geo candidates)", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}}},
 
                                            // Detector-level vs matched particle-level jet pT
-
-                                           {"h_jet_pt_response_matrix", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,jet}^{part} (GeV/#it{c})", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}}},
-                                           {"h_jet_pt_response_matrix_pr", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,jet}^{part} (GeV/#it{c}) (prompt)", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}}},
-                                           {"h_jet_pt_response_matrix_np", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,jet}^{part} (GeV/#it{c}) (non-prompt)", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}}},
-
-                                           // Axes: pT_jet^det, pT_D0^det, pT_jet^part, pT_D0^part
-                                           {"h_response_d0pt_pr", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,D^{0}}^{det} (GeV/#it{c});#it{p}_{T,jet}^{part} (GeV/#it{c});#it{p}_{T,D^{0}}^{part} (GeV/#it{c})", {HistType::kTHnSparseF, {{40, 0., 200.}, {50, 0., 50.}, {40, 0., 200.}, {50, 0., 50.}}}},
-                                           {"h_response_d0pt_np", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,D^{0}}^{det} (GeV/#it{c});#it{p}_{T,jet}^{part} (GeV/#it{c});#it{p}_{T,D^{0}}^{part} (GeV/#it{c})", {HistType::kTHnSparseF, {{40, 0., 200.}, {50, 0., 50.}, {40, 0., 200.}, {50, 0., 50.}}}},
+                                           // Response matrices (h_jet_pt_response_matrix[_pr/_np], h_response_*) are booked in init()
 
                                            {"h_kineff_gen_num_pr", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{p}_{T,D^{0}}^{part} (GeV/#it{c})", {HistType::kTH2F, {{40, 0., 200.}, {50, 0., 50.}}}},
                                            {"h_kineff_gen_den_pr", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{p}_{T,D^{0}}^{part} (GeV/#it{c})", {HistType::kTH2F, {{40, 0., 200.}, {50, 0., 50.}}}},
@@ -424,12 +430,6 @@ struct JetHFAngularityTask {
                                            {"h_kineff_det_den_pr", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,D^{0}}^{det} (GeV/#it{c})", {HistType::kTH2F, {{40, 0., 200.}, {50, 0., 50.}}}},
                                            {"h_kineff_det_num_np", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,D^{0}}^{det} (GeV/#it{c})", {HistType::kTH2F, {{40, 0., 200.}, {50, 0., 50.}}}},
                                            {"h_kineff_det_den_np", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,D^{0}}^{det} (GeV/#it{c})", {HistType::kTH2F, {{40, 0., 200.}, {50, 0., 50.}}}},
-                                           //             ANGULARITY RESPONSE MATRIX
-
-                                           {"h_response_angularity_pr", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#lambda_{1}^{1,det};#it{p}_{T,jet}^{part} (GeV/#it{c});#lambda_{1}^{1,part}", {HistType::kTHnSparseF, {{40, 0., 200.}, {50, 0., 1.}, {40, 0., 200.}, {50, 0., 1.}}}},
-                                           {"h_response_angularity_np", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#lambda_{1}^{1,det};#it{p}_{T,jet}^{part} (GeV/#it{c});#lambda_{1}^{1,part}", {HistType::kTHnSparseF, {{40, 0., 200.}, {50, 0., 1.}, {40, 0., 200.}, {50, 0., 1.}}}},
-                                           {"h_response_girth_pr", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#lambda_{2}^{1,det};#it{p}_{T,jet}^{part} (GeV/#it{c});#lambda_{2}^{1,part}", {HistType::kTHnSparseF, {{40, 0., 200.}, {50, 0., 1.}, {40, 0., 200.}, {50, 0., 1.}}}},
-                                           {"h_response_girth_np", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#lambda_{2}^{1,det};#it{p}_{T,jet}^{part} (GeV/#it{c});#lambda_{2}^{1,part}", {HistType::kTHnSparseF, {{40, 0., 200.}, {50, 0., 1.}, {40, 0., 200.}, {50, 0., 1.}}}},
 
                                            {"h_eff_run2_num_pr", ";#it{p}_{T,D^{0}}^{det} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 50.}}}},
                                            {"h_eff_run2_num_np", ";#it{p}_{T,D^{0}}^{det} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 50.}}}},
@@ -441,9 +441,7 @@ struct JetHFAngularityTask {
                                            {"MC_CollisionCounter", "N_{collisions};", {HistType::kTH1F, {{4, 0., 4.}}}},
                                            {"MC_JetCounter", "N_{jet};", {HistType::kTH1F, {{4, 0., 4.}}}},
 
-                                           {"hSparse_d0_mcd_eff", ";m_{D^{0}}^{det};#it{p}_{T,D^{0}}^{det};#it{p}_{T,jet}^{det};z_{||}^{det};Origin(D^{0});Matching status;#lambda_{1}^{1,det};#lambda_{2}^{1,det};IsReflection", {HistType::kTHnSparseF, {{300, 1.7, 2.0}, {200, 0., 100.}, {200, 0., 100.}, {200, 0., 2.}, {3, -0.5, 2.5}, {2, -0.5, 1.5}, {50, 0., 1.}, {50, 0., 1.}, {2, -0.5, 1.5}}}},
-
-                                           {"hSparse_d0_mcp_eff", ";#it{p}_{T,D^{0}}^{part};#it{p}_{T,jet}^{part};z_{||}^{part};Origin(D^{0});Matching status;#lambda_{1}^{1,part};#lambda_{2}^{1,part}", {HistType::kTHnSparseF, {{200, 0., 100.}, {200, 0., 100.}, {200, 0., 2.}, {3, -0.5, 2.5}, {2, -0.5, 1.5}, {50, 0., 1.}, {50, 0., 1.}}}},
+                                           // hSparse_d0_mcd_eff and hSparse_d0_mcp_eff are booked in init()
 
                                          }};
 
@@ -451,10 +449,98 @@ struct JetHFAngularityTask {
 
   void init(InitContext const&)
   {
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections.value);
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections.value);
 
     massD0MCP = jetcandidateutilities::getTablePDGMass<D0CandidatesMCP>();
+
+    //  Histograms with configurable axes
+    // ---- Configurable axes ----
+    const AxisSpec axMass{binsMassD0, "m_{D^{0}} (GeV/#it{c}^{2})"};
+    const AxisSpec axPtD0{binsPtD0, "#it{p}_{T,D^{0}} (GeV/#it{c})"};
+    const AxisSpec axZ{binsZParallel, "z_{||}"};
+    const AxisSpec axDR{binsDeltaR, "#DeltaR"};
+    const AxisSpec axL11{binsLambda11, "#lambda_{1}^{1}"};
+    const AxisSpec axL12{binsLambda12, "#lambda_{2}^{1}"};
+
+    const AxisSpec axPtJetData{binsPtJetData, "#it{p}_{T,jet} (GeV/#it{c})"};
+    const AxisSpec axPtJetDet{binsPtJetMC, "#it{p}_{T,jet}^{det} (GeV/#it{c})"};
+    const AxisSpec axPtJetPart{binsPtJetMC, "#it{p}_{T,jet}^{part} (GeV/#it{c})"};
+
+    const AxisSpec axPtD0Det{binsPtD0Resp, "#it{p}_{T,D^{0}}^{det} (GeV/#it{c})"};
+    const AxisSpec axPtD0Part{binsPtD0Resp, "#it{p}_{T,D^{0}}^{part} (GeV/#it{c})"};
+    const AxisSpec axL11Det{binsLambda11Resp, "#lambda_{1}^{1,det}"};
+    const AxisSpec axL11Part{binsLambda11Resp, "#lambda_{1}^{1,part}"};
+    const AxisSpec axL12Det{binsLambda12Resp, "#lambda_{2}^{1,det}"};
+    const AxisSpec axL12Part{binsLambda12Resp, "#lambda_{2}^{1,part}"};
+
+    // ---- Fixed categorical axes (not configurable) ----
+    const AxisSpec axOrigin{3, -0.5, 2.5, "Origin(D^{0})"};
+    const AxisSpec axMatch{2, -0.5, 1.5, "Matching status"};
+    const AxisSpec axRefl{2, -0.5, 1.5, "IsReflection"};
+
+    // ---- DATA ----
+    registry.add("hSparse_d0", "hSparse_d0", HistType::kTHnSparseF,
+                 {axMass, axPtD0, axPtJetData, axZ, axDR, axL11, axL12});
+
+    // ---- MCD ----
+    registry.add("hSparse_d0_mcd", "hSparse_d0_mcd", HistType::kTHnSparseF,
+                 {axMass, axPtD0, axPtJetDet, axZ, axDR, axL11, axL12});
+    registry.add("hSparse_d0_mcd_calib", "hSparse_d0_mcd_calib", HistType::kTHnSparseF,
+                 {axMass, axPtD0, axPtJetDet, axZ, axOrigin, axL11, axL12});
+    registry.add("hSparse_d0_mcd_reflection", "hSparse_d0_mcd_reflection", HistType::kTHnSparseF,
+                 {axMass, axPtD0, axPtJetDet, axZ, axOrigin, axL11, axL12});
+
+    // ---- Jet pT response (detector level vs. matched particle level) ----
+    registry.add("h_jet_pt_response_matrix", "", HistType::kTH2F, {axPtJetDet, axPtJetPart});
+    registry.add("h_jet_pt_response_matrix_pr", "prompt", HistType::kTH2F, {axPtJetDet, axPtJetPart});
+    registry.add("h_jet_pt_response_matrix_np", "non-prompt", HistType::kTH2F, {axPtJetDet, axPtJetPart});
+
+    // ---- D0 pT response. Axes: pT_jet^det, pT_D0^det, pT_jet^part, pT_D0^part ----
+    registry.add("h_response_d0pt_pr", "", HistType::kTHnSparseF,
+                 {axPtJetDet, axPtD0Det, axPtJetPart, axPtD0Part});
+    registry.add("h_response_d0pt_np", "", HistType::kTHnSparseF,
+                 {axPtJetDet, axPtD0Det, axPtJetPart, axPtD0Part});
+
+    // ---- Angularity / girth response matrices ----
+    registry.add("h_response_angularity_pr", "", HistType::kTHnSparseF,
+                 {axPtJetDet, axL11Det, axPtJetPart, axL11Part});
+    registry.add("h_response_angularity_np", "", HistType::kTHnSparseF,
+                 {axPtJetDet, axL11Det, axPtJetPart, axL11Part});
+    registry.add("h_response_girth_pr", "", HistType::kTHnSparseF,
+                 {axPtJetDet, axL12Det, axPtJetPart, axL12Part});
+    registry.add("h_response_girth_np", "", HistType::kTHnSparseF,
+                 {axPtJetDet, axL12Det, axPtJetPart, axL12Part});
+
+    // ---- Particle-level efficiency, consistent with the response matrices ----
+    registry.add("h_eff_num_d0pt_pr", "", HistType::kTH2F, {axPtJetPart, axPtD0Part});
+    registry.add("h_eff_num_d0pt_np", "", HistType::kTH2F, {axPtJetPart, axPtD0Part});
+    registry.add("h_eff_den_d0pt_pr", "", HistType::kTH2F, {axPtJetPart, axPtD0Part});
+    registry.add("h_eff_den_d0pt_np", "", HistType::kTH2F, {axPtJetPart, axPtD0Part});
+
+    registry.add("h_eff_num_angularity_pr", "", HistType::kTH2F, {axPtJetPart, axL11Part});
+    registry.add("h_eff_num_angularity_np", "", HistType::kTH2F, {axPtJetPart, axL11Part});
+    registry.add("h_eff_den_angularity_pr", "", HistType::kTH2F, {axPtJetPart, axL11Part});
+    registry.add("h_eff_den_angularity_np", "", HistType::kTH2F, {axPtJetPart, axL11Part});
+
+    registry.add("h_eff_num_girth_pr", "", HistType::kTH2F, {axPtJetPart, axL12Part});
+    registry.add("h_eff_num_girth_np", "", HistType::kTH2F, {axPtJetPart, axL12Part});
+    registry.add("h_eff_den_girth_pr", "", HistType::kTH2F, {axPtJetPart, axL12Part});
+    registry.add("h_eff_den_girth_np", "", HistType::kTH2F, {axPtJetPart, axL12Part});
+
+    // ---- Efficiency sparses ----
+    registry.add("hSparse_d0_mcd_eff", "hSparse_d0_mcd_eff", HistType::kTHnSparseF,
+                 {axMass, axPtD0, axPtJetDet, axZ, axOrigin, axMatch, axL11, axL12, axRefl});
+    registry.add("hSparse_d0_mcp_eff", "hSparse_d0_mcp_eff", HistType::kTHnSparseF,
+                 {axPtD0, axPtJetPart, axZ, axOrigin, axMatch, axL11, axL12});
+
+    // ---- Efficiency sparses, candidate-match version (match axis = candidate-match flag) ----
+    registry.add("hSparse_d0_mcd_eff_cand", "hSparse_d0_mcd_eff_cand", HistType::kTHnSparseF,
+                 {axMass, axPtD0, axPtJetDet, axZ, axOrigin, axMatch, axL11, axL12, axRefl});
+    registry.add("hSparse_d0_mcp_eff_cand", "hSparse_d0_mcp_eff_cand", HistType::kTHnSparseF,
+                 {axPtD0, axPtJetPart, axZ, axOrigin, axMatch, axL11, axL12});
+
+    //  Bin labels
 
     // ---- DATA bin labels ----
     auto hColl = registry.get<TH1>(HIST("h_collisions"));
@@ -540,6 +626,23 @@ struct JetHFAngularityTask {
     hSparseMCPEff->GetAxis(3)->SetBinLabel(3, "non-prompt");
     hSparseMCPEff->GetAxis(4)->SetBinLabel(1, "Unmatched");
     hSparseMCPEff->GetAxis(4)->SetBinLabel(2, "Matched");
+
+    // ---- Candidate-match efficiency sparse bin labels ----
+    auto hSparseMCDEffCand = registry.get<THnSparse>(HIST("hSparse_d0_mcd_eff_cand"));
+    hSparseMCDEffCand->GetAxis(4)->SetBinLabel(1, "none/bkg");
+    hSparseMCDEffCand->GetAxis(4)->SetBinLabel(2, "prompt");
+    hSparseMCDEffCand->GetAxis(4)->SetBinLabel(3, "non-prompt");
+    hSparseMCDEffCand->GetAxis(5)->SetBinLabel(1, "Unmatched (cand)");
+    hSparseMCDEffCand->GetAxis(5)->SetBinLabel(2, "Matched (cand)");
+    hSparseMCDEffCand->GetAxis(8)->SetBinLabel(1, "Not reflection");
+    hSparseMCDEffCand->GetAxis(8)->SetBinLabel(2, "Reflection");
+
+    auto hSparseMCPEffCand = registry.get<THnSparse>(HIST("hSparse_d0_mcp_eff_cand"));
+    hSparseMCPEffCand->GetAxis(3)->SetBinLabel(1, "none/bkg");
+    hSparseMCPEffCand->GetAxis(3)->SetBinLabel(2, "prompt");
+    hSparseMCPEffCand->GetAxis(3)->SetBinLabel(3, "non-prompt");
+    hSparseMCPEffCand->GetAxis(4)->SetBinLabel(1, "Unmatched (cand)");
+    hSparseMCPEffCand->GetAxis(4)->SetBinLabel(2, "Matched (cand)");
 
     // ---- Reflection sparse bin labels ----
     auto hSparseMCDRefl = registry.get<THnSparse>(HIST("hSparse_d0_mcd_reflection"));
@@ -1100,7 +1203,7 @@ struct JetHFAngularityTask {
           }
 
           if (isCleanMatched) {
-            registry.fill(HIST("h_jet_pt_response_matrix"), mcdjet.pt(), matchedPt);
+            // registry.fill(HIST("h_jet_pt_response_matrix"), mcdjet.pt(), matchedPt);
             registry.fill(HIST("h_jet_matching_dr_mcd"), matchedDR);
           }
 
@@ -1151,31 +1254,63 @@ struct JetHFAngularityTask {
                           girth,
                           isReflectionFlag);
 
-            if (originMcd == kOriginMcPrompt) {
-              registry.fill(HIST("h_eff_run2_num_pr"), mcdD0cand.pt());
-              registry.fill(HIST("h_kineff_det_den_pr"), mcdjet.pt(), mcdD0cand.pt());
-              if (isGeoMatched) {
-                registry.fill(HIST("h_kineff_det_num_pr"), mcdjet.pt(), mcdD0cand.pt());
-              }
-            } else if (originMcd == kOriginMcNonPrompt) {
-              registry.fill(HIST("h_eff_run2_num_np"), mcdD0cand.pt());
-              registry.fill(HIST("h_kineff_det_den_np"), mcdjet.pt(), mcdD0cand.pt());
-              if (isGeoMatched) {
-                registry.fill(HIST("h_kineff_det_num_np"), mcdjet.pt(), mcdD0cand.pt());
+            // Same entry, but the match axis carries the candidate-match flag
+            registry.fill(HIST("hSparse_d0_mcd_eff_cand"),
+                          mcdD0cand.m(),
+                          mcdD0cand.pt(),
+                          mcdjet.pt(),
+                          zParallelMCD,
+                          originMcd,
+                          static_cast<int>(isCandMatched),
+                          angularity,
+                          girth,
+                          isReflectionFlag);
+
+            // Reflection rows are a second copy of the same true D0: skip them (switchable).
+            const bool skipReflection = rejectReflections && isReflection;
+
+            if (!skipReflection) {
+              if (originMcd == kOriginMcPrompt) {
+                registry.fill(HIST("h_eff_run2_num_pr"), mcdD0cand.pt());
+                registry.fill(HIST("h_kineff_det_den_pr"), mcdjet.pt(), mcdD0cand.pt());
+                if (isGeoMatched) {
+                  registry.fill(HIST("h_kineff_det_num_pr"), mcdjet.pt(), mcdD0cand.pt());
+                }
+              } else if (originMcd == kOriginMcNonPrompt) {
+                registry.fill(HIST("h_eff_run2_num_np"), mcdD0cand.pt());
+                registry.fill(HIST("h_kineff_det_den_np"), mcdjet.pt(), mcdD0cand.pt());
+                if (isGeoMatched) {
+                  registry.fill(HIST("h_kineff_det_num_np"), mcdjet.pt(), mcdD0cand.pt());
+                }
               }
             }
 
-            if (isCleanMatched) {
+            if (isCleanMatched && !skipReflection) {
+              registry.fill(HIST("h_jet_pt_response_matrix"), mcdjet.pt(), matchedPt);
+
+              // The matched particle-level jet must lie in the range covered by the denominator.
+              const bool matchedInDenominatorRange = (matchedPt > jetPtMin);
+
               if (originMcd == kOriginMcPrompt) {
                 registry.fill(HIST("h_jet_pt_response_matrix_pr"), mcdjet.pt(), matchedPt);
                 registry.fill(HIST("h_response_angularity_pr"), mcdjet.pt(), angularity, matchedPt, matchedAngularity);
                 registry.fill(HIST("h_response_girth_pr"), mcdjet.pt(), girth, matchedPt, matchedGirth);
                 registry.fill(HIST("h_response_d0pt_pr"), mcdjet.pt(), mcdD0cand.pt(), matchedPt, matchedD0Pt);
+                if (matchedInDenominatorRange) {
+                  registry.fill(HIST("h_eff_num_d0pt_pr"), matchedPt, matchedD0Pt);
+                  registry.fill(HIST("h_eff_num_angularity_pr"), matchedPt, matchedAngularity);
+                  registry.fill(HIST("h_eff_num_girth_pr"), matchedPt, matchedGirth);
+                }
               } else if (originMcd == kOriginMcNonPrompt) {
                 registry.fill(HIST("h_jet_pt_response_matrix_np"), mcdjet.pt(), matchedPt);
                 registry.fill(HIST("h_response_angularity_np"), mcdjet.pt(), angularity, matchedPt, matchedAngularity);
                 registry.fill(HIST("h_response_girth_np"), mcdjet.pt(), girth, matchedPt, matchedGirth);
                 registry.fill(HIST("h_response_d0pt_np"), mcdjet.pt(), mcdD0cand.pt(), matchedPt, matchedD0Pt);
+                if (matchedInDenominatorRange) {
+                  registry.fill(HIST("h_eff_num_d0pt_np"), matchedPt, matchedD0Pt);
+                  registry.fill(HIST("h_eff_num_angularity_np"), matchedPt, matchedAngularity);
+                  registry.fill(HIST("h_eff_num_girth_np"), matchedPt, matchedGirth);
+                }
               }
             }
 
@@ -1219,10 +1354,6 @@ struct JetHFAngularityTask {
 
         registry.fill(HIST("MC_JetCounter"), getValFromBin(BinMCJetCntr::ParticleLevelJetInMCCollision));
 
-        auto mcpD0cand = mcpjet.template candidates_first_as<D0CandidatesMCP>();
-
-        const int originMcp = mcpD0cand.originMcGen(); // 0 none/bkg, 1 prompt, 2 non-prompt
-
         bool mcpIsCleanMatched = false;
         if (mcpjet.has_matchedJetGeo() && mcpjet.has_matchedJetCand()) {
           int mcpGeoTarget = -1;
@@ -1242,6 +1373,10 @@ struct JetHFAngularityTask {
         if (mcpIsCleanMatched) {
           registry.fill(HIST("MC_JetCounter"), getValFromBin(BinMCJetCntr::ParticleLevelJetWithMatchedCandidate));
         }
+        // ---- First generated D0 of the jet only: one entry per MCP jet ----
+        auto mcpD0cand = mcpjet.template candidates_first_as<D0CandidatesMCP>();
+
+        const int originMcp = mcpD0cand.originMcGen(); // 0 none/bkg, 1 prompt, 2 non-prompt
 
         const std::array<double, 3> jetMomMCP{mcpjet.px(), mcpjet.py(), mcpjet.pz()};
         const std::array<double, 3> candMomMCP{mcpD0cand.px(), mcpD0cand.py(), mcpD0cand.pz()};
@@ -1252,6 +1387,10 @@ struct JetHFAngularityTask {
         const float angularityMCP = computeLambda(mcpjet, mcpJetParticles, mcpJetCandidates, 1.f, 1.f); // λ_1^1
         const float girthMCP = computeLambda(mcpjet, mcpJetParticles, mcpJetCandidates, 2.f, 1.f);      // λ_2^1
 
+        const int isCandMatchedMCP = mcpjet.has_matchedJetCand() ? 1 : 0;
+        const bool mcpIsGeoMatched = mcpjet.has_matchedJetGeo();
+
+        // clean-match version
         registry.fill(HIST("hSparse_d0_mcp_eff"),
                       mcpD0cand.pt(),
                       mcpjet.pt(),
@@ -1261,7 +1400,26 @@ struct JetHFAngularityTask {
                       angularityMCP,
                       girthMCP);
 
-        const bool mcpIsGeoMatched = mcpjet.has_matchedJetGeo();
+        // candidate-match version
+        registry.fill(HIST("hSparse_d0_mcp_eff_cand"),
+                      mcpD0cand.pt(),
+                      mcpjet.pt(),
+                      zParallelMCP,
+                      originMcp,
+                      isCandMatchedMCP,
+                      angularityMCP,
+                      girthMCP);
+
+        if (originMcp == kOriginMcPrompt) {
+          registry.fill(HIST("h_eff_den_d0pt_pr"), mcpjet.pt(), mcpD0cand.pt());
+          registry.fill(HIST("h_eff_den_angularity_pr"), mcpjet.pt(), angularityMCP);
+          registry.fill(HIST("h_eff_den_girth_pr"), mcpjet.pt(), girthMCP);
+        } else if (originMcp == kOriginMcNonPrompt) {
+          registry.fill(HIST("h_eff_den_d0pt_np"), mcpjet.pt(), mcpD0cand.pt());
+          registry.fill(HIST("h_eff_den_angularity_np"), mcpjet.pt(), angularityMCP);
+          registry.fill(HIST("h_eff_den_girth_np"), mcpjet.pt(), girthMCP);
+        }
+
         if (originMcp == kOriginMcPrompt) {
           registry.fill(HIST("h_eff_run2_den_pr"), mcpD0cand.pt());
           registry.fill(HIST("h_kineff_gen_den_pr"), mcpjet.pt(), mcpD0cand.pt());

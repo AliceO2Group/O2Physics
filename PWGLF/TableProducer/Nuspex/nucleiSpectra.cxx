@@ -513,7 +513,7 @@ struct nucleiSpectra {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", (std::string)nuclei::centDetectorNames[cfgCentralityEstimator])};
+    const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", std::string(nuclei::centDetectorNames[cfgCentralityEstimator]))};
     const AxisSpec nSigmaAxes[2]{{cfgNsigmaTPCbins, "n#sigma_{TPC}"}, {cfgNsigmaTOFbins, "n#sigma_{TOF}"}};
     const AxisSpec tofMassAxis{cfgTOFmassBins, "TOF mass - PDG mass"};
     const AxisSpec ptResAxis{cfgMomResBins, "#Delta#it{p}_{T}/#it{p}_{T}"};
@@ -558,6 +558,7 @@ struct nucleiSpectra {
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kINELgt0 + 2, "IsINELgt0");
 
     spectra.add("hRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
+    spectra.add("hCentralityEvents", "selected events", HistType::kTH1D, {centAxis});
     if (doprocessMC) {
       spectra.add("hGenVtxZ", " generated collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
     }
@@ -655,6 +656,7 @@ struct nucleiSpectra {
     gRandom->SetSeed(bc.timestamp());
 
     spectra.fill(HIST("hRecVtxZData"), collision.posZ());
+    spectra.fill(HIST("hCentralityEvents"), getCentrality(collision));
 
     if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       spectra.fill(HIST("hRecVtxZDataITSrof"), collision.posZ());
@@ -1181,7 +1183,7 @@ struct nucleiSpectra {
           track.itsChi2NCl() > cfgTrackCut.ITSchi2ClusMax) {
         continue;
       }
-      double expBethe{common::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams->get(4, 0u), cfgBetheBlochParams->get(4, 1u), cfgBetheBlochParams->get(4, 2u), cfgBetheBlochParams->get(4, 3u), cfgBetheBlochParams->get(4, 4u))};
+      double expBethe{common::BetheBlochAleph((track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams->get(4, 0u), cfgBetheBlochParams->get(4, 1u), cfgBetheBlochParams->get(4, 2u), cfgBetheBlochParams->get(4, 3u), cfgBetheBlochParams->get(4, 4u))};
       double expSigma{expBethe * cfgBetheBlochParams->get(4, 5u)};
       double nSigmaTPC{(track.tpcSignal() - expBethe) / expSigma};
       int iC = track.signed1Pt() > 0;

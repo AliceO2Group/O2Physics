@@ -31,6 +31,7 @@
 
 #include <TH1.h>
 
+#include <cmath>
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -50,11 +51,13 @@ using SlimCollision = SlimCollisions::iterator;
 namespace slmccollision
 {
 DECLARE_SOA_COLUMN(McWeight, mcWeight, float);
-}
+DECLARE_SOA_COLUMN(PtHard, ptHard, float);
+} // namespace slmccollision
 DECLARE_SOA_TABLE(SlMcCollisions, "AOD", "SLMCCOLLISION",
                   o2::soa::Index<>,
                   o2::aod::mccollision::PosZ,
-                  slmccollision::McWeight);
+                  slmccollision::McWeight,
+                  slmccollision::PtHard);
 using SlMcCollision = SlMcCollisions::iterator;
 namespace slimtracks
 {
@@ -143,6 +146,8 @@ struct SlimTablesProducer {
     hMCP->GetXaxis()->SetBinLabel(2, "Zvertex");
     hMCP->GetXaxis()->SetBinLabel(3, "selectMcCollision");
 
+    histos.add("p_xSection", "generated cross section;;#sigma_{gen} (pb)", {HistType::kTProfile, {{1, 0.0, 1.0}}});
+
     histos.add("Ntracks_pT", "track pT distribution;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, -0.5, 199.5}}}, doSumw2);
     histos.add("Nparticles_pT", "particle pT distribution;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, -0.5, 199.5}}}, doSumw2);
 
@@ -198,6 +203,11 @@ struct SlimTablesProducer {
                  soa::Filtered<aod::JetParticles> const& particles)
   {
     float eventWeightMC = mccollision.weight();
+    if (skipMBGapEvents && mccollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return; // gap events: not part of the jet-jet sample
+    }
+    histos.fill(HIST("p_xSection"), 0.5, mccollision.xsectGen(), mccollision.accepted()); // running estimate: weight late (converged) values more
+
     if (collisions.size() != 1) { // skip the mccollision if it has mre than 1 associated rec collision
       return;
     }
@@ -210,6 +220,9 @@ struct SlimTablesProducer {
       return;
     }
     histos.fill(HIST("h_mcCollMCP_counts_weight"), 2.5, eventWeightMC);
+
+    float ptHardTrue = mccollision.ptHard();
+
     for (auto const& collision : collisions) {
       float eventWeight = collision.weight();
       histos.fill(HIST("h_mcCollMCD_counts_weight"), 0.5, eventWeightMC);
@@ -237,7 +250,7 @@ struct SlimTablesProducer {
         histos.fill(HIST("Ntracks_pT"), track.pt(), eventWeight);
         slimTracks(slimCollIndex, track.px(), track.py(), track.pz());
       }
-      slimMcCollisions(mccollision.posZ(), eventWeightMC);
+      slimMcCollisions(mccollision.posZ(), eventWeightMC, ptHardTrue);
       auto slimMcCollIndex = slimMcCollisions.lastIndex();
       for (const auto& particle : particles) {
         if (!particle.isPhysicalPrimary()) {

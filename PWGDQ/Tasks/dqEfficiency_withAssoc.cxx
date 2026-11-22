@@ -165,8 +165,8 @@ DECLARE_SOA_COLUMN(Etaee, etaee, float);
 DECLARE_SOA_COLUMN(Rapee, rapee, float);
 DECLARE_SOA_COLUMN(Phiee, phiee, float);
 DECLARE_SOA_COLUMN(Ptee, ptee, float);
-DECLARE_SOA_COLUMN(Lxyee, lxyee, float);
-DECLARE_SOA_COLUMN(LxyeePoleMass, lxyeepolemass, float);
+DECLARE_SOA_COLUMN(Lxyee, lxyJPsi2ee, float);
+DECLARE_SOA_COLUMN(LxyeePoleMass, lxyJPsi2eePoleMass, float);
 DECLARE_SOA_COLUMN(Lzee, lzee, float);
 DECLARE_SOA_COLUMN(LxyeePoleMassPVrecomputed, lxyeePoleMassPVrecomputed, float);
 DECLARE_SOA_COLUMN(Vx, vx, float);
@@ -179,10 +179,26 @@ DECLARE_SOA_COLUMN(DcaZ2, dcaZ2, float);
 DECLARE_SOA_COLUMN(MultiplicityFT0A, multiplicityFT0AJPsi2ee, float);
 DECLARE_SOA_COLUMN(MultiplicityFT0C, multiplicityFT0CJPsi2ee, float);
 DECLARE_SOA_COLUMN(PercentileFT0M, percentileFT0MJPsi2ee, float);
+DECLARE_SOA_COLUMN(PercentileFT0C, percentileFT0CJPsi2ee, float);
 DECLARE_SOA_COLUMN(MultiplicityNContrib, multiplicityNContribJPsi2ee, float);
 DECLARE_SOA_COLUMN(AmbiguousInBunchPairs, AmbiguousJpsiPairsInBunch, bool);
 DECLARE_SOA_COLUMN(AmbiguousOutOfBunchPairs, AmbiguousJpsiPairsOutOfBunch, bool);
 DECLARE_SOA_COLUMN(Corrassoc, corrassoc, bool);
+// Additional columns for prompt-non-prompt JPsi separation (BDT training), identical to tableReader_withAssoc
+DECLARE_SOA_COLUMN(PairFilter, pairFilter, uint32_t);      //! twoTrackFilter (cut bits + ambiguity bits 28-31)
+DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);      //! MC signal bits, 0 in data
+DECLARE_SOA_COLUMN(TauxyeeErr, tauxyeeErr, float);         //! kVertexingTauxyErr: in ns (not cm) and with the reconstructed mass
+DECLARE_SOA_COLUMN(TauzeeErr, tauzeeErr, float);           //! kVertexingTauzErr: in ns (not cm) and with the reconstructed mass
+DECLARE_SOA_COLUMN(LxyeeProjected, lxyeeProjected, float); //! kVertexingLxyProjected
+DECLARE_SOA_COLUMN(LxyeeOverErr, lxyeeOverErr, float);     //! kVertexingLxyOverErr
+DECLARE_SOA_COLUMN(Lxyzee, lxyzee, float);                 //! kVertexingLxyz
+DECLARE_SOA_COLUMN(LxyzeeOverErr, lxyzeeOverErr, float);   //! kVertexingLxyzOverErr
+DECLARE_SOA_COLUMN(Chi2PCAee, chi2PCAee, float);           //! kVertexingChi2PCA
+DECLARE_SOA_COLUMN(CosPAee, cosPAee, float);               //! kCosPointingAngle
+DECLARE_SOA_COLUMN(DcaXYOverSig1, dcaXYOverSig1, float);
+DECLARE_SOA_COLUMN(DcaZOverSig1, dcaZOverSig1, float);
+DECLARE_SOA_COLUMN(DcaXYOverSig2, dcaXYOverSig2, float);
+DECLARE_SOA_COLUMN(DcaZOverSig2, dcaZOverSig2, float);
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
 // Candidate columns efficiency calculation for prompt-non-prompt JPsi separation
@@ -225,10 +241,19 @@ DECLARE_SOA_TABLE(JPsiMuonCandidates, "AOD", "DQJPSIMUONA",
                   dqanalysisflags::Ptleg1, dqanalysisflags::Etaleg1, dqanalysisflags::Phileg1, dqanalysisflags::Ptleg2, dqanalysisflags::Etaleg2, dqanalysisflags::Phileg2,
                   dqanalysisflags::McFlag);
 DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER",
+                  dqanalysisflags::PairFilter, dqanalysisflags::McDecision,
                   dqanalysisflags::Massee, dqanalysisflags::Ptee, dqanalysisflags::Etaee, dqanalysisflags::Rapee, dqanalysisflags::Phiee,
                   dqanalysisflags::Lxyee, dqanalysisflags::LxyeePoleMass, dqanalysisflags::Lzee, dqanalysisflags::LxyeePoleMassPVrecomputed,
-                  dqanalysisflags::Vx, dqanalysisflags::Vy, dqanalysisflags::Vz, dqanalysisflags::DcaXY1, dqanalysisflags::DcaZ1, dqanalysisflags::ITSClusterMapleg1, dqanalysisflags::TPCnsigmaElleg1, dqanalysisflags::DcaXY2, dqanalysisflags::DcaZ2, dqanalysisflags::ITSClusterMapleg2, dqanalysisflags::TPCnsigmaElleg2,
-                  dqanalysisflags::AmbiguousInBunchPairs, dqanalysisflags::AmbiguousOutOfBunchPairs, dqanalysisflags::Corrassoc, dqanalysisflags::MultiplicityFT0A, dqanalysisflags::MultiplicityFT0C, dqanalysisflags::PercentileFT0M, dqanalysisflags::MultiplicityNContrib);
+                  dqanalysisflags::TauxyeeErr, dqanalysisflags::TauzeeErr,
+                  dqanalysisflags::LxyeeProjected, dqanalysisflags::LxyeeOverErr, dqanalysisflags::Lxyzee, dqanalysisflags::LxyzeeOverErr,
+                  dqanalysisflags::Chi2PCAee, dqanalysisflags::CosPAee,
+                  dqanalysisflags::Vx, dqanalysisflags::Vy, dqanalysisflags::Vz,
+                  dqanalysisflags::Ptleg1, dqanalysisflags::Etaleg1, dqanalysisflags::DcaXY1, dqanalysisflags::DcaZ1, dqanalysisflags::DcaXYOverSig1, dqanalysisflags::DcaZOverSig1,
+                  dqanalysisflags::ITSClusterMapleg1, dqanalysisflags::ITSChi2leg1,
+                  dqanalysisflags::Ptleg2, dqanalysisflags::Etaleg2, dqanalysisflags::DcaXY2, dqanalysisflags::DcaZ2, dqanalysisflags::DcaXYOverSig2, dqanalysisflags::DcaZOverSig2,
+                  dqanalysisflags::ITSClusterMapleg2, dqanalysisflags::ITSChi2leg2,
+                  dqanalysisflags::AmbiguousInBunchPairs, dqanalysisflags::AmbiguousOutOfBunchPairs, dqanalysisflags::Corrassoc,
+                  dqanalysisflags::MultiplicityFT0C, dqanalysisflags::PercentileFT0C, dqanalysisflags::MultiplicityNContrib);
 DECLARE_SOA_TABLE(OniaMCTruth, "AOD", "MCTRUTHONIA", dqanalysisflags::OniaPt, dqanalysisflags::OniaEta, dqanalysisflags::OniaY, dqanalysisflags::OniaPhi, dqanalysisflags::OniaVz, dqanalysisflags::OniaVtxZ, dqanalysisflags::MultiplicityFT0A, dqanalysisflags::MultiplicityFT0C, dqanalysisflags::PercentileFT0M, dqanalysisflags::MultiplicityNContrib);
 } // namespace o2::aod
 
@@ -236,7 +261,9 @@ DECLARE_SOA_TABLE(OniaMCTruth, "AOD", "MCTRUTHONIA", dqanalysisflags::OniaPt, dq
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedMCEventLabels>;
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::ReducedMCEventLabels>;
 using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedMCEventLabels>;
+using MyEventsVtxCovGlobalMult = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::ReducedEventsGlobalTrk, aod::ReducedMCEventLabels>;
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedMCEventLabels>;
+using MyEventsVtxCovGlobalMultSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::ReducedEventsGlobalTrk, aod::ReducedMCEventLabels, aod::EventCuts>;
 using MyEventsVtxCovSelectedInfo = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedMCEventLabels, aod::ReducedEventsInfo>;
 using MyEventsVtxCovSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedMCEventLabels>;
 using MyEventsVtxCovSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector>;
@@ -584,6 +611,11 @@ struct AnalysisEventSelection {
     runEventSelection<gkEventFillMap>(events, mcEvents);
     publishSelections<gkEventFillMap>(events);
   }
+  void processSkimmedWithGlobalMults(MyEventsVtxCovGlobalMult const& events, soa::Join<aod::ReducedMCEvents, aod::ReducedMCGlobalMultiplicities> const& mcEvents)
+  {
+    runEventSelection<gkEventFillMapWithCov>(events, mcEvents);
+    publishSelections<gkEventFillMapWithCov>(events);
+  }
   void processFillEvents(MyEvents const& events) // Used to forward the event table from tablemaker, typical use for now is jet analysis.
   {
     for (auto const& event : events) {
@@ -603,6 +635,7 @@ struct AnalysisEventSelection {
   }
 
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmed, "Run event selection on DQ skimmed events", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithGlobalMults, "Run event selection with global track multiplicity estimation", false);
   PROCESS_SWITCH(AnalysisEventSelection, processFillEvents, "Fill storedReducedEvents table for use in JE framework", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", true);
 };
@@ -643,7 +676,7 @@ struct AnalysisTrackSelection {
   Service<o2::ccdb::BasicCCDBManager> fCCDB{};
 
   HistogramManager* fHistMan = nullptr;
-  std::vector<AnalysisCompositeCut*> fTrackCuts;
+  std::vector<AnalysisCut*> fTrackCuts;
   std::vector<MCSignal*> fMCSignals; // list of signals to be checked
   std::vector<TString> fHistNamesReco;
   std::vector<TString> fHistNamesMCMatched;
@@ -673,7 +706,7 @@ struct AnalysisTrackSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (auto const& t : addTrackCuts) {
-        fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(t);
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -978,7 +1011,7 @@ struct AnalysisMuonSelection {
   Service<o2::ccdb::BasicCCDBManager> fCCDB{};
 
   HistogramManager* fHistMan = nullptr;
-  std::vector<AnalysisCompositeCut*> fMuonCuts;
+  std::vector<AnalysisCut*> fMuonCuts;
   std::vector<TString> fHistNamesReco;
   std::vector<TString> fHistNamesMCMatched;
   std::vector<MCSignal*> fMCSignals; // list of signals to be checked
@@ -1008,7 +1041,7 @@ struct AnalysisMuonSelection {
     if (addCutsStr != "") {
       std::vector<AnalysisCut*> addCuts = dqcuts::GetCutsFromJSON(addCutsStr.Data());
       for (auto const& t : addCuts) {
-        fMuonCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fMuonCuts.push_back(t);
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -1780,7 +1813,7 @@ struct AnalysisSameEventPairing {
     bool isMCGen = context.mOptions.get<bool>("processMCGen") || context.mOptions.get<bool>("processMCGenWithGrouping") || context.mOptions.get<bool>("processBarrelOnlySkimmed");
     VarManager::SetDefaultVarNames();
 
-    fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed");
+    fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithGlobalMultSkimmed");
     fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlyVertexingSkimmed");
     fEnableBarrelMuonHistos = context.mOptions.get<bool>("processElectronMuonSkimmed");
     fEnableBarrelMuonMixingHistos = context.mOptions.get<bool>("processMixingElectronMuonSkimmed");
@@ -2232,7 +2265,7 @@ struct AnalysisSameEventPairing {
     fHistMan->SetUseDefaultVariableNames(kTRUE);
     fHistMan->SetDefaultVarNames(dqefficiency_helpers::varNames(), dqefficiency_helpers::varUnits());
 
-    VarManager::SetCollisionSystem((TString)fConfigOptions.collisionSystem, fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
+    VarManager::SetCollisionSystem(TString(fConfigOptions.collisionSystem), fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
 
     DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram.value.data());     // define all histograms
     dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
@@ -2437,6 +2470,28 @@ struct AnalysisSameEventPairing {
               }
             }
           }
+          constexpr bool eventHasVtxCovForTable = ((TEventFillMap & VarManager::ObjTypes::ReducedEventVtxCov) > 0);
+          if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0 && trackHasCov && TTwoProngFitter && eventHasVtxCovForTable) {
+            // kVertexingProcCode == 0: the fit failed; FillPairVertexing then returns early without updating the
+            // projected / pseudo-proper / pointing-angle variables, so they would be stale -> skip the pair
+            if (t1.sign() * t2.sign() < 0 && mcDecision > 0) {
+              const bool ambiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
+              const bool ambiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
+              PromptNonPromptSepTable(twoTrackFilter, mcDecision,
+                                      VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kRap], VarManager::fgValues[VarManager::kPhi],
+                                      VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV],
+                                      VarManager::fgValues[VarManager::kVertexingTauxyErr], VarManager::fgValues[VarManager::kVertexingTauzErr],
+                                      VarManager::fgValues[VarManager::kVertexingLxyProjected], VarManager::fgValues[VarManager::kVertexingLxyOverErr], VarManager::fgValues[VarManager::kVertexingLxyz], VarManager::fgValues[VarManager::kVertexingLxyzOverErr],
+                                      VarManager::fgValues[VarManager::kVertexingChi2PCA], VarManager::fgValues[VarManager::kCosPointingAngle],
+                                      VarManager::fgValues[VarManager::kVtxX], VarManager::fgValues[VarManager::kVtxY], VarManager::fgValues[VarManager::kVtxZ],
+                                      t1.pt(), t1.eta(), VarManager::fgValues[VarManager::kDCAxy1], VarManager::fgValues[VarManager::kDCAz1], VarManager::fgValues[VarManager::kDCAxyOverSig1], VarManager::fgValues[VarManager::kDCAzOverSig1],
+                                      VarManager::fgValues[VarManager::kITSclusterMap1], t1.itsChi2NCl(),
+                                      t2.pt(), t2.eta(), VarManager::fgValues[VarManager::kDCAxy2], VarManager::fgValues[VarManager::kDCAz2], VarManager::fgValues[VarManager::kDCAxyOverSig2], VarManager::fgValues[VarManager::kDCAzOverSig2],
+                                      VarManager::fgValues[VarManager::kITSclusterMap2], t2.itsChi2NCl(),
+                                      ambiInBunch, ambiOutOfBunch, isCorrectAssoc_leg1 && isCorrectAssoc_leg2,
+                                      VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kVtxNcontribReal]);
+            }
+          }
         }
 
         if constexpr (TPairType == VarManager::kDecayToMuMu) {
@@ -2535,11 +2590,6 @@ struct AnalysisSameEventPairing {
         // Fill histograms
         bool isAmbiInBunch = false;
         bool isAmbiOutOfBunch = false;
-        bool isCorrect_pair = false;
-        if (isCorrectAssoc_leg1 && isCorrectAssoc_leg2) {
-          isCorrect_pair = true;
-        }
-
         for (int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
@@ -2548,10 +2598,6 @@ struct AnalysisSameEventPairing {
               fHistMan->FillHistClass(histNames[icut][0].Data(), dqefficiency_helpers::varValues()); // reconstructed, unmatched
               for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {                     // loop over MC signals
                 if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
-                  PromptNonPromptSepTable(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kRap], VarManager::fgValues[VarManager::kPhi],
-                                          VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV],
-                                          VarManager::fgValues[VarManager::kVtxX], VarManager::fgValues[VarManager::kVtxY], VarManager::fgValues[VarManager::kVtxZ], VarManager::fgValues[VarManager::kDCAxy1], VarManager::fgValues[VarManager::kDCAz1], VarManager::fgValues[VarManager::kITSclusterMap1], VarManager::fgValues[VarManager::kTPCnSigmaEl1], VarManager::fgValues[VarManager::kDCAxy2], VarManager::fgValues[VarManager::kDCAz2], VarManager::fgValues[VarManager::kITSclusterMap2], VarManager::fgValues[VarManager::kTPCnSigmaEl2],
-                                          isAmbiInBunch, isAmbiOutOfBunch, isCorrect_pair, VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
                   fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][0].Data(), dqefficiency_helpers::varValues()); // matched signal
                   if (useMiniTree.fConfigMiniTree) {
                     if constexpr (TPairType == VarManager::kDecayToMuMu) {
@@ -3147,6 +3193,14 @@ struct AnalysisSameEventPairing {
     runMCGen<VarManager::kDecayToEE>(events, mcEvents, mcTracks);
   }
 
+  void processBarrelOnlyWithGlobalMultSkimmed(MyEventsVtxCovGlobalMultSelected const& events,
+                                              soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                              MyBarrelTracksWithCovWithAmbiguities const& barrelTracks, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
+  {
+    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
+    runMCGen<VarManager::kDecayToEE>(events, mcEvents, mcTracks);
+  }
+
   void processMuonOnlySkimmed(MyEventsVtxCovSelected const& events,
                               soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
   {
@@ -3406,6 +3460,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processAllSkimmed, "Run all types of pairing, with skimmed tracks/muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmed, "Run barrel only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithCollSkimmed, "Run barrel only pairing, with skimmed tracks and with collision information", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithGlobalMultSkimmed, "Run barrel only pairing, with global tracks, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmed, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlyVertexingSkimmed, "Run muon only pairing with two-prong vertexing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processElectronMuonSkimmed, "Run electron-muon pairing, with skimmed tracks/muons", false);

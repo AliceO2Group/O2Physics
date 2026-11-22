@@ -16,12 +16,12 @@
 #include <Framework/ProcessingContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <ML/3rdparty/GPUORTFloat16.h>
 #include <onnxruntime_c_api.h>
 #include <onnxruntime_cxx_api.h>
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
@@ -29,6 +29,7 @@
 #include <ios>
 #include <limits>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -116,6 +117,8 @@ struct BenchmarkOnnxModel {
   Configurable<int> iterations{"iterations", 100, "Timed inference calls"};
   Configurable<int> cpuThreads{"cpu-threads", 1, "ORT intra-op CPU threads"};
   Configurable<std::string> outputCsv{"output-csv", "onnx-benchmark.csv", "CSV output (overwritten)"};
+  Configurable<std::string> inputFile{"input-file", "", "Optional whitespace-separated feature matrix [batch-size, features]; empty uses synthetic inputs"};
+  Configurable<std::string> predictionsFile{"predictions-file", "", "Optional first-output matrix as text (overwritten); extra inference outside timing"};
 
   void run(ProcessingContext& pc)
   {
@@ -189,16 +192,54 @@ struct BenchmarkOnnxModel {
     if (count > std::numeric_limits<size_t>::max() / sizeof(float)) {
       throw std::runtime_error("Input size overflow");
     }
-    // Replace this feature filling with AO2D extraction and training preprocessing later.
+    // File loading and FP16 conversion are outside the timing loop. Without a
+    // file, retain deterministic synthetic inputs for performance-only runs.
     std::vector<float> floats(fp16.value ? 0 : count);
-    std::vector<o2::OrtDataType::Float16_t> halves(fp16.value ? count : 0);
-    static_assert(sizeof(o2::OrtDataType::Float16_t) == 2);
-    for (size_t i = 0; i < count; ++i) {
-      float value = static_cast<float>(i % 101) / 100.f - 0.5f;
+    std::vector<_Float16> halves(fp16.value ? count : 0);
+    static_assert(sizeof(_Float16) == 2);
+    auto store = [&](size_t i, float value) {
+      if (!std::isfinite(value)) {
+        throw std::runtime_error("Input features must be finite");
+      }
       if (fp16.value) {
-        halves[i] = o2::OrtDataType::Float16_t(value);
+        halves[i] = _Float16(value);
+        if (!std::isfinite((float)halves[i])) {
+          throw std::runtime_error("Input feature overflows FP16");
+        }
       } else {
         floats[i] = value;
+      }
+    };
+    if (inputFile.value.empty()) {
+      for (size_t i = 0; i < count; ++i) {
+        store(i, static_cast<float>(i % 101) / 100.f - 0.5f);
+      }
+    } else {
+      std::ifstream file(inputFile.value);
+      if (!file) {
+        throw std::runtime_error("Cannot open input-file: " + inputFile.value);
+      }
+      std::string line;
+      for (int row = 0; row < batchSize.value; ++row) {
+        if (!std::getline(file, line)) {
+          throw std::runtime_error("input-file has fewer rows than batch-size");
+        }
+        std::istringstream values(line);
+        for (int column = 0; column < features.value; ++column) {
+          float value = 0;
+          if (!(values >> value)) {
+            throw std::runtime_error("input-file has a missing or invalid feature at row " + std::to_string(row + 1));
+          }
+          store(static_cast<size_t>(row) * features.value + column, value);
+        }
+        values >> std::ws;
+        if (!values.eof()) {
+          throw std::runtime_error("input-file has extra columns at row " + std::to_string(row + 1));
+        }
+      }
+      file >> std::ws;
+      if (!file.eof() || file.bad()) {
+        throw std::runtime_error("input-file has extra rows or a read error");
       }
     }
     auto host = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
@@ -237,6 +278,50 @@ struct BenchmarkOnnxModel {
     double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
     if (memory) {
       afterRun = memory->used();
+    }
+    if (!predictionsFile.value.empty()) {
+      // A separate, untimed run leaves benchmark allocation/destruction intact.
+      auto outputs = session.Run(runOptions, inputNames, &input, 1, outputNames.data(), outputNames.size());
+      auto const& output = outputs.front();
+      if (!output.IsTensor()) {
+        throw std::runtime_error("Prediction export requires a dense tensor as the first output");
+      }
+      auto info = output.GetTensorTypeAndShapeInfo();
+      auto outputShape = info.GetShape();
+      auto outputType = info.GetElementType();
+      if (outputShape.size() != 2 || outputShape[0] != batchSize.value || outputShape[1] <= 0 ||
+          (outputType != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT && outputType != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16)) {
+        throw std::runtime_error("Prediction export requires an FP32 or FP16 first output [batch-size, classes]");
+      }
+      const float* fp32 = outputType == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT ? output.GetTensorData<float>() : nullptr;
+      const auto* fp16Data = outputType == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16 ? output.GetTensorData<_Float16>() : nullptr;
+      const size_t columns = static_cast<size_t>(outputShape[1]);
+      // Validate before opening the destination, so invalid predictions do not
+      // replace an existing file with a partial matrix.
+      auto valueAt = [&](size_t i) { return fp32 ? fp32[i] : (float)fp16Data[i]; };
+      for (size_t i = 0; i < info.GetElementCount(); ++i) {
+        if (!std::isfinite(valueAt(i))) {
+          throw std::runtime_error("Prediction export found a nonfinite value");
+        }
+      }
+      std::ofstream predictions(predictionsFile.value, std::ios::trunc);
+      if (!predictions) {
+        throw std::runtime_error("Cannot open predictions-file: " + predictionsFile.value);
+      }
+      predictions << std::setprecision(std::numeric_limits<float>::max_digits10);
+      for (int row = 0; row < batchSize.value; ++row) {
+        for (size_t column = 0; column < columns; ++column) {
+          if (column) {
+            predictions << ' ';
+          }
+          predictions << valueAt(static_cast<size_t>(row) * columns + column);
+        }
+        predictions << '\n';
+      }
+      predictions.close();
+      if (!predictions) {
+        throw std::runtime_error("Failed writing predictions-file");
+      }
     }
     std::ofstream csv(outputCsv.value, std::ios::trunc);
     if (!csv) {

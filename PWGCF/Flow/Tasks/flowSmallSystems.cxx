@@ -9,13 +9,20 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file   flowTransmutation.cxx
+/// \file   flowSmallSystems.cxx
 /// \author Vojtech Machacek (vojtech.machacek@cern.ch)
 /// \since  Oct/05/2026
-/// \brief  Task to measure flow observables with cumulants method in transmuted events.
+/// \brief  Task to measure flow observables with cumulants method in small collision systems.
+
+#include "PWGCF/GenericFramework/Core/FlowContainer.h"
+#include "PWGCF/GenericFramework/Core/GFW.h"
+#include "PWGCF/GenericFramework/Core/GFWConfig.h"
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -39,9 +46,13 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
+#include <TNamed.h>
+#include <TRandom3.h>
 #include <TString.h>
 
 #include <sys/types.h>
+
+#include <RtypesCore.h>
 
 #include <algorithm>
 #include <chrono>
@@ -50,6 +61,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -58,9 +70,11 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::analysis::genericframework;
 using namespace o2::aod::rctsel;
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP}; // NOLINT(bugprone-macro-parentheses)
 static constexpr std::array<std::array<float, 2>, 7> LongArrayFloat = {{{{2.5, 2.5}}, {{50.0, 50.0}}, {{70.0, 70.0}}, {{5.0, 5.0}}, {{7.0, 7.0}}, {{7.0, 7.0}}, {{0., 0.}}}};
+static constexpr std::array<std::array<int, 2>, 9> LongArrayInt = {{{{1, 2}}, {{1, 2}}, {{1, 2}}, {{1, 2}}, {{1, 2}}, {{1, 2}}, {{1, 2}}, {{1, 2}}, {{1, 2}}}};
 template <typename T, typename P>
 auto readMatrix(Array2D<T> const& mat, P& array)
 {
@@ -71,7 +85,7 @@ auto readMatrix(Array2D<T> const& mat, P& array)
   }
   return;
 }
-struct FlowTransmutation {
+struct FlowSmallSystems {
   struct : ConfigurableGroup{
              O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FV0A; 4:NTPV; 5:NGlobal; 6:MFT")
                O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
@@ -103,27 +117,46 @@ struct FlowTransmutation {
     O2_DEFINE_CONFIGURABLE(cfgPVMultCentCutEnabled, bool, true, "Enable primary vertex multiplicity vs centrality cut");
     O2_DEFINE_CONFIGURABLE(cfgPVMultCentLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for primary vertex multiplicity vs centrality upper cut");
     O2_DEFINE_CONFIGURABLE(cfgPVMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for primary vertex multiplicity vs centrality lower cut");
-    Configurable<std::vector<double>> cfgPVMultCentCutCutPars{"cfgPVMultCentCutPars", std::vector<double>{245.882, -6.90255, 0.0930817, -0.000710842, 0.00000231095, 35.9647, -0.530632, 0.00513954, -0.0000411738, 1.10106e-7}, "Primary vertex multiplicity vs centrality cut parameter values"};
+    Configurable<std::vector<double>> cfgPVMultCentCutPars{"cfgPVMultCentCutPars", std::vector<double>{245.882, -6.90255, 0.0930817, -0.000710842, 0.00000231095, 35.9647, -0.530632, 0.00513954, -0.0000411738, 1.10106e-7}, "Primary vertex multiplicity vs centrality cut parameter values"};
   } cfgMultiplicityCorrelationCut;
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgUseGFW, bool, true, "Enable analysis using GFW");
+    O2_DEFINE_CONFIGURABLE(cfgUseMultWeights, bool, true, "Enable multiplicity weights in flow calculation");
+    O2_DEFINE_CONFIGURABLE(cfgBootstrapSamples, int, 10, "Number of bootstrap subsamples");
+    O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, 0, "Use Nch for cumulant analysis instead of centrality");
+    O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
+    O2_DEFINE_CONFIGURABLE(cfgEfficiencyNch, std::string, "", "CCDB path to efficiency object, only for Nch correction")
+    O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
+    O2_DEFINE_CONFIGURABLE(cfgCutPtRefMax, float, 3.0f, "Maximal pT for poi tracks")
+    O2_DEFINE_CONFIGURABLE(cfgCutPtRefMin, float, 0.2f, "Minimal pT for poi tracks")
+    O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 100.0f, "Maximal pT for poi tracks")
+    O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
+    Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull"}, {-0.8, 0.4, -0.8}, {-0.4, 0.8, 0.8}, {0, 0, 0}, {1, 1, 1}}, "Extra configurations for GFW regions (Name, Eta max, Eta min, pT-diff, BitMask)"};
+    Configurable<LabeledArray<int>> cfgDefineGFWRegions{"cfgDefineGFWRegions", {LongArrayInt.front().data(), 9, 1, {"Standard", "DeltaEta>0", "DeltaEta>0.2", "DeltaEta>0.4", "DeltaEta>0.6", "DeltaEta>0.8", "DeltaEta>1.0", "DeltaEta>1.2", "DeltaEta>1.4"}, {"Enabled"}}, "Switch (0/1) for various GFW region initialzation"};
+    Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "refFull {2 2 -2 -2}"}, {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"}, {0, 0, 0, 0, 0}, {15, 1, 1, 0, 0}}, "Configurations for each correlation to calculate"};
+  } cfgGFWSettings;
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgUseHighMultTrigger, bool, false, "Enable HM trigger");
+    O2_DEFINE_CONFIGURABLE(cfgHighMultiplicityTriggerMenu, int, 0, "0: HighTrackMult; 1: HighMultFv0; 2: HighFt0Mult; 3: HighFt0cFv0Mult; 4: HighFt0Flat; 5: HighFt0cFv0Flat");
+  } cfgTriggeredData;
   O2_DEFINE_CONFIGURABLE(cfgNUAWeightsRunByRun, bool, true, "Fill NUA weights run by run")
   O2_DEFINE_CONFIGURABLE(cfgGetNumberOfCorr, bool, false, "Get histograms with number of correlations")
   Configurable<std::vector<int>> cfgFirstFillRunsList{"cfgFirstFillRunsList", std::vector<int>{}, "First run of the fill for time-dependent analysis, keep empty to disable"};
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "Maximal pT for all tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for all tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 3.0f, "Maximal pT for poi tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, std::string, "(0.0026+0.005/(x^1.01))", "function for pT dependent DCAxy cut, keep empty for const. cut based on DCAxy (Nsigma)")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, std::string, "(0.0026+0.005/(x^1.01))", "function for pT dependent DCAz cut, keep empty for const. cut based on DCAz (Nsigma)")
   Configurable<std::vector<int>> cfgRemovedRunList{"cfgRemovedRunList", std::vector<int>{-1}, "excluded run numbers"};
   Configurable<LabeledArray<float>> cfgTrackCuts{"cfgTrackCuts", {LongArrayFloat.front().data(), 7, 2, {"chi2 per TPCcls", "TPC cluster", "TPC crossed rows", "ITS cluster", "DCAxy (Nsigma)", "DCAz (Nsigma)", "DCAz (cm) override"}, {"Nch", "Observable"}}, "separate Nch and observable track selections"};
-  ConfigurableAxis binningNch{"binningNch", {500, 0, 500}, "binning for N_{ch} histograms"};
-  ConfigurableAxis binningTime{"binningTime", {12, 0, 12}, "binning for time-dependent histograms transmutation QA"};
+  ConfigurableAxis binningNch{"binningNch", {VARIABLE_WIDTH, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350, 360, 370, 380, 390, 400, 410, 420, 430, 440, 460, 470, 480, 490, 500}, "binning for N_{ch} histograms"};
+  ConfigurableAxis binningTime{"binningTime", {12, 0, 12}, "binning for time-dependent histograms QA"};
   ConfigurableAxis binningPt{"binningPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, "binning for pT histograms"};
   HistogramRegistry registryQA{"registryQA"};
   HistogramRegistry registryCorr{"registryCorr"};
+  HistogramRegistry registryTrigger{"registryTrigger"};
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgEventSelection.cfgCutVertex);
-  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
+  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
   Service<ccdb::BasicCCDBManager> ccdb{};
   RCTFlagsChecker rctChecker{"CBT"};
   enum TrackSelectionGroup {
@@ -190,6 +223,22 @@ struct FlowTransmutation {
     BeforeSel,
     AfterSel
   };
+  enum MinParticlesInCorrelation {
+    Min2PC = 0,
+    Min4PC = 1,
+    Min6PC = 2,
+    Min8PC = 3,
+
+  };
+  enum HighMultTriggerMenu {
+    HighTrackMult = 0,
+    HighMultFv0,
+    HighFt0Mult,
+    HighFt0cFv0Mult,
+    HighFt0Flat,
+    HighFt0cFv0Flat,
+    TriggerMenuCounter
+  };
   struct EventCut {
     bool enabled;
     int histBin;
@@ -200,10 +249,19 @@ struct FlowTransmutation {
     float backward;
     float gap;
   };
+  struct Weights {
+    TH1D* hEfficiencyNch = nullptr;
+    TH1D* hEfficiency = nullptr;
+    GFWWeights* hAcceptance = nullptr;
+  } weight;
   static constexpr std::array<std::string_view, 2> FillTimeName = {"beforeEventSelQA/", "afterEventSelQA/"};
   static constexpr std::array<std::string_view, 2> FillTrackName = {"cutNch/", "cutObs/"};
+  std::array<std::string, TriggerMenuCounter> triggerName = {"fHighTrackMult", "HighMultFv0", "fHighFt0Mult", "fHighFt0cFv0Mult", "fHighFt0Flat", "fHighFt0cFv0Flat"};
+
   std::array<EventCut, 8> eventSelectionCuts{};
   std::array<std::array<float, 2>, 7> trackSel{};
+  std::array<std::array<int, 1>, 9> gfwRegions{};
+
   TF1* fGlobalMultPVMultLowCut = nullptr;
   TF1* fGlobalMultPVMultHighCut = nullptr;
   TF1* fGlobalMultV0AMultLowCut = nullptr;
@@ -212,13 +270,30 @@ struct FlowTransmutation {
   TF1* fGlobalMultCentHighCut = nullptr;
   TF1* fPVMultCentLowCut = nullptr;
   TF1* fPVMultCentHighCut = nullptr;
-  TH1D* hEff = nullptr;
+
   std::array<TF1*, 2> fDCAzCut{};
   std::array<TF1*, 2> fDCAxyCut{};
   std::vector<int> runNumbers;
   std::map<int, std::shared_ptr<TH3>> th3sPerRun;
+
   int firstRunOfFill = -1;
-  int getCorrectITSLayersFlag(int flag)
+
+  GFW* fGFW = new GFW();
+  std::vector<GFW::CorrConfig> corrConfigs;
+  GFWRegions cacheRegions;
+  GFWCorrConfigs cacheCorrConfig;
+  TAxis* axisPtGFW = nullptr;
+  OutputObj<FlowContainer> fFC{"FlowContainer"};
+
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+
+  TH1D* hEff = nullptr;
+  TH1D* mEfficiencyForNch = nullptr;
+  GFWWeights* mAcceptance = nullptr;
+  TRandom3* fRndm = new TRandom3(0);
+
+  int getCorrectITSLayersFlag(const int& flag)
   {
     switch (flag) {
       case ITSLayersAll:
@@ -231,17 +306,82 @@ struct FlowTransmutation {
         return 0; // Disabled
     }
   }
+  inline void setGFWRegionPredefined(int flagRegion)
+  {
+    switch (flagRegion) {
+      case NoGap:
+        fGFW->AddRegion("full", -0.8, 0.8, 1, 1);
+        LOGF(info, "cfgRegion added: full, Eta Min: -0.8, Eta Max: 0.8, pT diff: 0, bitmask: 1");
+        break;
+      case Gap00:
+        fGFW->AddRegion("refN00", -0.8, 0., 1, 1);
+        fGFW->AddRegion("refP00", 0., 0.8, 1, 1);
+        LOGF(info, "cfgRegion added: refN00, Eta Min: -0.8, Eta Max: 0., pT diff: 0, bitmask: 1");
+        LOGF(info, "cfgRegion added: refP00, Eta Min: 0., Eta Max: 0.8, pT diff: 0, bitmask: 1");
+        break;
+      case Gap02:
+        fGFW->AddRegion("refN02", -0.8, -0.1, 1, 1);
+        fGFW->AddRegion("refP02", 0.1, 0.8, 1, 1);
+        LOGF(info, "cfgRegion added: refN02, Eta Min: -0.8, Eta Max: -0.1, pT diff: 0, bitmask: 1");
+        LOGF(info, "cfgRegion added: refP02, Eta Min: 0.1, Eta Max: 0.8, pT diff: 0, bitmask: 1");
+        break;
+      case Gap04:
+        fGFW->AddRegion("refN04", -0.8, -0.2, 1, 1);
+        fGFW->AddRegion("refP04", 0.2, 0.8, 1, 1);
+        LOGF(info, "cfgRegion added: refN04, Eta Min: -0.8, Eta Max: -0.2, pT diff: 0, bitmask: 1");
+        LOGF(info, "cfgRegion added: refP04, Eta Min: 0.2, Eta Max: 0.8, pT diff: 0, bitmask: 1");
+        break;
+      case Gap06:
+        fGFW->AddRegion("refN06", -0.8, -0.3, 1, 1);
+        fGFW->AddRegion("refP06", 0.3, 0.8, 1, 1);
+        LOGF(info, "cfgRegion added: refN06, Eta Min: -0.8, Eta Max: -0.3, pT diff: 0, bitmask: 1");
+        LOGF(info, "cfgRegion added: refP06, Eta Min: 0.3, Eta Max: 0.8, pT diff: 0, bitmask: 1");
+        break;
+      case Gap08:
+        fGFW->AddRegion("refN08", -0.8, -0.4, 1, 1);
+        fGFW->AddRegion("refP08", 0.4, 0.8, 1, 1);
+        LOGF(info, "cfgRegion added: refN08, Eta Min: -0.8, Eta Max: -0.4, pT diff: 0, bitmask: 1");
+        LOGF(info, "cfgRegion added: refP08, Eta Min: 0.4, Eta Max: 0.8, pT diff: 0, bitmask: 1");
+        break;
+      case Gap10:
+        fGFW->AddRegion("refN10", -0.8, -0.5, 1, 1);
+        fGFW->AddRegion("refP10", 0.5, 0.8, 1, 1);
+        LOGF(info, "cfgRegion added: refN10, Eta Min: -0.8, Eta Max: -0.5, pT diff: 0, bitmask: 1");
+        LOGF(info, "cfgRegion added: refP10, Eta Min: 0.5, Eta Max: 0.8, pT diff: 0, bitmask: 1");
+        break;
+      case Gap12:
+        fGFW->AddRegion("refN12", -0.8, -0.6, 1, 1);
+        fGFW->AddRegion("refP12", 0.6, 0.8, 1, 1);
+        LOGF(info, "cfgRegion added: refN12, Eta Min: -0.8, Eta Max: -0.6, pT diff: 0, bitmask: 1");
+        LOGF(info, "cfgRegion added: refP12, Eta Min: 0.6, Eta Max: 0.8, pT diff: 0, bitmask: 1");
+        break;
+      case Gap14:
+        fGFW->AddRegion("refN14", -0.8, -0.7, 1, 1);
+        fGFW->AddRegion("refP14", 0.7, 0.8, 1, 1);
+        LOGF(info, "cfgRegion added: refN14, Eta Min: -0.8, Eta Max: -0.7, pT diff: 0, bitmask: 1");
+        LOGF(info, "cfgRegion added: refP14, Eta Min: 0.7, Eta Max: 0.8, pT diff: 0, bitmask: 1");
+        break;
+      default:
+        LOGF(warning, Form("Used flag: %i is not defined! No region has been set.", flagRegion));
+    }
+  }
   void init(InitContext const&)
   {
-    AxisSpec axisVertex{40, -20, 20, "Vtxz (cm)"};
-    AxisSpec axisPhi{60, 0.0, constants::math::TwoPI, "#varphi"};
-    AxisSpec axisEta{40, -1., 1., "#eta"};
-    AxisSpec axisCent{100, 0., 100., "Centrality"};
+    double binningNchMax = binningNch.value.back();
+    std::vector<double> binningCent = std::vector<double>(101);
+    iota(binningCent.begin(), binningCent.end(), 0);
+    AxisSpec axisVertex = {40, -20, 20, "Vtxz (cm)"};
+    AxisSpec axisPhi = {60, 0.0, constants::math::TwoPI, "#varphi"};
+    AxisSpec axisEta = {40, -1., 1., "#eta"};
+    AxisSpec axisCent = {binningCent, "Centrality"};
     AxisSpec axisT0C = {1000, 0, 50000, "N_{ch} (T0C)"};
     AxisSpec axisT0A = {1800, 0, 180000, "N_{ch} (T0A)"};
     AxisSpec axisV0A = {1800, 0, 180000, "N_{ch} (V0A)"};
-    AxisSpec axisNch = {binningNch, "N_{ch}"};
+    AxisSpec axisNch = {static_cast<int>(binningNchMax), 0., binningNchMax, "N_{ch}"};
     AxisSpec axisPt = {binningPt, "p_{T} (GeV/c)"};
+    AxisSpec axisGFW = {(cfgGFWSettings.cfgUseNch) ? binningNch : binningCent};
+    int nPtBins = axisPt.binEdges.size() - 1;
+    axisPtGFW = new TAxis(nPtBins, binningPt.value.data());
     registryQA.add("cutNch/hTrackPhi", "Track #varphi distribution;#varphi;Count", {HistType::kTH1D, {axisPhi}});
     registryQA.add("cutNch/hTrackEta", "Track #eta distribution;#eta;Count", {HistType::kTH1D, {axisEta}});
     registryQA.add("cutNch/hPt", "p_{T} distribution for reconstructed particles in a given pT range;p_{T};Counts", {HistType::kTH1D, {axisPt}});
@@ -256,8 +396,12 @@ struct FlowTransmutation {
     registryQA.addClone("cutNch/", "cutObs/");
     registryQA.add("hVtxZ", "Vertex Z distribution;Vtxz (cm);Count", {HistType::kTH1D, {axisVertex}});
     registryQA.add("hCentrality", "Centrality distribution;Centrality;Count", {HistType::kTH1D, {axisCent}});
+    registryQA.add("hNch", "N_{ch} distribution;N_{ch}^{raw};Count", {HistType::kTH1D, {axisNch}});
+    if (!cfgGFWSettings.cfgEfficiencyNch.value.empty()) {
+      registryQA.add("hNchCorrected", "N_{ch} distribution;N_{ch}^{corrected};Count", {HistType::kTH1D, {axisNch}});
+    }
     registryQA.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{13, 0.5, 13.5}}});
-    registryQA.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(FilteredEvent, "Filtered event");
+    registryQA.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(FilteredEvent, (cfgTriggeredData.cfgUseHighMultTrigger) ? "Filtered event + HM Trigger" : "Filtered event");
     registryQA.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(Sel8, "after sel8");
     registryQA.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(RCTflags, "RCTflags");
     std::array<std::string, 4> itsLayersFlag = {"ITSLayers-Disabled", "ITSLayersAll", "ITSLayers0123", "ITSLayer3"};
@@ -278,6 +422,12 @@ struct FlowTransmutation {
     registryQA.add("beforeEventSelQA/globalTracks_multV0A", "before event selection;mulplicity V0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
     registryQA.add("beforeEventSelQA/multV0A_multT0A", "before event selection;mulplicity T0A;mulplicity V0A", {HistType::kTH2D, {axisT0A, axisT0A}});
     registryQA.add("beforeEventSelQA/multT0C_centT0C", "before event selection;FT0C centrality (%);mulplicity T0C", {HistType::kTH2D, {axisCent, axisT0C}});
+    if (!cfgGFWSettings.cfgAcceptance.value.empty()) {
+      registryQA.add("cutObs/hPhiCorrected", ";#varphi;Count", {HistType::kTH1D, {axisPhi}});
+    }
+    if (!cfgGFWSettings.cfgEfficiencyNch.value.empty()) {
+      registryQA.add("hMultCorrected_MultUncorrected", "Multiplicity correlation matrix; N_ch^corected; N_ch^uncorected", {HistType::kTH2D, {axisNch, axisNch}});
+    }
     if (cfgEventSelection.cfgEvSelUsage) {
       registryQA.addClone("beforeEventSelQA/", "afterEventSelQA/");
     }
@@ -349,13 +499,13 @@ struct FlowTransmutation {
         if (cfgMultiplicityCorrelationCut.cfgPVMultCentCutEnabled) {
           LOGF(info, "PV multiplicity vs centrality cut is enabled");
           fPVMultCentHighCut = new TF1("fPVMultCentHighCut", cfgMultiplicityCorrelationCut.cfgPVMultCentHighCutFunction->c_str(), 0, 100);
-          fPVMultCentHighCut->SetParameters(cfgMultiplicityCorrelationCut.cfgPVMultCentCutCutPars.value.data());
+          fPVMultCentHighCut->SetParameters(cfgMultiplicityCorrelationCut.cfgPVMultCentCutPars.value.data());
           fPVMultCentLowCut = new TF1("fPVMultCentLowCut", cfgMultiplicityCorrelationCut.cfgPVMultCentLowCutFunction->c_str(), 0, 100);
-          fPVMultCentLowCut->SetParameters(cfgMultiplicityCorrelationCut.cfgPVMultCentCutCutPars.value.data());
+          fPVMultCentLowCut->SetParameters(cfgMultiplicityCorrelationCut.cfgPVMultCentCutPars.value.data());
           LOGF(info, "PV multiplicity vs centrality Upper Cut: %s", cfgMultiplicityCorrelationCut.cfgPVMultCentHighCutFunction->c_str());
           LOGF(info, "PV multiplicity vs centrality Lower Cut: %s", cfgMultiplicityCorrelationCut.cfgPVMultCentLowCutFunction->c_str());
           LOGF(info, "PV multiplicity vs centrality cut parameters:");
-          for (std::size_t i = 0; i < cfgMultiplicityCorrelationCut.cfgPVMultCentCutCutPars.value.size(); ++i) {
+          for (std::size_t i = 0; i < cfgMultiplicityCorrelationCut.cfgPVMultCentCutPars.value.size(); ++i) {
             LOGF(info, "fPVMultCentLowCut par %zu = %g", i, fPVMultCentLowCut->GetParameter(i));
             LOGF(info, "fPVMultCentHighCut par %zu = %g", i, fPVMultCentHighCut->GetParameter(i));
           }
@@ -401,6 +551,65 @@ struct FlowTransmutation {
       registryQA.add("multT0A_multT0C", "FT0A-C multiplicity correlation;N_{ch}(FT0A);N_{ch}(FT0C);t[h]", {HistType::kTH3D, {axisT0A, axisT0C, binningTime}});
       firstRunOfFill = *std::min_element(cfgFirstFillRunsList.value.begin(), cfgFirstFillRunsList.value.end());
     }
+    std::array<std::string, 9> predefRegions = {"Standard", "Gap00", "Gap02", "Gap04", "Gap06", "Gap08", "Gap10", "Gap12", "Gap14"};
+    auto* oba = new TObjArray();
+    if (cfgGFWSettings.cfgUseGFW) {
+      readMatrix(cfgGFWSettings.cfgDefineGFWRegions->getData(), gfwRegions); // read matrix to get initial settings for GFW regions
+      LOGF(info, "GFW regions Defined:");
+      for (int iRegion = -1; iRegion < EtaGapCounter; iRegion++) {
+        if (gfwRegions[iRegion + 1][0] != 0) {
+          setGFWRegionPredefined(iRegion);
+        }
+      }
+      if (cfgGFWSettings.cfgRegions->GetSize() == -1) { // define regions for correlation
+        LOGF(warning, "cfgRegions: All columns used for GFW regions are not the same size!");
+      } else if (cfgGFWSettings.cfgRegions->GetSize() == 0) {
+        LOGF(info, "cfgRegions: No extra GFW regions to be added");
+      } else {
+        cacheRegions.SetNames(cfgGFWSettings.cfgRegions->GetNames());
+        cacheRegions.SetEtaMin(cfgGFWSettings.cfgRegions->GetEtaMin());
+        cacheRegions.SetEtaMax(cfgGFWSettings.cfgRegions->GetEtaMax());
+        cacheRegions.SetpTDifs(cfgGFWSettings.cfgRegions->GetpTDifs());
+        cacheRegions.SetBitmasks(cfgGFWSettings.cfgRegions->GetBitmasks());
+        for (int i = 0; i < cacheRegions.GetSize(); i++) {
+          fGFW->AddRegion(cacheRegions.GetNames().at(i), cacheRegions.GetEtaMin().at(i), cacheRegions.GetEtaMax().at(i), (cacheRegions.GetpTDifs().at(i) != 0) ? 1 + axisPtGFW->GetNbins() : 1, cacheRegions.GetBitmasks().at(i));
+          LOGF(info, "cfgRegion added: %s, Eta Min: %f, Eta Max: %f, pT diff: %i, bitmask: %i", cacheRegions.GetNames().at(i), cacheRegions.GetEtaMin().at(i), cacheRegions.GetEtaMax().at(i), cacheRegions.GetpTDifs().at(i), cacheRegions.GetBitmasks().at(i));
+        }
+      }
+      if (cfgGFWSettings.cfgCorrConfig->GetSize() == -1) { // define N particle correlators
+        LOGF(fatal, "cfgCorrConfig: All columns used for GFW correlations are not the same size!");
+      } else if (cfgGFWSettings.cfgCorrConfig->GetSize() == 0) {
+        LOGF(info, "cfgCorrConfig: No GFW regions have been added");
+      } else {
+        cacheCorrConfig.SetCorrs(cfgGFWSettings.cfgCorrConfig->GetCorrs());
+        cacheCorrConfig.SetHeads(cfgGFWSettings.cfgCorrConfig->GetHeads());
+        cacheCorrConfig.SetpTDifs(cfgGFWSettings.cfgCorrConfig->GetpTDifs());
+        cacheCorrConfig.SetpTCorrMasks(cfgGFWSettings.cfgCorrConfig->GetpTCorrMasks());
+        std::string suffix = "_ptDiff";
+        for (int i = 0; i < cacheCorrConfig.GetSize(); i++) {
+          corrConfigs.push_back(fGFW->GetCorrelatorConfig(cacheCorrConfig.GetCorrs().at(i), cacheCorrConfig.GetHeads().at(i), cacheCorrConfig.GetpTDifs().at(i) != 0));
+          if (cacheCorrConfig.GetpTDifs().at(i) != 0) {
+            for (auto iBin = 1; iBin <= axisPtGFW->GetNbins(); iBin++) {
+              std::string index = Form("_pt_%i", iBin);
+              oba->Add(new TNamed(cacheCorrConfig.GetHeads().at(i) + index, cacheCorrConfig.GetHeads().at(i) + suffix));
+              std::string sName = cacheCorrConfig.GetHeads().at(i) + index;
+              LOGF(info, Form("Correlator to be calculated: %s", sName.c_str()));
+            }
+          } else {
+            oba->Add(new TNamed(cacheCorrConfig.GetHeads().at(i), cacheCorrConfig.GetHeads().at(i)));
+            LOGF(info, Form("Correlator to be calculated: %s", cacheCorrConfig.GetHeads().at(i).c_str()));
+          }
+        }
+      }
+      fGFW->CreateRegions();
+      fFC.setObject(new FlowContainer("FlowContainer"));
+      fFC->SetXAxis(axisPtGFW);
+      fFC->Initialize(oba, axisGFW, cfgGFWSettings.cfgBootstrapSamples);
+    }
+    delete oba;
+    if (cfgTriggeredData.cfgUseHighMultTrigger) {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
   }
   template <typename TCollision>
   float getCentrality(const TCollision& collision)
@@ -425,7 +634,7 @@ struct FlowTransmutation {
     }
   }
   template <typename TCollision>
-  bool selectMultiplicityCorrelation(const TCollision& collision, const int multTrk, const float& centrality)
+  bool selectMultiplicityCorrelation(const TCollision& collision, const int& multTrk, const float& centrality)
   {
     auto multNTracksPV = collision.multNTracksPV();
     if (cfgMultiplicityCorrelationCut.cfgGlobalMultPVMultCutEnabled) {
@@ -451,7 +660,7 @@ struct FlowTransmutation {
     return true;
   }
   template <typename TCollision>
-  bool eventSelected(const TCollision& collision, const int multTrk, const float centrality, const int runNumber)
+  bool eventSelected(const TCollision& collision, const int& multTrk, const float& centrality, const int& runNumber)
   {
     if (!cfgEventSelection.cfgEvSelUsage) {
       return true;
@@ -468,7 +677,7 @@ struct FlowTransmutation {
       }
       registryQA.fill(HIST("hEventCount"), RCTflags);
     }
-    for (auto& cut : eventSelectionCuts) {
+    for (const auto& cut : eventSelectionCuts) {
       if (!cut.enabled) {
         continue;
       }
@@ -540,12 +749,123 @@ struct FlowTransmutation {
       }
     }
   }
-  double getTimeSinceStartOfFill(uint64_t timestamp, int firstRun)
+  void loadCorrection(const int& runNumber)
+  {
+    if (!cfgGFWSettings.cfgAcceptance.value.empty()) {
+      weight.hAcceptance = ccdb->getForRun<GFWWeights>(cfgGFWSettings.cfgAcceptance, runNumber);
+      if (weight.hAcceptance == nullptr) {
+        LOGF(fatal, "Could not load acceptance weight for run %i from %s", runNumber, cfgGFWSettings.cfgAcceptance.value.c_str());
+      } else {
+        LOGF(info, "Loaded acceptance weight for run %i from %s", runNumber, cfgGFWSettings.cfgAcceptance.value.c_str());
+      }
+    }
+    if (!cfgGFWSettings.cfgEfficiency.value.empty()) {
+      weight.hEfficiency = ccdb->getForRun<TH1D>(cfgGFWSettings.cfgEfficiency, runNumber);
+      if (weight.hEfficiency == nullptr) {
+        LOGF(fatal, "Could not load efficiency weight for run %i from %s", runNumber, cfgGFWSettings.cfgEfficiency.value.c_str());
+      } else {
+        LOGF(info, "Loaded efficiency weight for run %i from %s", runNumber, cfgGFWSettings.cfgEfficiency.value.c_str());
+      }
+    }
+    if (!cfgGFWSettings.cfgEfficiencyNch.value.empty() && cfgGFWSettings.cfgUseNch) {
+      weight.hEfficiencyNch = ccdb->getForRun<TH1D>(cfgGFWSettings.cfgEfficiencyNch, runNumber);
+      if (weight.hEfficiencyNch == nullptr) {
+        LOGF(fatal, "Could not load Nch-efficiency weight for run %i from %s - No correction on x-axis is applied", runNumber, cfgGFWSettings.cfgEfficiencyNch.value.c_str());
+      } else {
+        LOGF(info, "Loaded Nch-efficiency weight for run %i from %s", runNumber, cfgGFWSettings.cfgEfficiencyNch.value.c_str());
+      }
+    }
+  }
+  inline void fillFlowContainer(const GFW::CorrConfig& nCorrConfig, const double& xAxis, const int& iBin, const double& rndm, const std::string& corrName)
+  {
+    auto dnx = fGFW->Calculate(nCorrConfig, iBin, kTRUE).real();
+    if (dnx == 0) {
+      return;
+    }
+    auto val = fGFW->Calculate(nCorrConfig, iBin, kFALSE).real() / dnx;
+    if (std::abs(val) < 1) {
+      fFC->FillProfile(corrName.c_str(), xAxis, val, cfgGFWSettings.cfgUseMultWeights ? dnx : 1.0, rndm);
+    }
+  }
+  template <typename T>
+  inline void fillCorelationCounter(const int& nchRaw, const std::array<T, EtaGapCounter>& trackCorr)
+  {
+    float binContent = 0;
+    float nCorrelations = 0;
+    for (uint iRegion = 0; iRegion < static_cast<int>(EtaGapCounter); iRegion++) {
+      if (trackCorr[iRegion].forward > static_cast<float>(Min2PC) && trackCorr[iRegion].backward > static_cast<float>(Min2PC)) {
+        binContent = registryCorr.get<TH2>(HIST("hTwoParticleCorrelations"))->GetBinContent(nchRaw, iRegion + 1);
+        nCorrelations = trackCorr[iRegion].forward * trackCorr[iRegion].backward;
+        registryCorr.get<TH2>(HIST("hTwoParticleCorrelations"))->SetBinContent(nchRaw, iRegion + 1, binContent + nCorrelations);
+      }
+      if (trackCorr[iRegion].forward > static_cast<float>(Min4PC) && trackCorr[iRegion].backward > static_cast<float>(Min4PC)) {
+        binContent = registryCorr.get<TH2>(HIST("hFourParticleCorrelations"))->GetBinContent(nchRaw, iRegion + 1);
+        nCorrelations = trackCorr[iRegion].forward * (trackCorr[iRegion].forward - 1) * trackCorr[iRegion].backward * (trackCorr[iRegion].backward - 1) / 4.;
+        registryCorr.get<TH2>(HIST("hFourParticleCorrelations"))->SetBinContent(nchRaw, iRegion + 1, binContent + nCorrelations);
+      }
+      if (trackCorr[iRegion].forward > static_cast<float>(Min6PC) && trackCorr[iRegion].backward > static_cast<float>(Min6PC)) {
+        binContent = registryCorr.get<TH2>(HIST("hSixParticleCorrelations"))->GetBinContent(nchRaw, iRegion + 1);
+        nCorrelations = trackCorr[iRegion].forward * (trackCorr[iRegion].forward - 1) * (trackCorr[iRegion].forward - 2) * trackCorr[iRegion].backward * (trackCorr[iRegion].backward - 1) * (trackCorr[iRegion].backward - 2) / 36.;
+        registryCorr.get<TH2>(HIST("hSixParticleCorrelations"))->SetBinContent(nchRaw, iRegion + 1, binContent + nCorrelations);
+      }
+      if (trackCorr[iRegion].forward > static_cast<float>(Min8PC) && trackCorr[iRegion].backward > static_cast<float>(Min8PC)) {
+        binContent = registryCorr.get<TH2>(HIST("hEightParticleCorrelations"))->GetBinContent(nchRaw, iRegion + 1);
+        nCorrelations = trackCorr[iRegion].forward * (trackCorr[iRegion].forward - 1) * (trackCorr[iRegion].forward - 2) * (trackCorr[iRegion].forward - 3) * trackCorr[iRegion].backward * (trackCorr[iRegion].backward - 1) * (trackCorr[iRegion].backward - 2) * (trackCorr[iRegion].backward - 3) / 576;
+        registryCorr.get<TH2>(HIST("hEightParticleCorrelations"))->SetBinContent(nchRaw, iRegion + 1, binContent + nCorrelations);
+      }
+    }
+  }
+  template <typename T>
+  void fillOutputObjects(const float& cent, const int& nchRaw, const float& nchCorrected, const double& rndm, const std::array<T, EtaGapCounter>& trackCorr)
+  {
+    if (cfgGetNumberOfCorr) {
+      fillCorelationCounter(nchRaw, trackCorr);
+    }
+    if (cfgGFWSettings.cfgUseGFW) {
+      double xAxis = (cfgGFWSettings.cfgUseNch) ? nchCorrected : cent;
+      for (const auto& corr : corrConfigs) {
+        if (!corr.pTDif) {
+          fillFlowContainer(corr, xAxis, 0, rndm, corr.Head);
+        } else {
+          std::string nameFC;
+          for (int iBin = 1; iBin <= axisPtGFW->GetNbins(); iBin++) {
+            nameFC = corr.Head + "_pt_" + iBin;
+            fillFlowContainer(corr, xAxis, iBin, rndm, nameFC);
+          }
+        }
+      }
+    }
+  }
+  double getTimeSinceStartOfFill(const uint64_t& timestamp, const int& firstRun)
   {
     auto runDuration = ccdb->getRunDuration(firstRun);
     uint64_t tsSOF = runDuration.first;
     uint64_t diff = timestamp - tsSOF;
     return static_cast<double>(diff) / 3600000.0;
+  }
+  template <typename TTrack>
+  inline void fillGFW(const TTrack& track, const float& vtxZ)
+  {
+    bool isRef = (track.pt() < cfgGFWSettings.cfgCutPtRefMax && track.pt() > cfgGFWSettings.cfgCutPtRefMin);
+    bool isPOI = (track.pt() < cfgGFWSettings.cfgCutPtPOIMax && track.pt() > cfgGFWSettings.cfgCutPtPOIMin);
+
+    if (!isRef && !isPOI) {
+      return;
+    }
+    double wNUE = (weight.hEfficiency != nullptr) ? 1. / weight.hEfficiency->GetBinContent(weight.hEfficiency->FindBin(track.pt())) : 1.0;
+    double wNUA = (weight.hAcceptance != nullptr) ? weight.hAcceptance->getNUA(track.phi(), track.eta(), vtxZ) : 1.0;
+    if (weight.hAcceptance != nullptr) {
+      registryQA.fill(HIST("cutObs/hPhiCorrected"), track.phi(), wNUA);
+    }
+    if (isRef) {
+      fGFW->Fill(track.eta(), axisPtGFW->FindBin(track.pt()) - 1, track.phi(), wNUA * wNUE, 1);
+    }
+    if (isPOI) {
+      fGFW->Fill(track.eta(), axisPtGFW->FindBin(track.pt()) - 1, track.phi(), wNUA * wNUE, 2);
+    }
+    if (isRef && isPOI) {
+      fGFW->Fill(track.eta(), axisPtGFW->FindBin(track.pt()) - 1, track.phi(), wNUA * wNUE, 4);
+    }
   }
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Mults>>;
@@ -553,8 +873,18 @@ struct FlowTransmutation {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int run = bc.runNumber();
-    int nch = 0;
+    float nch = 0;
+    int nchCorrCounter = 0;
+    float nchCorrected = 0;
+    double lRandom = fRndm->Rndm();
     std::array<TrackRegion, 8> trackCorr{TrackRegion{.forward = 0, .backward = 0, .gap = 0.}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.1}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.2}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.3}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.4}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.5}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.6}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.7}};
+    if (cfgTriggeredData.cfgUseHighMultTrigger) {
+      zorro.initCCDB(ccdb.service, run, bc.timestamp(), triggerName[cfgTriggeredData.cfgHighMultiplicityTriggerMenu]);
+      zorro.populateHistRegistry(registryTrigger, run);
+      if (!zorro.isSelected(bc.globalBC())) {
+        return;
+      }
+    }
     registryQA.fill(HIST("hEventCount"), FilteredEvent);
     if (tracks.size() < 1) {
       return;
@@ -581,12 +911,23 @@ struct FlowTransmutation {
         std::shared_ptr<TH3> histNUA = registryQA.add<TH3>(Form("NUA/hPhiEtaVtxZ_%i", run), "", {HistType::kTH3D, {{60, 0.0, constants::math::TwoPI}, {32, -0.8, 0.8}, {40, -10, 10}}});
         th3sPerRun.insert(std::make_pair(run, histNUA));
       }
+      if (cfgGFWSettings.cfgUseGFW) {
+        loadCorrection(run);
+      }
       runNumbers.push_back(run);
     }
+    if (cfgGFWSettings.cfgUseGFW) {
+      fGFW->Clear();
+    }
     for (const auto& track : tracks) {
-
       if (trackSelected<TrkSelNch>(track)) {
         fillTrackQA<TrkSelNch>(track, vtxz);
+        if (weight.hEfficiencyNch != nullptr) {
+          nchCorrected += 1. / weight.hEfficiency->GetBinContent(weight.hEfficiencyNch->FindBin(track.pt()));
+        } else {
+          nchCorrected++;
+        }
+        nch++;
       }
       if (!trackSelected<TrkSelObs>(track)) {
         continue;
@@ -594,43 +935,25 @@ struct FlowTransmutation {
       fillTrackQA<TrkSelObs>(track, vtxz);
       if (cfgGetNumberOfCorr) {
         fillCorrProfile(track, trackCorr);
-
-        nch++;
+        nchCorrCounter++;
       }
       if (cfgNUAWeightsRunByRun) {
         th3sPerRun[run]->Fill(track.phi(), track.eta(), vtxz);
       }
-    }
-    float binContent = 0;
-    float nCorrelations = 0;
-    if (cfgGetNumberOfCorr) {
-      for (uint iRegion = 0; iRegion < static_cast<int>(EtaGapCounter); iRegion++) {
-        if (trackCorr[iRegion].forward > 0 && trackCorr[iRegion].backward > 0) {
-          binContent = registryCorr.get<TH2>(HIST("hTwoParticleCorrelations"))->GetBinContent(nch, iRegion + 1);
-          nCorrelations = trackCorr[iRegion].forward * trackCorr[iRegion].backward;
-          registryCorr.get<TH2>(HIST("hTwoParticleCorrelations"))->SetBinContent(nch, iRegion + 1, binContent + nCorrelations);
-        }
-        if (trackCorr[iRegion].forward > 1 && trackCorr[iRegion].backward > 1) {
-          binContent = registryCorr.get<TH2>(HIST("hFourParticleCorrelations"))->GetBinContent(nch, iRegion + 1);
-          nCorrelations = trackCorr[iRegion].forward * (trackCorr[iRegion].forward - 1) * trackCorr[iRegion].backward * (trackCorr[iRegion].backward - 1) / 4.;
-          registryCorr.get<TH2>(HIST("hFourParticleCorrelations"))->SetBinContent(nch, iRegion + 1, binContent + nCorrelations);
-        }
-        if (trackCorr[iRegion].forward > 2 && trackCorr[iRegion].backward > 2) {
-          binContent = registryCorr.get<TH2>(HIST("hSixParticleCorrelations"))->GetBinContent(nch, iRegion + 1);
-          nCorrelations = trackCorr[iRegion].forward * (trackCorr[iRegion].forward - 1) * (trackCorr[iRegion].forward - 2) * trackCorr[iRegion].backward * (trackCorr[iRegion].backward - 1) * (trackCorr[iRegion].backward - 2) / 36.;
-          registryCorr.get<TH2>(HIST("hSixParticleCorrelations"))->SetBinContent(nch, iRegion + 1, binContent + nCorrelations);
-        }
-        if (trackCorr[iRegion].forward > 3 && trackCorr[iRegion].backward > 3) {
-          binContent = registryCorr.get<TH2>(HIST("hEightParticleCorrelations"))->GetBinContent(nch, iRegion + 1);
-          nCorrelations = trackCorr[iRegion].forward * (trackCorr[iRegion].forward - 1) * (trackCorr[iRegion].forward - 2) * (trackCorr[iRegion].forward - 3) * trackCorr[iRegion].backward * (trackCorr[iRegion].backward - 1) * (trackCorr[iRegion].backward - 2) * (trackCorr[iRegion].backward - 3) / 576;
-          registryCorr.get<TH2>(HIST("hEightParticleCorrelations"))->SetBinContent(nch, iRegion + 1, binContent + nCorrelations);
-        }
+      if (cfgGFWSettings.cfgUseGFW) {
+        fillGFW(track, vtxz);
       }
     }
+    if (!cfgGFWSettings.cfgEfficiencyNch.value.empty() && weight.hEfficiencyNch != nullptr) {
+      registryQA.fill(HIST("hMultCorrected_MultUncorrected"), nch, nchCorrected);
+      registryQA.fill(HIST("hNchCorrected"), nchCorrected);
+    }
+    registryQA.fill(HIST("hNch"), nch);
+    fillOutputObjects(cent, nchCorrCounter, nchCorrected, lRandom, trackCorr);
   }
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<FlowTransmutation>(cfgc)};
+    adaptAnalysisTask<FlowSmallSystems>(cfgc)};
 }

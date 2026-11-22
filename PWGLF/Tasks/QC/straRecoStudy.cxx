@@ -99,20 +99,20 @@ struct preProcessMCcollisions {
 
   void init(InitContext const&)
   {
-    const AxisSpec axisNTimesCollRecoed{(int)10, -0.5f, +9.5f, ""};
-    const AxisSpec axisTrackCount{(int)50, -0.5f, +49.5f, ""};
-    const AxisSpec axisContributors{(int)200, -0.5f, +199.5f, ""};
-    const AxisSpec axisContributorsTRD{(int)200, -0.5f, +199.5f, "N_{contribs}^{TRD}"};
-    const AxisSpec axisContributorsTOF{(int)200, -0.5f, +199.5f, "N_{contribs}^{TOF}"};
-    const AxisSpec axisCovariance{(int)400, 0.0f, +0.1f, ""};
-    const AxisSpec axisCovarianceTest{(int)400, -0.05f, +0.05f, ""};
-    const AxisSpec axisTwenty{(int)20, -0.5f, +19.5f, ""};
-    const AxisSpec axisTwentyWithNegative{(int)20, -10.5, +9.5f, ""};
-    const AxisSpec axisTwentyFloatWithNegative{(int)100, -10.0f, +10.0f, ""};
+    const AxisSpec axisNTimesCollRecoed{10, -0.5f, +9.5f, ""};
+    const AxisSpec axisTrackCount{50, -0.5f, +49.5f, ""};
+    const AxisSpec axisContributors{200, -0.5f, +199.5f, ""};
+    const AxisSpec axisContributorsTRD{200, -0.5f, +199.5f, "N_{contribs}^{TRD}"};
+    const AxisSpec axisContributorsTOF{200, -0.5f, +199.5f, "N_{contribs}^{TOF}"};
+    const AxisSpec axisCovariance{400, 0.0f, +0.1f, ""};
+    const AxisSpec axisCovarianceTest{400, -0.05f, +0.05f, ""};
+    const AxisSpec axisTwenty{20, -0.5f, +19.5f, ""};
+    const AxisSpec axisTwentyWithNegative{20, -10.5, +9.5f, ""};
+    const AxisSpec axisTwentyFloatWithNegative{100, -10.0f, +10.0f, ""};
 
-    const AxisSpec axisPVResolutionXY{(int)400, 0.0f, +0.05f, ""};
-    const AxisSpec axisPVResolutionZ{(int)400, -0.1f, +0.1f, ""};
-    const AxisSpec axisPVResolutionT{(int)500, -20.0f, +20.0f, ""};
+    const AxisSpec axisPVResolutionXY{400, 0.0f, +0.05f, ""};
+    const AxisSpec axisPVResolutionZ{400, -0.1f, +0.1f, ""};
+    const AxisSpec axisPVResolutionT{500, -20.0f, +20.0f, ""};
 
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
     histos.add("hNTimesCollWithXiRecoed", "hNTimesCollWithXiRecoed", kTH1F, {axisNTimesCollRecoed});
@@ -353,12 +353,12 @@ struct straRecoStudy {
 
   void init(InitContext const&)
   {
-    const AxisSpec axisEventSelection{(int)10, -0.5f, +9.5f, ""};
+    const AxisSpec axisEventSelection{10, -0.5f, +9.5f, ""};
     histos.add("hEventSelection", "hEventSelection", kTH1F, {axisEventSelection});
 
     // Creation of axes
-    const AxisSpec axisVsPt{(int)NBinsPt, 0, MaxPt, "#it{p}_{T} (GeV/c)"};
-    const AxisSpec axisVsPtCoarse{(int)NBinsPtCoarse, 0, MaxPt, "#it{p}_{T} (GeV/c)"};
+    const AxisSpec axisVsPt{NBinsPt.value, 0, MaxPt, "#it{p}_{T} (GeV/c)"};
+    const AxisSpec axisVsPtCoarse{NBinsPtCoarse.value, 0, MaxPt, "#it{p}_{T} (GeV/c)"};
 
     const AxisSpec axisGammaMass{400, 0.000f, 0.400f, "Inv. Mass (GeV/c^{2})"};
     const AxisSpec axisK0ShortMass{400, 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"};
@@ -377,8 +377,8 @@ struct straRecoStudy {
     const AxisSpec axisTPCCroRo{160, -0.5f, +159.5f, "TPC crossed rows"};
 
     // bit packed ITS cluster map
-    const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
-    const AxisSpec axisRadius{(int)160, 0.0f, +80.0f, "Radius (cm)"};
+    const AxisSpec axisITSCluMap{128, -0.5f, +127.5f, "Packed ITS map"};
+    const AxisSpec axisRadius{160, 0.0f, +80.0f, "Radius (cm)"};
 
     TString lSpecies[] = {"Gamma", "K0Short", "Lambda", "AntiLambda", "XiMinus", "XiPlus", "OmegaMinus", "OmegaPlus"};
     const AxisSpec lMassAxis[] = {axisGammaMass, axisK0ShortMass, axisLambdaMass, axisLambdaMass, axisXiMass, axisXiMass, axisOmegaMass, axisOmegaMass};
@@ -566,8 +566,8 @@ struct straRecoStudy {
       // MC association
       auto posPartTrack = v0.posTrack_as<TracksCompleteIU>();
       auto negPartTrack = v0.negTrack_as<TracksCompleteIU>();
-      histos.fill(HIST("h2dITSCluMap_V0Positive"), (float)posPartTrack.itsClusterMap(), v0.v0radius());
-      histos.fill(HIST("h2dITSCluMap_V0Negative"), (float)negPartTrack.itsClusterMap(), v0.v0radius());
+      histos.fill(HIST("h2dITSCluMap_V0Positive"), static_cast<float>(posPartTrack.itsClusterMap()), v0.v0radius());
+      histos.fill(HIST("h2dITSCluMap_V0Negative"), static_cast<float>(negPartTrack.itsClusterMap()), v0.v0radius());
 
       if (posPartTrack.itsNCls() < itsminclusters || negPartTrack.itsNCls() < itsminclusters)
         continue;
@@ -717,9 +717,9 @@ struct straRecoStudy {
       auto posPartTrack = casc.posTrack_as<TracksCompleteIU>();
       auto negPartTrack = casc.negTrack_as<TracksCompleteIU>();
 
-      histos.fill(HIST("h2dITSCluMap_CascPositive"), (float)posPartTrack.itsClusterMap(), casc.v0radius());
-      histos.fill(HIST("h2dITSCluMap_CascNegative"), (float)negPartTrack.itsClusterMap(), casc.v0radius());
-      histos.fill(HIST("h2dITSCluMap_CascBachelor"), (float)bachPartTrack.itsClusterMap(), casc.cascradius());
+      histos.fill(HIST("h2dITSCluMap_CascPositive"), static_cast<float>(posPartTrack.itsClusterMap()), casc.v0radius());
+      histos.fill(HIST("h2dITSCluMap_CascNegative"), static_cast<float>(negPartTrack.itsClusterMap()), casc.v0radius());
+      histos.fill(HIST("h2dITSCluMap_CascBachelor"), static_cast<float>(bachPartTrack.itsClusterMap()), casc.cascradius());
 
       if (casc.sign() < 0) {
         histos.fill(HIST("h3dTrackPtsXiMinusP"), casc.pt(), posPartTrack.itsNCls(), posPartTrack.tpcNClsCrossedRows());

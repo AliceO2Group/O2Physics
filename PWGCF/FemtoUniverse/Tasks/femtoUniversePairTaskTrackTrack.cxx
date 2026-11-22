@@ -81,8 +81,8 @@ struct FemtoUniversePairTaskTrackTrack {
   Configurable<int> confPIDPartOne{"confPIDPartOne", 2, "Particle 1 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
 
   /// Partition for particle 1
-  Partition<aod::FDParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && ((aod::femtouniverseparticle::cut & confCutPartOne) == confCutPartOne);
-  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && ((aod::femtouniverseparticle::cut & confCutPartOne) == confCutPartOne);
+  Partition<aod::FDParticles> partsOne = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && ((aod::femtouniverseparticle::cut & confCutPartOne) == confCutPartOne);
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsOneMC = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && ((aod::femtouniverseparticle::cut & confCutPartOne) == confCutPartOne);
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 1> trackHistoPartOne;
@@ -94,10 +94,10 @@ struct FemtoUniversePairTaskTrackTrack {
   Configurable<int> confPIDPartTwo{"confPIDPartTwo", 2, "Particle 2 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
 
   /// Partition for particle 2
-  Partition<aod::FDParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) &&
+  Partition<aod::FDParticles> partsTwo = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) &&
                                          //  (aod::femtouniverseparticle::pt < cfgCutTable->get("PartTwo", "MaxPt")) &&
                                          ((aod::femtouniverseparticle::cut & confCutPartTwo) == confCutPartTwo);
-  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsTwoMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) &&
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsTwoMC = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) &&
                                                                        ((aod::femtouniverseparticle::cut & confCutPartTwo) == confCutPartTwo);
 
   /// Histogramming for particle 2

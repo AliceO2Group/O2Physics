@@ -1054,7 +1054,7 @@ struct LambdaTableProducer {
                        v0.template posTrack_as<T>().index(),
                        v0.template negTrack_as<T>().index(),
                        v0.v0cosPA(),
-                       v0.dcaV0daughters(), (int8_t)v0Type,
+                       v0.dcaV0daughters(), static_cast<int8_t>(v0Type),
                        v0PrmScdType,
                        corr_fact);
       ++nWritten;
@@ -1173,7 +1173,7 @@ struct LambdaTableProducer {
         lambdaMCGenCollisionTable.lastIndex(), mcpart.px(), mcpart.py(),
         mcpart.pz(), mcpart.pt(), mcpart.eta(), mcpart.phi(), mcpart.y(),
         RecoDecay::m(mcpart.p(), mcpart.e()), prPx, prPy, prPz,
-        daughterIDs[posDauIdx], daughterIDs[negDauIdx], (int8_t)v0Type, -999.,
+        daughterIDs[posDauIdx], daughterIDs[negDauIdx], static_cast<int8_t>(v0Type), -999.,
         -999., v0PrmScdType, 1.);
     }
   }
@@ -2525,15 +2525,15 @@ struct LambdaSpinPolarization {
   Preslice<LambdaTracks> perCollisionLambda = aod::lambdatrack::lambdaCollisionId;
   SliceCache cache;
 
-  Partition<LambdaTracks> partLambdaTracks = (aod::lambdatrack::v0Type == (int8_t)kLambda) && (aod::lambdatrack::v0PrmScd == (int8_t)kPrimary);
+  Partition<LambdaTracks> partLambdaTracks = (aod::lambdatrack::v0Type == static_cast<int8_t>(kLambda)) && (aod::lambdatrack::v0PrmScd == static_cast<int8_t>(kPrimary));
 
-  Partition<LambdaTracks> partAntiLambdaTracks = (aod::lambdatrack::v0Type == (int8_t)kAntiLambda) && (aod::lambdatrack::v0PrmScd == (int8_t)kPrimary);
+  Partition<LambdaTracks> partAntiLambdaTracks = (aod::lambdatrack::v0Type == static_cast<int8_t>(kAntiLambda)) && (aod::lambdatrack::v0PrmScd == static_cast<int8_t>(kPrimary));
 
   SliceCache cachemc;
 
-  Partition<aod::LambdaMcGenTracks> partMcLambdaTracks = (aod::lambdatrack::v0Type == (int8_t)kLambda) && (aod::lambdatrack::v0PrmScd == (int8_t)kPrimary);
+  Partition<aod::LambdaMcGenTracks> partMcLambdaTracks = (aod::lambdatrack::v0Type == static_cast<int8_t>(kLambda)) && (aod::lambdatrack::v0PrmScd == static_cast<int8_t>(kPrimary));
 
-  Partition<aod::LambdaMcGenTracks> partMcAntiLambdaTracks = (aod::lambdatrack::v0Type == (int8_t)kAntiLambda) && (aod::lambdatrack::v0PrmScd == (int8_t)kPrimary);
+  Partition<aod::LambdaMcGenTracks> partMcAntiLambdaTracks = (aod::lambdatrack::v0Type == static_cast<int8_t>(kAntiLambda)) && (aod::lambdatrack::v0PrmScd == static_cast<int8_t>(kPrimary));
 
   void processDummy(LambdaCollisions::iterator const&) {}
   PROCESS_SWITCH(LambdaSpinPolarization, processDummy, "Dummy", false);

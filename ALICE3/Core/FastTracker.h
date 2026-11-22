@@ -117,6 +117,7 @@ class FastTracker
   void setLhcUPCscale(float s) { lhcUPCScale = s; }
   void setBField(float b) { magneticField = b; }
   void setMinRadTrack(float r) { fMinRadTrack = r; }
+  void setMaxSnp(float snp) { mMaxSnp = snp; }
   void setMagneticField(float b) { magneticField = b; }
   void setApplyZacceptance(bool b) { mApplyZacceptance = b; }
   void setApplyMSCorrection(bool b) { mApplyMSCorrection = b; }
@@ -165,6 +166,7 @@ class FastTracker
   float lhcUPCScale = 1.0f;             /// scale factor for LHC UPC events
   float upcBackgroundMultiplier = 1.0f; /// multiplier for UPC background
   float fMinRadTrack = 132.f;           /// minimum radius for track propagation in cm
+  float mMaxSnp = 0.85f;                /// max. |sin(phi)| at a layer in its own frame for the layer to count as reached (DetectorK fMaxSnp)
 
   /// counters for covariance matrix statuses
   uint64_t covMatOK = 0;    /// cov mat has positive eigenvals

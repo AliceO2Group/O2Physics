@@ -105,6 +105,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   using SelectedCandidatesMcKfMl = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec, aod::HfSelD0, aod::HfMlD0>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
   using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+  using TypeMcGenCollisions = aod::McCollisions;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
   Filter filterMcGenMatching = (nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) || (acceptCorrelatedBkgs && aod::hf_cand_mc_flag::flagMcMatchGen != 0);
@@ -533,7 +534,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleMlAll, "Process MC with KFParticle and ML", false);
 
-  void processMcGenOnly(TypeMcCollisions const& mcCollisions,
+  void processMcGenOnly(TypeMcGenCollisions const& mcCollisions,
                         MatchedGenCandidatesMc const& mcParticles)
   {
     rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);

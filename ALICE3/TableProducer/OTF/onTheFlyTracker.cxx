@@ -98,7 +98,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -259,7 +258,7 @@ struct OnTheFlyTracker {
 
   // V0 names for filling histograms
   static constexpr int NtypesV0 = 3;
-  static constexpr std::string_view NameV0s[NtypesV0] = {"K0", "Lambda", "AntiLambda"};
+  static constexpr std::array<const char*, NtypesV0> NameV0s = {"K0", "Lambda", "AntiLambda"};
 
   // Class to hold the track information for the O2 vertexing
   class TrackAlice3 : public o2::track::TrackParCov
@@ -1473,7 +1472,7 @@ struct OnTheFlyTracker {
           continue;
         }
         for (int indexDetector = 0; indexDetector < mGeoContainer.getNumberOfConfigurations(); indexDetector++) {
-          std::string path = Form("V0Building_Configuration_%i/%s/", indexDetector, NameV0s[indexV0].data());
+          std::string path = Form("V0Building_Configuration_%i/%s/", indexDetector, NameV0s[indexV0]);
           fillHist<TH2>(path + "hGen", v0DecayRadius2D, mcParticle.pt());
           fillHist<TH2>(path + "hGenNegDaughterFromV0", v0DecayRadius2D, v0DecayProducts[0].Pt());
           fillHist<TH2>(path + "hGenPosDaughterFromV0", v0DecayRadius2D, v0DecayProducts[1].Pt());
@@ -1560,21 +1559,21 @@ struct OnTheFlyTracker {
         fillHist<TH1>(Form("V0Building_Configuration_%i/hV0Building", icfg), 1.0f);
         for (size_t indexV0 = 0; indexV0 < V0PDGs.size(); indexV0++) {
           if (mcParticle.pdgCode() == V0PDGs[indexV0]) {
-            fillHist<TH2>(Form("V0Building_Configuration_%i/%s/hReco", icfg, NameV0s[indexV0].data()), v0DecayRadius2D, mcParticle.pt());
+            fillHist<TH2>(Form("V0Building_Configuration_%i/%s/hReco", icfg, NameV0s[indexV0]), v0DecayRadius2D, mcParticle.pt());
           }
         }
       }
       if (isV0Reco[0]) {
         for (size_t indexV0 = 0; indexV0 < V0PDGs.size(); indexV0++) {
           if (mcParticle.pdgCode() == V0PDGs[indexV0]) {
-            fillHist<TH2>(Form("V0Building_Configuration_%i/%s/hRecoNegDaughterFromV0", icfg, NameV0s[indexV0].data()), v0DecayRadius2D, v0DecayProducts[0].Pt());
+            fillHist<TH2>(Form("V0Building_Configuration_%i/%s/hRecoNegDaughterFromV0", icfg, NameV0s[indexV0]), v0DecayRadius2D, v0DecayProducts[0].Pt());
           }
         }
       }
       if (isV0Reco[1]) {
         for (size_t indexV0 = 0; indexV0 < V0PDGs.size(); indexV0++) {
           if (mcParticle.pdgCode() == V0PDGs[indexV0]) {
-            fillHist<TH2>(Form("V0Building_Configuration_%i/%s/hRecoPosDaughterFromV0", icfg, NameV0s[indexV0].data()), v0DecayRadius2D, v0DecayProducts[1].Pt());
+            fillHist<TH2>(Form("V0Building_Configuration_%i/%s/hRecoPosDaughterFromV0", icfg, NameV0s[indexV0]), v0DecayRadius2D, v0DecayProducts[1].Pt());
           }
         }
       }
@@ -1817,7 +1816,7 @@ struct OnTheFlyTracker {
                               trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                               trackParCov.getSigma1Pt2());
       tableMcTrackLabels(trackParCov.mcLabel, 0);
-      tableTracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits, trackParCov.trackType, trackParCov.isPVContributor);
+      tableTracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits, trackParCov.trackType, trackParCov.isPVContributor, -1, -1, -1, -1);
 
       // populate extra tables if required to do so
       if (populateTracksExtra) {

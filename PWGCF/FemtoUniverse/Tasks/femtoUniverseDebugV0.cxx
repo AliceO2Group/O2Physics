@@ -78,9 +78,9 @@ struct FemtoUniverseDebugV0 {
   /// Partitioning
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
 
-  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && ((aod::femtouniverseparticle::cut & V0configs.confCutV0) == V0configs.confCutV0);
+  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kV0)) && ((aod::femtouniverseparticle::cut & V0configs.confCutV0) == V0configs.confCutV0);
 
-  Partition<soa::Join<FemtoFullParticles, aod::FDMCLabels>> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && ((aod::femtouniverseparticle::cut & V0configs.confCutV0) == V0configs.confCutV0);
+  Partition<soa::Join<FemtoFullParticles, aod::FDMCLabels>> partsOneMC = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kV0)) && ((aod::femtouniverseparticle::cut & V0configs.confCutV0) == V0configs.confCutV0);
 
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
 
@@ -128,8 +128,8 @@ struct FemtoUniverseDebugV0 {
       }
 
       // Check cuts on V0 children
-      if (positiveChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) &&
-          negativeChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) &&
+      if (positiveChild.partType() == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kV0Child) &&
+          negativeChild.partType() == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kV0Child) &&
           isFullPIDSelected(positiveChild.pidCut(), positiveChild.p(), 999.f, childconfigs.confPositiveChildIndex.value, childconfigs.confChildnSpecies.value, childconfigs.confChildPIDnSigmaMax.value, childconfigs.confPositiveChildPIDnSigmaMax.value, 1.f) &&
           isFullPIDSelected(negativeChild.pidCut(), negativeChild.p(), 999.f, childconfigs.confNegativeChildIndex.value, childconfigs.confChildnSpecies.value, childconfigs.confChildPIDnSigmaMax.value, childconfigs.confNegativeChildPIDnSigmaMax.value, 1.f)) {
         auto positiveChildMass = pdg->Mass(V0configs.confPDGCodePositiveChild);
@@ -170,8 +170,8 @@ struct FemtoUniverseDebugV0 {
       }
 
       // Check cuts on V0 children
-      if (positiveChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) &&
-          negativeChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) &&
+      if (positiveChild.partType() == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kV0Child) &&
+          negativeChild.partType() == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kV0Child) &&
           isFullPIDSelected(positiveChild.pidCut(), positiveChild.p(), 999.f, childconfigs.confPositiveChildIndex.value, childconfigs.confChildnSpecies.value, childconfigs.confChildPIDnSigmaMax.value, childconfigs.confPositiveChildPIDnSigmaMax.value, 1.f) &&
           isFullPIDSelected(negativeChild.pidCut(), negativeChild.p(), 999.f, childconfigs.confNegativeChildIndex.value, childconfigs.confChildnSpecies.value, childconfigs.confChildPIDnSigmaMax.value, childconfigs.confNegativeChildPIDnSigmaMax.value, 1.f)) {
         auto positiveChildMass = pdg->Mass(V0configs.confPDGCodePositiveChild);

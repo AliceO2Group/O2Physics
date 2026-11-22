@@ -269,7 +269,7 @@ struct AnalysisEventQa {
     for (auto& event : events) {
       VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
       VarManager::FillEvent<TEventFillMap>(event);
-      eventFilter = uint32_t(event.isEventSelected());
+      eventFilter = static_cast<uint32_t>(event.isEventSelected());
       if (!eventFilter)
         continue;
       // fEvCounters++;
@@ -382,7 +382,7 @@ struct AnalysisMCEvent {
 
       for (auto& event : events) {
         Int_t globalindexmc = -1;
-        eventFilter = uint32_t(event.isEventSelected());
+        eventFilter = static_cast<uint32_t>(event.isEventSelected());
         if (!eventFilter)
           continue;
 
@@ -715,7 +715,7 @@ struct AnalysisTrackSelection {
       // fill event information which might be needed in histograms that combine track and event properties
       VarManager::FillEvent<TEventFillMap>(event);
       // if(!fEventCut->IsSelected(VarManager::fgValues)) continue;
-      eventFilter = uint32_t(event.isEventSelected());
+      eventFilter = static_cast<uint32_t>(event.isEventSelected());
       if (!eventFilter) {
         pass = false;
       }
@@ -923,7 +923,7 @@ struct AnalysisTrackSelection {
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
-          filterMap |= (uint32_t(1) << i);
+          filterMap |= (static_cast<uint32_t>(1) << i);
           if (fConfigQA && pass) {
             fHistManQA->FillHistClass(fHistNamesRecoQA[i].Data(), VarManager::fgValues);
           }
@@ -942,14 +942,14 @@ struct AnalysisTrackSelection {
 
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
           if ((*sig).CheckSignal(true, track.reducedMCTrack())) {
-            mcDecision |= (uint32_t(1) << isig);
+            mcDecision |= (static_cast<uint32_t>(1) << isig);
           }
         }
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
           if (track.has_mcParticle()) {
             auto mctrack = track.template mcParticle_as<aod::McParticles>();
             if ((*sig).CheckSignal(true, mctrack)) {
-              mcDecision |= (uint32_t(1) << isig);
+              mcDecision |= (static_cast<uint32_t>(1) << isig);
             }
           }
         }
@@ -957,11 +957,11 @@ struct AnalysisTrackSelection {
 
       // fill histograms
       for (unsigned int i = 0; i < fMCSignals.size(); i++) {
-        if (!(mcDecision & (uint32_t(1) << i))) {
+        if (!(mcDecision & (static_cast<uint32_t>(1) << i))) {
           continue;
         }
         for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
-          if (filterMap & (uint8_t(1) << j)) {
+          if (filterMap & (static_cast<uint8_t>(1) << j)) {
             if (track.sign() < 0) {
               fHistRecNegPart[j * fMCSignals.size() + i]->Fill(track.pt(), track.eta(), track.phi());
             } else {
@@ -1142,7 +1142,7 @@ struct AnalysisTrackSelection {
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
-          filterMap |= (uint32_t(1) << i);
+          filterMap |= (static_cast<uint32_t>(1) << i);
           if (fConfigQA) {
             fHistManQA->FillHistClass(fHistNamesRecoQA[i].Data(), VarManager::fgValues);
           }
@@ -1159,7 +1159,7 @@ struct AnalysisTrackSelection {
           if (track.has_mcParticle()) {
             auto mctrack = track.template mcParticle_as<aod::McParticles>();
             if ((*sig).CheckSignal(true, mctrack)) {
-              mcDecision |= (uint32_t(1) << isig);
+              mcDecision |= (static_cast<uint32_t>(1) << isig);
               mctrackindex = mctrack.globalIndex();
             }
           }
@@ -1168,7 +1168,7 @@ struct AnalysisTrackSelection {
 
       // // Double reconstructed track only for the signal (they should not be redundant or crossing!!)
       // for (unsigned int i = 0; i < fMCSignals.size(); i++) {
-      //   if (!(mcDecision & (uint32_t(1) << i))) {
+      //   if (!(mcDecision & (static_cast<uint32_t>(1) << i))) {
       //     continue;
       //   }
 
@@ -1183,7 +1183,7 @@ struct AnalysisTrackSelection {
       }
       // track cuts
       for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
-        if (filterMap & (uint8_t(1) << j)) {
+        if (filterMap & (static_cast<uint8_t>(1) << j)) {
 
           if (!(fRecTrackLabels[j].find(mctrackindex) != fRecTrackLabels[j].end())) {
             fRecTrackLabels[j][mctrackindex] = fRecCounters[j];
@@ -1199,7 +1199,7 @@ struct AnalysisTrackSelection {
 
       // fill histograms
       for (unsigned int i = 0; i < fMCSignals.size(); i++) {
-        if (!(mcDecision & (uint32_t(1) << i))) {
+        if (!(mcDecision & (static_cast<uint32_t>(1) << i))) {
           continue;
         }
         Double_t mmcpt = -10000.;
@@ -1244,7 +1244,7 @@ struct AnalysisTrackSelection {
         }
         // track cuts
         for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
-          if (filterMap & (uint8_t(1) << j)) {
+          if (filterMap & (static_cast<uint8_t>(1) << j)) {
             if (track.sign() < 0) {
               fHistRecNegPart[j * fMCSignals.size() + i]->Fill(track.pt(), track.eta(), track.phi());
             } else {
@@ -1733,7 +1733,7 @@ struct AnalysisSameEventPairing {
     for (auto& [t1, t2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
       // for (auto& [t1, t2] : combinations(tracks, tracks)) {
 
-      twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected());
+      twoTrackFilter = static_cast<uint32_t>(t1.isBarrelSelected()) & static_cast<uint32_t>(t2.isBarrelSelected());
 
       if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
         continue;
@@ -1759,7 +1759,7 @@ struct AnalysisSameEventPairing {
       // Fill the QA for all passing tracks
       if (fConfigQA) {
         for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
-          if (twoTrackFilter & (uint8_t(1) << j)) {
+          if (twoTrackFilter & (static_cast<uint8_t>(1) << j)) {
             if (!fConfigFillLS) {
               fHistManQA->FillHistClass(Form("PairsBarrelSEPM_%s", fTrackCuts.at(j).GetName()), VarManager::fgValues);
             } else {
@@ -1788,7 +1788,7 @@ struct AnalysisSameEventPairing {
               continue;
           }
           if ((*sig).CheckSignal(true, t1.reducedMCTrack(), t2.reducedMCTrack())) {
-            mcDecision |= (uint32_t(1) << isig);
+            mcDecision |= (static_cast<uint32_t>(1) << isig);
           }
         }
 
@@ -1801,7 +1801,7 @@ struct AnalysisSameEventPairing {
                 continue;
             }
             if ((*sig).CheckSignal(true, mct1, mct2)) {
-              mcDecision |= (uint32_t(1) << isig);
+              mcDecision |= (static_cast<uint32_t>(1) << isig);
             }
           }
         }
@@ -1809,12 +1809,12 @@ struct AnalysisSameEventPairing {
       } // end of loop MC signals
 
       for (unsigned int i = 0; i < fMCSignals.size(); i++) {
-        if (!(mcDecision & (uint32_t(1) << i))) {
+        if (!(mcDecision & (static_cast<uint32_t>(1) << i))) {
           continue;
         }
         if (recfidcut) {
           for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
-            if (twoTrackFilter & (uint8_t(1) << j)) {
+            if (twoTrackFilter & (static_cast<uint8_t>(1) << j)) {
               if (!fConfigFillLS) {
                 fHistRecPair[j * fMCSignals.size() + i]->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
                 if (fConfigQA)
@@ -1874,7 +1874,7 @@ struct AnalysisSameEventPairing {
           }
           if (genfidcut) {
             for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
-              if (twoTrackFilter & (uint8_t(1) << j)) {
+              if (twoTrackFilter & (static_cast<uint8_t>(1) << j)) {
                 if (!fConfigFillLS) {
                   fHistRecPairMC[j * fMCSignals.size() + i]->Fill(mass, pairpt);
                 } else {

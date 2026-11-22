@@ -127,13 +127,13 @@ constexpr char PrefixRho[] = "Rho0/";
 constexpr char PrefixPhi[] = "Phi/";
 constexpr char PrefixKstar[] = "Kstar0/";
 // same-event siblings, used only by a pair builder's same-event resonance manager
-constexpr char PrefixRhoSe[] = "Rho0Se/";
-constexpr char PrefixPhiSe[] = "PhiSe/";
-constexpr char PrefixKstarSe[] = "Kstar0Se/";
+constexpr char PrefixRhoSe[] = "Rho0/SE/";
+constexpr char PrefixPhiSe[] = "Phi/SE/";
+constexpr char PrefixKstarSe[] = "Kstar0/SE/";
 // mixed-event siblings, used only by a pair builder's mixed-event resonance manager
-constexpr char PrefixRhoMe[] = "Rho0Me/";
-constexpr char PrefixPhiMe[] = "PhiMe/";
-constexpr char PrefixKstarMe[] = "Kstar0Me/";
+constexpr char PrefixRhoMe[] = "Rho0/ME/";
+constexpr char PrefixPhiMe[] = "Phi/ME/";
+constexpr char PrefixKstarMe[] = "Kstar0/ME/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";

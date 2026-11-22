@@ -157,6 +157,8 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   o2::framework::Configurable<datatypes::TrackMaskType> rejectionMaskHighMomentum{"rejectionMaskHighMomentum", 0ul, "Bitmask for rejections above momentum threshold"};
   // momentum threshold for PID usage
   o2::framework::Configurable<float> pidThres{"pidThres", 1.2f, "Momentum threshold for using TPCTOF/TOF pid for tracks with large momentum (GeV/c)"};
+  // which species slot this selection corresponds to in the packed purity tables (FitVars only)
+  o2::framework::Configurable<int> puritySlotMask{"puritySlotMask", 1, "Bitmask (bit N = slot N) selecting which purity slot to plot, read off hPuritySlotAssignment in the producer output."};
 };
 
 // Define unique prefixes as constexpr string literals
@@ -761,6 +763,19 @@ class TrackBuilder
     if (!mProduceTracks && !mProduceLiteTracks) {
       return false;
     }
+    // getDaughterIndex() already checks indexMap and skips calling fillTrack() when the track is
+    // already present, so reaching this point with an existing entry only happens via the direct
+    // standalone-track path (fillTracks()/fillMcTracks()). Two distinct causes land here: the track
+    // was already registered as someone's daughter before its own collision was processed, or the
+    // track is itself associated with more than one collision and was already filled for an earlier
+    // one. Either way, keep the earlier row rather than writing a duplicate; its mask/fillType
+    // reflects whichever collision/role filled it first, not necessarily this one.
+    if (utils::getIndex(track.globalIndex(), indexMap)) {
+      LOG(warn) << "Track " << track.globalIndex() << " was already filled (as a daughter, or under another "
+                << "collision it is associated with); skipping the duplicate standalone fill. Its mask/fillType "
+                << "reflects whichever fill happened first, not necessarily this collision's selection.";
+      return true;
+    }
     int64_t lastIndex = 0;
     if (mProduceTracks) {
       trackProducts.producedTracks(collisionBuilder.collisionIndex(),
@@ -813,49 +828,49 @@ class TrackBuilder
     }
     if (mProduceElectronPids) {
       float itsEl = 0.f;
-      if constexpr (requires(T1 t) { t.itsNSigmaEl(); }) {
+      if constexpr (utils::HasItsNSigma<T1>) {
         itsEl = track.itsNSigmaEl();
       }
       trackProducts.producedElectronPids(itsEl, track.tpcNSigmaEl(), track.tofNSigmaEl());
     }
     if (mProducePionPids) {
       float itsPi = 0.f;
-      if constexpr (requires(T1 t) { t.itsNSigmaPi(); }) {
+      if constexpr (utils::HasItsNSigma<T1>) {
         itsPi = track.itsNSigmaPi();
       }
       trackProducts.producedPionPids(itsPi, track.tpcNSigmaPi(), track.tofNSigmaPi());
     }
     if (mProduceKaonPids) {
       float itsKa = 0.f;
-      if constexpr (requires(T1 t) { t.itsNSigmaKa(); }) {
+      if constexpr (utils::HasItsNSigma<T1>) {
         itsKa = track.itsNSigmaKa();
       }
       trackProducts.producedKaonPids(itsKa, track.tpcNSigmaKa(), track.tofNSigmaKa());
     }
     if (mProduceProtonPids) {
       float itsPr = 0.f;
-      if constexpr (requires(T1 t) { t.itsNSigmaPr(); }) {
+      if constexpr (utils::HasItsNSigma<T1>) {
         itsPr = track.itsNSigmaPr();
       }
       trackProducts.producedProtonPids(itsPr, track.tpcNSigmaPr(), track.tofNSigmaPr());
     }
     if (mProduceDeuteronPids) {
       float itsDe = 0.f;
-      if constexpr (requires(T1 t) { t.itsNSigmaDe(); }) {
+      if constexpr (utils::HasItsNSigma<T1>) {
         itsDe = track.itsNSigmaDe();
       }
       trackProducts.producedDeuteronPids(itsDe, track.tpcNSigmaDe(), track.tofNSigmaDe());
     }
     if (mProduceTritonPids) {
       float itsTr = 0.f;
-      if constexpr (requires(T1 t) { t.itsNSigmaTr(); }) {
+      if constexpr (utils::HasItsNSigma<T1>) {
         itsTr = track.itsNSigmaTr();
       }
       trackProducts.producedTritonPids(itsTr, track.tpcNSigmaTr(), track.tofNSigmaTr());
     }
     if (mProduceHeliumPids) {
       float itsHe = 0.f;
-      if constexpr (requires(T1 t) { t.itsNSigmaHe(); }) {
+      if constexpr (utils::HasItsNSigma<T1>) {
         itsHe = track.itsNSigmaHe();
       }
       trackProducts.producedHeliumPids(itsHe, track.tpcNSigmaHe(), track.tofNSigmaHe());
@@ -868,7 +883,7 @@ class TrackBuilder
       std::array<float, PuritySpeciesLast> tpcNSigma = {track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe()};
       std::array<float, PuritySpeciesLast> tofNSigma = {track.tofNSigmaEl(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(), track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe()};
 
-      if constexpr (requires(T1 t) { t.itsNSigmaEl(); }) {
+      if constexpr (utils::HasItsNSigma<T1>) {
         itsNSigma = {track.itsNSigmaEl(), track.itsNSigmaPi(), track.itsNSigmaKa(), track.itsNSigmaPr(), track.itsNSigmaDe(), track.itsNSigmaTr(), track.itsNSigmaHe()};
       }
 
@@ -1096,7 +1111,7 @@ class TrackBuilderDerivedToDerived
       trackProducts.producedTpcPurity(track.tpcPackedNSigma());
       trackProducts.producedTofPurity(track.tofPackedNSigma(), track.purityHasTof());
     }
-    if constexpr (requires(T1 t) { t.dcaXY(); }) {
+    if constexpr (utils::HasDca<T1>) {
       trackProducts.producedTrackDcas(track.dcaXY(), track.dcaZ());
     }
 

@@ -109,10 +109,10 @@ class MlResponse
   void setModelPathsCCDB(const std::vector<std::string>& onnxFiles, const o2::ccdb::CcdbApi& ccdbApi, const std::vector<std::string>& pathsCCDB, int64_t timestampCCDB)
   {
     if (onnxFiles.size() != mNModels) {
-      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
+      LOG(fatal) << "Number of expected models (" << static_cast<int>(mNModels) << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
     }
     if (pathsCCDB.size() != mNModels) {
-      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the number of CCDB paths (" << pathsCCDB.size() << ")! Please check your configurables.";
+      LOG(fatal) << "Number of expected models (" << static_cast<int>(mNModels) << ") different from the number of CCDB paths (" << pathsCCDB.size() << ")! Please check your configurables.";
     }
 
     // check that the path is unique for each BDT model (otherwise CCDB download does not work as expected)
@@ -140,7 +140,7 @@ class MlResponse
   void setModelPathsLocal(const std::vector<std::string>& onnxFiles)
   {
     if (onnxFiles.size() != mNModels) {
-      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
+      LOG(fatal) << "Number of expected models (" << static_cast<int>(mNModels) << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
     }
     mPaths = onnxFiles;
   }
@@ -239,6 +239,27 @@ class MlResponse
       output.resize(expectedOutputSize);
     }
     return output;
+  }
+
+  /// Get vector of vectors with predictions from every output head of a multi-output model (e.g. GNN)
+  /// \param input a vector containing the values of features used in the model
+  /// \param nModel is the model index
+  /// \return one vector per output head, in the order of the ONNX model's output nodes
+  template <typename T1, typename T2>
+  std::vector<std::vector<TypeOutputScore>> getModelOutputs(T1& input, const T2& nModel)
+  {
+    if (nModel < 0 || static_cast<std::size_t>(nModel) >= mModels.size()) {
+      LOG(fatal) << "Model index " << nModel << " is out of range! The number of initialised models is " << mModels.size() << ". Please check your configurables.";
+    }
+
+    const int numInputNodes = mModels[nModel].getNumInputNodes();
+    const int numInputFeatures = static_cast<int>(input.size());
+
+    if (numInputNodes != numInputFeatures && numInputNodes >= 0) {
+      LOG(fatal) << "Number of input nodes in the model " << mPaths[nModel] << " is different from the number of input features to be tested (" << numInputNodes << " vs " << numInputFeatures << ")";
+    }
+
+    return mModels[nModel].template evalModelFull<TypeOutputScore>(input);
   }
 
   /// ML selections
