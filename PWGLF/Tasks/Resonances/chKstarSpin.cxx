@@ -55,6 +55,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cinttypes>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -1197,7 +1198,23 @@ struct chKstarSpin {
 
     histos.add("EventQA/hEventCut", "No. of event after cuts", kTH1D, {{20, 0, 20}});
     auto check = [](bool enabled) { return enabled ? "" : " #otimes"; };
-    std::vector<std::string> eveCutLabels = {"All Events", Form("|Vz| < %.1f", eventCuts.cfgCutVertexZ.value), std::string("sel8"), std::string("kNoTimeFrameBorder"), std::string("kNoITSROFrameBorder"), std::string("kIsTriggerTVX"), std::string("kNoSameBunchPileup") + check(eventCuts.useNoSameBunchPileup.value), std::string("kIsGoodITSLayersAll") + check(eventCuts.useGoodITSLayersAll.value), std::string("kNoCollInTimeRangeStandard") + check(eventCuts.useNoCollInTimeRangeStandard.value), Form("Occupancy < %d%s", eventCuts.cfgOccCut.value, check(eventCuts.useOccCut.value)), std::string("rctChecker") + check(rctCut.requireRCTFlagChecker.value), std::string("kIsGoodZvtxFT0vsPV") + check(eventCuts.useIsGoodZvtxFT0vsPV.value), std::string("isVertexITSTPC") + check(eventCuts.useIsVertexITSTPC.value), std::string("isVertexTOFMatched") + check(eventCuts.useIsVertexTOFmatched.value), std::string("INEL > 0") + check(eventCuts.useInelGt0.value), std::string("hasFT0") + check(eventCuts.useHasFT0.value), std::string("hasBC") + check(eventCuts.useHasBC.value)};
+    std::vector<std::string> eveCutLabels = {
+      "All Events",
+      Form("|Vz| < %.1f", eventCuts.cfgCutVertexZ.value),
+      std::string("sel8"), std::string("kNoTimeFrameBorder"),
+      std::string("kNoITSROFrameBorder"), std::string("kIsTriggerTVX"),
+      std::string("kNoSameBunchPileup") + check(eventCuts.useNoSameBunchPileup.value),
+      std::string("kIsGoodITSLayersAll") + check(eventCuts.useGoodITSLayersAll.value),
+      std::string("kNoCollInTimeRangeStandard") + check(eventCuts.useNoCollInTimeRangeStandard.value),
+      Form("Occupancy < %d%s", eventCuts.cfgOccCut.value, check(eventCuts.useOccCut.value)),
+      std::string("rctChecker") + check(rctCut.requireRCTFlagChecker.value),
+      std::string("kIsGoodZvtxFT0vsPV") + check(eventCuts.useIsGoodZvtxFT0vsPV.value),
+      std::string("isVertexITSTPC") + check(eventCuts.useIsVertexITSTPC.value),
+      std::string("isVertexTOFMatched") + check(eventCuts.useIsVertexTOFmatched.value),
+      std::string("INEL > 0") + check(eventCuts.useInelGt0.value),
+      std::string("hasFT0") + check(eventCuts.useHasFT0.value),
+      std::string("hasBC") + check(eventCuts.useHasBC.value)};
+
     for (size_t i = 0; i < eveCutLabels.size(); ++i) {
       histos.get<TH1>(HIST("EventQA/hEventCut"))->GetXaxis()->SetBinLabel(i + 1, eveCutLabels[i].c_str());
     }
