@@ -33,6 +33,7 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/RawDeviceService.h>
 #include <Framework/StaticFor.h>
 #include <Framework/runDataProcessing.h>
 
@@ -40,12 +41,16 @@
 #include <TH1.h>
 #include <TH2.h>
 
+#include <fairmq/Device.h>
+
 #include <algorithm>
 #include <array>
 #include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
+#include <filesystem>
 #include <initializer_list>
 #include <string>
 #include <string_view>
@@ -151,7 +156,10 @@ struct ChargedParticles { // NOLINT(clang-analyzer-optin.performance.Padding): o
   };
   std::unordered_map<int64_t, ParticleTracks> tracksPerParticle; // qa: selected tracks per mc particle in the current mc event
   std::string lastRunLabel;
-  int phiRunBin{0}; // qa: run bin of qa/tracks/phiRun (0 = no run label yet)
+  int phiRunBin{0};           // qa: run bin of qa/tracks/phiRun (0 = no run label yet)
+  int lastEvSelRunNumber{-1}; // qa: run label of the per-run cut flow (all candidates, not only accepted events)
+  std::string evSelRunLabel;
+  std::string mcRunLabel; // qa: run of the current mc collision (per-run efficiencies)
   Configurable<std::string> evSelBits{"evSelBits", "auto", "event selection bits on top of sel8 (names as in EventSelectionParams), comma separated; auto = default of the collision system (currently kNoSameBunchPileup for all)"};
   Configurable<float> maxVtxZ{"maxVtxZ", 10.f, "max |z| of the reco and true vertex"};
   uint64_t evSelMask{0};
@@ -217,7 +225,7 @@ struct ChargedParticles { // NOLINT(clang-analyzer-optin.performance.Padding): o
   };
   VarContainer vars;
 
-  void init(InitContext const&);
+  void init(InitContext& ic);
 
   template <typename P>
   bool initParticle(const P& particle);
@@ -288,7 +296,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
  * Initialise the task and add histograms.
  */
 //**************************************************************************************************
-void ChargedParticles::init(InitContext const&)
+void ChargedParticles::init(InitContext& ic)
 {
   if (static_cast<int>(doprocessData.value) + static_cast<int>(doprocessMC.value) + static_cast<int>(doprocessMCnoPCC.value) != 1) {
     LOGP(fatal, "enable exactly one of processData, processMC, processMCnoPCC");
@@ -424,6 +432,15 @@ void ChargedParticles::init(InitContext const&)
   ptMin = ptBinEdges.front();
   ptMax = ptBinEdges.back();
 
+  // relative pt resolution (qa): logarithmic bins, 6 % wide, from 1e-4 to 1
+  constexpr int NRelResBins = 160;
+  constexpr double RelResLog10Min = -4.;
+  constexpr double RelResLog10Max = 0.;
+  std::vector<double> relResEdges;
+  for (int i = 0; i <= NRelResBins; ++i) {
+    relResEdges.push_back(std::pow(10., RelResLog10Min + (RelResLog10Max - RelResLog10Min) * i / NRelResBins));
+  }
+
   const AxisSpec ptMeasAxis{ptBinEdges, "#it{p}^{ meas}_{T} (GeV/#it{c})", "pt_meas"};
 
   const int nBinsMultMeas = maxMultMeas + 1;
@@ -441,6 +458,7 @@ void ChargedParticles::init(InitContext const&)
     histos.add("QA/events/dzFT0PV", "", kTH2D, {multMeasAxis, {100, -5., 5., "#it{z}_{FT0} #minus #it{z}_{PV} (cm)"}});
     histos.add("QA/events/zVtxMeas", "", kTH1D, {{61, -30.5, 30.5, "#it{V}^{ meas}_{z} (cm)"}});
     histos.add("QA/events/eventSelection", "", kTH1D, {{nStages, -0.5, nStages - 0.5}});
+    histos.add("QA/events/eventSelectionRun", "", kTH2D, {{512, 0., 512.}, {nStages, -0.5, nStages - 0.5}}); // run axis labelled as runStatistics
     histos.add("QA/events/runStatistics", "", kTH1D, {{512, 0., 512.}});
     histos.add("QA/events/metaInfo", "", kTH1D, {{4, 0., 4.}});
     // track qa (selected tracks in selected events), run 2 names and binning (7 its layers, run 3 dca cut ranges)
@@ -457,7 +475,7 @@ void ChargedParticles::init(InitContext const&)
     histos.add("QA/tracks/tpcCrossedRowsOverFindableCls", "", kTH1D, {{90, 0.7, 1.6, "crossed rows / findable clusters TPC"}});
     histos.add("QA/tracks/tpcFractionSharedCls", "", kTH2D, {ptMeasAxis, {51, 0., 1.02, "fraction of shared clusters TPC"}});
     histos.add("QA/tracks/tpcChi2NCl", "", kTH1D, {{100, 0., 10., "chi2 / cluster TPC"}});
-    histos.add("QA/tracks/sigmaPt", "", kTH2D, {ptMeasAxis, {100, 0., 0.3, "#sigma(#it{p}^{ meas}_{T}) / #it{p}^{ meas}_{T}"}});
+    histos.add("QA/tracks/sigmaPt", "", kTH2D, {ptMeasAxis, {relResEdges, "#sigma(#it{p}^{ meas}_{T}) / #it{p}^{ meas}_{T}"}});
     // one dca axis for all dca qa: a bin centred at 0, fine in the core (resolution down to ~10 um at high pt), coarse
     // in the tails; segments of {bin width (cm), bins per side}, each width 5x the previous and every boundary on the
     // coarser grids, so RebinY(5) and RebinY(25) give the next levels (pure, centred at 0)
@@ -539,7 +557,12 @@ void ChargedParticles::init(InitContext const&)
       if (isNominal) {
         histos.add((dir + "QA/events/multTrueBits").c_str(), "", kTH2D, {multTrueAxis, bitAxis});
         histos.add((dir + "QA/events/eventSelectionMC").c_str(), "", kTH1D, {{NStagesMC, -0.5, NStagesMC - 0.5}});
-        histos.add((dir + "QA/tracks/deltaPt").c_str(), "", kTH2D, {ptMeasAxis, {100, 0., 0.3, "#Delta(#it{p}_{T}) / #it{p}^{ meas}_{T}"}});
+        histos.add((dir + "QA/tracks/deltaPt").c_str(), "", kTH2D, {ptMeasAxis, {relResEdges, "#Delta(#it{p}_{T}) / #it{p}^{ meas}_{T}"}});
+        // event and tracking efficiency per run, as in the unfolding (run axis labelled as runStatistics)
+        histos.add((dir + "QA/events/evtGenRun").c_str(), "", kTH2D, {{512, 0., 512.}, multTrueAxis});
+        histos.add((dir + "QA/events/evtRecoRun").c_str(), "", kTH2D, {{512, 0., 512.}, multTrueAxis});
+        histos.add((dir + "QA/tracks/primGenRun").c_str(), "", kTH2D, {{512, 0., 512.}, ptTrueAxis});
+        histos.add((dir + "QA/tracks/primRecoRun").c_str(), "", kTH2D, {{512, 0., 512.}, ptTrueAxis});
       }
     }
 
@@ -581,7 +604,16 @@ void ChargedParticles::init(InitContext const&)
     axisMatch->SetBinLabel(3, "pointing in z");
     axisMatch->SetBinLabel(4, "with its track");
     axisMatch->SetBinLabel(5, "its cuts");
-    metaLabel = metadataInfo.isInitialized() ? metadataInfo.makeMetadataLabel() + ", O2 " + metadataInfo.getO2Version() : std::string("no ao2d metadata");
+    metaLabel = metadataInfo.isInitialized() ? metadataInfo.makeMetadataLabel() : std::string("no ao2d metadata");
+    const char* o2PhysicsRoot = std::getenv("O2PHYSICS_ROOT"); // grid: .../Packages/O2Physics/<tag>
+    metaLabel += ", O2Physics " + (o2PhysicsRoot ? std::filesystem::path(o2PhysicsRoot).filename().string() : std::string("unknown"));
+    const char* train = std::getenv("ALIEN_JDL_HYTRAIN"); // hyperloop train jobs
+    const auto session = ic.services().get<RawDeviceService>().device()->GetConfig()->GetPropertyAsString("session", "");
+    if (train) {
+      metaLabel += ", train " + std::string(train);
+    } else if (!session.empty() && !session.starts_with("dpl_")) {
+      metaLabel += ", session " + session; // hyperloop tests: test number (dpl_<n>: random local default)
+    }
     if (ptRange.value != "nominal") {
       metaLabel += ", ptRange " + ptRange.value + ", fiducialMult " + (fiducialMult.value ? "true" : "false");
     }
@@ -597,6 +629,7 @@ void ChargedParticles::init(InitContext const&)
         }
       });
     }
+    histos.get<TH1>(HIST("QA/events/metaInfo"))->Fill(metaLabel.c_str(), 1.); // once per task instance: number of jobs after merging
   }
 
   trackSel = getGlobalTrackSelection();
@@ -700,6 +733,9 @@ void ChargedParticles::processMCImpl(CollisionTableMCTrue::iterator const& mcCol
   tracksPerParticle.clear();
 
   initEventMC(mcCollision, particles);
+  if (isNominal && isRun3) {
+    mcRunLabel = std::to_string(mcCollision.template bc_as<BCsWithSel>().runNumber()); // also for events without reco collision
+  }
 
   // several reco collisions per mc collision (rare, mostly split-off vertices): the one with most contributors
   // represents the mc collision, the others count as event contamination (as in data)
@@ -1043,23 +1079,38 @@ void ChargedParticles::fillEvSelQA(const C& collision, aod::FT0s const& ft0s, bo
   if (!isNominal || !isRun3) {
     return;
   }
+  int evSelRunNumber = -1;
+  if constexpr (IS_MC) {
+    evSelRunNumber = collision.template bc_as<BCsWithSel>().runNumber();
+  } else {
+    evSelRunNumber = collision.template bc_as<aod::BCs>().runNumber();
+  }
+  if (evSelRunNumber != lastEvSelRunNumber) {
+    lastEvSelRunNumber = evSelRunNumber;
+    evSelRunLabel = std::to_string(evSelRunNumber);
+  }
+  auto* evSelRun = histos.get<TH2>(HIST("QA/events/eventSelectionRun")).get(); // filled by run label, as runStatistics
   histos.fill(HIST("QA/events/eventSelection"), 0);
+  evSelRun->Fill(evSelRunLabel.c_str(), 0., 1.);
   if (!collision.sel8()) {
     return;
   }
   // cumulative cut-flow of the applied selection
   int stage = 1;
   histos.fill(HIST("QA/events/eventSelection"), stage);
+  evSelRun->Fill(evSelRunLabel.c_str(), stage, 1.);
   bool passes = true;
   for (const auto& bit : evSelBitList) {
     passes = passes && ((collision.selection_raw() >> bit) & 1ULL);
     ++stage;
     if (passes) {
       histos.fill(HIST("QA/events/eventSelection"), stage);
+      evSelRun->Fill(evSelRunLabel.c_str(), stage, 1.);
     }
   }
   if (passes && std::abs(collision.posZ()) < vtxZCut()) {
     histos.fill(HIST("QA/events/eventSelection"), stage + 1);
+    evSelRun->Fill(evSelRunLabel.c_str(), stage + 1, 1.);
   }
   histos.fill(HIST("QA/events/zVtxMeas"), collision.posZ());
   if (vars.isAcceptedEvent) {
@@ -1075,7 +1126,6 @@ void ChargedParticles::fillEvSelQA(const C& collision, aod::FT0s const& ft0s, bo
       phiRunBin = histos.get<TH2>(HIST("QA/tracks/phiRun"))->GetYaxis()->FindBin(lastRunLabel.c_str()); // adds the label once per run
     }
     histos.get<TH1>(HIST("QA/events/runStatistics"))->Fill(lastRunLabel.c_str(), 1.);
-    histos.get<TH1>(HIST("QA/events/metaInfo"))->Fill(metaLabel.c_str(), 1.);
   }
   if (std::abs(collision.posZ()) >= vtxZCut()) {
     return;
@@ -1123,11 +1173,15 @@ void ChargedParticles::processTrue(const P& particles)
   if (vars.classMask == 0 && !isUntriggeredGoodZPos) {
     return;
   }
+  const bool fillRunQA = isNominal && isRun3; // per-run efficiencies
 
   forEachDir([&](auto dir) {
     constexpr int Dir = decltype(dir)::value;
     if (isInDir(Dir)) {
       histos.fill(HIST(ClassDir[Dir]) + HIST("multDist_evt_gen"), vars.multTrue);
+      if (fillRunQA) {
+        histos.get<TH2>(HIST(ClassDir[Dir]) + HIST("QA/events/evtGenRun"))->Fill(mcRunLabel.c_str(), vars.multTrue, 1.);
+      }
       if (vars.isTriggeredMC) {
         histos.fill(HIST(ClassDir[Dir]) + HIST("multDist_evt_gen_trig"), vars.multTrue);
       }
@@ -1143,6 +1197,8 @@ void ChargedParticles::processTrue(const P& particles)
             histos.fill(HIST(ClassDir[Dir]) + HIST("multPtSpec_prim_gen"), vars.multTrue, particle.pt());
             if (!vars.isAcceptedEvent) {
               histos.fill(HIST(ClassDir[Dir]) + HIST("multPtSpec_prim_gen_evtloss"), vars.multTrue, particle.pt());
+            } else if (fillRunQA) {
+              histos.get<TH2>(HIST(ClassDir[Dir]) + HIST("QA/tracks/primGenRun"))->Fill(mcRunLabel.c_str(), particle.pt(), 1.);
             }
           }
         });
@@ -1175,6 +1231,9 @@ void ChargedParticles::processMeas(const T& tracks, bool isRepresentative)
       constexpr int Dir = decltype(dir)::value;
       if (isTrueEvent(Dir)) {
         histos.fill(HIST(ClassDir[Dir]) + HIST("multCorrel_evt"), vars.multMeas, vars.multTrue);
+        if (isNominal && isRun3) {
+          histos.get<TH2>(HIST(ClassDir[Dir]) + HIST("QA/events/evtRecoRun"))->Fill(mcRunLabel.c_str(), vars.multTrue, 1.);
+        }
       }
     });
   }
@@ -1249,6 +1308,9 @@ void ChargedParticles::processMeas(const T& tracks, bool isRepresentative)
               histos.fill(HIST(ClassDir[Dir]) + HIST("multCorrel_prim"), vars.multMeas, vars.multTrue);
               histos.fill(HIST(ClassDir[Dir]) + HIST("ptCorrel_prim"), track.pt(), particle.pt());
               histos.fill(HIST(ClassDir[Dir]) + HIST("multPtSpec_prim_meas"), vars.multTrue, particle.pt());
+              if (isNominal && isRun3) {
+                histos.get<TH2>(HIST(ClassDir[Dir]) + HIST("QA/tracks/primRecoRun"))->Fill(mcRunLabel.c_str(), particle.pt(), 1.);
+              }
               histos.fill(HIST(ClassDir[Dir]) + HIST("multPtSpec_trk_prim_meas"), vars.multMeas, track.pt());
             }
           }
