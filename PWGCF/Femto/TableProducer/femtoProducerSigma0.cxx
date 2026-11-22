@@ -15,7 +15,7 @@
 /// Needs the full-precision FLambdas, FLambdaMasks, FPhotons and FPhotonMasks as input (i.e. the
 /// producer ran with LambdaTables.produceLambdas and PhotonTables.producePhotons, not the Lite variants,
 /// or the Lite tables were converted back before running this task).
-/// FSigma0Extras additionally needs FLambdaExtras and FPhotonExtras (processWithExtras).
+/// FSigma0Extras additionally needs FLambdaExtras and FPhotonExtras (processDataWithExtras).
 /// TODO: FSigma0Labels: the Sigma0 currently gets the label of its Lambda daughter since photons are not implemented for femto MC.
 /// \author Yakiv Paroviak, CTU in Prague, yakiv.paroviak@cern.ch
 
@@ -78,24 +78,24 @@ struct FemtoProducerSigma0 {
 
   void init(o2::framework::InitContext& context)
   {
-    if (static_cast<int>(doprocess) + static_cast<int>(doprocessWithExtras) + static_cast<int>(doprocessMc) + static_cast<int>(doprocessMcWithExtras) > 1) {
-      LOG(fatal) << "Enable only one of process, processWithExtras, processMc and processMcWithExtras";
+    if (static_cast<int>(doprocessData) + static_cast<int>(doprocessDataWithExtras) + static_cast<int>(doprocessMc) + static_cast<int>(doprocessMcWithExtras) > 1) {
+      LOG(fatal) << "Enable only one of processData, processDataWithExtras, processMc and processMcWithExtras";
     }
     sigma0Builder.init(confSigma0Filter, confSigma0Tables, context);
   }
 
-  void process(FilteredFemtoCollision const& col, FemtoLambdas const& /*lambdas*/, FemtoPhotons const& /*photons*/)
+  void processData(FilteredFemtoCollision const& col, FemtoLambdas const& /*lambdas*/, FemtoPhotons const& /*photons*/)
   {
     sigma0Builder.fillSigma0s(col, sigma0BuilderProducts, lambdaPartition, photonPartition, cache);
   }
-  PROCESS_SWITCH(FemtoProducerSigma0, process, "Build Sigma0 candidates", true);
+  PROCESS_SWITCH(FemtoProducerSigma0, processData, "Build Sigma0 candidates", true);
 
   // copies QA information of the Lambda and photon daughters
-  void processWithExtras(FilteredFemtoCollision const& col, FemtoLambdasWithExtras const& /*lambdas*/, FemtoPhotonsWithExtras const& /*photons*/)
+  void processDataWithExtras(FilteredFemtoCollision const& col, FemtoLambdasWithExtras const& /*lambdas*/, FemtoPhotonsWithExtras const& /*photons*/)
   {
     sigma0Builder.fillSigma0s(col, sigma0BuilderProducts, lambdaWithExtrasPartition, photonWithExtrasPartition, cache);
   }
-  PROCESS_SWITCH(FemtoProducerSigma0, processWithExtras, "Build Sigma0 candidates and fill FSigma0Extras (needs FLambdaExtras and FPhotonExtras)", false);
+  PROCESS_SWITCH(FemtoProducerSigma0, processDataWithExtras, "Build Sigma0 candidates and fill FSigma0Extras (needs FLambdaExtras and FPhotonExtras)", false);
 
   // the Sigma0 is labelled with the mc particle of its Lambda daughter
   void processMc(FilteredFemtoCollision const& col, FemtoLambdasWithLabel const& /*lambdas*/, FemtoPhotons const& /*photons*/)
