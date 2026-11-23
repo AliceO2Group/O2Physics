@@ -1010,11 +1010,12 @@ struct PhiStrangeCorrelation {
           case getPdgCode<kK0S>():
             fillGenAssocSpecies.template operator()<kK0S>(HIST("k0s/h3K0SMCGen"), HIST("k0s/h4K0SMCGenAssocReco"));
             break;
-          case getPdgCode<kLambda>():
-            fillGenAssocSpecies.template operator()<kLambda>(HIST("lambda/h3LambdaMCGen"), HIST("lambda/h4LambdaMCGenAssocReco"));
-            break;
-          case getPdgCode<kAntiLambda>():
-            fillGenAssocSpecies.template operator()<kAntiLambda>(HIST("antilambda/h3AntiLambdaMCGen"), HIST("antilambda/h4AntiLambdaMCGenAssocReco"));
+          case getPdgCode<kLambda>(): // the switch is on |PDG|: the sign tells Lambda from AntiLambda
+            if (mcParticle.pdgCode() == getPdgCode<kLambda>()) {
+              fillGenAssocSpecies.template operator()<kLambda>(HIST("lambda/h3LambdaMCGen"), HIST("lambda/h4LambdaMCGenAssocReco"));
+            } else {
+              fillGenAssocSpecies.template operator()<kAntiLambda>(HIST("antilambda/h3AntiLambdaMCGen"), HIST("antilambda/h4AntiLambdaMCGenAssocReco"));
+            }
             break;
           case getPdgCode<kXi>():
             fillGenAssocSpecies.template operator()<kXi>(HIST("xi/h3XiMCGen"), HIST("xi/h4XiMCGenAssocReco"));
@@ -1062,11 +1063,12 @@ struct PhiStrangeCorrelation {
         case getPdgCode<kK0S>():
           fillPartCollection.template operator()<kK0S>();
           break;
-        case getPdgCode<kLambda>():
-          fillPartCollection.template operator()<kLambda>();
-          break;
-        case getPdgCode<kAntiLambda>():
-          fillPartCollection.template operator()<kAntiLambda>();
+        case getPdgCode<kLambda>(): // the switch is on |PDG|: the sign tells Lambda from AntiLambda
+          if (mcParticle.pdgCode() == getPdgCode<kLambda>()) {
+            fillPartCollection.template operator()<kLambda>();
+          } else {
+            fillPartCollection.template operator()<kAntiLambda>();
+          }
           break;
         case getPdgCode<kXi>():
           fillPartCollection.template operator()<kXi>();
