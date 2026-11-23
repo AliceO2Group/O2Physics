@@ -60,6 +60,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -143,11 +144,16 @@ struct Sigmaplusbuilder {
   Configurable<float> candMaxPhotonDcaZToPV{"candMaxPhotonDcaZToPV", 2.0, "Max |DCAz| of the photon's flight line to the PV at its transverse DCA (cm), applied to the photon before the pairing with the proton"};
   Configurable<bool> candDeduplicatePhotons{"candDeduplicatePhotons", true, "Per timeframe, write only the candidate with the smallest DCA to PV among candidates sharing the same photon"};
 
-  // tilt search: if the measured flight direction gives no real solution for the missing photon,
-  // tilted flight directions are tried starting with the smallest tilt
-  Configurable<float> candMaxTilt{"candMaxTilt", 0.05, "Max tilt of the flight direction searched for a real root (rad)"};
-  Configurable<float> candTiltStep{"candTiltStep", 0.005, "Tilt step between the rings of tried flight directions (rad)"};
-  Configurable<int> candTiltNAzimuth{"candTiltNAzimuth", 36, "Flight directions tried per ring"};
+  // flight direction options
+  struct : ConfigurableGroup {
+    // tilt search: if the measured flight direction gives no real solution for the missing photon,
+    // tilted flight directions are tried starting with the smallest tilt
+    Configurable<float> candMaxTilt{"candMaxTilt", 0.05, "Max tilt of the flight direction searched for a real root (rad)"};
+    Configurable<float> candTiltStep{"candTiltStep", 0.005, "Tilt step between the rings of tried flight directions (rad)"};
+    Configurable<int> candTiltNAzimuth{"candTiltNAzimuth", 36, "Flight directions tried per ring"};
+    Configurable<bool> candFlightDirAtSv{"candFlightDirAtSv", false, "Use the tangent of the Sigma+ track at the decay vertex as flight direction (otherwise the PV->SV chord)"};
+    Configurable<bool> protonRecomputeMissingDca{"protonRecomputeMissingDca", false, "Compute the DCA to the PV of proton tracks that the track propagation did not propagate (DCA = 999)"};
+  } flightDirOpts;
 
   // MC
   Configurable<float> cutRapMotherMC{"cutRapMotherMC", 1.0f, "Rapidity cut for generated mother Sigma+ in MC"};
@@ -687,8 +693,7 @@ struct Sigmaplusbuilder {
   template <typename TTrack>
   TrackCand tpcOnlyTrackCand(const TTrack& track, const std::vector<double>& collisionBcNS, const std::vector<double>& collisionTimeNS)
   {
-    o2::aod::track::extensions::TPCTimeErrEncoding timeEncoding{};
-    timeEncoding.encoding.timeErr = track.trackTimeRes();
+    const auto timeEncoding = std::bit_cast<o2::aod::track::extensions::TPCTimeErrEncoding>(track.trackTimeRes());
     double trackTimeNS = collisionBcNS[track.collisionId()] + track.trackTime(); // trackTime() is relative to the BC of its collision
     double timeMin = trackTimeNS - timeEncoding.getDeltaTBwd() - photonPoolTimeMarginNS;
     double timeMax = trackTimeNS + timeEncoding.getDeltaTFwd() + photonPoolTimeMarginNS;
@@ -1052,9 +1057,28 @@ struct Sigmaplusbuilder {
     return photonsByCollision;
   }
 
+  // proton DCA (xy, z) to the PV, recomputed if the track was not propagated (DCA = 999)
+  template <typename TTrack>
+  std::array<float, 2> protonDcaToPv(const TTrack& track, const std::array<float, 3>& pv)
+  {
+    constexpr float NotPropagatedDca = 900.f;
+    std::array<float, 2> dca{track.dcaXY(), track.dcaZ()};
+    if (!flightDirOpts.protonRecomputeMissingDca || std::abs(dca[0]) < NotPropagatedDca) {
+      return dca;
+    }
+    auto trackPar = getTrackPar(track);
+    trackPar.setPID(o2::track::PID::Proton);
+    std::array<float, 2> dcaNew{};
+    if (o2::base::Propagator::Instance()->propagateToDCA(o2::math_utils::Point3D<float>{pv[0], pv[1], pv[2]}, trackPar, mBz, 2.f,
+                                                         o2::base::Propagator::MatCorrType::USEMatCorrLUT, &dcaNew)) {
+      return dcaNew;
+    }
+    return dca;
+  }
+
   // proton candidate selection
   template <bool IsMC, typename TTrack>
-  bool selectProton(const TTrack& track)
+  bool selectProton(const TTrack& track, const std::array<float, 3>& pv, std::array<float, 2>& dca)
   {
     bool isSignal = false;
     if constexpr (IsMC) {
@@ -1099,8 +1123,9 @@ struct Sigmaplusbuilder {
     }
     fillProtonStep(5);
 
-    fillProtonHist(HIST("h2DcaToPVVsPt"), isSignal, track.pt(), std::abs(track.dcaXY()));
-    if (std::abs(track.dcaXY()) < protonMinDcaToPV || std::abs(track.dcaXY()) > protonMaxDcaToPV || std::abs(track.dcaZ()) > protonMaxDcaZToPV) {
+    dca = protonDcaToPv(track, pv);
+    fillProtonHist(HIST("h2DcaToPVVsPt"), isSignal, track.pt(), std::abs(dca[0]));
+    if (std::abs(dca[0]) < protonMinDcaToPV || std::abs(dca[0]) > protonMaxDcaToPV || std::abs(dca[1]) > protonMaxDcaZToPV) {
       return false;
     }
     fillProtonStep(6);
@@ -1247,7 +1272,7 @@ struct Sigmaplusbuilder {
 
   // Build a Sigma+ -> p pi0 candidate from a proton track and a PCM photon
   template <bool IsMC, typename TTrack, typename TPhotonTrack>
-  void buildSigmaPlusCandidate(const TTrack& protonTrack, const PhotonCand<TPhotonTrack>& photon, int collisionIndex, const std::array<float, 3>& pv)
+  void buildSigmaPlusCandidate(const TTrack& protonTrack, const std::array<float, 2>& protonDca, const PhotonCand<TPhotonTrack>& photon, int collisionIndex, const std::array<float, 3>& pv)
   {
     auto posTrack = photon.posTrack;
     auto negTrack = photon.negTrack;
@@ -1373,6 +1398,19 @@ struct Sigmaplusbuilder {
     fitter.getTrack(0).getPxPyPzGlo(pProton);
     fitter.getTrack(1).getPxPyPzGlo(pGamma1);
 
+    // Sigma+ direction at the decay vertex: PV->SV chord rotated by half the bending angle
+    if (flightDirOpts.candFlightDirAtSv && std::abs(mBz) > 0.f) {
+      float ptEstimate = std::hypot(pProton[0] + pGamma1[0], pProton[1] + pGamma1[1]);
+      float rhoSigma = ptEstimate * 1000.f / (0.2998f * std::abs(mBz)); // cm, Bz in kG
+      float sinHalfBend = rhoSigma > 0.f ? std::hypot(flightVec[0], flightVec[1]) / (2.f * rhoSigma) : 1.f;
+      if (sinHalfBend < 1.f) {
+        float rot = -static_cast<float>(protonTrack.sign()) * (mBz < 0.f ? -1.f : 1.f) * std::asin(sinHalfBend);
+        nHatOrig = normalize3({flightVec[0] * std::cos(rot) - flightVec[1] * std::sin(rot),
+                               flightVec[0] * std::sin(rot) + flightVec[1] * std::cos(rot),
+                               flightVec[2]});
+      }
+    }
+
     float e1 = std::sqrt(dot3(pGamma1, pGamma1));
     float massPi0 = o2::constants::physics::MassPionNeutral;
     constexpr float CoefADegenerateThreshold = 1e-6f;
@@ -1418,13 +1456,13 @@ struct Sigmaplusbuilder {
       std::array<float, 3> helperAxis = std::abs(nHatOrig[2]) < MaxAbsNzForZHelperAxis ? std::array<float, 3>{0.f, 0.f, 1.f} : std::array<float, 3>{1.f, 0.f, 0.f};
       std::array<float, 3> tiltAxisU = normalize3(cross3(nHatOrig, helperAxis));
       std::array<float, 3> tiltAxisV = cross3(nHatOrig, tiltAxisU);
-      int nRings = static_cast<int>(std::lround(candMaxTilt / candTiltStep));
+      int nRings = static_cast<int>(std::lround(flightDirOpts.candMaxTilt / flightDirOpts.candTiltStep));
       for (int ring = 1; ring <= nRings && discriminant < 0.f; ++ring) {
-        float tilt = ring * candTiltStep;
+        float tilt = ring * flightDirOpts.candTiltStep;
         float bestRingDisc = -1.f;
         std::array<float, 3> bestRingDir{};
-        for (int iAzimuth = 0; iAzimuth < candTiltNAzimuth; ++iAzimuth) {
-          float azimuth = o2::constants::math::TwoPI * iAzimuth / candTiltNAzimuth;
+        for (int iAzimuth = 0; iAzimuth < flightDirOpts.candTiltNAzimuth; ++iAzimuth) {
+          float azimuth = o2::constants::math::TwoPI * iAzimuth / flightDirOpts.candTiltNAzimuth;
           std::array<float, 3> tiltDir{};
           for (size_t i = 0; i < tiltDir.size(); ++i) {
             tiltDir[i] = std::cos(tilt) * nHatOrig[i] + std::sin(tilt) * (std::cos(azimuth) * tiltAxisU[i] + std::sin(azimuth) * tiltAxisV[i]);
@@ -1609,8 +1647,8 @@ struct Sigmaplusbuilder {
     cand.protonSign = protonTrack.sign();
     cand.protonItsNCls = protonTrack.itsNCls();
     cand.protonTpcNCls = protonTrack.tpcNClsFound();
-    cand.protonDcaXY = protonTrack.dcaXY();
-    cand.protonDcaZ = protonTrack.dcaZ();
+    cand.protonDcaXY = protonDca[0];
+    cand.protonDcaZ = protonDca[1];
     cand.photonMass = photon.mGamma;
     cand.photonAlpha = photon.alpha;
     cand.photonQt = photon.qtarm;
@@ -1972,9 +2010,12 @@ struct Sigmaplusbuilder {
       }
 
       std::vector<TTrack> acceptedProtons;
+      std::vector<std::array<float, 2>> acceptedProtonDcas;
       for (const auto& track : tracksThisCollision) {
-        if (selectProton<IsMC>(track)) {
+        std::array<float, 2> dca{};
+        if (selectProton<IsMC>(track, pv, dca)) {
           acceptedProtons.push_back(track);
+          acceptedProtonDcas.push_back(dca);
           if constexpr (IsMC) {
             if (track.has_mcParticle()) {
               fillSigmaCounter(findSigmaPlusMotherOfProton(track.template mcParticle_as<aod::McParticles>()), 2);
@@ -1984,8 +2025,8 @@ struct Sigmaplusbuilder {
       }
 
       for (const auto& photon : acceptedPhotons) {
-        for (const auto& proton : acceptedProtons) {
-          buildSigmaPlusCandidate<IsMC>(proton, photon, collision.globalIndex(), pv);
+        for (size_t iProton = 0; iProton < acceptedProtons.size(); ++iProton) {
+          buildSigmaPlusCandidate<IsMC>(acceptedProtons[iProton], acceptedProtonDcas[iProton], photon, collision.globalIndex(), pv);
         }
       }
     }
