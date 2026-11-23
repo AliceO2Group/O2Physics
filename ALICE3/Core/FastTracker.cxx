@@ -188,9 +188,15 @@ DetLayer* FastTracker::addLayer(const TString& name, float r, float z, float x0,
     LOG(error) << "Layer " << name << " with efficiency > 0.0 should not be inert";
   }
   // Layers should be ordered by increasing radius, check this
-  if (!layers.empty() && !newLayer.isSiliconDisk() && !layers.back().isSiliconDisk() &&
-      newLayer.getRadius() < layers.back().getRadius()) {
-    LOG(fatal) << "Layer " << newLayer << " is not ordered correctly, it should be after layer " << layers.back();
+  if (!newLayer.isSiliconDisk()) {
+    const auto previous = std::find_if(layers.rbegin(), layers.rend(),
+                                       [](const auto& layer) {
+                                         return !layer.isSiliconDisk();
+                                       });
+
+    if (previous != layers.rend() && newLayer.getRadius() < previous->getRadius()) {
+      LOG(fatal) << "Layer " << newLayer << " is not ordered correctly, it should be after layer " << previous->getName();
+    }
   }
   // Layers should all have different names
   for (const auto& layer : layers) {
