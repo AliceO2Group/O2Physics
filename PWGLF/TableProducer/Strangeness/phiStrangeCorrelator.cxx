@@ -443,7 +443,7 @@ struct V0ReducedCandProducer {
     Configurable<float> dcaPosToPV{"dcaPosToPV", 0.06f, "DCA Pos To PV"};
     Configurable<float> dcaNegToPV{"dcaNegToPV", 0.06f, "DCA Neg To PV"};
 
-    Configurable<bool> furtherV0Selection{"furtherV0Selection", false, "Further V0 selection"};
+    Configurable<bool> applyCtauCut{"applyCtauCut", false, "Apply the ctau cuts (ctauK0S, ctauLambda)"};
 
     Configurable<float> yAcceptance{"yAcceptance", 0.5f, "Rapidity acceptance"};
 
@@ -453,20 +453,20 @@ struct V0ReducedCandProducer {
       Configurable<float> rejMassK0S{"rejMassK0S", 0.005f, "V0 rej K0s"};
 
       Configurable<float> paramArmenterosCutK0S{"paramArmenterosCutK0S", 0.2f, "Parameter for Armenteros Cut for K0S"};
+      Configurable<bool> vetoLambdaInK0S{"vetoLambdaInK0S", false, "Reject K0S candidates within rejMassK0S of the Lambda mass (either charge) and apply the Armenteros cut"};
 
       Configurable<float> minPtK0S{"minPtK0S", 0.0f, "K0S min pt"};
       Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.0, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.4, 7.0, 8.0, 10.0}, "pT bin limits for K0S"};
-      Configurable<std::pair<float, float>> rangeMK0sSignal{"rangeMK0sSignal", {0.47f, 0.53f}, "K0S mass range for signal extraction"};
     } k0sConfigs;
 
     struct : ConfigurableGroup {
       Configurable<float> cosPALambda{"cosPALambda", 0.995f, "Lambda CosPA"};
       Configurable<float> ctauLambda{"ctauLambda", 30.0f, "C tau Lambda(cm)"};
       Configurable<float> rejMassLambda{"rejMassLambda", 0.005f, "V0 rej Lambda"};
+      Configurable<bool> vetoK0SInLambda{"vetoK0SInLambda", false, "Reject Lambda and AntiLambda candidates within rejMassLambda of the K0S mass"};
 
       Configurable<float> minPtLambda{"minPtLambda", 0.8f, "Lambda min pt"};
       Configurable<std::vector<double>> binspTLambda{"binspTLambda", {0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.4, 7.0, 8.0, 10.0}, "pT bin limits for Lambda"};
-      Configurable<std::pair<float, float>> rangeMLambdaSignal{"rangeMLambdaSignal", {1.11f, 1.12f}, "Lambda mass range for signal extraction"};
     } lambdaConfigs;
   } v0Configs;
 
@@ -610,13 +610,18 @@ struct V0ReducedCandProducer {
       return false;
     }
 
-    if (v0Configs.furtherV0Selection) {
+    // Separate switches: the competing-mass rejection of one species must be possible without changing the selection
+    // of the other (a K0S whose pi+ passes the proton PID enters the Lambda mass spectrum with a kinematic edge
+    // that falls under the Lambda peak at low pT)
+    if (v0Configs.applyCtauCut) {
       constexpr float assumedMass = v0Type == kK0S ? MassK0S : MassLambda;
       if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * assumedMass > cutCtau) {
         return false;
       }
+    }
 
-      if constexpr (v0Type == kK0S) {
+    if constexpr (v0Type == kK0S) {
+      if (v0Configs.k0sConfigs.vetoLambdaInK0S) {
         if (std::abs(v0.mLambda() - MassLambda) < v0Configs.k0sConfigs.rejMassK0S ||
             std::abs(v0.mAntiLambda() - MassLambda) < v0Configs.k0sConfigs.rejMassK0S) {
           return false;
@@ -624,10 +629,10 @@ struct V0ReducedCandProducer {
         if (v0.qtarm() < (v0Configs.k0sConfigs.paramArmenterosCutK0S * std::abs(v0.alpha()))) {
           return false;
         }
-      } else {
-        if (std::abs(v0.mK0Short() - MassK0S) < v0Configs.lambdaConfigs.rejMassLambda) {
-          return false;
-        }
+      }
+    } else {
+      if (v0Configs.lambdaConfigs.vetoK0SInLambda && std::abs(v0.mK0Short() - MassK0S) < v0Configs.lambdaConfigs.rejMassLambda) {
+        return false;
       }
     }
 
