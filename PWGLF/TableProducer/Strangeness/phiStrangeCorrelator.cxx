@@ -1307,11 +1307,8 @@ struct EventSelectionProducer {
   // Configurable for MC
   Configurable<bool> cfgiskNoITSROFrameBorder{"cfgiskNoITSROFrameBorder", false, "kNoITSROFrameBorder request on MC collisions"};
 
-  // Configurables on phi selection
-  struct : ConfigurableGroup {
-    Configurable<float> minMPhiSignal{"minMPhiSignal", 1.0095f, "Upper limits on Phi mass for signal extraction"};
-    Configurable<float> maxMPhiSignal{"maxMPhiSignal", 1.029f, "Upper limits on Phi mass for signal extraction"};
-  } phiConfigs;
+  // Configurable on phi selection
+  Configurable<std::pair<float, float>> rangeMPhiSignal{"rangeMPhiSignal", {1.0f, 1.05f}, "Phi mass range for signal extraction"};
 
   Configurable<bool> withTrueGenPhi{"withTrueGenPhi", false, "Require the presence of a true generated phi meson in the event"};
 
@@ -1458,9 +1455,10 @@ struct EventSelectionProducer {
       }
     } else {
       uint16_t nPhi{0};
+      const auto& [minMass, maxMass] = rangeMPhiSignal.value;
 
       for (const auto& phiCand : phiCandidates) {
-        if (phiCand.inMassRegion(phiConfigs.minMPhiSignal, phiConfigs.maxMPhiSignal)) {
+        if (phiCand.inMassRegion(minMass, maxMass)) {
           nPhi++;
         }
 
