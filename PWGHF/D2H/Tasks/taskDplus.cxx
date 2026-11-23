@@ -261,10 +261,6 @@ struct HfTaskDplus {
         axes.insert(axes.end(), {thnAxisMlScore0, thnAxisMlScore1, thnAxisMlScore2});
         axesFD.insert(axesFD.end(), {thnAxisMlScore0, thnAxisMlScore1, thnAxisMlScore2});
       }
-      if (storeRecRapidity) {
-        axes.push_back(thnAxisY);
-        axesFD.push_back(thnAxisY);
-      }
       if (storeCentrality) {
         axes.push_back(thnAxisCent);
         axesFD.push_back(thnAxisCent);
@@ -282,6 +278,10 @@ struct HfTaskDplus {
         axesFD.push_back(thnAxisPvContributors);
         axesGenPrompt.push_back(thnAxisPvContributors);
         axesGenFD.push_back(thnAxisPvContributors);
+      }
+      if (storeRecRapidity) {
+        axes.push_back(thnAxisY);
+        axesFD.push_back(thnAxisY);
       }
 
       axesFD.push_back(thnAxisPtBHad);
@@ -360,71 +360,80 @@ struct HfTaskDplus {
     for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
       outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
     }
+    std::vector<double> valuesToFillMcRec;
     if constexpr (IsMc) {                                               // MC
       if constexpr (IsMatched) {                                        // Matched
         if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) { // Prompt
-
-          if (storeCentrality && storeOccupancy) {
-            registry.fill(HIST("hSparseMassPrompt"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, occupancy);
-          } else if (storeCentrality && !storeOccupancy) {
-            registry.fill(HIST("hSparseMassPrompt"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality);
-          } else if (!storeCentrality && storeOccupancy) {
-            registry.fill(HIST("hSparseMassPrompt"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
-          } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
-            registry.fill(HIST("hSparseMassPrompt"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors);
-          } else if (!storeCentrality && !storeOccupancy && storeRecRapidity) {
-            registry.fill(HIST("hSparseMassPrompt"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], HfHelper::yDplus(candidate));
-          } else {
-            registry.fill(HIST("hSparseMassPrompt"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
+          valuesToFillMcRec.reserve(registry.get<THnSparse>(HIST("hSparseMassPrompt"))->GetNdimensions());
+          valuesToFillMcRec.insert(valuesToFillMcRec.end(), {HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]});
+          if (storeCentrality) {
+            valuesToFillMcRec.push_back(centrality);
           }
+          if(storeOccupancy) {
+            valuesToFillMcRec.push_back(occupancy);
+          }
+          if (storePvContributors) {
+            valuesToFillMcRec.push_back(numPvContributors);
+          }
+          if (storeRecRapidity) {
+            valuesToFillMcRec.push_back(HfHelper::yDplus(candidate));
+          }
+          registry.get<THnSparse>(HIST("hSparseMassPrompt"))->Fill(valuesToFillMcRec.data());
 
         } else if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) { // FD
-
-          if (storeCentrality && storeOccupancy) {
-            registry.fill(HIST("hSparseMassFD"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, occupancy, ptbhad, flagBHad);
-          } else if (storeCentrality && !storeOccupancy) {
-            registry.fill(HIST("hSparseMassFD"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, ptbhad, flagBHad);
-          } else if (!storeCentrality && storeOccupancy) {
-            registry.fill(HIST("hSparseMassFD"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy, ptbhad, flagBHad);
-          } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
-            registry.fill(HIST("hSparseMassFD"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors, ptbhad, flagBHad);
-          } else if (!storeCentrality && !storeOccupancy && storeRecRapidity) {
-            registry.fill(HIST("hSparseMassFD"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors, ptbhad, flagBHad, HfHelper::yDplus(candidate));
-          } else {
-            registry.fill(HIST("hSparseMassFD"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], ptbhad, flagBHad);
+          valuesToFillMcRec.reserve(registry.get<THnSparse>(HIST("hSparseMassFD"))->GetNdimensions()-2);
+          valuesToFillMcRec.insert(valuesToFillMcRec.end(), {HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]});
+          if (storeCentrality) {
+            valuesToFillMcRec.push_back(centrality);
           }
+          if(storeOccupancy) {
+            valuesToFillMcRec.push_back(occupancy);
+          }
+          if (storePvContributors) {
+            valuesToFillMcRec.push_back(numPvContributors);
+          }
+          if (storeRecRapidity) {
+            valuesToFillMcRec.push_back(HfHelper::yDplus(candidate));
+          }
+          valuesToFillMcRec.push_back(ptbhad);
+          valuesToFillMcRec.push_back(static_cast<float>(flagBHad));
+          registry.get<THnSparse>(HIST("hSparseMassFD"))->Fill(valuesToFillMcRec.data());
 
         } else { // Bkg
           if (fillMcBkgHistos) {
-            if (storeCentrality && storeOccupancy) {
-              registry.fill(HIST("hSparseMassBkg"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, occupancy);
-            } else if (storeCentrality && !storeOccupancy) {
-              registry.fill(HIST("hSparseMassBkg"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality);
-            } else if (!storeCentrality && storeOccupancy) {
-              registry.fill(HIST("hSparseMassBkg"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
-            } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
-              registry.fill(HIST("hSparseMassBkg"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors);
-            } else if (!storeCentrality && !storeOccupancy && storeRecRapidity) {
-              registry.fill(HIST("hSparseMassBkg"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], HfHelper::yDplus(candidate));
-            } else {
-              registry.fill(HIST("hSparseMassBkg"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
+            valuesToFillMcRec.reserve(registry.get<THnSparse>(HIST("hSparseMassBkg"))->GetNdimensions());
+            valuesToFillMcRec.insert(valuesToFillMcRec.end(), {HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]});
+            if (storeCentrality) {
+              valuesToFillMcRec.push_back(centrality);
             }
+            if(storeOccupancy) {
+              valuesToFillMcRec.push_back(occupancy);
+            }
+            if (storePvContributors) {
+              valuesToFillMcRec.push_back(numPvContributors);
+            }
+            if (storeRecRapidity) {
+              valuesToFillMcRec.push_back(HfHelper::yDplus(candidate));
+            }
+          registry.get<THnSparse>(HIST("hSparseMassBkg"))->Fill(valuesToFillMcRec.data());
           }
         }
       } else {
-        if (storeCentrality && storeOccupancy) {
-          registry.fill(HIST("hSparseMassNotMatched"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, occupancy);
-        } else if (storeCentrality && !storeOccupancy) {
-          registry.fill(HIST("hSparseMassNotMatched"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality);
-        } else if (!storeCentrality && storeOccupancy) {
-          registry.fill(HIST("hSparseMassNotMatched"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
-        } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
-          registry.fill(HIST("hSparseMassNotMatched"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors);
-        } else if (!storeCentrality && !storeOccupancy && storeRecRapidity) {
-          registry.fill(HIST("hSparseMassNotMatched"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], HfHelper::yDplus(candidate));
-        } else {
-          registry.fill(HIST("hSparseMassNotMatched"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
+        valuesToFillMcRec.reserve(registry.get<THnSparse>(HIST("hSparseMassNotMatched"))->GetNdimensions());
+        valuesToFillMcRec.insert(valuesToFillMcRec.end(), {HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]});
+        if (storeCentrality) {
+          valuesToFillMcRec.push_back(centrality);
         }
+        if(storeOccupancy) {
+          valuesToFillMcRec.push_back(occupancy);
+        }
+        if (storePvContributors) {
+          valuesToFillMcRec.push_back(numPvContributors);
+        }
+        if (storeRecRapidity) {
+          valuesToFillMcRec.push_back(HfHelper::yDplus(candidate));
+        }
+      registry.get<THnSparse>(HIST("hSparseMassNotMatched"))->Fill(valuesToFillMcRec.data());
       }
     } else { // Data
       if (storeCentrality && storeOccupancy && storePvContributors) {
