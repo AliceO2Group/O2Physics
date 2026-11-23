@@ -16,10 +16,13 @@ o2physics_add_library(ALICE3Core
                               FlatLutRootWriter.cxx
                               FlatTrackSmearer.cxx
                               GeometryContainer.cxx
+                              SecondaryLut.cxx
+                              SecondaryTrackSmearer.cxx
                       PUBLIC_LINK_LIBRARIES O2::Framework
                                             O2Physics::AnalysisCore
                       PRIVATE_LINK_LIBRARIES ROOT::Core
                                               ROOT::RIO
+                                              ROOT::Hist
                                               ROOT::Tree)
 
 o2physics_target_root_dictionary(ALICE3Core
@@ -27,6 +30,7 @@ o2physics_target_root_dictionary(ALICE3Core
                               FlatLutEntry.h
                               OTFParticle.h
                               GeometryContainer.h
+                              SecondaryLut.h
                       LINKDEF ALICE3CoreLinkDef.h)
 
 o2physics_add_library(FastTracker

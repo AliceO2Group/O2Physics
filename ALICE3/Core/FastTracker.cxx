@@ -41,6 +41,7 @@
 
 #include <Rtypes.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -52,18 +53,143 @@
 namespace o2::fastsim
 {
 
+FastTracker::SiliconLayerHits FastTracker::countSiliconLayerHits(const o2::track::TrackParCov& track) const
+{
+  SiliconLayerHits result;
+  std::array<float, 3> position{};
+  track.getXYZGlo(position);
+  const double x = position[0], y = position[1], z = position[2];
+  const double phi = track.getPhi(), tgl = track.getTgl(), curvature = track.getCurvature(magneticField);
+  if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z) ||
+      !std::isfinite(phi) || !std::isfinite(tgl) || !std::isfinite(curvature)) {
+    LOG(error) << "Cannot count silicon layer hits for non-finite track parameters";
+    result.count = -1;
+    return result;
+  }
+  const double ux = std::cos(phi), uy = std::sin(phi);
+  constexpr double MinCurvature = 1.e-8;
+  constexpr double TwoPi = 6.2831853071795864769;
+
+  for (const auto& layer : layers) {
+    if (!layer.isSilicon() && !layer.isSiliconDisk()) {
+      continue;
+    }
+    if (layer.isSiliconDisk()) {
+      const double diskZ = layer.getDiskZ();
+      const double rMin = layer.getDiskInnerRadius();
+      const double rMax = layer.getDiskOuterRadius();
+      if (!std::isfinite(diskZ) || !std::isfinite(rMin) || !std::isfinite(rMax) ||
+          rMin < 0. || rMax < rMin) {
+        LOG(fatal) << "Invalid silicon disk geometry: " << layer;
+        continue;
+      }
+      if (std::abs(tgl) < 1.e-12) {
+        continue;
+      }
+      const double distance = (diskZ - z) / tgl;
+      if (distance < 0.) {
+        continue;
+      }
+      if (std::abs(curvature) >= MinCurvature) {
+        if (distance > TwoPi / std::abs(curvature)) {
+          continue;
+        }
+      }
+
+      const double cx = std::abs(curvature) < MinCurvature ? x : x - uy / curvature;
+      const double cy = std::abs(curvature) < MinCurvature ? y : y + ux / curvature;
+      const double startTheta = std::atan2(y - cy, x - cx);
+      const double diskX = std::abs(curvature) < MinCurvature ? x + ux * distance : cx + std::cos(startTheta + curvature * distance) / std::abs(curvature);
+      const double diskY = std::abs(curvature) < MinCurvature ? y + uy * distance : cy + std::sin(startTheta + curvature * distance) / std::abs(curvature);
+      const double hitRadius = std::hypot(diskX, diskY);
+      if (hitRadius >= rMin && hitRadius <= rMax) {
+        ++result.count;
+        result.innerRadius = result.innerRadius < 0.f ? static_cast<float>(rMin) : std::min(result.innerRadius, static_cast<float>(rMin));
+        result.outerRadius = std::max(result.outerRadius, static_cast<float>(rMax));
+      }
+      continue;
+    }
+    const double r = layer.getRadius();
+    const double halfLength = layer.getZ();
+    if (!std::isfinite(r) || !std::isfinite(halfLength) || r <= 0. || halfLength < 0.) {
+      LOG(fatal) << "Invalid silicon layer geometry: " << layer;
+      continue;
+    }
+    bool reached = false;
+    if (std::abs(curvature) < MinCurvature) {
+      const double projection = x * ux + y * uy;
+      const double discriminant = projection * projection + r * r - x * x - y * y;
+      if (discriminant >= 0.) {
+        const double root = std::sqrt(discriminant);
+        for (const double distance : {-projection - root, -projection + root}) {
+          if (distance >= 0. && std::abs(z + distance * tgl) <= halfLength) {
+            reached = true;
+            break;
+          }
+        }
+      }
+    } else {
+      const double cx = x - uy / curvature, cy = y + ux / curvature;
+      const double trackRadius = 1. / std::abs(curvature);
+      const double centerDistance = std::hypot(cx, cy);
+      if (centerDistance < 1.e-10 && std::abs(trackRadius - r) < 1.e-5) {
+        const double endZ = z + TwoPi * trackRadius * tgl;
+        reached = std::min(z, endZ) <= halfLength && std::max(z, endZ) >= -halfLength;
+      } else if (centerDistance > 0. && centerDistance <= trackRadius + r &&
+                 centerDistance >= std::abs(trackRadius - r)) {
+        const double along = (r * r + centerDistance * centerDistance - trackRadius * trackRadius) / (2. * centerDistance);
+        const double perpendicular = std::sqrt(std::max(0., r * r - along * along));
+        const double nx = cx / centerDistance, ny = cy / centerDistance;
+        const double startX = x - cx, startY = y - cy;
+        for (const double sign : {-1., 1.}) {
+          const double ix = along * nx - sign * perpendicular * ny;
+          const double iy = along * ny + sign * perpendicular * nx;
+          const double vx = ix - cx, vy = iy - cy;
+          double angle = std::atan2(startX * vy - startY * vx, startX * vx + startY * vy);
+          if (std::hypot(ix - x, iy - y) < 1.e-5) {
+            angle = 0.;
+          }
+          if (curvature < 0.) {
+            angle = -angle;
+          }
+          if (angle < 0.) {
+            angle += TwoPi;
+          }
+          const double distance = angle / std::abs(curvature);
+          if (std::abs(z + distance * tgl) <= halfLength) {
+            reached = true;
+            break;
+          }
+        }
+      }
+    }
+    if (reached) {
+      ++result.count;
+      if (result.innerRadius < 0.f || r < result.innerRadius) {
+        result.innerRadius = r;
+      }
+      result.outerRadius = std::max(result.outerRadius, static_cast<float>(r));
+    }
+  }
+  return result;
+}
+
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
 
 DetLayer* FastTracker::addLayer(const TString& name, float r, float z, float x0, float xrho, float resRPhi, float resZ, float eff, int type)
 {
   LOG(debug) << "Adding layer " << name << " r=" << r << " z=" << z << " x0=" << x0 << " xrho=" << xrho << " resRPhi=" << resRPhi << " resZ=" << resZ << " eff=" << eff << " type=" << type;
   DetLayer newLayer(name, r, z, x0, xrho, resRPhi, resZ, eff, type);
+  if (newLayer.isSiliconDisk()) {
+    newLayer.setSiliconDiskAcceptance(r, r, z);
+  }
   // Check that efficient layers are not inert layers
   if (newLayer.getEfficiency() > 0.0f && newLayer.isInert()) {
     LOG(error) << "Layer " << name << " with efficiency > 0.0 should not be inert";
   }
   // Layers should be ordered by increasing radius, check this
-  if (!layers.empty() && newLayer.getRadius() < layers.back().getRadius()) {
+  if (!layers.empty() && !newLayer.isSiliconDisk() && !layers.back().isSiliconDisk() &&
+      newLayer.getRadius() < layers.back().getRadius()) {
     LOG(fatal) << "Layer " << newLayer << " is not ordered correctly, it should be after layer " << layers.back();
   }
   // Layers should all have different names
@@ -180,6 +306,10 @@ void FastTracker::addGenericDetector(const o2::fastsim::GeometryEntry& configMap
 
     LOG(info) << " Adding layer " << layer << " r=" << r << " z=" << z << " x0=" << x0 << " xrho=" << xrho << " resRPhi=" << resRPhi << " resZ=" << resZ << " eff=" << eff << " type=" << type << " deadPhiRegions=" << deadPhiRegions;
     DetLayer* addedLayer = addLayer(layer.c_str(), r, z, x0, xrho, resRPhi, resZ, eff, type);
+    if (type == DetLayer::kLayerSiliconDisk) {
+      const float rMax = configMap.getFloatValue(layer, "diskOuterRadius");
+      addedLayer->setSiliconDiskAcceptance(r, rMax, z);
+    }
     if (!deadPhiRegions.empty()) { // Taking it as ccdb path or local file
                                    // Check if it begins with ccdb:
       if (deadPhiRegions.starts_with("ccdb:")) {
