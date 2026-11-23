@@ -61,7 +61,9 @@
 #include <map>
 #include <memory>
 #include <ostream>
+#include <random>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 using namespace o2;
@@ -237,6 +239,8 @@ struct NonPromptCascadeTask {
   Configurable<float> cfgMaxMultFV0{"cfgMaxMultFV0", 10000.f, "Upper range of multiplicty FV0 histo"};
   Configurable<std::string> cfgPtEdgesdNdeta{"ptEdges", "0,0.2,0.4,0.6,0.8,1,1.2,1.6,2.0,2.4,2.8,3.2,3.6,4,4.5,5,5.5,6,7,8,10", "Pt bin edges (comma-separated)"};
   Configurable<int> cfgDownscaleCascTF{"cfgDownscaleCascTF", 1, "Keep one in every N input timeframes for cascade reco and generator output (1 keeps all)"};
+  Configurable<double> cfgDownscaleTracked{"cfgDownscaleTracked", 1., "Fraction of selected tracked cascade candidates to save (0 keeps none, 1 keeps all)"};
+  Configurable<double> cfgDownscaleNonTracked{"cfgDownscaleNonTracked", 1., "Fraction of selected non-tracked cascade candidates to save (0 keeps none, 1 keeps all)"};
   Configurable<int> cfgDownscaleMB{"cfgDownscaleMB", 1, "Downscaling for pile up study sample"};
   Configurable<double> cfgEtaCutdNdeta{"cfgEtaCutdNdeta", 0.8, "Eta cut for charged tracks"};
 
@@ -289,6 +293,12 @@ struct NonPromptCascadeTask {
   {
     if (cfgDownscaleCascTF.value < 1) {
       LOG(fatal) << "cfgDownscaleCascTF must be at least 1";
+    }
+    if (!(cfgDownscaleTracked.value >= 0. && cfgDownscaleTracked.value <= 1.)) {
+      LOG(fatal) << "cfgDownscaleTracked must be in [0, 1]";
+    }
+    if (!(cfgDownscaleNonTracked.value >= 0. && cfgDownscaleNonTracked.value <= 1.)) {
+      LOG(fatal) << "cfgDownscaleNonTracked must be in [0, 1]";
     }
     auto timeframeSelection = mRegistry.add<TH1>("hTimeframeSelection", ";Timeframe selection;Timeframes", HistType::kTH1D, {{2, -0.5, 1.5}});
     timeframeSelection->GetXaxis()->SetBinLabel(1, "Skipped");
@@ -460,9 +470,16 @@ struct NonPromptCascadeTask {
     }
   };
 
-  template <typename TrackType, typename CollisionType>
-  void fillCandidatesVector(CollisionType const&, TrackType const& tracks, auto const& cascades, auto& candidates)
+  template <typename TrackType, typename CollisionType, typename CascadeType>
+  void fillCandidatesVector(CollisionType const&, TrackType const& tracks, CascadeType const& cascades, aod::BCsWithTimestamps const& bcs, auto& candidates)
   {
+    constexpr bool isTracked = !std::is_same_v<CascadeType, aod::Cascades>;
+    const double keepFraction = isTracked ? cfgDownscaleTracked.value : cfgDownscaleNonTracked.value;
+    std::mt19937_64 downscaleRng;
+    std::bernoulli_distribution keepCandidate{keepFraction};
+    if (keepFraction < 1. && bcs.size() != 0) {
+      downscaleRng.seed(bcs.iteratorAt(0).globalBC());
+    }
 
     const auto& getCascade = [](auto const& candidate) {
       if constexpr (requires { candidate.cascade(); }) {
@@ -668,6 +685,9 @@ struct NonPromptCascadeTask {
       } else {
         o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, ntCascadeTrack, mBz, 2.f, matCorr, &motherDCA);
       }
+      if (keepFraction < 1. && !keepCandidate(downscaleRng)) {
+        continue;
+      }
       uint32_t toiMask = 0x0;
       if (mToiMap.count(bc.globalBC())) {
         toiMask = mToiMap[bc.globalBC()];
@@ -768,24 +788,24 @@ struct NonPromptCascadeTask {
   void processTrackedCascadesMC(CollisionCandidatesRun3MC const& collisions,
                                 aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
                                 aod::V0s const& /*v0s*/, TracksExtMC const& tracks,
-                                aod::McParticles const& mcParticles, aod::McCollisions const&, aod::BCsWithTimestamps const&)
+                                aod::McParticles const& mcParticles, aod::McCollisions const&, aod::BCsWithTimestamps const& bcs)
   {
     if (!mKeepTimeframe) {
       return;
     }
-    fillCandidatesVector<TracksExtMC>(collisions, tracks, trackedCascades, gCandidates);
+    fillCandidatesVector<TracksExtMC>(collisions, tracks, trackedCascades, bcs, gCandidates);
     fillMCtable<aod::AssignedTrackedCascades>(mcParticles, collisions, gCandidates);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesMC, "process cascades from strangeness tracking: MC analysis", false);
 
   void processCascadesMC(CollisionCandidatesRun3MC const& collisions, aod::Cascades const& cascades,
                          aod::V0s const& /*v0s*/, TracksExtMC const& tracks,
-                         aod::McParticles const& mcParticles, aod::McCollisions const&, aod::BCsWithTimestamps const&)
+                         aod::McParticles const& mcParticles, aod::McCollisions const&, aod::BCsWithTimestamps const& bcs)
   {
     if (!mKeepTimeframe) {
       return;
     }
-    fillCandidatesVector<TracksExtMC>(collisions, tracks, cascades, gCandidatesNT);
+    fillCandidatesVector<TracksExtMC>(collisions, tracks, cascades, bcs, gCandidatesNT);
     fillMCtable<aod::Cascades>(mcParticles, collisions, gCandidatesNT);
     // fillMultHistos<CollisionCandidatesRun3MC>(collisions);
   }
@@ -824,28 +844,28 @@ struct NonPromptCascadeTask {
   void processTrackedCascadesData(CollisionCandidatesRun3 const& collisions,
                                   aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
                                   aod::V0s const& /*v0s*/, TracksExtData const& tracks,
-                                  aod::BCsWithTimestamps const&)
+                                  aod::BCsWithTimestamps const& bcs)
   {
     if (!mKeepTimeframe) {
       return;
     }
     mProcessCounter[0]++;
     zorroAccounting(collisions);
-    fillCandidatesVector<TracksExtData>(collisions, tracks, trackedCascades, gCandidates);
+    fillCandidatesVector<TracksExtData>(collisions, tracks, trackedCascades, bcs, gCandidates);
     fillDataTable<aod::AssignedTrackedCascades>(gCandidates);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesData, "process cascades from strangeness tracking: Data analysis", false);
 
   void processCascadesData(CollisionCandidatesRun3 const& collisions, aod::Cascades const& cascades,
                            aod::V0s const& /*v0s*/, TracksExtData const& tracks,
-                           aod::BCsWithTimestamps const&)
+                           aod::BCsWithTimestamps const& bcs)
   {
     if (!mKeepTimeframe) {
       return;
     }
     mProcessCounter[1]++;
     zorroAccounting(collisions);
-    fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT);
+    fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, bcs, gCandidatesNT);
     fillDataTable<aod::Cascades>(gCandidatesNT);
     // fillMultHistos<CollisionCandidatesRun3>(collisions);
   }
