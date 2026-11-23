@@ -369,7 +369,7 @@ struct HfTaskDplus {
           if (storeCentrality) {
             valuesToFillMcRec.push_back(centrality);
           }
-          if(storeOccupancy) {
+          if (storeOccupancy) {
             valuesToFillMcRec.push_back(occupancy);
           }
           if (storePvContributors) {
@@ -381,12 +381,12 @@ struct HfTaskDplus {
           registry.get<THnSparse>(HIST("hSparseMassPrompt"))->Fill(valuesToFillMcRec.data());
 
         } else if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) { // FD
-          valuesToFillMcRec.reserve(registry.get<THnSparse>(HIST("hSparseMassFD"))->GetNdimensions()-2);
+          valuesToFillMcRec.reserve(registry.get<THnSparse>(HIST("hSparseMassFD"))->GetNdimensions() - 2);
           valuesToFillMcRec.insert(valuesToFillMcRec.end(), {HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]});
           if (storeCentrality) {
             valuesToFillMcRec.push_back(centrality);
           }
-          if(storeOccupancy) {
+          if (storeOccupancy) {
             valuesToFillMcRec.push_back(occupancy);
           }
           if (storePvContributors) {
@@ -406,7 +406,7 @@ struct HfTaskDplus {
             if (storeCentrality) {
               valuesToFillMcRec.push_back(centrality);
             }
-            if(storeOccupancy) {
+            if (storeOccupancy) {
               valuesToFillMcRec.push_back(occupancy);
             }
             if (storePvContributors) {
@@ -415,7 +415,7 @@ struct HfTaskDplus {
             if (storeRecRapidity) {
               valuesToFillMcRec.push_back(HfHelper::yDplus(candidate));
             }
-          registry.get<THnSparse>(HIST("hSparseMassBkg"))->Fill(valuesToFillMcRec.data());
+            registry.get<THnSparse>(HIST("hSparseMassBkg"))->Fill(valuesToFillMcRec.data());
           }
         }
       } else {
@@ -424,7 +424,7 @@ struct HfTaskDplus {
         if (storeCentrality) {
           valuesToFillMcRec.push_back(centrality);
         }
-        if(storeOccupancy) {
+        if (storeOccupancy) {
           valuesToFillMcRec.push_back(occupancy);
         }
         if (storePvContributors) {
@@ -433,7 +433,7 @@ struct HfTaskDplus {
         if (storeRecRapidity) {
           valuesToFillMcRec.push_back(HfHelper::yDplus(candidate));
         }
-      registry.get<THnSparse>(HIST("hSparseMassNotMatched"))->Fill(valuesToFillMcRec.data());
+        registry.get<THnSparse>(HIST("hSparseMassNotMatched"))->Fill(valuesToFillMcRec.data());
       }
     } else { // Data
       if (storeCentrality && storeOccupancy && storePvContributors) {
