@@ -19,6 +19,8 @@
 #ifndef ALICE3_CORE_DETLAYER_H_
 #define ALICE3_CORE_DETLAYER_H_
 
+#include <Framework/Logger.h>
+
 #include <TGraph.h>
 #include <TString.h>
 

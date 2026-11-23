@@ -93,6 +93,7 @@ class FastTracker
    *
    * Propagates the given input track through the detector layers, applying
    * relevant corrections and updates, and stores the result in outputTrack.
+   * Silicon disks are not included in this tracking calculation.
    *
    * @param inputTrack The input track parameters and covariance (const, by value).
    * @param outputTrack Reference to the output track parameters and covariance, to be filled.

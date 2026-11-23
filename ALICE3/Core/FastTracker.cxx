@@ -451,15 +451,15 @@ int FastTracker::fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   const float initialAlpha = inputTrack.getAlpha(); // frame of the input track
   const float kTrackingMargin = 0.1;
 
-  int firstActiveLayer = -1; // first layer that is not inert
+  int firstActiveLayer = -1; // first supported layer that is not inert
   for (size_t i = 0; i < layers.size(); ++i) {
-    if (!layers[i].isInert()) {
+    if (!layers[i].isInert() && !layers[i].isSiliconDisk()) {
       firstActiveLayer = i;
       break;
     }
   }
   if (firstActiveLayer < 0) {
-    LOG(fatal) << "No active layers found in FastTracker, check layer setup";
+    LOG(fatal) << "No active non-disk layers found in FastTracker, check layer setup";
     return -2; // no active layers
   }
   const int xrhosteps = 100;
@@ -480,8 +480,14 @@ int FastTracker::fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   // Outward pass to find intercepts
   int firstLayerReached = -1;
   int lastLayerReached = -1;
+  int previousLayer = -1;
   new (&outputTrack)(o2::track::TrackParCov)(inputTrack);
   for (size_t il = 0; il < layers.size(); il++) {
+    if (layers[il].isSiliconDisk()) {
+      continue;
+    }
+    const int previousNonDiskLayer = previousLayer;
+    previousLayer = il;
     // check if layer is doable
     if (layers[il].getRadius() < initialRadius) {
       continue; // this layer should not be attempted, but go ahead
@@ -528,9 +534,9 @@ int FastTracker::fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
     LOGF(debug, "Propagation was %s up to layer %d", ok ? "successful" : "unsuccessful", il);
 
     // was there a problem on this layer?
-    if (!ok && il > 0) { // may fail to reach target layer due to the eloss
+    if (!ok && previousNonDiskLayer >= 0) { // may fail to reach target layer due to the eloss
       const float rad2 = inputTrack.getX() * inputTrack.getX() + inputTrack.getY() * inputTrack.getY();
-      const float maxR = layers[il - 1].getRadius() + kTrackingMargin * 2;
+      const float maxR = layers[previousNonDiskLayer].getRadius() + kTrackingMargin * 2;
       const float minRad = (fMinRadTrack > 0 && fMinRadTrack < maxR) ? fMinRadTrack : maxR;
       if (rad2 - minRad * minRad < kTrackingMargin * kTrackingMargin) { // check previously reached layer
         return -5;                                                      // did not reach min requested layer
@@ -605,6 +611,9 @@ int FastTracker::fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   // Inward pass to calculate covariances
   // As in DetectorK::SolveTrack, the track is rotated to the frame of each layer (X axis normal to the layer)
   for (int il = lastLayerReached; il >= firstLayerReached; il--) {
+    if (layers[il].isSiliconDisk()) {
+      continue;
+    }
 
     float targetX = 1e+3;
     inputTrack.getXatLabR(layers[il].getRadius(), targetX, magneticField);
