@@ -1043,7 +1043,7 @@ struct FlowSP {
 
   // HIER
   template <SelectionType st>
-  void makeSelectionMatrix(std::vector<bool> passedCuts)
+  void makeSelectionMatrix(const std::vector<bool> &passedCuts)
   {
     int nCuts = static_cast<int>(passedCuts.size());
 
