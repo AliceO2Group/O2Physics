@@ -503,8 +503,22 @@ struct OnTheFlyTracker {
             continue;
           }
           filename = filename.substr(first, filename.find_last_not_of(" \t\r\n") - first + 1);
+
           if (!smearer.loadTable(found->second, filename.c_str())) {
             LOG(fatal) << "Failed to load secondary LUT " << entry.first << " from " << filename;
+          }
+
+          // Check compatibility with the configured magnetic field
+          const auto* lut = smearer.getLUT(found->second);
+          constexpr float fieldTolerance = 1.e-3f; // kG
+
+          if (!lut || !std::isfinite(lut->getField()) || std::abs(lut->getField() - mMagneticField) > fieldTolerance) {
+            LOG(fatal) << "Incompatible magnetic field for secondary LUT "
+                       << entry.first << " from " << filename
+                       << ": LUT Bz = "
+                       << (lut ? lut->getField() : 0.f)
+                       << " kG, configured Bz = "
+                       << mMagneticField << " kG";
           }
           ++loaded;
         }
@@ -2217,6 +2231,7 @@ struct OnTheFlyTracker {
   template <typename TMcParticles>
   void processConfigurationDev(aod::McCollision const& mcCollision, TMcParticles const& mcParticles)
   {
+    size_t nReconstructedPrimaries = 0;
     const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
     tracksAlice3.clear();
     ghostTracksAlice3.clear();
@@ -2387,6 +2402,10 @@ struct OnTheFlyTracker {
         if (enablePrimarySmearing) {
           getHist<TH1>(histPath + "hPtReconstructedPr")->Fill(trackParCov.getPt());
         }
+        // Only reconstructed primaries count toward PV acceptance
+        if (otfParticle.isPrimary()) {
+          ++nReconstructedPrimaries;
+        }
       } else {
         ghostTracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, TimeResolutionUs, isSecondary, false, false, false, 0, nTrkHits, kGhostPrimary});
         ghostTracksAlice3.back().trackIU = hitRadii[0];
@@ -2396,7 +2415,7 @@ struct OnTheFlyTracker {
 
     o2::vertexing::PVertex primaryVertex;
     static constexpr int MinTracksForReconstructingPV = 2;
-    const auto vertexTrackCount = useSecondaryLUT ? tracksAlice3.size() : recoPrimaries.size();
+    const auto vertexTrackCount = useSecondaryLUT ? nReconstructedPrimaries : recoPrimaries.size();
     if (enablePrimaryVertexing && vertexTrackCount <= MinTracksForReconstructingPV) {
       LOG(info) << "Not enough tracks (" << vertexTrackCount << ") to compute vertex, skipping vertexing and collision population.";
       return;

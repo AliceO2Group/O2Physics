@@ -104,8 +104,9 @@ FastTracker::SiliconLayerHits FastTracker::countSiliconLayerHits(const o2::track
       const double hitRadius = std::hypot(diskX, diskY);
       if (hitRadius >= rMin && hitRadius <= rMax) {
         ++result.count;
-        result.innerRadius = result.innerRadius < 0.f ? static_cast<float>(rMin) : std::min(result.innerRadius, static_cast<float>(rMin));
-        result.outerRadius = std::max(result.outerRadius, static_cast<float>(rMax));
+        const float rHit = static_cast<float>(hitRadius);
+        result.innerRadius = result.innerRadius < 0.f ? rHit : std::min(result.innerRadius, rHit);
+        result.outerRadius = std::max(result.outerRadius, rHit);
       }
       continue;
     }
