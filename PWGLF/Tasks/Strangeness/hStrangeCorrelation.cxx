@@ -586,7 +586,17 @@ struct HStrangeCorrelation {
     float signed1Pt = 0.0f;
     int64_t collisionId = -1;
   };
-
+  enum v0Type : int {
+    K0Short = 0,
+    Lambda,
+    AntiLambda,
+  };
+  enum CascadeType : int {
+    XiMinus = 0,
+    XiPlus,
+    OmegaMinus,
+    OmegaPlus,
+  };
   // First-failing-condition breakdown for the stage3->4 gate ("Trigger track, best collision"
   // -> "Trigger in TriggerTracks"). Order mirrors the order in which hStrangeCorrelationFilter.cxx
   // applies its conditions -- the declarative preFilterTracks DCAxy cut first, then the early
@@ -1057,19 +1067,19 @@ struct HStrangeCorrelation {
     hEfficiencyTriggerMult = dynamic_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyTriggerMult"));
     hEfficiencyTriggerMultVsPhi = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyTriggerMultVsPhi"));
     hEfficiencyK0Short = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyK0Short"));
-    hEfficiencyV0MultVsPhi[0] = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyK0ShortMultVsPhi"));
+    hEfficiencyV0MultVsPhi[K0Short] = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyK0ShortMultVsPhi"));
     hEfficiencyLambda = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyLambda"));
-    hEfficiencyV0MultVsPhi[1] = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyLambdaMultVsPhi"));
+    hEfficiencyV0MultVsPhi[Lambda] = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyLambdaMultVsPhi"));
     hEfficiencyAntiLambda = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyAntiLambda"));
-    hEfficiencyV0MultVsPhi[2] = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyAntiLambdaMultVsPhi"));
+    hEfficiencyV0MultVsPhi[AntiLambda] = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyAntiLambdaMultVsPhi"));
     hEfficiencyXiMinus = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyXiMinus"));
-    hEfficiencyCascadeMultVsPhi[0] = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyXiMinusMultVsPhi"));
+    hEfficiencyCascadeMultVsPhi[XiMinus] = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyXiMinusMultVsPhi"));
     hEfficiencyXiPlus = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyXiPlus"));
-    hEfficiencyCascadeMultVsPhi[1] = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyXiPlusMultVsPhi"));
+    hEfficiencyCascadeMultVsPhi[XiPlus] = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyXiPlusMultVsPhi"));
     hEfficiencyOmegaMinus = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyOmegaMinus"));
-    hEfficiencyCascadeMultVsPhi[2] = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyOmegaMinusMultVsPhi"));
+    hEfficiencyCascadeMultVsPhi[OmegaMinus] = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyOmegaMinusMultVsPhi"));
     hEfficiencyOmegaPlus = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyOmegaPlus"));
-    hEfficiencyCascadeMultVsPhi[3] = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyOmegaPlusMultVsPhi"));
+    hEfficiencyCascadeMultVsPhi[OmegaPlus] = dynamic_cast<THnT<float>*>(listEfficiencies->FindObject("hEfficiencyOmegaPlusMultVsPhi"));
     hEfficiencyHadron = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyHadron"));
     hEfficiencyHadronMult = dynamic_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyHadronMult"));
     hEfficiencyPion = dynamic_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyPion"));
