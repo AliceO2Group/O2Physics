@@ -61,6 +61,7 @@
 #include <THn.h>
 #include <THnSparse.h>
 #include <TList.h>
+#include <TMCProcess.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
@@ -758,6 +759,7 @@ struct HStrangeCorrelation {
     int64_t globalIndex = -1;
     int64_t motherIndex = -1;
     bool reconstructed = false;
+    int origin = 0; // 0 = physical primary, 1 = secondary from material, 2 = secondary from weak decay
   };
 
   struct PairLossTruthK0Info {
@@ -3176,6 +3178,15 @@ struct HStrangeCorrelation {
       // reconstructed, so Reconstructed + OnlyTriggerReconstructed + OnlyK0Reconstructed
       // + NotReconstructed equals Gen bin by bin.
       histos.add("PairLossK0/GenStudy/Gen/hCorrelation", "generated h-K0s pairs;#Delta#eta;#Delta#varphi;#it{p}_{T}^{trigger} (GeV/#it{c});#it{p}_{T}^{K^{0}_{S}} (GeV/#it{c});#it{N}_{ch}^{gen}", kTHnF, {axisDeltaEtaNDim, axisDeltaPhiNDim, axisPtTriggerNDim, axisPtAssocNDim, axisGenStudyNch});
+      // Origin of triggers and K0s (primaries and both kinds of secondaries) in three classes:
+      // All (inclusive), NearSide (has a K0s / trigger at |#Delta#varphi| < #pi/2) and AwaySide
+      // (has one in the other half of the 2#pi range). A particle can be in NearSide and AwaySide at once.
+      const AxisSpec axisOrigin{3, -0.5, 2.5, "origin: 0 primary, 1 material, 2 weak decay"};
+      const AxisSpec axisReco{2, -0.5, 1.5, "reconstructed"};
+      histos.add("PairLossK0/GenStudy/Origin/All/hTrigger", "triggers by origin;#it{p}_{T}^{trigger} (GeV/#it{c});origin;reconstructed", kTH3F, {axesConfigurations.axisPtQA, axisOrigin, axisReco});
+      histos.add("PairLossK0/GenStudy/Origin/All/hK0Short", "K0s by origin;#it{p}_{T}^{K^{0}_{S}} (GeV/#it{c});origin;reconstructed", kTH3F, {axesConfigurations.axisPtQA, axisOrigin, axisReco});
+      histos.addClone("PairLossK0/GenStudy/Origin/All/", "PairLossK0/GenStudy/Origin/NearSide/");
+      histos.addClone("PairLossK0/GenStudy/Origin/All/", "PairLossK0/GenStudy/Origin/AwaySide/");
       histos.addClone("PairLossK0/GenStudy/Gen/", "PairLossK0/GenStudy/Reconstructed/");
       histos.addClone("PairLossK0/GenStudy/Gen/", "PairLossK0/GenStudy/NotReconstructed/");
       // Only the correlation exists for the two mixed classes -- a single particle is
@@ -5103,6 +5114,53 @@ struct HStrangeCorrelation {
           } else {
             histos.fill(HIST("PairLossK0/GenStudy/NotReconstructed/hCorrelation"), deltaEta, deltaPhi, trigger.pt, k0.pt, generatedNch);
           }
+        }
+      }
+
+      // Origin study. Same trigger / K0s definitions as above, but without the
+      // physical-primary requirement, so that secondaries are kept and classified.
+      // Material = not primary and not a weak decay (needs the transport process in the MC).
+      std::vector<GenStudyPairObject> originTriggers;
+      std::vector<GenStudyPairObject> originK0s;
+      for (auto const& mcParticle : mcParticles) {
+        const bool isK0 = mcParticle.pdgCode() == PDG_t::kK0Short;
+        if (std::abs(mcParticle.eta()) > etaSel || (!isK0 && !isPairLossTriggerPdg(mcParticle.pdgCode()))) {
+          continue;
+        }
+        const int origin = mcParticle.isPhysicalPrimary() ? 0 : (mcParticle.getProcess() == TMCProcess::kPDecay ? 2 : 1);
+        GenStudyPairObject object{.pt = mcParticle.pt(), .eta = mcParticle.eta(), .phi = mcParticle.phi(), .globalIndex = mcParticle.globalIndex(), .motherIndex = mcParticle.has_mothers() ? mcParticle.mothers_first_as<aod::McParticles>().globalIndex() : -1, .reconstructed = false, .origin = origin};
+        if (isK0 && object.pt >= axisRanges[2][0] && object.pt <= axisRanges[2][1]) {
+          object.reconstructed = reconstructedV0McIds.contains(object.globalIndex);
+          originK0s.push_back(object);
+        } else if (!isK0 && object.pt >= axisRanges[3][0] && object.pt <= axisRanges[3][1]) {
+          object.reconstructed = reconstructedTrackMcIds.contains(object.globalIndex);
+          originTriggers.push_back(object);
+        }
+      }
+      // near-side: -pi/2 < deltaPhi < pi/2; away-side: the other half of the 2pi range.
+      // computeDeltaPhi returns [-pi/2, 3pi/2), so the split is at pi/2.
+      auto hasSide = [&](GenStudyPairObject const& object, std::vector<GenStudyPairObject> const& others, bool nearSide) {
+        return std::any_of(others.begin(), others.end(), [&](GenStudyPairObject const& other) {
+          return object.globalIndex != other.globalIndex && object.motherIndex != other.globalIndex && other.motherIndex != object.globalIndex &&
+                 (computeDeltaPhi(object.phi, other.phi) < PIHalf) == nearSide;
+        });
+      };
+      for (auto const& trigger : originTriggers) {
+        histos.fill(HIST("PairLossK0/GenStudy/Origin/All/hTrigger"), trigger.pt, trigger.origin, trigger.reconstructed);
+        if (hasSide(trigger, originK0s, true)) {
+          histos.fill(HIST("PairLossK0/GenStudy/Origin/NearSide/hTrigger"), trigger.pt, trigger.origin, trigger.reconstructed);
+        }
+        if (hasSide(trigger, originK0s, false)) {
+          histos.fill(HIST("PairLossK0/GenStudy/Origin/AwaySide/hTrigger"), trigger.pt, trigger.origin, trigger.reconstructed);
+        }
+      }
+      for (auto const& k0 : originK0s) {
+        histos.fill(HIST("PairLossK0/GenStudy/Origin/All/hK0Short"), k0.pt, k0.origin, k0.reconstructed);
+        if (hasSide(k0, originTriggers, true)) {
+          histos.fill(HIST("PairLossK0/GenStudy/Origin/NearSide/hK0Short"), k0.pt, k0.origin, k0.reconstructed);
+        }
+        if (hasSide(k0, originTriggers, false)) {
+          histos.fill(HIST("PairLossK0/GenStudy/Origin/AwaySide/hK0Short"), k0.pt, k0.origin, k0.reconstructed);
         }
       }
     };
