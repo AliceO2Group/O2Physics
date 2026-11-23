@@ -95,7 +95,7 @@ struct PhiMesonCandProducer {
 
   // Configurables on phi selection
   struct : ConfigurableGroup {
-    Configurable<float> maxMPhi{"maxMPhi", 1.2f, "Maximum mass for Phi candidates"};
+    Configurable<float> maxMPhi{"maxMPhi", 1.5f, "Maximum mass for Phi candidates"};
     Configurable<float> minPhiPt{"minPhiPt", 0.4f, "Minimum pT for Phi candidates"};
     Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
   } phiConfigs;
@@ -103,7 +103,7 @@ struct PhiMesonCandProducer {
   Configurable<bool> trueGenPhi{"trueGenPhi", false, "Phi trigger in MC Collisions: false - gen K+K- pair, true - gen phi meson"};
 
   // Configurables on phi pT bins
-  Configurable<std::vector<double>> binspTPhi{"binspTPhi", {0.4, 0.8, 1.4, 2.0, 2.8, 4.0, 6.0, 10.0}, "pT bin limits for Phi"};
+  Configurable<std::vector<double>> binspTPhi{"binspTPhi", {0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 15.0, 20.0}, "pT bin limits for Phi"};
 
   // Filter on default selected collisions
   // Filter collisionFilter = aod::lf_selection_default_collision::defaultSel == true;
@@ -438,10 +438,10 @@ struct V0ReducedCandProducer {
 
   // Configurables for V0 selection
   struct : ConfigurableGroup {
-    Configurable<float> decayRadius{"decayRadius", 0.5f, "V0 decay radius"};
+    Configurable<float> decayRadius{"decayRadius", 0.9f, "V0 decay radius"};
     Configurable<float> dcaV0Dau{"dcaV0Dau", 1.0f, "DCA V0 Daughters"};
-    Configurable<float> dcaPosToPV{"dcaPosToPV", 0.1f, "DCA Pos To PV"};
-    Configurable<float> dcaNegToPV{"dcaNegToPV", 0.1f, "DCA Neg To PV"};
+    Configurable<float> dcaPosToPV{"dcaPosToPV", 0.06f, "DCA Pos To PV"};
+    Configurable<float> dcaNegToPV{"dcaNegToPV", 0.06f, "DCA Neg To PV"};
 
     Configurable<bool> furtherV0Selection{"furtherV0Selection", false, "Further V0 selection"};
 
@@ -454,18 +454,18 @@ struct V0ReducedCandProducer {
 
       Configurable<float> paramArmenterosCutK0S{"paramArmenterosCutK0S", 0.2f, "Parameter for Armenteros Cut for K0S"};
 
-      Configurable<float> minPtK0S{"minPtK0S", 0.1f, "K0S min pt"};
-      Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
+      Configurable<float> minPtK0S{"minPtK0S", 0.0f, "K0S min pt"};
+      Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.0, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.4, 7.0, 8.0, 10.0}, "pT bin limits for K0S"};
       Configurable<std::pair<float, float>> rangeMK0sSignal{"rangeMK0sSignal", {0.47f, 0.53f}, "K0S mass range for signal extraction"};
     } k0sConfigs;
 
     struct : ConfigurableGroup {
-      Configurable<float> cosPALambda{"cosPALambda", 0.98f, "Lambda CosPA"};
-      Configurable<float> ctauLambda{"ctauLambda", 7.89f, "C tau Lambda(cm)"};
+      Configurable<float> cosPALambda{"cosPALambda", 0.995f, "Lambda CosPA"};
+      Configurable<float> ctauLambda{"ctauLambda", 30.0f, "C tau Lambda(cm)"};
       Configurable<float> rejMassLambda{"rejMassLambda", 0.005f, "V0 rej Lambda"};
 
-      Configurable<float> minPtLambda{"minPtLambda", 0.1f, "Lambda min pt"};
-      Configurable<std::vector<double>> binspTLambda{"binspTLambda", {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Lambda"};
+      Configurable<float> minPtLambda{"minPtLambda", 0.8f, "Lambda min pt"};
+      Configurable<std::vector<double>> binspTLambda{"binspTLambda", {0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.4, 7.0, 8.0, 10.0}, "pT bin limits for Lambda"};
       Configurable<std::pair<float, float>> rangeMLambdaSignal{"rangeMLambdaSignal", {1.11f, 1.12f}, "Lambda mass range for signal extraction"};
     } lambdaConfigs;
   } v0Configs;
@@ -759,32 +759,32 @@ struct CascadeReducedCandProducer {
 
   // Configurables for Cascade selection
   struct : ConfigurableGroup {
-    Configurable<float> dcaV0Dau{"dcaV0Dau", 1.0f, "DCA V0 Daughters"};
+    Configurable<float> dcaV0Dau{"dcaV0Dau", 0.5f, "DCA V0 Daughters"};
     Configurable<float> dcaCascDau{"dcaCascDau", 1.0f, "DCA Cascade Daughters"};
-    Configurable<float> dcaPosToPV{"dcaPosToPV", 0.1f, "DCA Pos To PV"};
-    Configurable<float> dcaNegToPV{"dcaNegToPV", 0.1f, "DCA Neg To PV"};
+    Configurable<float> dcaPosToPV{"dcaPosToPV", 0.06f, "DCA Pos To PV"};
+    Configurable<float> dcaNegToPV{"dcaNegToPV", 0.06f, "DCA Neg To PV"};
     Configurable<float> dcaBachToPV{"dcaBachToPV", 0.1f, "DCA Bach To PV"};
 
     Configurable<float> yAcceptance{"yAcceptance", 0.5f, "Rapidity acceptance"};
 
     struct : ConfigurableGroup {
       Configurable<float> v0CosPAXi{"v0CosPAXi", 0.98f, "Xi V0 CosPA"};
-      Configurable<float> cosPAXi{"cosPAXi", 0.98f, "Xi CosPA"};
-      Configurable<float> v0RadiusXi{"v0RadiusXi", 0.5f, "V0 decay radius"};
-      Configurable<float> radiusXi{"radiusXi", 0.5f, "Xi decay radius"};
+      Configurable<float> cosPAXi{"cosPAXi", 0.99f, "Xi CosPA"};
+      Configurable<float> v0RadiusXi{"v0RadiusXi", 1.2f, "V0 decay radius"};
+      Configurable<float> radiusXi{"radiusXi", 1.0f, "Xi decay radius"};
 
       Configurable<float> minPtXi{"minPtXi", 0.8f, "Xi min pt"};
-      Configurable<std::vector<double>> binspTXi{"binspTXi", {0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Xi"};
+      Configurable<std::vector<double>> binspTXi{"binspTXi", {0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.5}, "pT bin limits for Xi"};
     } xiConfigs;
 
     struct : ConfigurableGroup {
       Configurable<float> v0CosPAOmega{"v0CosPAOmega", 0.98f, "Omega V0 CosPA"};
-      Configurable<float> cosPAOmega{"cosPAOmega", 0.98f, "Omega CosPA"};
-      Configurable<float> v0RadiusOmega{"v0RadiusOmega", 0.5f, "V0 decay radius"};
-      Configurable<float> radiusOmega{"radiusOmega", 0.5f, "Omega decay radius"};
+      Configurable<float> cosPAOmega{"cosPAOmega", 0.99f, "Omega CosPA"};
+      Configurable<float> v0RadiusOmega{"v0RadiusOmega", 1.2f, "V0 decay radius"};
+      Configurable<float> radiusOmega{"radiusOmega", 0.8f, "Omega decay radius"};
 
       Configurable<float> minPtOmega{"minPtOmega", 0.8f, "Omega min pt"};
-      Configurable<std::vector<double>> binspTOmega{"binspTOmega", {0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Omega"};
+      Configurable<std::vector<double>> binspTOmega{"binspTOmega", {0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.5}, "pT bin limits for Omega"};
     } omegaConfigs;
   } cascadeConfigs;
 
@@ -1056,7 +1056,7 @@ struct PionTrackProducer {
   } trackConfigs;
 
   // Configurable on pion pT bins
-  Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
+  Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0}, "pT bin limits for pions"};
 
   static constexpr double MassPi = o2::constants::physics::MassPiPlus;
 

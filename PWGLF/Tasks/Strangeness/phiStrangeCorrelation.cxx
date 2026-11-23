@@ -195,32 +195,32 @@ struct PhiStrangeCorrelation {
 
   // Configurables on phi mass selection
   struct : ConfigurableGroup {
-    Configurable<std::pair<float, float>> rangeMPhiSignal{"rangeMPhiSignal", {1.0095f, 1.029f}, "Phi mass range for signal extraction"};
-    Configurable<std::pair<float, float>> rangeMPhiSideband{"rangeMPhiSideband", {1.1f, 1.2f}, "Phi mass range for sideband extraction"};
+    Configurable<std::pair<float, float>> rangeMPhiSignal{"rangeMPhiSignal", {1.0f, 1.05f}, "Phi mass range for signal extraction"};
+    Configurable<std::pair<float, float>> rangeMPhiSideband{"rangeMPhiSideband", {1.06f, 1.08f}, "Phi mass range for sideband extraction"};
   } phiConfigs;
 
   // Configurables for K0s selection
   struct : ConfigurableGroup {
     Configurable<bool> selectK0sInSigRegion{"selectK0sInSigRegion", true, "Select K0s candidates in signal region"};
-    Configurable<std::pair<float, float>> rangeMK0sSignal{"rangeMK0sSignal", {0.47f, 0.53f}, "K0S mass range for signal extraction"};
+    Configurable<std::pair<float, float>> rangeMK0sSignal{"rangeMK0sSignal", {0.475f, 0.515f}, "K0S mass range for signal extraction"};
   } k0sConfigs;
 
   // Configurables for Lambda selection
   struct : ConfigurableGroup {
     Configurable<bool> selectLambdaInSigRegion{"selectLambdaInSigRegion", true, "Select Lambda candidates in signal region"};
-    Configurable<std::pair<float, float>> rangeMLambdaSignal{"rangeMLambdaSignal", {1.11f, 1.12f}, "Lambda mass range for signal extraction"};
+    Configurable<std::pair<float, float>> rangeMLambdaSignal{"rangeMLambdaSignal", {1.105f, 1.128f}, "Lambda mass range for signal extraction"};
   } lambdaConfigs;
 
   // Configurables for Xi selection
   struct : ConfigurableGroup {
     Configurable<bool> selectXiInSigRegion{"selectXiInSigRegion", true, "Select Xi candidates in signal region"};
-    Configurable<std::pair<float, float>> rangeMXiSignal{"rangeMXiSignal", {1.31f, 1.33f}, "Xi mass range for signal extraction"};
+    Configurable<std::pair<float, float>> rangeMXiSignal{"rangeMXiSignal", {1.305f, 1.335f}, "Xi mass range for signal extraction"};
   } xiConfigs;
 
   // Configurables for Omega selection
   struct : ConfigurableGroup {
     Configurable<bool> selectOmegaInSigRegion{"selectOmegaInSigRegion", true, "Select Omega candidates in signal region"};
-    Configurable<std::pair<float, float>> rangeMOmegaSignal{"rangeMOmegaSignal", {1.66f, 1.68f}, "Omega mass range for signal extraction"};
+    Configurable<std::pair<float, float>> rangeMOmegaSignal{"rangeMOmegaSignal", {1.655f, 1.685f}, "Omega mass range for signal extraction"};
   } omegaConfigs;
 
   // Configurables for Pions selection
@@ -236,26 +236,26 @@ struct PhiStrangeCorrelation {
   Configurable<std::vector<double>> binspTPhiExt{"binspTPhiExt", {0.0, 0.4, 0.8, 1.4, 2.0, 2.8, 4.0, 6.0, 10.0}, "pT bin limits for Phi extended for MC Gen"};
 
   // Configurable on K0S pT bins
-  Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
+  Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.0, 0.3, 0.5, 0.8, 1.2, 1.6, 2.0, 2.4, 3.0, 4.2, 6.4}, "pT bin limits for K0S"};
   Configurable<std::vector<double>> binspTK0SExt{"binspTK0SExt", {0.0, 0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S extended for MC Gen"};
 
   // Configurable on Lambda pT bins
-  Configurable<std::vector<double>> binspTLambda{"binspTLambda", {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Lambda"};
+  Configurable<std::vector<double>> binspTLambda{"binspTLambda", {0.8, 1.2, 1.6, 2.0, 2.4, 3.0, 4.2, 6.4}, "pT bin limits for Lambda"};
   Configurable<std::vector<double>> binspTLambdaExt{"binspTLambdaExt", {0.0, 0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Lambda extended for MC Gen"};
 
   // Configurable on Xi pT bins
-  Configurable<std::vector<double>> binspTXi{"binspTXi", {0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Xi"};
+  Configurable<std::vector<double>> binspTXi{"binspTXi", {0.8, 1.2, 1.6, 2.0, 2.4, 3.0, 4.2, 6.5}, "pT bin limits for Xi"};
   Configurable<std::vector<double>> binspTXiExt{"binspTXiExt", {0.0, 0.4, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Xi extended for MC Gen"};
 
   // Configurable on Omega pT bins
-  Configurable<std::vector<double>> binspTOmega{"binspTOmega", {0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Omega"};
+  Configurable<std::vector<double>> binspTOmega{"binspTOmega", {0.8, 1.2, 1.6, 2.0, 2.4, 3.0, 4.2, 6.5}, "pT bin limits for Omega"};
   Configurable<std::vector<double>> binspTOmegaExt{"binspTOmegaExt", {0.0, 0.4, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Omega extended for MC Gen"};
 
   // Configurable on pion pT bins
   Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for Pions"};
   Configurable<std::vector<double>> binspTPiExt{"binspTPiExt", {0.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for Pions extended for MC Gen"};
 
-  Configurable<std::array<bool, kAssocPartSize>> activeCorrelationTypes{"activeCorrelationTypes", {true, false, false, false, false, true}, "Enable correlation types: 0 - K0S, 1 - Lambda, 2 - AntiLambda, 3 - Xi, 4 - Omega, 5 - Pion"};
+  Configurable<std::array<bool, kAssocPartSize>> activeCorrelationTypes{"activeCorrelationTypes", {true, false, false, true, true, true}, "Enable correlation types: 0 - K0S, 1 - Lambda, 2 - AntiLambda, 3 - Xi, 4 - Omega, 5 - Pion"};
 
   // Configurables for delta y selection
   struct : ConfigurableGroup {
@@ -283,8 +283,8 @@ struct PhiStrangeCorrelation {
   // Configurables for minimum pt selection in McGen
   struct : ConfigurableGroup {
     Configurable<float> minPtPhi{"minPtPhi", 0.4f, "Minimum pT for Phi candidates"};
-    Configurable<float> minPtK0S{"minPtK0S", 0.1f, "Minimum pT for K0S candidates"};
-    Configurable<float> minPtLambda{"minPtLambda", 0.2f, "Minimum pT for Lambda candidates"};
+    Configurable<float> minPtK0S{"minPtK0S", 0.0f, "Minimum pT for K0S candidates"};
+    Configurable<float> minPtLambda{"minPtLambda", 0.8f, "Minimum pT for Lambda candidates"};
     Configurable<float> minPtXi{"minPtXi", 0.8f, "Minimum pT for Xi candidates"};
     Configurable<float> minPtOmega{"minPtOmega", 0.8f, "Minimum pT for Omega candidates"};
     Configurable<float> minPtPion{"minPtPion", 0.2f, "Minimum pT for Pion candidates"};
