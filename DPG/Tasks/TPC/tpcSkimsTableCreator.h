@@ -166,6 +166,6 @@ constexpr double MultiplicityNorm{11000.};
 
 constexpr float OneToKilo{1e-3f};
 
-constexpr std::array<std::string_view, 9> ParticleNames{"e", "#mu", "#pi", "K", "p", "d", "t", "{}^{3}He", "#alpha"};
+constexpr std::array<std::string_view, o2::track::PID::NIDs> ParticleNames{"e", "#mu", "#pi", "K", "p", "d", "t", "{}^{3}He", "#alpha"};
 } // namespace o2::dpg_tpcskimstablecreator
 #endif // DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_

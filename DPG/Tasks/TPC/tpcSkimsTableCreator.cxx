@@ -208,11 +208,10 @@ struct TreeWriterTpcV0 {
     }
 
     if (cfgsCommon.saveMomentumHistograms) {
-      registry.add("hMomentumPos", "hMomentumPos;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{cfgsCommon.axisMomentumHistograms}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
-      registry.add("hMomentumNeg", "hMomentumNeg;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{cfgsCommon.axisMomentumHistograms}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
+      registry.add("hParticleVsMomentum", "hParticleVsMomentum;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{cfgsCommon.axisMomentumHistograms}, {2 * o2::track::PID::NIDs, -0.5, 2 * o2::track::PID::NIDs - 0.5}}});
       for (int iParticle = 0; iParticle < o2::track::PID::NIDs; ++iParticle) {
-        registry.get<TH2>(HIST("hMomentumPos"))->GetYaxis()->SetBinLabel(iParticle + 1, ParticleNames.at(iParticle).data());
-        registry.get<TH2>(HIST("hMomentumNeg"))->GetYaxis()->SetBinLabel(iParticle + 1, ParticleNames.at(iParticle).data());
+        registry.get<TH2>(HIST("hParticleVsMomentum"))->GetYaxis()->SetBinLabel(iParticle + 1, (static_cast<std::string>(ParticleNames.at(iParticle)) + "^{+}").c_str());
+        registry.get<TH2>(HIST("hParticleVsMomentum"))->GetYaxis()->SetBinLabel(iParticle + 1 + o2::track::PID::NIDs, (static_cast<std::string>(ParticleNames.at(iParticle)) + "^{-}").c_str());
       }
     }
 
@@ -535,11 +534,8 @@ struct TreeWriterTpcV0 {
         if (passTrackSelection && passNSigmaTofCut && passMatchTofRequirement) {
           if (cfgsCommon.saveMomentumHistograms) {
             const double log10p = std::log10(dauTrack.tpcInnerParam());
-            if (isPositive) {
-              registry.fill(HIST("hMomentumPos"), log10p, daughter.id);
-            } else {
-              registry.fill(HIST("hMomentumNeg"), log10p, daughter.id);
-            }
+            const int pidShift = isPositive ? 0 : o2::track::PID::NIDs;
+            registry.fill(HIST("hParticleVsMomentum"), log10p, pidShift + daughter.id);
           }
           if (cfgsCommon.saveTrees) {
             const TH2* histoMomentum = isPositive ? mHistMomentumPos : mHistMomentumNeg;
@@ -781,11 +777,10 @@ struct TreeWriterTpcTof {
     }
 
     if (cfgsCommon.saveMomentumHistograms) {
-      registry.add("hMomentumPos", "hMomentumPos;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{cfgsCommon.axisMomentumHistograms}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
-      registry.add("hMomentumNeg", "hMomentumNeg;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{cfgsCommon.axisMomentumHistograms}, {o2::track::PID::NIDs, 0, o2::track::PID::NIDs}}});
+      registry.add("hParticleVsMomentum", "hParticleVsMomentum;log_{10}(#it{p} / (GeV/#it{c}));PID id", {HistType::kTH2D, {{cfgsCommon.axisMomentumHistograms}, {2 * o2::track::PID::NIDs, -0.5, 2 * o2::track::PID::NIDs - 0.5}}});
       for (int iParticle = 0; iParticle < o2::track::PID::NIDs; ++iParticle) {
-        registry.get<TH2>(HIST("hMomentumPos"))->GetYaxis()->SetBinLabel(iParticle + 1, ParticleNames.at(iParticle).data());
-        registry.get<TH2>(HIST("hMomentumNeg"))->GetYaxis()->SetBinLabel(iParticle + 1, ParticleNames.at(iParticle).data());
+        registry.get<TH2>(HIST("hParticleVsMomentum"))->GetYaxis()->SetBinLabel(iParticle + 1, (static_cast<std::string>(ParticleNames.at(iParticle)) + "^{+}").c_str());
+        registry.get<TH2>(HIST("hParticleVsMomentum"))->GetYaxis()->SetBinLabel(iParticle + 1 + o2::track::PID::NIDs, (static_cast<std::string>(ParticleNames.at(iParticle)) + "^{-}").c_str());
       }
     }
 
@@ -991,11 +986,8 @@ struct TreeWriterTpcTof {
             if (cfgsCommon.saveMomentumHistograms) {
               const double log10p = std::log10(trk.tpcInnerParam());
               const bool isPositive = (trk.signed1Pt() > 0);
-              if (isPositive) {
-                registry.fill(HIST("hMomentumPos"), log10p, tofTrack->pid);
-              } else {
-                registry.fill(HIST("hMomentumNeg"), log10p, tofTrack->pid);
-              }
+              const int pidShift = isPositive ? 0 : o2::track::PID::NIDs;
+              registry.fill(HIST("hParticleVsMomentum"), log10p, pidShift + tofTrack->pid);
             }
             if (cfgsCommon.saveTrees) {
               const TH2* histoMomentum = trk.signed1Pt() > 0 ? mHistMomentumPos : mHistMomentumNeg;
