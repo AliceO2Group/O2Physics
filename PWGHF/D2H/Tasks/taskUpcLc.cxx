@@ -343,12 +343,14 @@ struct HfTaskUpcLc {
 
       float interactionRate = -1.f;
       if constexpr (!IsMc) {
-        const double rate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource, true);
-        if (rate >= 0.) {
-          interactionRate = rate * 1.e-3; // Hz to kHz
-          if (fillHistQa) {
-            const auto runLabel = std::to_string(bc.runNumber());
-            registry.get<TH2>(HIST("Data/hInteractionRateVsRun"))->Fill(runLabel.c_str(), interactionRate, 1.);
+        if (FillMl || fillTreeUpcQa || fillHistQa) {
+          const double rate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource, true);
+          if (rate >= 0.) {
+            interactionRate = rate * 1.e-3; // Hz to kHz
+            if (fillHistQa) {
+              const auto runLabel = std::to_string(bc.runNumber());
+              registry.get<TH2>(HIST("Data/hInteractionRateVsRun"))->Fill(runLabel.c_str(), interactionRate, 1.);
+            }
           }
         }
       }
