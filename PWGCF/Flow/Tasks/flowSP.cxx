@@ -1471,7 +1471,7 @@ struct FlowSP {
     const double uqC = spm.uy * spm.qyC + spm.ux * spm.qxC;
     const double uqCcross = spm.ux * spm.qyC + spm.uy * spm.qxC;
     const double uqACross = spm.ux * spm.qyA + spm.uy * spm.qxA;
-  
+
     if (cfg.cFillGeneralV1Histos) {
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAodd"), track.pt(), track.eta(), spm.centrality, scale * (uqA)*invSqrtQQ, weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCodd"), track.pt(), track.eta(), spm.centrality, scale * (uqC)*invSqrtQQ, weight);
@@ -1480,7 +1480,7 @@ struct FlowSP {
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnA"), track.pt(), track.eta(), spm.centrality, (uqA)*invSqrtQQ, weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnC"), track.pt(), track.eta(), spm.centrality, (uqC)*invSqrtQQ, weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCCrossTPCZDC"), track.pt(), track.eta(), spm.centrality, uqCcross * invSqrtQQ, weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnACrossTPCZDC"), track.pt(), track.eta(), spm.centrality, uqACross *  invSqrtQQ, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnACrossTPCZDC"), track.pt(), track.eta(), spm.centrality, uqACross * invSqrtQQ, weight);
     }
 
     if (cfg.cFillMixedHarmonics) {
@@ -1502,7 +1502,6 @@ struct FlowSP {
 
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCy"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qyC) * invSqrtQQy, weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCyx"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qxC) * invSqrtQQy, weight);
-
     }
 
     if (cfg.cFillEventPlane) { // only fill for inclusive!
@@ -1846,7 +1845,7 @@ struct FlowSP {
         }
       }
 
-      // Add possibility to make 3D pt weights to check 
+      // Add possibility to make 3D pt weights to check
 
       // constrain angle to 0 -> [0,0+2pi]
       auto phi = RecoDecay::constrainAngle(track.phi(), 0);
