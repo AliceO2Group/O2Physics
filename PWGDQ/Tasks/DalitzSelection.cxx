@@ -93,21 +93,21 @@ namespace o2::aod
 namespace dqdalitzelectrons
 {
 DECLARE_SOA_COLUMN(FilterMap, filterMap, uint8_t);
-DECLARE_SOA_COLUMN(Pt1, pt1, float);    // pt*sign
+DECLARE_SOA_COLUMN(Pt1, pt1, float); // pt*sign
 DECLARE_SOA_COLUMN(Eta1, eta1, float);
-DECLARE_SOA_COLUMN(Phi1, phi1, float); 
-DECLARE_SOA_COLUMN(Pt2, pt2, float);    // pt*sign
+DECLARE_SOA_COLUMN(Phi1, phi1, float);
+DECLARE_SOA_COLUMN(Pt2, pt2, float); // pt*sign
 DECLARE_SOA_COLUMN(Eta2, eta2, float);
 DECLARE_SOA_COLUMN(Phi2, phi2, float);
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int16_t);
-}
+} // namespace dqdalitzelectrons
 DECLARE_SOA_TABLE(DalitzElectronsInfo, "AOD", "DQDALITZSEL", dqdalitzelectrons::FilterMap,
-                                                                   dqdalitzelectrons::Pt1, dqdalitzelectrons::Eta1, dqdalitzelectrons::Phi1, 
-                                                                   dqdalitzelectrons::Pt2, dqdalitzelectrons::Eta2, dqdalitzelectrons::Phi2,
-                                                                   o2::aod::track::ITSClusterMap, o2::aod::track::TPCChi2NCl, dqdalitzelectrons::TPCNClsFound,
-                                                                   o2::aod::track::Y, o2::aod::track::Z,
-                                                                   cent::CentFT0C, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange);  
-}
+                  dqdalitzelectrons::Pt1, dqdalitzelectrons::Eta1, dqdalitzelectrons::Phi1,
+                  dqdalitzelectrons::Pt2, dqdalitzelectrons::Eta2, dqdalitzelectrons::Phi2,
+                  o2::aod::track::ITSClusterMap, o2::aod::track::TPCChi2NCl, dqdalitzelectrons::TPCNClsFound,
+                  o2::aod::track::Y, o2::aod::track::Z,
+                  cent::CentFT0C, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange);
+} // namespace o2::aod
 
 struct DalitzSelection {
   Produces<o2::aod::DalitzBits> dalitzbits;
@@ -592,21 +592,21 @@ struct DalitzSelection {
             } // end if like-sign
           } // end if isSelected
         } // end cut loop
-        
+
         if (pairFilterMap) {
           if constexpr (isReassoc) {
             auto const& fullTrack1 = track1.template track_as<TFullTracks>();
             auto const& fullTrack2 = track2.template track_as<TFullTracks>();
             VarManager::FillTrackCollision<TTrackFillMap>(fullTrack2, collision);
             shiftDCAz(fullTrack2, collision);
-            dalitzInfo(pairFilterMap, fullTrack1.pt() * fullTrack1.sign(), fullTrack1.eta(), fullTrack1.phi(), 
+            dalitzInfo(pairFilterMap, fullTrack1.pt() * fullTrack1.sign(), fullTrack1.eta(), fullTrack1.phi(),
                        fullTrack2.pt() * fullTrack2.sign(), fullTrack2.eta(), fullTrack2.phi(),
-                       fullTrack2.itsClusterMap(), fullTrack2.tpcChi2NCl(), fullTrack2.tpcNClsFound() == 256 ? 0 : fullTrack2.tpcNClsFound(), 
+                       fullTrack2.itsClusterMap(), fullTrack2.tpcChi2NCl(), fullTrack2.tpcNClsFound() == 256 ? 0 : fullTrack2.tpcNClsFound(),
                        VarManager::fgValues[VarManager::kTrackDCAxy], VarManager::fgValues[VarManager::kTrackDCAz],
                        collision.centFT0C(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
           } else {
             dalitzInfo(pairFilterMap, track1.pt() * track1.sign(), track1.eta(), track1.phi(), track2.pt() * track2.sign(), track2.eta(), track2.phi(),
-                       track2.itsClusterMap(), track2.tpcChi2NCl(), track2.tpcNClsFound() == 256 ? 0 : track2.tpcNClsFound(), 
+                       track2.itsClusterMap(), track2.tpcChi2NCl(), track2.tpcNClsFound() == 256 ? 0 : track2.tpcNClsFound(),
                        track2.y(), track2.z(),
                        collision.centFT0C(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
           }
@@ -669,7 +669,7 @@ struct DalitzSelection {
       }
     }
   }
-  
+
   template <typename TTracks, typename TEvent>
   void shiftDCAz(TTracks const& track, TEvent const& collision)
   {
