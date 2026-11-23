@@ -124,6 +124,7 @@ struct F0phiproxy {
   Configurable<int> proxyDipionMassBins{"proxyDipionMassBins", 300, "Dipion mass bins in compact proxy maps; default preserves original 5 MeV resolution"};
   ConfigurableAxis proxyMultiplicityAxis{"proxyMultiplicityAxis", {0., 0., 20., 50., 200., 1000000.}, "Compact proxy NPV intervals; first zero selects variable-width bins"};
   ConfigurableAxis proxyPtAxis{"proxyPtAxis", {0., 0., 0.3, 1., 2., 3., 4., 6., 10.}, "Compact proxy pT intervals covering both the data and Kstar-study selections"};
+  Configurable<int> phiMassBins{"phiMassBins", 600, "KK and phi-proxy mass bins over 0.9-1.5 GeV; default preserves the original 1 MeV bins"};
   Configurable<int> kstarMassBins{"kstarMassBins", 200, "K pi and Kstar-proxy mass bins over 0.6-1.4 GeV; 200 gives the study's 4 MeV bins"};
   Configurable<bool> mcPrimaryOnly{"mcPrimaryOnly", true, "Generated daughters must be physical primaries; strong-decay daughters are included"};
   Configurable<int> mcF0PdgCode{"mcF0PdgCode", 0, "0 resolves f0_980 from the O2 PDG service; override only for a verified generator convention"};
@@ -404,7 +405,7 @@ struct F0phiproxy {
         vertexMax.value <= 0.f || trackPtMin.value < 0.f || trackEtaMax.value <= 0.f ||
         pionTPC.value <= 0.f || pionTOF.value <= 0.f || kaonTPC.value <= 0.f || kaonTOF.value <= 0.f ||
         dipionMassMin.value >= dipionMassMax.value || dipionYMax.value <= 0.f || proxyYMax.value <= 0.f ||
-        multiplicityBins.value <= 0 || proxyDipionMassBins.value <= 0 || kstarMassBins.value <= 0 || mcF0PdgCode.value < 0) {
+        multiplicityBins.value <= 0 || proxyDipionMassBins.value <= 0 || phiMassBins.value <= 0 || kstarMassBins.value <= 0 || mcF0PdgCode.value < 0) {
       throw std::runtime_error("Invalid F0PhiProxy configuration");
     }
     if (useFT0M.value) {
@@ -527,7 +528,7 @@ struct F0phiproxy {
     const std::array<std::array<std::array<const char*, NCharges>, NMixClasses>, NChannels> controlNames{{{{{"hPhiKK", "hPhiKKLikePP", "hPhiKKLikeMM"}, {"hPhiKKMixed", "hPhiKKMixedLikePP", "hPhiKKMixedLikeMM"}}},
                                                                                                           {{{"hKstarKPi", "hKstarKPiLikePP", "hKstarKPiLikeMM"}, {"hKstarKPiMixed", "hKstarKPiMixedLikePP", "hKstarKPiMixedLikeMM"}}}}};
     for (size_t channel = 0; channel < NChannels; ++channel) {
-      const AxisSpec mass = channel == Phi ? AxisSpec{600, 0.9, 1.5, "m_{K,proxy K} (GeV/c^{2})"} : AxisSpec{kstarMassBins.value, 0.6, 1.4, "m_{K,proxy #pi} (GeV/c^{2})"};
+      const AxisSpec mass = channel == Phi ? AxisSpec{phiMassBins.value, 0.9, 1.5, "m_{K,proxy K} (GeV/c^{2})"} : AxisSpec{kstarMassBins.value, 0.6, 1.4, "m_{K,proxy #pi} (GeV/c^{2})"};
       for (size_t mix = 0; mix < NMixClasses; ++mix) {
         if (mix != 0 && !mixingEnabled()) {
           continue;
@@ -622,7 +623,7 @@ struct F0phiproxy {
   {
     const AxisSpec pt{100, 0., 10., "pair pT (GeV/c)"};
     const AxisSpec pionMass{300, 0.2, 1.7, "dipion mass (GeV/c2)"};
-    const std::array<AxisSpec, NChannels> mass{AxisSpec{600, 0.9, 1.5, "KK mass (GeV/c2)"}, AxisSpec{kstarMassBins.value, 0.6, 1.4, "K pi mass (GeV/c2)"}};
+    const std::array<AxisSpec, NChannels> mass{AxisSpec{phiMassBins.value, 0.9, 1.5, "KK mass (GeV/c2)"}, AxisSpec{kstarMassBins.value, 0.6, 1.4, "K pi mass (GeV/c2)"}};
     if (doprocessMCGen) {
       histos.add("hMCGenEventSelection", "Generated events;1=all,2=vertex,3=truth INEL>0", HistType::kTH1D, {{3, 0.5, 3.5}});
       const std::array<const char*, NGenSpectra> names{"hMCGenDipion", "hMCGenTrueF0", "hMCGenPhiKK", "hMCGenTruePhi", "hMCGenKstarKPi", "hMCGenTrueKstar", "hMCGenProxyPhi", "hMCGenProxyPhiTrueF0", "hMCGenProxyKstar", "hMCGenProxyKstarTrueF0"};
