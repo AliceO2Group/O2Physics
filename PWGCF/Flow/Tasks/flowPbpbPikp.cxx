@@ -813,37 +813,37 @@ struct FlowPbpbPikp {
       // Charged particles
       mAcceptance[UseCharged] = ccdb->getForTimeStamp<GFWWeights>(Weights.cfgAcceptance.value + "_ch", timestamp);
       if (mAcceptance[UseCharged]) {
-        LOGF(info, "Loaded acceptance weights from %s_ch (%p)", Weights.cfgAcceptance.value.c_str(), (void*)mAcceptance[UseCharged]);
+        LOGF(info, "Loaded acceptance weights from %s_ch (%p)", Weights.cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance[UseCharged]));
       } else {
-        LOGF(fatal, "Could not load acceptance weights from %s_ch (%p)", Weights.cfgAcceptance.value.c_str(), (void*)mAcceptance[UseCharged]);
+        LOGF(fatal, "Could not load acceptance weights from %s_ch (%p)", Weights.cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance[UseCharged]));
       }
       // Pions
       mAcceptance[UsePions] = ccdb->getForTimeStamp<GFWWeights>(Weights.cfgAcceptance.value + "_pi", timestamp);
       if (mAcceptance[UsePions]) {
-        LOGF(info, "Loaded acceptance weights from %s_pi (%p)", Weights.cfgAcceptance.value.c_str(), (void*)mAcceptance[UsePions]);
+        LOGF(info, "Loaded acceptance weights from %s_pi (%p)", Weights.cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance[UsePions]));
       } else {
-        LOGF(fatal, "Could not load acceptance weights from %s_pi (%p)", Weights.cfgAcceptance.value.c_str(), (void*)mAcceptance[UsePions]);
+        LOGF(fatal, "Could not load acceptance weights from %s_pi (%p)", Weights.cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance[UsePions]));
       }
       // Kaons
       mAcceptance[UseKaons] = ccdb->getForTimeStamp<GFWWeights>(Weights.cfgAcceptance.value + "_ka", timestamp);
       if (mAcceptance[UseKaons]) {
-        LOGF(info, "Loaded acceptance weights from %s_ka (%p)", Weights.cfgAcceptance.value.c_str(), (void*)mAcceptance[UseKaons]);
+        LOGF(info, "Loaded acceptance weights from %s_ka (%p)", Weights.cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance[UseKaons]));
       } else {
-        LOGF(fatal, "Could not load acceptance weights from %s_ka (%p)", Weights.cfgAcceptance.value.c_str(), (void*)mAcceptance[UseKaons]);
+        LOGF(fatal, "Could not load acceptance weights from %s_ka (%p)", Weights.cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance[UseKaons]));
       }
       // Protons
       mAcceptance[UseProtons] = ccdb->getForTimeStamp<GFWWeights>(Weights.cfgAcceptance.value + "_pr", timestamp);
       if (mAcceptance[UseProtons]) {
-        LOGF(info, "Loaded acceptance weights from %s_pr (%p)", Weights.cfgAcceptance.value.c_str(), (void*)mAcceptance[UseProtons]);
+        LOGF(info, "Loaded acceptance weights from %s_pr (%p)", Weights.cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance[UseProtons]));
       } else {
-        LOGF(fatal, "Could not load acceptance weights from %s_pr (%p)", Weights.cfgAcceptance.value.c_str(), (void*)mAcceptance[UseProtons]);
+        LOGF(fatal, "Could not load acceptance weights from %s_pr (%p)", Weights.cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance[UseProtons]));
       }
       // Reference charged particles
       mAcceptance[UseRef] = ccdb->getForTimeStamp<GFWWeights>(Weights.cfgAcceptance.value + "_ref", timestamp);
       if (mAcceptance[UseRef]) {
-        LOGF(info, "Loaded acceptance weights from %s_ref (%p)", Weights.cfgAcceptance.value.c_str(), (void*)mAcceptance[UseRef]);
+        LOGF(info, "Loaded acceptance weights from %s_ref (%p)", Weights.cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance[UseRef]));
       } else {
-        LOGF(fatal, "Could not load acceptance weights from %s_ref (%p)", Weights.cfgAcceptance.value.c_str(), (void*)mAcceptance[UseRef]);
+        LOGF(fatal, "Could not load acceptance weights from %s_ref (%p)", Weights.cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance[UseRef]));
       }
     }
     correctionsLoaded = true;
