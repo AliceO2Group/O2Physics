@@ -150,7 +150,7 @@ void evaluateOccupancyVariables(const TrkType& track, OccupancyValues& occValues
   occValues.twmoRT0V0PrimUnfm80 = tmoFromTrack.twmoRobustT0V0PrimUnfm80();
 }
 
-inline void initAdaptDwnsplHistograms(const std::string& ccdbPathForAdaptDwnsplFile, const std::string& adaptDwnsplFileName, const std::string& adaptDwnsplHistoPosName, const std::string& adaptDwnsplHistoNegName, TH2*& histoPos, TH2*& histoNeg)
+inline void initAdaptDwnsplHistograms(const std::string& ccdbPathForAdaptDwnsplFile, const std::string& adaptDwnsplFileName, const std::string& adaptDwnsplHistoName, TH2*& histo)
 {
   o2::ccdb::CcdbApi ccdbApi;
   ccdbApi.init("http://alice-ccdb.cern.ch");
@@ -166,31 +166,24 @@ inline void initAdaptDwnsplHistograms(const std::string& ccdbPathForAdaptDwnsplF
   if (adaptDwsplFile == nullptr || adaptDwsplFile->IsZombie()) {
     LOGF(fatal, "Failed to open expected-momentum histograms file from CCDB: %s/%s", ccdbPathForAdaptDwnsplFile.c_str(), adaptDwnsplFileName.c_str());
   }
-  histoPos = dynamic_cast<TH2*>(adaptDwsplFile->Get<TH2>(adaptDwnsplHistoPosName.c_str())->Clone());
-  histoNeg = dynamic_cast<TH2*>(adaptDwsplFile->Get<TH2>(adaptDwnsplHistoNegName.c_str())->Clone());
-  if (histoPos == nullptr) {
-    LOGF(fatal, "Histogram %s not found in expected-momentum histograms file!", adaptDwnsplHistoPosName.c_str());
+  histo = dynamic_cast<TH2*>(adaptDwsplFile->Get<TH2>(adaptDwnsplHistoName.c_str())->Clone());
+  if (histo == nullptr) {
+    LOGF(fatal, "Histogram %s not found in expected-momentum histograms file!", adaptDwnsplHistoName.c_str());
   }
-  if (histoNeg == nullptr) {
-    LOGF(fatal, "Histogram %s not found in expected-momentum histograms file!", adaptDwnsplHistoNegName.c_str());
+  if (histo->GetXaxis()->IsVariableBinSize()) {
+    LOGF(fatal, "Histogram %s has variable bin size, which is not allowed!", adaptDwnsplHistoName.c_str());
   }
-  if (histoPos->GetXaxis()->IsVariableBinSize()) {
-    LOGF(fatal, "Histogram %s has variable bin size, which is not allowed!", adaptDwnsplHistoPosName.c_str());
-  }
-  if (histoNeg->GetXaxis()->IsVariableBinSize()) {
-    LOGF(fatal, "Histogram %s has variable bin size, which is not allowed!", adaptDwnsplHistoNegName.c_str());
-  }
-  histoPos->SetDirectory(nullptr);
-  histoNeg->SetDirectory(nullptr);
+  histo->SetDirectory(nullptr);
   adaptDwsplFile->Close();
   delete adaptDwsplFile;
   adaptDwsplFile = nullptr;
 }
 
-inline bool performAdaptiveDownsampling(TRandom3* fRndm, const double p, const o2::track::PID::ID pid, const double targetYield, const TH2* histoExpected)
+inline bool performAdaptiveDownsampling(TRandom3* fRndm, const double p, const o2::track::PID::ID pid, const double targetYield, const TH2* histoExpected, const bool isPositive)
 {
+  const int pidShift = isPositive ? 0 : o2::track::PID::NIDs;
   const double targetYieldPerBin = targetYield * histoExpected->GetXaxis()->GetBinWidth(1);
-  const double yieldExpected = histoExpected->GetBinContent(histoExpected->GetXaxis()->FindBin(std::log10(p)), pid);
+  const double yieldExpected = histoExpected->GetBinContent(histoExpected->GetXaxis()->FindBin(std::log10(p)), histoExpected->GetYaxis()->FindBin(pidShift + pid));
   if (yieldExpected < targetYieldPerBin) {
     return true;
   }

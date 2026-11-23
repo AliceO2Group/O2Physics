@@ -117,8 +117,7 @@ struct TreeWriterTpcV0 {
   Configurable<bool> rejectNoTofDauTrackKa{"rejectNoTofDauTrackKa", false, "reject not matched to TOF kaon daughter tracks"};
 
   /// Configurables adaptive downsampling
-  Configurable<std::string> adaptDwnsplHistoPosName{"adaptDwnsplHistoPosName", "tree-writer-tpc-v0/hMomentumPos", "Name of the histogram with expected-momentum of positively charged particles"};
-  Configurable<std::string> adaptDwnsplHistoNegName{"adaptDwnsplHistoNegName", "tree-writer-tpc-v0/hMomentumNeg", "Name of the histogram with expected-momentum of negatively charged particles"};
+  Configurable<std::string> adaptDwnsplHistoName{"adaptDwnsplHistoName", "tree-writer-tpc-v0/hParticleVsMomentum", "Name of the histogram with expected-momentum of particles"};
   // Configurables for output tables reservation size
   Configurable<float> reserveV0Ratio{"reserveV0Ratio", 0.05, "Ratio of how many tracks from V0s are expected in the output table to the input V0 table size"};
   Configurable<float> reserveCascRatio{"reserveCascRatio", 0.0025, "Ratio of how many tracks from cascades are expected in the output table to the input Cascade table size"};
@@ -172,8 +171,7 @@ struct TreeWriterTpcV0 {
 
   TRandom3* fRndm = new TRandom3();
 
-  TH2* mHistMomentumPos{};
-  TH2* mHistMomentumNeg{};
+  TH2* mHistMomentum{};
 
   using Trks = soa::Join<aod::Tracks, aod::V0Bits, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection>;
   using TrksWithDEdxCorrection = soa::Join<Trks, aod::DEdxsCorrected>;
@@ -216,10 +214,9 @@ struct TreeWriterTpcV0 {
     }
 
     if (cfgsCommon.applyAdaptiveDownsampling) {
-      initAdaptDwnsplHistograms(cfgsCommon.ccdbPathForAdaptDwnsplFile, cfgsCommon.adaptDwnsplFileName, adaptDwnsplHistoPosName, adaptDwnsplHistoNegName, mHistMomentumPos, mHistMomentumNeg);
+      initAdaptDwnsplHistograms(cfgsCommon.ccdbPathForAdaptDwnsplFile, cfgsCommon.adaptDwnsplFileName, adaptDwnsplHistoName, mHistMomentum);
       if (cfgsCommon.adaptDwnsplHistoScaleFactor != 1.f) {
-        mHistMomentumPos->Scale(cfgsCommon.adaptDwnsplHistoScaleFactor);
-        mHistMomentumNeg->Scale(cfgsCommon.adaptDwnsplHistoScaleFactor);
+        mHistMomentum->Scale(cfgsCommon.adaptDwnsplHistoScaleFactor);
       }
     }
   }
@@ -538,8 +535,7 @@ struct TreeWriterTpcV0 {
             registry.fill(HIST("hParticleVsMomentum"), log10p, pidShift + daughter.id);
           }
           if (cfgsCommon.saveTrees) {
-            const TH2* histoMomentum = isPositive ? mHistMomentumPos : mHistMomentumNeg;
-            if (cfgsCommon.applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, dauTrack.tpcInnerParam(), daughter.id, cfgsCommon.adaptDwnsplTargetYield, histoMomentum)) {
+            if (cfgsCommon.applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, dauTrack.tpcInnerParam(), daughter.id, cfgsCommon.adaptDwnsplTargetYield, mHistMomentum, isPositive)) {
               return false;
             }
             OccupancyValues occValues{};
@@ -709,8 +705,7 @@ struct TreeWriterTpcTof {
   // Configurable for output table reservation size
   Configurable<float> reserveTrackRatio{"reserveTrackRatio", 0.003, "Ratio of how many tracks are expected in the output table to the input Tracks table size"};
   // Configurables for run condtion table
-  Configurable<std::string> adaptDwnsplHistoPosName{"adaptDwnsplHistoPosName", "tree-writer-tpc-tof/hMomentumPos", "Name of the histogram with expected-momentum of positively charged particles"};
-  Configurable<std::string> adaptDwnsplHistoNegName{"adaptDwnsplHistoNegName", "tree-writer-tpc-tof/hMomentumNeg", "Name of the histogram with expected-momentum of negatively charged particles"};
+  Configurable<std::string> adaptDwnsplHistoName{"adaptDwnsplHistoName", "tree-writer-tpc-v0/hParticleVsMomentum", "Name of the histogram with expected-momentum of particles"};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -735,8 +730,7 @@ struct TreeWriterTpcTof {
 
   TRandom3* fRndm = new TRandom3();
 
-  TH2* mHistMomentumPos{};
-  TH2* mHistMomentumNeg{};
+  TH2* mHistMomentum{};
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra,
                          aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa,
@@ -785,10 +779,9 @@ struct TreeWriterTpcTof {
     }
 
     if (cfgsCommon.applyAdaptiveDownsampling) {
-      initAdaptDwnsplHistograms(cfgsCommon.ccdbPathForAdaptDwnsplFile, cfgsCommon.adaptDwnsplFileName, adaptDwnsplHistoPosName, adaptDwnsplHistoNegName, mHistMomentumPos, mHistMomentumNeg);
+      initAdaptDwnsplHistograms(cfgsCommon.ccdbPathForAdaptDwnsplFile, cfgsCommon.adaptDwnsplFileName, adaptDwnsplHistoName, mHistMomentum);
       if (cfgsCommon.adaptDwnsplHistoScaleFactor != 1.f) {
-        mHistMomentumPos->Scale(cfgsCommon.adaptDwnsplHistoScaleFactor);
-        mHistMomentumNeg->Scale(cfgsCommon.adaptDwnsplHistoScaleFactor);
+        mHistMomentum->Scale(cfgsCommon.adaptDwnsplHistoScaleFactor);
       }
     }
   }
@@ -982,16 +975,15 @@ struct TreeWriterTpcTof {
           const bool passMomHardCut = trk.tpcInnerParam() < tofTrack->maxMomHardCutOnly;
           const bool passMomTpcOnly = trk.tpcInnerParam() <= tofTrack->maxMomTPCOnly && std::fabs(tofTrack->tpcNSigma) < tofTrack->nSigmaTPCOnly;
           const bool passMomTpcTof = trk.tpcInnerParam() > tofTrack->maxMomTPCOnly && std::fabs(tofTrack->tofNSigma) < tofTrack->nSigmaTofTpctof && std::fabs(tofTrack->tpcNSigma) < tofTrack->nSigmaTpcTpctof;
+          const bool isPositive = (trk.signed1Pt() > 0);
           if (passMomHardCut && (passMomTpcOnly || passMomTpcTof)) {
             if (cfgsCommon.saveMomentumHistograms) {
               const double log10p = std::log10(trk.tpcInnerParam());
-              const bool isPositive = (trk.signed1Pt() > 0);
               const int pidShift = isPositive ? 0 : o2::track::PID::NIDs;
               registry.fill(HIST("hParticleVsMomentum"), log10p, pidShift + tofTrack->pid);
             }
             if (cfgsCommon.saveTrees) {
-              const TH2* histoMomentum = trk.signed1Pt() > 0 ? mHistMomentumPos : mHistMomentumNeg;
-              if (cfgsCommon.applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, trk.tpcInnerParam(), tofTrack->pid, cfgsCommon.adaptDwnsplTargetYield, histoMomentum)) {
+              if (cfgsCommon.applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, trk.tpcInnerParam(), tofTrack->pid, cfgsCommon.adaptDwnsplTargetYield, mHistMomentum, isPositive)) {
                 continue;
               }
               fillSkimmedTpcTofTable<IsCorrectedDeDx, ModeId>(trk, trackQA, existTrkQA, collision, tofTrack->tpcNSigma, tofTrack->tofNSigma, tofTrack->itsNSigma, tofTrack->tpcExpSignal, tofTrack->pid, runnumber, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame, occValues, isGoodRctEvent);
