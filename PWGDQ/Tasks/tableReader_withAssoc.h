@@ -4294,6 +4294,7 @@ struct AnalysisDileptonTrack {
   o2::framework::Configurable<bool> fConfigUseRapcut{"cfgUseMCRapcut", false, "Use Rap cut for dileptons used in the triplet vertexing"};
   o2::framework::Configurable<bool> fConfigEnergycorrelator{"cfgEnergycorrelator", false, "Add some hist for energy correlator study"};
   o2::framework::Configurable<bool> fConfigApplyMassEC{"cfgApplyMassEC", false, "Apply fit mass for sideband for the energy correlator study"};
+  o2::framework::Configurable<bool> fConfigBMesonsTable{"cfgBMesonsTable", false, "Write out B mesons table for ML analysis"};
   o2::framework::Configurable<std::vector<float>> fConfigFitmassEC{"cfgTFitmassEC", std::vector<float>{-0.541438, 2.8, 3.2}, "parameter from the fit fuction and fit range"};
   o2::framework::Configurable<std::vector<float>> fConfigTransRange{"cfgTransRange", std::vector<float>{0.333333, 0.666667}, "Transverse region for the energy correlstor analysis"};
 
@@ -4342,7 +4343,7 @@ struct AnalysisDileptonTrack {
 
   void init(o2::framework::InitContext& context)
   {
-    bool isBarrel = context.mOptions.get<bool>("processBarrelSkimmed");
+    bool isBarrel = context.mOptions.get<bool>("processBarrelSkimmed") || context.mOptions.get<bool>("processDsToKKPi");
     bool isBarrelME = context.mOptions.get<bool>("processBarrelMixedEvent");
     bool isBarrelAsymmetric = context.mOptions.get<bool>("processDstarToD0Pi");
     bool isMuon = context.mOptions.get<bool>("processMuonSkimmed");
@@ -4681,7 +4682,7 @@ struct AnalysisDileptonTrack {
       for (auto const& assoc : assocs) {
 
         uint32_t trackSelection = 0;
-        if constexpr (TCandidateType == VarManager::kBtoJpsiEEK) {
+        if constexpr (TCandidateType == VarManager::kBtoJpsiEEK || TCandidateType == VarManager::kDsToKKPi) {
           // check the cuts fulfilled by this candidate track; if none just continue
           trackSelection = (assoc.isBarrelSelected_raw() & fTrackCutBitMap);
           if (trackSelection == 0) {
@@ -4713,23 +4714,27 @@ struct AnalysisDileptonTrack {
             Effweight_rec = Effweight_rec * Effdilepton * Effhadron * Masswindow;
           }
           std::vector<float> fTransRange = fConfigTransRange;
-          VarManager::FillEnergyCorrelatorTriple<VarManager::kDecayToEE, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom(), 1. / Effweight_rec);
+          if (fConfigEnergycorrelator) {
+            VarManager::FillEnergyCorrelatorTriple<VarManager::kDecayToEE, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom(), 1. / Effweight_rec);
+          }
 
           // table to be written out for ML analysis
-          BmesonsTable(event.runNumber(), event.globalIndex(), event.timestamp(), fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kPairEta], fValuesHadron[VarManager::kPairPhi], fValuesHadron[VarManager::kPairRap],
-                       fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz],
-                       fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle],
-                       fValuesHadron[VarManager::kVertexingChi2PCA],
-                       track.globalIndex(), lepton1.globalIndex(), lepton2.globalIndex(),
-                       track.tpcInnerParam(), track.eta(), dilepton.pt(), dilepton.eta(), lepton1.tpcInnerParam(), lepton1.eta(), lepton2.tpcInnerParam(), lepton2.eta(),
-                       track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tpcNSigmaPr(), track.tofNSigmaKa(),
-                       lepton1.tpcNSigmaEl(), lepton1.tpcNSigmaPi(), lepton1.tpcNSigmaPr(),
-                       lepton2.tpcNSigmaEl(), lepton2.tpcNSigmaPi(), lepton2.tpcNSigmaPr(),
-                       track.itsClusterMap(), lepton1.itsClusterMap(), lepton2.itsClusterMap(),
-                       track.itsChi2NCl(), lepton1.itsChi2NCl(), lepton2.itsChi2NCl(),
-                       track.tpcNClsFound(), lepton1.tpcNClsFound(), lepton2.tpcNClsFound(),
-                       track.tpcChi2NCl(), lepton1.tpcChi2NCl(), lepton2.tpcChi2NCl(),
-                       dilepton.filterMap_raw(), trackSelection);
+          if (fConfigBMesonsTable) {
+            BmesonsTable(event.runNumber(), event.globalIndex(), event.timestamp(), fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kPairEta], fValuesHadron[VarManager::kPairPhi], fValuesHadron[VarManager::kPairRap],
+                         fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz],
+                         fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle],
+                         fValuesHadron[VarManager::kVertexingChi2PCA],
+                         track.globalIndex(), lepton1.globalIndex(), lepton2.globalIndex(),
+                         track.tpcInnerParam(), track.eta(), dilepton.pt(), dilepton.eta(), lepton1.tpcInnerParam(), lepton1.eta(), lepton2.tpcInnerParam(), lepton2.eta(),
+                         track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tpcNSigmaPr(), track.tofNSigmaKa(),
+                         lepton1.tpcNSigmaEl(), lepton1.tpcNSigmaPi(), lepton1.tpcNSigmaPr(),
+                         lepton2.tpcNSigmaEl(), lepton2.tpcNSigmaPi(), lepton2.tpcNSigmaPr(),
+                         track.itsClusterMap(), lepton1.itsClusterMap(), lepton2.itsClusterMap(),
+                         track.itsChi2NCl(), lepton1.itsChi2NCl(), lepton2.itsChi2NCl(),
+                         track.tpcNClsFound(), lepton1.tpcNClsFound(), lepton2.tpcNClsFound(),
+                         track.tpcChi2NCl(), lepton1.tpcChi2NCl(), lepton2.tpcChi2NCl(),
+                         dilepton.filterMap_raw(), trackSelection);
+          }
         }
         if constexpr (TCandidateType == VarManager::kDstarToD0KPiPi) {
           trackSelection = (assoc.isBarrelSelected_raw() & fTrackCutBitMap);
@@ -4847,6 +4852,25 @@ struct AnalysisDileptonTrack {
       auto groupedBarrelAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
       auto groupedDitracks = ditracks.sliceBy(ditracksPerCollision, event.globalIndex());
       runDileptonHadron<VarManager::kDstarToD0KPiPi, gkEventFillMapWithCovZdcFit, gkTrackFillMapWithCov>(event, groupedBarrelAssocs, tracks, groupedDitracks);
+    }
+  }
+
+  void processDsToKKPi(o2::soa::Filtered<MyEventsVtxCovSelected> const& events,
+                       o2::soa::Filtered<o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts>> const& assocs,
+                       MyBarrelTracksWithCov const& tracks,
+                       o2::soa::Filtered<MyDielectronCandidates> const& dileptons)
+  {
+    if (events.size() == 0) {
+      return;
+    }
+    if (fCurrentRun != events.begin().runNumber()) {
+      initParamsFromCCDB(events.begin().timestamp());
+      fCurrentRun = events.begin().runNumber();
+    }
+    for (auto const& event : events) {
+      auto groupedBarrelAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
+      auto groupedDielectrons = dileptons.sliceBy(dielectronsPerCollision, event.globalIndex());
+      runDileptonHadron<VarManager::kDsToKKPi, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, groupedBarrelAssocs, tracks, groupedDielectrons);
     }
   }
 
@@ -5026,6 +5050,7 @@ struct AnalysisDileptonTrack {
 
   PROCESS_SWITCH(AnalysisDileptonTrack, processBarrelSkimmed, "Run barrel dilepton-track pairing, using skimmed data", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processDstarToD0Pi, "Run barrel pairing of D0 daughters with pion candidate, using skimmed data", false);
+  PROCESS_SWITCH(AnalysisDileptonTrack, processDsToKKPi, "Run barrel pairing of K+K- pairs with pion candidate for Ds reconstruction", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMuonSkimmed, "Run muon dilepton-track pairing, using skimmed data", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processBarrelMixedEvent, "Run barrel dilepton-hadron mixed event pairing", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMuonMixedEvent, "Run muon dilepton-hadron mixed event pairing", false);
