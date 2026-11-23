@@ -32,12 +32,17 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 
+#include <TH1.h>
+
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <random>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -145,6 +150,7 @@ enum CollisionSels {
 };
 
 constexpr char ColSelHistName[] = "hCollisionSelection";
+constexpr char GenCollisionSelHistName[] = "hGenCollisionSelection";
 const char colSelsName[] = "Collision Selection Object";
 const std::unordered_map<CollisionSels, std::string> collisionSelectionNames = {
   {kSel8, "Sel8"},
@@ -634,6 +640,22 @@ class CollisionBuilder
     mGrpPath = confCcdb.grpPath.value;
     mSubGeneratorId = confFilter.subGeneratorId.value;
 
+    if (mSubGeneratorId >= 0) {
+      LOG(warn) << "CollisionFilter.subGeneratorId = " << mSubGeneratorId << " is active: only collisions "
+                << "whose generated collision has this exact sub-generator ID (0 = MB, >0 = injected signal) "
+                << "are kept. This only makes sense for productions with an injected signal, where "
+                << "sub-generator IDs distinguish the injected signal from the underlying event. General-"
+                << "purpose MC never sets a sub-generator ID, so this filter silently discards the entire "
+                << "sample -- with no trace in hCollisionSelection, since that histogram is filled earlier, "
+                << "independent of this check. Check hGenCollisionSelection, and only use this filter on "
+                << "injected-signal productions.";
+
+      mHistRegistry = registry;
+      mHistRegistry->add(static_cast<char const*>(GenCollisionSelHistName), "; ; Entries", o2::framework::HistType::kTH1F, {{2, -0.5, 1.5}});
+      mHistRegistry->get<TH1>(HIST(GenCollisionSelHistName))->GetXaxis()->SetBinLabel(1, "All analyzed");
+      mHistRegistry->get<TH1>(HIST(GenCollisionSelHistName))->GetXaxis()->SetBinLabel(2, "Passed sub-generator ID filter");
+    }
+
     mProducedCollisions = utils::enableTable("FCols_001", confTable.produceCollisions.value, initContext);
     mProducedLiteCollisions = utils::enableTable("FLiteCols_001", confTable.produceLiteCollisions.value, initContext);
     mProducedCollisionMasks = utils::enableTable("FColMasks_001", confTable.produceCollisionMasks.value, initContext);
@@ -728,9 +750,11 @@ class CollisionBuilder
     if (mSubGeneratorId >= 0) {
       if (col.has_mcCollision()) {
         auto mcCol = col.template mcCollision_as<T2>();
+        mHistRegistry->fill(HIST(GenCollisionSelHistName), 0);
         if (mcCol.getSubGeneratorId() != mSubGeneratorId) {
           return false;
         }
+        mHistRegistry->fill(HIST(GenCollisionSelHistName), 1);
       }
     }
 
@@ -831,6 +855,7 @@ class CollisionBuilder
 
  private:
   CollisionSelection<SelectionHistName, FilterHistName> mCollisionSelection;
+  o2::framework::HistogramRegistry* mHistRegistry = nullptr;
   bool mCollisionAlreadyFilled = false;
   int64_t mCurrentCollisionIndex = -1;
   int mRunNumber = -1;
@@ -855,11 +880,36 @@ struct CollisionBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::StoredFColMasks> producedCollisionMask;
 };
 
+// configurable for uniform collision downsampling
+struct ConfCollisionDownsampling : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("CollisionDownsampling");
+  o2::framework::Configurable<float> fraction{"fraction", 1.f, "Fraction of collisions (that already passed all other selections) to keep via uniform random downsampling. 1 = keep all (default, no-op), 0 = keep none."};
+  o2::framework::Configurable<int64_t> seed{"seed", 0, "Seed for the downsampling RNG. Set to 0 to generate a unique seed from the current time, or to a fixed positive value for reproducible downsampling."};
+};
+
 class CollisionBuilderDerivedToDerived
 {
  public:
   CollisionBuilderDerivedToDerived() = default;
   ~CollisionBuilderDerivedToDerived() = default;
+
+  void init(ConfCollisionDownsampling const& confDownsampling)
+  {
+    mFraction = confDownsampling.fraction.value;
+    uint64_t randomSeed = confDownsampling.seed.value == 0
+                            ? static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
+                            : static_cast<uint64_t>(confDownsampling.seed.value);
+    mRng = std::mt19937(randomSeed);
+  }
+
+  /// \return true if this collision is randomly rejected by the configured downsampling fraction
+  bool collisionFailsDownsampling()
+  {
+    if (mFraction >= 1.f) {
+      return false;
+    }
+    return mDist(mRng) >= mFraction;
+  }
 
   template <typename T1, typename T2>
   void processCollision(T1& col, T2& newCollisionTable)
@@ -870,6 +920,11 @@ class CollisionBuilderDerivedToDerived
                                         col.magField());
     newCollisionTable.producedCollisionMask(col.mask());
   }
+
+ private:
+  float mFraction = 1.f;
+  std::mt19937 mRng;
+  std::uniform_real_distribution<float> mDist{0.f, 1.f};
 };
 
 } // namespace o2::analysis::femto::collisionbuilder

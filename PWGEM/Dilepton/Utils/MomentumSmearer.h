@@ -110,28 +110,28 @@ class MomentumSmearer
   void getResolutionHistos(TList* list)
   {
 
-    fResoPt = dynamic_cast<TH2F*>(list->FindObject(fResPtHistName));
+    fResoPt = dynamic_cast<TH2*>(list->FindObject(fResPtHistName));
     if (!fResoPt) {
       LOGP(fatal, "Could not open {} from file {}", fResPtHistName.Data(), fResFileName.Data());
     }
 
-    fResoEta = dynamic_cast<TH2F*>(list->FindObject(fResEtaHistName));
+    fResoEta = dynamic_cast<TH2*>(list->FindObject(fResEtaHistName));
     if (!fResoEta) {
       LOGP(fatal, "Could not open {} from file {}", fResEtaHistName.Data(), fResFileName.Data());
     }
 
-    fResoPhi_Pos = dynamic_cast<TH2F*>(list->FindObject(fResPhiPosHistName));
+    fResoPhi_Pos = dynamic_cast<TH2*>(list->FindObject(fResPhiPosHistName));
     if (!fResoPhi_Pos) {
       LOGP(fatal, "Could not open {} from file {}", fResPhiPosHistName.Data(), fResFileName.Data());
     }
 
-    fResoPhi_Neg = dynamic_cast<TH2F*>(list->FindObject(fResPhiNegHistName));
+    fResoPhi_Neg = dynamic_cast<TH2*>(list->FindObject(fResPhiNegHistName));
     if (!fResoPhi_Neg) {
       LOGP(fatal, "Could not open {} from file {}", fResPhiNegHistName.Data(), fResFileName.Data());
     }
   }
 
-  void fillVecReso(TH2F* fReso, std::vector<TH1D*>& fVecReso, const char* suffix)
+  void fillVecReso(TH2* fReso, std::vector<TH1D*>& fVecReso, const char* suffix)
   {
     TAxis* axisPt = fReso->GetXaxis(); // be careful! This works only for variable bin width.
     int nBinsPt = axisPt->GetNbins();
@@ -239,22 +239,22 @@ class MomentumSmearer
       }
     } else {
       if (fResType != 0) {
-        fResoPt = dynamic_cast<TH2F*>(listRes->FindObject(fResPtHistName));
+        fResoPt = dynamic_cast<TH2*>(listRes->FindObject(fResPtHistName));
         if (!fResoPt) {
           LOGP(fatal, "Could not open {} from file {}", fResPtHistName.Data(), fResFileName.Data());
         }
 
-        fResoEta = dynamic_cast<TH2F*>(listRes->FindObject(fResEtaHistName));
+        fResoEta = dynamic_cast<TH2*>(listRes->FindObject(fResEtaHistName));
         if (!fResoEta) {
           LOGP(fatal, "Could not open {} from file {}", fResEtaHistName.Data(), fResFileName.Data());
         }
 
-        fResoPhi_Pos = dynamic_cast<TH2F*>(listRes->FindObject(fResPhiPosHistName));
+        fResoPhi_Pos = dynamic_cast<TH2*>(listRes->FindObject(fResPhiPosHistName));
         if (!fResoPhi_Pos) {
           LOGP(fatal, "Could not open {} from file {}", fResPhiPosHistName.Data(), fResFileName.Data());
         }
 
-        fResoPhi_Neg = dynamic_cast<TH2F*>(listRes->FindObject(fResPhiNegHistName));
+        fResoPhi_Neg = dynamic_cast<TH2*>(listRes->FindObject(fResPhiNegHistName));
         if (!fResoPhi_Neg) {
           LOGP(fatal, "Could not open {} from file {}", fResPhiNegHistName.Data(), fResFileName.Data());
         }
@@ -372,7 +372,7 @@ class MomentumSmearer
     fInitialized = true;
   }
 
-  void applySmearing(const float ptgen, const float vargen, const float multiply, float& varsmeared, TH2F* fReso, std::vector<TH1D*>& fVecReso)
+  void applySmearing(const float ptgen, const float vargen, const float multiply, float& varsmeared, TH2* fReso, std::vector<TH1D*>& fVecReso)
   {
     float ptgen_tmp = ptgen > fMinPtGen ? ptgen : fMinPtGen;
     TAxis* axisPt = fReso->GetXaxis();
@@ -594,10 +594,10 @@ class MomentumSmearer
   TString getEffHistName() { return fEffHistName; }
   TString getDCAFileName() { return fDCAFileName; }
   TString getDCaHistName() { return fDCAHistName; }
-  TH2F* getHistResoPt() { return fResoPt; }
-  TH2F* getHistResoEta() { return fResoEta; }
-  TH2F* getHistResoPhiPos() { return fResoPhi_Pos; }
-  TH2F* getHistResoPhiNeg() { return fResoPhi_Neg; }
+  TH2* getHistResoPt() { return fResoPt; }
+  TH2* getHistResoEta() { return fResoEta; }
+  TH2* getHistResoPhiPos() { return fResoPhi_Pos; }
+  TH2* getHistResoPhiNeg() { return fResoPhi_Neg; }
   TObject* getHistEff() { return fEff; }
   TString getCcdbPathRes() { return fCcdbPathRes; }
   TString getCcdbPathEff() { return fCcdbPathEff; }
@@ -624,10 +624,10 @@ class MomentumSmearer
   int fResType = 0;
   int fDCAType = 0;
   THnSparseF* fResoND;
-  TH2F* fResoPt;
-  TH2F* fResoEta;
-  TH2F* fResoPhi_Pos;
-  TH2F* fResoPhi_Neg;
+  TH2* fResoPt;
+  TH2* fResoEta;
+  TH2* fResoPhi_Pos;
+  TH2* fResoPhi_Neg;
   std::vector<std::vector<std::vector<std::vector<std::vector<TH3D*>>>>> fVecResoND;
   int fNCenBins = 1;
   int fNPtBins = 1;

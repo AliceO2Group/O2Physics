@@ -138,9 +138,29 @@ struct Lambdastarproxy {
   Configurable<float> lstarCutNsigmaTOFPr{"lstarCutNsigmaTOFPr", float{NsigmaTOFDefault}, "|nSigma^{TOF}_{p}| cut"};
   Configurable<float> lstarCutNsigmaTPCKaon{"lstarCutNsigmaTPCKaon", float{NsigmaTPCDefault}, "|nSigma^{TPC}_{K}| cut"};
   Configurable<float> lstarCutNsigmaTOFKaon{"lstarCutNsigmaTOFKaon", float{NsigmaTOFDefault}, "|nSigma^{TOF}_{K}| cut"};
+  // Opt-in kaon-only window in the upper part of the TPC-only pT branch.
+  // Disabled by default so existing data and reconstructed-MC selections are reproducible.
+  Configurable<int> lstarEnableKaonTPCAsym{"lstarEnableKaonTPCAsym", 0, "Enable the asymmetric kaon TPC window below lstarPidPtRefKaon"};
+  Configurable<float> lstarKaonTPCAsymPtMin{"lstarKaonTPCAsymPtMin", 0.3f, "Measured kaon-track pT where the asymmetric TPC window starts (GeV/c)"};
+  Configurable<float> lstarKaonTPCAsymMin{"lstarKaonTPCAsymMin", -2.f, "Strict lower TPC nSigma_K bound in the asymmetric window"};
+  Configurable<float> lstarKaonTPCAsymMax{"lstarKaonTPCAsymMax", 5.f, "Strict upper TPC nSigma_K bound in the asymmetric window"};
   Configurable<float> lstarCutNsigmaTPCDe{"lstarCutNsigmaTPCDe", float{NsigmaTPCDefault}, "|nSigma^{TPC}_{d}| cut"};
   Configurable<float> lstarCutNsigmaTOFDe{"lstarCutNsigmaTOFDe", float{NsigmaTOFDefault}, "|nSigma^{TOF}_{d}| cut"};
   Configurable<int> lstarEnableTOFNsigmaCutDe{"lstarEnableTOFNsigmaCutDe", 0, "Enable deuteron-only TOF nSigma cut in PID strategy 2"};
+  // Group new settings to stay within the framework's top-level member limit.
+  // The configurable names remain flat; all features are opt-in.
+  struct : ConfigurableGroup {
+    Configurable<int> lstarEnableProtonTPCAsym{"lstarEnableProtonTPCAsym", 0, "Enable the asymmetric proton TPC window below lstarPidPtRefPr"};
+    Configurable<float> lstarProtonTPCAsymPtMin{"lstarProtonTPCAsymPtMin", 0.5f, "Measured proton-track pT where the asymmetric TPC window starts (GeV/c)"};
+    Configurable<float> lstarProtonTPCAsymMin{"lstarProtonTPCAsymMin", -2.f, "Strict lower TPC nSigma_p bound in the asymmetric window"};
+    Configurable<float> lstarProtonTPCAsymMax{"lstarProtonTPCAsymMax", 5.f, "Strict upper TPC nSigma_p bound in the asymmetric window"};
+    // Strategy 2 only: existing TOF and ITS requirements still apply.
+    Configurable<int> lstarEnableDeuteronTPCAsym{"lstarEnableDeuteronTPCAsym", 0, "Enable an asymmetric deuteron TPC window in PID strategy 2"};
+    Configurable<float> lstarDeuteronTPCAsymPtMin{"lstarDeuteronTPCAsymPtMin", 0.f, "Measured deuteron-track pT where the asymmetric TPC window starts (GeV/c)"};
+    Configurable<float> lstarDeuteronTPCAsymPtMax{"lstarDeuteronTPCAsymPtMax", -1.f, "Exclusive upper measured deuteron-track pT for the asymmetric window; negative means no upper limit"};
+    Configurable<float> lstarDeuteronTPCAsymMin{"lstarDeuteronTPCAsymMin", -2.f, "Strict lower TPC nSigma_d bound in the asymmetric window"};
+    Configurable<float> lstarDeuteronTPCAsymMax{"lstarDeuteronTPCAsymMax", 4.f, "Strict upper TPC nSigma_d bound in the asymmetric window"};
+  } asymmetricTPCPID;
   Configurable<int> lstarProxyUseProtonPIDAsDeuteron{"lstarProxyUseProtonPIDAsDeuteron", 0, "Closure/control test: keep proxy candidates that pass the normal deuteron selection and are also proton-like, then build p_proxy = p_track/2"};
   // Optional deuteron-only TOF auxiliary selections.
   // Defaults are OFF, so strategy 2 remains TPC nSigma only for deuterons.
@@ -154,6 +174,12 @@ struct Lambdastarproxy {
   struct : ConfigurableGroup {
     Configurable<int> lstarEnableITSPIDDe{"lstarEnableITSPIDDe", 0, "Apply one-sided ITS cluster-size PID to deuteron candidates"};
     Configurable<float> lstarCutNsigmaITSDeMin{"lstarCutNsigmaITSDeMin", -3.f, "Require nSigmaITS_d greater than this lower bound (not an absolute-value cut)"};
+    Configurable<float> lstarITSPIDDePtMin{"lstarITSPIDDePtMin", 0.f, "Inclusive lower measured track pT for deuteron ITS PID (GeV/c)"};
+    Configurable<float> lstarITSPIDDePtMax{"lstarITSPIDDePtMax", -1.f, "Exclusive upper measured track pT for deuteron ITS PID; negative means no upper limit"};
+    Configurable<int> lstarEnableTPCVetoDe{"lstarEnableTPCVetoDe", 0, "Reject deuteron candidates compatible with enabled competing TPC hypotheses; does not require TOF"};
+    Configurable<float> lstarTPCVetoPiDe{"lstarTPCVetoPiDe", 3.f, "Require |TPC nSigma_pi| above this value for deuteron candidates; zero disables this veto"};
+    Configurable<float> lstarTPCVetoKaDe{"lstarTPCVetoKaDe", 3.f, "Require |TPC nSigma_K| above this value for deuteron candidates; zero disables this veto"};
+    Configurable<float> lstarTPCVetoPrDe{"lstarTPCVetoPrDe", 3.f, "Require |TPC nSigma_p| above this value for deuteron candidates; zero disables this veto"};
     Configurable<int> lstarITSNClustersDe{"lstarITSNClustersDe", 0, "Additional deuteron-only minimum ITS clusters; 0 disables"};
     Configurable<int> lstarTPCNClsFoundDeMin{"lstarTPCNClsFoundDeMin", 0, "Additional deuteron-only minimum TPC found clusters (not crossed rows); 0 disables"};
     Configurable<float> lstarRequireTOFAbovePDe{"lstarRequireTOFAbovePDe", -1.f, "Strategy 2: require TOF match and TOF-d nSigma cut at full track p >= threshold in GeV/c; negative disables"};
@@ -619,6 +645,9 @@ struct Lambdastarproxy {
     }
     validateDeuteronRefinements();
     validatePtDependentDcaZ();
+    validateKaonTPCAsym();
+    validateProtonTPCAsym();
+    validateDeuteronTPCAsym();
     if (trackSpectraConfig.lstarEnableTrackSpectra.value != 0 &&
         ((!doprocess.value && !doprocessMCReco.value) || !std::isfinite(trackSpectraConfig.lstarTrackSpectraAbsYMax.value) || trackSpectraConfig.lstarTrackSpectraAbsYMax.value <= 0.f)) {
       LOGF(fatal, "Track spectra require data or reconstructed MC and a positive finite spectra rapidity window");
@@ -1273,8 +1302,39 @@ struct Lambdastarproxy {
     std::shared_ptr<TH3> dePurityMCSpecies;
   } dePurity;
 
+  void validateDeuteronITSPIDRange() const
+  {
+    if (deuteronPID.lstarEnableITSPIDDe.value == 0) {
+      return;
+    }
+    if (!std::isfinite(deuteronPID.lstarITSPIDDePtMin.value) || deuteronPID.lstarITSPIDDePtMin.value < 0.f ||
+        !std::isfinite(deuteronPID.lstarITSPIDDePtMax.value) ||
+        (deuteronPID.lstarITSPIDDePtMax.value >= 0.f && deuteronPID.lstarITSPIDDePtMax.value <= deuteronPID.lstarITSPIDDePtMin.value)) {
+      LOGF(fatal, "Deuteron ITS PID requires a finite nonnegative lower pT and an ordered upper pT; negative maximum means no upper limit");
+    }
+  }
+
+  void validateDeuteronTPCVeto() const
+  {
+    if (deuteronPID.lstarEnableTPCVetoDe.value == 0) {
+      return;
+    }
+    bool anyEnabled = false;
+    for (auto const& cut : {deuteronPID.lstarTPCVetoPiDe.value, deuteronPID.lstarTPCVetoKaDe.value, deuteronPID.lstarTPCVetoPrDe.value}) {
+      if (!std::isfinite(cut) || cut < 0.f) {
+        LOGF(fatal, "Deuteron competing TPC veto thresholds must be finite and nonnegative; zero disables a species");
+      }
+      anyEnabled = anyEnabled || cut > 0.f;
+    }
+    if (!anyEnabled) {
+      LOGF(fatal, "Enabled deuteron TPC veto requires at least one positive competing-species threshold");
+    }
+  }
+
   void validateDeuteronRefinements() const
   {
+    validateDeuteronITSPIDRange();
+    validateDeuteronTPCVeto();
     if (deuteronPID.lstarITSNClustersDe.value < 0 || deuteronPID.lstarITSNClustersDe.value > ITSClusterLayers || deuteronPID.lstarTPCNClsFoundDeMin.value < 0) {
       LOGF(fatal, "Deuteron-only ITS minimum must be 0..7; TPC-found minimum must be nonnegative");
     }
@@ -1339,6 +1399,29 @@ struct Lambdastarproxy {
   }
 
   template <typename TTrack>
+  bool passDeuteronTPCVeto(TTrack const& track) const
+  {
+    if (deuteronPID.lstarEnableTPCVetoDe.value == 0) {
+      return true;
+    }
+    // A missing full-PID response has an invalid expected resolution and must
+    // not be accepted merely because its stored nSigma lies far from zero.
+    const auto passes = [](float nsigma, float expectedSigma, float cut) {
+      return std::isfinite(nsigma) && std::isfinite(expectedSigma) && expectedSigma > 0.f && std::abs(nsigma) > cut;
+    };
+    if (deuteronPID.lstarTPCVetoPiDe.value > 0.f && !passes(track.tpcNSigmaPi(), track.tpcExpSigmaPi(), deuteronPID.lstarTPCVetoPiDe.value)) {
+      return false;
+    }
+    if (deuteronPID.lstarTPCVetoKaDe.value > 0.f && !passes(track.tpcNSigmaKa(), track.tpcExpSigmaKa(), deuteronPID.lstarTPCVetoKaDe.value)) {
+      return false;
+    }
+    if (deuteronPID.lstarTPCVetoPrDe.value > 0.f && !passes(track.tpcNSigmaPr(), track.tpcExpSigmaPr(), deuteronPID.lstarTPCVetoPrDe.value)) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename TTrack>
   bool passDeuteronRefinements(TTrack const& track) const
   {
     if (deuteronPID.lstarITSNClustersDe.value > 0 && track.itsNCls() < deuteronPID.lstarITSNClustersDe.value) {
@@ -1348,9 +1431,19 @@ struct Lambdastarproxy {
       return false;
     }
     if (deuteronPID.lstarEnableITSPIDDe.value != 0) {
-      const double response = deuteronITSNSigma(track);
-      if (!std::isfinite(response) || response <= deuteronPID.lstarCutNsigmaITSDeMin.value) {
+      const bool restrictedRange = deuteronPID.lstarITSPIDDePtMin.value > 0.f || deuteronPID.lstarITSPIDDePtMax.value >= 0.f;
+      const float pt = track.pt();
+      if (restrictedRange && (!std::isfinite(pt) || pt < 0.f)) {
         return false;
+      }
+      // The default open range keeps the existing unconditional ITS decision.
+      // Range limits use measured single-track pT before proxy momentum scaling.
+      if (!restrictedRange || (pt >= deuteronPID.lstarITSPIDDePtMin.value &&
+                               (deuteronPID.lstarITSPIDDePtMax.value < 0.f || pt < deuteronPID.lstarITSPIDDePtMax.value))) {
+        const double response = deuteronITSNSigma(track);
+        if (!std::isfinite(response) || response <= deuteronPID.lstarCutNsigmaITSDeMin.value) {
+          return false;
+        }
       }
     }
     if (deuteronPID.lstarRequireTOFAbovePDe.value >= 0.f) {
@@ -1365,7 +1458,7 @@ struct Lambdastarproxy {
         return false;
       }
     }
-    return true;
+    return passDeuteronTPCVeto(track);
   }
 
   void bookDeuteronPurityQA()
@@ -1699,12 +1792,11 @@ struct Lambdastarproxy {
         probe.charge = static_cast<int>(track.sign());
         probe.tid = track.globalIndex();
         if (role == 0) {
-          const bool passProton = passFinalCandidatePID(track.pt(), track.tpcNSigmaPr(), track.tofNSigmaPr(), true,
-                                                        lstarCutNsigmaTPCPr.value, lstarCutNsigmaTOFPr.value, lstarPidCircularCutPr.value, lstarPidPtRefPr.value);
-          probe.nominal = passFinalCandidatePID(track.pt(), tpc[role], tof[role], true, lstarCutNsigmaTPCDe.value, lstarCutNsigmaTOFDe.value, lstarPidCircularCutDe.value, lstarPidPtRefDe.value, true) &&
+          const bool passProton = passProtonCandidatePID(track.pt(), track.tpcNSigmaPr(), track.tofNSigmaPr(), true);
+          probe.nominal = passDeuteronCandidatePID(track.pt(), tpc[role], tof[role], true) &&
                           passOptionalDeuteronTOFExtras(track) && passDeuteronRefinements(track) && (lstarProxyUseProtonPIDAsDeuteron.value == 0 || passProton);
         } else {
-          probe.nominal = passFinalCandidatePID(track.pt(), tpc[role], tof[role], true, lstarCutNsigmaTPCKaon.value, lstarCutNsigmaTOFKaon.value, lstarPidCircularCutKaon.value, lstarPidPtRefKaon.value);
+          probe.nominal = passKaonCandidatePID(track.pt(), tpc[role], tof[role], true);
         }
         if constexpr (IsMC) {
           probe.truth = trackTruth(track, collisionId);
@@ -2086,6 +2178,108 @@ struct Lambdastarproxy {
     return true;
   }
 
+  void validateKaonTPCAsym() const
+  {
+    if (lstarEnableKaonTPCAsym.value == 0) {
+      return;
+    }
+    if (!std::isfinite(lstarKaonTPCAsymPtMin.value) || lstarKaonTPCAsymPtMin.value < 0.f ||
+        !std::isfinite(lstarPidPtRefKaon.value) || lstarKaonTPCAsymPtMin.value >= lstarPidPtRefKaon.value ||
+        !std::isfinite(lstarKaonTPCAsymMin.value) || !std::isfinite(lstarKaonTPCAsymMax.value) ||
+        lstarKaonTPCAsymMin.value >= lstarKaonTPCAsymMax.value ||
+        !std::isfinite(lstarCutNsigmaTPCKaon.value) || lstarCutNsigmaTPCKaon.value <= 0.f) {
+      LOGF(fatal, "Asymmetric kaon TPC PID requires finite ordered nSigma bounds, a positive symmetric cut, and 0 <= lstarKaonTPCAsymPtMin < lstarPidPtRefKaon");
+    }
+  }
+
+  bool passKaonCandidatePID(float pt, float nsTPC, float nsTOF, bool hasTof) const
+  {
+    if (lstarEnableKaonTPCAsym.value != 0 && pt >= lstarKaonTPCAsymPtMin.value && pt < lstarPidPtRefKaon.value) {
+      return std::isfinite(nsTPC) && nsTPC > lstarKaonTPCAsymMin.value && nsTPC < lstarKaonTPCAsymMax.value;
+    }
+    return passFinalCandidatePID(pt, nsTPC, nsTOF, hasTof,
+                                 lstarCutNsigmaTPCKaon.value, lstarCutNsigmaTOFKaon.value,
+                                 lstarPidCircularCutKaon.value, lstarPidPtRefKaon.value);
+  }
+
+  void validateProtonTPCAsym() const
+  {
+    if (asymmetricTPCPID.lstarEnableProtonTPCAsym.value == 0) {
+      return;
+    }
+    if (!std::isfinite(asymmetricTPCPID.lstarProtonTPCAsymPtMin.value) || asymmetricTPCPID.lstarProtonTPCAsymPtMin.value < 0.f ||
+        !std::isfinite(lstarPidPtRefPr.value) || asymmetricTPCPID.lstarProtonTPCAsymPtMin.value >= lstarPidPtRefPr.value ||
+        !std::isfinite(asymmetricTPCPID.lstarProtonTPCAsymMin.value) || !std::isfinite(asymmetricTPCPID.lstarProtonTPCAsymMax.value) ||
+        asymmetricTPCPID.lstarProtonTPCAsymMin.value >= asymmetricTPCPID.lstarProtonTPCAsymMax.value ||
+        !std::isfinite(lstarCutNsigmaTPCPr.value) || lstarCutNsigmaTPCPr.value <= 0.f) {
+      LOGF(fatal, "Asymmetric proton TPC PID requires finite ordered nSigma bounds, a positive symmetric cut, and 0 <= lstarProtonTPCAsymPtMin < lstarPidPtRefPr");
+    }
+  }
+
+  bool passProtonTPCWindow(float pt, float nsTPC) const
+  {
+    if (asymmetricTPCPID.lstarEnableProtonTPCAsym.value != 0 && pt >= asymmetricTPCPID.lstarProtonTPCAsymPtMin.value && pt < lstarPidPtRefPr.value) {
+      return std::isfinite(nsTPC) && nsTPC > asymmetricTPCPID.lstarProtonTPCAsymMin.value && nsTPC < asymmetricTPCPID.lstarProtonTPCAsymMax.value;
+    }
+    return std::abs(nsTPC) < lstarCutNsigmaTPCPr.value;
+  }
+
+  bool passProtonCandidatePID(float pt, float nsTPC, float nsTOF, bool hasTof) const
+  {
+    if (asymmetricTPCPID.lstarEnableProtonTPCAsym.value != 0 && pt >= asymmetricTPCPID.lstarProtonTPCAsymPtMin.value && pt < lstarPidPtRefPr.value) {
+      return passProtonTPCWindow(pt, nsTPC);
+    }
+    return passFinalCandidatePID(pt, nsTPC, nsTOF, hasTof,
+                                 lstarCutNsigmaTPCPr.value, lstarCutNsigmaTOFPr.value,
+                                 lstarPidCircularCutPr.value, lstarPidPtRefPr.value);
+  }
+
+  void validateDeuteronTPCAsym() const
+  {
+    if (asymmetricTPCPID.lstarEnableDeuteronTPCAsym.value == 0) {
+      return;
+    }
+    if (lstarPidStrategy.value != PidStrategyNucleiDeuteronTPC ||
+        !std::isfinite(asymmetricTPCPID.lstarDeuteronTPCAsymPtMin.value) || asymmetricTPCPID.lstarDeuteronTPCAsymPtMin.value < 0.f ||
+        !std::isfinite(asymmetricTPCPID.lstarDeuteronTPCAsymPtMax.value) ||
+        (asymmetricTPCPID.lstarDeuteronTPCAsymPtMax.value >= 0.f && asymmetricTPCPID.lstarDeuteronTPCAsymPtMax.value <= asymmetricTPCPID.lstarDeuteronTPCAsymPtMin.value) ||
+        !std::isfinite(asymmetricTPCPID.lstarDeuteronTPCAsymMin.value) || !std::isfinite(asymmetricTPCPID.lstarDeuteronTPCAsymMax.value) ||
+        asymmetricTPCPID.lstarDeuteronTPCAsymMin.value >= asymmetricTPCPID.lstarDeuteronTPCAsymMax.value ||
+        !std::isfinite(lstarCutNsigmaTPCDe.value) || lstarCutNsigmaTPCDe.value <= 0.f) {
+      LOGF(fatal, "Asymmetric deuteron TPC PID requires strategy 2, finite ordered nSigma bounds, a positive symmetric cut, and a valid measured-pT interval; negative maximum disables its upper limit");
+    }
+  }
+
+  bool useDeuteronTPCAsym(float pt) const
+  {
+    return asymmetricTPCPID.lstarEnableDeuteronTPCAsym.value != 0 && pt >= asymmetricTPCPID.lstarDeuteronTPCAsymPtMin.value &&
+           (asymmetricTPCPID.lstarDeuteronTPCAsymPtMax.value < 0.f || pt < asymmetricTPCPID.lstarDeuteronTPCAsymPtMax.value);
+  }
+
+  bool passDeuteronTPCWindow(float pt, float nsTPC) const
+  {
+    if (useDeuteronTPCAsym(pt)) {
+      return std::isfinite(nsTPC) && nsTPC > asymmetricTPCPID.lstarDeuteronTPCAsymMin.value && nsTPC < asymmetricTPCPID.lstarDeuteronTPCAsymMax.value;
+    }
+    return std::isfinite(nsTPC) && std::abs(nsTPC) < lstarCutNsigmaTPCDe.value;
+  }
+
+  bool passDeuteronCandidatePID(float pt, float nsTPC, float nsTOF, bool hasTof) const
+  {
+    if (useDeuteronTPCAsym(pt)) {
+      if (!passDeuteronTPCWindow(pt, nsTPC)) {
+        return false;
+      }
+      if (lstarEnableTOFNsigmaCutDe.value != 0 && hasTof) {
+        return std::abs(nsTOF) < lstarCutNsigmaTOFDe.value;
+      }
+      return true;
+    }
+    return passFinalCandidatePID(pt, nsTPC, nsTOF, hasTof,
+                                 lstarCutNsigmaTPCDe.value, lstarCutNsigmaTOFDe.value,
+                                 lstarPidCircularCutDe.value, lstarPidPtRefDe.value, true);
+  }
+
   bool passFinalCandidatePID(float pt, float nsTPC, float nsTOF, bool hasTof,
                              float tpcCut, float tofCut, float circularCut,
                              float ptRef, bool isDeuteron = false) const
@@ -2378,7 +2572,7 @@ struct Lambdastarproxy {
 
       if (deuteronPID.lstarEnableDeuteronPurityQA.value != 0) {
         fillDeuteronPurityQA<IsMC>(trkD, DeuteronPIDStage::BeforePID);
-        if (std::isfinite(trkD.tpcNSigmaDe()) && std::abs(trkD.tpcNSigmaDe()) < lstarCutNsigmaTPCDe.value) {
+        if (passDeuteronTPCWindow(trkD.pt(), trkD.tpcNSigmaDe())) {
           fillDeuteronPurityQA<IsMC>(trkD, DeuteronPIDStage::AfterTPC);
         }
       }
@@ -2404,10 +2598,7 @@ struct Lambdastarproxy {
         continue;
       }
 
-      const bool passesDeuteronSelection = passFinalCandidatePID(ptD, nsTPCDe, nsTOFDe, hasTofDe,
-                                                                 lstarCutNsigmaTPCDe.value, lstarCutNsigmaTOFDe.value,
-                                                                 lstarPidCircularCutDe.value, lstarPidPtRefDe.value,
-                                                                 true);
+      const bool passesDeuteronSelection = passDeuteronCandidatePID(ptD, nsTPCDe, nsTOFDe, hasTofDe);
       if (!passesDeuteronSelection) {
         continue;
       }
@@ -2421,17 +2612,7 @@ struct Lambdastarproxy {
       const float nsTOFPrAsProxy =
         trkD.tofNSigmaPr();
 
-      const bool passesProtonSelection =
-        passFinalCandidatePID(
-          ptD,
-          nsTPCPrAsProxy,
-          nsTOFPrAsProxy,
-          hasTofDe,
-          lstarCutNsigmaTPCPr.value,
-          lstarCutNsigmaTOFPr.value,
-          lstarPidCircularCutPr.value,
-          lstarPidPtRefPr.value,
-          false);
+      const bool passesProtonSelection = passProtonCandidatePID(ptD, nsTPCPrAsProxy, nsTOFPrAsProxy, hasTofDe);
 
       if (useProtonAsProxy &&
           !passesProtonSelection) {
@@ -2510,7 +2691,7 @@ struct Lambdastarproxy {
 
       if (lstarEnableSparse.value != 0 && lstarEnableProxyControls.value != 0) {
         histos.fill(HIST("hLambdaStarProxySelectedTrackControlSparse"), ptD, hasTofDe,
-                    passesProtonSelection, std::abs(nsTPCPrAsProxy) < lstarCutNsigmaTPCPr.value);
+                    passesProtonSelection, passProtonTPCWindow(ptD, nsTPCPrAsProxy));
       }
 
       proxyCands.push_back(
@@ -2526,7 +2707,7 @@ struct Lambdastarproxy {
           .protonLike =
             passesProtonSelection,
           .hasTOF = hasTofDe,
-          .protonTPCCompatible = std::abs(nsTPCPrAsProxy) < lstarCutNsigmaTPCPr.value,
+          .protonTPCCompatible = passProtonTPCWindow(ptD, nsTPCPrAsProxy),
 
           .charge =
             static_cast<int>(
@@ -2558,14 +2739,7 @@ struct Lambdastarproxy {
       const float nsTPCPr = trkP.tpcNSigmaPr();
       const float nsTOFPr = trkP.tofNSigmaPr();
       const bool hasTofPr = hasTOFMatch(trkP);
-      const bool isProton = passFinalCandidatePID(ptP,
-                                                  nsTPCPr,
-                                                  nsTOFPr,
-                                                  hasTofPr,
-                                                  lstarCutNsigmaTPCPr.value,
-                                                  lstarCutNsigmaTOFPr.value,
-                                                  lstarPidCircularCutPr.value,
-                                                  lstarPidPtRefPr.value, false);
+      const bool isProton = passProtonCandidatePID(ptP, nsTPCPr, nsTOFPr, hasTofPr);
       if (!isProton) {
         continue;
       }
@@ -2630,14 +2804,7 @@ struct Lambdastarproxy {
       const float nsTPCK = trkK.tpcNSigmaKa();
       const float nsTOFK = trkK.tofNSigmaKa();
       const bool hasTofK = hasTOFMatch(trkK);
-      const bool isKaon = passFinalCandidatePID(ptK,
-                                                nsTPCK,
-                                                nsTOFK,
-                                                hasTofK,
-                                                lstarCutNsigmaTPCKaon.value,
-                                                lstarCutNsigmaTOFKaon.value,
-                                                lstarPidCircularCutKaon.value,
-                                                lstarPidPtRefKaon.value, false);
+      const bool isKaon = passKaonCandidatePID(ptK, nsTPCK, nsTOFK, hasTofK);
       if (!isKaon) {
         continue;
       }

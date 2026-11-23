@@ -175,8 +175,8 @@ struct FemtoUniversePairTaskTrackPhi {
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsPhiDaughMC = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kPhiChild));
 
   // Partition for K+K- minv
-  Partition<FilteredFemtoFullParticles> partsKaons = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack));
-  Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsKaonsMC = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack));
+  //  Partition<FilteredFemtoFullParticles> partsKaons = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack));
+  // Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsKaonsMC = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack));
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 1> trackHistoPartTrack;
@@ -562,7 +562,7 @@ struct FemtoUniversePairTaskTrackPhi {
       float mMassKp = o2::constants::physics::MassKPlus;
       float mMassKm = o2::constants::physics::MassKMinus;
 
-      for (auto const& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(partsKaons, partsKaons))) {
+      for (auto const& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(partsPhiDaugh, partsPhiDaugh))) {
         if ((confFillMinvBackgroundKpKp) && (kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
           part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassKp);
           part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassKp);
@@ -630,7 +630,7 @@ struct FemtoUniversePairTaskTrackPhi {
       float mMassOne = o2::constants::physics::MassKPlus;
       float mMassTwo = o2::constants::physics::MassKMinus;
 
-      for (auto const& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(partsKaons, partsKaons))) {
+      for (auto const& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(partsPhiDaugh, partsPhiDaugh))) {
         if ((confFillMinvBackgroundKpKp) && (kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
           part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
           part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassOne);

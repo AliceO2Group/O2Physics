@@ -383,3 +383,8 @@ o2physics_add_dpl_workflow(phiphi-mc-trigger
     SOURCES phiphimctrigger.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(chkstar-spin
+    SOURCES chKstarSpin.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

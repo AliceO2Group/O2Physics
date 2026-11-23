@@ -63,7 +63,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
   Configurable<float> confPtHighPart1{"confPtHighPart1", 2.5, "Higher limit for Pt for the first particle"};
 
   /// Partition for particle 1
-  Partition<aod::FDParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) &&
+  Partition<aod::FDParticles> partsOne = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) &&
                                          (aod::femtouniverseparticle::pt < confPtHighPart1) && (aod::femtouniverseparticle::pt > confPtLowPart1) && (nabs(aod::femtouniverseparticle::eta) < confEtaMax);
 
   /// Histogramming for particle 1
@@ -77,7 +77,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
   Configurable<float> confPtHighPart2{"confPtHighPart2", 2.5, "Higher limit for Pt for the second particle"};
 
   /// Partition for particle 2
-  Partition<aod::FDParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) &&
+  Partition<aod::FDParticles> partsTwo = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) &&
                                          (aod::femtouniverseparticle::pt < confPtHighPart2) && (aod::femtouniverseparticle::pt > confPtLowPart2) && (nabs(aod::femtouniverseparticle::eta) < confEtaMax);
 
   /// Histogramming for particle 2

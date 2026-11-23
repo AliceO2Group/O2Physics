@@ -58,7 +58,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <ios>
+#include <locale>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -96,6 +99,12 @@ struct CentRho2Set {
   std::shared_ptr<TH1> hEvents;
 };
 
+// Separate storage avoids redirecting or filling any legacy MCReco histograms.
+struct CombinedRhoSet {
+  std::array<std::shared_ptr<TH2>, 4> singles;
+  std::array<std::shared_ptr<TH2>, 12> pairs;
+};
+
 struct LambdaProtonBalanceFunction {
   HistogramRegistry registryLambda{"Lambda_invMass", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryRho{"rho1ANDrho2_LP", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -111,6 +120,8 @@ struct LambdaProtonBalanceFunction {
   HistogramRegistry registryProtonVetoQA{"ProtonVetoQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   // MC efficiency maps (Gen*/Rec* TH3: x=cent, y=pT, z=y), filled only by processMCEfficiency. Folder: Efficiency/
   HistogramRegistry registryEff{"Efficiency", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registryCorrInputs{"CombinedCorrectionInputs", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registryCombined{"MCRecoCombined", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // ════════════════════════════════════════════════════════════════════════
   // TaskState — ordinary C++ runtime/implementation state.
@@ -199,6 +210,19 @@ struct LambdaProtonBalanceFunction {
     TH3* invEffAL = nullptr;
     TH3* invEffP = nullptr;
     TH3* invEffAP = nullptr;
+
+    // Species order: Lambda, AntiLambda, Proton, AntiProton.
+    // Input order: Stage1, Stage2, Stage3, GenPrimary. Stage3 IS the numerator.
+    std::array<std::array<std::shared_ptr<TH3>, 4>, 4> correctionInputs;
+    std::shared_ptr<TH1> correctionMetadata;
+    bool correctionMetadataRecorded = false;
+    std::shared_ptr<TH2> correctionInputQA;
+    // Derived only from merged CCDB counts, never published as mergeable ratios.
+    // Map order: purity, primary fraction, efficiency, combined weight, valid mask.
+    std::array<std::array<std::unique_ptr<TH3D>, 5>, 4> correctionMaps;
+    CombinedRhoSet combinedIntegrated;
+    std::vector<CombinedRhoSet> combinedCentrality;
+    std::shared_ptr<TH2> combinedLookupQA;
   };
 
   TaskState state;
@@ -213,17 +237,18 @@ struct LambdaProtonBalanceFunction {
   Configurable<bool> cRequireSel8{"cRequireSel8", true, "Require sel8 in data and matched MC events"};
   Configurable<bool> cPileupReject{"cPileupReject", false, "Reject same-bunch pileup (kNoSameBunchPileup)"};
   Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", false, "Require FT0 vs PV z-vertex agreement (kIsGoodZvtxFT0vsPV)"};
-  Configurable<bool> cIsGoodITSLayers{"cIsGoodITSLayers", false, "Require all ITS layers good (kIsGoodITSLayersAll)"};
+  Configurable<bool> cIsGoodITSLayers{"cIsGoodITSLayers", true, "Require all ITS layers good (kIsGoodITSLayersAll)"};
   Configurable<bool> cUseQinvCut{"cUseQinvCut", false, "Apply q_inv > cQinvCutValue pair cut (false = no q_inv rejection)"};
-  Configurable<float> cQinvCutValue{"cQinvCutValue", 0.001f, "q_inv cut value (GeV/c)"};
-  Configurable<int> cQinvQABins{"cQinvQABins", 1000, "Number of bins for QA q_inv histograms"};
-  Configurable<float> cQinvQAMax{"cQinvQAMax", 1.0f, "Max q_inv for QA histograms (GeV/c)"};
+  Configurable<float> cQinvCutValue{"cQinvCutValue", 0.1f, "q_inv cut value (GeV/c)"};
+  Configurable<int> cQinvQABins{"cQinvQABins", 100, "Number of bins for QA q_inv histograms"};
+  Configurable<float> cQinvQAMax{"cQinvQAMax", 2.0f, "Max q_inv for QA histograms (GeV/c)"};
   Configurable<bool> cFillCentHists{"cFillCentHists", true, "Fill centrality-differential rho1/rho2 histograms in separate rho1ANDrho2_LP_CentralityBased folder"};
   Configurable<bool> cUseFT0C{"cUseFT0C", false, "Use FT0C instead of FT0M as centrality estimator"};
-  ConfigurableAxis cCentBins{"cCentBins", {VARIABLE_WIDTH, 0.f, 5.f, 10.f, 20.f, 40.f, 60.f, 80.f}, "Centrality bins (%)"};
+  ConfigurableAxis cCentBins{"cCentBins", {VARIABLE_WIDTH, 0.f, 20.f, 50.f, 80.f}, "Centrality bins (%)"};
   Configurable<bool> cApplyEffCorr{"cApplyEffCorr", false, "Weight rho1/rho2 by 1/efficiency"};
+  Configurable<bool> cApplyCombinedCorr{"cApplyCombinedCorr", false, "MCRecBF only: separate data-equivalent rho1/rho2 weighted by purity*primaryFraction/efficiency from merged counts at cEffCcdbPath; supersedes cApplyEffCorr"};
   Configurable<std::string> cEffFile{"cEffFile", "", "ROOT file with hInvEff_Lambda, hInvEff_AntiLambda, hInvEff_Proton, hInvEff_AntiProton (TH3: x=cent, y=pt, z=y). Used only if cEffCcdbPath is empty"};
-  Configurable<std::string> cEffCcdbPath{"cEffCcdbPath", "", "CCDB path of a TList holding hInvEff_Lambda, hInvEff_AntiLambda, hInvEff_Proton, hInvEff_AntiProton; if non-empty it is used instead of cEffFile"};
+  Configurable<std::string> cEffCcdbPath{"cEffCcdbPath", "", "Single CCDB TList: hInvEff_* for legacy mode, merged CombinedCorrectionInputs objects for combined MCRecBF; takes precedence over cEffFile"};
   Configurable<std::string> cCcdbUrl{"cCcdbUrl", "http://alice-ccdb.cern.ch", "CCDB URL"};
   Configurable<int64_t> cEffCcdbTimestamp{"cEffCcdbTimestamp", 1700000000000, "CCDB timestamp (ms) used to fetch the efficiency maps (must lie inside the object validity)"};
 
@@ -245,10 +270,10 @@ struct LambdaProtonBalanceFunction {
   // V0 topology cuts + V0 DCA Cuts
   Configurable<float> cV0MaxDcaDaughters{"cV0MaxDcaDaughters", 1.0f, "DCA V0 daughters < (cm)"};
   Configurable<float> lambdaV0DaughterProtonMinDCAToPV{"lambdaV0DaughterProtonMinDCAToPV", 0.05f, "DCA proton daughter to PV > (cm)"};
-  Configurable<float> lambdaV0DaughterPionMinDCAToPV{"lambdaV0DaughterPionMinDCAToPV", 0.10f, "DCA pion daughter to PV > (cm)"};
+  Configurable<float> lambdaV0DaughterPionMinDCAToPV{"lambdaV0DaughterPionMinDCAToPV", 0.06f, "DCA pion daughter to PV > (cm)"};
   Configurable<double> lambdaV0MinCosPA{"lambdaV0MinCosPA", 0.995, "V0 CosPA >"};
   Configurable<float> lambdaV0MinDecayRadius{"lambdaV0MinDecayRadius", 0.5f, "V0 radius > (cm)"};
-  Configurable<float> cV0MaxDcaToPV{"cV0MaxDcaToPV", 999.0f, "DCA V0 to PV < (cm)"};
+  Configurable<float> cV0MaxDcaToPV{"cV0MaxDcaToPV", 0.1f, "DCA V0 to PV < (cm)"};
 
   // PID cuts
   Configurable<float> lambdaV0DaughterPionTPCNsigma{"lambdaV0DaughterPionTPCNsigma", 2.0f, "lambdaV0DaughterPionTPCNsigma"};
@@ -304,7 +329,7 @@ struct LambdaProtonBalanceFunction {
   // These replace the former static constexpr k* constants.  Default values
   // reproduce the original hardcoded grid (y: 10×72).
   Configurable<int> cRhoPhiBins{"cRhoPhiBins", 36, "Number of phi bins for rho1/rho2"};
-  Configurable<int> cRhoYBins{"cRhoYBins", 12, "Number of y bins for rho1/rho2"};
+  Configurable<int> cRhoYBins{"cRhoYBins", 24, "Number of y bins for rho1/rho2"};
   Configurable<float> cRhoYMin{"cRhoYMin", -0.5f, "Min y for rho1/rho2"};
   Configurable<float> cRhoYMax{"cRhoYMax", 0.5f, "Max y for rho1/rho2"};
   // ─────────────────────────────────────────────────────────────────────────
@@ -457,13 +482,383 @@ struct LambdaProtonBalanceFunction {
   // (TH3* non-const: TH1::FindBin is a non-const method.)
   float getEffWeight(TH3* h, float cent, float pt, float y) const
   {
-    if (!cApplyEffCorr.value || !h) {
+    if (!cApplyEffCorr.value || cApplyCombinedCorr.value || !h) {
       return 1.f;
     }
     const float v = h->GetBinContent(h->FindBin(cent, pt, y));
     return v > 0.f ? v : 0.f; // 0 means: particle is dropped (no efficiency info)
   }
   // ─────────────────────────────────────────────────────────────────────
+
+  static constexpr std::array<const char*, 4> kCorrectionSpecies = {"Lambda", "AntiLambda", "Proton", "AntiProton"};
+  static constexpr std::array<const char*, 4> kCorrectionInputs = {"hStage1_", "hStage2_", "hStage3_", "hGenPrimary_"};
+  static constexpr std::array<const char*, 12> kCombinedChannels = {"Lp", "LAp", "ALp", "ALAp", "pp", "pAp", "App", "ApAp", "LL", "LAL", "ALL", "ALAL"};
+  static constexpr size_t LambdaSpeciesCount = 2;
+  static constexpr int MetadataBitsPerByte = 8;
+  static constexpr double CancellationTolerance = 1.e-12;
+
+  // Exact serialized contract, including every configurable affecting the new
+  // selection. MC-only V0 filters are deliberately absent: data ignores them.
+  // Bump the version if the selector, target, association or PID logic changes.
+  std::string correctionContract() const
+  {
+    std::ostringstream out;
+    out.imbue(std::locale::classic());
+    out << std::hexfloat
+        << "CombinedCorr-v2|PDG=3122,-3122,2212,-2212|dataV0-noTruth-beforeCleaning"
+        << "|assignedArmHypothesis|unionSharedCleaning|precleanDaughterVeto"
+        << "|oneMatchedRecoCollision|sel8-recoZ-extraFlags|noINEL-contributor-centCut"
+        << "|N2=usableLabel-sameCollision-signedPDG|N3=N2-physicalPrimary"
+        << "|G=physicalPrimary-LambdaHasDaughters-noDecayChannel-noProtonVeto"
+        << "|N=recoPt-speciesY|G=truthPt-LambdaStoredY-protonMassY"
+        << "|weights=PfOverEff|pairFactorization|flowInvalid";
+    const auto add = [&](const char* name, auto value) { out << '|' << name << '=' << value; };
+    add("cPPandV0ZVertexCut", cPPandV0ZVertexCut.value);
+    add("cRequireSel8", cRequireSel8.value);
+    add("cPileupReject", cPileupReject.value);
+    add("cZVtxTimeDiff", cZVtxTimeDiff.value);
+    add("cIsGoodITSLayers", cIsGoodITSLayers.value);
+    add("cUseFT0C", cUseFT0C.value);
+    add("pProtonTPCMinRows", pProtonTPCMinRows.value);
+    add("pProtonTPCMinRowsOverFindable", pProtonTPCMinRowsOverFindable.value);
+    add("pProtonTPCMaxChi2PerCluster", pProtonTPCMaxChi2PerCluster.value);
+    add("pProtonITSMinClusters", pProtonITSMinClusters.value);
+    add("pProtonITSMaxChi2PerCluster", pProtonITSMaxChi2PerCluster.value);
+    add("cPPMinTpcSignal", cPPMinTpcSignal.value);
+    add("pProtonMaxDCAxy", pProtonMaxDCAxy.value);
+    add("pProtonMaxDCAz", pProtonMaxDCAz.value);
+    add("pProtonTPCTOFSwitchPt", pProtonTPCTOFSwitchPt.value);
+    add("pProtonTPCNsigma", pProtonTPCNsigma.value);
+    add("pProtonTOFNsigma", pProtonTOFNsigma.value);
+    add("cUseContaminantVeto", cUseContaminantVeto.value);
+    add("cVetoUseTOF", cVetoUseTOF.value);
+    add("pProtonVetoPionNsigma", pProtonVetoPionNsigma.value);
+    add("pProtonVetoKaonNsigma", pProtonVetoKaonNsigma.value);
+    add("pProtonVetoElectronNsigma", pProtonVetoElectronNsigma.value);
+    add("pProtonMinPt", pProtonMinPt.value);
+    add("pProtonMaxPt", pProtonMaxPt.value);
+    add("pProtonMaxY", pProtonMaxY.value);
+    add("cV0MaxDcaDaughters", cV0MaxDcaDaughters.value);
+    add("lambdaV0DaughterProtonMinDCAToPV", lambdaV0DaughterProtonMinDCAToPV.value);
+    add("lambdaV0DaughterPionMinDCAToPV", lambdaV0DaughterPionMinDCAToPV.value);
+    add("lambdaV0MinCosPA", lambdaV0MinCosPA.value);
+    add("lambdaV0MinDecayRadius", lambdaV0MinDecayRadius.value);
+    add("cV0MaxDcaToPV", cV0MaxDcaToPV.value);
+    add("lambdaV0DaughterPionTPCNsigma", lambdaV0DaughterPionTPCNsigma.value);
+    add("lambdaV0DaughterProtonTPCNsigma", lambdaV0DaughterProtonTPCNsigma.value);
+    add("lambdaV0MinPt", lambdaV0MinPt.value);
+    add("lambdaV0MaxPt", lambdaV0MaxPt.value);
+    add("lambdaV0MaxY", lambdaV0MaxY.value);
+    add("lambdaV0MaxCTau", lambdaV0MaxCTau.value);
+    add("lambdaV0KShortRejectMassWindow", lambdaV0KShortRejectMassWindow.value);
+    add("lambdaV0MassWindow", lambdaV0MassWindow.value);
+    add("cV0TypeSelection", cV0TypeSelection.value);
+    add("cV0DauMinPt", cV0DauMinPt.value);
+    add("cV0DauMaxEta", cV0DauMaxEta.value);
+    add("cV0DauMinTpcCrossedRows", cV0DauMinTpcCrossedRows.value);
+    add("lambdaV0ArmSlope", lambdaV0ArmSlope.value);
+    add("lambdaV0RejectAmbiguousDaughters", lambdaV0RejectAmbiguousDaughters.value);
+    add("lambdaV0KeepSharedCandidates", lambdaV0KeepSharedCandidates.value);
+    add("lambdaV0RejectSharedCandidates", lambdaV0RejectSharedCandidates.value);
+    add("cUseQinvCut", cUseQinvCut.value);
+    add("cQinvCutValue", cQinvCutValue.value);
+    add("cRhoPhiBins", cRhoPhiBins.value);
+    for (size_t species = 0; species < kCorrectionSpecies.size(); ++species) {
+      out << '|' << kCorrectionSpecies[species];
+      const auto& h = state.correctionInputs[species][0];
+      for (auto const& axis : {h->GetXaxis(), h->GetYaxis(), h->GetZaxis()}) {
+        out << '|';
+        if (axis->GetXbins()->GetSize() == 0) {
+          // Serialize the uniform-axis definition: calculated edges can differ
+          // by floating-point rounding between worker platforms.
+          out << "U," << axis->GetNbins() << ','
+              << axis->GetXmin() << ',' << axis->GetXmax() << ',';
+        } else {
+          // Variable axes have explicit stored edges; preserve them exactly.
+          out << "V," << axis->GetNbins() << ',';
+          for (int i = 0; i < axis->GetXbins()->GetSize(); ++i) {
+            out << axis->GetXbins()->At(i) << ',';
+          }
+        }
+      }
+    }
+    return out.str();
+  }
+
+  static bool correctionAxisMatches(TAxis const& a, TAxis const& b)
+  {
+    if (a.GetNbins() != b.GetNbins()) {
+      return false;
+    }
+    for (int bin = 1; bin <= a.GetNbins() + 1; ++bin) {
+      if (!std::isfinite(a.GetBinLowEdge(bin)) || a.GetBinLowEdge(bin) != b.GetBinLowEdge(bin)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static bool correctionCoordinatesInRange(TH3 const& h, double cent, double pt, double y)
+  {
+    return std::isfinite(cent) && std::isfinite(pt) && std::isfinite(y) &&
+           cent >= h.GetXaxis()->GetXmin() && cent < h.GetXaxis()->GetXmax() &&
+           pt >= h.GetYaxis()->GetXmin() && pt < h.GetYaxis()->GetXmax() &&
+           y >= h.GetZaxis()->GetXmin() && y < h.GetZaxis()->GetXmax();
+  }
+
+  // Hyperloop contract:
+  // Run1: processMCEfficiency=1, other processes=0, both correction switches=0.
+  // Merge first. Append the 16 TH3D hStage{1,2,3}_<species>/hGenPrimary_<species>,
+  // hCorrectionMetadata (TH1D) and hCorrectionInputQA (TH2D), unchanged, from
+  // CombinedCorrectionInputs to the SAME TList as the existing hInvEff_* maps.
+  // Upload through the existing macro; this task never writes to CCDB.
+  // Run2: processMCRecBF=1, other processes=0, cApplyCombinedCorr=1 and the same
+  // selection/axis settings, cEffCcdbPath and a timestamp inside its validity.
+  // The inverse maps are optional for combined mode but retained for old jobs.
+  // No worker-produced ratios are merged or uploaded. Derived maps below are
+  // private runtime objects (not output histograms to be added across workers).
+  void initCombinedCorrection()
+  {
+    if (!doprocessMCEfficiency.value && !cApplyCombinedCorr.value) {
+      return;
+    }
+    // In application-only jobs these are private axis templates, not outputs.
+    HistogramRegistry templates{"correctionTemplates", {}, OutputObjHandlingPolicy::AnalysisObject};
+    auto& inputs = doprocessMCEfficiency.value ? registryCorrInputs : templates;
+    const AxisSpec axCent(cCentBins, "centrality (%)");
+    const AxisSpec axLambdaPt(lambdaEffPtAxis, "pT (GeV/c)");
+    const AxisSpec axProtonPt{60, 0., 6., "pT (GeV/c)"};
+    const AxisSpec axY{cRhoYBins.value, cRhoYMin.value, cRhoYMax.value, "y"};
+    for (size_t species = 0; species < kCorrectionSpecies.size(); ++species) {
+      for (size_t stage = 0; stage < kCorrectionInputs.size(); ++stage) {
+        const std::string name = std::string(kCorrectionInputs[stage]) + kCorrectionSpecies[species];
+        auto h = inputs.add<TH3>(name.c_str(), name.c_str(),
+                                 {HistType::kTH3D, {axCent, species < LambdaSpeciesCount ? axLambdaPt : axProtonPt, axY}});
+        h->Sumw2();
+        state.correctionInputs[species][stage] = h;
+      }
+      const auto& h = state.correctionInputs[species][0];
+      const double minPt = species < LambdaSpeciesCount ? lambdaV0MinPt.value : pProtonMinPt.value;
+      const double maxPt = species < LambdaSpeciesCount ? lambdaV0MaxPt.value : pProtonMaxPt.value;
+      const double maxY = species < LambdaSpeciesCount ? lambdaV0MaxY.value : pProtonMaxY.value;
+      // Keep rejecting NaN bounds when simplifying the ordered comparisons.
+      if (std::isnan(minPt) || std::isnan(maxPt) || std::isnan(maxY) ||
+          minPt >= maxPt || maxY <= 0. || h->GetYaxis()->GetXmin() > minPt ||
+          h->GetYaxis()->GetXmax() < maxPt || h->GetZaxis()->GetXmin() > -maxY ||
+          h->GetZaxis()->GetXmax() < maxY ||
+          (species >= LambdaSpeciesCount && (h->GetYaxis()->GetXmax() <= maxPt || h->GetZaxis()->GetXmax() <= maxY))) {
+        if (cApplyCombinedCorr.value) {
+          LOGF(fatal, "Combined correction axes do not cover %s acceptance (proton upper cuts are inclusive)", kCorrectionSpecies[species]);
+        } else {
+          LOGF(warn, "Combined input axes do not fully cover %s acceptance; legacy efficiency retained, combined application will reject this configuration", kCorrectionSpecies[species]);
+        }
+      }
+    }
+    const auto contract = correctionContract();
+    for (const auto& species : state.correctionInputs) {
+      for (const auto& h : species) {
+        std::string title = h->GetName();
+        title += '|';
+        title += contract;
+        h->SetTitle(title.c_str());
+      }
+    }
+    // A count plus the individual bits of the exact contract, not a hash or an
+    // averaged configuration. Merging differently configured workers changes at
+    // least one bit occupancy away from 0 or the total count and is rejected.
+    const int metadataBins = 1 + MetadataBitsPerByte * static_cast<int>(contract.size());
+    state.correctionMetadata = inputs.add<TH1>("hCorrectionMetadata", contract.c_str(),
+                                               {HistType::kTH1D, {{metadataBins, 0.5, metadataBins + 0.5}}});
+    state.correctionInputQA = inputs.add<TH2>("hCorrectionInputQA", "Input validation;Species;Reason",
+                                              {HistType::kTH2D, {{4, -0.5, 3.5}, {6, 0.5, 6.5}}});
+    const std::array<const char*, 6> reasons = {"reco outside map", "generated outside map", "nonfinite reco", "nonfinite generated", "Stage3 Lambda without daughters", "Stage3 truth outside acceptance"};
+    for (size_t species = 0; species < kCorrectionSpecies.size(); ++species) {
+      state.correctionInputQA->GetXaxis()->SetBinLabel(species + 1, kCorrectionSpecies[species]);
+    }
+    for (size_t reason = 0; reason < reasons.size(); ++reason) {
+      state.correctionInputQA->GetYaxis()->SetBinLabel(reason + 1, reasons[reason]);
+    }
+    if (!cApplyCombinedCorr.value) {
+      return;
+    }
+    const AxisSpec phi{state.mRhoPhiBins, 0., o2::constants::math::TwoPI, "phi"};
+    const AxisSpec index{state.mRhoUnrolledBinsY, 0., static_cast<double>(state.mRhoUnrolledBinsY), "index(y,phi)"};
+    const auto book = [&](CombinedRhoSet& set, std::string const& dir) {
+      for (size_t species = 0; species < kCorrectionSpecies.size(); ++species) {
+        const std::string name = dir + "h2_rho1_" + kCorrectionSpecies[species] + "_y";
+        set.singles[species] = registryCombined.add<TH2>(name.c_str(), "Combined-corrected rho1;y;phi", {HistType::kTH2D, {axY, phi}});
+        set.singles[species]->Sumw2();
+      }
+      for (size_t channel = 0; channel < kCombinedChannels.size(); ++channel) {
+        const std::string name = dir + "h2_rho2_" + kCombinedChannels[channel] + "_y_AllPt";
+        set.pairs[channel] = registryCombined.add<TH2>(name.c_str(), "Combined-corrected ordered rho2", {HistType::kTH2D, {index, index}});
+        set.pairs[channel]->Sumw2();
+      }
+    };
+    book(state.combinedIntegrated, "");
+    if (cFillCentHists.value) {
+      state.combinedCentrality.resize(state.centEdgesLocal.size() - 1);
+      for (size_t bin = 0; bin < state.combinedCentrality.size(); ++bin) {
+        book(state.combinedCentrality[bin], Form("Cent%02d_%02d/", static_cast<int>(state.centEdgesLocal[bin]), static_cast<int>(state.centEdgesLocal[bin + 1])));
+      }
+    }
+    // Event normalization uses the already-filled legacy BF event counters.
+    // No cent-range event cut exists: configure cCentBins for the intended
+    // coverage in BOTH runs. With default 0..80, out-of-range candidates are
+    // explicitly rejected by lookup QA; integrated full-event closure is then
+    // not established. Empty/zero-efficiency bins likewise remove support.
+    state.combinedLookupQA = registryCombined.add<TH2>("hCombinedLookupQA", "One lookup per selected candidate;Species;Status",
+                                                       {HistType::kTH2D, {{4, -0.5, 3.5}, {4, 0.5, 4.5}}});
+    const std::array<const char*, 4> statuses = {"accepted", "nonfinite or outside map", "empty/zero-efficiency bin", "outside rho grid"};
+    for (size_t species = 0; species < kCorrectionSpecies.size(); ++species) {
+      state.combinedLookupQA->GetXaxis()->SetBinLabel(species + 1, kCorrectionSpecies[species]);
+      state.combinedLookupQA->GetYaxis()->SetBinLabel(species + 1, statuses[species]);
+    }
+  }
+
+  void loadCombinedCorrection(TList const& list)
+  {
+    const auto contract = correctionContract();
+    auto* metadata = dynamic_cast<TH1D*>(list.FindObject("hCorrectionMetadata"));
+    const int expectedBins = 1 + MetadataBitsPerByte * static_cast<int>(contract.size());
+    if (!metadata || metadata->GetNbinsX() != expectedBins || contract != metadata->GetTitle() ||
+        !correctionAxisMatches(*metadata->GetXaxis(), *state.correctionMetadata->GetXaxis())) {
+      LOGF(fatal, "Missing/incompatible hCorrectionMetadata: upload the original merged metadata with all 16 raw counts");
+      return;
+    }
+    const double workers = metadata->GetBinContent(1);
+    if (!std::isfinite(workers) || workers < 1. || workers != std::floor(workers) ||
+        metadata->GetBinContent(0) != 0. || metadata->GetBinContent(expectedBins + 1) != 0.) {
+      LOGF(fatal, "Invalid combined-correction metadata count");
+      return;
+    }
+    for (size_t character = 0; character < contract.size(); ++character) {
+      for (int bit = 0; bit < MetadataBitsPerByte; ++bit) {
+        const bool set = ((static_cast<unsigned char>(contract[character]) >> bit) & 1U) != 0U;
+        if (metadata->GetBinContent(2 + MetadataBitsPerByte * character + bit) != (set ? workers : 0.)) {
+          LOGF(fatal, "Combined-correction inputs mix incompatible worker selections/axes or metadata was modified");
+          return;
+        }
+      }
+    }
+    auto* qa = dynamic_cast<TH2D*>(list.FindObject("hCorrectionInputQA"));
+    if (!qa || !correctionAxisMatches(*qa->GetXaxis(), *state.correctionInputQA->GetXaxis()) ||
+        !correctionAxisMatches(*qa->GetYaxis(), *state.correctionInputQA->GetYaxis())) {
+      LOGF(fatal, "Missing/incompatible merged hCorrectionInputQA");
+      return;
+    }
+    for (int bin = 0; bin < qa->GetNcells(); ++bin) {
+      const double count = qa->GetBinContent(bin);
+      if (!std::isfinite(count) || count < 0. || count != std::floor(count)) {
+        LOGF(fatal, "Invalid correction input QA count");
+        return;
+      }
+    }
+    for (size_t species = 0; species < kCorrectionSpecies.size(); ++species) {
+      if (qa->GetBinContent(species + 1, 3) > 0. || qa->GetBinContent(species + 1, 4) > 0. ||
+          qa->GetBinContent(species + 1, 5) > 0.) {
+        LOGF(fatal, "Unsafe %s correction inputs: nonfinite coordinates or Stage3 Lambda without daughter records; legacy denominator retained", kCorrectionSpecies[species]);
+        return;
+      }
+    }
+    for (size_t species = 0; species < kCorrectionSpecies.size(); ++species) {
+      std::array<TH3D*, 4> raw{};
+      const auto& expected = state.correctionInputs[species][0];
+      for (size_t stage = 0; stage < raw.size(); ++stage) {
+        const std::string name = std::string(kCorrectionInputs[stage]) + kCorrectionSpecies[species];
+        raw[stage] = dynamic_cast<TH3D*>(list.FindObject(name.c_str()));
+        auto* h = raw[stage];
+        std::string expectedTitle = name;
+        expectedTitle += '|';
+        expectedTitle += contract;
+        if (h == nullptr || std::string(h->GetTitle()) != expectedTitle ||
+            !correctionAxisMatches(*h->GetXaxis(), *expected->GetXaxis()) ||
+            !correctionAxisMatches(*h->GetYaxis(), *expected->GetYaxis()) ||
+            !correctionAxisMatches(*h->GetZaxis(), *expected->GetZaxis()) || h->GetSumw2N() != h->GetNcells()) {
+          LOGF(fatal, "Missing/incompatible TH3D %s: preserve merged raw counts, titles, axes and Sumw2", name.c_str());
+          return;
+        }
+        for (int bin = 0; bin < h->GetNcells(); ++bin) {
+          const double n = h->GetBinContent(bin);
+          // Unit-weight raw counts must have Sumw2 == content. Reject ratios,
+          // scaled spectra, negative/nonfinite entries and lost integer precision.
+          if (!std::isfinite(n) || n < 0. || n >= 0x1p53 || n != std::floor(n) || h->GetSumw2()->At(bin) != n) {
+            LOGF(fatal, "Non-raw or invalid correction count in %s bin %d", name.c_str(), bin);
+            return;
+          }
+        }
+      }
+      const std::array<const char*, 5> mapNames = {"hPurity_", "hPrimaryFraction_", "hEfficiency_", "hCombinedWeight_", "hCombinedValid_"};
+      for (size_t kind = 0; kind < mapNames.size(); ++kind) {
+        const std::string name = std::string(mapNames[kind]) + kCorrectionSpecies[species];
+        auto* clonedObject = raw[0]->Clone(name.c_str());
+        auto* map = dynamic_cast<TH3D*>(clonedObject);
+        if (map == nullptr) {
+          delete clonedObject;
+          LOGF(fatal, "Cannot clone combined correction map %s as TH3D", name.c_str());
+          return;
+        }
+        state.correctionMaps[species][kind].reset(map);
+        state.correctionMaps[species][kind]->SetDirectory(nullptr);
+        state.correctionMaps[species][kind]->Reset();
+      }
+      int validBins = 0;
+      int invalidBins = 0;
+      int efficiencyAboveOne = 0;
+      for (int bin = 0; bin < raw[0]->GetNcells(); ++bin) {
+        const double n1 = raw[0]->GetBinContent(bin);
+        const double n2 = raw[1]->GetBinContent(bin);
+        const double n3 = raw[2]->GetBinContent(bin);
+        const double gen = raw[3]->GetBinContent(bin);
+        if (n3 > n2 || n2 > n1) {
+          LOGF(fatal, "Stage3 <= Stage2 <= Stage1 violated for %s bin %d", kCorrectionSpecies[species], bin);
+          return;
+        }
+        int bx = 0, by = 0, bz = 0;
+        raw[0]->GetBinXYZ(bin, bx, by, bz);
+        if (bx < 1 || bx > raw[0]->GetNbinsX() || by < 1 || by > raw[0]->GetNbinsY() || bz < 1 || bz > raw[0]->GetNbinsZ()) {
+          continue; // All flow bins remain explicitly invalid, even if populated.
+        }
+        auto& maps = state.correctionMaps[species];
+        if (n1 > 0.) {
+          maps[0]->SetBinContent(bin, n2 / n1);
+        }
+        if (n2 > 0.) {
+          maps[1]->SetBinContent(bin, n3 / n2);
+        }
+        if (gen > 0.) {
+          maps[2]->SetBinContent(bin, n3 / gen);
+        }
+        if (n1 <= 0. || n2 <= 0. || n3 <= 0. || gen <= 0.) {
+          ++invalidBins;
+          continue; // Do not use cancellation to bypass zero efficiency/0/0.
+        }
+        const double purity = n2 / n1;
+        const double primary = n3 / n2;
+        const double efficiency = n3 / gen; // Exactly Stage3, no second numerator.
+        const double weight = purity * primary / efficiency;
+        const double cancelled = gen / n1;
+        if (!std::isfinite(weight) || weight <= 0. ||
+            std::abs(weight - cancelled) > CancellationTolerance * std::max(weight, cancelled)) {
+          LOGF(fatal, "Combined correction cancellation/numerical check failed for %s bin %d", kCorrectionSpecies[species], bin);
+          return;
+        }
+        maps[3]->SetBinContent(bin, weight);
+        maps[4]->SetBinContent(bin, 1.);
+        ++validBins;
+        if (efficiency > 1.) {
+          ++efficiencyAboveOne;
+        }
+      }
+      if (validBins == 0) {
+        LOGF(fatal, "No valid combined-correction bins for %s", kCorrectionSpecies[species]);
+        return;
+      }
+      LOGF(info, "%s merged combined maps: %d valid, %d empty/zero-efficiency bins, %d efficiency>1 bins (migration/duplicates are not clipped)",
+           kCorrectionSpecies[species], validBins, invalidBins, efficiencyAboveOne);
+    }
+    LOGF(info, "Combined correction uses reconstructed/truth coordinate spectra, not unfolding. Pair factorization is approximate. Same-sample LHC25b4a6 closure has statistical overlap. Map uncertainties are not propagated by rho Sumw2.");
+  }
 
   // ── Two-region PID selection for (anti)protons ────────────────────────
   template <typename TTrack>
@@ -1310,6 +1705,9 @@ struct LambdaProtonBalanceFunction {
 
   void init(InitContext const&)
   {
+    if (cApplyCombinedCorr.value && (!doprocessMCRecBF.value || cEffCcdbPath.value.empty())) {
+      LOGF(fatal, "cApplyCombinedCorr requires processMCRecBF=true and the single cEffCcdbPath; data/gen combined correction is not enabled");
+    }
     if (static_cast<int>(doprocessData.value) + static_cast<int>(doprocessMCRecBF.value) +
           static_cast<int>(doprocessMCGenBF.value) >
         1) {
@@ -2250,6 +2648,10 @@ struct LambdaProtonBalanceFunction {
       "mCentMin=" + std::to_string(state.mCentMin),
       "mCentMax=" + std::to_string(state.mCentMax),
       "cFillCentHists=" + std::to_string(static_cast<int>(cFillCentHists.value))};
+    if (cApplyCombinedCorr.value) {
+      configLabels.emplace_back("cApplyCombinedCorr=1: MCRecoCombined uses Pf/eff");
+      configLabels.emplace_back("legacyMCRecoWeight=1: cApplyEffCorr superseded");
+    }
     std::string centBinsLabel = "cCentBins=";
     for (const float& edge : state.centEdgesLocal) {
       if (centBinsLabel != "cCentBins=") {
@@ -2265,8 +2667,11 @@ struct LambdaProtonBalanceFunction {
       hConfig->GetXaxis()->SetBinLabel(i + 1, configLabels[i].c_str());
     }
 
-    // ── Efficiency correction: load 1/eff maps once ──────────────────────
-    if (cApplyEffCorr.value) {
+    initCombinedCorrection();
+
+    // One existing CCDB fetch serves either correction mode. In combined mode
+    // the separate legacy MCReco output is unweighted, regardless of cApplyEffCorr.
+    if (cApplyEffCorr.value || cApplyCombinedCorr.value) {
       if (!cEffCcdbPath.value.empty()) {
         // ── load from CCDB (TList of TH3) ──
         ccdb->setURL(cCcdbUrl.value);
@@ -2289,10 +2694,14 @@ struct LambdaProtonBalanceFunction {
           h->SetDirectory(nullptr);
           return h;
         };
-        state.invEffL = loadMap("hInvEff_Lambda");
-        state.invEffAL = loadMap("hInvEff_AntiLambda");
-        state.invEffP = loadMap("hInvEff_Proton");
-        state.invEffAP = loadMap("hInvEff_AntiProton");
+        if (cApplyCombinedCorr.value) {
+          loadCombinedCorrection(*effList);
+        } else {
+          state.invEffL = loadMap("hInvEff_Lambda");
+          state.invEffAL = loadMap("hInvEff_AntiLambda");
+          state.invEffP = loadMap("hInvEff_Proton");
+          state.invEffAP = loadMap("hInvEff_AntiProton");
+        }
       } else {
         // ── load from a ROOT file (fallback / local tests) ──
         TFile* fEff = TFile::Open(cEffFile.value.c_str(), "READ");
@@ -3097,6 +3506,263 @@ struct LambdaProtonBalanceFunction {
       state.runTotalAntiPRemovedVeto += nAntiPRemovedVeto;
     }
     // ─────────────────────────────────────────────────────────────────────
+  }
+
+  struct CorrectionCandidates {
+    std::vector<MyV0sMC::iterator> lambdas, antiLambdas;
+    std::vector<MyTracksMC::iterator> protons, antiProtons;
+  };
+
+  template <typename TCollision>
+  CorrectionCandidates selectCorrectionCandidates(TCollision const& collision, MyV0sMC const& v0s, MyTracksMC const& tracks)
+  {
+    CorrectionCandidates selected;
+    std::unordered_set<int64_t> daughters;
+    // Verified against data's <true,false,MyTracks> specialization: fillQA
+    // gates histogram/counter side effects only. useMCV0Labels gates BOTH the
+    // parent/daughter label precondition and optional truth filters. The MC join
+    // only adds columns; no label is read here or by the proton selector.
+    // This same call builds the conservative PRE-cleaning veto in both runs.
+    selectRecoV0s<false, false, MyTracksMC>(collision, v0s, selected.lambdas, selected.antiLambdas, daughters);
+    selectRecoProtons<false>(tracks, daughters, selected.protons, selected.antiProtons);
+    return selected;
+  }
+
+  void recordCorrectionMetadata()
+  {
+    if (state.correctionMetadataRecorded) {
+      return;
+    }
+    state.correctionMetadataRecorded = true;
+    const std::string contract = state.correctionMetadata->GetTitle();
+    state.correctionMetadata->Fill(1.);
+    for (size_t character = 0; character < contract.size(); ++character) {
+      for (int bit = 0; bit < MetadataBitsPerByte; ++bit) {
+        if (((static_cast<unsigned char>(contract[character]) >> bit) & 1U) != 0U) {
+          state.correctionMetadata->Fill(2 + MetadataBitsPerByte * character + bit);
+        }
+      }
+    }
+  }
+
+  void fillCorrectionGenerated(size_t species, float cent, float pt, float y)
+  {
+    if (!std::isfinite(cent) || !std::isfinite(pt) || !std::isfinite(y)) {
+      state.correctionInputQA->Fill(species, 4.);
+      return;
+    }
+    auto& h = state.correctionInputs[species][3];
+    if (!correctionCoordinatesInRange(*h, cent, pt, y)) {
+      state.correctionInputQA->Fill(species, 2.);
+    }
+    h->Fill(cent, pt, y); // Unit weight, including explicitly invalid flow bins.
+  }
+
+  template <bool isV0, typename TCandidate>
+  void fillCorrectionCandidate(TCandidate const& candidate, size_t species, int64_t mcCollisionId, float cent)
+  {
+    float y = 0.f;
+    if constexpr (isV0) {
+      y = candidate.rapidity(species == 0 ? 1 : 2);
+    } else {
+      y = protonRapidity(candidate);
+    }
+    const float pt = candidate.pt();
+    if (!std::isfinite(cent) || !std::isfinite(pt) || !std::isfinite(y)) {
+      state.correctionInputQA->Fill(species, 3.);
+      return;
+    }
+    auto& hist = state.correctionInputs[species];
+    if (!correctionCoordinatesInRange(*hist[0], cent, pt, y)) {
+      state.correctionInputQA->Fill(species, 1.);
+    }
+    hist[0]->Fill(cent, pt, y); // Stage1 precedes ANY MC label access.
+    if (!candidate.has_mcParticle()) {
+      return;
+    }
+    aod::McParticles const* truth = nullptr;
+    if constexpr (isV0) {
+      truth = static_cast<aod::mcv0label::McParticleId const&>(candidate).getCurrent();
+    } else {
+      truth = static_cast<aod::mctracklabel::McParticleId const&>(candidate).getCurrent();
+    }
+    const int64_t id = candidate.mcParticleId();
+    if (!usableMCIndex(truth, id)) {
+      return;
+    }
+    const auto mc = truth->rawIteratorAt(id - truth->offset());
+    static constexpr std::array<int, 4> signedPDG = {PDG_t::kLambda0, PDG_t::kLambda0Bar, PDG_t::kProton, PDG_t::kProtonBar};
+    if (mc.mcCollisionId() != mcCollisionId || mc.pdgCode() != signedPDG[species]) {
+      return;
+    }
+    hist[1]->Fill(cent, pt, y);
+    if (!mc.isPhysicalPrimary()) {
+      return;
+    }
+    hist[2]->Fill(cent, pt, y); // Exactly Stage3, at the SAME reconstructed bin.
+    if constexpr (isV0) {
+      if (!mc.has_daughters()) {
+        // Do not redefine Stage3 to hide incompatibility with the legacy target.
+        state.correctionInputQA->Fill(species, 5.);
+      }
+      if (!inLambdaAcc(mc.pt(), mc.y())) {
+        state.correctionInputQA->Fill(species, 6.);
+      }
+    } else {
+      if (!inProtonAcc(mc.pt(), mcRapidity(mc, kMassProton))) {
+        state.correctionInputQA->Fill(species, 6.);
+      }
+    }
+  }
+
+  template <typename TCollision>
+  void fillCorrectionInputs(TCollision const& collision, MyV0sMC const& v0s, MyTracksMC const& tracks, int64_t mcCollisionId, float cent)
+  {
+    const auto selected = selectCorrectionCandidates(collision, v0s, tracks);
+    for (const auto& v0 : selected.lambdas) {
+      fillCorrectionCandidate<true>(v0, 0, mcCollisionId, cent);
+    }
+    for (const auto& v0 : selected.antiLambdas) {
+      fillCorrectionCandidate<true>(v0, 1, mcCollisionId, cent);
+    }
+    for (const auto& track : selected.protons) {
+      fillCorrectionCandidate<false>(track, 2, mcCollisionId, cent);
+    }
+    for (const auto& track : selected.antiProtons) {
+      fillCorrectionCandidate<false>(track, 3, mcCollisionId, cent);
+    }
+  }
+
+  struct CombinedParticle {
+    PartInfo info;
+    int64_t posDaughter = -1, negDaughter = -1;
+    bool isV0 = false;
+    double weight = 0.;
+  };
+
+  template <bool isV0, typename TCandidate>
+  CombinedParticle makeCombinedParticle(TCandidate const& candidate, size_t species, float cent)
+  {
+    CombinedParticle result;
+    auto& p = result.info;
+    p.gid = candidate.globalIndex();
+    p.px = candidate.px();
+    p.py = candidate.py();
+    p.pz = candidate.pz();
+    p.pt = candidate.pt();
+    p.phi = candidate.phi();
+    const float mass = isV0 ? kMassLambda : kMassProton;
+    p.E = std::sqrt(p.px * p.px + p.py * p.py + p.pz * p.pz + mass * mass);
+    if constexpr (isV0) {
+      result.isV0 = true;
+      result.posDaughter = candidate.posTrackId();
+      result.negDaughter = candidate.negTrackId();
+      p.y = candidate.rapidity(species == 0 ? 1 : 2);
+    } else {
+      p.y = protonRapidity(candidate);
+    }
+    const auto& maps = state.correctionMaps[species];
+    if (!correctionCoordinatesInRange(*maps[3], cent, p.pt, p.y) || !std::isfinite(p.phi) || !std::isfinite(p.E)) {
+      state.combinedLookupQA->Fill(species, 2.);
+      return result;
+    }
+    const int bin = maps[3]->FindFixBin(cent, p.pt, p.y);
+    const double weight = maps[3]->GetBinContent(bin);
+    if (maps[4]->GetBinContent(bin) != 1. || !std::isfinite(weight) || weight <= 0.) {
+      state.combinedLookupQA->Fill(species, 3.);
+      return result;
+    }
+    p.idxY = unrolledIndexY(p.y, p.phi);
+    if (p.idxY < 0) {
+      state.combinedLookupQA->Fill(species, 4.);
+      return result;
+    }
+    result.weight = weight;
+    state.combinedLookupQA->Fill(species, 1.);
+    return result;
+  }
+
+  void fillCombinedPairs(std::vector<CombinedParticle> const& first, std::vector<CombinedParticle> const& second,
+                         std::shared_ptr<TH2> const& integrated, std::shared_ptr<TH2> const& centrality)
+  {
+    for (const auto& a : first) {
+      for (const auto& b : second) {
+        if (a.isV0 == b.isV0 && a.info.gid == b.info.gid) {
+          continue;
+        }
+        if (a.isV0 && b.isV0) {
+          if (a.posDaughter == b.posDaughter || a.posDaughter == b.negDaughter ||
+              a.negDaughter == b.posDaughter || a.negDaughter == b.negDaughter) {
+            continue;
+          }
+        } else if ((a.isV0 && (a.posDaughter == b.info.gid || a.negDaughter == b.info.gid)) ||
+                   (b.isV0 && (b.posDaughter == a.info.gid || b.negDaughter == a.info.gid))) {
+          continue;
+        }
+        const auto& p = a.info;
+        const auto& q = b.info;
+        const float qinv = computeQinv(p.px, p.py, p.pz, p.E, q.px, q.py, q.pz, q.E);
+        if (!std::isfinite(qinv) || failsQinvCut(qinv)) {
+          continue;
+        }
+        // Factorized single-particle correction is an approximation: correlated
+        // background, feed-down and pair reconstruction need separate studies.
+        const double weight = a.weight * b.weight;
+        if (!std::isfinite(weight)) {
+          LOGF(fatal, "Nonfinite combined pair weight");
+          return;
+        }
+        integrated->Fill(p.idxY + 0.5, q.idxY + 0.5, weight);
+        if (centrality) {
+          centrality->Fill(p.idxY + 0.5, q.idxY + 0.5, weight);
+        }
+      }
+    }
+  }
+
+  template <typename TCollision>
+  void runCombinedRecoAnalysis(TCollision const& collision, MyV0sMC const& v0s, MyTracksMC const& tracks, float cent)
+  {
+    const auto selected = selectCorrectionCandidates(collision, v0s, tracks);
+    std::array<std::vector<CombinedParticle>, 4> particles;
+    const auto append = [&](CombinedParticle const& particle, size_t species) {
+      if (particle.weight > 0.) {
+        particles[species].push_back(particle);
+      }
+    };
+    for (const auto& v0 : selected.lambdas) {
+      append(makeCombinedParticle<true>(v0, 0, cent), 0);
+    }
+    for (const auto& v0 : selected.antiLambdas) {
+      append(makeCombinedParticle<true>(v0, 1, cent), 1);
+    }
+    for (const auto& track : selected.protons) {
+      append(makeCombinedParticle<false>(track, 2, cent), 2);
+    }
+    for (const auto& track : selected.antiProtons) {
+      append(makeCombinedParticle<false>(track, 3, cent), 3);
+    }
+    CombinedRhoSet* cs = nullptr;
+    const int centBin = centBinIndex(cent);
+    if (cFillCentHists.value && centBin >= 0 && centBin < static_cast<int>(state.combinedCentrality.size())) {
+      cs = &state.combinedCentrality[centBin];
+    }
+    for (size_t species = 0; species < particles.size(); ++species) {
+      for (const auto& p : particles[species]) {
+        state.combinedIntegrated.singles[species]->Fill(p.info.y, p.info.phi, p.weight);
+        if (cs) {
+          cs->singles[species]->Fill(p.info.y, p.info.phi, p.weight);
+        }
+      }
+    }
+    // Ordered channels: Lp,LAp,ALp,ALAp,pp,pAp,App,ApAp,LL,LAL,ALL,ALAL.
+    static constexpr std::array<size_t, 12> first = {0, 0, 1, 1, 2, 2, 3, 3, 0, 0, 1, 1};
+    static constexpr std::array<size_t, 12> second = {2, 3, 2, 3, 2, 3, 2, 3, 0, 1, 0, 1};
+    for (size_t channel = 0; channel < kCombinedChannels.size(); ++channel) {
+      fillCombinedPairs(particles[first[channel]], particles[second[channel]],
+                        state.combinedIntegrated.pairs[channel], cs ? cs->pairs[channel] : nullptr);
+    }
+    // No legacy QA, Stage1-3 multiplicity or event-counter fills in this pass.
   }
 
   void fillStage23Counts(int64_t /*mcCollisionId*/,
@@ -4250,6 +4916,7 @@ struct LambdaProtonBalanceFunction {
                            MyTracksMC const& allTracks,
                            aod::McParticles const& mcParticles)
   {
+    recordCorrectionMetadata(); // Only this process writes correction inputs/metadata.
     // ── 1) Event association + selection (soa::Filtered does not apply to SmallGroups) ──
     // Exactly one reconstructed collision per MC collision: removes split-vertex double counting.
     if (collisions.size() != 1) {
@@ -4293,8 +4960,10 @@ struct LambdaProtonBalanceFunction {
         }
         if (pdg == PDG_t::kLambda0) {
           registryEff.fill(HIST("GenLambda"), cent, pt, y);
+          fillCorrectionGenerated(0, cent, pt, y);
         } else {
           registryEff.fill(HIST("GenAntiLambda"), cent, pt, y);
+          fillCorrectionGenerated(1, cent, pt, y);
         }
       } else if (pdg == PDG_t::kProton || pdg == PDG_t::kProtonBar) {
         const float pt = mc.pt();
@@ -4304,11 +4973,18 @@ struct LambdaProtonBalanceFunction {
         }
         if (pdg == PDG_t::kProton) {
           registryEff.fill(HIST("GenProton"), cent, pt, y);
+          fillCorrectionGenerated(2, cent, pt, y);
         } else {
           registryEff.fill(HIST("GenAntiProton"), cent, pt, y);
+          fillCorrectionGenerated(3, cent, pt, y);
         }
       }
     }
+
+    // Separate, truth-blind reconstructed pass; never reuse the legacy pool.
+    // Event cuts above equal withMatchedEvent/selectBFEvent: one matched reco
+    // collision, configured sel8/reco-z/extra flags, no cent/contributor/INEL cut.
+    fillCorrectionInputs(collision, V0s, tracks, mcCollision.globalIndex(), cent);
 
     // Use the identical reconstructed selection and cleaning as processMCRecBF,
     // including the conservative daughter veto built before shared-daughter cleaning.
@@ -4400,6 +5076,9 @@ struct LambdaProtonBalanceFunction {
                            [&](auto const& collision, MyTracksMC const& tracks, float cent, CentRho2Set* cs) {
                              auto V0s = allV0s.sliceBy(v0sPerCollision, collision.globalIndex());
                              runRecoAnalysis<true, decltype(collision), MyV0sMC, MyTracksMC>(collision, V0s, tracks, cent, cs, mcCollision.globalIndex());
+                             if (cApplyCombinedCorr.value) {
+                               runCombinedRecoAnalysis(collision, V0s, tracks, cent);
+                             }
                            });
   }
   PROCESS_SWITCH(LambdaProtonBalanceFunction, processMCRecBF,
@@ -4563,7 +5242,7 @@ struct LambdaProtonBalanceFunction {
   // ─────────────────────────────────────────────────────────────────────
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<LambdaProtonBalanceFunction>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<LambdaProtonBalanceFunction>(context)};
 }

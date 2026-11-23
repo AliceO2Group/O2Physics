@@ -87,12 +87,12 @@ struct FemtoWorldIdenticalPionPair {
   Configurable<int> cfgSignPartTwo{"cfgSignPartTwo", 1, "Sign of Second particle"};
 
   /// Partition for particle 1
-  Partition<aod::FemtoWorldParticlesMerged> partsOne = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kTrack))                          // particle type cut
+  Partition<aod::FemtoWorldParticlesMerged> partsOne = (aod::femtoworldparticle::partType == static_cast<uint8_t>(aod::femtoworldparticle::ParticleType::kTrack))             // particle type cut
                                                        && (aod::femtoworldparticle::pt < cfgPtHighPart1) && (aod::femtoworldparticle::pt > cfgPtLowPart1)                     // simple pT cuts
                                                        && (aod::femtoworldparticle::eta < cfgEtaHighPart1) && (aod::femtoworldparticle::eta > cfgEtaLowPart1)                 // Eta cuts
                                                        && (nabs(o2::aod::track::dcaXY) < cfgDcaXYPart1) && (nabs(o2::aod::track::dcaZ) < cfgDcaZPart1)                        // DCA cuts for XY and Z
-                                                       && (aod::femtoworldparticle::tpcNClsFound > (uint8_t)cfgTpcClPart1)                                                    // Number of found TPC clusters
-                                                       && (aod::femtoworldparticle::tpcNClsCrossedRows > (uint8_t)cfgTpcCrosRoPart1)                                          // Crossed rows TPC
+                                                       && (aod::femtoworldparticle::tpcNClsFound > static_cast<uint8_t>(cfgTpcClPart1))                                       // Number of found TPC clusters
+                                                       && (aod::femtoworldparticle::tpcNClsCrossedRows > static_cast<uint8_t>(cfgTpcCrosRoPart1))                             // Crossed rows TPC
                                                        && (aod::femtoworldparticle::itsChi2NCl < cfgChi2ItsPart1) && (aod::femtoworldparticle::tpcChi2NCl < cfgChi2TpcPart1); //&& // chi2 cuts
 
   /// Histogramming for particle 1

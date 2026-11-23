@@ -177,6 +177,7 @@ class VarManager : public TObject
     kTripleCandidateToPKPi,     // e.g. Lambda_c -> p K- pi+
     kJpsiHadronMass,            // using the real hadron mass
     kJpsiPionMass,              // treat the hadron as pion
+    kDsToKKPi,                  // e.g. Ds+ -> K+ K- pi+ or cc.
     kNMaxCandidateTypes
   };
 
@@ -511,20 +512,21 @@ class VarManager : public TObject
     kV2ME_EP,
     kWV2ME_SP,
     kWV2ME_EP,
-    kTwoR2SP1,            // Scalar product resolution of event1 for ME technique
-    kTwoR2SP2,            // Scalar product resolution of event2 for ME technique
-    kTwoR2EP1,            // Event plane resolution of event2 for ME technique
-    kTwoR2EP2,            // Event plane resolution of event2 for ME technique
-    kDeltaPhiME_TPC,      // Delta phi of VM to TPC event plane for ME technique
-    kDeltaPhiME_FT0C,     // Delta phi of VM to FT0C event plane for ME technique
-    kDeltaPhiME_FT0A,     // Delta phi of VM to FT0A event plane for ME technique
-    kCos2DeltaPhiME_TPC,  // Cos(2*Delta phi) of VM to TPC event plane for ME technique
-    kCos2DeltaPhiME_FT0C, // Cos(2*Delta phi) of VM to FT0C event plane for ME technique
-    kCos2DeltaPhiME_FT0A, // Cos(2*Delta phi) of VM to FT0A event plane for ME technique
-    kA2EPME_TPC,          // A2 of VM to TPC event plane for ME technique
-    kA2EPME_FT0C,         // A2 of VM to FT0C event plane for ME technique
-    kA2EPME_FT0A,         // A2 of VM to FT0A event plane for ME technique
-    kNPairsPerEvent,      // number of pairs per event in same-event or mixed-event pairing
+    kTwoR2SP1,             // Scalar product resolution of event1 for ME technique
+    kTwoR2SP2,             // Scalar product resolution of event2 for ME technique
+    kTwoR2EP1,             // Event plane resolution of event2 for ME technique
+    kTwoR2EP2,             // Event plane resolution of event2 for ME technique
+    kDeltaPhiME_TPC,       // Delta phi of VM to TPC event plane for ME technique
+    kDeltaPhiME_FT0C,      // Delta phi of VM to FT0C event plane for ME technique
+    kDeltaPhiME_FT0A,      // Delta phi of VM to FT0A event plane for ME technique
+    kCos2DeltaPhiME_TPC,   // Cos(2*Delta phi) of VM to TPC event plane for ME technique
+    kCos2DeltaPhiME_FT0C,  // Cos(2*Delta phi) of VM to FT0C event plane for ME technique
+    kCos2DeltaPhiME_FT0A,  // Cos(2*Delta phi) of VM to FT0A event plane for ME technique
+    kA2EPME_TPC,           // A2 of VM to TPC event plane for ME technique
+    kA2EPME_FT0C,          // A2 of VM to FT0C event plane for ME technique
+    kA2EPME_FT0A,          // A2 of VM to FT0A event plane for ME technique
+    kNPairsPerEvent,       // number of pairs per event in same-event or mixed-event pairing
+    kNSelTracksForPairing, // number of tracks in the event passing the pairing track filter (barrel); in ME = that of the first event
     kInteractionRate,
     kMuPerBc,
 
@@ -1694,7 +1696,7 @@ class VarManager : public TObject
   static bool fgPVrecalKF;
   static void SetVariableDependencies(); // toggle those variables on which other used variables might depend
 
-  static float fgMagField;
+  static float fgMagField; // magnetic field, in kGaus
   static float fgzMatching;
   static float fgxShiftFwd;
   static float fgyShiftFwd;
@@ -3087,7 +3089,11 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kPhi] = track.phi();
     values[kCharge] = track.sign();
     if (fgUsedVars[kPhiTPCOuter]) {
-      values[kPhiTPCOuter] = RecoDecay::constrainAngle(track.phi() - track.sign() * (o2::constants::math::PIHalf - std::acos(0.22 * fgMagField / track.pt())));
+      if (track.pt() > 0.022 * fgMagField) {
+        values[kPhiTPCOuter] = RecoDecay::constrainAngle(track.phi() - track.sign() * (o2::constants::math::PIHalf - std::acos(0.022 * fgMagField / track.pt())));
+      } else {
+        values[kPhiTPCOuter] = o2::dqconstants::InvalidValueF;
+      }
     }
     if (fgUsedVars[kLocalSectorPhi]) {
       values[kLocalSectorPhi] = values[kPhiTPCOuter] - std::floor(18.0 * values[kPhiTPCOuter] / o2::constants::math::TwoPI) * (o2::constants::math::TwoPI / 18.0);
@@ -4822,6 +4828,15 @@ void VarManager::FillPairMEAcrossTFs(T const& t1, T const& t2, float* values)
   values[kEta] = v12.Eta();
   values[kPhi] = RecoDecay::constrainAngle(v12.Phi());
   values[kRap] = -v12.Rapidity();
+  values[kPt1] = t1.pt;
+  values[kEta1] = t1.eta;
+  values[kPhi1] = t1.phi;
+  values[kPt2] = t2.pt;
+  values[kEta2] = t2.eta;
+  values[kPhi2] = t2.phi;
+  if (fgUsedVars[kDeltaPhiPair2]) {
+    values[kDeltaPhiPair2] = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), -o2::constants::math::PIHalf);
+  }
 
   if (fgUsedVars[kCosThetaStarRandom] || fgUsedVars[kCosThetaStarFT0C]) {
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
@@ -5841,7 +5856,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
 
       procCode = VarManager::fgFitterThreeProngFwd.process(pars1, pars2, pars3);
       procCodeJpsi = VarManager::fgFitterTwoProngFwd.process(pars1, pars2);
-    } else if constexpr ((candidateType == kBtoJpsiEEK || candidateType == kDstarToD0KPiPi) && TrackHasCov) {
+    } else if constexpr ((candidateType == kBtoJpsiEEK || candidateType == kDstarToD0KPiPi || candidateType == kDsToKKPi) && TrackHasCov) {
       if constexpr (candidateType == kBtoJpsiEEK) {
         mlepton1 = o2::constants::physics::MassElectron;
         mlepton2 = o2::constants::physics::MassElectron;
@@ -5849,6 +5864,10 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       } else if constexpr (candidateType == kDstarToD0KPiPi) {
         mlepton1 = o2::constants::physics::MassKaonCharged;
         mlepton2 = o2::constants::physics::MassPionCharged;
+        mtrack = o2::constants::physics::MassPionCharged;
+      } else if constexpr (candidateType == kDsToKKPi) {
+        mlepton1 = o2::constants::physics::MassKaonCharged;
+        mlepton2 = o2::constants::physics::MassKaonCharged;
         mtrack = o2::constants::physics::MassPionCharged;
       }
       std::array<float, o2::dqconstants::defaults::NumTrkCovParsNoX> lepton1pars = {lepton1.y(), lepton1.z(), lepton1.snp(), lepton1.tgl(), lepton1.signed1Pt()};
@@ -5925,7 +5944,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       o2::dataformats::VertexBase primaryVertex = {vtxXYZ, vtxCov};
       auto covMatrixPV = primaryVertex.getCov();
 
-      if constexpr ((candidateType == kBtoJpsiEEK || candidateType == kDstarToD0KPiPi) && TrackHasCov) {
+      if constexpr ((candidateType == kBtoJpsiEEK || candidateType == kDstarToD0KPiPi || candidateType == kDsToKKPi) && TrackHasCov) {
         secondaryVertex = fgFitterThreeProngBarrel.getPCACandidate();
         covMatrixPCA = fgFitterThreeProngBarrel.calcPCACovMatrixFlat();
       } else if constexpr (candidateType == kBcToThreeMuons && MuonHasCov) {

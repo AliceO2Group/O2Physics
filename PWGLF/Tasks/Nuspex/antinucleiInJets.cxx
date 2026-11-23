@@ -257,7 +257,7 @@ struct AntinucleiInJets {
     rng.seed(12345);
 
     // Load reweighting histograms from CCDB if antinuclei efficiency processing is enabled
-    if (applyReweighting && (doprocessAntinucleiEfficiency || doprocessJetsMCgen || doprocessJetsMCrec)) {
+    if (applyReweighting) {
       ccdb->setURL(urlToCcdb.value);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
@@ -526,6 +526,15 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_coal_fullEvent", "antiproton_coal_fullEvent", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_coal_jet", "antiproton_coal_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_coal_ue", "antiproton_coal_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+
+      // Histograms without weights
+      registryMC.add("antideuteron_coal_jet_noweights", "antideuteron_coal_jet_noweights", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antideuteron_coal_ue_noweights", "antideuteron_coal_ue_noweights", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_coal_jet_noweights", "antiproton_coal_jet_noweights", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_coal_ue_noweights", "antiproton_coal_ue_noweights", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+
+      registryMC.add("jetEffAreaOverPiR2_MC", "jet effective area / piR^2", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});
+      registryMC.add("jetArea_MC", "jet area", HistType::kTH1F, {{5000, 0, 5, "area"}});
     }
 
     // jet pt resolution
@@ -3136,6 +3145,10 @@ struct AntinucleiInJets {
           continue;
         isAtLeastOneJetSelected = true;
 
+        // Fill histograms with jet effective area / piR^2 for normalization
+        registryMC.fill(HIST("jetEffAreaOverPiR2_MC"), jet.area() / (PI * rJet * rJet));
+        registryMC.fill(HIST("jetArea_MC"), jet.area());
+
         // Analyze jet constituents
         std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
         for (const auto& particle : jetConstituents) {
@@ -3158,10 +3171,14 @@ struct AntinucleiInJets {
             }
           }
 
-          if (particle.user_index() == PDG_t::kProtonBar)
+          if (particle.user_index() == PDG_t::kProtonBar) {
             registryMC.fill(HIST("antiproton_coal_jet"), particle.pt(), wAntipJet);
-          if (particle.user_index() == -o2::constants::physics::Pdg::kDeuteron)
+            registryMC.fill(HIST("antiproton_coal_jet_noweights"), particle.pt());
+          }
+          if (particle.user_index() == -o2::constants::physics::Pdg::kDeuteron) {
             registryMC.fill(HIST("antideuteron_coal_jet"), particle.pt(), wAntidJet);
+            registryMC.fill(HIST("antideuteron_coal_jet_noweights"), particle.pt());
+          }
         }
 
         // Set up two perpendicular cone axes for underlying event estimation
@@ -3210,10 +3227,14 @@ struct AntinucleiInJets {
           }
 
           // Fill histograms for UE
-          if (chParticle.pdgCode == PDG_t::kProtonBar)
+          if (chParticle.pdgCode == PDG_t::kProtonBar) {
             registryMC.fill(HIST("antiproton_coal_ue"), chParticle.pt(), wAntipUE);
-          if (chParticle.pdgCode == -o2::constants::physics::Pdg::kDeuteron)
+            registryMC.fill(HIST("antiproton_coal_ue_noweights"), chParticle.pt());
+          }
+          if (chParticle.pdgCode == -o2::constants::physics::Pdg::kDeuteron) {
             registryMC.fill(HIST("antideuteron_coal_ue"), chParticle.pt(), wAntidUE);
+            registryMC.fill(HIST("antideuteron_coal_ue_noweights"), chParticle.pt());
+          }
         }
       }
       if (isAtLeastOneJetSelected) {
