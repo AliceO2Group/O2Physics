@@ -26,6 +26,7 @@
 #include "Common/DataModel/Multiplicity.h"
 
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/DataTypes.h>
@@ -1115,6 +1116,25 @@ DECLARE_SOA_COLUMN(DauTpcNSigmaPi, dauTpcNSigmaPi, float);
 DECLARE_SOA_COLUMN(DauTofNSigmaPr, dauTofNSigmaPr, float);
 DECLARE_SOA_COLUMN(PtOriginal, ptOriginal, float);
 
+// columns for the TOF time of the full kink decay chain, the time difference for any
+// mother -> daughter mass hypothesis follows from them (dynamic column tofDeltaT(massMoth, massDau), ps), 0 for the right
+// hypothesis. Charged daughter without TOF signal: tofMinusEvTime = -999 and lengths 0.
+DECLARE_SOA_COLUMN(TofMinusEvTime, tofMinusEvTime, float);   //! measured TOF signal of the charged daughter minus event time (ps)
+DECLARE_SOA_COLUMN(TofLengthMoth, tofLengthMoth, float);     //! mother flight length PV -> kink vertex (cm)
+DECLARE_SOA_COLUMN(TofPMoth, tofPMoth, float);               //! measured mother momentum (GeV/c)
+DECLARE_SOA_COLUMN(TofLengthDau, tofLengthDau, float);       //! daughter flight length kink vertex -> TOF (cm)
+DECLARE_SOA_COLUMN(TofExpMomDau, tofExpMomDau, float);       //! daughter momentum used for the TOF expected time (GeV/c)
+DECLARE_SOA_COLUMN(DauTofEvTimeErr, dauTofEvTimeErr, float); //! event time resolution used for the daughter (ps)
+DECLARE_SOA_COLUMN(TofDauDeltaBc, tofDauDeltaBc, int16_t);   //! BC of the daughter's collision minus BC of the kink collision (0: same BC, TOF signal shifted to the kink BC)
+DECLARE_SOA_DYNAMIC_COLUMN(TofDeltaT, tofDeltaT,             //! (t_TOF - t_event) - (t_mother + t_daughter) for the given masses (ps), -999 without TOF
+                           [](float tofMinusEvTime, float lengthMoth, float pMoth, float lengthDau, float expMomDau, float massMoth, float massDau) -> float {
+                             if (lengthDau <= 0.f || pMoth <= 0.f || expMomDau <= 0.f) {
+                               return -999.f;
+                             }
+                             constexpr float C = o2::constants::physics::LightSpeedCm2PS;
+                             return tofMinusEvTime - lengthMoth * std::hypot(pMoth, massMoth) / (C * pMoth) - lengthDau * std::hypot(expMomDau, massDau) / (C * expMomDau);
+                           });
+
 // columns for sigma plus reconstructed with a PCM photon
 DECLARE_SOA_COLUMN(MlScore, mlScore, float);                               //! BDT score of the candidate
 DECLARE_SOA_COLUMN(FlightDirTilt, flightDirTilt, float);                   //! Tilt of the flight direction needed for a real solution of the missing photon
@@ -1225,6 +1245,20 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaExtras_001, "FSIGMAEXTRAS", 1,
                                    femtokinks::TransRadius);
 
 using FSigmaExtras = FSigmaExtras_001;
+using StoredFSigmaExtras = StoredFSigmaExtras_001;
+
+// TOF time of the full decay chain for sigma minus kinks
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaTofPids_001, "FSIGMATOFPID", 1,
+                                   femtokinks::TofMinusEvTime,
+                                   femtokinks::TofLengthMoth,
+                                   femtokinks::TofPMoth,
+                                   femtokinks::TofLengthDau,
+                                   femtokinks::TofExpMomDau,
+                                   femtokinks::DauTofEvTimeErr,
+                                   femtokinks::TofDauDeltaBc,
+                                   femtokinks::TofDeltaT<femtokinks::TofMinusEvTime, femtokinks::TofLengthMoth, femtokinks::TofPMoth, femtokinks::TofLengthDau, femtokinks::TofExpMomDau>);
+using FSigmaTofPids = FSigmaTofPids_001;
+using StoredFSigmaTofPids = StoredFSigmaTofPids_001;
 
 // table for basic sigma plus information
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlus_001, "FSIGMAPLUS", 1,
@@ -1296,6 +1330,19 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusExtras_002, "FSIGMAPLUSEXTRAS", 2,
 
 using FSigmaPlusExtras = FSigmaPlusExtras_002;
 using StoredFSigmaPlusExtras = StoredFSigmaPlusExtras_002;
+
+// TOF time of the full decay chain for sigma plus kinks
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusTofPids_001, "FSIGPLUSTOFPID", 1,
+                                   femtokinks::TofMinusEvTime,
+                                   femtokinks::TofLengthMoth,
+                                   femtokinks::TofPMoth,
+                                   femtokinks::TofLengthDau,
+                                   femtokinks::TofExpMomDau,
+                                   femtokinks::DauTofEvTimeErr,
+                                   femtokinks::TofDauDeltaBc,
+                                   femtokinks::TofDeltaT<femtokinks::TofMinusEvTime, femtokinks::TofLengthMoth, femtokinks::TofPMoth, femtokinks::TofLengthDau, femtokinks::TofExpMomDau>);
+using FSigmaPlusTofPids = FSigmaPlusTofPids_001;
+using StoredFSigmaPlusTofPids = StoredFSigmaPlusTofPids_001;
 
 // table for basic sigma plus information, sigma plus reconstructed with a PCM photon
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusPcm_001, "FSIGMAPLUSPCM", 1,
