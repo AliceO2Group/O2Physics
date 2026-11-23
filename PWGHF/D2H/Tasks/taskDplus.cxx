@@ -381,7 +381,7 @@ struct HfTaskDplus {
           registry.get<THnSparse>(HIST("hSparseMassPrompt"))->Fill(valuesToFillMcRec.data());
 
         } else if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) { // FD
-          valuesToFillMcRec.reserve(registry.get<THnSparse>(HIST("hSparseMassFD"))->GetNdimensions()-2);
+          valuesToFillMcRec.reserve(registry.get<THnSparse>(HIST("hSparseMassFD"))->GetNdimensions() - 2);
           valuesToFillMcRec.insert(valuesToFillMcRec.end(), {HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]});
           if (storeCentrality) {
             valuesToFillMcRec.push_back(centrality);
