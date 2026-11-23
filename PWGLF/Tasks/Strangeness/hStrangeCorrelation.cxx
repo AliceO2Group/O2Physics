@@ -1701,7 +1701,7 @@ struct HStrangeCorrelation {
             std::swap(binFillThnOppositeSignDaugher[2], binFillThnSameSignDaugher[2]);
           }
           std::array<double, 6> binFillThn = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
-          if (TESTBIT(doCorrelation, Index) && (!efficiencyFlags.applyEfficiencyCorrection || efficiency != 0) && (masterConfigurations.doPPAnalysis || (TESTBIT(selMap, Index) && TESTBIT(selMap, Index + 3)))) {
+          if (TESTBIT(doCorrelation, Index) && (!efficiencyFlags.applyEfficiencyCorrection || efficiency != 0) && (TESTBIT(selMap, Index) && (masterConfigurations.doPPAnalysis || TESTBIT(selMap, Index + 3)))) {
             if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!masterConfigurations.doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing &&
                 ((-massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma) ||
                  (-massWindowConfigurations.maxPeakNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxPeakNSigma) ||
@@ -3723,6 +3723,14 @@ struct HStrangeCorrelation {
       // use this cut at low multiplicities with caution
       return false;
     }
+    // same occupancy / time frame / ITS ROF border selections as in Pb-Pb
+    auto occupancy = collision.trackOccupancyInTimeRange();
+    if (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh) {
+      return false;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
     if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && masterConfigurations.rejectSameBunchPileup) {
       // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       return false;
@@ -4094,7 +4102,7 @@ struct HStrangeCorrelation {
         }
         float weight = efficiencyFlags.applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
         if (v0.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || v0.mcTrue(Index)) && (!masterConfigurations.doAssocPhysicalPrimary || v0.mcPhysicalPrimary()) && (!efficiencyFlags.applyEfficiencyCorrection || efficiency != 0)) {
-          if ((TESTBIT(doCorrelation, Index)) && (masterConfigurations.doPPAnalysis || (TESTBIT(selMap, Index) && TESTBIT(selMap, Index + 3)))) {
+          if ((TESTBIT(doCorrelation, Index)) && (TESTBIT(selMap, Index) && (masterConfigurations.doPPAnalysis || TESTBIT(selMap, Index + 3)))) {
             histos.fill(HIST("h3d") + HIST(V0names[Index]) + HIST("Spectrum"), v0Data.pt(), cent, v0.invMassNSigma(Index), weight);
             if (masterConfigurations.doMassSpectrumCheck) {
               histos.fill(HIST("h") + HIST(V0names[Index]) + HIST("PtVsMass"), v0Data.pt(), getV0InvariantMass<Index>(v0Data));
