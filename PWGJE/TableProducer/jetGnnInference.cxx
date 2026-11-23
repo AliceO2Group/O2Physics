@@ -90,6 +90,7 @@ struct JetGnnInferenceTask {
   Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
   Configurable<float> leadingConstituentPtMax{"leadingConstituentPtMax", 9999.0, "maximum pT selection on jet constituent"};
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
+  Configurable<uint32_t> nTracksMin{"nTracksMin", 2, "minimum number of tracks for GNN evaluation"};
 
   // ML configuration
   Configurable<int> nJetConst{"nJetConst", 100, "maximum number of jet constituents to be used for ML evaluation"};
@@ -107,7 +108,6 @@ struct JetGnnInferenceTask {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   // GNN configuration
-  Configurable<float> jetpTMin{"jetpTMin", 5., "minimum jet pT for QA histograms"};
   Configurable<float> dbMin{"dbMin", -15., "minimum GNN Db"};
   Configurable<float> dbMax{"dbMax", 15., "maximum GNN Db"};
   Configurable<double> fC{"fC", 0.018, "Parameter f_c for D_b calculation"};
@@ -196,7 +196,7 @@ struct JetGnnInferenceTask {
   template <typename Jet>
   void fillHistograms(Jet const& jet, float db, std::vector<float> const* trackScores = nullptr)
   {
-    if (jet.pt() < jetpTMin) {
+    if (jet.pt() < jetPtMin) {
       return;
     }
     float dbRange;
@@ -334,17 +334,28 @@ struct JetGnnInferenceTask {
   }
 
   template <typename Jet, typename Tracks>
-  float evaluateJet(Jet const& jet, Tracks const& tracks, std::vector<float>* trackScores = nullptr)
+  float evaluateJet(Jet const& jet, Tracks const& tracks)
+  {
+    return evaluateJetImpl<false>(jet, tracks, nullptr);
+  }
+
+  template <typename Jet, typename Tracks>
+  float evaluateJet(Jet const& jet, Tracks const& tracks, std::vector<float>& trackScores)
+  {
+    return evaluateJetImpl<true>(jet, tracks, &trackScores);
+  }
+
+  template <bool fullInference, typename Jet, typename Tracks>
+  float evaluateJetImpl(Jet const& jet, Tracks const& tracks, std::vector<float>* trackScores)
   {
     std::vector<std::vector<float>> trkFeat;
-    if (trackScores) {
-      trackScores->clear();
+    if constexpr (fullInference) {
       if constexpr (!std::is_void_v<JetGnnInfTrackTable> && requires { jet.tracksGnnIds(); }) {
         // The definition backbone owns track selection and model-node order.
         // Do not reapply inference-side cuts or select a different track subset.
         auto const gnnTracks = jet.template tracksGnn_as<JetGnnTracksTable>();
         trackScores->assign(gnnTracks.size(), invalidGnnScore);
-        if (gnnTracks.size() <= 1) {
+        if (gnnTracks.size() < nTracksMin) {
           return invalidGnnScore;
         }
         if (gnnTracks.size() > static_cast<std::size_t>(nJetConst.value)) {
@@ -380,7 +391,7 @@ struct JetGnnInferenceTask {
     tensorAlloc.getGNNInput(jetFeat, trkFeat, feat, gnnInput);
 
     float db;
-    if (trackScores) {
+    if constexpr (fullInference) {
       // Exported head order: edge_outputs, node_outputs, flav_preds.
       // Retrieve jet and track logits in one model evaluation; leave edges unused.
       auto const outputs = bMlResponse.getModelOutputs(gnnInput, 0);
@@ -447,7 +458,7 @@ struct JetGnnInferenceTask {
         }
         float db = invalidGnnScore;
         if (acceptedCollision) {
-          db = evaluateJet(jet, tracks, &trackScores);
+          db = evaluateJet(jet, tracks, trackScores);
         } else {
           // A different definition-side selection may have left backbone rows.
           // Keep one invalid prediction per row instead of breaking the join.
