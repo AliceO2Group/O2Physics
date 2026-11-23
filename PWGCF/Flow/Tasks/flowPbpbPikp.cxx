@@ -19,7 +19,6 @@
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
-#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -34,12 +33,12 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
-#include <Framework/StringHelpers.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
@@ -73,13 +72,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace constants::math;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
-
-namespace o2::analysis::genericframework
-{
-GFWRegions regions;
-GFWCorrConfigs configs;
-} // namespace o2::analysis::genericframework
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, (DEFAULT), (HELP)}; // NOLINT(bugprone-macro-parentheses)
 
 using namespace o2::analysis::genericframework;
 
@@ -100,7 +93,7 @@ static constexpr std::array<std::array<int, 3>, 20> LongArrayInt = {{{{1, 2, 3}}
 
 struct FlowPbpbPikp {
   o2::aod::ITSResponse itsResponse;
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<ccdb::BasicCCDBManager> ccdb{};
 
   struct : ConfigurableGroup {
     std::string prefix = "GeneralConfigs";
@@ -229,8 +222,13 @@ struct FlowPbpbPikp {
   ConfigurableAxis axisSigma{"axisSigma", {200, 0, 20}, "sigma axis for TPC"};
   ConfigurableAxis axisPIDParticles{"axisPIDParticles", {3, 0.5, 3.5}, "particle axis for PID QA (pi, ka, pr)"};
 
+  struct GFWMemberCache {
+    GFWRegions regions;
+    GFWCorrConfigs configs;
+  } GfwMemberCache;
+
   Filter collisionFilter = (nabs(aod::collision::posZ) < EvSels.cfgGlobalCutVertex);
-  Filter trackFilter = (nabs(aod::track::eta) < TrkSels.cfgGlobalEta) && (aod::track::pt > TrkSels.cfgGlobalPtMin) && (aod::track::pt < TrkSels.cfgGlobalPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < TrkSels.cfgGlobalChi2prTPCcls) && (nabs(aod::track::dcaZ) < TrkSels.cfgGlobalDCAz);
+  Filter trackFilter = (nabs(aod::track::eta) < TrkSels.cfgGlobalEta) && (aod::track::pt > TrkSels.cfgGlobalPtMin) && (aod::track::pt < TrkSels.cfgGlobalPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(1))) && (aod::track::tpcChi2NCl < TrkSels.cfgGlobalChi2prTPCcls) && (nabs(aod::track::dcaZ) < TrkSels.cfgGlobalDCAz);
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using AodTracksWithoutBayes = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
@@ -374,17 +372,17 @@ struct FlowPbpbPikp {
     ccdb->setCreatedNotAfter(now);
 
     LOGF(info, "flowGenericFramework::init()");
-    regions.SetNames(cfgRegions->GetNames());
-    regions.SetEtaMin(cfgRegions->GetEtaMin());
-    regions.SetEtaMax(cfgRegions->GetEtaMax());
-    regions.SetpTDifs(cfgRegions->GetpTDifs());
-    regions.SetBitmasks(cfgRegions->GetBitmasks());
-    configs.SetCorrs(cfgCorrConfig->GetCorrs());
-    configs.SetHeads(cfgCorrConfig->GetHeads());
-    configs.SetpTDifs(cfgCorrConfig->GetpTDifs());
-    configs.SetpTCorrMasks(cfgCorrConfig->GetpTCorrMasks());
-    regions.Print();
-    configs.Print();
+    GfwMemberCache.regions.SetNames(cfgRegions->GetNames());
+    GfwMemberCache.regions.SetEtaMin(cfgRegions->GetEtaMin());
+    GfwMemberCache.regions.SetEtaMax(cfgRegions->GetEtaMax());
+    GfwMemberCache.regions.SetpTDifs(cfgRegions->GetpTDifs());
+    GfwMemberCache.regions.SetBitmasks(cfgRegions->GetBitmasks());
+    GfwMemberCache.configs.SetCorrs(cfgCorrConfig->GetCorrs());
+    GfwMemberCache.configs.SetHeads(cfgCorrConfig->GetHeads());
+    GfwMemberCache.configs.SetpTDifs(cfgCorrConfig->GetpTDifs());
+    GfwMemberCache.configs.SetpTCorrMasks(cfgCorrConfig->GetpTCorrMasks());
+    GfwMemberCache.regions.Print();
+    GfwMemberCache.configs.Print();
 
     // Axis definitions
     std::string hCentTitle = "Centrality distribution, Estimator " + std::to_string(EvSels.cfgCentEstimator);
@@ -472,31 +470,31 @@ struct FlowPbpbPikp {
 
       o2::framework::AxisSpec axis = axisPtForCorr;
       int nPtBins = axis.binEdges.size() - 1;
-      double* ptBins = &(axis.binEdges)[0];
+      double* ptBins = axis.binEdges.data();
       fPtAxis = new TAxis(nPtBins, ptBins);
 
       // Iniitializing object for GFW
       auto* oba = new TObjArray();
 
       // Defining the regions
-      for (auto i(0); i < regions.GetSize(); i++) {
-        fGFW->AddRegion(regions.GetNames().at(i), regions.GetEtaMin().at(i), regions.GetEtaMax().at(i), (regions.GetpTDifs().at(i)) ? nPtBins + 1 : 1, regions.GetBitmasks().at(i));
+      for (auto i(0); i < GfwMemberCache.regions.GetSize(); i++) {
+        fGFW->AddRegion(GfwMemberCache.regions.GetNames().at(i), GfwMemberCache.regions.GetEtaMin().at(i), GfwMemberCache.regions.GetEtaMax().at(i), (GfwMemberCache.regions.GetpTDifs().at(i) != 0) ? nPtBins + 1 : 1, GfwMemberCache.regions.GetBitmasks().at(i));
       }
 
       // Defining the correlators
       std::string suffix = "_ptDiff";
-      for (auto i = 0; i < configs.GetSize(); i++) {
-        corrConfigs.push_back(fGFW->GetCorrelatorConfig(configs.GetCorrs().at(i), configs.GetHeads().at(i), configs.GetpTDifs().at(i)));
-        if (configs.GetpTDifs().at(i) != 0) {
+      for (auto i = 0; i < GfwMemberCache.configs.GetSize(); i++) {
+        corrConfigs.push_back(fGFW->GetCorrelatorConfig(GfwMemberCache.configs.GetCorrs().at(i), GfwMemberCache.configs.GetHeads().at(i), GfwMemberCache.configs.GetpTDifs().at(i)));
+        if (GfwMemberCache.configs.GetpTDifs().at(i) != 0) {
           for (auto j = 1; j <= nPtBins; j++) {
             std::string index = Form("_pt_%i", j);
-            oba->Add(new TNamed(configs.GetHeads().at(i) + index, configs.GetHeads().at(i) + suffix));
-            std::string corrName = configs.GetHeads().at(i) + index;
+            oba->Add(new TNamed(GfwMemberCache.configs.GetHeads().at(i) + index, GfwMemberCache.configs.GetHeads().at(i) + suffix));
+            std::string corrName = GfwMemberCache.configs.GetHeads().at(i) + index;
             LOGF(info, Form("Correlator to be calculated: %s", corrName.c_str()));
           }
         } else {
-          oba->Add(new TNamed(configs.GetHeads().at(i), configs.GetHeads().at(i)));
-          LOGF(info, Form("Correlator to be calculated: %s", configs.GetHeads().at(i).c_str()));
+          oba->Add(new TNamed(GfwMemberCache.configs.GetHeads().at(i), GfwMemberCache.configs.GetHeads().at(i)));
+          LOGF(info, Form("Correlator to be calculated: %s", GfwMemberCache.configs.GetHeads().at(i).c_str()));
         }
       }
       if (corrConfigs.empty()) {
@@ -613,7 +611,7 @@ struct FlowPbpbPikp {
 
     if (TrkDensCorr.cfgTrackDensityCorrUse) {
       std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
-      hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, &pTEffBins[0]);
+      hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, pTEffBins.data());
       funcEff.resize(pTEffBins.size() - 1);
       // LHC24g3 Eff
       std::vector<double> f1p0 = TrkDensCorr.cfgTrackDensityP0;
@@ -1002,8 +1000,6 @@ struct FlowPbpbPikp {
         fillSingleContainer(corrconf, eventClass, i, rndm, name);
       }
     }
-
-    return;
   }
 
   void createRunByRunHistos(int runNumber)
@@ -1095,6 +1091,8 @@ struct FlowPbpbPikp {
             histos.fill(HIST("NUA/hPhiEtaVtxz_pr"), track.phi(), track.eta(), vtxz); // proton weights
             histos.fill(HIST("NUA/hPhiPtCent_pr"), track.phi(), track.pt(), cent);
             histos.fill(HIST("NUA/hPhiEtaPt_pr"), track.phi(), track.eta(), track.pt());
+            break;
+          default:
             break;
         }
       }
@@ -1417,7 +1415,7 @@ struct FlowPbpbPikp {
     } // track loop ends
 
     // Filling FlowContainer
-    for (auto corrconfig : corrConfigs) {
+    for (auto const& corrconfig : corrConfigs) {
       fillFC(corrconfig, eventClass, fSampleIndex);
     }
   } // end of process
