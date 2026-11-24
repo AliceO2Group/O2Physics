@@ -171,7 +171,6 @@ struct HfTaskXic0ToXiPi {
     }
     if (fillCent) {
       const AxisSpec thnAxisPromptScore{thnConfigAxisPromptScore, "BDT score prompt."};
-      const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality."};
       const AxisSpec thnAxisPtPion{thnConfigAxisPtPion, "Pt of Pion from Xic0."};
       std::vector<AxisSpec> const axesWithBdtCent = {thnAxisPromptScore, thnAxisMass, thnAxisPt, thnAxisY, thnAxisCent, thnAxisPtPion, thnConfigAxisNumPvContr};
       std::vector<AxisSpec> const axesWithCent = {thnAxisMass, thnAxisPt, thnAxisY, thnAxisCent, thnAxisPtPion, thnConfigAxisNumPvContr};
