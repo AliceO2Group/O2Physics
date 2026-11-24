@@ -124,7 +124,7 @@ struct ChargedParticles { // NOLINT(clang-analyzer-optin.performance.Padding): o
   int maxMultTrue{100};
   std::string irSource{"T0VTX"}; // interaction rate estimator (ctp rate fetcher), from collisionSystem
   Configurable<float> etaCut{"etaCut", 0.8f, "eta cut"};
-  Configurable<std::string> ptRange{"ptRange", "nominal", "pt window and binning of tracks and particles: nominal (0.15-10), lowPt (0.05-10, low field), highPt (0.15-50)"};
+  Configurable<std::string> ptRange{"ptRange", "nominal", "pt window and binning of tracks and particles: nominal (0.15-10), lowPt (0.075-10, low field), highPt (0.15-50)"};
   Configurable<bool> fiducialMult{"fiducialMult", true, "count n_ch (measured and true, and so the event class fiducial) only in the fiducial window 0.15 < pt < 10, whatever ptRange"};
   Configurable<int> multEstimator{"multEstimator", 0, "measured multiplicity: 0 = selected tracks (ITS-TPC), 1 = also ITS-only tracks that pass all other selections (spectra stay ITS-TPC)"};
   static constexpr float FiducialPtMin = 0.15f;
@@ -470,7 +470,7 @@ void ChargedParticles::init(InitContext& ic)
                                     6.0, 6.5, 7.0, 8.0, 9.0, 10.0};
   // pt window = first and last edge
   if (ptRange.value == "lowPt") {
-    ptBinEdges.insert(ptBinEdges.begin(), {0.05, 0.075, 0.1, 0.125});
+    ptBinEdges.insert(ptBinEdges.begin(), {0.075, 0.1, 0.125});
   } else if (ptRange.value == "highPt") {
     ptBinEdges.insert(ptBinEdges.end(), {11., 12., 13., 14., 15., 16., 18., 20., 22., 24., 26., 30., 34., 40., 50.});
   } else if (ptRange.value != "nominal") {
