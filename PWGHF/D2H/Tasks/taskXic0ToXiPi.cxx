@@ -109,13 +109,21 @@ struct HfTaskXic0ToXiPi {
 
   void init(InitContext&)
   {
-    std::array<bool, 16> doprocess{doprocessDataWithDCAFitter, doprocessDataWithDCAFitterMl, doprocessDataWithDCAFitterFT0C, doprocessDataWithDCAFitterFT0M, doprocessDataWithDCAFitterMlFT0C, doprocessDataWithDCAFitterMlFT0M,
+    std::array<bool, 18> doprocess{doprocessDataWithDCAFitter, doprocessDataWithDCAFitterMl, doprocessDataWithDCAFitterFT0C, doprocessDataWithDCAFitterFT0M, doprocessDataWithDCAFitterMlFT0C, doprocessDataWithDCAFitterMlFT0M,
                                    doprocessDataWithKFParticle, doprocessDataWithKFParticleMl, doprocessDataWithKFParticleFT0C, doprocessDataWithKFParticleFT0M, doprocessDataWithKFParticleMlFT0C, doprocessDataWithKFParticleMlFT0M,
-                                   doprocessMcWithKFParticle, doprocessMcWithKFParticleMl, doprocessMcWithDCAFitter, doprocessMcWithDCAFitterMl};
+                                   doprocessMcWithKFParticle, doprocessMcWithKFParticleMl, doprocessMcWithDCAFitter, doprocessMcWithDCAFitterMl, doprocessMcWithKFParticleNoCent, doprocessMcWithKFParticleMlNoCent};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "One and only one process function should be enabled at a time.");
     }
 
+    bool const isMlProcess = doprocessDataWithDCAFitterMl || doprocessDataWithDCAFitterMlFT0C || doprocessDataWithDCAFitterMlFT0M ||
+                             doprocessDataWithKFParticleMl || doprocessDataWithKFParticleMlFT0C || doprocessDataWithKFParticleMlFT0M ||
+                             doprocessMcWithDCAFitterMl || doprocessMcWithKFParticleMl || doprocessMcWithKFParticleMlNoCent;
+    if (applyMl.value != isMlProcess) {
+      LOGP(fatal, "applyMl must match the selected process function (Ml or non-Ml).");
+    }
+
+    bool const isMcNoCent = doprocessMcWithKFParticleNoCent || doprocessMcWithKFParticleMlNoCent;
     const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (#Xi#pi) (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisPtB{thnConfigAxisPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
@@ -127,8 +135,12 @@ struct HfTaskXic0ToXiPi {
     const AxisSpec thnAxisNumPvContr{thnConfigAxisNumPvContr, "Number of PV contributors"};
     const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality percentile"};
 
-    if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl || doprocessMcWithDCAFitter || doprocessMcWithDCAFitterMl) {
-      std::vector<AxisSpec> const axesAcc = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin, thnAxisCent, thnAxisNumPvContr};
+    if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl || doprocessMcWithDCAFitter || doprocessMcWithDCAFitterMl || isMcNoCent) {
+      std::vector<AxisSpec> axesAcc = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin};
+      if (!isMcNoCent) {
+        axesAcc.push_back(thnAxisCent);
+      }
+      axesAcc.push_back(thnAxisNumPvContr);
       registry.add("hSparseAcc", "Thn for generated Xic0 from charm and beauty", HistType::kTHnSparseD, axesAcc);
       registry.get<THnSparse>(HIST("hSparseAcc"))->Sumw2();
 
@@ -139,11 +151,13 @@ struct HfTaskXic0ToXiPi {
     }
 
     std::vector<AxisSpec> axes = {thnAxisMass, thnAxisPt, thnAxisY};
-    if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl || doprocessMcWithDCAFitter || doprocessMcWithDCAFitterMl) {
+    if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl || doprocessMcWithDCAFitter || doprocessMcWithDCAFitterMl || isMcNoCent) {
       axes.push_back(thnAxisPtB);
       axes.push_back(thnAxisOrigin);
       axes.push_back(thnAxisMatchFlag);
-      axes.push_back(thnAxisCent);
+      if (!isMcNoCent) {
+        axes.push_back(thnAxisCent);
+      }
       axes.push_back(thnAxisNumPvContr);
     }
     if (applyMl) {
@@ -157,7 +171,6 @@ struct HfTaskXic0ToXiPi {
     }
     if (fillCent) {
       const AxisSpec thnAxisPromptScore{thnConfigAxisPromptScore, "BDT score prompt."};
-      const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality."};
       const AxisSpec thnAxisPtPion{thnConfigAxisPtPion, "Pt of Pion from Xic0."};
       std::vector<AxisSpec> const axesWithBdtCent = {thnAxisPromptScore, thnAxisMass, thnAxisPt, thnAxisY, thnAxisCent, thnAxisPtPion, thnConfigAxisNumPvContr};
       std::vector<AxisSpec> const axesWithCent = {thnAxisMass, thnAxisPt, thnAxisY, thnAxisCent, thnAxisPtPion, thnConfigAxisNumPvContr};
@@ -244,7 +257,7 @@ struct HfTaskXic0ToXiPi {
     }
   }
 
-  template <bool UseKfParticle, bool ApplyMl, typename CandType, typename CollType, typename McCollisionWithCents>
+  template <bool UseKfParticle, bool ApplyMl, bool UseCentrality = true, typename CandType, typename CollType, typename McCollisionWithCents>
   void processMc(const CandType& candidates,
                  Xic0Gen const& mcParticles,
                  TracksMc const&,
@@ -268,30 +281,56 @@ struct HfTaskXic0ToXiPi {
 
       auto collision = candidate.template collision_as<CollType>();
       auto numPvContributors = collision.numContrib();
-      float const mcCent = o2::hf_centrality::getCentralityColl(collision.template mcCollision_as<McCollisionWithCents>());
+      float mcCent = -1.f;
+      if constexpr (UseCentrality) {
+        mcCent = o2::hf_centrality::getCentralityColl(collision.template mcCollision_as<McCollisionWithCents>());
+      }
 
       double const ptXic = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
       if constexpr (ApplyMl) {
-        registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsXic0Type"),
-                      candidate.mlProbToXiPi()[0],
-                      candidate.invMassCharmBaryon(),
-                      ptXic,
-                      yCharmBaryon,
-                      candidate.ptBhadMotherPart(),
-                      candidate.originMcRec(),
-                      candidate.flagMcMatchRec(),
-                      mcCent,
-                      numPvContributors);
+        if constexpr (UseCentrality) {
+          registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsXic0Type"),
+                        candidate.mlProbToXiPi()[0],
+                        candidate.invMassCharmBaryon(),
+                        ptXic,
+                        yCharmBaryon,
+                        candidate.ptBhadMotherPart(),
+                        candidate.originMcRec(),
+                        candidate.flagMcMatchRec(),
+                        mcCent,
+                        numPvContributors);
+        } else {
+          registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsXic0Type"),
+                        candidate.mlProbToXiPi()[0],
+                        candidate.invMassCharmBaryon(),
+                        ptXic,
+                        yCharmBaryon,
+                        candidate.ptBhadMotherPart(),
+                        candidate.originMcRec(),
+                        candidate.flagMcMatchRec(),
+                        numPvContributors);
+        }
       } else {
-        registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsXic0Type"),
-                      candidate.invMassCharmBaryon(),
-                      ptXic,
-                      yCharmBaryon,
-                      candidate.ptBhadMotherPart(),
-                      candidate.originMcRec(),
-                      candidate.flagMcMatchRec(),
-                      mcCent,
-                      numPvContributors);
+        if constexpr (UseCentrality) {
+          registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsXic0Type"),
+                        candidate.invMassCharmBaryon(),
+                        ptXic,
+                        yCharmBaryon,
+                        candidate.ptBhadMotherPart(),
+                        candidate.originMcRec(),
+                        candidate.flagMcMatchRec(),
+                        mcCent,
+                        numPvContributors);
+        } else {
+          registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsXic0Type"),
+                        candidate.invMassCharmBaryon(),
+                        ptXic,
+                        yCharmBaryon,
+                        candidate.ptBhadMotherPart(),
+                        candidate.originMcRec(),
+                        candidate.flagMcMatchRec(),
+                        numPvContributors);
+        }
       }
     }
 
@@ -310,33 +349,14 @@ struct HfTaskXic0ToXiPi {
       for (const auto& recCol : recoCollsPerMcColl) {
         maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
       }
-      float const mcCent = o2::hf_centrality::getCentralityColl(mcCollision);
-
-      if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
-        registry.fill(HIST("hSparseAcc"),
-                      ptGen,
-                      -1.,
-                      yGen,
-                      RecoDecay::OriginType::Prompt,
-                      mcCent,
-                      maxNumContrib);
-      } else {
-        float const ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
-        registry.fill(HIST("hSparseAcc"),
-                      ptGen,
-                      ptGenB,
-                      yGen,
-                      RecoDecay::OriginType::NonPrompt,
-                      mcCent,
-                      maxNumContrib);
+      float mcCent = -1.f;
+      if constexpr (UseCentrality) {
+        mcCent = o2::hf_centrality::getCentralityColl(mcCollision);
       }
 
-      registry.fill(HIST("hNumRecoCollPerMcColl"), recoCollsPerMcColl.size());
-
-      // fill sparse only for gen particles associated to a reconstructed collision
-      if (recoCollsPerMcColl.size() >= 1) {
-        if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
-          registry.fill(HIST("hSparseAccWithRecoColl"),
+      if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
+        if constexpr (UseCentrality) {
+          registry.fill(HIST("hSparseAcc"),
                         ptGen,
                         -1.,
                         yGen,
@@ -344,14 +364,72 @@ struct HfTaskXic0ToXiPi {
                         mcCent,
                         maxNumContrib);
         } else {
-          float const ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
-          registry.fill(HIST("hSparseAccWithRecoColl"),
+          registry.fill(HIST("hSparseAcc"),
+                        ptGen,
+                        -1.,
+                        yGen,
+                        RecoDecay::OriginType::Prompt,
+                        maxNumContrib);
+        }
+      } else {
+        float const ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+        if constexpr (UseCentrality) {
+          registry.fill(HIST("hSparseAcc"),
                         ptGen,
                         ptGenB,
                         yGen,
                         RecoDecay::OriginType::NonPrompt,
                         mcCent,
                         maxNumContrib);
+        } else {
+          registry.fill(HIST("hSparseAcc"),
+                        ptGen,
+                        ptGenB,
+                        yGen,
+                        RecoDecay::OriginType::NonPrompt,
+                        maxNumContrib);
+        }
+      }
+
+      registry.fill(HIST("hNumRecoCollPerMcColl"), recoCollsPerMcColl.size());
+
+      // fill sparse only for gen particles associated to a reconstructed collision
+      if (recoCollsPerMcColl.size() >= 1) {
+        if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
+          if constexpr (UseCentrality) {
+            registry.fill(HIST("hSparseAccWithRecoColl"),
+                          ptGen,
+                          -1.,
+                          yGen,
+                          RecoDecay::OriginType::Prompt,
+                          mcCent,
+                          maxNumContrib);
+          } else {
+            registry.fill(HIST("hSparseAccWithRecoColl"),
+                          ptGen,
+                          -1.,
+                          yGen,
+                          RecoDecay::OriginType::Prompt,
+                          maxNumContrib);
+          }
+        } else {
+          float const ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+          if constexpr (UseCentrality) {
+            registry.fill(HIST("hSparseAccWithRecoColl"),
+                          ptGen,
+                          ptGenB,
+                          yGen,
+                          RecoDecay::OriginType::NonPrompt,
+                          mcCent,
+                          maxNumContrib);
+          } else {
+            registry.fill(HIST("hSparseAccWithRecoColl"),
+                          ptGen,
+                          ptGenB,
+                          yGen,
+                          RecoDecay::OriginType::NonPrompt,
+                          maxNumContrib);
+          }
         }
       }
     }
@@ -552,6 +630,26 @@ struct HfTaskXic0ToXiPi {
     processMc<true, true>(xic0CandidatesMlMcKf, mcParticles, tracks, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
+
+  void processMcWithKFParticleNoCent(Xic0CandsMcKF const& xic0CandidatesMcKf,
+                                     Xic0Gen const& mcParticles,
+                                     TracksMc const& tracks,
+                                     CollisionsWithMcLabels const& collisions,
+                                     aod::McCollisions const& mcCollisions)
+  {
+    processMc<true, false, false>(xic0CandidatesMcKf, mcParticles, tracks, collisions, mcCollisions);
+  }
+  PROCESS_SWITCH(HfTaskXic0ToXiPi, processMcWithKFParticleNoCent, "Process MC without centrality with KFParticle", false);
+
+  void processMcWithKFParticleMlNoCent(Xic0CandsMlMcKF const& xic0CandidatesMlMcKf,
+                                       Xic0Gen const& mcParticles,
+                                       TracksMc const& tracks,
+                                       CollisionsWithMcLabels const& collisions,
+                                       aod::McCollisions const& mcCollisions)
+  {
+    processMc<true, true, false>(xic0CandidatesMlMcKf, mcParticles, tracks, collisions, mcCollisions);
+  }
+  PROCESS_SWITCH(HfTaskXic0ToXiPi, processMcWithKFParticleMlNoCent, "Process MC without centrality with KFParticle and ML scores", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
