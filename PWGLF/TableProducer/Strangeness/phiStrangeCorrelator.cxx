@@ -1084,10 +1084,20 @@ struct PionTrackProducer {
   {
     AxisSpec binnedmultAxis{std::vector<double>(binsMult), "centFT0M"};
     AxisSpec binnedpTPiAxis{std::vector<double>(binspTPi), "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec nSigmaPiAxis = {100, -10.0f, 10.0f, "N#sigma #pi"};
+    AxisSpec nSigmaTPCPiAxis = {100, -10.0f, 10.0f, "N#sigma_{TPC} #pi"};
+    AxisSpec nSigmaTOFPiAxis = {100, -10.0f, 10.0f, "N#sigma_{TOF} #pi"};
 
-    histos.add("h3PionTPCnSigma", "Pion TPC nSigma distribution", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaPiAxis});
-    histos.add("h3PionTOFnSigma", "Pion TOF nSigma distribution", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaPiAxis});
+    histos.add("h3PionTPCnSigma", "Pion TPC nSigma distribution", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis});
+    histos.add("h3PionTOFnSigma", "Pion TOF nSigma distribution", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaTOFPiAxis});
+
+    // The selected pions split as phiStrangeCorrelation counts them (inNSigmaRegion): with TOF, the TPC and TOF nSigma
+    // together; without TOF, the TPC one alone. Fits of these give the purity and the nSigma-window efficiency of the
+    // counted sample, which the two distributions above, each over every track, cannot
+    histos.add("h4PionTPCTOFnSigma", "Pion TPC and TOF nSigma, tracks with TOF", kTHnSparseF, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis, nSigmaTOFPiAxis});
+    histos.add("h3PionTPCnSigmaNoTOF", "Pion TPC nSigma, tracks without TOF", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis});
+    // The same for the true primary pions, to compare the nSigma shapes of data and MC
+    histos.add("h4RecMCPionTPCTOFnSigma", "True primary pion TPC and TOF nSigma, tracks with TOF", kTHnSparseF, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis, nSigmaTOFPiAxis});
+    histos.add("h3RecMCPionTPCnSigmaNoTOF", "True primary pion TPC nSigma, tracks without TOF", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis});
 
     histos.add("h2RecMCDCAxyPrimPi", "Dcaxy distribution vs pt for Primary Pions", kTH2F, {binnedpTPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
     histos.add("h2RecMCDCAxySecWeakDecayPi", "Dcaz distribution vs pt for Secondary Pions from Weak Decay", kTH2F, {binnedpTPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
@@ -1255,6 +1265,11 @@ struct PionTrackProducer {
 
       histos.fill(HIST("h3PionTPCnSigma"), collision.centFT0M(), track.pt(), track.tpcNSigmaPi());
       histos.fill(HIST("h3PionTOFnSigma"), collision.centFT0M(), track.pt(), track.tofNSigmaPi());
+      if (track.hasTOF()) {
+        histos.fill(HIST("h4PionTPCTOFnSigma"), collision.centFT0M(), track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+      } else {
+        histos.fill(HIST("h3PionTPCnSigmaNoTOF"), collision.centFT0M(), track.pt(), track.tpcNSigmaPi());
+      }
 
       pionTracksData(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(MassPi), track.phi(), track.hasTOF());
     }
@@ -1287,6 +1302,12 @@ struct PionTrackProducer {
           histos.fill(HIST("h2RecMCDCAxySecMaterialPi"), track.pt(), track.dcaXY());
         }
         continue;
+      }
+
+      if (track.hasTOF()) {
+        histos.fill(HIST("h4RecMCPionTPCTOFnSigma"), collision.centFT0M(), track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+      } else {
+        histos.fill(HIST("h3RecMCPionTPCnSigmaNoTOF"), collision.centFT0M(), track.pt(), track.tpcNSigmaPi());
       }
 
       pionTracksMcReco(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(MassPi), track.phi(), track.hasTOF());
