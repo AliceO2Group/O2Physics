@@ -1647,7 +1647,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           nSigma,
           nSigma,
           -999.f, // No reconstructed DCAxy is available for generated tracks.
-          -1); // Generated track input does not carry an MC origin label.
+          -1);    // Generated track input does not carry an MC origin label.
       }
       if (sliceGenCharmHad.size() > 0 || sliceGenTrk1.size() > 0) {
         tables.rowFemtoResultColl(col.globalIndex(), timeStamp, col.posZ(), col.multNtr());
