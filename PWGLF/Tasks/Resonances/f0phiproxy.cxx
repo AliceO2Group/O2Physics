@@ -86,11 +86,23 @@ struct F0phiproxy {
   Configurable<float> trackEtaMax{"trackEtaMax", 0.8f, "Maximum track |eta|"};
   Configurable<bool> requireGlobalTrack{"requireGlobalTrack", true, "Require global track selection"};
   Configurable<bool> requirePVContributor{"requirePVContributor", true, "Require PV contributor"};
-  Configurable<float> pionTPC{"pionTPC", 3.f, "Pion TPC nSigma cut"};
-  Configurable<float> pionTOF{"pionTOF", 3.f, "Pion TOF veto when matched"};
-  Configurable<float> kaonTPC{"kaonTPC", 3.f, "Kaon TPC nSigma cut"};
-  Configurable<float> kaonTOF{"kaonTOF", 3.f, "Kaon TOF veto when matched"};
-  Configurable<bool> requireTOF{"requireTOF", false, "Require TOF for both species instead of veto-only"};
+  Configurable<float> pionTPC{"pionTPC", 3.f, "Pion TPC base/fallback cut; also the matched TPC cap except in uncapped radial mode"};
+  Configurable<float> pionTOF{"pionTOF", 3.f, "Pion rectangular TOF cut in modes 0, 1 and 2; radial modes use pionCombined"};
+  Configurable<float> kaonTPC{"kaonTPC", 3.f, "Kaon TPC base/fallback cut; also the matched TPC cap except in uncapped radial mode"};
+  Configurable<float> kaonTOF{"kaonTOF", 3.f, "Kaon rectangular TOF cut in modes 0, 1 and 2; radial modes use kaonCombined"};
+  Configurable<bool> requireTOF{"requireTOF", false, "Legacy PID mode 0 only: require TOF rather than use a conditional veto"};
+  Configurable<int> pionPIDMode{"pionPIDMode", 0, "0=legacy requireTOF, 1=TPC+TOF veto, 2=TPC+TOF required, 3=TPC only, 4=radial TOF veto, 5=radial veto with TPC cap"};
+  Configurable<int> kaonPIDMode{"kaonPIDMode", 0, "0=legacy requireTOF, 1=TPC+TOF veto, 2=TPC+TOF required, 3=TPC only, 4=radial TOF veto, 5=radial veto with TPC cap"};
+  Configurable<float> pionCombined{"pionCombined", 3.f, "Pion sqrt(nSigmaTPC^2+nSigmaTOF^2) cut in radial modes"};
+  Configurable<float> kaonCombined{"kaonCombined", 3.f, "Kaon sqrt(nSigmaTPC^2+nSigmaTOF^2) cut in radial modes"};
+  Configurable<float> pionTPCWithTOF{"pionTPCWithTOF", -1.f, "Matched pion TPC cut; -1 inherits pionTPC or momentum profile; unused in TPC-only and uncapped radial modes"};
+  Configurable<float> kaonTPCWithTOF{"kaonTPCWithTOF", -1.f, "Matched kaon TPC cut; -1 inherits kaonTPC or momentum profile; unused in TPC-only and uncapped radial modes"};
+  Configurable<std::vector<float>> pionTPCMomentumEdges{"pionTPCMomentumEdges", std::vector<float>{}, "Optional increasing total track p boundaries (GeV/c), not pT"};
+  Configurable<std::vector<float>> pionTPCMomentumCuts{"pionTPCMomentumCuts", std::vector<float>{}, "Pion TPC cuts in total-p intervals; one more cut than edges; empty uses pionTPC"};
+  Configurable<std::vector<float>> kaonTPCMomentumEdges{"kaonTPCMomentumEdges", std::vector<float>{}, "Optional increasing total track p boundaries (GeV/c), not pT"};
+  Configurable<std::vector<float>> kaonTPCMomentumCuts{"kaonTPCMomentumCuts", std::vector<float>{}, "Kaon TPC cuts in total-p intervals; one more cut than edges; empty uses kaonTPC"};
+  Configurable<bool> pionRejectKaonCompatible{"pionRejectKaonCompatible", false, "Optional reflection control: reject a pion if it also passes the configured kaon PID before overlap vetoes"};
+  Configurable<bool> kaonRejectPionCompatible{"kaonRejectPionCompatible", false, "Optional reflection control: reject a kaon if it also passes the configured pion PID before overlap vetoes"};
   Configurable<float> dipionYMax{"dipionYMax", 0.5f, "Maximum dipion |y|"};
   Configurable<float> proxyYMax{"proxyYMax", 0.5f, "Maximum proxy+bachelor and standard-control |y|"};
   Configurable<float> dipionMassMin{"dipionMassMin", 0.6f, "Lower dipion mass for proxy construction"};
@@ -107,10 +119,12 @@ struct F0phiproxy {
   Configurable<bool> enableCompactProxy{"enableCompactProxy", true, "Proxy maps retaining mass, pT, dipion mass, grouped multiplicity, charges and TOF"};
   Configurable<bool> enableFullProxySparse{"enableFullProxySparse", false, "Diagnostic 7D maps including multiplicity, bachelor charge and TOF; expensive to merge"};
   Configurable<bool> enablePidQA{"enablePidQA", false, "Book/fill the four PID QA histograms"};
+  Configurable<bool> enablePidSelectionQA{"enablePidSelectionQA", false, "Joint before/after PID, selected marginals and decision overlap; enable once per shared track sample"};
   Configurable<int> multiplicityBins{"multiplicityBins", 100, "Multiplicity bins in dipion/control and full diagnostic maps; identical settings required for merging"};
   Configurable<int> proxyDipionMassBins{"proxyDipionMassBins", 300, "Dipion mass bins in compact proxy maps; default preserves original 5 MeV resolution"};
   ConfigurableAxis proxyMultiplicityAxis{"proxyMultiplicityAxis", {0., 0., 20., 50., 200., 1000000.}, "Compact proxy NPV intervals; first zero selects variable-width bins"};
   ConfigurableAxis proxyPtAxis{"proxyPtAxis", {0., 0., 0.3, 1., 2., 3., 4., 6., 10.}, "Compact proxy pT intervals covering both the data and Kstar-study selections"};
+  Configurable<int> phiMassBins{"phiMassBins", 600, "KK and phi-proxy mass bins over 0.9-1.5 GeV; default preserves the original 1 MeV bins"};
   Configurable<int> kstarMassBins{"kstarMassBins", 200, "K pi and Kstar-proxy mass bins over 0.6-1.4 GeV; 200 gives the study's 4 MeV bins"};
   Configurable<bool> mcPrimaryOnly{"mcPrimaryOnly", true, "Generated daughters must be physical primaries; strong-decay daughters are included"};
   Configurable<int> mcF0PdgCode{"mcF0PdgCode", 0, "0 resolves f0_980 from the O2 PDG service; override only for a verified generator convention"};
@@ -135,6 +149,105 @@ struct F0phiproxy {
   static constexpr double MaxUniformFT0MBins = 10000.;
   int resolvedF0Code = 0;
   std::vector<double> ft0mEdges{};
+
+  // BEGIN PID selection helpers: also compiled verbatim by the standalone regression test.
+  enum class PIDMode : int {
+    Legacy = 0,
+    TPCWithTOFVeto = 1,
+    TPCWithTOFRequired = 2,
+    TPCOnly = 3,
+    RadialWithTPCFallback = 4,
+    RadialWithTPCCap = 5
+  };
+  struct PIDSelection {
+    int mode = 0;
+    float tpc = 3.f;
+    float tof = 3.f;
+    float combined = 3.f;
+    float tpcWithTOF = -1.f;
+    bool requireTOF = false;
+    std::vector<float> momentumEdges{};
+    std::vector<float> momentumCuts{};
+  };
+
+  static void validatePID(PIDSelection const& selection)
+  {
+    auto positive = [](float value) { return std::isfinite(value) && value > 0.f; };
+    if (selection.mode < static_cast<int>(PIDMode::Legacy) || selection.mode > static_cast<int>(PIDMode::RadialWithTPCCap) ||
+        !positive(selection.tpc) || !positive(selection.tof) || !positive(selection.combined) ||
+        (selection.tpcWithTOF != -1.f && !positive(selection.tpcWithTOF))) {
+      throw std::runtime_error("Invalid PID mode or nSigma threshold");
+    }
+    if (!selection.momentumEdges.empty() || !selection.momentumCuts.empty()) {
+      if (selection.momentumCuts.size() != selection.momentumEdges.size() + 1 ||
+          !std::all_of(selection.momentumEdges.begin(), selection.momentumEdges.end(), positive) ||
+          !std::all_of(selection.momentumCuts.begin(), selection.momentumCuts.end(), positive) ||
+          std::adjacent_find(selection.momentumEdges.begin(), selection.momentumEdges.end(), [](float a, float b) { return a >= b; }) != selection.momentumEdges.end()) {
+        throw std::runtime_error("Invalid total-momentum PID profile: increasing positive edges and one more positive cut are required");
+      }
+    }
+  }
+
+  static PIDMode resolvedPIDMode(PIDSelection const& selection)
+  {
+    const auto mode = static_cast<PIDMode>(selection.mode);
+    return mode == PIDMode::Legacy ? (selection.requireTOF ? PIDMode::TPCWithTOFRequired : PIDMode::TPCWithTOFVeto) : mode;
+  }
+
+  static float tpcPIDThreshold(PIDSelection const& selection, bool useMatchedCut, float momentum)
+  {
+    if (useMatchedCut && selection.tpcWithTOF > 0.f) {
+      return selection.tpcWithTOF;
+    }
+    if (selection.momentumCuts.empty()) {
+      return selection.tpc;
+    }
+    if (!std::isfinite(momentum) || momentum < 0.f) {
+      return std::numeric_limits<float>::quiet_NaN();
+    }
+    const auto interval = static_cast<size_t>(std::upper_bound(selection.momentumEdges.begin(), selection.momentumEdges.end(), momentum) - selection.momentumEdges.begin());
+    return selection.momentumCuts[interval];
+  }
+
+  static bool acceptPID(PIDSelection const& selection, float tpc, float tof, bool matched, float momentum)
+  {
+    if (!std::isfinite(tpc)) {
+      return false;
+    }
+    const auto mode = resolvedPIDMode(selection);
+    if (mode == PIDMode::TPCWithTOFRequired && !matched) {
+      return false;
+    }
+    if (mode == PIDMode::TPCOnly) {
+      return std::abs(tpc) < tpcPIDThreshold(selection, false, momentum);
+    }
+    if (mode == PIDMode::RadialWithTPCFallback && matched) {
+      // This ALICE alternative deliberately has no separate TPC cap for matched tracks.
+      return std::isfinite(tof) && static_cast<double>(tpc) * tpc + static_cast<double>(tof) * tof < static_cast<double>(selection.combined) * selection.combined;
+    }
+    if (!(std::abs(tpc) < tpcPIDThreshold(selection, matched, momentum))) {
+      return false;
+    }
+    if (!matched) {
+      return mode == PIDMode::TPCWithTOFVeto || mode == PIDMode::RadialWithTPCFallback || mode == PIDMode::RadialWithTPCCap;
+    }
+    if (!std::isfinite(tof)) {
+      return false;
+    }
+    if (mode == PIDMode::RadialWithTPCCap) {
+      // November-9 K* note: TPC cap AND radial cut; unmatched tracks use TPC only.
+      return static_cast<double>(tpc) * tpc + static_cast<double>(tof) * tof < static_cast<double>(selection.combined) * selection.combined;
+    }
+    return (mode == PIDMode::TPCWithTOFVeto || mode == PIDMode::TPCWithTOFRequired) && std::abs(tof) < selection.tof;
+  }
+
+  static std::pair<bool, bool> resolvePIDOverlap(bool pionPass, bool kaonPass, bool rejectKaonCompatiblePion, bool rejectPionCompatibleKaon)
+  {
+    // Use both original decisions, so enabling both vetoes removes both ambiguous assignments.
+    return {pionPass && !(rejectKaonCompatiblePion && kaonPass), kaonPass && !(rejectPionCompatibleKaon && pionPass)};
+  }
+  // END PID selection helpers.
+  PIDSelection pionSelection{}, kaonSelection{};
 
   struct TruthInfo {
     int64_t id = -1;
@@ -168,6 +281,12 @@ struct F0phiproxy {
   std::shared_ptr<TH2> eventStagesByActivity{}, activityVsNPV{}, activityVsVertex{}, mixPartnersByActivity{};
   std::array<std::shared_ptr<TH2>, 4> pidQA{};
   std::array<std::shared_ptr<TH3>, 4> pidQAByActivity{};
+  // Joint maps are matched-track only; post-TPC marginals also include accepted unmatched tracks.
+  std::array<std::array<std::shared_ptr<TH3>, 2>, 2> pidSelectionJoint{};
+  std::array<std::shared_ptr<TH2>, 4> pidSelectionAfter{};
+  std::array<std::shared_ptr<TH3>, 4> pidSelectionAfterByActivity{};
+  std::shared_ptr<TH3> pidSelectionByActivity{};
+  std::shared_ptr<TH1> pidSelectionNonfinite{};
 
   std::array<std::shared_ptr<THnSparse>, NMixClasses> dipionSpectra{};
   std::array<std::array<std::shared_ptr<THnSparse>, NMixClasses>, NChannels> compactProxy{}, fullProxy{};
@@ -273,6 +392,10 @@ struct F0phiproxy {
 
   void init(InitContext const&)
   {
+    pionSelection = {pionPIDMode.value, pionTPC.value, pionTOF.value, pionCombined.value, pionTPCWithTOF.value, requireTOF.value, pionTPCMomentumEdges.value, pionTPCMomentumCuts.value};
+    kaonSelection = {kaonPIDMode.value, kaonTPC.value, kaonTOF.value, kaonCombined.value, kaonTPCWithTOF.value, requireTOF.value, kaonTPCMomentumEdges.value, kaonTPCMomentumCuts.value};
+    validatePID(pionSelection);
+    validatePID(kaonSelection);
     if (doprocess && doprocessMCReco) {
       throw std::runtime_error("Enable either process (data) or processMCReco, never both");
     }
@@ -282,7 +405,7 @@ struct F0phiproxy {
         vertexMax.value <= 0.f || trackPtMin.value < 0.f || trackEtaMax.value <= 0.f ||
         pionTPC.value <= 0.f || pionTOF.value <= 0.f || kaonTPC.value <= 0.f || kaonTOF.value <= 0.f ||
         dipionMassMin.value >= dipionMassMax.value || dipionYMax.value <= 0.f || proxyYMax.value <= 0.f ||
-        multiplicityBins.value <= 0 || proxyDipionMassBins.value <= 0 || kstarMassBins.value <= 0 || mcF0PdgCode.value < 0) {
+        multiplicityBins.value <= 0 || proxyDipionMassBins.value <= 0 || phiMassBins.value <= 0 || kstarMassBins.value <= 0 || mcF0PdgCode.value < 0) {
       throw std::runtime_error("Invalid F0PhiProxy configuration");
     }
     if (useFT0M.value) {
@@ -357,6 +480,42 @@ struct F0phiproxy {
         }
       }
     }
+    if (enablePidSelectionQA.value) {
+      const AxisSpec pidPt{std::vector<double>{0., 0.15, 0.3, 0.5, 0.8, 1., 1.5, 2., 3., 4., 6., 10., 20.}, "track p_{T} (GeV/c); overflow retained"};
+      const AxisSpec pidNSigmaTPC{60, -6., 6., "TPC n#sigma; flow retained"};
+      const AxisSpec pidNSigmaTOF{60, -6., 6., "TOF n#sigma; flow retained"};
+      const std::array<std::array<const char*, 2>, 2> jointNames{{{"hPionTPCvsTOFBeforePID", "hPionTPCvsTOFAfterPID"}, {"hKaonTPCvsTOFBeforePID", "hKaonTPCvsTOFAfterPID"}}};
+      for (size_t species = 0; species < jointNames.size(); ++species) {
+        for (size_t stage = 0; stage < jointNames[species].size(); ++stage) {
+          pidSelectionJoint[species][stage] = histos.add<TH3>(recoName(jointNames[species][stage]).c_str(), stage == 0 ? "Matched quality tracks with finite TPC/TOF, before species PID" : "Matched accepted tracks with finite TPC/TOF, after species PID", HistType::kTH3F, {pidPt, pidNSigmaTPC, pidNSigmaTOF});
+          pidSelectionJoint[species][stage]->Sumw2();
+        }
+      }
+      const std::array<const char*, 4> afterNames{"hPionTPCAfterPID", "hPionTOFAfterPID", "hKaonTPCAfterPID", "hKaonTOFAfterPID"};
+      for (size_t index = 0; index < afterNames.size(); ++index) {
+        const AxisSpec& response = index % 2 == 0 ? pidNSigmaTPC : pidNSigmaTOF;
+        pidSelectionAfter[index] = histos.add<TH2>(recoName(afterNames[index]).c_str(), "After final species PID; TPC all accepted, TOF matched accepted;track pT;nSigma", HistType::kTH2F, {pidPt, response});
+        pidSelectionAfter[index]->Sumw2();
+        if (useFT0M.value) {
+          const std::string name = std::string(afterNames[index]).append("ByMultiplicity");
+          pidSelectionAfterByActivity[index] = histos.add<TH3>(recoName(name).c_str(), "After final species PID; TPC all accepted, TOF matched accepted", HistType::kTH3F, {pidPt, response, compactMult});
+          pidSelectionAfterByActivity[index]->Sumw2();
+        }
+      }
+      const AxisSpec selectionStage{7, -0.5, 6.5, "PID decision category (not exclusive)"};
+      pidSelectionByActivity = histos.add<TH3>(recoName("hPIDSelectionByActivity").c_str(), "Track-level PID decisions;track pT;activity;decision category", HistType::kTH3D, {pidPt, compactMult, selectionStage});
+      pidSelectionByActivity->Sumw2();
+      const std::array<const char*, 7> selectionNames{"Quality", "TOF matched", "Pion accepted (final)", "Kaon accepted (final)", "Both accepted (final)", "Neither accepted (final)", "Both accepted before ambiguity veto"};
+      for (size_t index = 0; index < selectionNames.size(); ++index) {
+        pidSelectionByActivity->GetZaxis()->SetBinLabel(static_cast<int>(index + 1), selectionNames[index]);
+      }
+      pidSelectionNonfinite = histos.add<TH1>(recoName("hPIDSelectionNonfinite").c_str(), "Nonfinite responses excluded from numerical PID QA;response;Tracks", HistType::kTH1D, {{5, -0.5, 4.5}});
+      pidSelectionNonfinite->Sumw2();
+      const std::array<const char*, 5> nonfiniteNames{"Track pT", "Pion TPC", "Pion TOF (matched)", "Kaon TPC", "Kaon TOF (matched)"};
+      for (size_t index = 0; index < nonfiniteNames.size(); ++index) {
+        pidSelectionNonfinite->GetXaxis()->SetBinLabel(static_cast<int>(index + 1), nonfiniteNames[index]);
+      }
+    }
     const std::array<const char*, NMixClasses> dipionNames{"hDipionSE", "hDipionME"};
     for (size_t mix = 0; mix < dipionNames.size(); ++mix) {
       if (mix != 0 && !mixingEnabled()) {
@@ -369,7 +528,7 @@ struct F0phiproxy {
     const std::array<std::array<std::array<const char*, NCharges>, NMixClasses>, NChannels> controlNames{{{{{"hPhiKK", "hPhiKKLikePP", "hPhiKKLikeMM"}, {"hPhiKKMixed", "hPhiKKMixedLikePP", "hPhiKKMixedLikeMM"}}},
                                                                                                           {{{"hKstarKPi", "hKstarKPiLikePP", "hKstarKPiLikeMM"}, {"hKstarKPiMixed", "hKstarKPiMixedLikePP", "hKstarKPiMixedLikeMM"}}}}};
     for (size_t channel = 0; channel < NChannels; ++channel) {
-      const AxisSpec mass = channel == Phi ? AxisSpec{600, 0.9, 1.5, "m_{K,proxy K} (GeV/c^{2})"} : AxisSpec{kstarMassBins.value, 0.6, 1.4, "m_{K,proxy #pi} (GeV/c^{2})"};
+      const AxisSpec mass = channel == Phi ? AxisSpec{phiMassBins.value, 0.9, 1.5, "m_{K,proxy K} (GeV/c^{2})"} : AxisSpec{kstarMassBins.value, 0.6, 1.4, "m_{K,proxy #pi} (GeV/c^{2})"};
       for (size_t mix = 0; mix < NMixClasses; ++mix) {
         if (mix != 0 && !mixingEnabled()) {
           continue;
@@ -392,11 +551,79 @@ struct F0phiproxy {
     }
   }
 
+  void fillPIDSelectionQA(float trackPt, float activity, bool matched,
+                          float pionTPCValue, float pionTOFValue, float kaonTPCValue, float kaonTOFValue,
+                          bool pionPIDAccepted, bool kaonPIDAccepted, bool pionAccepted, bool kaonAccepted)
+  {
+    if (!enablePidSelectionQA.value) {
+      return;
+    }
+    if (!std::isfinite(trackPt)) {
+      pidSelectionNonfinite->Fill(0.);
+      return;
+    }
+    pidSelectionByActivity->Fill(trackPt, activity, 0.);
+    if (matched) {
+      pidSelectionByActivity->Fill(trackPt, activity, 1.);
+    }
+    if (pionAccepted) {
+      pidSelectionByActivity->Fill(trackPt, activity, 2.);
+    }
+    if (kaonAccepted) {
+      pidSelectionByActivity->Fill(trackPt, activity, 3.);
+    }
+    if (pionAccepted && kaonAccepted) {
+      pidSelectionByActivity->Fill(trackPt, activity, 4.);
+    }
+    if (!pionAccepted && !kaonAccepted) {
+      pidSelectionByActivity->Fill(trackPt, activity, 5.);
+    }
+    if (pionPIDAccepted && kaonPIDAccepted) {
+      pidSelectionByActivity->Fill(trackPt, activity, 6.);
+    }
+    const std::array<float, 2> tpcValues{pionTPCValue, kaonTPCValue};
+    const std::array<float, 2> tofValues{pionTOFValue, kaonTOFValue};
+    const std::array<bool, 2> accepted{pionAccepted, kaonAccepted};
+    for (size_t species = 0; species < accepted.size(); ++species) {
+      const bool finiteTPC = std::isfinite(tpcValues[species]);
+      const bool finiteTOF = matched && std::isfinite(tofValues[species]);
+      const size_t tpcIndex = 2 * species;
+      const size_t tofIndex = tpcIndex + 1;
+      if (!finiteTPC) {
+        pidSelectionNonfinite->Fill(static_cast<double>(tpcIndex + 1));
+      }
+      if (matched && !finiteTOF) {
+        pidSelectionNonfinite->Fill(static_cast<double>(tofIndex + 1));
+      }
+      if (finiteTPC && finiteTOF) {
+        pidSelectionJoint[species][0]->Fill(trackPt, tpcValues[species], tofValues[species]);
+        if (accepted[species]) {
+          pidSelectionJoint[species][1]->Fill(trackPt, tpcValues[species], tofValues[species]);
+        }
+      }
+      if (!accepted[species]) {
+        continue;
+      }
+      auto fillAfter = [&](size_t index, float value) {
+        pidSelectionAfter[index]->Fill(trackPt, value);
+        if (pidSelectionAfterByActivity[index]) {
+          pidSelectionAfterByActivity[index]->Fill(trackPt, value, activity);
+        }
+      };
+      if (finiteTPC) {
+        fillAfter(tpcIndex, tpcValues[species]);
+      }
+      if (finiteTOF) {
+        fillAfter(tofIndex, tofValues[species]);
+      }
+    }
+  }
+
   void bookMC()
   {
     const AxisSpec pt{100, 0., 10., "pair pT (GeV/c)"};
     const AxisSpec pionMass{300, 0.2, 1.7, "dipion mass (GeV/c2)"};
-    const std::array<AxisSpec, NChannels> mass{AxisSpec{600, 0.9, 1.5, "KK mass (GeV/c2)"}, AxisSpec{kstarMassBins.value, 0.6, 1.4, "K pi mass (GeV/c2)"}};
+    const std::array<AxisSpec, NChannels> mass{AxisSpec{phiMassBins.value, 0.9, 1.5, "KK mass (GeV/c2)"}, AxisSpec{kstarMassBins.value, 0.6, 1.4, "K pi mass (GeV/c2)"}};
     if (doprocessMCGen) {
       histos.add("hMCGenEventSelection", "Generated events;1=all,2=vertex,3=truth INEL>0", HistType::kTH1D, {{3, 0.5, 3.5}});
       const std::array<const char*, NGenSpectra> names{"hMCGenDipion", "hMCGenTrueF0", "hMCGenPhiKK", "hMCGenTruePhi", "hMCGenKstarKPi", "hMCGenTrueKstar", "hMCGenProxyPhi", "hMCGenProxyPhiTrueF0", "hMCGenProxyKstar", "hMCGenProxyKstarTrueF0"};
@@ -448,11 +675,6 @@ struct F0phiproxy {
     }
   }
 
-  bool passPID(float tpc, float tof, bool matched, float tpcCut, float tofCut) const
-  {
-    return std::isfinite(tpc) && std::abs(tpc) < tpcCut && (!requireTOF.value || matched) &&
-           (!matched || (std::isfinite(tof) && std::abs(tof) < tofCut));
-  }
   static int chargeCategory(int a, int b) { return a != b ? 0 : (a > 0 ? 1 : 2); }
   static FourVector constituent(FourVector const& dipion)
   {
@@ -701,10 +923,17 @@ struct F0phiproxy {
         if constexpr (IsMC) {
           candidate.truth = trackTruth(track, collision.mcCollisionId());
         }
-        if (passPID(track.tpcNSigmaPi(), track.tofNSigmaPi(), tof, pionTPC.value, pionTOF.value)) {
+        const float momentum = track.p();
+        const bool pionPIDAccepted = acceptPID(pionSelection, track.tpcNSigmaPi(), track.tofNSigmaPi(), tof, momentum);
+        const bool kaonPIDAccepted = acceptPID(kaonSelection, track.tpcNSigmaKa(), track.tofNSigmaKa(), tof, momentum);
+        const auto accepted = resolvePIDOverlap(pionPIDAccepted, kaonPIDAccepted, pionRejectKaonCompatible.value, kaonRejectPionCompatible.value);
+        const bool pionAccepted = accepted.first;
+        const bool kaonAccepted = accepted.second;
+        fillPIDSelectionQA(track.pt(), mult, tof, track.tpcNSigmaPi(), track.tofNSigmaPi(), track.tpcNSigmaKa(), track.tofNSigmaKa(), pionPIDAccepted, kaonPIDAccepted, pionAccepted, kaonAccepted);
+        if (pionAccepted) {
           event.pions.push_back(candidate);
         }
-        if (passPID(track.tpcNSigmaKa(), track.tofNSigmaKa(), tof, kaonTPC.value, kaonTOF.value)) {
+        if (kaonAccepted) {
           event.kaons.push_back(candidate);
         }
       }

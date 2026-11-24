@@ -23,7 +23,6 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetReducedDataV0.h"
-#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
@@ -152,6 +151,16 @@ struct LfJetSpectra {
                   kNV0Sources };
   static constexpr std::array<std::string_view, kNV0Sources> SourceLabels = {"primary", "from #Xi^{#pm}", "from #Xi^{0}", "from #Omega^{#pm}", "other secondary"};
 
+  // Species of the per-jet V0 multiplicity and momentum fraction histograms: V0 constituents passing the selection of the
+  // species and in its invariant mass window. The first three entries coincide with V0Species; kJetLambdaAntiLambda counts
+  // once a candidate passing the Lambda or the AntiLambda selection
+  enum JetV0Species { kJetK0s = 0,
+                      kJetLambda,
+                      kJetAntiLambda,
+                      kJetLambdaAntiLambda,
+                      kNJetV0Species };
+  static constexpr std::array<std::string_view, kNJetV0Species> JetV0SpeciesNames = {"K0s", "Lambda", "AntiLambda", "LambdaAntiLambda"};
+
   Configurable<bool> fillV0QAHistograms{"fillV0QAHistograms", true, "fill the V0 QA histograms (cut flow and topological variables before/after selections)"};
 
   // Event selection
@@ -183,6 +192,9 @@ struct LfJetSpectra {
     Configurable<bool> doCompetingMassRejection{"doCompetingMassRejection", true, "Apply the competing V0 mass rejection"};
     Configurable<float> lambdaRejWindow{"lambdaRejWindow", 0.005, "Lambda mass window rejected for K0s candidates (GeV/c^2)"};
     Configurable<float> k0sRejWindow{"k0sRejWindow", 0.010, "K0s mass window rejected for (Anti)Lambda candidates (GeV/c^2)"};
+    // invariant mass windows, used only in the per-jet V0 multiplicity and momentum fraction histograms
+    Configurable<float> k0sMassWindow{"k0sMassWindow", 0.015, "Half-width of the K0s mass window around the PDG mass (GeV/c^2), per-jet V0 histograms"};
+    Configurable<float> lambdaMassWindow{"lambdaMassWindow", 0.006, "Half-width of the (Anti)Lambda mass window around the PDG mass (GeV/c^2), per-jet V0 histograms"};
   } v0Cuts;
 
   // MC options
@@ -191,7 +203,7 @@ struct LfJetSpectra {
   // Multiplicity binning
   ConfigurableAxis multBinning{"multBinning", {VARIABLE_WIDTH, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "Binning of multiplicity axis"};
 
-  Service<o2::framework::O2DatabasePDG> pdgDatabase;
+  Service<o2::framework::O2DatabasePDG> pdgDatabase{};
 
   // phiExclusionMin at or below this value: no phi exclusion region (same convention as the V0 jet finder)
   static constexpr float PhiExclusionUnset = -998.f;
@@ -371,6 +383,18 @@ struct LfJetSpectra {
       registry.add("jetV0s/nK0sSelected", "V0 constituents passing the K^{0}_{S} selection", HistType::kTH2F, {jetPtAxis, nV0Axis});
       registry.add("jetV0s/nLambdaSelected", "V0 constituents passing the #Lambda selection", HistType::kTH2F, {jetPtAxis, nV0Axis});
       registry.add("jetV0s/nAntiLambdaSelected", "V0 constituents passing the #bar{#Lambda} selection", HistType::kTH2F, {jetPtAxis, nV0Axis});
+
+      // Per-jet multiplicity (all the selected jets, also without candidates) and fraction of the subtracted jet pT carried by
+      // the V0 constituents passing the selection of the species and in its mass window (jets with at least one candidate)
+      const AxisSpec zAxis{120, 0., 1.2, "#Sigma#it{p}_{T}^{V0} / #it{p}_{T,jet}^{sub}"};
+      registry.add("jetV0s/nJets", "selected jets", HistType::kTH1D, {jetPtAxis});
+      for (const auto& species : JetV0SpeciesNames) {
+        const std::string dir = "jetV0s/" + std::string(species) + "/";
+        registry.add((dir + "nInMassWindow").c_str(), "V0 constituents passing the selection and in the mass window, per jet", HistType::kTH2F, {jetPtAxis, nV0Axis});
+        registry.add((dir + "ptFraction").c_str(), "fraction of the subtracted jet pT carried by the V0 constituents passing the selection and in the mass window (jets with at least one)", HistType::kTH2F, {jetPtAxis, zAxis});
+        // Mean over all the selected jets (z = 0 without candidates), filled with the exact value
+        registry.add((dir + "ptFractionProfile").c_str(), "mean fraction of the subtracted jet pT carried by the V0 constituents passing the selection and in the mass window (all jets);#it{p}_{T,jet}^{sub} (GeV/#it{c});#LT #Sigma#it{p}_{T}^{V0} / #it{p}_{T,jet}^{sub} #GT", HistType::kTProfile, {jetPtAxis});
+      }
     }
     if (doprocessMCReco) {
       const AxisSpec originAxis{kNV0Origins, -0.5, static_cast<double>(kNV0Origins) - 0.5, "MC origin"};
@@ -405,11 +429,21 @@ struct LfJetSpectra {
       registryMC.add("jetV0s/V0ConstituentSource", "source of the real V0 constituents", HistType::kTH3F, {jetPtAxis, ptAxis, sourceAxis});
       registryMC.add("jetV0s/V0SourcePtFraction", "fraction of the jet pT carried by the real V0 constituents of each source", HistType::kTH3F, {jetPtAxis, sourceAxis, sourceFractionAxis});
       registryMC.add("jetV0s/V0SourcePtFractionProfile", "mean fraction of the jet pT carried by the real V0 constituents of each source;#it{p}_{T,jet}^{sub} (GeV/#it{c});V0 source;#LT #Sigma#it{p}_{T}^{V0} / #it{p}_{T,jet}^{raw} #GT", HistType::kTProfile2D, {jetPtAxis, sourceAxis});
+      registryMC.add("jetV0s/V0SecondaryPtFractionProfile", "mean fraction of the jet pT carried by all secondary real V0 constituents;#it{p}_{T,jet}^{sub} (GeV/#it{c});#LT #Sigma#it{p}_{T}^{secondary V0} / #it{p}_{T,jet}^{raw} #GT", HistType::kTProfile, {jetPtAxis});
       for (const auto& axis : {registryMC.get<TH3>(HIST("jetV0s/V0ConstituentSource"))->GetZaxis(), registryMC.get<TH3>(HIST("jetV0s/V0SourcePtFraction"))->GetYaxis(),
                                registryMC.get<TProfile2D>(HIST("jetV0s/V0SourcePtFractionProfile"))->GetYaxis()}) {
         for (int i = 0; i < kNV0Sources; i++) {
           axis->SetBinLabel(i + 1, std::string(SourceLabels[i]).c_str());
         }
+      }
+
+      // Fraction of the subtracted jet pT carried by the fake V0 constituents (MC origin not K0s, Lambda or AntiLambda, as in
+      // fakeV0PtFraction) passing the selection of the species and in its mass window (jets with at least one candidate)
+      const AxisSpec zFakeAxis{120, 0., 1.2, "#Sigma#it{p}_{T}^{fake V0} / #it{p}_{T,jet}^{sub}"};
+      for (const auto& species : JetV0SpeciesNames) {
+        const std::string dir = "jetV0s/" + std::string(species) + "/";
+        registryMC.add((dir + "fakePtFraction").c_str(), "fraction of the subtracted jet pT carried by the fake V0 constituents passing the selection and in the mass window (jets with at least one candidate)", HistType::kTH2F, {jetPtAxis, zFakeAxis});
+        registryMC.add((dir + "fakePtFractionProfile").c_str(), "mean fraction of the subtracted jet pT carried by the fake V0 constituents passing the selection and in the mass window (all jets);#it{p}_{T,jet}^{sub} (GeV/#it{c});#LT #Sigma#it{p}_{T}^{fake V0} / #it{p}_{T,jet}^{sub} #GT", HistType::kTProfile, {jetPtAxis});
       }
     }
 
@@ -445,6 +479,14 @@ struct LfJetSpectra {
       registryMC.add("number_of_events_vsmultiplicity_gen", "number of generated events vs multiplicity", HistType::kTH1D, {multAxis});
       registryMC.add("number_of_jets_vsmultiplicity_gen", "number of generated jets vs multiplicity", HistType::kTH1D, {multAxis});
       registryMC.add("rhoPerpCone_gen", "Perpendicular cone #rho, particle level", HistType::kTH2F, {multAxis, rhoAxis});
+      const AxisSpec genJetPtRawAxis{200, 0., 200., "true #it{p}_{T,jet}^{raw} (GeV/#it{c})"};
+      const AxisSpec genJetPtSubAxis{200, 0., 200., "true #it{p}_{T,jet}^{sub} (GeV/#it{c})"};
+      const AxisSpec genV0PtAxis{200, 0., 20., "true primary #it{p}_{T,V0} (GeV/#it{c})"};
+      registryMC.add("jetV0s/genJetPtRawVsSub", "particle-level jet pT before and after background subtraction", HistType::kTH2F, {genJetPtRawAxis, genJetPtSubAxis});
+      registryMC.add("jetV0s/genV0PtVsJetPtRaw", "true primary V0 constituent pT vs true raw particle-level jet pT", HistType::kTH2F, {genJetPtRawAxis, genV0PtAxis});
+      registryMC.add("jetV0s/genV0PtSumVsJetPtRaw", "mean sum of true primary V0 pT per particle-level jet vs true raw jet pT;true #it{p}_{T,jet}^{raw} (GeV/#it{c});#LT #Sigma #it{p}_{T,V0}^{true} #GT (GeV/#it{c})", HistType::kTProfile, {genJetPtRawAxis});
+      registryMC.add("jetV0s/genV0PtFractionVsJetPtRaw", "mean sum of true primary V0 pT divided by true raw particle-level jet pT;true #it{p}_{T,jet}^{raw} (GeV/#it{c});#LT #Sigma #it{p}_{T,V0}^{true} / #it{p}_{T,jet}^{raw,true} #GT", HistType::kTProfile, {genJetPtRawAxis});
+      registryMC.add("jetV0s/genV0CountVsJetPtRaw", "mean number of true primary V0 constituents per particle-level jet;true #it{p}_{T,jet}^{raw} (GeV/#it{c});#LT N_{V0}^{true} #GT", HistType::kTProfile, {genJetPtRawAxis});
     }
     for (int iHist = 0; iHist < kNMCHistograms; iHist++) {
       const bool isGenLevelHistogram = (iHist == kGenJet || iHist == kGenUE || iHist == kGenFullEvent);
@@ -732,6 +774,17 @@ struct LfJetSpectra {
     return lastPassedSelectionStep(v0, species, true) == kStepCompetingMass;
   }
 
+  // Invariant mass window of a species, used only in the per-jet V0 multiplicity and momentum fraction histograms
+  template <typename T>
+  bool isInMassWindow(T const& v0, V0Species species)
+  {
+    if (species == kK0s) {
+      return std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0Cuts.k0sMassWindow;
+    }
+    const float mass = (species == kLambda) ? v0.mLambda() : v0.mAntiLambda();
+    return std::abs(mass - o2::constants::physics::MassLambda) < v0Cuts.lambdaMassWindow;
+  }
+
   // ---------------------------------------------------------------------------------------------------------------
   // V0 QA
 
@@ -945,11 +998,11 @@ struct LfJetSpectra {
   {
     switch (v0.pdgCode()) {
       case PDG_t::kK0Short:
-        return kOriginK0s;
+        return isTrueV0(v0, kK0s) ? kOriginK0s : kOriginOtherMother;
       case PDG_t::kLambda0:
-        return kOriginLambda;
+        return isTrueV0(v0, kLambda) ? kOriginLambda : kOriginOtherMother;
       case PDG_t::kLambda0Bar:
-        return kOriginAntiLambda;
+        return isTrueV0(v0, kAntiLambda) ? kOriginAntiLambda : kOriginOtherMother;
       case PDG_t::kGamma:
         return kOriginGammaConversion;
       case 0:
@@ -990,15 +1043,32 @@ struct LfJetSpectra {
     float fakePt = 0.;
     float fakeSelectedPt = 0.;
     std::array<float, kNV0Sources> sourcePt{};
+    std::array<int, kNJetV0Species> nInWindow{};
+    std::array<float, kNJetV0Species> ptInWindow{};
+    std::array<float, kNJetV0Species> fakePtInWindow{};
     for (const auto& v0 : jet.template candidates_as<TV0Table>()) {
       nV0s++;
       bool passedAnySelection = false;
+      bool isLambdaOrAntiLambdaInWindow = false;
+      auto countInWindow = [&](int jetSpecies) {
+        nInWindow[jetSpecies]++;
+        ptInWindow[jetSpecies] += v0.pt();
+        if constexpr (isMC) {
+          if (v0Origin(v0) > kOriginAntiLambda) {
+            fakePtInWindow[jetSpecies] += v0.pt();
+          }
+        }
+      };
       for (const auto& species : {kK0s, kLambda, kAntiLambda}) {
         if (!passedV0Selection(v0, species)) {
           continue;
         }
         passedAnySelection = true;
         nSelected[species]++;
+        if (isInMassWindow(v0, species)) {
+          countInWindow(species);
+          isLambdaOrAntiLambdaInWindow |= (species != kK0s);
+        }
         if constexpr (isMC) {
           if (isTrueV0(v0, species)) {
             nTrueSelected[species]++;
@@ -1022,7 +1092,20 @@ struct LfJetSpectra {
           }
         }
       }
+      if (isLambdaOrAntiLambdaInWindow) {
+        countInWindow(kJetLambdaAntiLambda);
+      }
     }
+
+    if constexpr (isMC) {
+      registryMC.fill(HIST("jetV0s/nJets"), ptSub, weight);
+    } else {
+      registryData.fill(HIST("jetV0s/nJets"), ptSub, weight);
+    }
+    fillJetV0SpeciesContent<isMC, kJetK0s>(ptSub, nInWindow[kJetK0s], ptInWindow[kJetK0s], fakePtInWindow[kJetK0s], weight);
+    fillJetV0SpeciesContent<isMC, kJetLambda>(ptSub, nInWindow[kJetLambda], ptInWindow[kJetLambda], fakePtInWindow[kJetLambda], weight);
+    fillJetV0SpeciesContent<isMC, kJetAntiLambda>(ptSub, nInWindow[kJetAntiLambda], ptInWindow[kJetAntiLambda], fakePtInWindow[kJetAntiLambda], weight);
+    fillJetV0SpeciesContent<isMC, kJetLambdaAntiLambda>(ptSub, nInWindow[kJetLambdaAntiLambda], ptInWindow[kJetLambdaAntiLambda], fakePtInWindow[kJetLambdaAntiLambda], weight);
 
     if constexpr (isMC) {
       registryMC.fill(HIST("jetV0s/nV0Constituents"), ptSub, nV0s, weight);
@@ -1038,15 +1121,42 @@ struct LfJetSpectra {
       registryMC.fill(HIST("jetV0s/fakeSelectedV0PtFraction"), ptSub, fakeSelectedPt / jet.pt(), weight);
       registryMC.fill(HIST("jetV0s/fakeV0PtFractionProfile"), ptSub, fakePt / jet.pt(), weight);
       registryMC.fill(HIST("jetV0s/fakeSelectedV0PtFractionProfile"), ptSub, fakeSelectedPt / jet.pt(), weight);
+      float secondaryPt = 0.f;
       for (int source = 0; source < kNV0Sources; source++) {
         registryMC.fill(HIST("jetV0s/V0SourcePtFraction"), ptSub, source, sourcePt[source] / jet.pt(), weight);
         registryMC.fill(HIST("jetV0s/V0SourcePtFractionProfile"), ptSub, source, sourcePt[source] / jet.pt(), weight);
+        if (source != kSourcePrimary) {
+          secondaryPt += sourcePt[source];
+        }
       }
+      registryMC.fill(HIST("jetV0s/V0SecondaryPtFractionProfile"), ptSub, secondaryPt / jet.pt(), weight);
     } else {
       registryData.fill(HIST("jetV0s/nV0Constituents"), ptSub, nV0s);
       registryData.fill(HIST("jetV0s/nK0sSelected"), ptSub, nSelected[kK0s]);
       registryData.fill(HIST("jetV0s/nLambdaSelected"), ptSub, nSelected[kLambda]);
       registryData.fill(HIST("jetV0s/nAntiLambdaSelected"), ptSub, nSelected[kAntiLambda]);
+    }
+  }
+
+  // Per-jet V0 histograms of one species (see JetV0Species), filled once per selected jet after the loop over its V0
+  // constituents: multiplicity and mean momentum fractions for all the jets, momentum fraction distributions only for the
+  // jets with at least one candidate
+  template <bool isMC, int iSpecies>
+  void fillJetV0SpeciesContent(float ptSub, int nCandidates, float candidatesPt, float fakeCandidatesPt, float weight)
+  {
+    constexpr auto Folder = HIST("jetV0s/") + HIST(JetV0SpeciesNames[iSpecies]);
+    auto& registry = isMC ? registryMC : registryData;
+    registry.fill(Folder + HIST("/nInMassWindow"), ptSub, nCandidates, weight);
+    registry.fill(Folder + HIST("/ptFractionProfile"), ptSub, candidatesPt / ptSub, weight);
+    if constexpr (isMC) {
+      registryMC.fill(Folder + HIST("/fakePtFractionProfile"), ptSub, fakeCandidatesPt / ptSub, weight);
+    }
+    if (nCandidates == 0) {
+      return;
+    }
+    registry.fill(Folder + HIST("/ptFraction"), ptSub, candidatesPt / ptSub, weight);
+    if constexpr (isMC) {
+      registryMC.fill(Folder + HIST("/fakePtFraction"), ptSub, fakeCandidatesPt / ptSub, weight);
     }
   }
 
@@ -1206,6 +1316,9 @@ struct LfJetSpectra {
     collectJetsAboveThreshold(v0jets, rho, v0sInJets, jetAxes);
 
     for (const auto& jet : v0jets) {
+      if (isInJetAcceptance(jet)) {
+        registryMC.fill(HIST("jetV0s/genJetPtRawVsSub"), jet.pt(), subtractedPt(jet, rho), weight);
+      }
       if (!isSelectedJet(jet, rho)) {
         continue;
       }
@@ -1213,9 +1326,19 @@ struct LfJetSpectra {
 
       // Generated V0s, in-jet region: constituents of the particle-level jet (anti-kT clustering of the V0s as single
       // pseudojets, daughters removed from the particle list, as at detector level)
+      float sumV0Pt = 0.f;
+      int nV0sInJet = 0;
       for (const auto& v0 : jet.candidates_as<aod::CandidatesV0MCP>()) {
+        sumV0Pt += v0.pt();
+        nV0sInJet++;
+        registryMC.fill(HIST("jetV0s/genV0PtVsJetPtRaw"), jet.pt(), v0.pt(), weight);
         fillMCGenV0<kGenJet>(v0, multiplicity, weight);
       }
+      if (jet.pt() > 0.f) {
+        registryMC.fill(HIST("jetV0s/genV0PtSumVsJetPtRaw"), jet.pt(), sumV0Pt, weight);
+        registryMC.fill(HIST("jetV0s/genV0PtFractionVsJetPtRaw"), jet.pt(), sumV0Pt / jet.pt(), weight);
+      }
+      registryMC.fill(HIST("jetV0s/genV0CountVsJetPtRaw"), jet.pt(), nV0sInJet, weight);
       // Generated V0s, UE region: accepted by the particle-level jet finder and not constituents of another jet above threshold
       for (const auto& v0 : v0s) {
         if (!jetFinderV0s.contains(v0.globalIndex()) || v0sInJets.contains(v0.globalIndex())) {

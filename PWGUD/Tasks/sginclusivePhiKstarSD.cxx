@@ -113,6 +113,7 @@ struct SginclusivePhiKstarSD {
   Configurable<float> pt3{"pt3", 0.5, "pid selection pt3"};
 
   Configurable<bool> useMultCut{"useMultCut", false, "Multipicity cut on good tracks"};
+  Configurable<bool> applyTrackTofMatching{"applyTrackTofMatching", false, "Require at least one track with a TOF hit"};
 
   Configurable<bool> rapiditycut{"rapiditycut", true, "Rapidity Cut"};
   Configurable<float> rapiditycutvalue{"rapiditycutvalue", 0.5, "Rapidity Cut value"};
@@ -976,6 +977,10 @@ struct SginclusivePhiKstarSD {
         continue;
       }
 
+      if (applyTrackTofMatching && !t0.hasTOF() && !t1.hasTOF()) {
+        continue;
+      }
+
       if (phi && selectionPIDKaon1(t0) && selectionPIDKaon1(t1)) {
         // Apply kaon hypothesis and create pairs
         v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
@@ -1058,6 +1063,11 @@ struct SginclusivePhiKstarSD {
       if (t0.globalIndex() == t1.globalIndex()) {
         continue;
       }
+
+      if (applyTrackTofMatching && !t0.hasTOF() && !t1.hasTOF()) {
+        continue;
+      }
+
       if (rho && selectionPIDProton(t0, useTof, nsigmaTpcCut, nsigmaTofCut) && selectionPIDKaon1(t1)) {
         v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassProton);
         v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
@@ -1247,6 +1257,11 @@ struct SginclusivePhiKstarSD {
         if ((trackselector(track1, parameters) == 0) || (trackselector(track2, parameters) == 0)) {
           continue;
         }
+
+        if (applyTrackTofMatching && !track1.hasTOF() && !track2.hasTOF()) {
+          continue;
+        }
+
         if (phi && selectionPIDKaon1(track1) && selectionPIDKaon1(track2)) {
           v0.SetCoordinates(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassKaonCharged);
           v1.SetCoordinates(track2.px(), track2.py(), track2.pz(), o2::constants::physics::MassKaonCharged);
@@ -1272,6 +1287,11 @@ struct SginclusivePhiKstarSD {
         if (track1.globalIndex() == track2.globalIndex()) {
           continue;
         }
+
+        if (applyTrackTofMatching && !track1.hasTOF() && !track2.hasTOF()) {
+          continue;
+        }
+
         if (kstar && selectionPIDKaon1(track1) && selectionPIDPion1(track2)) {
           v0.SetCoordinates(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassKaonCharged);
           v1.SetCoordinates(track2.px(), track2.py(), track2.pz(), o2::constants::physics::MassPionCharged);
@@ -1859,6 +1879,11 @@ struct SginclusivePhiKstarSD {
       if (!tr1.has_udMcParticle() || !tr2.has_udMcParticle()) {
         continue;
       }
+
+      if (applyTrackTofMatching && !tr1.hasTOF() && !tr2.hasTOF()) {
+        continue;
+      }
+
       if (!selectionPIDPion1(tr1) || !selectionPIDKaon1(tr2)) {
         continue;
       }
@@ -2127,6 +2152,10 @@ struct SginclusivePhiKstarSD {
         continue;
       }
 
+      if (applyTrackTofMatching && !t0.hasTOF() && !t1.hasTOF()) {
+        continue;
+      }
+
       if (phi && selectionPIDKaon1(t0) && selectionPIDKaon1(t1)) {
         // Apply kaon hypothesis and create pairs
         v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
@@ -2209,6 +2238,11 @@ struct SginclusivePhiKstarSD {
       if (t0.globalIndex() == t1.globalIndex()) {
         continue;
       }
+
+      if (applyTrackTofMatching && !t0.hasTOF() && !t1.hasTOF()) {
+        continue;
+      }
+
       if (rho && selectionPIDProton(t0, useTof, nsigmaTpcCut, nsigmaTofCut) && selectionPIDKaon1(t1)) {
         v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassProton);
         v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
@@ -2400,6 +2434,11 @@ struct SginclusivePhiKstarSD {
         if ((trackselector(track1, parameters) == 0) || (trackselector(track2, parameters) == 0)) {
           continue;
         }
+
+        if (applyTrackTofMatching && !track1.hasTOF() && !track2.hasTOF()) {
+          continue;
+        }
+
         if (phi && selectionPIDKaon1(track1) && selectionPIDKaon1(track2)) {
           v0.SetCoordinates(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassKaonCharged);
           v1.SetCoordinates(track2.px(), track2.py(), track2.pz(), o2::constants::physics::MassKaonCharged);
@@ -2425,6 +2464,11 @@ struct SginclusivePhiKstarSD {
         if (track1.globalIndex() == track2.globalIndex()) {
           continue;
         }
+
+        if (applyTrackTofMatching && !track1.hasTOF() && !track2.hasTOF()) {
+          continue;
+        }
+
         if (kstar && selectionPIDKaon1(track1) && selectionPIDPion1(track2)) {
           v0.SetCoordinates(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassKaonCharged);
           v1.SetCoordinates(track2.px(), track2.py(), track2.pz(), o2::constants::physics::MassPionCharged);

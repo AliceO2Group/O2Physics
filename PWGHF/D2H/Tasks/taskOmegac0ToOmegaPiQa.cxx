@@ -159,6 +159,15 @@ struct HfTaskOmegac0ToOmegaPiQa {
     registry.get<THnSparse>(HIST("hReco"))->Sumw2();
   }
 
+  template <typename CandType>
+  bool hasMlScore(const CandType& candidate)
+  {
+    if (!candidate.mlProbOmegaC0ToOmegaPi().empty()) {
+      return true;
+    }
+    return false;
+  }
+
   template <bool ApplyMl, typename CandType>
   void runDataAnalysis(const CandType& candidates)
   {
@@ -169,6 +178,9 @@ struct HfTaskOmegac0ToOmegaPiQa {
       }
 
       if constexpr (ApplyMl) {
+        if (!hasMlScore(candidate)) {
+          continue;
+        }
         registry.fill(HIST("hReco"), HfHelper::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.mlProbOmegaC0ToOmegaPi()[0]);
       } else {
         registry.fill(HIST("hReco"), HfHelper::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac);
@@ -182,6 +194,12 @@ struct HfTaskOmegac0ToOmegaPiQa {
     const double yOmegac = HfHelper::yOmegaczero(candidate);
     if (yCandRecoMax >= 0. && std::abs(yOmegac) > yCandRecoMax) {
       return;
+    }
+
+    if constexpr (ApplyMl) {
+      if (!hasMlScore(candidate)) {
+        return;
+      }
     }
 
     auto numPvContributors = collision.numContrib();
@@ -212,6 +230,9 @@ struct HfTaskOmegac0ToOmegaPiQa {
       }
 
       if constexpr (ApplyMl) {
+        if (!hasMlScore(candidate)) {
+          continue;
+        }
         registry.fill(HIST("hReco"), HfHelper::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegaC0ToOmegaPi()[0]);
       } else {
         registry.fill(HIST("hReco"), HfHelper::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec());
@@ -249,9 +270,15 @@ struct HfTaskOmegac0ToOmegaPiQa {
 
       auto collision = candidate.template collision_as<CollisionsWithMcLabels>();
       uint16_t const numPvContributors = collision.numContrib();
-      float const mcCent = o2::hf_centrality::getCentralityColl(collision.template mcCollision_as<McCollisionWithCents>());
+      float mcCent = -1.;
+      if (collision.has_mcCollision()) {
+        mcCent = o2::hf_centrality::getCentralityColl(collision.template mcCollision_as<McCollisionWithCents>());
+      }
 
       if constexpr (ApplyMl) {
+        if (!hasMlScore(candidate)) {
+          continue;
+        }
         registry.fill(HIST("hReco"), HfHelper::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, mcCent, numPvContributors, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegaC0ToOmegaPi()[0]);
       } else {
         registry.fill(HIST("hReco"), HfHelper::invMassOmegaczeroToOmegaPi(candidate), candidate.pt(), yOmegac, mcCent, numPvContributors, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec());

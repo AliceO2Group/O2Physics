@@ -21,6 +21,8 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -133,6 +135,10 @@ struct FlowSmallSystems {
     Configurable<LabeledArray<int>> cfgDefineGFWRegions{"cfgDefineGFWRegions", {LongArrayInt.front().data(), 9, 1, {"Standard", "DeltaEta>0", "DeltaEta>0.2", "DeltaEta>0.4", "DeltaEta>0.6", "DeltaEta>0.8", "DeltaEta>1.0", "DeltaEta>1.2", "DeltaEta>1.4"}, {"Enabled"}}, "Switch (0/1) for various GFW region initialzation"};
     Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "refFull {2 2 -2 -2}"}, {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"}, {0, 0, 0, 0, 0}, {15, 1, 1, 0, 0}}, "Configurations for each correlation to calculate"};
   } cfgGFWSettings;
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgUseHighMultTrigger, bool, false, "Enable HM trigger");
+    O2_DEFINE_CONFIGURABLE(cfgHighMultiplicityTriggerMenu, int, 0, "0: HighTrackMult; 1: HighMultFv0; 2: HighFt0Mult; 3: HighFt0cFv0Mult; 4: HighFt0Flat; 5: HighFt0cFv0Flat");
+  } cfgTriggeredData;
   O2_DEFINE_CONFIGURABLE(cfgNUAWeightsRunByRun, bool, true, "Fill NUA weights run by run")
   O2_DEFINE_CONFIGURABLE(cfgGetNumberOfCorr, bool, false, "Get histograms with number of correlations")
   Configurable<std::vector<int>> cfgFirstFillRunsList{"cfgFirstFillRunsList", std::vector<int>{}, "First run of the fill for time-dependent analysis, keep empty to disable"};
@@ -144,10 +150,11 @@ struct FlowSmallSystems {
   Configurable<std::vector<int>> cfgRemovedRunList{"cfgRemovedRunList", std::vector<int>{-1}, "excluded run numbers"};
   Configurable<LabeledArray<float>> cfgTrackCuts{"cfgTrackCuts", {LongArrayFloat.front().data(), 7, 2, {"chi2 per TPCcls", "TPC cluster", "TPC crossed rows", "ITS cluster", "DCAxy (Nsigma)", "DCAz (Nsigma)", "DCAz (cm) override"}, {"Nch", "Observable"}}, "separate Nch and observable track selections"};
   ConfigurableAxis binningNch{"binningNch", {VARIABLE_WIDTH, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350, 360, 370, 380, 390, 400, 410, 420, 430, 440, 460, 470, 480, 490, 500}, "binning for N_{ch} histograms"};
-  ConfigurableAxis binningTime{"binningTime", {12, 0, 12}, "binning for time-dependent histograms transmutation QA"};
+  ConfigurableAxis binningTime{"binningTime", {12, 0, 12}, "binning for time-dependent histograms QA"};
   ConfigurableAxis binningPt{"binningPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, "binning for pT histograms"};
   HistogramRegistry registryQA{"registryQA"};
   HistogramRegistry registryCorr{"registryCorr"};
+  HistogramRegistry registryTrigger{"registryTrigger"};
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgEventSelection.cfgCutVertex);
   Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
   Service<ccdb::BasicCCDBManager> ccdb{};
@@ -223,6 +230,15 @@ struct FlowSmallSystems {
     Min8PC = 3,
 
   };
+  enum HighMultTriggerMenu {
+    HighTrackMult = 0,
+    HighMultFv0,
+    HighFt0Mult,
+    HighFt0cFv0Mult,
+    HighFt0Flat,
+    HighFt0cFv0Flat,
+    TriggerMenuCounter
+  };
   struct EventCut {
     bool enabled;
     int histBin;
@@ -240,6 +256,7 @@ struct FlowSmallSystems {
   } weight;
   static constexpr std::array<std::string_view, 2> FillTimeName = {"beforeEventSelQA/", "afterEventSelQA/"};
   static constexpr std::array<std::string_view, 2> FillTrackName = {"cutNch/", "cutObs/"};
+  std::array<std::string, TriggerMenuCounter> triggerName = {"fHighTrackMult", "HighMultFv0", "fHighFt0Mult", "fHighFt0cFv0Mult", "fHighFt0Flat", "fHighFt0cFv0Flat"};
 
   std::array<EventCut, 8> eventSelectionCuts{};
   std::array<std::array<float, 2>, 7> trackSel{};
@@ -258,19 +275,25 @@ struct FlowSmallSystems {
   std::array<TF1*, 2> fDCAxyCut{};
   std::vector<int> runNumbers;
   std::map<int, std::shared_ptr<TH3>> th3sPerRun;
+
   int firstRunOfFill = -1;
+
   GFW* fGFW = new GFW();
   std::vector<GFW::CorrConfig> corrConfigs;
   GFWRegions cacheRegions;
   GFWCorrConfigs cacheCorrConfig;
   TAxis* axisPtGFW = nullptr;
   OutputObj<FlowContainer> fFC{"FlowContainer"};
+
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+
   TH1D* hEff = nullptr;
   TH1D* mEfficiencyForNch = nullptr;
   GFWWeights* mAcceptance = nullptr;
   TRandom3* fRndm = new TRandom3(0);
 
-  int getCorrectITSLayersFlag(int flag)
+  int getCorrectITSLayersFlag(const int& flag)
   {
     switch (flag) {
       case ITSLayersAll:
@@ -373,8 +396,12 @@ struct FlowSmallSystems {
     registryQA.addClone("cutNch/", "cutObs/");
     registryQA.add("hVtxZ", "Vertex Z distribution;Vtxz (cm);Count", {HistType::kTH1D, {axisVertex}});
     registryQA.add("hCentrality", "Centrality distribution;Centrality;Count", {HistType::kTH1D, {axisCent}});
+    registryQA.add("hNch", "N_{ch} distribution;N_{ch}^{raw};Count", {HistType::kTH1D, {axisNch}});
+    if (!cfgGFWSettings.cfgEfficiencyNch.value.empty()) {
+      registryQA.add("hNchCorrected", "N_{ch} distribution;N_{ch}^{corrected};Count", {HistType::kTH1D, {axisNch}});
+    }
     registryQA.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{13, 0.5, 13.5}}});
-    registryQA.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(FilteredEvent, "Filtered event");
+    registryQA.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(FilteredEvent, (cfgTriggeredData.cfgUseHighMultTrigger) ? "Filtered event + HM Trigger" : "Filtered event");
     registryQA.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(Sel8, "after sel8");
     registryQA.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(RCTflags, "RCTflags");
     std::array<std::string, 4> itsLayersFlag = {"ITSLayers-Disabled", "ITSLayersAll", "ITSLayers0123", "ITSLayer3"};
@@ -580,6 +607,9 @@ struct FlowSmallSystems {
       fFC->Initialize(oba, axisGFW, cfgGFWSettings.cfgBootstrapSamples);
     }
     delete oba;
+    if (cfgTriggeredData.cfgUseHighMultTrigger) {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
   }
   template <typename TCollision>
   float getCentrality(const TCollision& collision)
@@ -604,7 +634,7 @@ struct FlowSmallSystems {
     }
   }
   template <typename TCollision>
-  bool selectMultiplicityCorrelation(const TCollision& collision, const int multTrk, const float& centrality)
+  bool selectMultiplicityCorrelation(const TCollision& collision, const int& multTrk, const float& centrality)
   {
     auto multNTracksPV = collision.multNTracksPV();
     if (cfgMultiplicityCorrelationCut.cfgGlobalMultPVMultCutEnabled) {
@@ -630,7 +660,7 @@ struct FlowSmallSystems {
     return true;
   }
   template <typename TCollision>
-  bool eventSelected(const TCollision& collision, const int multTrk, const float centrality, const int runNumber)
+  bool eventSelected(const TCollision& collision, const int& multTrk, const float& centrality, const int& runNumber)
   {
     if (!cfgEventSelection.cfgEvSelUsage) {
       return true;
@@ -806,7 +836,7 @@ struct FlowSmallSystems {
       }
     }
   }
-  double getTimeSinceStartOfFill(uint64_t timestamp, int firstRun)
+  double getTimeSinceStartOfFill(const uint64_t& timestamp, const int& firstRun)
   {
     auto runDuration = ccdb->getRunDuration(firstRun);
     uint64_t tsSOF = runDuration.first;
@@ -814,7 +844,7 @@ struct FlowSmallSystems {
     return static_cast<double>(diff) / 3600000.0;
   }
   template <typename TTrack>
-  inline void fillGFW(TTrack& track, const float& vtxZ)
+  inline void fillGFW(const TTrack& track, const float& vtxZ)
   {
     bool isRef = (track.pt() < cfgGFWSettings.cfgCutPtRefMax && track.pt() > cfgGFWSettings.cfgCutPtRefMin);
     bool isPOI = (track.pt() < cfgGFWSettings.cfgCutPtPOIMax && track.pt() > cfgGFWSettings.cfgCutPtPOIMin);
@@ -848,6 +878,13 @@ struct FlowSmallSystems {
     float nchCorrected = 0;
     double lRandom = fRndm->Rndm();
     std::array<TrackRegion, 8> trackCorr{TrackRegion{.forward = 0, .backward = 0, .gap = 0.}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.1}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.2}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.3}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.4}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.5}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.6}, TrackRegion{.forward = 0, .backward = 0, .gap = 0.7}};
+    if (cfgTriggeredData.cfgUseHighMultTrigger) {
+      zorro.initCCDB(ccdb.service, run, bc.timestamp(), triggerName[cfgTriggeredData.cfgHighMultiplicityTriggerMenu]);
+      zorro.populateHistRegistry(registryTrigger, run);
+      if (!zorro.isSelected(bc.globalBC())) {
+        return;
+      }
+    }
     registryQA.fill(HIST("hEventCount"), FilteredEvent);
     if (tracks.size() < 1) {
       return;
@@ -909,7 +946,9 @@ struct FlowSmallSystems {
     }
     if (!cfgGFWSettings.cfgEfficiencyNch.value.empty() && weight.hEfficiencyNch != nullptr) {
       registryQA.fill(HIST("hMultCorrected_MultUncorrected"), nch, nchCorrected);
+      registryQA.fill(HIST("hNchCorrected"), nchCorrected);
     }
+    registryQA.fill(HIST("hNch"), nch);
     fillOutputObjects(cent, nchCorrCounter, nchCorrected, lRandom, trackCorr);
   }
 };

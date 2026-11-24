@@ -40,6 +40,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <TH2.h>
 #include <TH3.h>
 #include <TList.h>
 #include <TPDGCode.h>
@@ -49,6 +50,8 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -60,6 +63,8 @@ using namespace o2::constants::physics;
 using namespace std;
 
 struct MeanPtFlucId {
+  Configurable<bool> cfgSaveSubsamples{"cfgSaveSubsamples", true, "Save 30 matched reconstructed-event N1/N2 matrix subsamples"};
+  Configurable<int> cfgSubsampleSeed{"cfgSubsampleSeed", 12345, "Fixed hash seed; MUST match across cut variations"};
   Configurable<int> nPBins{"nPBins", 300, ""};
   Configurable<int> nPhiBins{"nPhiBins", 100, ""};
   Configurable<int> nPtBins{"nPtBins", 50, "Number of pT bins"};
@@ -165,6 +170,61 @@ struct MeanPtFlucId {
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   HistogramRegistry hist{"hist", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  // Separate registries keep each stream below the registry histogram limit.
+  HistogramRegistry subsampleRaw{"subsampleRaw", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry subsampleCorrected{"subsampleCorrected", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry subsampleTruth{"subsampleTruth", {}, OutputObjHandlingPolicy::AnalysisObject};
+  static constexpr int NSubsamples = 30;
+  struct SubsampleMatrices {
+    std::shared_ptr<TH2> n1;
+    std::shared_ptr<TH3> n2;
+  };
+  std::array<std::array<std::array<SubsampleMatrices, 4>, NSubsamples>, 3> subsampleMatrices;
+  int activeSubsample = -1;
+
+  static uint64_t mixSubsampleKey(uint64_t x)
+  {
+    x += 0x9e3779b97f4a7c15ULL;
+    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
+    return x ^ (x >> 31);
+  }
+
+  template <typename C>
+  void selectSubsample(C const& col)
+  {
+    activeSubsample = -1;
+    if (!cfgSaveSubsamples) {
+      return;
+    }
+    const auto bc = col.template bc_as<aod::BCs>();
+    uint64_t key = mixSubsampleKey(static_cast<uint64_t>(cfgSubsampleSeed.value));
+    key = mixSubsampleKey(key ^ static_cast<uint64_t>(bc.runNumber()));
+    key = mixSubsampleKey(key ^ bc.globalBC());
+    // Original vertex coordinates disambiguate collisions sharing a BC and MC
+    // BC identifiers repeated in different input files. No cut-dependent state.
+    for (const auto& coordinate : {col.posX(), col.posY(), col.posZ()}) {
+      uint32_t bits = 0;
+      std::memcpy(&bits, &coordinate, sizeof(bits));
+      key = mixSubsampleKey(key ^ bits);
+    }
+    activeSubsample = static_cast<int>(key % NSubsamples);
+  }
+
+  void fillSubsampleN1(int stream, int species, double cent, double pt, double value)
+  {
+    if (activeSubsample >= 0) {
+      subsampleMatrices[stream][activeSubsample][species].n1->Fill(cent, pt, value);
+    }
+  }
+
+  void fillSubsampleN2(int stream, int species, double cent, double pt1, double pt2, double value)
+  {
+    if (activeSubsample >= 0) {
+      subsampleMatrices[stream][activeSubsample][species].n2->Fill(cent, pt1, pt2, value);
+    }
+  }
 
   TH3* efficiencyWeightCh = nullptr;
   TH3* efficiencyWeightPi = nullptr;
@@ -622,6 +682,32 @@ struct MeanPtFlucId {
       addCorrectedHistograms("CorrectedTruthMatched/Pion/", axisPtPi);
       addCorrectedHistograms("CorrectedTruthMatched/Kaon/", axisPtKa);
       addCorrectedHistograms("CorrectedTruthMatched/Proton/", axisPtPr);
+    }
+
+    if (cfgSaveSubsamples && (doprocessRun3 || doprocessMCRecoSimRun3)) {
+      const std::array<AxisSpec, 4> axes{axisPtCh, axisPtPi, axisPtKa, axisPtPr};
+      const std::array<std::string, 4> names{"Charged", "Pion", "Kaon", "Proton"};
+      const std::array<std::string, 3> streams{"Analysis", "Corrected", "CorrectedTruthMatched"};
+      const std::array<HistogramRegistry*, 3> registries{&subsampleRaw, &subsampleCorrected, &subsampleTruth};
+      constexpr int TruthMatchedStream = 2;
+      constexpr int FirstTwoDigitGroup = 10;
+      for (std::size_t stream = 0; stream < streams.size(); ++stream) {
+        if (stream > 0 && !cfgApplyEfficiencyCorrection) {
+          continue;
+        }
+        if (stream == TruthMatchedStream && (!doprocessMCRecoSimRun3 || cfgUseCombinedPurityEfficiencyWeight)) {
+          continue;
+        }
+        for (int group = 0; group < NSubsamples; ++group) {
+          const std::string label = (group < FirstTwoDigitGroup ? "0" : "") + std::to_string(group);
+          for (std::size_t species = 0; species < names.size(); ++species) {
+            const std::string path = "Subsamples/" + label + "/" + streams[stream] + "/" + names[species] + "/";
+            auto& matrices = subsampleMatrices[stream][group][species];
+            matrices.n1 = registries[stream]->add<TH2>(path + "hN1Matrix", "Subsample single-particle density", kTH2D, {axisCent, axes[species]});
+            matrices.n2 = registries[stream]->add<TH3>(path + "hN2Matrix", "Subsample ordered distinct-pair density", kTH3D, {axisCent, axes[species], axes[species]});
+          }
+        }
+      }
     }
 
     auto addGeneratedHistograms = [&]() {
@@ -1161,6 +1247,9 @@ struct MeanPtFlucId {
     for (const int& ptBin : matrixOccupiedBins) {
       const double ptCenter = ptMin + (ptBin + 0.5) * binWidth;
       hist.fill(HIST(dire[Mode]) + HIST("hN1Matrix"), eventCoordinate, ptCenter, eventWeight * static_cast<double>(matrixNInBin[ptBin]));
+      if constexpr (Mode >= Analysis_Charged && Mode <= Analysis_Proton) {
+        fillSubsampleN1(0, Mode - Analysis_Charged, eventCoordinate, ptCenter, eventWeight * static_cast<double>(matrixNInBin[ptBin]));
+      }
     }
 
     for (size_t i = 0; i < matrixOccupiedBins.size(); ++i) {
@@ -1169,6 +1258,9 @@ struct MeanPtFlucId {
       const double nPairDiagonal = static_cast<double>(matrixNInBin[ptBin1]) * (matrixNInBin[ptBin1] - 1);
       if (nPairDiagonal > 0.0) {
         hist.fill(HIST(dire[Mode]) + HIST("hN2Matrix"), eventCoordinate, ptCenter1, ptCenter1, eventWeight * nPairDiagonal);
+        if constexpr (Mode >= Analysis_Charged && Mode <= Analysis_Proton) {
+          fillSubsampleN2(0, Mode - Analysis_Charged, eventCoordinate, ptCenter1, ptCenter1, eventWeight * nPairDiagonal);
+        }
       }
 
       for (size_t j = i + 1; j < matrixOccupiedBins.size(); ++j) {
@@ -1176,7 +1268,13 @@ struct MeanPtFlucId {
         const double ptCenter2 = ptMin + (ptBin2 + 0.5) * binWidth;
         const double nPair = static_cast<double>(matrixNInBin[ptBin1]) * matrixNInBin[ptBin2];
         hist.fill(HIST(dire[Mode]) + HIST("hN2Matrix"), eventCoordinate, ptCenter1, ptCenter2, eventWeight * nPair);
+        if constexpr (Mode >= Analysis_Charged && Mode <= Analysis_Proton) {
+          fillSubsampleN2(0, Mode - Analysis_Charged, eventCoordinate, ptCenter1, ptCenter2, eventWeight * nPair);
+        }
         hist.fill(HIST(dire[Mode]) + HIST("hN2Matrix"), eventCoordinate, ptCenter2, ptCenter1, eventWeight * nPair);
+        if constexpr (Mode >= Analysis_Charged && Mode <= Analysis_Proton) {
+          fillSubsampleN2(0, Mode - Analysis_Charged, eventCoordinate, ptCenter2, ptCenter1, eventWeight * nPair);
+        }
       }
     }
   }
@@ -1247,8 +1345,10 @@ struct MeanPtFlucId {
       const double ptCenter = ptMin + (ptBin + 0.5) * binWidth;
       if constexpr (TruthMatched) {
         hist.fill(HIST(TruthMatchedCorrectedDirectories[Mode]) + HIST("hN1Matrix"), centFT0M, ptCenter, matrixWInBin[ptBin]);
+        fillSubsampleN1(2, Mode, centFT0M, ptCenter, matrixWInBin[ptBin]);
       } else {
         hist.fill(HIST(CorrectedDirectories[Mode]) + HIST("hN1Matrix"), centFT0M, ptCenter, matrixWInBin[ptBin]);
+        fillSubsampleN1(1, Mode, centFT0M, ptCenter, matrixWInBin[ptBin]);
       }
     }
 
@@ -1259,8 +1359,10 @@ struct MeanPtFlucId {
       if (diagonalPairDensity > 0.) {
         if constexpr (TruthMatched) {
           hist.fill(HIST(TruthMatchedCorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter1, ptCenter1, diagonalPairDensity);
+          fillSubsampleN2(2, Mode, centFT0M, ptCenter1, ptCenter1, diagonalPairDensity);
         } else {
           hist.fill(HIST(CorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter1, ptCenter1, diagonalPairDensity);
+          fillSubsampleN2(1, Mode, centFT0M, ptCenter1, ptCenter1, diagonalPairDensity);
         }
       }
 
@@ -1270,10 +1372,14 @@ struct MeanPtFlucId {
         const double pairDensity = matrixWInBin[ptBin1] * matrixWInBin[ptBin2];
         if constexpr (TruthMatched) {
           hist.fill(HIST(TruthMatchedCorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter1, ptCenter2, pairDensity);
+          fillSubsampleN2(2, Mode, centFT0M, ptCenter1, ptCenter2, pairDensity);
           hist.fill(HIST(TruthMatchedCorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter2, ptCenter1, pairDensity);
+          fillSubsampleN2(2, Mode, centFT0M, ptCenter2, ptCenter1, pairDensity);
         } else {
           hist.fill(HIST(CorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter1, ptCenter2, pairDensity);
+          fillSubsampleN2(1, Mode, centFT0M, ptCenter1, ptCenter2, pairDensity);
           hist.fill(HIST(CorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter2, ptCenter1, pairDensity);
+          fillSubsampleN2(1, Mode, centFT0M, ptCenter2, ptCenter1, pairDensity);
         }
       }
     }
@@ -1663,15 +1769,20 @@ struct MeanPtFlucId {
   SliceCache cache;
   PresliceOptional<MyMCTracks> perCollision = aod::track::collisionId;
 
-  void processRun3(MyRun3Collisions::iterator const& col, MyAllTracks const& tracks)
+  void processRun3(MyRun3Collisions::iterator const& col, MyAllTracks const& tracks, aod::BCs const&)
   {
+    selectSubsample(col);
     fillBeforeQAHistos(col, tracks);
     fillRecoHistos<true, false>(col, tracks);
   }
   PROCESS_SWITCH(MeanPtFlucId, processRun3, "Process for Run-3", false);
 
-  void processMCRecoSimRun3(aod::McCollisions::iterator const& mcCol, soa::SmallGroups<MyRun3MCCollisions> const& cols, MyMCTracks const& tracks, aod::McParticles const& mcParts)
+  void processMCRecoSimRun3(aod::McCollisions::iterator const& mcCol, soa::SmallGroups<MyRun3MCCollisions> const& cols, MyMCTracks const& tracks, aod::McParticles const& mcParts, aod::BCs const&)
   {
+    activeSubsample = -1;
+    if (cols.size() == 1) {
+      selectSubsample(cols.begin());
+    }
     analyzeMC(mcCol, cols, tracks, mcParts);
   }
   PROCESS_SWITCH(MeanPtFlucId, processMCRecoSimRun3, "process MC Reconstructed & Truth Run-3", true);

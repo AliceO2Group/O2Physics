@@ -428,6 +428,7 @@ struct HfCandidateSelectorXic0ToXiPiKf {
           hfMlToXiPi(outputMlXic0ToXiPiKf);
         } else {
           isSelectedMlXic0 = hfMlResponse.isSelectedMl(inputFeaturesXic0, ptCand, outputMlXic0ToXiPiKf);
+          resultSelections = isSelectedMlXic0;
           registry.fill(HIST("hSelMlXic0"), isSelectedMlXic0);
           hfMlToXiPi(outputMlXic0ToXiPiKf);
         }

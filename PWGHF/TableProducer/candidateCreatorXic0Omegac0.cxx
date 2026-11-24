@@ -2356,7 +2356,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   // inspect for which zPvPosMax cut was set for reconstructed
   void init(InitContext& initContext)
   {
-    std::array<bool, 5> procCollisionsXicToXiPi{doprocessMcXicToXiPi, doprocessMcXicToXiPiFT0m, doprocessMcXicToXiPiFT0c, doprocessMcXicToXiPiKf, doprocessMcXicToXiPiKfQa};
+    std::array<bool, 7> procCollisionsXicToXiPi{doprocessMcXicToXiPi, doprocessMcXicToXiPiFT0m, doprocessMcXicToXiPiFT0c, doprocessMcXicToXiPiKf, doprocessMcXicToXiPiKfQa, doprocessMcXicToXiPiKfFT0m, doprocessMcXicToXiPiKfFT0c};
     if (std::accumulate(procCollisionsXicToXiPi.begin(), procCollisionsXicToXiPi.end(), 0) > 1) {
       LOGP(fatal, "At most one process function for XicToXiPi collision study can be enabled at a time.");
     }
@@ -3281,6 +3281,28 @@ struct HfCandidateCreatorXic0Omegac0Mc {
     runXic0Omegac0Mc<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcXicToXiPiKf, "Run Xic0 to xi pi MC process function - no centrality", false);
+
+  void processMcXicToXiPiKfFT0m(aod::HfCandToXiPiKf const& candidates,
+                                MyTracksWMc const& tracks,
+                                aod::McParticles const& mcParticles,
+                                McCollisionsCentFT0Ms const& mcColls,
+                                McCollisionsFT0Ms const& collsWithMcLabels,
+                                BCsInfo const& bcs)
+  {
+    runXic0Omegac0Mc<CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcXicToXiPiKfFT0m, "Run Xic0 to xi pi KFParticle MC process function - FT0M", false);
+
+  void processMcXicToXiPiKfFT0c(aod::HfCandToXiPiKf const& candidates,
+                                MyTracksWMc const& tracks,
+                                aod::McParticles const& mcParticles,
+                                soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcColls,
+                                McCollisionsFT0Cs const& collsWithMcLabels,
+                                BCsInfo const& bcs)
+  {
+    runXic0Omegac0Mc<CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcXicToXiPiKfFT0c, "Run Xic0 to xi pi KFParticle MC process function - FT0C", false);
 
   void processMcXicToXiPiKfQa(aod::HfCandToXiPiKfQa const& candidates,
                               MyTracksWMc const& tracks,

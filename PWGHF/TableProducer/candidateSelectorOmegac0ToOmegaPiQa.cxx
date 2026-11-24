@@ -133,7 +133,7 @@ struct HfCandidateSelectorToOmegaPiQa {
 
   // PID options
   Configurable<bool> usePidTpcOnly{"usePidTpcOnly", true, "Perform PID using only TPC"};
-  Configurable<bool> usePidTpcTofCombined{"usePidTpcTofCombined", false, "Perform PID using TPC or TOF"};
+  Configurable<bool> usePidTpcOrTof{"usePidTpcOrTof", false, "Perform PID using TPC or TOF"};
 
   // PID - TPC selections
   Configurable<double> ptPiPidTpcMin{"ptPiPidTpcMin", -1, "Lower bound of track pT for TPC PID for pion selection"};
@@ -204,10 +204,10 @@ struct HfCandidateSelectorToOmegaPiQa {
     Configurable<float> v0Chi2OverNdfMax{"v0Chi2OverNdfMax", 100., "Maximum chi2Geo/NDF of V0"};
     Configurable<float> cascChi2OverNdfMax{"cascChi2OverNdfMax", 100., "Maximum chi2Geo/NDF of casc"};
     Configurable<float> omegacChi2OverNdfMax{"omegacChi2OverNdfMax", 100., "Maximum chi2Geo/NDF of Omegac"};
-    Configurable<float> chi2TopoV0ToCascMax{"chi2TopoV0ToCascMax", 100., "Maximum chi2Topo/NDF of V0ToCas"};
-    Configurable<float> chi2TopoOmegacToPvMax{"chi2TopoOmegacToPvMax", 100., "Maximum chi2Topo/NDF of OmegacToPv"};
-    Configurable<float> chi2TopoCascToOmegacMax{"chi2TopoCascToOmegacMax", 100., "Maximum chi2Topo/NDF of CascToOmegac"};
-    Configurable<float> chi2TopoCascToPvMax{"chi2TopoCascToPvMax", 100., "Maximum chi2Topo/NDF of CascToPv"};
+    Configurable<float> chi2TopoV0ToCascMax{"chi2TopoV0ToCascMax", 100., "Maximum chi2Topo of V0ToCasc"};
+    Configurable<float> chi2TopoOmegacToPvMax{"chi2TopoOmegacToPvMax", 100., "Maximum chi2Topo of OmegacToPv"};
+    Configurable<float> chi2TopoCascToOmegacMax{"chi2TopoCascToOmegacMax", 100., "Maximum chi2Topo of CascToOmegac"};
+    Configurable<float> chi2TopoCascToPvMax{"chi2TopoCascToPvMax", 100., "Maximum chi2Topo of CascToPv"};
     Configurable<float> decayLenXYOmegacMax{"decayLenXYOmegacMax", 1.5, "Maximum decay lengthXY of Omegac"};
     Configurable<float> decayLenXYCascMin{"decayLenXYCascMin", 1., "Minimum decay lengthXY of Cascade"};
     Configurable<float> decayLenXYLambdaMin{"decayLenXYLambdaMin", 0., "Minimum decay lengthXY of V0"};
@@ -223,8 +223,8 @@ struct HfCandidateSelectorToOmegaPiQa {
       LOGP(fatal, "Exactly one process function for selector can be enabled at a time.");
     }
 
-    if (usePidTpcOnly == usePidTpcTofCombined) {
-      LOGF(fatal, "Check the PID configurables, usePidTpcOnly and usePidTpcTofCombined can't have the same value");
+    if (usePidTpcOnly == usePidTpcOrTof) {
+      LOGF(fatal, "Check the PID configurables, usePidTpcOnly and usePidTpcOrTof can't have the same value");
     }
 
     selectorPion.setRangePtTpc(ptPiPidTpcMin, ptPiPidTpcMax);
@@ -376,7 +376,7 @@ struct HfCandidateSelectorToOmegaPiQa {
     }
   }
 
-  // LF cuts - Cuts on LF tracks reco
+  // TODO: check if all these cuts are needed and remove those that are already applied in the candidate creator
   // Selection on LF related informations
   // returns true if all cuts are passed
   template <int svReco, typename T>
@@ -507,8 +507,7 @@ struct HfCandidateSelectorToOmegaPiQa {
         }
         registry.fill(HIST("hSelStatusLf"), 22.0);
 
-        // TODO: fix cascRejectInvmass variable needed not available in the current table
-
+        // TODO: cascRejectInvmass variable not available in the current table, check if needed
         // Competing Xi rejection
         // if (kfConfigurableGroup.applyCompetingCascRejection) {
         //  const auto invMassXiHypothesis = candidate.cascRejectInvmass();
@@ -544,7 +543,7 @@ struct HfCandidateSelectorToOmegaPiQa {
     return true;
   }
 
-  // HF cuts - Cuts on Charm baryon reco
+  // TODO: check if all these cuts are needed and remove those that are already applied in the candidate creator
   // Apply cuts with charm baryon & charm bachelor related informations
   // returns true if all cuts are passed
   template <int svReco, typename T>
@@ -597,11 +596,11 @@ struct HfCandidateSelectorToOmegaPiQa {
         registry.fill(HIST("hSelStatusHf"), 5.0);
 
         // Chi2
-        if (candidate.chi2GeoOverNdfCascade() < 0 || candidate.chi2GeoOverNdfCascade() > kfConfigurableGroup.omegacChi2OverNdfMax) {
+        if (candidate.chi2GeoOverNdf() < 0 || candidate.chi2GeoOverNdf() > kfConfigurableGroup.omegacChi2OverNdfMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusHf"), 6.0);
-        if (candidate.chi2TopoCascadeToPv() < 0 || candidate.chi2TopoCascadeToPv() > kfConfigurableGroup.chi2TopoOmegacToPvMax) {
+        if (candidate.chi2TopoToPv() < 0 || candidate.chi2TopoToPv() > kfConfigurableGroup.chi2TopoOmegacToPvMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusHf"), 7.0);
@@ -689,20 +688,19 @@ struct HfCandidateSelectorToOmegaPiQa {
   // apply PID selection on the decay products
   bool isSelectedPID(const TrackSelectorPID::Status pidPrFromLam, const TrackSelectorPID::Status pidPiFromLam, const TrackSelectorPID::Status pidKaFromCasc, const TrackSelectorPID::Status pidPiFromCharmBaryon)
   {
-    // TODO: check PID logic, usually we require particles to not be TrackSelectorPID::Rejected
     registry.fill(HIST("hSelStatusPID"), 0.0);
 
-    if (pidPrFromLam != TrackSelectorPID::Accepted || pidPiFromLam != TrackSelectorPID::Accepted) {
+    if (pidPrFromLam == TrackSelectorPID::Rejected || pidPiFromLam == TrackSelectorPID::Rejected) {
       return false;
     }
     registry.fill(HIST("hSelStatusPID"), 1.0);
 
-    if (pidKaFromCasc != TrackSelectorPID::Accepted) {
+    if (pidKaFromCasc == TrackSelectorPID::Rejected) {
       return false;
     }
     registry.fill(HIST("hSelStatusPID"), 2.0);
 
-    if (pidPiFromCharmBaryon != TrackSelectorPID::Accepted) {
+    if (pidPiFromCharmBaryon == TrackSelectorPID::Rejected) {
       return false;
     }
     registry.fill(HIST("hSelStatusPID"), 3.0);
@@ -723,9 +721,7 @@ struct HfCandidateSelectorToOmegaPiQa {
 
       if (!TESTBIT(candidate.hfflag(), aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi)) {
         hfSelOmegaC0ToOmegaPiCandidate(statusOmegaC0ToOmegaPi);
-        if (applyMl) {
-          hfMlOmegaC0ToOmegaPiCandidate(outputMlOmegac);
-        }
+        hfMlOmegaC0ToOmegaPiCandidate(outputMlOmegac);
         continue;
       }
       SETBIT(statusOmegaC0ToOmegaPi, aod::SelectionStep::RecoSkims);
@@ -753,9 +749,7 @@ struct HfCandidateSelectorToOmegaPiQa {
 
       if (!selectedLf || !selectedHf || !selectedTrackQuality) {
         hfSelOmegaC0ToOmegaPiCandidate(statusOmegaC0ToOmegaPi);
-        if (applyMl) {
-          hfMlOmegaC0ToOmegaPiCandidate(outputMlOmegac);
-        }
+        hfMlOmegaC0ToOmegaPiCandidate(outputMlOmegac);
         continue;
       }
       SETBIT(statusOmegaC0ToOmegaPi, aod::SelectionStep::RecoTopol);
@@ -766,12 +760,13 @@ struct HfCandidateSelectorToOmegaPiQa {
       TrackSelectorPID::Status pidKaFromCasc{};
       TrackSelectorPID::Status pidPiFromCharmBaryon{};
 
+      // TODO: add TPC and TOF option for PID selection
       if (usePidTpcOnly) {
         pidPrFromLam = selectorProton.statusTpc(trackPrFromLam);
         pidPiFromLam = selectorPion.statusTpc(trackPiFromLam);
         pidKaFromCasc = selectorKaon.statusTpc(trackKaFromCasc);
         pidPiFromCharmBaryon = selectorPion.statusTpc(trackPiFromCharm);
-      } else if (usePidTpcTofCombined) {
+      } else if (usePidTpcOrTof) {
         pidPrFromLam = selectorProton.statusTpcOrTof(trackPrFromLam);
         pidPiFromLam = selectorPion.statusTpcOrTof(trackPiFromLam);
         pidKaFromCasc = selectorKaon.statusTpcOrTof(trackKaFromCasc);
@@ -780,9 +775,7 @@ struct HfCandidateSelectorToOmegaPiQa {
 
       if (!isSelectedPID(pidPrFromLam, pidPiFromLam, pidKaFromCasc, pidPiFromCharmBaryon)) {
         hfSelOmegaC0ToOmegaPiCandidate(statusOmegaC0ToOmegaPi);
-        if (applyMl) {
-          hfMlOmegaC0ToOmegaPiCandidate(outputMlOmegac);
-        }
+        hfMlOmegaC0ToOmegaPiCandidate(outputMlOmegac);
         continue;
       }
       SETBIT(statusOmegaC0ToOmegaPi, aod::SelectionStep::RecoPID);
@@ -808,6 +801,8 @@ struct HfCandidateSelectorToOmegaPiQa {
           continue;
         }
         SETBIT(statusOmegaC0ToOmegaPi, aod::SelectionStep::RecoMl);
+      } else {
+        hfMlOmegaC0ToOmegaPiCandidate(outputMlOmegac);
       }
 
       registry.fill(HIST("hInvMassCharmBaryon"), HfHelper::invMassOmegaczeroToOmegaPi(candidate));

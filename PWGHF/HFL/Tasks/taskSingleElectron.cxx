@@ -13,26 +13,44 @@
 /// \brief task for electrons from heavy-flavour hadron decays
 /// \author Jonghan Park (Jeonbuk National University), Seul I Jeong (Pusan National University)
 
+#include "PWGHF/DataModel/AliasTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
+
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <CommonUtils/ConfigurableParam.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <DetectorsVertexing/PVertexer.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
 #include <TPDGCode.h>
 
+#include <algorithm>
+#include <array>
+#include <cstdint>
 #include <map>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::constants::math;
@@ -101,21 +119,37 @@ struct HfTaskSingleElectron {
   Configurable<int> nSigmaTpcHadronMax{"nSigmaTpcHadronMax", -3, "max of tpc hadron nsigma"};
   Configurable<int> nSigmaTpcHadronMin{"nSigmaTpcHadronMin", -5, "min of tpc hadron nsigma"};
 
+  Configurable<float> bFieldSign{"bFieldSign", 1.f, "sign of the L3 magnetic field (+1 or -1), used in DCA_xy x charge x sign(B)"};
+
+  // PV refit (processDataPvRefit)
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "CCDB path of the material LUT"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+
   // SliceCache
   SliceCache cache;
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  o2::base::MatLayerCylSet* lut{};
+  o2::vertexing::PVertexer vertexer;
+  int runNumber{0};
 
   // using declarations
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   using TracksEl = soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl>;
   using McTracksEl = soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TrackExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::McTrackLabels>;
+  using AllTracks = aod::TracksWCovDcaExtra;
 
   // Filter
   Filter collZFilter = nabs(aod::collision::posZ) < posZMax;
 
   // Partition
+  Partition<AllTracks> pvContributors = ((aod::track::flags & static_cast<uint32_t>(aod::track::PVContributor)) == static_cast<uint32_t>(aod::track::PVContributor));
 
   // ConfigurableAxis
   ConfigurableAxis axisPtEl{"axisPtEl", {VARIABLE_WIDTH, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.75f, 2.0f, 2.25f, 2.5f, 2.75f, 3.f, 3.5f, 4.0f, 5.0f, 6.0f, 8.0f, 10.0f}, "electron pt bins"};
+  ConfigurableAxis axisDcaSigned{"axisDcaSigned", {4000, -0.2, 0.2}, "DCA_xy x charge x sign(B) bins (cm)"};
+  ConfigurableAxis axisNContrib{"axisNContrib", {VARIABLE_WIDTH, 0., 5., 10., 15., 20., 25., 30., 40., 50., 60., 80., 100., 150., 250.}, "number of PV contributors bins"};
 
   // Histogram registry
   HistogramRegistry histos{"histos"};
@@ -190,6 +224,42 @@ struct HfTaskSingleElectron {
     histos.add("hDcaDalitz", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
     histos.add("hDcaConv", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
     histos.add("hDcaHadron", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
+
+    // DCA_xy x q x sign(B)
+    const AxisSpec axisDcaSig{axisDcaSigned, "DCA_{xy} #times #it{q} #times sign(#it{B}) (cm)"};
+    const AxisSpec axisNContribEvt{axisNContrib, "#it{N}_{contrib}"};
+    histos.add("hDcaSignedTrack", "after electron identification;#it{p}_{T} (GeV/#it{c});DCA_{xy} #times #it{q} #times sign(#it{B}) (cm);#it{N}_{contrib}", kTH3D, {{axisPtEl}, {axisDcaSig}, {axisNContribEvt}});
+    histos.add("hDcaSignedHadron", "TPC hadron band, before TOF selection;#it{p}_{T} (GeV/#it{c});DCA_{xy} #times #it{q} #times sign(#it{B}) (cm)", kTH2D, {{axisPtEl}, {axisDcaSig}});
+    histos.add("hDcaSignedHadronAfterTofCut", "TPC hadron band, after TOF selection;#it{p}_{T} (GeV/#it{c});DCA_{xy} #times #it{q} #times sign(#it{B}) (cm)", kTH2D, {{axisPtEl}, {axisDcaSig}});
+
+    if (doprocessData && doprocessDataPvRefit) {
+      LOGF(fatal, "processData and processDataPvRefit cannot be enabled together");
+    }
+    if (doprocessDataPvRefit) {
+      histos.add("hDcaSignedTrackPvRefit", "after electron identification, PV refit;#it{p}_{T} (GeV/#it{c});DCA_{xy} #times #it{q} #times sign(#it{B}) (cm);#it{N}_{contrib}", kTH3D, {{axisPtEl}, {axisDcaSig}, {axisNContribEvt}});
+      histos.add("hDcaSignedHadronPvRefit", "TPC hadron band, before TOF selection, PV refit;#it{p}_{T} (GeV/#it{c});DCA_{xy} #times #it{q} #times sign(#it{B}) (cm)", kTH2D, {{axisPtEl}, {axisDcaSig}});
+      histos.add("hDcaSignedHadronAfterTofCutPvRefit", "TPC hadron band, after TOF selection, PV refit;#it{p}_{T} (GeV/#it{c});DCA_{xy} #times #it{q} #times sign(#it{B}) (cm)", kTH2D, {{axisPtEl}, {axisDcaSig}});
+      // PV refit QA
+      const AxisSpec axisCollisionNContrib{1000, 0, 1000, "Number of contributors"};
+      const AxisSpec axisPvRefitDeltaX{1000, -0.05f, 0.05f, "#Delta x_{PV} (cm)"};
+      const AxisSpec axisPvRefitDeltaY{1000, -0.05f, 0.05f, "#Delta y_{PV} (cm)"};
+      const AxisSpec axisPvRefitDeltaZ{1000, -0.05f, 0.05f, "#Delta z_{PV} (cm)"};
+      histos.add("PvRefit/hVerticesPerTrack", "", kTH1D, {{3, 0.5f, 3.5f, ""}});
+      histos.add("PvRefit/hPvDeltaXvsNContrib", "", kTH2D, {axisCollisionNContrib, axisPvRefitDeltaX});
+      histos.add("PvRefit/hPvDeltaYvsNContrib", "", kTH2D, {axisCollisionNContrib, axisPvRefitDeltaY});
+      histos.add("PvRefit/hPvDeltaZvsNContrib", "", kTH2D, {axisCollisionNContrib, axisPvRefitDeltaZ});
+      histos.add("PvRefit/hChi2vsNContrib", "", kTH2D, {axisCollisionNContrib, {102, -1.5, 100.5, "#chi^{2} PV refit"}});
+      histos.add("PvRefit/hPvRefitXChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {{100, -20.f, 20.f}, {100, -2.f, 2.f}});
+      histos.add("PvRefit/hPvRefitYChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {{100, -20.f, 20.f}, {100, -2.f, 2.f}});
+      histos.add("PvRefit/hPvRefitZChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {{100, -20.f, 20.f}, {100, -2.f, 2.f}});
+      histos.add("PvRefit/hNContribPvRefitNotDoable", "N. contrib for PV refit not doable", kTH1D, {axisCollisionNContrib});
+      histos.add("PvRefit/hNContribPvRefitChi2Minus1", "N. contrib for PV refit #it{#chi}^{2}==#minus1", kTH1D, {axisCollisionNContrib});
+      ccdb->setURL(ccdbUrl);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
+      o2::conf::ConfigurableParam::updateFromString("pvertexer.useMeanVertexConstraint=false");
+    }
 
     // QA plots for MC
     histos.add("hPdgC", "", kTH1D, {{10001, -0.5, 10000.5}});
@@ -515,8 +585,8 @@ struct HfTaskSingleElectron {
     return Else;
   }
 
-  void processData(soa::Filtered<MyCollisions>::iterator const& collision,
-                   TracksEl const& tracks)
+  template <bool DoPvRefit, typename TCollision, typename TTracks>
+  void runData(TCollision const& collision, TTracks const& tracks)
   {
     float const flagAnalysedEvt = 0.5;
 
@@ -530,6 +600,27 @@ struct HfTaskSingleElectron {
 
     histos.fill(HIST("hVtxZ"), collision.posZ());
     histos.fill(HIST("hNEvents"), flagAnalysedEvt);
+
+    // PV refit: vertexer per collision
+    std::vector<int64_t> pvContribGlobId{};
+    std::vector<o2::track::TrackParCov> pvContribTrackParCov{};
+    o2::dataformats::VertexBase primVtx;
+    bool pvRefitDoable = false;
+    if constexpr (DoPvRefit) {
+      initCCDB(collision.template bc_as<aod::BCsWithTimestamps>(), runNumber, ccdb, ccdbPathGrpMag, lut, false);
+      auto pvContribColl = pvContributors->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      for (const auto& contributor : pvContribColl) {
+        pvContribGlobId.push_back(contributor.globalIndex());
+        pvContribTrackParCov.push_back(getTrackParCov(contributor));
+      }
+      primVtx.setX(collision.posX());
+      primVtx.setY(collision.posY());
+      primVtx.setZ(collision.posZ());
+      primVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+      vertexer.init();
+      pvRefitDoable = vertexer.prepareVertexRefit(pvContribTrackParCov, primVtx);
+    }
+    std::vector<bool> pvContribUsed(pvContribGlobId.size(), true);
 
     for (const auto& track : tracks) {
 
@@ -554,12 +645,64 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("hTpcNSigP"), track.p(), track.tpcNSigmaEl());
       histos.fill(HIST("hTpcNSigPt"), track.pt(), track.tpcNSigmaEl());
 
+      double const dcaSigned = track.dcaXY() * track.sign() * bFieldSign;
+      float dcaXYPvRefit = track.dcaXY();
+      bool pvRefitDone = false;
+      [[maybe_unused]] auto getDcaSignedPvRefit = [&]() -> double {
+        if (!pvRefitDone) {
+          pvRefitDone = true;
+          const auto it = std::find(pvContribGlobId.begin(), pvContribGlobId.end(), track.globalIndex());
+          if (track.isPVContributor() && it != pvContribGlobId.end()) {
+            histos.fill(HIST("PvRefit/hVerticesPerTrack"), 1);
+            if (!pvRefitDoable) {
+              histos.fill(HIST("PvRefit/hNContribPvRefitNotDoable"), collision.numContrib());
+            } else {
+              histos.fill(HIST("PvRefit/hVerticesPerTrack"), 2);
+              const auto entry = std::distance(pvContribGlobId.begin(), it);
+              pvContribUsed[entry] = false;
+              const auto primVtxRefitted = vertexer.refitVertex(pvContribUsed, primVtx);
+              pvContribUsed[entry] = true;
+              histos.fill(HIST("PvRefit/hChi2vsNContrib"), primVtxRefitted.getNContributors(), primVtxRefitted.getChi2());
+              if (primVtxRefitted.getChi2() < 0) {
+                histos.fill(HIST("PvRefit/hPvRefitXChi2Minus1"), primVtxRefitted.getX(), collision.posX());
+                histos.fill(HIST("PvRefit/hPvRefitYChi2Minus1"), primVtxRefitted.getY(), collision.posY());
+                histos.fill(HIST("PvRefit/hPvRefitZChi2Minus1"), primVtxRefitted.getZ(), collision.posZ());
+                histos.fill(HIST("PvRefit/hNContribPvRefitChi2Minus1"), collision.numContrib());
+              } else {
+                histos.fill(HIST("PvRefit/hVerticesPerTrack"), 3);
+                histos.fill(HIST("PvRefit/hPvDeltaXvsNContrib"), primVtxRefitted.getNContributors(), primVtx.getX() - primVtxRefitted.getX());
+                histos.fill(HIST("PvRefit/hPvDeltaYvsNContrib"), primVtxRefitted.getNContributors(), primVtx.getY() - primVtxRefitted.getY());
+                histos.fill(HIST("PvRefit/hPvDeltaZvsNContrib"), primVtxRefitted.getNContributors(), primVtx.getZ() - primVtxRefitted.getZ());
+                auto trackPar = getTrackPar(track);
+                std::array<float, 2> dcaInfo{-999.f, -999.f};
+                if (o2::base::Propagator::Instance()->propagateToDCABxByBz({primVtxRefitted.getX(), primVtxRefitted.getY(), primVtxRefitted.getZ()}, trackPar, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, &dcaInfo)) {
+                  dcaXYPvRefit = dcaInfo[0];
+                }
+              }
+            }
+          }
+        }
+        return dcaXYPvRefit * track.sign() * bFieldSign;
+      };
+      if (track.tpcNSigmaEl() < nSigmaTpcHadronMax && track.tpcNSigmaEl() > nSigmaTpcHadronMin) {
+        histos.fill(HIST("hDcaSignedHadron"), track.pt(), dcaSigned);
+        if constexpr (DoPvRefit) {
+          histos.fill(HIST("hDcaSignedHadronPvRefit"), track.pt(), getDcaSignedPvRefit());
+        }
+      }
+
       if (std::abs(track.tofNSigmaEl()) > nSigmaTofMax) {
         continue;
       }
       histos.fill(HIST("hTofNSigPtQA"), track.pt(), track.tofNSigmaEl());
       histos.fill(HIST("hTpcNSigPAfterTofCut"), track.p(), track.tpcNSigmaEl());
       histos.fill(HIST("hTpcNSigPtAfterTofCut"), track.pt(), track.tpcNSigmaEl());
+      if (track.tpcNSigmaEl() < nSigmaTpcHadronMax && track.tpcNSigmaEl() > nSigmaTpcHadronMin) {
+        histos.fill(HIST("hDcaSignedHadronAfterTofCut"), track.pt(), dcaSigned);
+        if constexpr (DoPvRefit) {
+          histos.fill(HIST("hDcaSignedHadronAfterTofCutPvRefit"), track.pt(), getDcaSignedPvRefit());
+        }
+      }
 
       if (track.tpcNSigmaEl() < nSigmaTpcMin || track.tpcNSigmaEl() > nSigmaTpcMax) {
         continue;
@@ -573,9 +716,28 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("hTpcNSigPtQA"), track.pt(), track.tpcNSigmaEl());
 
       histos.fill(HIST("hDcaTrack"), track.pt(), track.dcaXY());
+      histos.fill(HIST("hDcaSignedTrack"), track.pt(), dcaSigned, collision.numContrib());
+      if constexpr (DoPvRefit) {
+        histos.fill(HIST("hDcaSignedTrackPvRefit"), track.pt(), getDcaSignedPvRefit(), collision.numContrib());
+      }
     }
   }
+
+  void processData(soa::Filtered<MyCollisions>::iterator const& collision,
+                   TracksEl const& tracks)
+  {
+    runData<false>(collision, tracks);
+  }
   PROCESS_SWITCH(HfTaskSingleElectron, processData, "For real data", true);
+
+  void processDataPvRefit(soa::Filtered<MyCollisions>::iterator const& collision,
+                          TracksEl const& tracks,
+                          AllTracks const&,
+                          aod::BCsWithTimestamps const&)
+  {
+    runData<true>(collision, tracks);
+  }
+  PROCESS_SWITCH(HfTaskSingleElectron, processDataPvRefit, "For real data, also with the DCA to the PV refitted without the track", false);
 
   void processMc(soa::Filtered<MyCollisions>::iterator const& collision,
                  McTracksEl const& tracks,

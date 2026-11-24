@@ -115,6 +115,7 @@ constexpr int DeuteronPDG = o2::constants::physics::Pdg::kDeuteron;
 constexpr int TritonPDG = o2::constants::physics::Pdg::kTriton;
 constexpr int He3PDG = o2::constants::physics::Pdg::kHelium3;
 constexpr int HyperTritonPDG = o2::constants::physics::Pdg::kHyperTriton;
+constexpr int HyperHydrogen4PDG = o2::constants::physics::Pdg::kHyperHydrogen4;
 constexpr int Lithium4PDG = o2::constants::physics::Pdg::kLithium4;
 // Store an exact integer PDG code in sparse histograms as
 // sign * (high * kMotherPdgChunkBase + low). Splitting the code avoids the
@@ -437,6 +438,14 @@ struct HadNucleiFemto {
     Configurable<int> settingITSNClsMinTr{"settingITSNClsMinTr", 5, "Minimum number of ITS clusters for triton candidates"};
     Configurable<float> settingTPCChi2NClMaxTr{"settingTPCChi2NClMaxTr", 4.f, "Maximum TPC chi2 per cluster for triton candidates"};
     Configurable<float> settingITSChi2NClMaxTr{"settingITSChi2NClMaxTr", 36.f, "Maximum ITS chi2 per cluster for triton candidates"};
+    Configurable<float> settingDCAxyShiftTr{"settingDCAxyShiftTr", 0.00049472f, "Shift added to triton DCAxy in cm before taking its absolute value"};
+    Configurable<float> settingDCAxyOffsetTr{"settingDCAxyOffsetTr", 0.00780663f, "Constant term of the triton DCAxy limit in cm"};
+    Configurable<float> settingDCAxyCoeffTr{"settingDCAxyCoeffTr", 0.02015144f, "Coefficient of the inverse-pT term of the triton DCAxy limit"};
+    Configurable<float> settingDCAxyPowerTr{"settingDCAxyPowerTr", 5.86322f, "Inverse-pT exponent of the triton DCAxy limit"};
+    Configurable<float> settingDCAzShiftTr{"settingDCAzShiftTr", -0.00003534f, "Shift added to triton DCAz in cm before taking its absolute value"};
+    Configurable<float> settingDCAzOffsetTr{"settingDCAzOffsetTr", 0.00677261f, "Constant term of the triton DCAz limit in cm"};
+    Configurable<float> settingDCAzCoeffTr{"settingDCAzCoeffTr", 0.01587102f, "Coefficient of the inverse-pT term of the triton DCAz limit"};
+    Configurable<float> settingDCAzPowerTr{"settingDCAzPowerTr", 3.82604f, "Inverse-pT exponent of the triton DCAz limit"};
     Configurable<float> settingPIDMomentumSplitTr{"settingPIDMomentumSplitTr", 2.f, "Momentum separating low- and high-momentum triton TPC PID"};
     Configurable<float> settingCutTPCNsigmaLowPTr{"settingCutTPCNsigmaLowPTr", 3.f, "Maximum absolute TPC n-sigma for tritons below the momentum split"};
     Configurable<float> settingCutITSNsigmaLowPTr{"settingCutITSNsigmaLowPTr", 3.f, "Maximum absolute ITS n-sigma for tritons below the momentum split"};
@@ -444,7 +453,7 @@ struct HadNucleiFemto {
     Configurable<float> settingCutTPCNsigmaHighPMaxTr{"settingCutTPCNsigmaHighPMaxTr", 3.f, "Maximum TPC n-sigma for tritons above the momentum split"};
     Configurable<float> settingTOFMassMomentumMinTr{"settingTOFMassMomentumMinTr", 1.2f, "Minimum momentum to apply the triton TOF mass cut"};
     Configurable<float> settingTOFMassMinTr{"settingTOFMassMinTr", 2.5f, "Minimum triton TOF mass"};
-    Configurable<bool> settingUseTOFMassTableTr{"settingUseTOFMassTableTr", false, "Use pidTOFmass mass for triton PID and purity instead of computeTOFMass"};
+    Configurable<bool> settingUseTOFMassTableTr{"settingUseTOFMassTableTr", false, "Use pidTOFmass mass for triton PID, purity and pair-table output instead of computed mass"};
     Configurable<float> settingTOFMassMaxTr{"settingTOFMassMaxTr", 3.4f, "Maximum triton TOF mass"};
     Configurable<float> settingTPCRejectNsig{"settingTPCRejectNsig", 3.f, "Minimum absolute TPC n-sigma from deuteron, proton and pion hypotheses"};
   } tritonPid;
@@ -780,7 +789,16 @@ struct HadNucleiFemto {
      {"fraction/hDcaMotherPdgHad", "Hadron DCA by exact direct-mother PDG; signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin;collision association;mother PDG sign;mother PDG high;mother PDG low", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}, {NDcaOrigins, -0.5f, static_cast<float>(NDcaOrigins) - 0.5f}, {NCollisionAssociations, -0.5f, static_cast<float>(NCollisionAssociations) - 0.5f}, {3, -1.5f, 1.5f}, {MotherPdgHighMax + 1, -0.5f, static_cast<float>(MotherPdgHighMax) + 0.5f}, {MotherPdgChunkBase, -0.5f, static_cast<float>(MotherPdgChunkBase) - 0.5f}}}},
      {"fraction/hDcaMotherPdgNu", "Nucleus DCA by exact direct-mother PDG; signed physical reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin;collision association;mother PDG sign;mother PDG high;mother PDG low", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {40, 0.f, 100.f}, {NDcaOrigins, -0.5f, static_cast<float>(NDcaOrigins) - 0.5f}, {NCollisionAssociations, -0.5f, static_cast<float>(NCollisionAssociations) - 0.5f}, {3, -1.5f, 1.5f}, {MotherPdgHighMax + 1, -0.5f, static_cast<float>(MotherPdgHighMax) + 0.5f}, {MotherPdgChunkBase, -0.5f, static_cast<float>(MotherPdgChunkBase) - 0.5f}}}},
 
+     {"fractionMCGen/hHyperHydrogen4", "Generated primary hyperhydrogen-4;parent signed pT;parent y;centrality", {HistType::kTHnSparseF, {{400, -10.f, 10.f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}}}},
+     {"fractionMCGen/hHyperHydrogen4DaughterTriton", "Generated triton daughters;generated signed pT;generated y;centrality;channel (0 other, 1 tpPi, 2 tnPi0)", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}, {3, -0.5f, 2.5f}}}},
+     {"fractionMCGen/hHyperHydrogen4PtVsDaughterTritonPt", "Generated parent-daughter mapping;parent signed pT;daughter signed pT;parent y;daughter y;centrality;channel", {HistType::kTHnSparseF, {{400, -10.f, 10.f}, {280, -7.f, 7.f}, {120, -1.5f, 1.5f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}, {3, -0.5f, 2.5f}}}},
+     {"fractionMCGen/hHyperHydrogen4DaughterTritonProductionR", "Generated daughter production radius;signed pT;Rxy (cm);channel", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {200, 0.f, 100.f}, {3, -0.5f, 2.5f}}}},
+     {"fractionMCReco/hHyperHydrogen4DaughterTritonGenPtVsRecoPt", "Selected triton track response;generated signed pT;reconstructed signed pT;generated y;centrality;channel", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {280, -7.f, 7.f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}, {3, -0.5f, 2.5f}}}},
+     {"fractionMCReco/hHyperHydrogen4ParentPtVsDaughterTritonRecoPt", "Parent to selected triton track;parent signed pT;daughter reco signed pT;parent y;daughter generated y;centrality;channel", {HistType::kTHnSparseF, {{400, -10.f, 10.f}, {280, -7.f, 7.f}, {120, -1.5f, 1.5f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}, {3, -0.5f, 2.5f}}}},
+     {"fraction/hDcaHyperHydrogen4Triton", "Correct-collision triton DCA proxy;signed reco pT;DCAxy (cm);DCAz (cm);centrality;channel;Rxy (cm)", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {40, 0.f, 100.f}, {3, -0.5f, 2.5f}, {200, 0.f, 100.f}}}},
+
      // Generator denominators and source-resolved response matrices for the
+     {"fractionMCReco/hHyperHydrogen4TritonRecoMultiplicity", "Selected tracks per hyperhydrogen-4 truth triton;tracks;truth daughters", {HistType::kTH1F, {{20, 0.5f, 20.5f}}}},
      // hypertriton-to-primary He3 and triton constraints. Generated momenta
      // are physical particle momenta and must never receive the reconstructed
      // He3-track x2 rigidity conversion. The two-body histograms are
@@ -1263,14 +1281,18 @@ struct HadNucleiFemto {
   bool selectTrackTr(const Ttrack& candidate)
   {
     constexpr float maxAbsEta = 0.8f;
-    constexpr float maxAbsDcaXY = 0.2f;
-    constexpr float maxAbsDcaZ = 0.2f;
+    const float absPt = std::abs(candidate.pt());
+    if (!std::isfinite(absPt) || absPt <= 0.f) {
+      return false;
+    }
+    const float maxAbsDcaXY = tritonPid.settingDCAxyOffsetTr.value + tritonPid.settingDCAxyCoeffTr.value / std::pow(absPt, tritonPid.settingDCAxyPowerTr.value);
+    const float maxAbsDcaZ = tritonPid.settingDCAzOffsetTr.value + tritonPid.settingDCAzCoeffTr.value / std::pow(absPt, tritonPid.settingDCAzPowerTr.value);
     constexpr int minTPCCrossedRows = 70;
     constexpr float maxTPCFractionSharedCls = 0.3f;
 
     return !(std::abs(candidate.eta()) >= maxAbsEta ||
-             std::abs(candidate.dcaXY()) >= maxAbsDcaXY ||
-             std::abs(candidate.dcaZ()) >= maxAbsDcaZ ||
+             std::abs(candidate.dcaXY() + tritonPid.settingDCAxyShiftTr.value) >= maxAbsDcaXY ||
+             std::abs(candidate.dcaZ() + tritonPid.settingDCAzShiftTr.value) >= maxAbsDcaZ ||
              candidate.tpcNClsCrossedRows() < minTPCCrossedRows ||
              candidate.tpcChi2NCl() >= tritonPid.settingTPCChi2NClMaxTr ||
              candidate.tpcFractionSharedCls() >= maxTPCFractionSharedCls ||
@@ -2363,9 +2385,13 @@ struct HadNucleiFemto {
     hadNucand.collisionIDHad = trackHad.collisionId();
 
     if (trackDe.hasTOF()) {
-      float beta = o2::pid::tof::Beta::GetBeta(trackDe);
-      beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
-      hadNucand.massTOFNu = hadNucand.momNuTPC * nuChargeFactor * std::sqrt(1.f / (beta * beta) - 1.f);
+      if (useTritonNucleus() && tritonPid.settingUseTOFMassTableTr.value) {
+        hadNucand.massTOFNu = tritonTOFMass(trackDe);
+      } else {
+        float beta = o2::pid::tof::Beta::GetBeta(trackDe);
+        beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+        hadNucand.massTOFNu = hadNucand.momNuTPC * nuChargeFactor * std::sqrt(1.f / (beta * beta) - 1.f);
+      }
     }
     if (trackHad.hasTOF()) {
       float beta = o2::pid::tof::Beta::GetBeta(trackHad);
@@ -2498,10 +2524,14 @@ struct HadNucleiFemto {
     }
 
     if (track.hasTOF()) {
-      float beta = o2::pid::tof::Beta::GetBeta(track);
-      beta = std::clamp(beta, 1.e-4f, 1.f - 1.e-6f);
-      const float momentumForMass = isNucleus ? bufferedTrack.tpcInnerParam * nucleusChargeFactor() : bufferedTrack.tpcInnerParam;
-      bufferedTrack.massTOF = momentumForMass * std::sqrt(1.f / (beta * beta) - 1.f);
+      if (isNucleus && useTritonNucleus() && tritonPid.settingUseTOFMassTableTr.value) {
+        bufferedTrack.massTOF = tritonTOFMass(track);
+      } else {
+        float beta = o2::pid::tof::Beta::GetBeta(track);
+        beta = std::clamp(beta, 1.e-4f, 1.f - 1.e-6f);
+        const float momentumForMass = isNucleus ? bufferedTrack.tpcInnerParam * nucleusChargeFactor() : bufferedTrack.tpcInnerParam;
+        bufferedTrack.massTOF = momentumForMass * std::sqrt(1.f / (beta * beta) - 1.f);
+      }
     }
     return bufferedTrack;
   }
@@ -3733,6 +3763,40 @@ struct HadNucleiFemto {
     }
   }
 
+  // Shared generated/reconstructed proxy definition. Channel 0 retains other
+  // direct decay modes, 1 is t+p+pi-, 2 is t+n+pi0 (charge conjugated for antimatter).
+  // No physical branching ratio or hypertriton yield is applied here.
+  template <typename Tparticle, typename Tmother>
+  int hyperHydrogen4TritonChannel(const Tparticle& particle, const Tmother& mother) const
+  {
+    constexpr int threeBodyDaughters = 3;
+    const int sign = mother.pdgCode() > 0 ? 1 : -1;
+    if (std::abs(mother.pdgCode()) != HyperHydrogen4PDG || !mother.isPhysicalPrimary() ||
+        particle.pdgCode() != sign * TritonPDG || particle.isPhysicalPrimary() || particle.getProcess() != TMCProcess::kPDecay ||
+        particle.mcCollisionId() != mother.mcCollisionId()) {
+      return -1;
+    }
+    bool hasProton = false;
+    bool hasNeutron = false;
+    bool hasChargedPion = false;
+    bool hasNeutralPion = false;
+    int daughters = 0;
+    for (const auto& daughter : mother.template daughters_as<aod::McParticles>()) {
+      ++daughters;
+      hasProton |= daughter.pdgCode() == sign * static_cast<int>(PDG_t::kProton);
+      hasNeutron |= daughter.pdgCode() == sign * static_cast<int>(PDG_t::kNeutron);
+      hasChargedPion |= daughter.pdgCode() == -sign * static_cast<int>(PDG_t::kPiPlus);
+      hasNeutralPion |= daughter.pdgCode() == static_cast<int>(PDG_t::kPi0);
+    }
+    if (daughters == threeBodyDaughters && hasProton && hasChargedPion) {
+      return 1;
+    }
+    if (daughters == threeBodyDaughters && hasNeutron && hasNeutralPion) {
+      return 2;
+    }
+    return 0;
+  }
+
   template <typename Ttrack, typename Tparticle>
   void fillMCDcaTemplate(const Ttrack& track, const Tparticle& particle, float centrality, bool isNucleus, bool matchesRecoCollision)
   {
@@ -3741,6 +3805,23 @@ struct HadNucleiFemto {
     const int parentCategory = classifyParentCategory(particle, origin);
     const float productionRadius = std::hypot(particle.vx(), particle.vy());
     const float signedPt = signedPhysicalPt(track, isNucleus);
+
+    // Independent A=4 efficiency proxy. Do not mix it into the hypertriton
+    // response: their parent spectra and physical yields are different.
+    if (isNucleus && matchesRecoCollision && std::abs(particle.pdgCode()) == TritonPDG && particle.has_mothers()) {
+      for (const auto& mother : particle.template mothers_as<aod::McParticles>()) {
+        const int channel = hyperHydrogen4TritonChannel(particle, mother);
+        if (channel < 0) {
+          continue;
+        }
+        const float generatedPt = particle.pdgCode() > 0 ? particle.pt() : -particle.pt();
+        const float parentPt = mother.pdgCode() > 0 ? mother.pt() : -mother.pt();
+        mQaRegistry.fill(HIST("fractionMCReco/hHyperHydrogen4DaughterTritonGenPtVsRecoPt"), generatedPt, signedPt, particle.y(), centrality, channel);
+        mQaRegistry.fill(HIST("fractionMCReco/hHyperHydrogen4ParentPtVsDaughterTritonRecoPt"), parentPt, signedPt, mother.y(), particle.y(), centrality, channel);
+        mQaRegistry.fill(HIST("fraction/hDcaHyperHydrogen4Triton"), signedPt, track.dcaXY(), track.dcaZ(), centrality, channel, productionRadius);
+        break;
+      }
+    }
 
     // These response matrices use the relaxed DCA-fit selection under which
     // this function is called. Keep only correct-collision He3 or triton so
@@ -3888,6 +3969,26 @@ struct HadNucleiFemto {
       const int absolutePdg = std::abs(particlePdg);
       const float signedPt = particlePdg > 0 ? particle.pt() : -particle.pt();
 
+      if (absolutePdg == HyperHydrogen4PDG && particle.isPhysicalPrimary()) {
+        mQaRegistry.fill(HIST("fractionMCGen/hHyperHydrogen4"), signedPt, particle.y(), centrality);
+      }
+      // Daughter-first counting includes every generated daughter, not only
+      // those with a reconstructed track. It uses the same channel predicate
+      // and selected MC collisions as the proxy response above.
+      if (absolutePdg == TritonPDG && particle.has_mothers()) {
+        for (const auto& mother : particle.template mothers_as<aod::McParticles>()) {
+          const int channel = hyperHydrogen4TritonChannel(particle, mother);
+          if (channel < 0) {
+            continue;
+          }
+          const float parentPt = mother.pdgCode() > 0 ? mother.pt() : -mother.pt();
+          mQaRegistry.fill(HIST("fractionMCGen/hHyperHydrogen4DaughterTriton"), signedPt, particle.y(), centrality, channel);
+          mQaRegistry.fill(HIST("fractionMCGen/hHyperHydrogen4PtVsDaughterTritonPt"), parentPt, signedPt, mother.y(), particle.y(), centrality, channel);
+          mQaRegistry.fill(HIST("fractionMCGen/hHyperHydrogen4DaughterTritonProductionR"), signedPt, std::hypot(particle.vx(), particle.vy()), channel);
+          break;
+        }
+      }
+
       if (absolutePdg == He3PDG && particle.isPhysicalPrimary()) {
         mQaRegistry.fill(HIST("fractionMCGen/hPrimaryHe3"), signedPt, particle.y(), centrality);
         continue;
@@ -3946,6 +4047,9 @@ struct HadNucleiFemto {
   // nominal candidate selection, including its DCA requirement.
   void processDcaFractionPurityMC(const CollisionsFullMC& collisions, const TrackCandidatesMCDca& tracks, const aod::McParticles& mcParticles, const aod::BCsWithTimestamps& bcs)
   {
+    // Match the existing primary response's selected-track counting convention;
+    // expose clone multiplicity rather than assuming one track per daughter.
+    std::unordered_map<int64_t, int> hyperHydrogen4RecoCounts;
     SelectedMcCollisionInfo selectedMcCollisions;
     for (const auto& collision : collisions) {
       if (!selectCollision</*isMC*/ true>(collision, bcs)) {
@@ -4015,11 +4119,22 @@ struct HadNucleiFemto {
         if (selectedNucleusForFraction) {
           if (correctNucleusSpecies) {
             fillMCDcaTemplate(track, particle, collision.centFT0C(), true, matchesRecoCollision);
+            if (matchesRecoCollision && std::abs(particle.pdgCode()) == TritonPDG && particle.has_mothers()) {
+              for (const auto& mother : particle.template mothers_as<aod::McParticles>()) {
+                if (hyperHydrogen4TritonChannel(particle, mother) >= 0) {
+                  ++hyperHydrogen4RecoCounts[particle.globalIndex()];
+                  break;
+                }
+              }
+            }
           } else {
             fillMCDcaMisidentified(track, collision.centFT0C(), true, matchesRecoCollision);
           }
         }
       }
+    }
+    for (const auto& item : hyperHydrogen4RecoCounts) {
+      mQaRegistry.fill(HIST("fractionMCReco/hHyperHydrogen4TritonRecoMultiplicity"), item.second);
     }
     fillMCGeneratorNucleiFeedDown(mcParticles, selectedMcCollisions);
   }

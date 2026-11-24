@@ -11,12 +11,15 @@
 
 #include "ALICE3/Core/FlatLutRootWriter.h"
 
+#include "ALICE3/Core/FlatLutEntry.h"
+
 #include <TFile.h>
 #include <TTree.h>
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
 #include <string>
-#include <utility>
 
 namespace o2::fastsim
 {
@@ -61,7 +64,7 @@ void FlatLutRootWriter::addEntry(int entryIndex,
   row.eigvec = entry.eigvec;
   row.eiginv = entry.eiginv;
 
-  mRows.push_back(std::move(row));
+  mRows.push_back(row);
 }
 
 bool FlatLutRootWriter::writeToFile(const std::string& rootFileName) const
@@ -145,10 +148,10 @@ bool FlatLutRootWriter::writeToFile(const std::string& rootFileName) const
   float itof = 0.f;
   float otof = 0.f;
 
-  float covm[kNumCovarianceTerms] = {0.f};
-  float eigval[kNumEigenModes] = {0.f};
-  float eigvec[kNumEigenModes * kNumEigenModes] = {0.f};
-  float eiginv[kNumEigenModes * kNumEigenModes] = {0.f};
+  std::array<float, kNumCovarianceTerms> covm = {0.f};
+  std::array<float, kNumEigenModes> eigval = {0.f};
+  std::array<float, kNumEigenModes * kNumEigenModes> eigvec = {0.f};
+  std::array<float, kNumEigenModes * kNumEigenModes> eiginv = {0.f};
 
   entryTree.Branch("entryIndex", &entryIndex, "entryIndex/I");
   entryTree.Branch("nchBin", &nchBin, "nchBin/I");
@@ -166,10 +169,10 @@ bool FlatLutRootWriter::writeToFile(const std::string& rootFileName) const
   entryTree.Branch("itof", &itof, "itof/F");
   entryTree.Branch("otof", &otof, "otof/F");
 
-  entryTree.Branch("covm", covm, "covm[15]/F");
-  entryTree.Branch("eigval", eigval, "eigval[5]/F");
-  entryTree.Branch("eigvec", eigvec, "eigvec[25]/F");
-  entryTree.Branch("eiginv", eiginv, "eiginv[25]/F");
+  entryTree.Branch("covm", covm.data(), "covm[15]/F");
+  entryTree.Branch("eigval", eigval.data(), "eigval[5]/F");
+  entryTree.Branch("eigvec", eigvec.data(), "eigvec[25]/F");
+  entryTree.Branch("eiginv", eiginv.data(), "eiginv[25]/F");
 
   for (const auto& row : mRows) {
     entryIndex = row.entryIndex;
@@ -188,8 +191,8 @@ bool FlatLutRootWriter::writeToFile(const std::string& rootFileName) const
     itof = row.itof;
     otof = row.otof;
 
-    std::copy(row.covm.begin(), row.covm.end(), covm);
-    std::copy(row.eigval.begin(), row.eigval.end(), eigval);
+    covm = row.covm;
+    eigval = row.eigval;
     for (int i = 0; i < kNumEigenModes; ++i) {
       for (int j = 0; j < kNumEigenModes; ++j) {
         eigvec[kNumEigenModes * i + j] = row.eigvec[i][j];

@@ -44,8 +44,8 @@ struct HmpidCrossSectionCorrections {
 
   // Configurables for QA selection
   Configurable<float> qMipMin{"qMipMin", 200.0f, "minimum MIP charge for QA selection"};
-  Configurable<float> qMipMax{"qMipMax", 2000.0f, "maximum MIP charge for QA selection"};
-  Configurable<float> cutDistanceMipTrack{"cutDistanceMipTrack", 10.0f, "maximum raw MIP-track distance for QA selection"};
+  Configurable<float> qMipMax{"qMipMax", 2500.0f, "maximum MIP charge for QA selection"};
+  Configurable<float> cutDistanceMipTrack{"cutDistanceMipTrack", 30.0f, "maximum raw MIP-track distance for QA selection"};
 
   // Configurables for plotting
   Configurable<int> momNBins{"momNBins", 490, "Momentum bins"};
@@ -60,9 +60,10 @@ struct HmpidCrossSectionCorrections {
   Configurable<float> phiMin{"phiMin", -10.0f, "Phi min"};
   Configurable<float> phiMax{"phiMax", 10.0f, "Phi max"};
 
-  Configurable<int> mapNBins{"mapNBins", 135, "Map bins (x or y)"};
+  // Achieved precision is 8 mm (similar to PAD size - X -> 8mm, Y -> 8.4 mm)
+  Configurable<int> mapNBins{"mapNBins", 170, "Map bins (x)"};
   Configurable<float> mapMin{"mapMin", 0.0f, "Map min (x or y) in cm"};
-  Configurable<float> mapMax{"mapMax", 135.0f, "Map max (x or y) in cm"};
+  Configurable<float> mapMax{"mapMax", 136.0f, "Map max (x or y) in cm"};
 
   Configurable<int> residualsNBins{"residualsNBins", 400, "Residuals bins"};
   Configurable<float> residualsMin{"residualsMin", -20.0f, "Residuals min (x or y) in cm"};
@@ -93,6 +94,11 @@ struct HmpidCrossSectionCorrections {
       registry.add(Form("hmpidXYGlobalTrackRich%dPos", iCh), "Global track XY - all;X_{track} (cm);Y_{track} (cm)", HistType::kTHnSparseF, {axisGlobalMom, axisGlobalTrackX, axisGlobalTrackY});
       registry.add(Form("hmpidXYHmpidMipRich%dNeg", iCh), "MIP XY - Q_{MIP} cut;X_{MIP} (cm);Y_{MIP} (cm)", HistType::kTHnSparseF, {axisHmpidMom, axisMipX, axisMipY});
       registry.add(Form("hmpidXYGlobalTrackRich%dNeg", iCh), "Global track XY - all;X_{track} (cm);Y_{track} (cm)", HistType::kTHnSparseF, {axisGlobalMom, axisGlobalTrackX, axisGlobalTrackY});
+
+      registry.add(Form("hMomentumDistributionAllRich%dPos", iCh), Form("hMomentumDistributionAllRich%dPos", iCh), HistType::kTH1F, {axisHmpidMom});
+      registry.add(Form("hMomentumDistributionAllRich%dNeg", iCh), Form("hMomentumDistributionAllRich%dNeg", iCh), HistType::kTH1F, {axisHmpidMom});
+      registry.add(Form("hMomentumDistributionCutRich%dPos", iCh), Form("hMomentumDistributionCutRich%dPos", iCh), HistType::kTH1F, {axisHmpidMom});
+      registry.add(Form("hMomentumDistributionCutRich%dNeg", iCh), Form("hMomentumDistributionCutRich%dNeg", iCh), HistType::kTH1F, {axisHmpidMom});
 
       registry.add(Form("residualsXVsMomentumRich%dPos", iCh), Form("residualsXVsMomentumRich%dPos", iCh), HistType::kTH2F, {axisHmpidMom, axisResiduals});
       registry.add(Form("residualsYVsMomentumRich%dPos", iCh), Form("residualsYVsMomentumRich%dPos", iCh), HistType::kTH2F, {axisHmpidMom, axisResiduals});
@@ -147,6 +153,7 @@ struct HmpidCrossSectionCorrections {
       const bool isPos = momHmpid > 0;
       const bool isNeg = momHmpid < 0;
       const bool passQ = hmpid.chargeMip() > qMipMin && hmpid.chargeMip() < qMipMax;
+      const bool passDistance = std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack;
 
       switch (chamber) {
         case Rich0:
@@ -164,6 +171,11 @@ struct HmpidCrossSectionCorrections {
             registry.fill(HIST("hMomTrackVsHmpidRich0Pos"), momTrackAbs, momHmpidAbs);
             registry.fill(HIST("hXTrackVsXMipRich0Pos"), hmpid.xTrack(), hmpid.xMip());
             registry.fill(HIST("hYTrackVsYMipRich0Pos"), hmpid.yTrack(), hmpid.yMip());
+
+            registry.fill(HIST("hMomentumDistributionAllRich0Pos"), momTrackAbs);
+            if (passDistance && passQ) {
+              registry.fill(HIST("hMomentumDistributionCutRich0Pos"), momTrackAbs);
+            }
           }
           if (isNeg) {
             if (passQ) {
@@ -177,6 +189,11 @@ struct HmpidCrossSectionCorrections {
             registry.fill(HIST("hMomTrackVsHmpidRich0Neg"), momTrackAbs, momHmpidAbs);
             registry.fill(HIST("hXTrackVsXMipRich0Neg"), hmpid.xTrack(), hmpid.xMip());
             registry.fill(HIST("hYTrackVsYMipRich0Neg"), hmpid.yTrack(), hmpid.yMip());
+
+            registry.fill(HIST("hMomentumDistributionAllRich0Neg"), momTrackAbs);
+            if (passDistance && passQ) {
+              registry.fill(HIST("hMomentumDistributionCutRich0Neg"), momTrackAbs);
+            }
           }
           break;
         case Rich1:
@@ -194,6 +211,11 @@ struct HmpidCrossSectionCorrections {
             registry.fill(HIST("hMomTrackVsHmpidRich1Pos"), momTrackAbs, momHmpidAbs);
             registry.fill(HIST("hXTrackVsXMipRich1Pos"), hmpid.xTrack(), hmpid.xMip());
             registry.fill(HIST("hYTrackVsYMipRich1Pos"), hmpid.yTrack(), hmpid.yMip());
+
+            registry.fill(HIST("hMomentumDistributionAllRich1Pos"), momTrackAbs);
+            if (passDistance && passQ) {
+              registry.fill(HIST("hMomentumDistributionCutRich1Pos"), momTrackAbs);
+            }
           }
           if (isNeg) {
             if (passQ) {
@@ -207,6 +229,11 @@ struct HmpidCrossSectionCorrections {
             registry.fill(HIST("hMomTrackVsHmpidRich1Neg"), momTrackAbs, momHmpidAbs);
             registry.fill(HIST("hXTrackVsXMipRich1Neg"), hmpid.xTrack(), hmpid.xMip());
             registry.fill(HIST("hYTrackVsYMipRich1Neg"), hmpid.yTrack(), hmpid.yMip());
+
+            registry.fill(HIST("hMomentumDistributionAllRich1Neg"), momTrackAbs);
+            if (passDistance && passQ) {
+              registry.fill(HIST("hMomentumDistributionCutRich1Neg"), momTrackAbs);
+            }
           }
           break;
         case Rich2:
@@ -224,6 +251,11 @@ struct HmpidCrossSectionCorrections {
             registry.fill(HIST("hMomTrackVsHmpidRich2Pos"), momTrackAbs, momHmpidAbs);
             registry.fill(HIST("hXTrackVsXMipRich2Pos"), hmpid.xTrack(), hmpid.xMip());
             registry.fill(HIST("hYTrackVsYMipRich2Pos"), hmpid.yTrack(), hmpid.yMip());
+
+            registry.fill(HIST("hMomentumDistributionAllRich2Pos"), momTrackAbs);
+            if (passDistance && passQ) {
+              registry.fill(HIST("hMomentumDistributionCutRich2Pos"), momTrackAbs);
+            }
           }
           if (isNeg) {
             if (passQ) {
@@ -237,6 +269,11 @@ struct HmpidCrossSectionCorrections {
             registry.fill(HIST("hMomTrackVsHmpidRich2Neg"), momTrackAbs, momHmpidAbs);
             registry.fill(HIST("hXTrackVsXMipRich2Neg"), hmpid.xTrack(), hmpid.xMip());
             registry.fill(HIST("hYTrackVsYMipRich2Neg"), hmpid.yTrack(), hmpid.yMip());
+
+            registry.fill(HIST("hMomentumDistributionAllRich2Neg"), momTrackAbs);
+            if (passDistance && passQ) {
+              registry.fill(HIST("hMomentumDistributionCutRich2Neg"), momTrackAbs);
+            }
           }
           break;
         case Rich3:
@@ -254,6 +291,11 @@ struct HmpidCrossSectionCorrections {
             registry.fill(HIST("hMomTrackVsHmpidRich3Pos"), momTrackAbs, momHmpidAbs);
             registry.fill(HIST("hXTrackVsXMipRich3Pos"), hmpid.xTrack(), hmpid.xMip());
             registry.fill(HIST("hYTrackVsYMipRich3Pos"), hmpid.yTrack(), hmpid.yMip());
+
+            registry.fill(HIST("hMomentumDistributionAllRich3Pos"), momTrackAbs);
+            if (passDistance && passQ) {
+              registry.fill(HIST("hMomentumDistributionCutRich3Pos"), momTrackAbs);
+            }
           }
           if (isNeg) {
             if (passQ) {
@@ -267,6 +309,11 @@ struct HmpidCrossSectionCorrections {
             registry.fill(HIST("hMomTrackVsHmpidRich3Neg"), momTrackAbs, momHmpidAbs);
             registry.fill(HIST("hXTrackVsXMipRich3Neg"), hmpid.xTrack(), hmpid.xMip());
             registry.fill(HIST("hYTrackVsYMipRich3Neg"), hmpid.yTrack(), hmpid.yMip());
+
+            registry.fill(HIST("hMomentumDistributionAllRich3Neg"), momTrackAbs);
+            if (passDistance && passQ) {
+              registry.fill(HIST("hMomentumDistributionCutRich3Neg"), momTrackAbs);
+            }
           }
           break;
         case Rich4:
@@ -284,6 +331,11 @@ struct HmpidCrossSectionCorrections {
             registry.fill(HIST("hMomTrackVsHmpidRich4Pos"), momTrackAbs, momHmpidAbs);
             registry.fill(HIST("hXTrackVsXMipRich4Pos"), hmpid.xTrack(), hmpid.xMip());
             registry.fill(HIST("hYTrackVsYMipRich4Pos"), hmpid.yTrack(), hmpid.yMip());
+
+            registry.fill(HIST("hMomentumDistributionAllRich4Pos"), momTrackAbs);
+            if (passDistance && passQ) {
+              registry.fill(HIST("hMomentumDistributionCutRich4Pos"), momTrackAbs);
+            }
           }
           if (isNeg) {
             if (passQ) {
@@ -297,6 +349,11 @@ struct HmpidCrossSectionCorrections {
             registry.fill(HIST("hMomTrackVsHmpidRich4Neg"), momTrackAbs, momHmpidAbs);
             registry.fill(HIST("hXTrackVsXMipRich4Neg"), hmpid.xTrack(), hmpid.xMip());
             registry.fill(HIST("hYTrackVsYMipRich4Neg"), hmpid.yTrack(), hmpid.yMip());
+
+            registry.fill(HIST("hMomentumDistributionAllRich4Neg"), momTrackAbs);
+            if (passDistance && passQ) {
+              registry.fill(HIST("hMomentumDistributionCutRich4Neg"), momTrackAbs);
+            }
           }
           break;
         case Rich5:
@@ -314,6 +371,11 @@ struct HmpidCrossSectionCorrections {
             registry.fill(HIST("hMomTrackVsHmpidRich5Pos"), momTrackAbs, momHmpidAbs);
             registry.fill(HIST("hXTrackVsXMipRich5Pos"), hmpid.xTrack(), hmpid.xMip());
             registry.fill(HIST("hYTrackVsYMipRich5Pos"), hmpid.yTrack(), hmpid.yMip());
+
+            registry.fill(HIST("hMomentumDistributionAllRich5Pos"), momTrackAbs);
+            if (passDistance && passQ) {
+              registry.fill(HIST("hMomentumDistributionCutRich5Pos"), momTrackAbs);
+            }
           }
           if (isNeg) {
             if (passQ) {
@@ -327,6 +389,11 @@ struct HmpidCrossSectionCorrections {
             registry.fill(HIST("hMomTrackVsHmpidRich5Neg"), momTrackAbs, momHmpidAbs);
             registry.fill(HIST("hXTrackVsXMipRich5Neg"), hmpid.xTrack(), hmpid.xMip());
             registry.fill(HIST("hYTrackVsYMipRich5Neg"), hmpid.yTrack(), hmpid.yMip());
+
+            registry.fill(HIST("hMomentumDistributionAllRich5Neg"), momTrackAbs);
+            if (passDistance && passQ) {
+              registry.fill(HIST("hMomentumDistributionCutRich5Neg"), momTrackAbs);
+            }
           }
           break;
         case Rich6:
@@ -344,6 +411,11 @@ struct HmpidCrossSectionCorrections {
             registry.fill(HIST("hMomTrackVsHmpidRich6Pos"), momTrackAbs, momHmpidAbs);
             registry.fill(HIST("hXTrackVsXMipRich6Pos"), hmpid.xTrack(), hmpid.xMip());
             registry.fill(HIST("hYTrackVsYMipRich6Pos"), hmpid.yTrack(), hmpid.yMip());
+
+            registry.fill(HIST("hMomentumDistributionAllRich6Pos"), momTrackAbs);
+            if (passDistance && passQ) {
+              registry.fill(HIST("hMomentumDistributionCutRich6Pos"), momTrackAbs);
+            }
           }
           if (isNeg) {
             if (passQ) {
@@ -357,6 +429,11 @@ struct HmpidCrossSectionCorrections {
             registry.fill(HIST("hMomTrackVsHmpidRich6Neg"), momTrackAbs, momHmpidAbs);
             registry.fill(HIST("hXTrackVsXMipRich6Neg"), hmpid.xTrack(), hmpid.xMip());
             registry.fill(HIST("hYTrackVsYMipRich6Neg"), hmpid.yTrack(), hmpid.yMip());
+
+            registry.fill(HIST("hMomentumDistributionAllRich6Neg"), momTrackAbs);
+            if (passDistance && passQ) {
+              registry.fill(HIST("hMomentumDistributionCutRich6Neg"), momTrackAbs);
+            }
           }
           break;
         default:
