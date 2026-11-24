@@ -141,6 +141,7 @@ struct HfTaskCorrelationDplusHadrons {
   Configurable<int> nTpcCrossedRows{"nTpcCrossedRows", 70, "Number of crossed TPC Rows"};
   Configurable<float> cutCollPosZMc{"cutCollPosZMc", 10., "max z-vertex position for collision acceptance"};
   Configurable<bool> storeMassAxis{"storeMassAxis", false, "Store Mass axis in THnSparse"};
+  Configurable<bool> applyMassCutSignalRegionMcRec{"applyMassCutSignalRegionMcRec", false, "Apply the signal-region mass window to the MC Rec signal-region correlations (if false, all candidates are used, consistently with the D+ counting)"};
   Configurable<bool> storeBMotherInfo{"storeBMotherInfo", false, "Store generated pT(B mother) and phi(D+) - phi(B mother) of non-prompt D+ in MC Rec histograms"};
   Configurable<std::vector<double>> binsPtBMother{"binsPtBMother", std::vector<double>{0., 2., 4., 6., 8., 12., 16., 24., 36., 50., 99.}, "pT bin limits for the B mother of non-prompt D+"};
   // CCDB configuration
@@ -601,7 +602,7 @@ struct HfTaskCorrelationDplusHadrons {
         continue; // outside the pT range of the signal and sideband regions
       }
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
-      if (massD > signalRegionInner->at(pTBinD) && massD < signalRegionOuter->at(pTBinD)) {
+      if (!applyMassCutSignalRegionMcRec || (massD > signalRegionInner->at(pTBinD) && massD < signalRegionOuter->at(pTBinD))) {
         // in signal region
         registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, ptD, ptHadron, static_cast<int>(isDplusPrompt), poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionMcRec"), deltaPhi, deltaEta, efficiencyWeight);
