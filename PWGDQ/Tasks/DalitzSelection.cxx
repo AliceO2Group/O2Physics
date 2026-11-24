@@ -111,7 +111,7 @@ DECLARE_SOA_TABLE(DalitzElectrons, "AOD", "DQDALITZSEL", dqdalitzelectrons::Filt
 
 struct DalitzSelection {
   Produces<o2::aod::DalitzBits> dalitzbits;
-  Produces<o2::aod::DalitzElectronsInfo> dalitzInfo;
+  Produces<o2::aod::DalitzElectrons> dalitzInfo;
   Preslice<MyBarrelTracks> perCollision = aod::track::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
