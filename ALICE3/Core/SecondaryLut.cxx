@@ -35,7 +35,7 @@ namespace o2::fastsim
 
 namespace
 {
-constexpr std::array<const char*, SecondaryLut::kNDims> kDimNames = {"nch", "eta", "pt", "nHits"};
+constexpr std::array<const char*, SecondaryLut::kNDims> kDimNames = {"nch", "rad", "eta", "pt", "nHits"};
 }
 
 int SecondaryLutAxis::find(float val) const
@@ -81,12 +81,13 @@ void SecondaryLut::init()
   mEntries.assign(n, SecondaryLutEntry{});
 }
 
-const SecondaryLutEntry* SecondaryLut::lookup(float nch, float eta, float pt, float nHits) const
+const SecondaryLutEntry* SecondaryLut::lookup(float nch, float rad, float eta, float pt, float nHits) const
 {
   if (mEntries.empty()) {
     return nullptr;
   }
-  return &mEntries[index(mAxes[kNch].find(nch), mAxes[kEta].find(eta), mAxes[kPt].find(pt), mAxes[kNHits].find(nHits))];
+  return &mEntries[index(mAxes[kNch].find(nch), mAxes[kRad].find(rad), mAxes[kEta].find(eta),
+                         mAxes[kPt].find(pt), mAxes[kNHits].find(nHits))];
 }
 
 bool SecondaryLut::writeToFile(const char* fileName, const char* option) const
@@ -111,8 +112,8 @@ SecondaryLut* SecondaryLut::readFromFile(const char* fileName, const char* objNa
 
 void SecondaryLut::unravel(std::size_t idx, std::array<int, kNDims>& bins) const
 {
-  // Reverse of index(): pt fastest, then hits, eta, nch
-  static constexpr std::array<Dim, kNDims> order = {kPt, kNHits, kEta, kNch};
+  // Reverse of index(): pt fastest, then hits, eta, rad, nch
+  static constexpr std::array<Dim, kNDims> order = {kPt, kNHits, kEta, kRad, kNch};
   for (const Dim d : order) {
     bins[d] = static_cast<int>(idx % mAxes[d].nbins);
     idx /= mAxes[d].nbins;
