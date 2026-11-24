@@ -349,7 +349,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     selectedTrackHisto.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, dummy, isMc, trackSel.pdgCodeTrack1, true);
     if (isMc && std::abs(trackSel.pdgCodeTrack1.value) == kKPlus) {
       // DCA templates of kaons from heavy-flavour decays, split into charm and beauty origin (to reweight them separately).
-      // The producer stores the PDG code of the HF-hadron ancestor in motherPDG: a beauty hadron for beauty origin, a charm hadron otherwise.
+      // For kaons from beauty-hadron decays the producer stores the PDG code of the beauty-hadron ancestor in motherPDG.
       const AxisSpec axisPt{binpTTrack, "#it{p}_{T} (GeV/#it{c})"};
       const AxisSpec axisDcaXy{binTempFitVarTrack, "DCA_{xy} (cm)"};
       const AxisSpec axisDcaZ{binTempFitVarTrack, "DCA_{z} (cm)"};

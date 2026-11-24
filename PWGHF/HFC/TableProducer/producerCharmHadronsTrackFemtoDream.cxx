@@ -177,10 +177,11 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     Configurable<float> nSigmaCombPiMax{"nSigmaCombPiMax", 6.f, "Kaon PID Method2: for p > pTrackTightMin require |nSigmaCombPi| < this"};
     // Systematic variations of the kaon PID. Bit 0 of the PID container is the nominal selection,
     // bit i (i >= 1) is the selection with the (i-1)-th element of each of the four vectors below.
-    Configurable<std::vector<float>> nSigmaTpcKaMaxVar{"nSigmaTpcKaMaxVar", std::vector<float>{2.5f, 3.5f}, "Kaon PID syst. variations of nSigmaTpcKaMax (bit i+1)"};
-    Configurable<std::vector<float>> nSigmaCombKaMaxVar{"nSigmaCombKaMaxVar", std::vector<float>{2.5f, 3.5f}, "Kaon PID syst. variations of nSigmaCombKaMax (bit i+1)"};
-    Configurable<std::vector<float>> nSigmaCombKaTightMaxVar{"nSigmaCombKaTightMaxVar", std::vector<float>{1.5f, 2.5f}, "Kaon PID syst. variations of nSigmaCombKaTightMax (bit i+1)"};
-    Configurable<std::vector<float>> nSigmaTpcPiMinVar{"nSigmaTpcPiMinVar", std::vector<float>{3.5f, 2.5f}, "Kaon PID syst. variations of nSigmaTpcPiMin (bit i+1)"};
+    // Defaults follow the Run 2 strategy: only the Method2 threshold is varied by -/+10% (tight 2.7, loose 3.3).
+    Configurable<std::vector<float>> nSigmaTpcKaMaxVar{"nSigmaTpcKaMaxVar", std::vector<float>{3.f, 3.f}, "Kaon PID syst. variations of nSigmaTpcKaMax (bit i+1)"};
+    Configurable<std::vector<float>> nSigmaCombKaMaxVar{"nSigmaCombKaMaxVar", std::vector<float>{2.7f, 3.3f}, "Kaon PID syst. variations of nSigmaCombKaMax (bit i+1)"};
+    Configurable<std::vector<float>> nSigmaCombKaTightMaxVar{"nSigmaCombKaTightMaxVar", std::vector<float>{2.f, 2.f}, "Kaon PID syst. variations of nSigmaCombKaTightMax (bit i+1)"};
+    Configurable<std::vector<float>> nSigmaTpcPiMinVar{"nSigmaTpcPiMinVar", std::vector<float>{3.f, 3.f}, "Kaon PID syst. variations of nSigmaTpcPiMin (bit i+1)"};
   } kaonPidSel;
 
   struct : ConfigurableGroup {
@@ -321,13 +322,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     if (nKaonPidVariations + 1 > static_cast<std::size_t>(cutBits)) {
       LOG(fatal) << "Too many kaon PID variations: at most " << cutBits - 1 << " are supported.";
     }
-    if (std::abs(trackCfg.trkPDGCode.value) == kKPlus) {
-      // MC: kaons from charm- and beauty-hadron decays vs. the pT and species of the HF-hadron ancestor, to reweight the HF templates
-      const AxisSpec axisPtKaon{100, 0., 10., "#it{p}_{T}^{K} (GeV/#it{c})"};
-      const AxisSpec axisPtHfAncestor{100, 0., 50., "#it{p}_{T}^{HF ancestor} (GeV/#it{c})"};
-      const AxisSpec axisPdgHfAncestor{6000, 0.5, 6000.5, "|PDG| of the HF ancestor"};
-      trackRegistry.add("AnalysisQA/hKaonFromCharm", "Kaons from charm-hadron decays", kTHnSparseF, {axisPtKaon, axisPtHfAncestor, axisPdgHfAncestor});
-      trackRegistry.add("AnalysisQA/hKaonFromBeauty", "Kaons from beauty-hadron decays", kTHnSparseF, {axisPtKaon, axisPtHfAncestor, axisPdgHfAncestor});
+    if (trackCfg.trkPDGCode == kKPlus) {
       trackRegistry.add("AnalysisQA/KaonPidBitCounter", "; Kaon PID bit (0: nominal, i: variation i); Counter", kTH1F, {{static_cast<int>(nKaonPidVariations) + 1, -0.5, static_cast<double>(nKaonPidVariations) + 0.5}});
     }
 
@@ -550,60 +545,24 @@ struct HfProducerCharmHadronsTrackFemtoDream {
                             -999., -999., -999.);
   }
 
-  /// \return true if the PDG code belongs to a beauty hadron
-  static bool isBeautyHadron(const int pdgCode)
-  {
-    const int absPdg = std::abs(pdgCode);
-    return absPdg / RecoDecay::PdgDivisorMeson == kBottom || absPdg / RecoDecay::PdgDivisorBaryon == kBottom;
-  }
-
-  /// Find the closest charm-hadron ancestor of a particle, following the first mother at each step.
-  /// \return global index of the ancestor, or -1 if none is found before the partonic level
-  template <typename T>
-  static int64_t findCharmHadronAncestor(T const& particles, typename T::iterator const& particle)
-  {
-    auto current = particle;
-    while (current.has_mothers()) {
-      const auto motherId = current.mothersIds().front();
-      if (motherId < 0) {
-        break;
-      }
-      const auto mother = particles.rawIteratorAt(motherId - particles.offset());
-      const int pdgMother = std::abs(mother.pdgCode());
-      if (pdgMother <= RecoDecay::PdgQuarkMax || RecoDecay::isDiquark(pdgMother)) {
-        break;
-      }
-      if (pdgMother / RecoDecay::PdgDivisorMeson == kCharm || pdgMother / RecoDecay::PdgDivisorBaryon == kCharm) {
-        return mother.globalIndex();
-      }
-      current = mother;
-    }
-    return -1;
-  }
-
   /// Classify true kaons from the correct collision for the DCA templates.
-  /// \param hfAncestorId for kaons from heavy-flavour decays, global index of the beauty-hadron ancestor
-  /// (beauty origin) or of the closest charm-hadron ancestor (charm origin without beauty ancestor), -1 otherwise
+  /// \param bHadronAncestorId for kaons from a beauty-hadron decay chain, global index of the beauty-hadron ancestor, -1 otherwise
   template <typename T>
-  static int getKaonOrigin(T const& particles, typename T::iterator const& particle, int64_t& hfAncestorId)
+  static int getKaonOrigin(T const& particles, typename T::iterator const& particle, int64_t& bHadronAncestorId)
   {
     using namespace o2::aod::femtodreamMCparticle;
     constexpr int GenFromTransport = -1;
-    hfAncestorId = -1;
+    bHadronAncestorId = -1;
     if (particle.getProcess() == TMCProcess::kPHInhelastic && particle.getGenStatusCode() == GenFromTransport) {
       return kMaterial;
     }
     // HF decay products can be physical primaries. Check their ancestry first.
     std::vector<int> idxBhadMothers{};
     const auto hfOrigin = RecoDecay::getParticleOrigin(particles, particle, false, &idxBhadMothers);
-    if (hfOrigin == RecoDecay::OriginType::NonPrompt) {
-      if (!idxBhadMothers.empty()) {
-        hfAncestorId = idxBhadMothers.front();
+    if (hfOrigin != RecoDecay::OriginType::None) {
+      if (hfOrigin == RecoDecay::OriginType::NonPrompt && !idxBhadMothers.empty()) {
+        bHadronAncestorId = idxBhadMothers.front();
       }
-      return kSecondaryFromHF;
-    }
-    if (hfOrigin == RecoDecay::OriginType::Prompt) {
-      hfAncestorId = findCharmHadronAncestor(particles, particle);
       return kSecondaryFromHF;
     }
     if (particle.isPhysicalPrimary()) {
@@ -635,18 +594,12 @@ struct HfProducerCharmHadronsTrackFemtoDream {
         if ((col.has_mcCollision() && (particleMc.mcCollisionId() != col.mcCollisionId())) || !col.has_mcCollision()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kWrongCollision;
         } else if (std::abs(pdgCode) == kKPlus) {
-          int64_t hfAncestorId = -1;
-          particleOrigin = getKaonOrigin(mcParticles, particleMc, hfAncestorId);
-          if (hfAncestorId >= 0) {
-            // For kaons from HF decays store the PDG code of the HF-hadron ancestor: a beauty hadron for beauty origin,
-            // a charm hadron otherwise. The task uses it to split the HF DCA template into charm and beauty origin.
-            const auto hfAncestor = mcParticles.rawIteratorAt(hfAncestorId - mcParticles.offset());
-            pdgCodeMother = hfAncestor.pdgCode();
-            if (!isBeautyHadron(pdgCodeMother)) {
-              trackRegistry.fill(HIST("AnalysisQA/hKaonFromCharm"), particle.pt(), hfAncestor.pt(), std::abs(pdgCodeMother));
-            } else {
-              trackRegistry.fill(HIST("AnalysisQA/hKaonFromBeauty"), particle.pt(), hfAncestor.pt(), std::abs(pdgCodeMother));
-            }
+          int64_t bHadronAncestorId = -1;
+          particleOrigin = getKaonOrigin(mcParticles, particleMc, bHadronAncestorId);
+          if (bHadronAncestorId >= 0) {
+            // For kaons from beauty-hadron decays store the PDG code of the beauty-hadron ancestor instead of the direct mother.
+            // The task uses it to split the HF DCA template into charm and beauty origin.
+            pdgCodeMother = mcParticles.rawIteratorAt(bHadronAncestorId - mcParticles.offset()).pdgCode();
           } else if (!motherparticlesMc.empty()) {
             pdgCodeMother = motherparticlesMc.front().pdgCode();
           }
