@@ -880,7 +880,7 @@ struct PhotonConversionBuilder {
   }
 
   std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement = {0, {0, 1, 2}}; // no hit on 3 ITS ib layers.
-  template <bool isMC, typename TTrack>
+  template <bool isMC, o2::soa::is_iterator TTrack>
   bool checkV0leg(TTrack const& track)
   {
     using namespace o2::pwgem::photonmeson;
@@ -983,7 +983,7 @@ struct PhotonConversionBuilder {
     return cospaRZ;
   }
 
-  template <bool isMC, typename TTrack, typename TShiftedTrack>
+  template <bool isMC, o2::soa::is_iterator TTrack, typename TShiftedTrack>
   void fillTrackTable(TTrack const& track, TShiftedTrack const& shiftedtrack, const float dcaXY, const float dcaZ)
   {
     v0legs(track.collisionId(), track.globalIndex(), track.sign(),
@@ -1009,7 +1009,7 @@ struct PhotonConversionBuilder {
 
   // free legs (fillFreeLegs): after the tables are written; a track that passes the leg cuts, has a collision and the TPC (as the
   // finder takes them) and is the leg of no stored photon; TPC-only legs moved to their own collision as in the fit
-  template <bool isMC, class TBCs, class TCollisions, class TTracks>
+  template <bool isMC, typename TBCs, o2::soa::is_table TCollisions, o2::soa::is_table TTracks>
   void writeFreeLegs(TCollisions const& collisions, TTracks const& tracks, std::set<int64_t> const& skimRejected)
   {
     std::set<int64_t> usedLegs;
@@ -1062,7 +1062,7 @@ struct PhotonConversionBuilder {
     registry.fill(HIST("hNFreeLegs"), static_cast<float>(nFree));
   }
 
-  template <bool isMC, class TBCs, class TCollisions, class TTracks, typename TV0>
+  template <bool isMC, typename TBCs, o2::soa::is_table TCollisions, o2::soa::is_table TTracks, o2::soa::is_iterator TV0>
   void fillV0Table(TV0 const& v0, const bool filltable)
   {
     const auto& pos = v0.template posTrack_as<TTracks>();
@@ -1084,7 +1084,7 @@ struct PhotonConversionBuilder {
   // the purity score (finder LLR tables) is only needed for the finder gate and the split-leg order
   bool usePurity() const { return recovery.runFinder.value || dedup.resolveSplitLegs.value; }
 
-  template <typename TTrack>
+  template <o2::soa::is_iterator TTrack>
   static float purityScore(TTrack const& pos, TTrack const& ele, const float cosPA3D, const float pca, const float mee, const float gap, const float psipair)
   {
     return o2::pwgem::photonmeson::finderPurityScore({cosPA3D, pca, mee, gap, std::fabs(pos.tgl() - ele.tgl()), psipair,
@@ -1112,7 +1112,7 @@ struct PhotonConversionBuilder {
   }
 
   // fit of one leg pair with the V0 cuts
-  template <bool isMC, class TBCs, class TCollisions, class TTracks, typename TCollision, typename TTrack>
+  template <bool isMC, typename TBCs, o2::soa::is_table TCollisions, o2::soa::is_table TTracks, o2::soa::is_iterator TCollision, o2::soa::is_iterator TTrack>
   void fitV0Candidate(TCollision const& collision, TTrack const& pos, TTrack const& ele, const int64_t v0Id, const bool filltable, FitOptions const& opt = {})
   {
     using namespace o2::pwgem::photonmeson;
@@ -1774,7 +1774,7 @@ struct PhotonConversionBuilder {
   }
 
   // finder leg: helix circle and the time window in which the track can belong to a collision (TPC-only legs: from the drift-time asymmetry)
-  template <typename TBCs, typename TCollisions, typename TTrack>
+  template <typename TBCs, o2::soa::is_table TCollisions, o2::soa::is_iterator TTrack>
   bool makeFinderLeg(TTrack const& track, TCollisions const& collisions, const int64_t bcRef, FinderLeg& leg)
   {
     using namespace o2::pwgem::photonmeson;
@@ -1810,7 +1810,7 @@ struct PhotonConversionBuilder {
 
   // pairs the free legs of the whole DF (not used by any candidate unless finderFreeCollinearLegs, at least one leg without ITS); a pair that passes the geometry
   // (evalFinderPair) and matches a collision in z is fitted and becomes a dedup candidate with v0Id = -1
-  template <bool isMC, class TBCs, class TCollisions, class TTracks>
+  template <bool isMC, typename TBCs, o2::soa::is_table TCollisions, o2::soa::is_table TTracks>
   void runPhotonFinder(TCollisions const& collisions, TTracks const& tracks)
   {
     std::set<int64_t> usedLegs;
@@ -1995,7 +1995,7 @@ struct PhotonConversionBuilder {
   }
 
   // two stored photons that use two pieces of one track (same tgl, compatible parameters): keep the better one
-  template <class TTracks>
+  template <o2::soa::is_table TTracks>
   void resolveSplitLegConflicts(TTracks const& tracks, DedupDiag* diag)
   {
     const auto indexOfKey = candidateIndexByKey();
@@ -2079,7 +2079,7 @@ struct PhotonConversionBuilder {
   // ambiguity resolver
   // two stored photons of one collision, close in q and in space: fit the crossed leg pairing; if both crossed photons pass and
   // their summed score is lower, swap
-  template <bool isMC, class TBCs, class TCollisions, class TTracks>
+  template <bool isMC, typename TBCs, o2::soa::is_table TCollisions, o2::soa::is_table TTracks>
   void runSwapResolver(TCollisions const& collisions, TTracks const& tracks, DedupDiag* diag)
   {
     const auto indexOfKey = candidateIndexByKey();
@@ -2591,7 +2591,7 @@ struct PhotonConversionBuilder {
               });
   }
 
-  template <bool isMC, bool isTriggerAnalysis, bool enableFilter, typename TCollisions, typename TV0s, typename TTracks, typename TBCs>
+  template <bool isMC, bool isTriggerAnalysis, bool enableFilter, o2::soa::is_table TCollisions, o2::soa::is_table TV0s, o2::soa::is_table TTracks, o2::soa::is_table TBCs>
   void build(TCollisions const& collisions, TV0s const& v0s, TTracks const& tracks, TBCs const&, DedupDiag* diag = nullptr)
   {
     mRelaxedKeys.clear();
@@ -2789,7 +2789,7 @@ struct PhotonConversionBuilder {
     };
     LegMC posMC, eleMC;
   };
-  template <typename TLeg>
+  template <o2::soa::is_iterator TLeg>
   static void setMixPairLegs(MixPairPhoton& p, TLeg const& pos, TLeg const& ele)
   {
     p.posKey = {pos.sourceEventUid(), pos.mcMotherId()};
@@ -2993,7 +2993,7 @@ struct PhotonConversionBuilder {
     float score = 1.e9f, missT = 999.f, thetaB = 3.15f, ptBV = 0.f, lever = 0.f;
     int orderV = -1, legV = -1;
   };
-  template <typename TLegs>
+  template <o2::soa::is_table TLegs>
   BremsPointing mixBremsPointing(MixPairPhoton const& a, MixPairPhoton const& b, TLegs const& legs) const
   {
     constexpr float StepCm = 0.25f, MaxArcCm = 100.f, MarginCm = 2.f;
@@ -3170,7 +3170,7 @@ struct PhotonConversionBuilder {
   }
 
   // data-driven bremsstrahlung template: all pairs of stored photons of one artificial event after run 2 below 500 MeV/c (normalisation), below 100 MeV/c with the
-  template <typename TLegs>
+  template <o2::soa::is_table TLegs>
   void fillBremsJoint(const float type, const float cent, const float occ, std::vector<MixPairPhoton> const& photons, TLegs const& legs)
   {
     constexpr float MaxQNorm = 0.5f, MaxQ = 0.1f, MaxQAngle = 0.05f, DVTight = 0.1f, DTight = 0.3f, DLoose = 1.f, DNone = 100.f, AngleTight = 0.03f, AngleLoose = 0.1f, ScoreNone = 11.f, Half = 0.5f, LogFloorA = 1e-3f;
@@ -3208,7 +3208,7 @@ struct PhotonConversionBuilder {
       }
     }
   }
-  template <typename TLegs>
+  template <o2::soa::is_table TLegs>
   void fillMixSwapBrems(const float type, const float stage, const int64_t colId, std::vector<MixPairPhoton> const& photons,
                         std::map<std::tuple<int64_t, int64_t, int64_t>, float> const& candScore, TLegs const& legs)
   {
@@ -3305,8 +3305,20 @@ struct PhotonConversionBuilder {
     }
   }
 
+  // run 2: cache one table iterator per leg of this artificial event for the mixed-event photon pair analysis, to avoid repeated lookups in the legs table
+  template <o2::soa::is_iterator TMixCollision, o2::soa::is_table TMixLegs>
+  void cacheLegsOf(TMixCollision const& collision, TMixLegs const& legs)
+  {
+    mLegItFirst = collision.firstLeg();
+    mLegIt.clear();
+    mLegIt.reserve(collision.nLegs());
+    for (int64_t i = mLegItFirst; i < mLegItFirst + collision.nLegs(); ++i) {
+      mLegIt.push_back(legs.rawIteratorAt(i));
+    }
+  }
+
   // fill the occupancy of the source events and the deduplication diagnostics for the mixed-event photon pairs
-  template <typename TMixCollisions, typename TMixLegs>
+  template <o2::soa::is_table TMixCollisions, o2::soa::is_table TMixLegs>
   void fillMatchedConfigs(TMixCollisions const& collisions, TMixLegs const& legs)
   {
     for (const auto& collision : collisions) { // same-event artificial events carry the occupancy of their source event
@@ -3329,9 +3341,10 @@ struct PhotonConversionBuilder {
       const int64_t colId = collision.globalIndex();
       const float type = collision.isMixed() ? 1.f : 0.f;
       // MC photons with both legs present: (source event, mother) -> (pos row, ele row)
+      cacheLegsOf(collision, legs);
       std::map<std::pair<int64_t, int>, std::array<int64_t, 2>> photonLegs;
       for (int i = collision.firstLeg(); i < collision.firstLeg() + collision.nLegs(); ++i) {
-        const auto& l = mLegIt[i];
+        const auto& l = mLegIt[i - mLegItFirst];
         if (l.mcMotherId() < 0 || l.mcMotherPdg() != kGamma) {
           continue;
         }
@@ -3346,10 +3359,10 @@ struct PhotonConversionBuilder {
       }
       for (size_t i = 0; i < photons.size(); ++i) {
         for (size_t j = i + 1; j < photons.size(); ++j) {
-          const auto& ap = mLegIt[photons[i][0]];
-          const auto& am = mLegIt[photons[i][1]];
-          const auto& bp = mLegIt[photons[j][0]];
-          const auto& bm = mLegIt[photons[j][1]];
+          const auto& ap = mLegIt[photons[i][0] - mLegItFirst];
+          const auto& am = mLegIt[photons[i][1] - mLegItFirst];
+          const auto& bp = mLegIt[photons[j][0] - mLegItFirst];
+          const auto& bm = mLegIt[photons[j][1] - mLegItFirst];
           // related: same mother (siblings) or one photon radiated by a leg particle of the other (bremsstrahlung), as mixRelated
           const bool sameEvt = ap.sourceEventUid() == bp.sourceEventUid();
           if (type > 0.5f && sameEvt && mixed.skipSameSourceCrossed) {
@@ -3434,7 +3447,7 @@ struct PhotonConversionBuilder {
   }
 
   // truth of a photon pair: 0 both genuine, 1 crossed, 2 other (at least one leg not from a true photon), for all candidates of a collision
-  template <typename TMixCollisions, typename TMixLegs>
+  template <o2::soa::is_table TMixCollisions, o2::soa::is_table TMixLegs>
   void fillFourLegAll(TMixCollisions const& collisions, TMixLegs const& legs, const size_t nFit)
   {
     using Key3 = std::tuple<int64_t, int64_t, int64_t>;
@@ -3489,7 +3502,7 @@ struct PhotonConversionBuilder {
     }
   }
 
-  template <typename TMixCollisions, typename TMixLegs>
+  template <o2::soa::is_table TMixCollisions, o2::soa::is_table TMixLegs>
   void fillFourLegTruthAligned(TMixCollisions const& collisions, TMixLegs const& legs, const int64_t colId, const float type, const float truth,
                                const float isolated, const float actual, V0CandidateHelper const& a, V0CandidateHelper const& b,
                                V0CandidateHelper const& x1, V0CandidateHelper const& x2, const int groupSize)
@@ -3630,7 +3643,7 @@ struct PhotonConversionBuilder {
     }
   }
 
-  template <typename TMixCollisions, typename TMixLegs>
+  template <o2::soa::is_table TMixCollisions, o2::soa::is_table TMixLegs>
   void fillTakenApart(TMixCollisions const& collisions, TMixLegs const& legs, const size_t nFit, std::set<CandKey> const& afterChoice, std::set<CandKey> const& afterSplit)
   {
     using Key3 = std::tuple<int64_t, int64_t, int64_t>;
@@ -3685,7 +3698,7 @@ struct PhotonConversionBuilder {
     }
   }
 
-  template <typename TMixCollisions, typename TMixLegs>
+  template <o2::soa::is_table TMixCollisions, o2::soa::is_table TMixLegs>
   void fillFourLegDecisions(TMixCollisions const& collisions, TMixLegs const& legs, const size_t nFit)
   {
     fillFourLegAll(collisions, legs, nFit);
@@ -3776,18 +3789,12 @@ struct PhotonConversionBuilder {
   }
 
   // run 2: build the mixed event, fill the crossed pairings, and fill the diagnostics of the run-1 photons (pooled free legs) before the dedup and resolvers
-  template <typename TMixCollisions, typename TMixLegs>
+  template <o2::soa::is_table TMixCollisions, o2::soa::is_table TMixLegs>
   void buildMixed(TMixCollisions const& collisions, TMixLegs const& legs)
   {
     const auto tDF = std::chrono::steady_clock::now();
     mRelaxedKeys.clear();
     mLegDcaCache.clear();
-    // build the leg iterator cache for the current event
-    mLegIt.clear();
-    mLegIt.reserve(legs.size());
-    for (int64_t i = 0; i < static_cast<int64_t>(legs.size()); ++i) {
-      mLegIt.push_back(legs.rawIteratorAt(i));
-    }
     std::unordered_map<int64_t, std::vector<MixPairPhoton>> inputOfColl; // artificial event -> input photons (pair diagnostics)
     auto crossedPrefilter = [&](auto const& pos, auto const& ele) {
       if (std::fabs(pos.tgl() - ele.tgl()) > recovery.finderMaxDeltaTgl) {
@@ -3801,9 +3808,10 @@ struct PhotonConversionBuilder {
       const float type = collision.isMixed() ? 1.f : 0.f;
       const auto t0 = std::chrono::steady_clock::now();
       registry.fill(HIST("Mixed/hEvents"), type);
+      cacheLegsOf(collision, legs);
       std::vector<int64_t> posLegs, eleLegs;
       for (int i = collision.firstLeg(); i < collision.firstLeg() + collision.nLegs(); ++i) {
-        (mLegIt[i].sign() > 0 ? posLegs : eleLegs).push_back(i);
+        (mLegIt[i - mLegItFirst].sign() > 0 ? posLegs : eleLegs).push_back(i);
       }
       std::unordered_map<int64_t, o2::track::TrackAuxPar> circleOf;
       std::unordered_map<int64_t, int64_t> eleOfPhoton;
@@ -3811,27 +3819,27 @@ struct PhotonConversionBuilder {
       std::vector<std::pair<float, int64_t>> eleByTgl;
       eleByTgl.reserve(eleLegs.size());
       for (const auto& ie : eleLegs) {
-        eleOfPhoton.emplace(mLegIt[ie].sourcePhotonUid(), ie);
-        nEleOfSource[mLegIt[ie].sourceEventUid()]++;
-        eleByTgl.emplace_back(mLegIt[ie].tgl(), ie);
+        eleOfPhoton.emplace(mLegIt[ie - mLegItFirst].sourcePhotonUid(), ie);
+        nEleOfSource[mLegIt[ie - mLegItFirst].sourceEventUid()]++;
+        eleByTgl.emplace_back(mLegIt[ie - mLegItFirst].tgl(), ie);
       }
       std::sort(eleByTgl.begin(), eleByTgl.end());
       const bool tglWindow = mixed.prefilterCrossed && !mixed.uniformPairFit;
       if (mixed.prefilterCrossed) {
         for (const auto& i : posLegs) {
-          circleOf.emplace(i, o2::track::TrackAuxPar(getTrackPar(mLegIt[i]), d_bz));
+          circleOf.emplace(i, o2::track::TrackAuxPar(getTrackPar(mLegIt[i - mLegItFirst]), d_bz));
         }
         for (const auto& i : eleLegs) {
-          circleOf.emplace(i, o2::track::TrackAuxPar(getTrackPar(mLegIt[i]), d_bz));
+          circleOf.emplace(i, o2::track::TrackAuxPar(getTrackPar(mLegIt[i - mLegItFirst]), d_bz));
         }
       }
       auto crossedPrefilterCached = [&](int64_t ip, int64_t ie) {
-        return std::fabs(mLegIt[ip].tgl() - mLegIt[ie].tgl()) <= recovery.finderMaxDeltaTgl && std::fabs(circleGap(circleOf.at(ip), circleOf.at(ie))) < recovery.finderMaxCircleGap;
+        return std::fabs(mLegIt[ip - mLegItFirst].tgl() - mLegIt[ie - mLegItFirst].tgl()) <= recovery.finderMaxDeltaTgl && std::fabs(circleGap(circleOf.at(ip), circleOf.at(ie))) < recovery.finderMaxCircleGap;
       };
 
       auto crossedGate = [&](int64_t ip, int64_t ie) -> int {
-        const auto& p = mLegIt[ip];
-        const auto& e = mLegIt[ie];
+        const auto& p = mLegIt[ip - mLegItFirst];
+        const auto& e = mLegIt[ie - mLegItFirst];
         const bool pFree = p.sourceV0Id() == -2, eFree = e.sourceV0Id() == -2; // o2-linter: disable=magic-number (pooled free leg)
         if (pFree && eFree) {
           return 0;
@@ -3849,7 +3857,7 @@ struct PhotonConversionBuilder {
           const int64_t iFree = pFree ? ip : ie;
           const auto& st = pFree ? e : p;
           const auto itC = circleOf.find(iFree);
-          const o2::track::TrackAuxPar cf = itC != circleOf.end() ? itC->second : o2::track::TrackAuxPar(getTrackPar(mLegIt[iFree]), d_bz);
+          const o2::track::TrackAuxPar cf = itC != circleOf.end() ? itC->second : o2::track::TrackAuxPar(getTrackPar(mLegIt[iFree - mLegItFirst]), d_bz);
           if (std::fabs(std::hypot(st.sourceVx() - cf.xC, st.sourceVy() - cf.yC) - cf.rC) > mixed.crossedMaxParentDist.value) {
             return 3; // o2-linter: disable=magic-number (gate reason)
           }
@@ -3859,10 +3867,10 @@ struct PhotonConversionBuilder {
       const bool gateOn = mixed.crossedMaxParentQ.value > 0.f || mixed.crossedMaxParentDist.value > 0.f;
       std::vector<MixPairPhoton> before; // crossed pairings of this artificial event, before the dedup and resolvers
       for (const auto& ip : posLegs) {
-        const auto& pos = mLegIt[ip];
+        const auto& pos = mLegIt[ip - mLegItFirst];
         if (const auto itE = eleOfPhoton.find(pos.sourcePhotonUid()); itE != eleOfPhoton.end()) {
           const auto ie = itE->second;
-          const auto& ele = mLegIt[ie];
+          const auto& ele = mLegIt[ie - mLegItFirst];
           {
             MixPairPhoton p;
             p.px = pos.sourcePx();
@@ -3883,7 +3891,7 @@ struct PhotonConversionBuilder {
       inputOfColl[collision.globalIndex()] = before;
       std::vector<int64_t> visit; // negative legs paired with this positive leg, in the original (row) order
       for (const auto& ip : posLegs) {
-        const auto& pos = mLegIt[ip];
+        const auto& pos = mLegIt[ip - mLegItFirst];
         visit.clear();
         if (tglWindow) { // crossed pairings are prefiltered by tgl, then by circle gap
           const float tglP = pos.tgl();
@@ -3899,7 +3907,7 @@ struct PhotonConversionBuilder {
           const bool hasPartner = eleOfPhoton.contains(pos.sourcePhotonUid());
           int nOutside = mixed.skipSameSourceCrossed ? static_cast<int>(eleLegs.size()) - nEleOfSource[pos.sourceEventUid()] : static_cast<int>(eleLegs.size()) - (hasPartner ? 1 : 0);
           for (const auto& ie : visit) {
-            const auto& ele = mLegIt[ie];
+            const auto& ele = mLegIt[ie - mLegItFirst];
             if (ele.sourcePhotonUid() != pos.sourcePhotonUid() && !(mixed.skipSameSourceCrossed && pos.sourceEventUid() == ele.sourceEventUid())) {
               nOutside--;
             }
@@ -3911,7 +3919,7 @@ struct PhotonConversionBuilder {
           visit.assign(eleLegs.begin(), eleLegs.end());
         }
         for (const auto& ie : visit) {
-          const auto& ele = mLegIt[ie];
+          const auto& ele = mLegIt[ie - mLegItFirst];
           const size_t nBefore = vecV0Dedup.size();
           const bool originalPairing = pos.sourcePhotonUid() == ele.sourcePhotonUid();
           if (!originalPairing && mixed.skipSameSourceCrossed && pos.sourceEventUid() == ele.sourceEventUid()) {
@@ -4412,7 +4420,7 @@ struct PhotonConversionBuilder {
     }
   }
 
-  template <typename TMCParticles>
+  template <o2::soa::is_table TMCParticles>
   void fillRun1FourLeg(TMCParticles const& mcparticles, DedupDiag const& diag, std::vector<uint8_t> const& cls, std::vector<int64_t> const& motherPos,
                        std::set<CandKey> const& storedSet, std::map<int64_t, int>& nCandsOfTrack)
   {
@@ -5055,7 +5063,8 @@ struct PhotonConversionBuilder {
 
   using MixCollisionsIn = std::conditional_t<kMixedInstance, o2::aod::PCMMixCollisions, o2::aod::Collisions>;
   using MixLegsIn = std::conditional_t<kMixedInstance, o2::aod::PCMMixLegs, o2::aod::BCs>;
-  std::vector<decltype(std::declval<MixLegsIn const&>().rawIteratorAt(0))> mLegIt; // run 2: one iterator per PCMMixLegs row of the DF (buildMixed)
+  std::vector<decltype(std::declval<MixLegsIn const&>().rawIteratorAt(0))> mLegIt; // run 2: one iterator per PCMMixLegs row of the current artificial event (cacheLegsOf)
+  int64_t mLegItFirst = 0;                                                         // run 2: PCMMixLegs row of mLegIt[0]
   void processMixed(MixCollisionsIn const& collisions, MixLegsIn const& legs, MyBCs const& bcs)
   {
     if constexpr (kMixedInstance) {

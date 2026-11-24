@@ -177,6 +177,7 @@ class VarManager : public TObject
     kTripleCandidateToPKPi,     // e.g. Lambda_c -> p K- pi+
     kJpsiHadronMass,            // using the real hadron mass
     kJpsiPionMass,              // treat the hadron as pion
+    kDsToKKPi,                  // e.g. Ds+ -> K+ K- pi+ or cc.
     kNMaxCandidateTypes
   };
 
@@ -1695,7 +1696,7 @@ class VarManager : public TObject
   static bool fgPVrecalKF;
   static void SetVariableDependencies(); // toggle those variables on which other used variables might depend
 
-  static float fgMagField;
+  static float fgMagField; // magnetic field, in kGaus
   static float fgzMatching;
   static float fgxShiftFwd;
   static float fgyShiftFwd;
@@ -3088,7 +3089,11 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kPhi] = track.phi();
     values[kCharge] = track.sign();
     if (fgUsedVars[kPhiTPCOuter]) {
-      values[kPhiTPCOuter] = RecoDecay::constrainAngle(track.phi() - track.sign() * (o2::constants::math::PIHalf - std::acos(0.22 * fgMagField / track.pt())));
+      if (track.pt() > 0.022 * fgMagField) {
+        values[kPhiTPCOuter] = RecoDecay::constrainAngle(track.phi() - track.sign() * (o2::constants::math::PIHalf - std::acos(0.022 * fgMagField / track.pt())));
+      } else {
+        values[kPhiTPCOuter] = o2::dqconstants::InvalidValueF;
+      }
     }
     if (fgUsedVars[kLocalSectorPhi]) {
       values[kLocalSectorPhi] = values[kPhiTPCOuter] - std::floor(18.0 * values[kPhiTPCOuter] / o2::constants::math::TwoPI) * (o2::constants::math::TwoPI / 18.0);
@@ -5851,7 +5856,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
 
       procCode = VarManager::fgFitterThreeProngFwd.process(pars1, pars2, pars3);
       procCodeJpsi = VarManager::fgFitterTwoProngFwd.process(pars1, pars2);
-    } else if constexpr ((candidateType == kBtoJpsiEEK || candidateType == kDstarToD0KPiPi) && TrackHasCov) {
+    } else if constexpr ((candidateType == kBtoJpsiEEK || candidateType == kDstarToD0KPiPi || candidateType == kDsToKKPi) && TrackHasCov) {
       if constexpr (candidateType == kBtoJpsiEEK) {
         mlepton1 = o2::constants::physics::MassElectron;
         mlepton2 = o2::constants::physics::MassElectron;
@@ -5859,6 +5864,10 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       } else if constexpr (candidateType == kDstarToD0KPiPi) {
         mlepton1 = o2::constants::physics::MassKaonCharged;
         mlepton2 = o2::constants::physics::MassPionCharged;
+        mtrack = o2::constants::physics::MassPionCharged;
+      } else if constexpr (candidateType == kDsToKKPi) {
+        mlepton1 = o2::constants::physics::MassKaonCharged;
+        mlepton2 = o2::constants::physics::MassKaonCharged;
         mtrack = o2::constants::physics::MassPionCharged;
       }
       std::array<float, o2::dqconstants::defaults::NumTrkCovParsNoX> lepton1pars = {lepton1.y(), lepton1.z(), lepton1.snp(), lepton1.tgl(), lepton1.signed1Pt()};
@@ -5935,7 +5944,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       o2::dataformats::VertexBase primaryVertex = {vtxXYZ, vtxCov};
       auto covMatrixPV = primaryVertex.getCov();
 
-      if constexpr ((candidateType == kBtoJpsiEEK || candidateType == kDstarToD0KPiPi) && TrackHasCov) {
+      if constexpr ((candidateType == kBtoJpsiEEK || candidateType == kDstarToD0KPiPi || candidateType == kDsToKKPi) && TrackHasCov) {
         secondaryVertex = fgFitterThreeProngBarrel.getPCACandidate();
         covMatrixPCA = fgFitterThreeProngBarrel.calcPCACovMatrixFlat();
       } else if constexpr (candidateType == kBcToThreeMuons && MuonHasCov) {

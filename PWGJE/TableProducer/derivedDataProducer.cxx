@@ -164,6 +164,7 @@ struct JetDerivedDataProducerTask {
 
     Configurable<bool> includeTriggers{"includeTriggers", false, "fill the collision information with software trigger decisions"};
     Configurable<bool> includeHadronicRate{"includeHadronicRate", true, "fill the collision information with the hadronic rate"};
+    Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Estimator of the interaction rate (recommendation: T0VTX for pp, ZNC hadronic for Pb-Pb)"};
     Configurable<bool> v0ChargedDecaysOnly{"v0ChargedDecaysOnly", true, "store V0s (at particle-level) only if they decay to charged particles"};
     Configurable<bool> isMCGenOnly{"isMCGenOnly", false, "analysis is run over mcGen only"};
 
@@ -304,7 +305,7 @@ struct JetDerivedDataProducerTask {
     if (config.includeHadronicRate) {
       if (runNumber != bc.runNumber()) {
         runNumber = bc.runNumber();
-        hadronicRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 0.001;
+        hadronicRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, config.irSource) * 0.001;
       }
     }
     uint64_t triggerBit = 0;
@@ -326,7 +327,7 @@ struct JetDerivedDataProducerTask {
     if (config.includeHadronicRate) {
       if (runNumber != bc.runNumber()) {
         runNumber = bc.runNumber();
-        hadronicRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 0.001;
+        hadronicRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, config.irSource) * 0.001;
       }
     }
     uint64_t triggerBit = 0;
@@ -644,7 +645,7 @@ struct JetDerivedDataProducerTask {
         i++;
       }
     }
-    products.jMcParticlesTable(particle.mcCollisionId(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), particle.pdgCode(), particle.statusCode(), particle.flags(), mothersId, daughtersId);
+    products.jMcParticlesTable(particle.mcCollisionId(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), particle.pdgCode(), particle.statusCode(), particle.flags(), particle.vx(), particle.vy(), particle.vz(), mothersId, daughtersId);
     products.jParticlesParentIndexTable(particle.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processParticles, "produces derived parrticle table", false);

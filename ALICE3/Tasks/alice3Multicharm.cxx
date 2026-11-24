@@ -62,6 +62,7 @@ struct Alice3Multicharm {
     Configurable<int64_t> timestampCCDB{"timestampCCDB", 1695750420200, "timestamp of the ONNX file for ML model used to query in CCDB. Please use 1695750420200"};
     Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
     Configurable<bool> enableBDT{"enableBDT", false, "Enables bdt model"};
+    Configurable<bool> fillBkgScoreHistos{"fillBkgScoreHistos", false, "Fill the BDT background-score histograms (redundant for 2 classes: bkg = 1 - sig)"};
     Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/j/jekarlss/MLModels"}, "Paths of models on CCDB"};
     Configurable<std::vector<double>> ptBinEdges{"ptBinEdges", {0, 2, 4, 6, 8, 10, 15}, "Bin edges for pT dependant BDT"};
     Configurable<LabeledArray<double>> scoreCuts{"scoreCuts", {multi_charm_ml::Cuts[0].data(), multi_charm_ml::NBinsPt, multi_charm_ml::NClasses, multi_charm_ml::labelsPt, multi_charm_ml::labelsCutScore}, "ML selections per pT bin"};
@@ -148,6 +149,7 @@ struct Alice3Multicharm {
     Configurable<bool> applyXiccMaxProperLength{"applyXiccMaxProperLength", false, "Apply max proper length"};
   } selFlags;
 
+  Configurable<bool> do2dQa{"do2dQa", true, "Book and fill the 2D QA histograms (BDT score vs mass, pT and topological variables)"};
   Configurable<int> otfConfig{"otfConfig", 0, "OTF configuration flag"};
   Filter configFilter = (aod::otfmulticharm::lutConfigId == otfConfig);
 
@@ -220,38 +222,46 @@ struct Alice3Multicharm {
       mlResponse.cacheInputFeaturesIndices(ml.namesInputFeatures);
       mlResponse.init();
 
+      histos.add("BDT/BeforeSel/h3dBDTScoreSignal", "h3dBDTScoreSignal", kTH3D, {axisPt, axisXiccMass, axisBDTScore});
       histos.add("BDT/BeforeSel/hBDTScoreSignalFine", "hBDTScoreSignalFine", kTH1D, {axisBDTScoreFine});
       histos.add("BDT/BeforeSel/hBDTScoreSignal", "hBDTScoreSignal", kTH1D, {axisBDTScore});
-      histos.add("BDT/BeforeSel/hBDTScoreVsXiccMassSignal", "hBDTScoreVsXiccMassSignal", kTH2D, {axisXiccMass, axisBDTScore});
-      histos.add("BDT/BeforeSel/hBDTScoreVsXiccPtSignal", "hBDTScoreVsXiccPtSignal", kTH2D, {axisPt, axisBDTScore});
-      histos.add("BDT/BeforeSel/h3dBDTScoreSignal", "h3dBDTScoreSignal", kTH3D, {axisPt, axisXiccMass, axisBDTScore});
-      histos.add("BDT/BeforeSel/hBDTScoreBackgroundFine", "hBDTScoreBackgroundFine", kTH1D, {axisBDTScoreFine});
-      histos.add("BDT/BeforeSel/hBDTScoreBackground", "hBDTScoreBackground", kTH1D, {axisBDTScore});
-      histos.add("BDT/BeforeSel/hBDTScoreVsXiccMassBackground", "hBDTScoreVsXiccMassBackground", kTH2D, {axisXiccMass, axisBDTScore});
-      histos.add("BDT/BeforeSel/hBDTScoreVsXiccPtBackground", "hBDTScoreVsXiccPtBackground", kTH2D, {axisPt, axisBDTScore});
-      histos.add("BDT/BeforeSel/h3dBDTScoreBackground", "h3dBDTScoreBackground", kTH3D, {axisPt, axisXiccMass, axisBDTScore});
-      histos.add("BDT/BeforeSel/hDCAXicDaughters", "hDCAXicDaughters", kTH2D, {{axisBDTScore, axisDcaDaughters}});
-      histos.add("BDT/BeforeSel/hDCAXiccDaughters", "hDCAXiccDaughters", kTH2D, {{axisBDTScore, axisDcaDaughters}});
-      histos.add("BDT/BeforeSel/hDCAxyXi", "hDCAxyXi", kTH2D, {{axisBDTScore, axisDCA}});
-      histos.add("BDT/BeforeSel/hDCAzXi", "hDCAzXi", kTH2D, {{axisBDTScore, axisDCA}});
-      histos.add("BDT/BeforeSel/hDCAxyXic", "hDCAxyXic", kTH2D, {{axisBDTScore, axisDCA}});
-      histos.add("BDT/BeforeSel/hDCAzXic", "hDCAzXic", kTH2D, {{axisBDTScore, axisDCA}});
-      histos.add("BDT/BeforeSel/hDCAxyXicc", "hDCAxyXicc", kTH2D, {{axisBDTScore, axisDCA}});
-      histos.add("BDT/BeforeSel/hDCAzXicc", "hDCAzXicc", kTH2D, {{axisBDTScore, axisDCA}});
-      histos.add("BDT/BeforeSel/hDecayRadiusXic", "hDecayRadiusXic", kTH2D, {{axisBDTScore, axisRadius}});
-      histos.add("BDT/BeforeSel/hDecayRadiusXicc", "hDecayRadiusXicc", kTH2D, {{axisBDTScore, axisRadius}});
-      histos.add("BDT/BeforeSel/hDecayDistanceFromPVXic", "hDecayDistanceFromPVXic", kTH2D, {{axisBDTScore, axisDecayLength}});
-      histos.add("BDT/BeforeSel/hProperLengthXic", "hProperLengthXic", kTH2D, {{axisBDTScore, axisDecayLength}});
-      histos.add("BDT/BeforeSel/hProperLengthXicc", "hProperLengthXicc", kTH2D, {{axisBDTScore, axisDecayLength}});
-      histos.add("BDT/BeforeSel/hPi1cDCAxy", "hPi1cDCAxy", kTH2D, {{axisBDTScore, axisDCA}});
-      histos.add("BDT/BeforeSel/hPi1cDCAz", "hPi1cDCAz", kTH2D, {{axisBDTScore, axisDCA}});
-      histos.add("BDT/BeforeSel/hPi2cDCAxy", "hPi2cDCAxy", kTH2D, {{axisBDTScore, axisDCA}});
-      histos.add("BDT/BeforeSel/hPi2cDCAz", "hPi2cDCAz", kTH2D, {{axisBDTScore, axisDCA}});
-      histos.add("BDT/BeforeSel/hPiccDCAxy", "hPiccDCAxy", kTH2D, {{axisBDTScore, axisDCA}});
-      histos.add("BDT/BeforeSel/hPiccDCAz", "hPiccDCAz", kTH2D, {{axisBDTScore, axisDCA}});
-      histos.add("BDT/BeforeSel/hPi1cPt", "hPi1cPt", kTH2D, {{axisBDTScore, axisPt}});
-      histos.add("BDT/BeforeSel/hPi2cPt", "hPi2cPt", kTH2D, {{axisBDTScore, axisPt}});
-      histos.add("BDT/BeforeSel/hPiccPt", "hPiccPt", kTH2D, {{axisBDTScore, axisPt}});
+      if (do2dQa) {
+        histos.add("BDT/BeforeSel/hBDTScoreVsXiccMassSignal", "hBDTScoreVsXiccMassSignal", kTH2D, {axisXiccMass, axisBDTScore});
+        histos.add("BDT/BeforeSel/hBDTScoreVsXiccPtSignal", "hBDTScoreVsXiccPtSignal", kTH2D, {axisPt, axisBDTScore});
+      }
+      if (ml.fillBkgScoreHistos) {
+        histos.add("BDT/BeforeSel/h3dBDTScoreBackground", "h3dBDTScoreBackground", kTH3D, {axisPt, axisXiccMass, axisBDTScore});
+        histos.add("BDT/BeforeSel/hBDTScoreBackgroundFine", "hBDTScoreBackgroundFine", kTH1D, {axisBDTScoreFine});
+        histos.add("BDT/BeforeSel/hBDTScoreBackground", "hBDTScoreBackground", kTH1D, {axisBDTScore});
+        if (do2dQa) {
+          histos.add("BDT/BeforeSel/hBDTScoreVsXiccMassBackground", "hBDTScoreVsXiccMassBackground", kTH2D, {axisXiccMass, axisBDTScore});
+          histos.add("BDT/BeforeSel/hBDTScoreVsXiccPtBackground", "hBDTScoreVsXiccPtBackground", kTH2D, {axisPt, axisBDTScore});
+        }
+      }
+      if (do2dQa) {
+        histos.add("BDT/BeforeSel/hDCAXicDaughters", "hDCAXicDaughters", kTH2D, {{axisBDTScore, axisDcaDaughters}});
+        histos.add("BDT/BeforeSel/hDCAXiccDaughters", "hDCAXiccDaughters", kTH2D, {{axisBDTScore, axisDcaDaughters}});
+        histos.add("BDT/BeforeSel/hDCAxyXi", "hDCAxyXi", kTH2D, {{axisBDTScore, axisDCA}});
+        histos.add("BDT/BeforeSel/hDCAzXi", "hDCAzXi", kTH2D, {{axisBDTScore, axisDCA}});
+        histos.add("BDT/BeforeSel/hDCAxyXic", "hDCAxyXic", kTH2D, {{axisBDTScore, axisDCA}});
+        histos.add("BDT/BeforeSel/hDCAzXic", "hDCAzXic", kTH2D, {{axisBDTScore, axisDCA}});
+        histos.add("BDT/BeforeSel/hDCAxyXicc", "hDCAxyXicc", kTH2D, {{axisBDTScore, axisDCA}});
+        histos.add("BDT/BeforeSel/hDCAzXicc", "hDCAzXicc", kTH2D, {{axisBDTScore, axisDCA}});
+        histos.add("BDT/BeforeSel/hDecayRadiusXic", "hDecayRadiusXic", kTH2D, {{axisBDTScore, axisRadius}});
+        histos.add("BDT/BeforeSel/hDecayRadiusXicc", "hDecayRadiusXicc", kTH2D, {{axisBDTScore, axisRadius}});
+        histos.add("BDT/BeforeSel/hDecayDistanceFromPVXic", "hDecayDistanceFromPVXic", kTH2D, {{axisBDTScore, axisDecayLength}});
+        histos.add("BDT/BeforeSel/hProperLengthXic", "hProperLengthXic", kTH2D, {{axisBDTScore, axisDecayLength}});
+        histos.add("BDT/BeforeSel/hProperLengthXicc", "hProperLengthXicc", kTH2D, {{axisBDTScore, axisDecayLength}});
+        histos.add("BDT/BeforeSel/hPi1cDCAxy", "hPi1cDCAxy", kTH2D, {{axisBDTScore, axisDCA}});
+        histos.add("BDT/BeforeSel/hPi1cDCAz", "hPi1cDCAz", kTH2D, {{axisBDTScore, axisDCA}});
+        histos.add("BDT/BeforeSel/hPi2cDCAxy", "hPi2cDCAxy", kTH2D, {{axisBDTScore, axisDCA}});
+        histos.add("BDT/BeforeSel/hPi2cDCAz", "hPi2cDCAz", kTH2D, {{axisBDTScore, axisDCA}});
+        histos.add("BDT/BeforeSel/hPiccDCAxy", "hPiccDCAxy", kTH2D, {{axisBDTScore, axisDCA}});
+        histos.add("BDT/BeforeSel/hPiccDCAz", "hPiccDCAz", kTH2D, {{axisBDTScore, axisDCA}});
+        histos.add("BDT/BeforeSel/hPi1cPt", "hPi1cPt", kTH2D, {{axisBDTScore, axisPt}});
+        histos.add("BDT/BeforeSel/hPi2cPt", "hPi2cPt", kTH2D, {{axisBDTScore, axisPt}});
+        histos.add("BDT/BeforeSel/hPiccPt", "hPiccPt", kTH2D, {{axisBDTScore, axisPt}});
+      }
       histos.addClone("BDT/BeforeSel/", "BDT/AfterSel/");
     }
 
@@ -315,38 +325,44 @@ struct Alice3Multicharm {
         bdtPredictedBackground = static_cast<float>(outputScore[0]);
         bdtPredictedSignal = static_cast<float>(outputScore[1]);
 
+        histos.fill(HIST("BDT/BeforeSel/h3dBDTScoreSignal"), xiccCand.xiccPt(), xiccCand.xiccMass(), bdtPredictedSignal);
         histos.fill(HIST("BDT/BeforeSel/hBDTScoreSignal"), bdtPredictedSignal);
         histos.fill(HIST("BDT/BeforeSel/hBDTScoreSignalFine"), bdtPredictedSignal);
-        histos.fill(HIST("BDT/BeforeSel/hBDTScoreVsXiccMassSignal"), xiccCand.xiccMass(), bdtPredictedSignal);
-        histos.fill(HIST("BDT/BeforeSel/hBDTScoreVsXiccPtSignal"), xiccCand.xiccPt(), bdtPredictedSignal);
-        histos.fill(HIST("BDT/BeforeSel/h3dBDTScoreSignal"), xiccCand.xiccPt(), xiccCand.xiccMass(), bdtPredictedSignal);
-        histos.fill(HIST("BDT/BeforeSel/hBDTScoreBackground"), bdtPredictedBackground);
-        histos.fill(HIST("BDT/BeforeSel/hBDTScoreBackgroundFine"), bdtPredictedBackground);
-        histos.fill(HIST("BDT/BeforeSel/hBDTScoreVsXiccMassBackground"), xiccCand.xiccMass(), bdtPredictedBackground);
-        histos.fill(HIST("BDT/BeforeSel/hBDTScoreVsXiccPtBackground"), xiccCand.xiccPt(), bdtPredictedBackground);
-        histos.fill(HIST("BDT/BeforeSel/h3dBDTScoreBackground"), xiccCand.xiccPt(), xiccCand.xiccMass(), bdtPredictedBackground);
-        histos.fill(HIST("BDT/BeforeSel/hDCAXicDaughters"), bdtPredictedSignal, xiccCand.xicDauDCA() * ToMicrons);
-        histos.fill(HIST("BDT/BeforeSel/hDCAXiccDaughters"), bdtPredictedSignal, xiccCand.xiccDauDCA() * ToMicrons);
-        histos.fill(HIST("BDT/BeforeSel/hDCAxyXi"), bdtPredictedSignal, std::fabs(xiccCand.xiDCAxy() * ToMicrons));
-        histos.fill(HIST("BDT/BeforeSel/hDCAzXi"), bdtPredictedSignal, std::fabs(xiccCand.xiDCAz() * ToMicrons));
-        histos.fill(HIST("BDT/BeforeSel/hDCAxyXic"), bdtPredictedSignal, std::fabs(xiccCand.xicDCAxy() * ToMicrons));
-        histos.fill(HIST("BDT/BeforeSel/hDCAzXic"), bdtPredictedSignal, std::fabs(xiccCand.xicDCAz() * ToMicrons));
-        histos.fill(HIST("BDT/BeforeSel/hDCAxyXicc"), bdtPredictedSignal, std::fabs(xiccCand.xiccDCAxy() * ToMicrons));
-        histos.fill(HIST("BDT/BeforeSel/hDCAzXicc"), bdtPredictedSignal, std::fabs(xiccCand.xiccDCAz() * ToMicrons));
-        histos.fill(HIST("BDT/BeforeSel/hDecayRadiusXic"), bdtPredictedSignal, xiccCand.xicDecayRadius2D() * ToMicrons);
-        histos.fill(HIST("BDT/BeforeSel/hDecayRadiusXicc"), bdtPredictedSignal, xiccCand.xiccDecayRadius2D() * ToMicrons);
-        histos.fill(HIST("BDT/BeforeSel/hDecayDistanceFromPVXic"), bdtPredictedSignal, xiccCand.xicDistanceFromPV() * ToMicrons);
-        histos.fill(HIST("BDT/BeforeSel/hProperLengthXic"), bdtPredictedSignal, xiccCand.xicProperLength() * ToMicrons);
-        histos.fill(HIST("BDT/BeforeSel/hProperLengthXicc"), bdtPredictedSignal, xiccCand.xiccProperLength() * ToMicrons);
-        histos.fill(HIST("BDT/BeforeSel/hPi1cDCAxy"), bdtPredictedSignal, xiccCand.pi1cDCAxy() * ToMicrons);
-        histos.fill(HIST("BDT/BeforeSel/hPi1cDCAz"), bdtPredictedSignal, xiccCand.pi1cDCAz() * ToMicrons);
-        histos.fill(HIST("BDT/BeforeSel/hPi2cDCAxy"), bdtPredictedSignal, xiccCand.pi2cDCAxy() * ToMicrons);
-        histos.fill(HIST("BDT/BeforeSel/hPi2cDCAz"), bdtPredictedSignal, xiccCand.pi2cDCAz() * ToMicrons);
-        histos.fill(HIST("BDT/BeforeSel/hPiccDCAxy"), bdtPredictedSignal, xiccCand.piccDCAxy() * ToMicrons);
-        histos.fill(HIST("BDT/BeforeSel/hPiccDCAz"), bdtPredictedSignal, xiccCand.piccDCAz() * ToMicrons);
-        histos.fill(HIST("BDT/BeforeSel/hPi1cPt"), bdtPredictedSignal, xiccCand.pi1cPt());
-        histos.fill(HIST("BDT/BeforeSel/hPi2cPt"), bdtPredictedSignal, xiccCand.pi2cPt());
-        histos.fill(HIST("BDT/BeforeSel/hPiccPt"), bdtPredictedSignal, xiccCand.piccPt());
+        if (ml.fillBkgScoreHistos) {
+          histos.fill(HIST("BDT/BeforeSel/h3dBDTScoreBackground"), xiccCand.xiccPt(), xiccCand.xiccMass(), bdtPredictedBackground);
+          histos.fill(HIST("BDT/BeforeSel/hBDTScoreBackground"), bdtPredictedBackground);
+          histos.fill(HIST("BDT/BeforeSel/hBDTScoreBackgroundFine"), bdtPredictedBackground);
+          if (do2dQa) {
+            histos.fill(HIST("BDT/BeforeSel/hBDTScoreVsXiccMassBackground"), xiccCand.xiccMass(), bdtPredictedBackground);
+            histos.fill(HIST("BDT/BeforeSel/hBDTScoreVsXiccPtBackground"), xiccCand.xiccPt(), bdtPredictedBackground);
+          }
+        }
+        if (do2dQa) {
+          histos.fill(HIST("BDT/BeforeSel/hBDTScoreVsXiccMassSignal"), xiccCand.xiccMass(), bdtPredictedSignal);
+          histos.fill(HIST("BDT/BeforeSel/hBDTScoreVsXiccPtSignal"), xiccCand.xiccPt(), bdtPredictedSignal);
+          histos.fill(HIST("BDT/BeforeSel/hDCAXicDaughters"), bdtPredictedSignal, xiccCand.xicDauDCA() * ToMicrons);
+          histos.fill(HIST("BDT/BeforeSel/hDCAXiccDaughters"), bdtPredictedSignal, xiccCand.xiccDauDCA() * ToMicrons);
+          histos.fill(HIST("BDT/BeforeSel/hDCAxyXi"), bdtPredictedSignal, std::fabs(xiccCand.xiDCAxy() * ToMicrons));
+          histos.fill(HIST("BDT/BeforeSel/hDCAzXi"), bdtPredictedSignal, std::fabs(xiccCand.xiDCAz() * ToMicrons));
+          histos.fill(HIST("BDT/BeforeSel/hDCAxyXic"), bdtPredictedSignal, std::fabs(xiccCand.xicDCAxy() * ToMicrons));
+          histos.fill(HIST("BDT/BeforeSel/hDCAzXic"), bdtPredictedSignal, std::fabs(xiccCand.xicDCAz() * ToMicrons));
+          histos.fill(HIST("BDT/BeforeSel/hDCAxyXicc"), bdtPredictedSignal, std::fabs(xiccCand.xiccDCAxy() * ToMicrons));
+          histos.fill(HIST("BDT/BeforeSel/hDCAzXicc"), bdtPredictedSignal, std::fabs(xiccCand.xiccDCAz() * ToMicrons));
+          histos.fill(HIST("BDT/BeforeSel/hDecayRadiusXic"), bdtPredictedSignal, xiccCand.xicDecayRadius2D() * ToMicrons);
+          histos.fill(HIST("BDT/BeforeSel/hDecayRadiusXicc"), bdtPredictedSignal, xiccCand.xiccDecayRadius2D() * ToMicrons);
+          histos.fill(HIST("BDT/BeforeSel/hDecayDistanceFromPVXic"), bdtPredictedSignal, xiccCand.xicDistanceFromPV() * ToMicrons);
+          histos.fill(HIST("BDT/BeforeSel/hProperLengthXic"), bdtPredictedSignal, xiccCand.xicProperLength() * ToMicrons);
+          histos.fill(HIST("BDT/BeforeSel/hProperLengthXicc"), bdtPredictedSignal, xiccCand.xiccProperLength() * ToMicrons);
+          histos.fill(HIST("BDT/BeforeSel/hPi1cDCAxy"), bdtPredictedSignal, xiccCand.pi1cDCAxy() * ToMicrons);
+          histos.fill(HIST("BDT/BeforeSel/hPi1cDCAz"), bdtPredictedSignal, xiccCand.pi1cDCAz() * ToMicrons);
+          histos.fill(HIST("BDT/BeforeSel/hPi2cDCAxy"), bdtPredictedSignal, xiccCand.pi2cDCAxy() * ToMicrons);
+          histos.fill(HIST("BDT/BeforeSel/hPi2cDCAz"), bdtPredictedSignal, xiccCand.pi2cDCAz() * ToMicrons);
+          histos.fill(HIST("BDT/BeforeSel/hPiccDCAxy"), bdtPredictedSignal, xiccCand.piccDCAxy() * ToMicrons);
+          histos.fill(HIST("BDT/BeforeSel/hPiccDCAz"), bdtPredictedSignal, xiccCand.piccDCAz() * ToMicrons);
+          histos.fill(HIST("BDT/BeforeSel/hPi1cPt"), bdtPredictedSignal, xiccCand.pi1cPt());
+          histos.fill(HIST("BDT/BeforeSel/hPi2cPt"), bdtPredictedSignal, xiccCand.pi2cPt());
+          histos.fill(HIST("BDT/BeforeSel/hPiccPt"), bdtPredictedSignal, xiccCand.piccPt());
+        }
       }
 
       histos.fill(HIST("hMCharmBuilding"), 0);
@@ -483,38 +499,44 @@ struct Alice3Multicharm {
       histos.fill(HIST("hXicPt"), xiccCand.xicPt());
       histos.fill(HIST("h3dXicc"), xiccCand.xiccPt(), xiccCand.xiccEta(), xiccCand.xiccMass());
       if (ml.enableBDT) {
+        histos.fill(HIST("BDT/AfterSel/h3dBDTScoreSignal"), xiccCand.xiccPt(), xiccCand.xiccMass(), bdtPredictedSignal);
         histos.fill(HIST("BDT/AfterSel/hBDTScoreSignal"), bdtPredictedSignal);
         histos.fill(HIST("BDT/AfterSel/hBDTScoreSignalFine"), bdtPredictedSignal);
-        histos.fill(HIST("BDT/AfterSel/hBDTScoreVsXiccMassSignal"), xiccCand.xiccMass(), bdtPredictedSignal);
-        histos.fill(HIST("BDT/AfterSel/hBDTScoreVsXiccPtSignal"), xiccCand.xiccPt(), bdtPredictedSignal);
-        histos.fill(HIST("BDT/AfterSel/h3dBDTScoreSignal"), xiccCand.xiccPt(), xiccCand.xiccMass(), bdtPredictedSignal);
-        histos.fill(HIST("BDT/AfterSel/hBDTScoreBackground"), bdtPredictedBackground);
-        histos.fill(HIST("BDT/AfterSel/hBDTScoreBackgroundFine"), bdtPredictedBackground);
-        histos.fill(HIST("BDT/AfterSel/hBDTScoreVsXiccMassBackground"), xiccCand.xiccMass(), bdtPredictedBackground);
-        histos.fill(HIST("BDT/AfterSel/hBDTScoreVsXiccPtBackground"), xiccCand.xiccPt(), bdtPredictedBackground);
-        histos.fill(HIST("BDT/AfterSel/h3dBDTScoreBackground"), xiccCand.xiccPt(), xiccCand.xiccMass(), bdtPredictedBackground);
-        histos.fill(HIST("BDT/AfterSel/hDCAXicDaughters"), bdtPredictedSignal, xiccCand.xicDauDCA() * ToMicrons);
-        histos.fill(HIST("BDT/AfterSel/hDCAXiccDaughters"), bdtPredictedSignal, xiccCand.xiccDauDCA() * ToMicrons);
-        histos.fill(HIST("BDT/AfterSel/hDCAxyXi"), bdtPredictedSignal, std::fabs(xiccCand.xiDCAxy() * ToMicrons));
-        histos.fill(HIST("BDT/AfterSel/hDCAzXi"), bdtPredictedSignal, std::fabs(xiccCand.xiDCAz() * ToMicrons));
-        histos.fill(HIST("BDT/AfterSel/hDCAxyXic"), bdtPredictedSignal, std::fabs(xiccCand.xicDCAxy() * ToMicrons));
-        histos.fill(HIST("BDT/AfterSel/hDCAzXic"), bdtPredictedSignal, std::fabs(xiccCand.xicDCAz() * ToMicrons));
-        histos.fill(HIST("BDT/AfterSel/hDCAxyXicc"), bdtPredictedSignal, std::fabs(xiccCand.xiccDCAxy() * ToMicrons));
-        histos.fill(HIST("BDT/AfterSel/hDCAzXicc"), bdtPredictedSignal, std::fabs(xiccCand.xiccDCAz() * ToMicrons));
-        histos.fill(HIST("BDT/AfterSel/hDecayRadiusXic"), bdtPredictedSignal, xiccCand.xicDecayRadius2D() * ToMicrons);
-        histos.fill(HIST("BDT/AfterSel/hDecayRadiusXicc"), bdtPredictedSignal, xiccCand.xiccDecayRadius2D() * ToMicrons);
-        histos.fill(HIST("BDT/AfterSel/hDecayDistanceFromPVXic"), bdtPredictedSignal, xiccCand.xicDistanceFromPV() * ToMicrons);
-        histos.fill(HIST("BDT/AfterSel/hProperLengthXic"), bdtPredictedSignal, xiccCand.xicProperLength() * ToMicrons);
-        histos.fill(HIST("BDT/AfterSel/hProperLengthXicc"), bdtPredictedSignal, xiccCand.xiccProperLength() * ToMicrons);
-        histos.fill(HIST("BDT/AfterSel/hPi1cDCAxy"), bdtPredictedSignal, xiccCand.pi1cDCAxy() * ToMicrons);
-        histos.fill(HIST("BDT/AfterSel/hPi1cDCAz"), bdtPredictedSignal, xiccCand.pi1cDCAz() * ToMicrons);
-        histos.fill(HIST("BDT/AfterSel/hPi2cDCAxy"), bdtPredictedSignal, xiccCand.pi2cDCAxy() * ToMicrons);
-        histos.fill(HIST("BDT/AfterSel/hPi2cDCAz"), bdtPredictedSignal, xiccCand.pi2cDCAz() * ToMicrons);
-        histos.fill(HIST("BDT/AfterSel/hPiccDCAxy"), bdtPredictedSignal, xiccCand.piccDCAxy() * ToMicrons);
-        histos.fill(HIST("BDT/AfterSel/hPiccDCAz"), bdtPredictedSignal, xiccCand.piccDCAz() * ToMicrons);
-        histos.fill(HIST("BDT/AfterSel/hPi1cPt"), bdtPredictedSignal, xiccCand.pi1cPt());
-        histos.fill(HIST("BDT/AfterSel/hPi2cPt"), bdtPredictedSignal, xiccCand.pi2cPt());
-        histos.fill(HIST("BDT/AfterSel/hPiccPt"), bdtPredictedSignal, xiccCand.piccPt());
+        if (ml.fillBkgScoreHistos) {
+          histos.fill(HIST("BDT/AfterSel/h3dBDTScoreBackground"), xiccCand.xiccPt(), xiccCand.xiccMass(), bdtPredictedBackground);
+          histos.fill(HIST("BDT/AfterSel/hBDTScoreBackground"), bdtPredictedBackground);
+          histos.fill(HIST("BDT/AfterSel/hBDTScoreBackgroundFine"), bdtPredictedBackground);
+          if (do2dQa) {
+            histos.fill(HIST("BDT/AfterSel/hBDTScoreVsXiccMassBackground"), xiccCand.xiccMass(), bdtPredictedBackground);
+            histos.fill(HIST("BDT/AfterSel/hBDTScoreVsXiccPtBackground"), xiccCand.xiccPt(), bdtPredictedBackground);
+          }
+        }
+        if (do2dQa) {
+          histos.fill(HIST("BDT/AfterSel/hBDTScoreVsXiccMassSignal"), xiccCand.xiccMass(), bdtPredictedSignal);
+          histos.fill(HIST("BDT/AfterSel/hBDTScoreVsXiccPtSignal"), xiccCand.xiccPt(), bdtPredictedSignal);
+          histos.fill(HIST("BDT/AfterSel/hDCAXicDaughters"), bdtPredictedSignal, xiccCand.xicDauDCA() * ToMicrons);
+          histos.fill(HIST("BDT/AfterSel/hDCAXiccDaughters"), bdtPredictedSignal, xiccCand.xiccDauDCA() * ToMicrons);
+          histos.fill(HIST("BDT/AfterSel/hDCAxyXi"), bdtPredictedSignal, std::fabs(xiccCand.xiDCAxy() * ToMicrons));
+          histos.fill(HIST("BDT/AfterSel/hDCAzXi"), bdtPredictedSignal, std::fabs(xiccCand.xiDCAz() * ToMicrons));
+          histos.fill(HIST("BDT/AfterSel/hDCAxyXic"), bdtPredictedSignal, std::fabs(xiccCand.xicDCAxy() * ToMicrons));
+          histos.fill(HIST("BDT/AfterSel/hDCAzXic"), bdtPredictedSignal, std::fabs(xiccCand.xicDCAz() * ToMicrons));
+          histos.fill(HIST("BDT/AfterSel/hDCAxyXicc"), bdtPredictedSignal, std::fabs(xiccCand.xiccDCAxy() * ToMicrons));
+          histos.fill(HIST("BDT/AfterSel/hDCAzXicc"), bdtPredictedSignal, std::fabs(xiccCand.xiccDCAz() * ToMicrons));
+          histos.fill(HIST("BDT/AfterSel/hDecayRadiusXic"), bdtPredictedSignal, xiccCand.xicDecayRadius2D() * ToMicrons);
+          histos.fill(HIST("BDT/AfterSel/hDecayRadiusXicc"), bdtPredictedSignal, xiccCand.xiccDecayRadius2D() * ToMicrons);
+          histos.fill(HIST("BDT/AfterSel/hDecayDistanceFromPVXic"), bdtPredictedSignal, xiccCand.xicDistanceFromPV() * ToMicrons);
+          histos.fill(HIST("BDT/AfterSel/hProperLengthXic"), bdtPredictedSignal, xiccCand.xicProperLength() * ToMicrons);
+          histos.fill(HIST("BDT/AfterSel/hProperLengthXicc"), bdtPredictedSignal, xiccCand.xiccProperLength() * ToMicrons);
+          histos.fill(HIST("BDT/AfterSel/hPi1cDCAxy"), bdtPredictedSignal, xiccCand.pi1cDCAxy() * ToMicrons);
+          histos.fill(HIST("BDT/AfterSel/hPi1cDCAz"), bdtPredictedSignal, xiccCand.pi1cDCAz() * ToMicrons);
+          histos.fill(HIST("BDT/AfterSel/hPi2cDCAxy"), bdtPredictedSignal, xiccCand.pi2cDCAxy() * ToMicrons);
+          histos.fill(HIST("BDT/AfterSel/hPi2cDCAz"), bdtPredictedSignal, xiccCand.pi2cDCAz() * ToMicrons);
+          histos.fill(HIST("BDT/AfterSel/hPiccDCAxy"), bdtPredictedSignal, xiccCand.piccDCAxy() * ToMicrons);
+          histos.fill(HIST("BDT/AfterSel/hPiccDCAz"), bdtPredictedSignal, xiccCand.piccDCAz() * ToMicrons);
+          histos.fill(HIST("BDT/AfterSel/hPi1cPt"), bdtPredictedSignal, xiccCand.pi1cPt());
+          histos.fill(HIST("BDT/AfterSel/hPi2cPt"), bdtPredictedSignal, xiccCand.pi2cPt());
+          histos.fill(HIST("BDT/AfterSel/hPiccPt"), bdtPredictedSignal, xiccCand.piccPt());
+        }
       }
     }
   }

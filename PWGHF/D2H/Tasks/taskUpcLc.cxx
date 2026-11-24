@@ -74,8 +74,8 @@ namespace full
 DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(BkgScore, bkgScore, float);
-DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);        //! Run number of the collision
-DECLARE_SOA_COLUMN(HasLcCandidate, hasLcCandidate, bool); //! At least one selected Lc candidate within the task rapidity acceptance
+DECLARE_SOA_COLUMN(InteractionRate, interactionRate, float); //! Hadronic interaction rate (kHz), -1 for MC or unavailable rate
+DECLARE_SOA_COLUMN(HasLcCandidate, hasLcCandidate, bool);    //! At least one selected Lc candidate within the task rapidity acceptance
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);
 DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);
@@ -102,13 +102,13 @@ DECLARE_SOA_TABLE(HfUpcQa, "AOD", "HFUPCQA",
                   full::ZdcTimeZNA,
                   full::ZdcTimeZNC,
                   full::HasLcCandidate,
-                  full::RunNumber);
+                  full::InteractionRate);
 
 DECLARE_SOA_TABLE(HfUpcLcBdtInfos, "AOD", "HFUPCLCBDTINFOS",
                   full::M,
                   full::Pt,
                   full::BkgScore,
-                  full::RunNumber);
+                  full::InteractionRate);
 
 DECLARE_SOA_TABLE(HfUpcLcInfos, "AOD", "HFUPCLCINFOS",
                   full::M,
@@ -341,12 +341,16 @@ struct HfTaskUpcLc {
       registry.fill(HIST("Data/hUpcMulti"), multNTracksPV);
       registry.fill(HIST("Data/hUpcVtz"), posZ);
 
+      float interactionRate = -1.f;
       if constexpr (!IsMc) {
-        if (fillHistQa) {
+        if (FillMl || fillTreeUpcQa || fillHistQa) {
           const double rate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource, true);
           if (rate >= 0.) {
-            const auto runLabel = std::to_string(bc.runNumber());
-            registry.get<TH2>(HIST("Data/hInteractionRateVsRun"))->Fill(runLabel.c_str(), rate * 1.e-3, 1.); // Hz to kHz
+            interactionRate = rate * 1.e-3; // Hz to kHz
+            if (fillHistQa) {
+              const auto runLabel = std::to_string(bc.runNumber());
+              registry.get<TH2>(HIST("Data/hInteractionRateVsRun"))->Fill(runLabel.c_str(), interactionRate, 1.);
+            }
           }
         }
       }
@@ -397,7 +401,7 @@ struct HfTaskUpcLc {
               outputBkg = mlProb[MlClassBackground]; /// bkg score
             }
             /// Fill the ML outputScores and variables of candidate
-            rowCandUpcBdt(massLc, pt, outputBkg, bc.runNumber());
+            rowCandUpcBdt(massLc, pt, outputBkg, interactionRate);
 
           } else {
             rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa);
@@ -413,7 +417,7 @@ struct HfTaskUpcLc {
       }
       if (fillTreeUpcQa) {
         // One QA row per selected collision, including collisions without Lc candidates.
-        rowUpcQa(numPvContributors, multNTracksPV, posZ, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC, hasLcCandidate, bc.runNumber());
+        rowUpcQa(numPvContributors, multNTracksPV, posZ, fitInfo.ampFT0A, fitInfo.ampFT0C, zdcTimeZNA, zdcTimeZNC, hasLcCandidate, interactionRate);
       }
     }
   }

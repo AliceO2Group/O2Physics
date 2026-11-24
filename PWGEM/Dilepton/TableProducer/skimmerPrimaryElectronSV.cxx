@@ -47,7 +47,7 @@ struct skimmerPrimaryElectronSV {
   using MyCollisionsWithSWT = o2::soa::Join<MyCollisions, o2::aod::EMSWTriggerBitsTMP>;
 
   using MyTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksCov, // use covariance matrix updated by propagationService.
-                                 o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
+                                 o2::aod::pidTPCFullEl, o2::aod::pidTPCFullMu, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
                                  o2::aod::pidTOFFullEl, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr, o2::aod::pidTOFbeta, o2::aod::TOFSignal, o2::aod::TOFEvTime>;
   using MyTrack = MyTracks::iterator;
   using MyTracksMC = o2::soa::Join<MyTracks, o2::aod::McTrackLabels, o2::aod::mcTPCTuneOnData>;

@@ -840,8 +840,8 @@ uint16_t setTaggingSVBit(T const& jet, U const& prongs, V prongChi2PCAMin, V pro
  * @param trackPtMin Minimum value of track pT.
  * @return The number of vertices (clusters) in the jet.
  */
-template <typename AnyCollision, typename AnalysisJet, typename AnyTracks, typename AnyParticles, typename AnyOriginalParticles>
-int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyTracks const&, AnyParticles const& particles, AnyOriginalParticles const&, std::unordered_map<std::string, std::vector<int>>& trkLabels, bool searchUpToQuark, float vtxResParam = 0.01 /* 0.01cm = 100um */, float trackPtMin = 0.5)
+template <typename AnyCollision, typename AnalysisJet, typename AnyTracks, typename AnyParticles>
+int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyTracks const&, AnyParticles const& particles, std::unordered_map<std::string, std::vector<int>>& trkLabels, bool searchUpToQuark, float vtxResParam = 0.01 /* 0.01cm = 100um */, float trackPtMin = 0.5)
 {
   const auto& tracks = jet.template tracks_as<AnyTracks>();
   const int nTrks = tracks.size();
@@ -880,7 +880,7 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
 
       if (tj < nTrks) {
         if (tracks[tj].has_mcParticle()) {
-          const auto& pj = tracks[tj].template mcParticle_as<AnyParticles>().template mcParticle_as<AnyOriginalParticles>();
+          const auto& pj = tracks[tj].template mcParticle_as<AnyParticles>();
           posj = std::array<float, 3>{pj.vx(), pj.vy(), pj.vz()};
         } else {
           dists[trkPairIdx(ti, tj)] = std::numeric_limits<float>::max();
@@ -891,7 +891,7 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
       }
 
       if (tracks[ti].has_mcParticle()) {
-        const auto& pi = tracks[ti].template mcParticle_as<AnyParticles>().template mcParticle_as<AnyOriginalParticles>();
+        const auto& pi = tracks[ti].template mcParticle_as<AnyParticles>();
         posi = std::array<float, 3>{pi.vx(), pi.vy(), pi.vz()};
       } else {
         dists[trkPairIdx(ti, tj)] = std::numeric_limits<float>::max();

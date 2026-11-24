@@ -322,13 +322,13 @@ struct HfTaskCharmHadronsV0FemtoDream {
 
   void init(InitContext& /*context*/)
   {
-    std::array<bool, 5> processes = {doprocessDataLcV0, doprocessDataDplusV0, doprocessDataD0V0, doprocessDataDstarV0, doprocessMcDplusV0};
+    std::array<bool, 6> processes = {doprocessDataLcV0, doprocessDataDplusV0, doprocessDataD0V0, doprocessDataDstarV0, doprocessMcDplusV0, doprocessMcDstarV0};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
     bool process3Prong = doprocessDataLcV0 || doprocessDataDplusV0 || doprocessMcDplusV0;
     bool process2Prong = doprocessDataD0V0;
-    bool processDstar = doprocessDataDstarV0;
+    bool processDstar = doprocessDataDstarV0 || doprocessMcDstarV0;
 
     // setup columnpolicy for binning
     colBinningMult = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult}};
@@ -994,6 +994,43 @@ struct HfTaskCharmHadronsV0FemtoDream {
     runMixing<true, DecayChannel::DplusToPiKPi>(cols, parts, partitionMcCharmHadron3Prong);
   }
   PROCESS_SWITCH(HfTaskCharmHadronsV0FemtoDream, processMcDplusV0, "Enable processing DplusToPiKPi and V0 correlation for Monte Carlo", false);
+
+  void processMcDstarV0(FilteredMcCollisions const& cols,
+                        FDMcV0Particles const& parts,
+                        o2::aod::FDMCParticles const&,
+                        o2::aod::FDExtMCParticles const&,
+                        FilteredCharmMcCandDstars const& candidates,
+                        o2::aod::V0Datas const& fullV0s)
+  {
+    rowFemtoResultCharmDstar.reserve(candidates.size() + 1);
+
+    for (const auto& col : cols) {
+      eventHisto.fillQA(col);
+      auto sliceMcCharmHad = partitionMcCharmHadronDstar->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+      if (fillTableWithCharm.value && sliceMcCharmHad.size() == 0) {
+        continue;
+      }
+      if (v0Sel.pdgCodeV0 == kLambda0) {
+        auto sliceMcV0 = partitionMcLambda->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+        fillTables<true, DecayChannel::DstarToD0Pi>(col, sliceMcV0, sliceMcCharmHad, parts, fullV0s);
+        if (sliceMcCharmHad.size() > 0 && sliceMcV0.size() > 0) {
+          doSameEvent<true, DecayChannel::DstarToD0Pi, FilteredCharmMcCandDstars>(sliceMcCharmHad, sliceMcV0, parts, col);
+        }
+
+      } else if (v0Sel.pdgCodeV0 == kK0Short) {
+        auto sliceMcV0 = partitionMcK0Short->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+        fillTables<true, DecayChannel::DstarToD0Pi>(col, sliceMcV0, sliceMcCharmHad, parts, fullV0s);
+
+        if (sliceMcCharmHad.size() > 0 && sliceMcV0.size() > 0) {
+          doSameEvent<true, DecayChannel::DstarToD0Pi, FilteredCharmMcCandDstars>(sliceMcCharmHad, sliceMcV0, parts, col);
+        }
+      } else {
+        LOG(fatal) << "Unsupported V0 PDG: " << v0Sel.pdgCodeV0 << " (allowed: 3122, 310)";
+      }
+    }
+    runMixing<true, DecayChannel::DstarToD0Pi>(cols, parts, partitionMcCharmHadronDstar);
+  }
+  PROCESS_SWITCH(HfTaskCharmHadronsV0FemtoDream, processMcDstarV0, "Enable processing DstarToD0Pi and V0 correlation for Monte Carlo", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

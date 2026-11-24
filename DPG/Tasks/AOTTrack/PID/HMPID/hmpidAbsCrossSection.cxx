@@ -32,7 +32,7 @@ using namespace o2::framework;
 
 struct HmpidAbsCrossSection {
 
-  HistogramRegistry registryDA{"registryDA", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<float> minReqClusterITS{"minReqClusterITS", 4.0, "min number of clusters required in ITS"};
   Configurable<float> minTPCnClsFound{"minTPCnClsFound", 50.0f, "minTPCnClsFound"};
@@ -110,67 +110,69 @@ struct HmpidAbsCrossSection {
     AxisSpec axisChamber{10, -1.5, 8.5, "Chamber number", "axisChamber"};
 
     // 1D integrated histograms (quick view)
-    registryDA.add("incoming_Pos_8cm", "incoming_Pos_8cm", HistType::kTH1F, {axisMom});
-    registryDA.add("incoming_Pos_4cm", "incoming_Pos_4cm", HistType::kTH1F, {axisMom});
+    registry.add("incoming_Pos_8cm", "incoming_Pos_8cm", HistType::kTH1F, {axisMom});
+    registry.add("incoming_Pos_4cm", "incoming_Pos_4cm", HistType::kTH1F, {axisMom});
 
-    registryDA.add("DeltaR_Pos_8cm", "DeltaR_Pos_8cm", HistType::kTH1F, {axisDeltaR});
-    registryDA.add("DeltaR_Pos_4cm", "DeltaR_Pos_4cm", HistType::kTH1F, {axisDeltaR});
+    registry.add("DeltaR_Pos_8cm", "DeltaR_Pos_8cm", HistType::kTH1F, {axisDeltaR});
+    registry.add("DeltaR_Pos_4cm", "DeltaR_Pos_4cm", HistType::kTH1F, {axisDeltaR});
 
-    registryDA.add("incoming_Neg_8cm", "incoming_Neg_8cm", HistType::kTH1F, {axisMom});
-    registryDA.add("incoming_Neg_4cm", "incoming_Neg_4cm", HistType::kTH1F, {axisMom});
+    registry.add("incoming_Neg_8cm", "incoming_Neg_8cm", HistType::kTH1F, {axisMom});
+    registry.add("incoming_Neg_4cm", "incoming_Neg_4cm", HistType::kTH1F, {axisMom});
 
-    registryDA.add("DeltaR_Neg_8cm", "DeltaR_Neg_8cm", HistType::kTH1F, {axisDeltaR});
-    registryDA.add("DeltaR_Neg_4cm", "DeltaR_Neg_4cm", HistType::kTH1F, {axisDeltaR});
+    registry.add("DeltaR_Neg_8cm", "DeltaR_Neg_8cm", HistType::kTH1F, {axisDeltaR});
+    registry.add("DeltaR_Neg_4cm", "DeltaR_Neg_4cm", HistType::kTH1F, {axisDeltaR});
 
     // Positive candidates histograms
-    registryDA.add("nSigmaTPC_vs_momHMPID_PreCut_Pos_8cm", "nSigmaTPC_vs_momHMPID_PreCut_Pos_8cm", HistType::kTH2F, {axisMom, axisNsigmaTPC});
-    registryDA.add("nSigmaTOF_vs_momHMPID_PreCut_Pos_8cm", "nSigmaTOF_vs_momHMPID_PreCut_Pos_8cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
-    registryDA.add("nSigmaTPC_vs_momHMPID_PreCut_Pos_4cm", "nSigmaTPC_vs_momHMPID_PreCut_Pos_4cm", HistType::kTH2F, {axisMom, axisNsigmaTPC});
-    registryDA.add("nSigmaTOF_vs_momHMPID_PreCut_Pos_4cm", "nSigmaTOF_vs_momHMPID_PreCut_Pos_4cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+    registry.add("nSigmaTPC_vs_momHMPID_PreCut_Pos_8cm", "nSigmaTPC_vs_momHMPID_PreCut_Pos_8cm", HistType::kTH2F, {axisMom, axisNsigmaTPC});
+    registry.add("nSigmaTOF_vs_momHMPID_PreCut_Pos_8cm", "nSigmaTOF_vs_momHMPID_PreCut_Pos_8cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+    registry.add("nSigmaTPC_vs_momHMPID_PreCut_Pos_4cm", "nSigmaTPC_vs_momHMPID_PreCut_Pos_4cm", HistType::kTH2F, {axisMom, axisNsigmaTPC});
+    registry.add("nSigmaTOF_vs_momHMPID_PreCut_Pos_4cm", "nSigmaTOF_vs_momHMPID_PreCut_Pos_4cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
 
     // TPC only candidates histograms
-    registryDA.add("nSigmaTOF_vs_momHMPID_TPCOnly_Pos_8cm", "nSigmaTOF_vs_momHMPID_TPCOnly_Pos_8cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
-    registryDA.add("nSigmaTOF_vs_momHMPID_TPCOnly_Pos_4cm", "nSigmaTOF_vs_momHMPID_TPCOnly_Pos_4cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+    registry.add("nSigmaTOF_vs_momHMPID_TPCOnly_Pos_8cm", "nSigmaTOF_vs_momHMPID_TPCOnly_Pos_8cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+    registry.add("nSigmaTOF_vs_momHMPID_TPCOnly_Pos_4cm", "nSigmaTOF_vs_momHMPID_TPCOnly_Pos_4cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
 
     // after TPC+TOF cuts candidates histograms
-    registryDA.add("nSigmaTOF_vs_momHMPID_Pos_8cm", "nSigmaTOF_vs_momHMPID_Pos_8cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
-    registryDA.add("nSigmaTOF_vs_momHMPID_Pos_4cm", "nSigmaTOF_vs_momHMPID_Pos_4cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+    registry.add("nSigmaTOF_vs_momHMPID_Pos_8cm", "nSigmaTOF_vs_momHMPID_Pos_8cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+    registry.add("nSigmaTOF_vs_momHMPID_Pos_4cm", "nSigmaTOF_vs_momHMPID_Pos_4cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
 
-    registryDA.add("DeltaR_vs_momHMPID_Pos_8cm", "DeltaR_vs_momHMPID_Pos_8cm", HistType::kTH2F, {axisMom, axisDeltaR});
-    registryDA.add("DeltaR_vs_momHMPID_Pos_4cm", "DeltaR_vs_momHMPID_Pos_4cm", HistType::kTH2F, {axisMom, axisDeltaR});
+    registry.add("DeltaR_vs_momHMPID_Pos_8cm", "DeltaR_vs_momHMPID_Pos_8cm", HistType::kTH2F, {axisMom, axisDeltaR});
+    registry.add("DeltaR_vs_momHMPID_Pos_4cm", "DeltaR_vs_momHMPID_Pos_4cm", HistType::kTH2F, {axisMom, axisDeltaR});
 
     // corrected residuals distributions
-    registryDA.add("residualsX_Vs_momentum_Pos_8cm", "residualsX_Vs_momentum_Pos_8cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "x_{mip} - x_{track} (cm)"}});
-    registryDA.add("residualsY_Vs_momentum_Pos_8cm", "residualsY_Vs_momentum_Pos_8cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "y_{mip} - y_{track} (cm)"}});
-    registryDA.add("residualsX_Vs_momentum_Pos_4cm", "residualsX_Vs_momentum_Pos_4cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "x_{mip} - x_{track} (cm)"}});
-    registryDA.add("residualsY_Vs_momentum_Pos_4cm", "residualsY_Vs_momentum_Pos_4cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "y_{mip} - y_{track} (cm)"}});
+    registry.add("residualsX_Vs_momentum_Pos_8cm", "residualsX_Vs_momentum_Pos_8cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "x_{mip} - x_{track} (cm)"}});
+    registry.add("residualsY_Vs_momentum_Pos_8cm", "residualsY_Vs_momentum_Pos_8cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "y_{mip} - y_{track} (cm)"}});
+    registry.add("residualsX_Vs_momentum_Pos_4cm", "residualsX_Vs_momentum_Pos_4cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "x_{mip} - x_{track} (cm)"}});
+    registry.add("residualsY_Vs_momentum_Pos_4cm", "residualsY_Vs_momentum_Pos_4cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "y_{mip} - y_{track} (cm)"}});
 
     // Negative candidates histograms
-    registryDA.add("nSigmaTPC_vs_momHMPID_PreCut_Neg_8cm", "nSigmaTPC_vs_momHMPID_PreCut_Neg_8cm", HistType::kTH2F, {axisMom, axisNsigmaTPC});
-    registryDA.add("nSigmaTOF_vs_momHMPID_PreCut_Neg_8cm", "nSigmaTOF_vs_momHMPID_PreCut_Neg_8cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
-    registryDA.add("nSigmaTPC_vs_momHMPID_PreCut_Neg_4cm", "nSigmaTPC_vs_momHMPID_PreCut_Neg_4cm", HistType::kTH2F, {axisMom, axisNsigmaTPC});
-    registryDA.add("nSigmaTOF_vs_momHMPID_PreCut_Neg_4cm", "nSigmaTOF_vs_momHMPID_PreCut_Neg_4cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+    registry.add("nSigmaTPC_vs_momHMPID_PreCut_Neg_8cm", "nSigmaTPC_vs_momHMPID_PreCut_Neg_8cm", HistType::kTH2F, {axisMom, axisNsigmaTPC});
+    registry.add("nSigmaTOF_vs_momHMPID_PreCut_Neg_8cm", "nSigmaTOF_vs_momHMPID_PreCut_Neg_8cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+    registry.add("nSigmaTPC_vs_momHMPID_PreCut_Neg_4cm", "nSigmaTPC_vs_momHMPID_PreCut_Neg_4cm", HistType::kTH2F, {axisMom, axisNsigmaTPC});
+    registry.add("nSigmaTOF_vs_momHMPID_PreCut_Neg_4cm", "nSigmaTOF_vs_momHMPID_PreCut_Neg_4cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
 
     // TPC only candidates histograms
-    registryDA.add("nSigmaTOF_vs_momHMPID_TPCOnly_Neg_8cm", "nSigmaTOF_vs_momHMPID_TPCOnly_Neg_8cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
-    registryDA.add("nSigmaTOF_vs_momHMPID_TPCOnly_Neg_4cm", "nSigmaTOF_vs_momHMPID_TPCOnly_Neg_4cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+    registry.add("nSigmaTOF_vs_momHMPID_TPCOnly_Neg_8cm", "nSigmaTOF_vs_momHMPID_TPCOnly_Neg_8cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+    registry.add("nSigmaTOF_vs_momHMPID_TPCOnly_Neg_4cm", "nSigmaTOF_vs_momHMPID_TPCOnly_Neg_4cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
 
     // after TPC+TOF cuts candidates histograms
-    registryDA.add("nSigmaTOF_vs_momHMPID_Neg_8cm", "nSigmaTOF_vs_momHMPID_Neg_8cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
-    registryDA.add("nSigmaTOF_vs_momHMPID_Neg_4cm", "nSigmaTOF_vs_momHMPID_Neg_4cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+    registry.add("nSigmaTOF_vs_momHMPID_Neg_8cm", "nSigmaTOF_vs_momHMPID_Neg_8cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+    registry.add("nSigmaTOF_vs_momHMPID_Neg_4cm", "nSigmaTOF_vs_momHMPID_Neg_4cm", HistType::kTH2F, {axisMom, axisNsigmaTOF});
 
-    registryDA.add("DeltaR_vs_momHMPID_Neg_8cm", "DeltaR_vs_momHMPID_Neg_8cm", HistType::kTH2F, {axisMom, axisDeltaR});
-    registryDA.add("DeltaR_vs_momHMPID_Neg_4cm", "DeltaR_vs_momHMPID_Neg_4cm", HistType::kTH2F, {axisMom, axisDeltaR});
+    registry.add("DeltaR_vs_momHMPID_Neg_8cm", "DeltaR_vs_momHMPID_Neg_8cm", HistType::kTH2F, {axisMom, axisDeltaR});
+    registry.add("DeltaR_vs_momHMPID_Neg_4cm", "DeltaR_vs_momHMPID_Neg_4cm", HistType::kTH2F, {axisMom, axisDeltaR});
 
     // corrected residuals distributions
-    registryDA.add("residualsX_Vs_momentum_Neg_8cm", "residualsX_Vs_momentum_Neg_8cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "x_{mip} - x_{track} (cm)"}});
-    registryDA.add("residualsY_Vs_momentum_Neg_8cm", "residualsY_Vs_momentum_Neg_8cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "y_{mip} - y_{track} (cm)"}});
-    registryDA.add("residualsX_Vs_momentum_Neg_4cm", "residualsX_Vs_momentum_Neg_4cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "x_{mip} - x_{track} (cm)"}});
-    registryDA.add("residualsY_Vs_momentum_Neg_4cm", "residualsY_Vs_momentum_Neg_4cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "y_{mip} - y_{track} (cm)"}});
+    registry.add("residualsX_Vs_momentum_Neg_8cm", "residualsX_Vs_momentum_Neg_8cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "x_{mip} - x_{track} (cm)"}});
+    registry.add("residualsY_Vs_momentum_Neg_8cm", "residualsY_Vs_momentum_Neg_8cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "y_{mip} - y_{track} (cm)"}});
+    registry.add("residualsX_Vs_momentum_Neg_4cm", "residualsX_Vs_momentum_Neg_4cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "x_{mip} - x_{track} (cm)"}});
+    registry.add("residualsY_Vs_momentum_Neg_4cm", "residualsY_Vs_momentum_Neg_4cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "y_{mip} - y_{track} (cm)"}});
 
-    // nsigma TPC vs nsigma TOF for candidates
-    registryDA.add("pidTPC_TOF_p_ch_Pos", "pidTPC_TOF_p_ch_Pos", HistType::kTHnSparseF, {axisMom, axisNsigmaTPC, axisNsigmaTOF, axisChamber});
-    registryDA.add("pidTPC_TOF_p_ch_Neg", "pidTPC_TOF_p_ch_Neg", HistType::kTHnSparseF, {axisMom, axisNsigmaTPC, axisNsigmaTOF, axisChamber});
+    // multi-dimensional histograms for PID analysis
+    registry.add("pidTPC_TOF_p_ch_Pos", "pidTPC_TOF_p_ch_Pos", HistType::kTHnSparseF, {axisMom, axisNsigmaTPC, axisNsigmaTOF, axisChamber});
+    registry.add("pidTPC_TOF_p_ch_Neg", "pidTPC_TOF_p_ch_Neg", HistType::kTHnSparseF, {axisMom, axisNsigmaTPC, axisNsigmaTOF, axisChamber});
+    registry.add("nSigmaTPC_TOF_p_ch_deltaR_Pos", "nSigmaTPC_TOF_p_ch_deltaR_Pos", HistType::kTHnSparseF, {axisNsigmaTPC, axisNsigmaTOF, axisMom, axisDeltaR, axisChamber});
+    registry.add("nSigmaTPC_TOF_p_ch_deltaR_Neg", "nSigmaTPC_TOF_p_ch_deltaR_Neg", HistType::kTHnSparseF, {axisNsigmaTPC, axisNsigmaTOF, axisMom, axisDeltaR, axisChamber});
   } // end init
 
   void process(aod::HmpidAnalysis const& hmpidTable)
@@ -243,13 +245,7 @@ struct HmpidAbsCrossSection {
       const float dyCorr = (hmpid.yMip() - hmpid.yTrack()) - usedOffsetY;
       const float drCorr = std::hypot(dxCorr, dyCorr);
 
-      // check only HMPID chamber with an absorber (only RICH 2 (4cm abs) and RICH4 (8cm abs))
-      if (chamber != Rich2 && chamber != Rich4) {
-        continue;
-      }
-
       // select particle species
-
       float nSigmaTPC = 0.f;
       float nSigmaTOF = 0.f;
 
@@ -275,25 +271,25 @@ struct HmpidAbsCrossSection {
       // nsigma distributions pre-cuts
       // -------------------------
       if (isPos) {
-        registryDA.fill(HIST("pidTPC_TOF_p_ch_Pos"), momAbs, nSigmaTPC, nSigmaTOF, chamber);
+        registry.fill(HIST("pidTPC_TOF_p_ch_Pos"), momAbs, nSigmaTPC, nSigmaTOF, chamber);
         if (chamber == Rich2) {
-          registryDA.fill(HIST("nSigmaTPC_vs_momHMPID_PreCut_Pos_4cm"), momAbs, nSigmaTPC);
-          registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_PreCut_Pos_4cm"), momAbs, nSigmaTOF);
+          registry.fill(HIST("nSigmaTPC_vs_momHMPID_PreCut_Pos_4cm"), momAbs, nSigmaTPC);
+          registry.fill(HIST("nSigmaTOF_vs_momHMPID_PreCut_Pos_4cm"), momAbs, nSigmaTOF);
         }
         if (chamber == Rich4) {
-          registryDA.fill(HIST("nSigmaTPC_vs_momHMPID_PreCut_Pos_8cm"), momAbs, nSigmaTPC);
-          registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_PreCut_Pos_8cm"), momAbs, nSigmaTOF);
+          registry.fill(HIST("nSigmaTPC_vs_momHMPID_PreCut_Pos_8cm"), momAbs, nSigmaTPC);
+          registry.fill(HIST("nSigmaTOF_vs_momHMPID_PreCut_Pos_8cm"), momAbs, nSigmaTOF);
         }
       }
       if (isNeg) {
-        registryDA.fill(HIST("pidTPC_TOF_p_ch_Neg"), momAbs, nSigmaTPC, nSigmaTOF, chamber);
+        registry.fill(HIST("pidTPC_TOF_p_ch_Neg"), momAbs, nSigmaTPC, nSigmaTOF, chamber);
         if (chamber == Rich2) {
-          registryDA.fill(HIST("nSigmaTPC_vs_momHMPID_PreCut_Neg_4cm"), momAbs, nSigmaTPC);
-          registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_PreCut_Neg_4cm"), momAbs, nSigmaTOF);
+          registry.fill(HIST("nSigmaTPC_vs_momHMPID_PreCut_Neg_4cm"), momAbs, nSigmaTPC);
+          registry.fill(HIST("nSigmaTOF_vs_momHMPID_PreCut_Neg_4cm"), momAbs, nSigmaTOF);
         }
         if (chamber == Rich4) {
-          registryDA.fill(HIST("nSigmaTPC_vs_momHMPID_PreCut_Neg_8cm"), momAbs, nSigmaTPC);
-          registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_PreCut_Neg_8cm"), momAbs, nSigmaTOF);
+          registry.fill(HIST("nSigmaTPC_vs_momHMPID_PreCut_Neg_8cm"), momAbs, nSigmaTPC);
+          registry.fill(HIST("nSigmaTOF_vs_momHMPID_PreCut_Neg_8cm"), momAbs, nSigmaTOF);
         }
       }
 
@@ -309,18 +305,18 @@ struct HmpidAbsCrossSection {
       // -------------------------
       if (isPos) {
         if (chamber == Rich2) {
-          registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_TPCOnly_Pos_8cm"), momAbs, nSigmaTOF);
+          registry.fill(HIST("nSigmaTOF_vs_momHMPID_TPCOnly_Pos_4cm"), momAbs, nSigmaTOF);
         }
         if (chamber == Rich4) {
-          registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_TPCOnly_Pos_4cm"), momAbs, nSigmaTOF);
+          registry.fill(HIST("nSigmaTOF_vs_momHMPID_TPCOnly_Pos_8cm"), momAbs, nSigmaTOF);
         }
       }
       if (isNeg) {
         if (chamber == Rich2) {
-          registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_TPCOnly_Neg_8cm"), momAbs, nSigmaTOF);
+          registry.fill(HIST("nSigmaTOF_vs_momHMPID_TPCOnly_Neg_4cm"), momAbs, nSigmaTOF);
         }
         if (chamber == Rich4) {
-          registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_TPCOnly_Neg_4cm"), momAbs, nSigmaTOF);
+          registry.fill(HIST("nSigmaTOF_vs_momHMPID_TPCOnly_Neg_8cm"), momAbs, nSigmaTOF);
         }
       }
 
@@ -338,44 +334,52 @@ struct HmpidAbsCrossSection {
         }
       }
 
+      // fill multi-dimensional histograms for PID analysis after TPC+TOF cuts
+      if (isPos) {
+        registry.fill(HIST("nSigmaTPC_TOF_p_ch_deltaR_Pos"), nSigmaTPC, nSigmaTOF, momAbs, drCorr, chamber);
+      }
+      if (isNeg) {
+        registry.fill(HIST("nSigmaTPC_TOF_p_ch_deltaR_Neg"), nSigmaTPC, nSigmaTOF, momAbs, drCorr, chamber);
+      }
+
       // Fill distributions for absorption cross section measurement
       if (isPos && chamber == Rich4) {
-        registryDA.fill(HIST("incoming_Pos_8cm"), momAbs);
-        registryDA.fill(HIST("DeltaR_Pos_8cm"), drCorr);
-        registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_Pos_8cm"), momAbs, nSigmaTOF);
-        registryDA.fill(HIST("DeltaR_vs_momHMPID_Pos_8cm"), momAbs, drCorr);
-        registryDA.fill(HIST("residualsX_Vs_momentum_Pos_8cm"), momAbs, dxCorr);
-        registryDA.fill(HIST("residualsY_Vs_momentum_Pos_8cm"), momAbs, dyCorr);
+        registry.fill(HIST("incoming_Pos_8cm"), momAbs);
+        registry.fill(HIST("DeltaR_Pos_8cm"), drCorr);
+        registry.fill(HIST("nSigmaTOF_vs_momHMPID_Pos_8cm"), momAbs, nSigmaTOF);
+        registry.fill(HIST("DeltaR_vs_momHMPID_Pos_8cm"), momAbs, drCorr);
+        registry.fill(HIST("residualsX_Vs_momentum_Pos_8cm"), momAbs, dxCorr);
+        registry.fill(HIST("residualsY_Vs_momentum_Pos_8cm"), momAbs, dyCorr);
       }
 
       if (isNeg && chamber == Rich4) {
-        registryDA.fill(HIST("incoming_Neg_8cm"), momAbs);
-        registryDA.fill(HIST("DeltaR_Neg_8cm"), drCorr);
-        registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_Neg_8cm"), momAbs, nSigmaTOF);
-        registryDA.fill(HIST("DeltaR_vs_momHMPID_Neg_8cm"), momAbs, drCorr);
+        registry.fill(HIST("incoming_Neg_8cm"), momAbs);
+        registry.fill(HIST("DeltaR_Neg_8cm"), drCorr);
+        registry.fill(HIST("nSigmaTOF_vs_momHMPID_Neg_8cm"), momAbs, nSigmaTOF);
+        registry.fill(HIST("DeltaR_vs_momHMPID_Neg_8cm"), momAbs, drCorr);
 
-        registryDA.fill(HIST("residualsX_Vs_momentum_Neg_8cm"), momAbs, dxCorr);
-        registryDA.fill(HIST("residualsY_Vs_momentum_Neg_8cm"), momAbs, dyCorr);
+        registry.fill(HIST("residualsX_Vs_momentum_Neg_8cm"), momAbs, dxCorr);
+        registry.fill(HIST("residualsY_Vs_momentum_Neg_8cm"), momAbs, dyCorr);
       }
 
       if (isPos && chamber == Rich2) {
-        registryDA.fill(HIST("incoming_Pos_4cm"), momAbs);
-        registryDA.fill(HIST("DeltaR_Pos_4cm"), drCorr);
-        registryDA.fill(HIST("DeltaR_vs_momHMPID_Pos_4cm"), momAbs, drCorr);
-        registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_Pos_4cm"), momAbs, nSigmaTOF);
+        registry.fill(HIST("incoming_Pos_4cm"), momAbs);
+        registry.fill(HIST("DeltaR_Pos_4cm"), drCorr);
+        registry.fill(HIST("DeltaR_vs_momHMPID_Pos_4cm"), momAbs, drCorr);
+        registry.fill(HIST("nSigmaTOF_vs_momHMPID_Pos_4cm"), momAbs, nSigmaTOF);
 
-        registryDA.fill(HIST("residualsX_Vs_momentum_Pos_4cm"), momAbs, dxCorr);
-        registryDA.fill(HIST("residualsY_Vs_momentum_Pos_4cm"), momAbs, dyCorr);
+        registry.fill(HIST("residualsX_Vs_momentum_Pos_4cm"), momAbs, dxCorr);
+        registry.fill(HIST("residualsY_Vs_momentum_Pos_4cm"), momAbs, dyCorr);
       }
 
       if (isNeg && chamber == Rich2) {
-        registryDA.fill(HIST("incoming_Neg_4cm"), momAbs);
-        registryDA.fill(HIST("DeltaR_Neg_4cm"), drCorr);
-        registryDA.fill(HIST("DeltaR_vs_momHMPID_Neg_4cm"), momAbs, drCorr);
-        registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_Neg_4cm"), momAbs, nSigmaTOF);
+        registry.fill(HIST("incoming_Neg_4cm"), momAbs);
+        registry.fill(HIST("DeltaR_Neg_4cm"), drCorr);
+        registry.fill(HIST("DeltaR_vs_momHMPID_Neg_4cm"), momAbs, drCorr);
+        registry.fill(HIST("nSigmaTOF_vs_momHMPID_Neg_4cm"), momAbs, nSigmaTOF);
 
-        registryDA.fill(HIST("residualsX_Vs_momentum_Neg_4cm"), momAbs, dxCorr);
-        registryDA.fill(HIST("residualsY_Vs_momentum_Neg_4cm"), momAbs, dyCorr);
+        registry.fill(HIST("residualsX_Vs_momentum_Neg_4cm"), momAbs, dxCorr);
+        registry.fill(HIST("residualsY_Vs_momentum_Neg_4cm"), momAbs, dyCorr);
       }
     } // end of loop over hmpidTable
   } // end of process

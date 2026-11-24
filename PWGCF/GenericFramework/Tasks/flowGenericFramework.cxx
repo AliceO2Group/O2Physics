@@ -168,23 +168,26 @@ struct FlowGenericFramework {
     O2_DEFINE_CONFIGURABLE(cfgDCAz, float, 2, "Cut on DCA in the longitudinal direction (cm)");
     O2_DEFINE_CONFIGURABLE(cfgNTPCCls, float, 50, "Cut on number of TPC clusters found");
     O2_DEFINE_CONFIGURABLE(cfgNTPCXrows, float, 70, "Cut on number of TPC crossed rows");
-    O2_DEFINE_CONFIGURABLE(cfgNTPCXrowsDaughters, float, 70, "Cut on number of TPC crossed rows of V0 daughters");
     O2_DEFINE_CONFIGURABLE(cfgMinNITSCls, float, 5, "Cut on minimum number of ITS clusters found");
+    O2_DEFINE_CONFIGURABLE(cfgNTPCClsDaughters, float, 50, "Cut on number of TPC clusters found of V0 daughter tracks");
+    O2_DEFINE_CONFIGURABLE(cfgNTPCXrowsDaughters, float, 70, "Cut on number of TPC crossed rows of V0 daughter tracks");
+    O2_DEFINE_CONFIGURABLE(cfgMinNITSClsDaughters, float, 5, "Cut on minimum number of ITS clusters found of V0 daughter tracks");
     O2_DEFINE_CONFIGURABLE(cfgChi2PrITSCls, float, 36, "Cut on chi^2 per ITS clusters found");
     O2_DEFINE_CONFIGURABLE(cfgChi2PrTPCCls, float, 2.5, "Cut on chi^2 per TPC clusters found");
     O2_DEFINE_CONFIGURABLE(cfgTPCSectorCut, bool, false, "Cut on pt-phi distribution");
+    O2_DEFINE_CONFIGURABLE(cfgIsPVContributor, bool, false, "Select tracks contributing to the PV");
   } cfgTrackCuts;
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileupCut, bool, true, "NoSameBunchPileupCut");
     O2_DEFINE_CONFIGURABLE(cfgIsGoodZvtxFT0vsPV, bool, true, "IsGoodZvtxFT0vsPV");
     O2_DEFINE_CONFIGURABLE(cfgIsGoodITSLayersAll, bool, true, "IsGoodITSLayersAll");
-    O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, true, "NoCollInTimeRangeStandard");
-    O2_DEFINE_CONFIGURABLE(cfgNoCollInRofStandard, bool, true, "NoCollInRofStandard");
-    O2_DEFINE_CONFIGURABLE(cfgNoHighMultCollInPrevRof, bool, true, "NoHighMultCollInPrevRof");
-    O2_DEFINE_CONFIGURABLE(cfgNoITSROFrameBorder, bool, true, "NoITSROFrameBorder");
-    O2_DEFINE_CONFIGURABLE(cfgNoTimeFrameBorder, bool, true, "NoTimeFrameBorder");
-    O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, true, "TVXinTRD - Use TVXinTRD (reject TRD triggered events)");
-    O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "IsVertexITSTPC - Selects collisions with at least one ITS-TPC track");
+    O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, false, "NoCollInTimeRangeStandard");
+    O2_DEFINE_CONFIGURABLE(cfgNoCollInRofStandard, bool, false, "NoCollInRofStandard");
+    O2_DEFINE_CONFIGURABLE(cfgNoHighMultCollInPrevRof, bool, false, "NoHighMultCollInPrevRof");
+    O2_DEFINE_CONFIGURABLE(cfgNoITSROFrameBorder, bool, false, "NoITSROFrameBorder");
+    O2_DEFINE_CONFIGURABLE(cfgNoTimeFrameBorder, bool, false, "NoTimeFrameBorder");
+    O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, false, "TVXinTRD - Use TVXinTRD (reject TRD triggered events)");
+    O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, false, "IsVertexITSTPC - Selects collisions with at least one ITS-TPC track");
   } cfgEventCutFlags;
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Do correlations as function of Nch");
@@ -1580,24 +1583,10 @@ struct FlowGenericFramework {
     if (!cfgTrackCuts.cfgDCAzPtDep.value.empty() && std::fabs(track.dcaZ()) > fPtDepDCAz->Eval(track.pt())) {
       return false;
     }
+    if (cfgTrackCuts.cfgIsPVContributor && !track.isPVContributor()) {
+      return false;
+    }
     return ((track.tpcNClsCrossedRows() >= cfgTrackCuts.cfgNTPCXrows) && (track.tpcNClsFound() >= cfgTrackCuts.cfgNTPCCls) && (track.itsNCls() >= cfgTrackCuts.cfgMinNITSCls));
-  }
-
-  template <typename TTrack>
-  bool nchSelected(const TTrack& track)
-  {
-    // Renormalise to default cut
-    const float defaultNsigma = 7;
-    if (cfgTrackCuts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > defaultNsigma / cfgTrackCuts.cfgDCAxyNSigma * fPtDepDCAxy->Eval(track.pt()))) {
-      return false;
-    }
-    if (!cfgTrackCuts.cfgDCAzPtDep.value.empty() && std::fabs(track.dcaZ()) > fPtDepDCAz->Eval(track.pt())) {
-      return false;
-    }
-    int tpcNClsCrossedRowsDefault = 70;
-    int tpcNClsFoundDefault = 50;
-    int itsNclsDefault = 5;
-    return ((track.tpcNClsCrossedRows() >= tpcNClsCrossedRowsDefault) && (track.tpcNClsFound() >= tpcNClsFoundDefault) && (track.itsNCls() >= itsNclsDefault));
   }
 
   template <typename TTrack>
@@ -2320,8 +2309,7 @@ struct FlowGenericFramework {
       if (mcParticle.eta() < gfwMemberCache.etalow || mcParticle.eta() > gfwMemberCache.etaup || mcParticle.pt() < gfwMemberCache.ptlow || mcParticle.pt() > gfwMemberCache.ptup) {
         return;
       }
-      // Select tracks with nominal cuts always
-      if (!nchSelected(track)) {
+      if (!trackSelected(track, field)) {
         return;
       }
       double weffCh = getEfficiency(track, centrality, 0);
@@ -2331,11 +2319,6 @@ struct FlowGenericFramework {
         }
         ++acceptedTracks.totaluncorr;
       }
-
-      if (!trackSelected(track, field)) {
-        return;
-      }
-
       int pidIndex = 0;
       if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
         pidIndex = PionID;
@@ -2406,10 +2389,11 @@ struct FlowGenericFramework {
       if (cfgFill.cfgFillQA) {
         fillTrackQA<Reco, Before>(track, vtxz);
       }
-      // Select tracks with nominal cuts always
-      if (!nchSelected(track)) {
+
+      if (!trackSelected(track, field)) {
         return;
       }
+
       double weffCh = getEfficiency(track, centrality, 0);
       if (track.eta() > cfgKinematics.cfgEtaNch->first && track.eta() < cfgKinematics.cfgEtaNch->second) {
         if (weffCh > 0) {
@@ -2417,9 +2401,7 @@ struct FlowGenericFramework {
         }
         ++acceptedTracks.totaluncorr;
       }
-      if (!trackSelected(track, field)) {
-        return;
-      }
+
       // int pidIndex = 0;
       // if (cfgFill.cfgUsePID) Need PID for v02
       int pidIndex = getNsigmaPID(track);
@@ -2541,7 +2523,7 @@ struct FlowGenericFramework {
       }
 
       bool isK0 = (v0.pdgCode() == PDG_t::kK0Short);
-      bool isLambda = (v0.pdgCode() == PDG_t::kLambda0);
+      bool isLambda = (std::abs(v0.pdgCode()) == PDG_t::kLambda0);
 
       if (!isK0 && !isLambda) {
         return;
@@ -2591,12 +2573,10 @@ struct FlowGenericFramework {
     bool isAL = false;
   };
 
+  // V0 daughter track selection has no DCA cuts
   template <typename TTrack>
   bool selectionV0Daughter(const TTrack& track, int pid)
   {
-    if (track.tpcNClsCrossedRows() < cfgTrackCuts.cfgNTPCXrowsDaughters) {
-      return false;
-    }
     // Only accept daughters consistent with the expected identities of K0 or Lambda decay.
     if (cfgPIDCuts.cfgDaughterPIDRejection) {
       if (cfgPIDCuts.cfgUseOnlyTPC) {
@@ -2617,7 +2597,7 @@ struct FlowGenericFramework {
         return false;
       }
     }
-    return true;
+    return ((track.tpcNClsCrossedRows() >= cfgTrackCuts.cfgNTPCXrowsDaughters) && (track.tpcNClsFound() >= cfgTrackCuts.cfgNTPCClsDaughters) && (track.itsNCls() >= cfgTrackCuts.cfgMinNITSClsDaughters));
   }
 
   template <typename TTrack>

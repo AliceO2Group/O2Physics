@@ -1485,7 +1485,7 @@ struct TauThreeProngEventTableProducer {
           // LOGF(info, "Truth collision has more than 1 reco collision. Skipping this event.");
           //  histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(1);
           //   problem = true;
-          problemBits[MANY_RECO - 1] = true;
+          problemBits[MANY_RECO - 1] = true; // problemBits[0]
           // problem = MANY_RECO;
           registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(MANY_RECO);
           // continue;
@@ -1510,7 +1510,7 @@ struct TauThreeProngEventTableProducer {
           gapSide = collFromMcColl.gapSide();
           // registrySkim.get<TH1>(HIST("skim/gapSide"))->Fill(gapSide);
           if (gapSide < o2::aod::sgselector::SingleGapA || gapSide > o2::aod::sgselector::DoubleGap) { //    if (gapSide < 0 || gapSide > 2)
-            problemBits[BAD_GAP - 1] = true;
+            problemBits[BAD_GAP - 1] = true;                                                           // problemBits[5]
           }
           //  return;
           // registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(1., 1.);
@@ -1519,7 +1519,7 @@ struct TauThreeProngEventTableProducer {
           gapSide = truegapSide;
           // registrySkim.get<TH1>(HIST("skim/trueGapSide"))->Fill(gapSide);
           if (gapSide != mGapSide) {
-            problemBits[GAP_NE_2 - 1] = true;
+            problemBits[GAP_NE_2 - 1] = true; // problemBits[6]
           }
           //  return;
           // registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(2., 1.);
@@ -1560,7 +1560,7 @@ struct TauThreeProngEventTableProducer {
               isFITveto = true;
           } // end of loop over FIT bits
           if (mFITvetoFlag && isFITveto) {
-            problemBits[FIT_VETO - 1] = true;
+            problemBits[FIT_VETO - 1] = true; // problemBits[7]
           }
           //      return;
           //    registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(7., 1.);
@@ -1632,7 +1632,7 @@ struct TauThreeProngEventTableProducer {
           registrySkim.get<TH1>(HIST("rec/nPVtrack_SGP"))->Fill(nPVcontrib);
           // registrySkim.get<TH1>(HIST("rec/qtot_SGP"))->Fill(qtot);
           // registrySkim.get<TH1>(HIST("rec/nTOFtrack_SGP"))->Fill(nTofTrk);
-          registrySkim.get<TH1>(HIST("rec/FT0A_SG"))->Fill(amplitudesFIT[0]);
+          registrySkim.get<TH1>(HIST("rec/FT0A_SGP"))->Fill(amplitudesFIT[0]);
           registrySkim.get<TH1>(HIST("rec/FT0C_SGP"))->Fill(amplitudesFIT[1]);
           registrySkim.get<TH1>(HIST("rec/FV0A_SGP"))->Fill(amplitudesFIT[2]);
           //
@@ -1677,7 +1677,7 @@ struct TauThreeProngEventTableProducer {
                 //               histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(3);
                 //               problem = true;
 
-                problemBits[TOO_MANY_DAUGHTERS - 1] = true;
+                problemBits[TOO_MANY_DAUGHTERS - 1] = true; // problemBits[1]
                 // problem = TOO_MANY_DAUGHTERS;
                 registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(TOO_MANY_DAUGHTERS);
 
@@ -1725,7 +1725,7 @@ struct TauThreeProngEventTableProducer {
                   if (verbose)
                     LOGF(info, "------ Daughter has more than 1 associated track. Ntracks = %d. Skipping this daughter.", counter);
 
-                  problemBits[TWO_TRACKS - 1] = true;
+                  problemBits[TWO_TRACKS - 1] = true; // problemBits[2]
                   // problem = TWO_TRACKS;
                   registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(TWO_TRACKS);
                   continue;
@@ -1734,7 +1734,7 @@ struct TauThreeProngEventTableProducer {
                 // what if no track is associated to mc particle???
                 if (verbose)
                   LOGF(info, "----- Daughter has no associated track. Ntracks = %d. Skipping this daughter.", tracksFromDaughter.size());
-                problemBits[NO_TRACK - 1] = true;
+                problemBits[NO_TRACK - 1] = true; // problemBits[3]
                 // problem = NO_TRACK;
                 registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(NO_TRACK);
                 continue;
