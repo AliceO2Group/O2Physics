@@ -24,6 +24,7 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 #include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/HFC/DataModel/DerivedDataCorrelationTables.h"
 
 #include "Common/Core/RecoDecay.h"
 
@@ -104,6 +105,8 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     Produces<o2::aod::FDHfCharmDstar> rowFemtoResultCharmDstar;
     Produces<o2::aod::FDHfCharmSc> rowFemtoResultCharmSc;
     Produces<o2::aod::FDHfTrk> rowFemtoResultTrk;
+    Produces<o2::aod::HfFemtoPairPids> rowFemtoResultPairPid; // one row per FDHfCharmTrkPairs row
+    Produces<o2::aod::HfFemtoTrkPids> rowFemtoResultTrkPid;   // one row per FDHfTrk row
     Produces<o2::aod::FDHfColl> rowFemtoResultColl;
   } tables;
 
@@ -721,6 +724,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         processType,
         charmHadMc,
         originType);
+      tables.rowFemtoResultPairPid(p1.pidcut());
 
       fillPairHistogram<IsMc, Channel>(sameEventCont, p1, p2, col);
     }
@@ -862,6 +866,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           processType,
           charmHadMc,
           originType);
+        tables.rowFemtoResultPairPid(p1.pidcut());
 
         fillPairHistogram<IsMc, Channel>(mixedEventCont, p1, p2, collision1);
       }
@@ -1041,6 +1046,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         part.tpcNClsCrossedRows(),
         tpcNSigma,
         tofNSigma);
+      tables.rowFemtoResultTrkPid(part.pidcut());
     }
 
     // ---- Fill Collision Table ----
@@ -1596,6 +1602,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           processType,
           p2.flagMc(),
           p2.originMcRec());
+        tables.rowFemtoResultPairPid(p1.pidcut());
         container.template setPair_base<aod::femtodreamMCparticle::MCType::kTruth>(kstar, FemtoDreamMath::getmT(p1, massOne, particle, massTwo), p1, particle, col.multNtr(), col.multV0M(), pairQASetting.use4D, pairQASetting.extendedPlots);
       }
     };
@@ -1669,6 +1676,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           nCls,
           nSigma,
           nSigma);
+        tables.rowFemtoResultTrkPid(part.pidcut());
       }
       if (sliceGenCharmHad.size() > 0 || sliceGenTrk1.size() > 0) {
         tables.rowFemtoResultColl(col.globalIndex(), timeStamp, col.posZ(), col.multNtr());
