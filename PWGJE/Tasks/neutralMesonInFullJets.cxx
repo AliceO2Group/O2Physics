@@ -570,10 +570,9 @@ struct neutralMesonInFullJets {
 
   // Measuring Jet pt, eta, phi for jets in MC detector-level
   void processMCDJets(soa::Filtered<EMCCollisionsMCD>::iterator const& collision,
-                      soa::Filtered<aod::FullMCDetectorLevelJets> const& jets,
-                      aod::JMcCollisions const&)
+                      soa::Filtered<aod::FullMCDetectorLevelJets> const& jets)
   {
-    const float weight = collision.mcCollision().weight();
+    const float weight = collision.weight();
     const float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
 
     if (!eventSelection<DataType::MCD>(
