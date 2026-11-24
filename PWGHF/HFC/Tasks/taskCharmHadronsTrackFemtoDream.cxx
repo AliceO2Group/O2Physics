@@ -311,6 +311,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   FemtoDreamEventHisto eventHisto;
   /// Histogram output
   HistogramRegistry registry{"CorrelationsAndQA", {}, OutputObjHandlingPolicy::AnalysisObject};
+  bool fillKaonHfTemplates{false}; // fill the charm/beauty split of the HF DCA template of kaons
   HistogramRegistry registryMixQa{"registryMixQa"};
   HistogramRegistry registryCharmHadronQa{"registryCharmHadronQa"};
 
@@ -346,6 +347,17 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     eventHisto.init(&registry);
     allTrackHisto.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, dummy, isMc, trackSel.pdgCodeTrack1, true);
     selectedTrackHisto.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, dummy, isMc, trackSel.pdgCodeTrack1, true);
+    if (isMc && std::abs(trackSel.pdgCodeTrack1.value) == kKPlus) {
+      // DCA templates of kaons from heavy-flavour decays, split into charm and beauty origin (to reweight them separately).
+      // The producer stores the PDG code of the HF-hadron ancestor in motherPDG: a beauty hadron for beauty origin, a charm hadron otherwise.
+      const AxisSpec axisPt{binpTTrack, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec axisDcaXy{binTempFitVarTrack, "DCA_{xy} (cm)"};
+      const AxisSpec axisDcaZ{binTempFitVarTrack, "DCA_{z} (cm)"};
+      const AxisSpec axisMult{binmultTempFit, "Multiplicity"};
+      registry.add("Track_one_MC/hDCAxy_SecondaryFromCharm", "Kaons from charm-hadron decays; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTHnSparseF, {axisPt, axisDcaXy, axisDcaZ, axisMult});
+      registry.add("Track_one_MC/hDCAxy_SecondaryFromBeauty", "Kaons from beauty-hadron decays; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTHnSparseF, {axisPt, axisDcaXy, axisDcaZ, axisMult});
+      fillKaonHfTemplates = true;
+    }
 
     sameEventCont.init(&registry,
                        binkstar, binpTTrack, binkT, binmT, mixingBinMult, mixingBinMultPercentile,
@@ -550,6 +562,24 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       container.setPDGCodes(trackSel.pdgCodeTrack1.value, pdg);
     }
     container.template setPair<IsMc, true>(track, candidate, col.multNtr(), col.multV0M(), pairQASetting.use4D, pairQASetting.extendedPlots, smearingByOrigin);
+  }
+
+  /// Fill the DCA templates of kaons from heavy-flavour decays (folder Track_one_MC), split into charm and beauty origin
+  template <typename TrackType>
+  void fillKaonHfOriginTemplates(TrackType const& track, const int mult)
+  {
+    if (!fillKaonHfTemplates || !track.has_fdMCParticle() ||
+        track.fdMCParticle().partOriginMCTruth() != aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryFromHF) {
+      return;
+    }
+    constexpr int PdgDivisorMeson = 100;
+    constexpr int PdgDivisorBaryon = 1000;
+    const int pdgHfAncestor = std::abs(track.fdExtMCParticle().motherPDG());
+    if (pdgHfAncestor / PdgDivisorMeson == kBottom || pdgHfAncestor / PdgDivisorBaryon == kBottom) {
+      registry.fill(HIST("Track_one_MC/hDCAxy_SecondaryFromBeauty"), track.pt(), track.tempFitVar(), track.dcaZ(), mult);
+    } else {
+      registry.fill(HIST("Track_one_MC/hDCAxy_SecondaryFromCharm"), track.pt(), track.tempFitVar(), track.dcaZ(), mult);
+    }
   }
 
   /// This function processes the same event and takes care of all the histogramming
@@ -967,6 +997,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value),
         col.multNtr(),
         col.multV0M());
+      if constexpr (IsMc) {
+        fillKaonHfOriginTemplates(part, col.multNtr());
+      }
 
       float chargeTrack = ((part.cut() & CutBitChargePositive) == CutBitChargePositive)
                             ? PositiveCharge
