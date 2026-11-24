@@ -321,7 +321,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     if (nKaonPidVariations + 1 > static_cast<std::size_t>(cutBits)) {
       LOG(fatal) << "Too many kaon PID variations: at most " << cutBits - 1 << " are supported.";
     }
-    if (trackCfg.trkPDGCode == kKPlus) {
+    if (std::abs(trackCfg.trkPDGCode.value) == kKPlus) {
       // MC: kaons from charm- and beauty-hadron decays vs. the pT and species of the HF-hadron ancestor, to reweight the HF templates
       const AxisSpec axisPtKaon{100, 0., 10., "#it{p}_{T}^{K} (GeV/#it{c})"};
       const AxisSpec axisPtHfAncestor{100, 0., 50., "#it{p}_{T}^{HF ancestor} (GeV/#it{c})"};
@@ -428,7 +428,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   // Kaon PID selection
   // -------------------------
   /// nSigma thresholds varied for the kaon PID systematics
-  struct KaonPidThresholds {
+  struct HfKaonPidThresholds {
     float nSigmaTpcKaMax;
     float nSigmaCombKaMax;
     float nSigmaCombKaTightMax;
@@ -436,7 +436,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   };
 
   template <typename TrackType>
-  bool isTrackKaonPidSelected(const TrackType& track, const KaonPidThresholds& thr)
+  bool isTrackKaonPidSelected(const TrackType& track, const HfKaonPidThresholds& thr)
   {
     const float pTrack = track.p();
 
@@ -501,7 +501,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
       trackRegistry.fill(HIST("AnalysisQA/KaonPidBitCounter"), 0);
     }
     for (std::size_t iVar = 0; iVar < kaonPidSel.nSigmaTpcKaMaxVar->size(); ++iVar) {
-      const KaonPidThresholds thrVar{kaonPidSel.nSigmaTpcKaMaxVar->at(iVar), kaonPidSel.nSigmaCombKaMaxVar->at(iVar), kaonPidSel.nSigmaCombKaTightMaxVar->at(iVar), kaonPidSel.nSigmaTpcPiMinVar->at(iVar)};
+      const HfKaonPidThresholds thrVar{kaonPidSel.nSigmaTpcKaMaxVar->at(iVar), kaonPidSel.nSigmaCombKaMaxVar->at(iVar), kaonPidSel.nSigmaCombKaTightMaxVar->at(iVar), kaonPidSel.nSigmaTpcPiMinVar->at(iVar)};
       if (isTrackKaonPidSelected(track, thrVar)) {
         pidBits |= BitType{1} << (iVar + 1);
         trackRegistry.fill(HIST("AnalysisQA/KaonPidBitCounter"), iVar + 1);
@@ -553,10 +553,8 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   /// \return true if the PDG code belongs to a beauty hadron
   static bool isBeautyHadron(const int pdgCode)
   {
-    constexpr int PdgDivisorMeson = 100;
-    constexpr int PdgDivisorBaryon = 1000;
     const int absPdg = std::abs(pdgCode);
-    return absPdg / PdgDivisorMeson == kBottom || absPdg / PdgDivisorBaryon == kBottom;
+    return absPdg / RecoDecay::PdgDivisorMeson == kBottom || absPdg / RecoDecay::PdgDivisorBaryon == kBottom;
   }
 
   /// Find the closest charm-hadron ancestor of a particle, following the first mother at each step.
@@ -564,9 +562,6 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   template <typename T>
   static int64_t findCharmHadronAncestor(T const& particles, typename T::iterator const& particle)
   {
-    constexpr int PdgDivisorMeson = 100;
-    constexpr int PdgDivisorBaryon = 1000;
-    constexpr int PdgQuarkMax = 8;
     auto current = particle;
     while (current.has_mothers()) {
       const auto motherId = current.mothersIds().front();
@@ -575,10 +570,10 @@ struct HfProducerCharmHadronsTrackFemtoDream {
       }
       const auto mother = particles.rawIteratorAt(motherId - particles.offset());
       const int pdgMother = std::abs(mother.pdgCode());
-      if (pdgMother <= PdgQuarkMax || RecoDecay::isDiquark(pdgMother)) {
+      if (pdgMother <= RecoDecay::PdgQuarkMax || RecoDecay::isDiquark(pdgMother)) {
         break;
       }
-      if (pdgMother / PdgDivisorMeson == kCharm || pdgMother / PdgDivisorBaryon == kCharm) {
+      if (pdgMother / RecoDecay::PdgDivisorMeson == kCharm || pdgMother / RecoDecay::PdgDivisorBaryon == kCharm) {
         return mother.globalIndex();
       }
       current = mother;

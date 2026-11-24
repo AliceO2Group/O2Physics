@@ -572,10 +572,8 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         track.fdMCParticle().partOriginMCTruth() != aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryFromHF) {
       return;
     }
-    constexpr int PdgDivisorMeson = 100;
-    constexpr int PdgDivisorBaryon = 1000;
     const int pdgHfAncestor = std::abs(track.fdExtMCParticle().motherPDG());
-    if (pdgHfAncestor / PdgDivisorMeson == kBottom || pdgHfAncestor / PdgDivisorBaryon == kBottom) {
+    if (pdgHfAncestor / RecoDecay::PdgDivisorMeson == kBottom || pdgHfAncestor / RecoDecay::PdgDivisorBaryon == kBottom) {
       registry.fill(HIST("Track_one_MC/hDCAxy_SecondaryFromBeauty"), track.pt(), track.tempFitVar(), track.dcaZ(), mult);
     } else {
       registry.fill(HIST("Track_one_MC/hDCAxy_SecondaryFromCharm"), track.pt(), track.tempFitVar(), track.dcaZ(), mult);
