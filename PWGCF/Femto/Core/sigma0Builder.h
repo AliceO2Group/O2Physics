@@ -16,9 +16,11 @@
 #ifndef PWGCF_FEMTO_CORE_SIGMA0BUILDER_H_
 #define PWGCF_FEMTO_CORE_SIGMA0BUILDER_H_
 
+#include "PWGCF/Femto/Core/baseSelection.h"
 #include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/photonBuilder.h"
+#include "PWGCF/Femto/Core/selectionContainer.h"
 #include "PWGCF/Femto/Core/v0Builder.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
@@ -29,18 +31,30 @@
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 
 #include <Math/GenVector/VectorUtil.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
+#include <TH1.h>
 
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <limits>
+#include <memory>
+#include <sstream>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace o2::analysis::femto::sigma0builder
 {
 
-// Selection of the Lambda and photon daughters. Applied with partitions in the producer, before the builder.
+// Selection of the input Lambda and photon daughters. Applied with partitions in the producer, before the builder.
 constexpr const char PrefixSigma0LambdaSelection[] = "Sigma0LambdaSelection";
 using ConfSigma0LambdaSelection = v0builder::ConfLambdaSelection<PrefixSigma0LambdaSelection, 0>;
 constexpr const char PrefixSigma0PhotonSelection[] = "Sigma0PhotonSelection";
@@ -59,20 +73,397 @@ struct ConfSigma0Filters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> massMax{"massMax", 1.3f, "Maximum invariant mass"};
 };
 
+// Bits of the output daughter masks stored in FSigma0Masks.
+// Each entry is a bitmask on the input daughter mask (see hLambdaSelection/hPhotonSelection of the femto producer) and defines one output bit,
+// which is set if the daughter has all bits of the entry set. Masks can be given in decimal or hexadecimal (0x...) notation.
+struct ConfSigma0Bits : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("Sigma0Bits");
+  o2::framework::Configurable<std::vector<std::string>> lambdaMask{"lambdaMask", {"0"}, "Bitmasks on the input Lambda mask, one output bit of FSigma0Masks.maskLambda per entry"};
+  o2::framework::Configurable<std::vector<std::string>> photonMask{"photonMask", {"0"}, "Bitmasks on the input photon mask, one output bit of FSigma0Masks.maskPhoton per entry"};
+};
+
+// Minimal QA histograms of the producer (independent of FSigma0Extras)
+struct ConfSigma0Qa : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("Sigma0Qa");
+  o2::framework::Configurable<bool> fillQa{"fillQa", true, "Fill QA histograms of the accepted Sigma0 candidates and their daughters"};
+  o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "pT (GeV/c) of Sigma0, Lambda and photon"};
+  o2::framework::ConfigurableAxis sigma0Mass{"sigma0Mass", {{400, 1.1, 1.3}}, "Invariant mass of the Sigma0 (GeV/c^2)"};
+  o2::framework::ConfigurableAxis lambdaMass{"lambdaMass", {{400, 1.0, 1.2}}, "Invariant mass of the Lambda daughter (GeV/c^2)"};
+};
+
+/// \brief Histogram documenting a filter, i.e. the configured bounds and how many candidates pass each of them.
+/// Same bin labels as BaseSelection::setupFilterHistogram, but the values are passed as strings so that bitmasks are printed exactly.
+class FilterHistogram
+{
+ public:
+  void init(o2::framework::HistogramRegistry* registry, std::string const& name, std::vector<std::pair<std::string, std::string>> const& filters)
+  {
+    mNFilters = static_cast<int>(filters.size());
+    mHist = registry->add<TH1>(name, "; Filter; Entries", o2::framework::HistType::kTH1F, {{mNFilters + 2, -0.5, mNFilters + 1.5}});
+    auto* axis = mHist->GetXaxis();
+    for (int i = 0; i < mNFilters; ++i) {
+      std::ostringstream label;
+      label << "FilterName" << selectioncontainer::ValueDelimiter << filters.at(i).first << selectioncontainer::SectionDelimiter
+            << "FilterValue" << selectioncontainer::ValueDelimiter << filters.at(i).second;
+      axis->SetBinLabel(i + 1, label.str().c_str());
+    }
+    axis->SetBinLabel(mNFilters + 1, "All analyzed");
+    axis->SetBinLabel(mNFilters + 2, "All passed");
+  }
+
+  /// fill the bin of one filter bound if it is passed, returns the decision
+  bool fill(int filterIndex, bool passed)
+  {
+    if (passed) {
+      mHist->Fill(filterIndex);
+    }
+    return passed;
+  }
+
+  /// fill the summary bins, called once per candidate
+  void fillSummary(bool passedAll)
+  {
+    mHist->Fill(mNFilters);
+    if (passedAll) {
+      mHist->Fill(mNFilters + 1);
+    }
+  }
+
+  template <typename T>
+  static std::string toString(T value)
+  {
+    std::ostringstream oss;
+    oss << value;
+    return oss.str();
+  }
+
+  template <typename T>
+  static std::string maskToString(T mask)
+  {
+    return std::to_string(static_cast<uint64_t>(mask));
+  }
+
+ private:
+  std::shared_ptr<TH1> mHist;
+  int mNFilters = 0;
+};
+
+// filters applied to the input collisions (Filter), Lambdas and photons (Partitions) of the producer
+enum CollisionFilters {
+  kColVtxZMin,
+  kColVtxZMax,
+  kColMultMin,
+  kColMultMax,
+  kColCentMin,
+  kColCentMax,
+  kColMagFieldMin,
+  kColMagFieldMax,
+  kColMask,
+  kCollisionFiltersMax
+};
+
+enum LambdaFilters {
+  kLambdaSign,
+  kLambdaPtMin,
+  kLambdaPtMax,
+  kLambdaEtaMin,
+  kLambdaEtaMax,
+  kLambdaPhiMin,
+  kLambdaPhiMax,
+  kLambdaMassMin,
+  kLambdaMassMax,
+  kLambdaMask,
+  kLambdaFiltersMax
+};
+
+enum PhotonFilters {
+  kPhotonPtMin,
+  kPhotonPtMax,
+  kPhotonEtaMin,
+  kPhotonEtaMax,
+  kPhotonPhiMin,
+  kPhotonPhiMax,
+  kPhotonMask,
+  kPhotonFiltersMax
+};
+
+// filters on the reconstructed Lambda-photon pair
+enum Sigma0Filters {
+  kSigma0PtMin,
+  kSigma0PtMax,
+  kSigma0EtaMin,
+  kSigma0EtaMax,
+  kSigma0PhiMin,
+  kSigma0PhiMax,
+  kSigma0MassMin,
+  kSigma0MassMax,
+  kSigma0FiltersMax
+};
+
+constexpr char CollisionFilterHistName[] = "hCollisionFilters";
+constexpr char LambdaFilterHistName[] = "hLambdaFilters";
+constexpr char PhotonFilterHistName[] = "hPhotonFilters";
+constexpr char Sigma0FilterHistName[] = "hSigma0Filters";
+
+// minimal QA histograms of the producer
+constexpr char QaSigma0Mass[] = "Sigma0Qa/hSigma0Mass";
+constexpr char QaLambdaMass[] = "Sigma0Qa/hLambdaMass";
+constexpr char QaSigma0Pt[] = "Sigma0Qa/hSigma0Pt";
+constexpr char QaLambdaPt[] = "Sigma0Qa/hLambdaPt";
+constexpr char QaPhotonPt[] = "Sigma0Qa/hPhotonPt";
+
+/// \brief Documents the filters applied to the input tables of the (derived-to-derived) Sigma0 producer.
+/// The filters themselves are applied by the Filter/Partitions of the producer; here they are re-evaluated on the full input
+/// to fill the filter histograms. Lambdas and photons are only counted in collisions passing the collision filter.
+class Sigma0InputFilters
+{
+ public:
+  template <typename T1, typename T2, typename T3>
+  void init(o2::framework::HistogramRegistry* registry, T1 const& confCollision, T2 const& confLambda, T3 const& confPhoton)
+  {
+    mVtxZMin = confCollision.vtxZMin.value;
+    mVtxZMax = confCollision.vtxZMax.value;
+    mMultMin = confCollision.multMin.value;
+    mMultMax = confCollision.multMax.value;
+    mCentMin = confCollision.centMin.value;
+    mCentMax = confCollision.centMax.value;
+    mMagFieldMin = static_cast<int8_t>(confCollision.magFieldMin.value);
+    mMagFieldMax = static_cast<int8_t>(confCollision.magFieldMax.value);
+    mCollisionMask = confCollision.collisionMask.value;
+
+    mLambdaSign = confLambda.sign.value;
+    mLambdaPtMin = confLambda.ptMin.value;
+    mLambdaPtMax = confLambda.ptMax.value;
+    mLambdaEtaMin = confLambda.etaMin.value;
+    mLambdaEtaMax = confLambda.etaMax.value;
+    mLambdaPhiMin = confLambda.phiMin.value;
+    mLambdaPhiMax = confLambda.phiMax.value;
+    mLambdaMassMin = confLambda.massMin.value;
+    mLambdaMassMax = confLambda.massMax.value;
+    mLambdaMask = confLambda.mask.value;
+
+    mPhotonPtMin = confPhoton.ptMin.value;
+    mPhotonPtMax = confPhoton.ptMax.value;
+    mPhotonEtaMin = confPhoton.etaMin.value;
+    mPhotonEtaMax = confPhoton.etaMax.value;
+    mPhotonPhiMin = confPhoton.phiMin.value;
+    mPhotonPhiMax = confPhoton.phiMax.value;
+    mPhotonMask = confPhoton.mask.value;
+
+    mCollisionHist.init(registry, CollisionFilterHistName,
+                        {
+                          {"vtxZMin", FilterHistogram::toString(mVtxZMin)},
+                          {"vtxZMax", FilterHistogram::toString(mVtxZMax)},
+                          {"multMin", FilterHistogram::toString(mMultMin)},
+                          {"multMax", FilterHistogram::toString(mMultMax)},
+                          {"centMin", FilterHistogram::toString(mCentMin)},
+                          {"centMax", FilterHistogram::toString(mCentMax)},
+                          {"magFieldMin", FilterHistogram::toString(static_cast<int>(mMagFieldMin))},
+                          {"magFieldMax", FilterHistogram::toString(static_cast<int>(mMagFieldMax))},
+                          {"collisionMask", FilterHistogram::maskToString(mCollisionMask)},
+                        });
+    mLambdaHist.init(registry, LambdaFilterHistName,
+                     {
+                       {"sign", FilterHistogram::toString(mLambdaSign)},
+                       {"ptMin", FilterHistogram::toString(mLambdaPtMin)},
+                       {"ptMax", FilterHistogram::toString(mLambdaPtMax)},
+                       {"etaMin", FilterHistogram::toString(mLambdaEtaMin)},
+                       {"etaMax", FilterHistogram::toString(mLambdaEtaMax)},
+                       {"phiMin", FilterHistogram::toString(mLambdaPhiMin)},
+                       {"phiMax", FilterHistogram::toString(mLambdaPhiMax)},
+                       {"massMin", FilterHistogram::toString(mLambdaMassMin)},
+                       {"massMax", FilterHistogram::toString(mLambdaMassMax)},
+                       {"mask", FilterHistogram::maskToString(mLambdaMask)},
+                     });
+    mPhotonHist.init(registry, PhotonFilterHistName,
+                     {
+                       {"ptMin", FilterHistogram::toString(mPhotonPtMin)},
+                       {"ptMax", FilterHistogram::toString(mPhotonPtMax)},
+                       {"etaMin", FilterHistogram::toString(mPhotonEtaMin)},
+                       {"etaMax", FilterHistogram::toString(mPhotonEtaMax)},
+                       {"phiMin", FilterHistogram::toString(mPhotonPhiMin)},
+                       {"phiMax", FilterHistogram::toString(mPhotonPhiMax)},
+                       {"mask", FilterHistogram::maskToString(mPhotonMask)},
+                     });
+  }
+
+  template <typename T1, typename T2, typename T3>
+  void fill(T1 const& cols, T2 const& lambdas, T3 const& photons)
+  {
+    mCollisionPassed.assign(cols.size(), false);
+    for (auto const& col : cols) {
+      mCollisionPassed.at(col.globalIndex()) = checkCollision(col);
+    }
+    for (auto const& lambda : lambdas) {
+      if (mCollisionPassed.at(lambda.fColId())) {
+        checkLambda(lambda);
+      }
+    }
+    for (auto const& photon : photons) {
+      if (mCollisionPassed.at(photon.fColId())) {
+        checkPhoton(photon);
+      }
+    }
+  }
+
+ private:
+  // same conditions as MAKE_COLLISION_FILTER
+  template <typename T>
+  bool checkCollision(T const& col)
+  {
+    bool pass = true;
+    pass &= mCollisionHist.fill(kColVtxZMin, col.posZ() >= mVtxZMin);
+    pass &= mCollisionHist.fill(kColVtxZMax, col.posZ() <= mVtxZMax);
+    pass &= mCollisionHist.fill(kColMultMin, col.mult() >= mMultMin);
+    pass &= mCollisionHist.fill(kColMultMax, col.mult() <= mMultMax);
+    pass &= mCollisionHist.fill(kColCentMin, col.cent() >= mCentMin);
+    pass &= mCollisionHist.fill(kColCentMax, col.cent() <= mCentMax);
+    pass &= mCollisionHist.fill(kColMagFieldMin, col.magField() >= mMagFieldMin);
+    pass &= mCollisionHist.fill(kColMagFieldMax, col.magField() <= mMagFieldMax);
+    pass &= mCollisionHist.fill(kColMask, (col.mask() & mCollisionMask) == mCollisionMask);
+    mCollisionHist.fillSummary(pass);
+    return pass;
+  }
+
+  // same conditions as MAKE_LAMBDA_PARTITION
+  template <typename T>
+  void checkLambda(T const& lambda)
+  {
+    const float signedPt = lambda.signedPt();
+    const float pt = std::abs(signedPt);
+    bool pass = true;
+    pass &= mLambdaHist.fill(kLambdaSign, mLambdaSign == 0 || (mLambdaSign > 0 ? signedPt > 0.f : signedPt < 0.f));
+    pass &= mLambdaHist.fill(kLambdaPtMin, pt > mLambdaPtMin);
+    pass &= mLambdaHist.fill(kLambdaPtMax, pt < mLambdaPtMax);
+    pass &= mLambdaHist.fill(kLambdaEtaMin, lambda.eta() > mLambdaEtaMin);
+    pass &= mLambdaHist.fill(kLambdaEtaMax, lambda.eta() < mLambdaEtaMax);
+    pass &= mLambdaHist.fill(kLambdaPhiMin, lambda.phi() > mLambdaPhiMin);
+    pass &= mLambdaHist.fill(kLambdaPhiMax, lambda.phi() < mLambdaPhiMax);
+    pass &= mLambdaHist.fill(kLambdaMassMin, lambda.mass() > mLambdaMassMin);
+    pass &= mLambdaHist.fill(kLambdaMassMax, lambda.mass() < mLambdaMassMax);
+    pass &= mLambdaHist.fill(kLambdaMask, (lambda.mask() & mLambdaMask) == mLambdaMask);
+    mLambdaHist.fillSummary(pass);
+  }
+
+  // same conditions as MAKE_PHOTON_PARTITION
+  template <typename T>
+  void checkPhoton(T const& photon)
+  {
+    bool pass = true;
+    pass &= mPhotonHist.fill(kPhotonPtMin, photon.pt() > mPhotonPtMin);
+    pass &= mPhotonHist.fill(kPhotonPtMax, photon.pt() < mPhotonPtMax);
+    pass &= mPhotonHist.fill(kPhotonEtaMin, photon.eta() > mPhotonEtaMin);
+    pass &= mPhotonHist.fill(kPhotonEtaMax, photon.eta() < mPhotonEtaMax);
+    pass &= mPhotonHist.fill(kPhotonPhiMin, photon.phi() > mPhotonPhiMin);
+    pass &= mPhotonHist.fill(kPhotonPhiMax, photon.phi() < mPhotonPhiMax);
+    pass &= mPhotonHist.fill(kPhotonMask, (photon.mask() & mPhotonMask) == mPhotonMask);
+    mPhotonHist.fillSummary(pass);
+  }
+
+  FilterHistogram mCollisionHist;
+  FilterHistogram mLambdaHist;
+  FilterHistogram mPhotonHist;
+  std::vector<bool> mCollisionPassed;
+
+  float mVtxZMin = 0.f;
+  float mVtxZMax = 0.f;
+  float mMultMin = 0.f;
+  float mMultMax = 0.f;
+  float mCentMin = 0.f;
+  float mCentMax = 0.f;
+  int8_t mMagFieldMin = 0;
+  int8_t mMagFieldMax = 0;
+  datatypes::CollisionMaskType mCollisionMask = 0;
+
+  int mLambdaSign = 0;
+  float mLambdaPtMin = 0.f;
+  float mLambdaPtMax = 0.f;
+  float mLambdaEtaMin = 0.f;
+  float mLambdaEtaMax = 0.f;
+  float mLambdaPhiMin = 0.f;
+  float mLambdaPhiMax = 0.f;
+  float mLambdaMassMin = 0.f;
+  float mLambdaMassMax = 0.f;
+  datatypes::V0MaskType mLambdaMask = 0;
+
+  float mPhotonPtMin = 0.f;
+  float mPhotonPtMax = 0.f;
+  float mPhotonEtaMin = 0.f;
+  float mPhotonEtaMax = 0.f;
+  float mPhotonPhiMin = 0.f;
+  float mPhotonPhiMax = 0.f;
+  datatypes::PhotonMaskType mPhotonMask = 0;
+};
+
+// selection histograms of the output daughter masks
+constexpr char LambdaSelHistName[] = "hLambdaSelection";
+constexpr char PhotonSelHistName[] = "hPhotonSelection";
+constexpr char LambdaSelsName[] = "Sigma0 Lambda daughter selection object";
+constexpr char PhotonSelsName[] = "Sigma0 photon daughter selection object";
+
+/// \brief Builds an output daughter mask from the input daughter mask.
+/// Each configured bitmask defines one output bit, set if the input mask contains all bits of the configured bitmask.
+/// Like the trigger selection of the collision builder, the bits are neither minimal nor optional selections,
+/// i.e. no candidate is rejected here (the input selection is applied with the partitions of the producer).
+template <auto& HistName, typename MaskType>
+class DaughterMaskSelection : public baseselection::BaseSelection<float, MaskType, 1>
+{
+ public:
+  DaughterMaskSelection() = default;
+  ~DaughterMaskSelection() override = default;
+
+  void configure(o2::framework::HistogramRegistry* registry, std::string const& selectionName, std::vector<std::string> const& masks)
+  {
+    mMasks.clear();
+    std::vector<std::string> comments;
+    for (auto const& maskString : masks) {
+      uint64_t mask = 0;
+      try {
+        mask = std::stoull(maskString, nullptr, 0);
+      } catch (std::exception const&) {
+        LOG(fatal) << "Selection '" << selectionName << "': cannot parse bitmask '" << maskString << "'";
+      }
+      if (mask > std::numeric_limits<MaskType>::max()) {
+        LOG(fatal) << "Selection '" << selectionName << "': bitmask " << maskString << " does not fit into the input mask";
+      }
+      mMasks.push_back(static_cast<MaskType>(mask));
+      comments.push_back("input mask & " + std::to_string(mask) + " == " + std::to_string(mask));
+    }
+    this->addSelection(0, selectionName, std::vector<float>(mMasks.size(), 1.f), limits::kEqualArray, false, false, false);
+    this->addComments(0, comments);
+    this->template setupSelectionHistogram<HistName>(registry);
+  }
+
+  MaskType applySelections(MaskType inputMask)
+  {
+    this->reset();
+    std::vector<float> passed(mMasks.size(), 0.f);
+    for (std::size_t i = 0; i < mMasks.size(); i++) {
+      passed.at(i) = (inputMask & mMasks.at(i)) == mMasks.at(i) ? 1.f : 0.f;
+    }
+    this->evaluateObservable(0, passed);
+    this->template assembleBitmask<HistName>();
+    return this->getBitmask();
+  }
+
+ private:
+  std::vector<MaskType> mMasks;
+};
+
 // Base selection configuration for downstream analysis tasks.
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define SIGMA0_DEFAULT_SELECTIONS(defaultMassMin, defaultMassMax, defaultPdgCode)                                             \
-  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", (defaultPdgCode), "PDG code. Set sign to -1 for antiparticle"};   \
-  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                       \
-  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                                     \
-  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                                  \
-  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                                   \
-  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                                    \
-  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                       \
-  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass"};                          \
-  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass"};                          \
-  o2::framework::Configurable<datatypes::V0MaskType> lambdaMask{"lambdaMask", 0, "Bitmask required for the Lambda daughter"}; \
-  o2::framework::Configurable<datatypes::PhotonMaskType> photonMask{"photonMask", 0, "Bitmask required for the photon daughter"};
+#define SIGMA0_DEFAULT_SELECTIONS(defaultMassMin, defaultMassMax, defaultPdgCode)                                                     \
+  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", (defaultPdgCode), "PDG code. Set sign to -1 for antiparticle"};           \
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                               \
+  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                                             \
+  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                                          \
+  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                                           \
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                                            \
+  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                               \
+  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass"};                                  \
+  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass"};                                  \
+  o2::framework::Configurable<datatypes::V0MaskType> lambdaMask{"lambdaMask", 0, "Bitmask for the Lambda daughter (see Sigma0Bits)"}; \
+  o2::framework::Configurable<datatypes::PhotonMaskType> photonMask{"photonMask", 0, "Bitmask for the photon daughter (see Sigma0Bits)"};
 
 template <auto& Prefix, int DefaultSign = 1>
 struct ConfSigma0Selection : o2::framework::ConfigurableGroup {
@@ -113,19 +504,10 @@ class Sigma0Builder
   Sigma0Builder() = default;
   ~Sigma0Builder() = default;
 
-  template <typename T1, typename T2, typename T3>
-  void init(T1& confFilter, T2& confTable, T3& initContext)
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  void init(o2::framework::HistogramRegistry* registry, T1& confFilter, T2& confBits, T3& confQa, T4& confTable, T5& initContext)
   {
     LOG(info) << "Initialize femto Sigma0 builder...";
-    mMassMin = confFilter.massMin.value;
-    mMassMax = confFilter.massMax.value;
-    mPtMin = confFilter.ptMin.value;
-    mPtMax = confFilter.ptMax.value;
-    mEtaMin = confFilter.etaMin.value;
-    mEtaMax = confFilter.etaMax.value;
-    mPhiMin = confFilter.phiMin.value;
-    mPhiMax = confFilter.phiMax.value;
-
     mProduceSigma0s = utils::enableTable("FSigma0s_001", confTable.produceSigma0s.value, initContext);
     mProduceLiteSigma0s = utils::enableTable("FLiteSigma0s_001", confTable.produceLiteSigma0s.value, initContext);
     mProduceSigma0Masks = utils::enableTable("FSigma0Masks_001", confTable.produceSigma0Masks.value, initContext);
@@ -139,7 +521,43 @@ class Sigma0Builder
 
     mFillAnyTable = mProduceSigma0s || mProduceLiteSigma0s || mProduceSigma0Masks || mProduceSigma0Extras || mProduceSigma0Labels;
     if (!mFillAnyTable) {
-      LOG(info) << "No tables configured...";
+      LOG(info) << "No tables configured, Selection object will not be configured...";
+      LOG(info) << "Initialization done...";
+      return;
+    }
+    mPtMin = confFilter.ptMin.value;
+    mPtMax = confFilter.ptMax.value;
+    mEtaMin = confFilter.etaMin.value;
+    mEtaMax = confFilter.etaMax.value;
+    mPhiMin = confFilter.phiMin.value;
+    mPhiMax = confFilter.phiMax.value;
+    mMassMin = confFilter.massMin.value;
+    mMassMax = confFilter.massMax.value;
+    mSigma0FilterHist.init(registry, Sigma0FilterHistName,
+                           {
+                             {"ptMin", FilterHistogram::toString(mPtMin)},
+                             {"ptMax", FilterHistogram::toString(mPtMax)},
+                             {"etaMin", FilterHistogram::toString(mEtaMin)},
+                             {"etaMax", FilterHistogram::toString(mEtaMax)},
+                             {"phiMin", FilterHistogram::toString(mPhiMin)},
+                             {"phiMax", FilterHistogram::toString(mPhiMax)},
+                             {"massMin", FilterHistogram::toString(mMassMin)},
+                             {"massMax", FilterHistogram::toString(mMassMax)},
+                           });
+
+    mLambdaSelection.configure(registry, "Lambda daughter mask", confBits.lambdaMask.value);
+    mLambdaSelection.printSelections(LambdaSelsName);
+    mPhotonSelection.configure(registry, "Photon daughter mask", confBits.photonMask.value);
+    mPhotonSelection.printSelections(PhotonSelsName);
+
+    mFillQa = confQa.fillQa.value;
+    if (mFillQa) {
+      mRegistry = registry;
+      mRegistry->add(QaSigma0Mass, "#Sigma^{0} invariant mass;#it{M}_{#Lambda#gamma} (GeV/#it{c}^{2});Entries", o2::framework::HistType::kTH1F, {confQa.sigma0Mass});
+      mRegistry->add(QaLambdaMass, "#Lambda daughter invariant mass;#it{M}_{#Lambda} (GeV/#it{c}^{2});Entries", o2::framework::HistType::kTH1F, {confQa.lambdaMass});
+      mRegistry->add(QaSigma0Pt, "#Sigma^{0} transverse momentum;#it{p}_{T} (GeV/#it{c});Entries", o2::framework::HistType::kTH1F, {confQa.pt});
+      mRegistry->add(QaLambdaPt, "#Lambda daughter transverse momentum;#it{p}_{T} (GeV/#it{c});Entries", o2::framework::HistType::kTH1F, {confQa.pt});
+      mRegistry->add(QaPhotonPt, "#gamma daughter transverse momentum;#it{p}_{T} (GeV/#it{c});Entries", o2::framework::HistType::kTH1F, {confQa.pt});
     }
     LOG(info) << "Initialization done...";
   }
@@ -173,12 +591,19 @@ class Sigma0Builder
     mMass = vecSigma0.M();
   }
 
-  [[nodiscard]] bool checkFilters() const
+  bool checkFilters()
   {
-    return ((mMass > mMassMin && mMass < mMassMax) &&
-            (mPt > mPtMin && mPt < mPtMax) &&
-            (mEta > mEtaMin && mEta < mEtaMax) &&
-            (mPhi >= mPhiMin && mPhi < mPhiMax));
+    bool pass = true;
+    pass &= mSigma0FilterHist.fill(kSigma0PtMin, mPt > mPtMin);
+    pass &= mSigma0FilterHist.fill(kSigma0PtMax, mPt < mPtMax);
+    pass &= mSigma0FilterHist.fill(kSigma0EtaMin, mEta > mEtaMin);
+    pass &= mSigma0FilterHist.fill(kSigma0EtaMax, mEta < mEtaMax);
+    pass &= mSigma0FilterHist.fill(kSigma0PhiMin, mPhi >= mPhiMin);
+    pass &= mSigma0FilterHist.fill(kSigma0PhiMax, mPhi < mPhiMax);
+    pass &= mSigma0FilterHist.fill(kSigma0MassMin, mMass > mMassMin);
+    pass &= mSigma0FilterHist.fill(kSigma0MassMax, mMass < mMassMax);
+    mSigma0FilterHist.fillSummary(pass);
+    return pass;
   }
 
   template <typename T1, typename T2, typename T3, typename T4>
@@ -187,6 +612,13 @@ class Sigma0Builder
     reconstructSigma0(lambda, photon);
     if (!checkFilters()) {
       return;
+    }
+    if (mFillQa) {
+      mRegistry->fill(HIST(QaSigma0Mass), mMass);
+      mRegistry->fill(HIST(QaLambdaMass), lambda.mass());
+      mRegistry->fill(HIST(QaSigma0Pt), mPt);
+      mRegistry->fill(HIST(QaLambdaPt), lambda.pt());
+      mRegistry->fill(HIST(QaPhotonPt), photon.pt());
     }
 
     // the Sigma0 inherits the sign of the Lambda (Sigma0 -> Lambda gamma, AntiSigma0 -> AntiLambda gamma)
@@ -213,7 +645,7 @@ class Sigma0Builder
                                    photon.globalIndex());
     }
     if (mProduceSigma0Masks) {
-      products.producedSigma0Masks(lambda.mask(), photon.mask());
+      products.producedSigma0Masks(mLambdaSelection.applySelections(lambda.mask()), mPhotonSelection.applySelections(photon.mask()));
     }
     if (mProduceSigma0Extras) {
       if constexpr (requires { lambda.cosPa(); lambda.dauDca(); lambda.transRadius(); photon.cosPa(); photon.v0Radius(); photon.chi2Ndf(); }) {
@@ -251,14 +683,24 @@ class Sigma0Builder
   float mPhi = 0.f;
   float mMass = 0.f;
 
-  float mMassMin = 0.f;
-  float mMassMax = 0.f;
+  // filters on the Lambda-photon pair
+  FilterHistogram mSigma0FilterHist;
   float mPtMin = 0.f;
   float mPtMax = 0.f;
   float mEtaMin = 0.f;
   float mEtaMax = 0.f;
   float mPhiMin = 0.f;
   float mPhiMax = 0.f;
+  float mMassMin = 0.f;
+  float mMassMax = 0.f;
+
+  // output daughter masks
+  DaughterMaskSelection<LambdaSelHistName, datatypes::V0MaskType> mLambdaSelection;
+  DaughterMaskSelection<PhotonSelHistName, datatypes::PhotonMaskType> mPhotonSelection;
+
+  // minimal QA
+  o2::framework::HistogramRegistry* mRegistry = nullptr;
+  bool mFillQa = false;
 
   bool mFillAnyTable = false;
   bool mProduceSigma0s = false;

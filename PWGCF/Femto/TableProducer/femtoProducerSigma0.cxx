@@ -27,6 +27,7 @@
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
@@ -72,17 +73,32 @@ struct FemtoProducerSigma0 {
 
   // Sigma0 builder
   sigma0builder::ConfSigma0Filters confSigma0Filter;
+  sigma0builder::ConfSigma0Bits confSigma0Bits;
+  sigma0builder::ConfSigma0Qa confSigma0Qa;
   sigma0builder::ConfSigma0Tables confSigma0Tables;
   sigma0builder::Sigma0BuilderProducts sigma0BuilderProducts;
   sigma0builder::Sigma0Builder sigma0Builder;
+
+  // filter histograms of the input collisions, Lambdas and photons
+  sigma0builder::Sigma0InputFilters sigma0InputFilters;
+
+  o2::framework::HistogramRegistry hRegistry{};
 
   void init(o2::framework::InitContext& context)
   {
     if (static_cast<int>(doprocessData) + static_cast<int>(doprocessDataWithExtras) + static_cast<int>(doprocessMc) + static_cast<int>(doprocessMcWithExtras) > 1) {
       LOG(fatal) << "Enable only one of processData, processDataWithExtras, processMc and processMcWithExtras";
     }
-    sigma0Builder.init(confSigma0Filter, confSigma0Tables, context);
+    sigma0InputFilters.init(&hRegistry, collisionSelection, confLambdaSelection, confPhotonSelection);
+    sigma0Builder.init(&hRegistry, confSigma0Filter, confSigma0Bits, confSigma0Qa, confSigma0Tables, context);
   }
+
+  // documents the filters applied to the input tables, independent of the process function used to build the Sigma0s
+  void processInputFilters(FemtoCollisions const& cols, FemtoLambdas const& lambdas, FemtoPhotons const& photons)
+  {
+    sigma0InputFilters.fill(cols, lambdas, photons);
+  }
+  PROCESS_SWITCH(FemtoProducerSigma0, processInputFilters, "Fill the filter histograms of the input collisions, Lambdas and photons", true);
 
   void processData(FilteredFemtoCollision const& col, FemtoLambdas const& /*lambdas*/, FemtoPhotons const& /*photons*/)
   {
