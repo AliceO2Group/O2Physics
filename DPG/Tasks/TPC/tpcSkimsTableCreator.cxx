@@ -173,6 +173,8 @@ struct TreeWriterTpcV0 {
 
   TH2* mHistMomentum{};
 
+  double mTargetYieldPerBin{};
+
   using Trks = soa::Join<aod::Tracks, aod::V0Bits, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection>;
   using TrksWithDEdxCorrection = soa::Join<Trks, aod::DEdxsCorrected>;
   using Colls = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
@@ -213,11 +215,12 @@ struct TreeWriterTpcV0 {
       }
     }
 
-    if (cfgsCommon.applyAdaptiveDownsampling) {
+    if (cfgsCommon.applyAdaptiveDownsampling && cfgsCommon.saveTrees) {
       initAdaptDwnsplHistograms(cfgsCommon.ccdbPathForAdaptDwnsplFile, cfgsCommon.adaptDwnsplFileName, adaptDwnsplHistoName, mHistMomentum);
       if (cfgsCommon.adaptDwnsplHistoScaleFactor != 1.f) {
         mHistMomentum->Scale(cfgsCommon.adaptDwnsplHistoScaleFactor);
       }
+      mTargetYieldPerBin = cfgsCommon.adaptDwnsplTargetYield * mHistMomentum->GetXaxis()->GetBinWidth(1);
     }
   }
 
@@ -535,7 +538,7 @@ struct TreeWriterTpcV0 {
             registry.fill(HIST("hParticleVsMomentum"), log10p, pidShift + daughter.id);
           }
           if (cfgsCommon.saveTrees) {
-            if (cfgsCommon.applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, dauTrack.tpcInnerParam(), daughter.id, cfgsCommon.adaptDwnsplTargetYield, mHistMomentum, isPositive)) {
+            if (cfgsCommon.applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, dauTrack.tpcInnerParam(), daughter.id, mTargetYieldPerBin, mHistMomentum, isPositive)) {
               return false;
             }
             OccupancyValues occValues{};
@@ -732,6 +735,8 @@ struct TreeWriterTpcTof {
 
   TH2* mHistMomentum{};
 
+  double mTargetYieldPerBin{};
+
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra,
                          aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa,
                          aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr,
@@ -778,11 +783,12 @@ struct TreeWriterTpcTof {
       }
     }
 
-    if (cfgsCommon.applyAdaptiveDownsampling) {
+    if (cfgsCommon.applyAdaptiveDownsampling && cfgsCommon.saveTrees) {
       initAdaptDwnsplHistograms(cfgsCommon.ccdbPathForAdaptDwnsplFile, cfgsCommon.adaptDwnsplFileName, adaptDwnsplHistoName, mHistMomentum);
       if (cfgsCommon.adaptDwnsplHistoScaleFactor != 1.f) {
         mHistMomentum->Scale(cfgsCommon.adaptDwnsplHistoScaleFactor);
       }
+      mTargetYieldPerBin = cfgsCommon.adaptDwnsplTargetYield * mHistMomentum->GetXaxis()->GetBinWidth(1);
     }
   }
 
@@ -983,7 +989,7 @@ struct TreeWriterTpcTof {
               registry.fill(HIST("hParticleVsMomentum"), log10p, pidShift + tofTrack->pid);
             }
             if (cfgsCommon.saveTrees) {
-              if (cfgsCommon.applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, trk.tpcInnerParam(), tofTrack->pid, cfgsCommon.adaptDwnsplTargetYield, mHistMomentum, isPositive)) {
+              if (cfgsCommon.applyAdaptiveDownsampling && !performAdaptiveDownsampling(fRndm, trk.tpcInnerParam(), tofTrack->pid, mTargetYieldPerBin, mHistMomentum, isPositive)) {
                 continue;
               }
               fillSkimmedTpcTofTable<IsCorrectedDeDx, ModeId>(trk, trackQA, existTrkQA, collision, tofTrack->tpcNSigma, tofTrack->tofNSigma, tofTrack->itsNSigma, tofTrack->tpcExpSignal, tofTrack->pid, runnumber, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame, occValues, isGoodRctEvent);

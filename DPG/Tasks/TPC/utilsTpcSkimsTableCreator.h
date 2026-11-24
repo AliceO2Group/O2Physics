@@ -181,10 +181,9 @@ inline void initAdaptDwnsplHistograms(const std::string& ccdbPathForAdaptDwnsplF
   adaptDwsplFile = nullptr;
 }
 
-inline bool performAdaptiveDownsampling(TRandom3* fRndm, const double p, const o2::track::PID::ID pid, const double targetYield, const TH2* histoExpected, const bool isPositive)
+inline bool performAdaptiveDownsampling(TRandom3* fRndm, const double p, const o2::track::PID::ID pid, const double targetYieldPerBin, const TH2* histoExpected, const bool isPositive)
 {
   const int pidShift = isPositive ? 0 : o2::track::PID::NIDs;
-  const double targetYieldPerBin = targetYield * histoExpected->GetXaxis()->GetBinWidth(1);
   const double yieldExpected = histoExpected->GetBinContent(histoExpected->GetXaxis()->FindBin(std::log10(p)), histoExpected->GetYaxis()->FindBin(pidShift + pid));
   if (yieldExpected < targetYieldPerBin) {
     return true;
