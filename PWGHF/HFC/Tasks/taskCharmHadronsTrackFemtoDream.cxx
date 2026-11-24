@@ -1016,7 +1016,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         part.tpcNClsCrossedRows(),
         tpcNSigma,
         tofNSigma,
-        originMcTrack);
+        originMcTrack,
+        part.dcaXY(),
+        part.dcaZ());
     }
 
     // ---- Fill Collision Table ----
@@ -1645,7 +1647,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           nCls,
           nSigma,
           nSigma,
-          -1); // Generated track input does not carry an MC origin label.
+          -1, // Generated track input does not carry an MC origin label.
+          -999.f, // No reconstructed DCA is available for generated tracks.
+          -999.f);
       }
       if (sliceGenCharmHad.size() > 0 || sliceGenTrk1.size() > 0) {
         tables.rowFemtoResultColl(col.globalIndex(), timeStamp, col.posZ(), col.multNtr());

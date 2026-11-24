@@ -196,8 +196,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFind
                            [](uint8_t tpcNClsFindable, uint8_t tpcNClsCrossedRows) -> float {
                              return (float)tpcNClsCrossedRows / (float)tpcNClsFindable;
                            });
-DECLARE_SOA_COLUMN(TPCNSigmaTrk, tpcNSigmaTrk, float); //! TPC Nsigma for the configured associated-track species
-DECLARE_SOA_COLUMN(TOFNSigmaTrk, tofNSigmaTrk, float); //! TOF Nsigma for the configured associated-track species
 DECLARE_SOA_COLUMN(TPCNSigmaEl, tpcNSigmaEl, float); //! Nsigma separation with the TPC detector for electron
 DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float); //! Nsigma separation with the TPC detector for pion
 DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float); //! Nsigma separation with the TPC detector for kaon
@@ -693,9 +691,11 @@ DECLARE_SOA_TABLE(FDHfTrk, "AOD", "FDHFTRK", //! table to store results for HF f
                   femtodreamparticle::TPCNClsFound,
                   track::TPCNClsFindable,
                   femtodreamparticle::TPCNClsCrossedRows,
-                  femtodreamparticle::TPCNSigmaTrk,
-                  femtodreamparticle::TOFNSigmaTrk,
-                  fdhf::OriginMcTrack);
+                  femtodreamparticle::TPCNSigmaPr,
+                  femtodreamparticle::TOFNSigmaPr,
+                  fdhf::OriginMcTrack,
+                  track::DcaXY,
+                  track::DcaZ);
 
 DECLARE_SOA_TABLE(FDHfV0, "AOD", "FDHFV0", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,
