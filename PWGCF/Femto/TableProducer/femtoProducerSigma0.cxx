@@ -90,7 +90,7 @@ struct FemtoProducerSigma0 {
       LOG(fatal) << "Enable only one of processData, processDataWithExtras, processMc and processMcWithExtras";
     }
     sigma0InputFilters.init(&hRegistry, collisionSelection, confLambdaSelection, confPhotonSelection);
-    sigma0Builder.init(&hRegistry, confSigma0Filter, confSigma0Bits, confSigma0Qa, confSigma0Tables, context);
+    sigma0Builder.init(&hRegistry, confLambdaSelection, confPhotonSelection, confSigma0Filter, confSigma0Bits, confSigma0Qa, confSigma0Tables, context);
   }
 
   // documents the filters applied to the input tables, independent of the process function used to build the Sigma0s

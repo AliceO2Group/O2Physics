@@ -43,7 +43,6 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <exception>
 #include <limits>
 #include <memory>
 #include <sstream>
@@ -74,12 +73,13 @@ struct ConfSigma0Filters : o2::framework::ConfigurableGroup {
 };
 
 // Bits of the output daughter masks stored in FSigma0Masks.
-// Each entry is a bitmask on the input daughter mask (see hLambdaSelection/hPhotonSelection of the femto producer) and defines one output bit,
-// which is set if the daughter has all bits of the entry set. Masks can be given in decimal or hexadecimal (0x...) notation.
+// Each entry is a (decimal) bitmask on the daughter mask of the femto producer (see its hLambdaSelection/hPhotonSelection) and defines one
+// output bit, which is set if the daughter has all bits of the entry set. The input mask of the partition (Sigma0LambdaSelection.mask,
+// Sigma0PhotonSelection.mask) is always added as the loosest selection, without a bit.
 struct ConfSigma0Bits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("Sigma0Bits");
-  o2::framework::Configurable<std::vector<std::string>> lambdaMask{"lambdaMask", {"0"}, "Bitmasks on the input Lambda mask, one output bit of FSigma0Masks.maskLambda per entry"};
-  o2::framework::Configurable<std::vector<std::string>> photonMask{"photonMask", {"0"}, "Bitmasks on the input photon mask, one output bit of FSigma0Masks.maskPhoton per entry"};
+  o2::framework::Configurable<std::vector<int>> lambdaMask{"lambdaMask", {}, "Bitmasks (decimal) on the Lambda mask, one bit of FSigma0Masks.maskLambda per entry"};
+  o2::framework::Configurable<std::vector<int>> photonMask{"photonMask", {}, "Bitmasks (decimal) on the photon mask, one bit of FSigma0Masks.maskPhoton per entry"};
 };
 
 // Minimal QA histograms of the producer (independent of FSigma0Extras)
@@ -401,47 +401,50 @@ constexpr char PhotonSelHistName[] = "hPhotonSelection";
 constexpr char LambdaSelsName[] = "Sigma0 Lambda daughter selection object";
 constexpr char PhotonSelsName[] = "Sigma0 photon daughter selection object";
 
-/// \brief Builds an output daughter mask from the input daughter mask.
-/// Each configured bitmask defines one output bit, set if the input mask contains all bits of the configured bitmask.
-/// Like the trigger selection of the collision builder, the bits are neither minimal nor optional selections,
-/// i.e. no candidate is rejected here (the input selection is applied with the partitions of the producer).
+/// \brief Builds an output daughter mask from the daughter mask of the femto producer.
+/// The selection values are bitmasks on the daughter mask: the first (loosest) one is the input mask used in the partition of the producer,
+/// which is always fulfilled and gets no bit; each further bitmask gets one bit, set if the daughter mask contains all of its bits.
+/// Downstream, one of the bits can be chosen as a tighter daughter selection (minimal cut).
+/// Values are stored as double to represent 32-bit masks exactly.
 template <auto& HistName, typename MaskType>
-class DaughterMaskSelection : public baseselection::BaseSelection<float, MaskType, 1>
+class DaughterMaskSelection : public baseselection::BaseSelection<double, MaskType, 1>
 {
  public:
   DaughterMaskSelection() = default;
   ~DaughterMaskSelection() override = default;
 
-  void configure(o2::framework::HistogramRegistry* registry, std::string const& selectionName, std::vector<std::string> const& masks)
+  void configure(o2::framework::HistogramRegistry* registry, std::string const& selectionName, MaskType inputMask, std::vector<int> const& masks)
   {
     mMasks.clear();
-    std::vector<std::string> comments;
-    for (auto const& maskString : masks) {
-      uint64_t mask = 0;
-      try {
-        mask = std::stoull(maskString, nullptr, 0);
-      } catch (std::exception const&) {
-        LOG(fatal) << "Selection '" << selectionName << "': cannot parse bitmask '" << maskString << "'";
-      }
-      if (mask > std::numeric_limits<MaskType>::max()) {
-        LOG(fatal) << "Selection '" << selectionName << "': bitmask " << maskString << " does not fit into the input mask";
+    mMasks.push_back(inputMask);
+    for (auto const& mask : masks) {
+      if (mask < 0 || static_cast<uint64_t>(mask) > std::numeric_limits<MaskType>::max()) {
+        LOG(fatal) << "Selection '" << selectionName << "': bitmask " << mask << " is not a valid daughter mask";
       }
       mMasks.push_back(static_cast<MaskType>(mask));
-      comments.push_back("input mask & " + std::to_string(mask) + " == " + std::to_string(mask));
     }
-    this->addSelection(0, selectionName, std::vector<float>(mMasks.size(), 1.f), limits::kEqualArray, false, false, false);
+    std::vector<double> values;
+    std::vector<std::string> comments;
+    for (auto const& mask : mMasks) {
+      values.push_back(static_cast<double>(mask));
+      comments.emplace_back(values.size() == 1 ? "input filter mask" : "");
+    }
+    this->addSelection(0, selectionName, values, limits::kEqualArray, true, true, false);
     this->addComments(0, comments);
     this->template setupSelectionHistogram<HistName>(registry);
   }
 
-  MaskType applySelections(MaskType inputMask)
+  MaskType applySelections(MaskType daughterMask)
   {
     this->reset();
-    std::vector<float> passed(mMasks.size(), 0.f);
+    // kEqualArray: the i-th bit is set if the i-th value equals the i-th bitmask
+    std::vector<double> values(mMasks.size(), -1.);
     for (std::size_t i = 0; i < mMasks.size(); i++) {
-      passed.at(i) = (inputMask & mMasks.at(i)) == mMasks.at(i) ? 1.f : 0.f;
+      if ((daughterMask & mMasks.at(i)) == mMasks.at(i)) {
+        values.at(i) = static_cast<double>(mMasks.at(i));
+      }
     }
-    this->evaluateObservable(0, passed);
+    this->evaluateObservable(0, values);
     this->template assembleBitmask<HistName>();
     return this->getBitmask();
   }
@@ -504,8 +507,8 @@ class Sigma0Builder
   Sigma0Builder() = default;
   ~Sigma0Builder() = default;
 
-  template <typename T1, typename T2, typename T3, typename T4, typename T5>
-  void init(o2::framework::HistogramRegistry* registry, T1& confFilter, T2& confBits, T3& confQa, T4& confTable, T5& initContext)
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
+  void init(o2::framework::HistogramRegistry* registry, T1 const& confLambdaSelection, T2 const& confPhotonSelection, T3& confFilter, T4& confBits, T5& confQa, T6& confTable, T7& initContext)
   {
     LOG(info) << "Initialize femto Sigma0 builder...";
     mProduceSigma0s = utils::enableTable("FSigma0s_001", confTable.produceSigma0s.value, initContext);
@@ -545,9 +548,9 @@ class Sigma0Builder
                              {"massMax", FilterHistogram::toString(mMassMax)},
                            });
 
-    mLambdaSelection.configure(registry, "Lambda daughter mask", confBits.lambdaMask.value);
+    mLambdaSelection.configure(registry, "Lambda daughter mask", confLambdaSelection.mask.value, confBits.lambdaMask.value);
     mLambdaSelection.printSelections(LambdaSelsName);
-    mPhotonSelection.configure(registry, "Photon daughter mask", confBits.photonMask.value);
+    mPhotonSelection.configure(registry, "Photon daughter mask", confPhotonSelection.mask.value, confBits.photonMask.value);
     mPhotonSelection.printSelections(PhotonSelsName);
 
     mFillQa = confQa.fillQa.value;
