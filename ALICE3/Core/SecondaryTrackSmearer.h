@@ -56,18 +56,18 @@ class SecondaryTrackSmearer
 
   /// Lookup clamps each coordinate to the table range; nHits must be nonnegative.
   /// The returned pointer is invalidated when its table is reloaded or destroyed.
-  [[nodiscard]] const SecondaryLutEntry* getLUTEntry(int pdg, float nch, float eta, float pt, int nHits, float& interpolatedEff) const;
+  [[nodiscard]] const SecondaryLutEntry* getLUTEntry(int pdg, float nch, float radius, float eta, float pt, int nHits, float& interpolatedEff) const;
   /// wasSmeared reports whether the track was modified, including rejected
   /// tracks when skipUnreconstructed is false.
   bool smearTrack(O2Track& track, const SecondaryLutEntry* entry, float interpolatedEff, bool* wasSmeared = nullptr);
-  bool smearTrack(O2Track& track, int pdg, float nch, int nHits, bool* wasSmeared = nullptr);
+  bool smearTrack(O2Track& track, int pdg, float nch, float radius, int nHits, bool* wasSmeared = nullptr);
 
   /// Queries return NaN if no valid entry is available.
-  [[nodiscard]] double getEfficiency(int pdg, float nch, float eta, float pt, int nHits) const;
-  [[nodiscard]] double getPtRes(int pdg, float nch, float eta, float pt, int nHits) const;
-  [[nodiscard]] double getEtaRes(int pdg, float nch, float eta, float pt, int nHits) const;
-  [[nodiscard]] double getAbsPtRes(int pdg, float nch, float eta, float pt, int nHits) const;
-  [[nodiscard]] double getAbsEtaRes(int pdg, float nch, float eta, float pt, int nHits) const;
+  [[nodiscard]] double getEfficiency(int pdg, float nch, float radius, float eta, float pt, int nHits) const;
+  [[nodiscard]] double getPtRes(int pdg, float nch, float radius, float eta, float pt, int nHits) const;
+  [[nodiscard]] double getEtaRes(int pdg, float nch, float radius, float eta, float pt, int nHits) const;
+  [[nodiscard]] double getAbsPtRes(int pdg, float nch, float radius, float eta, float pt, int nHits) const;
+  [[nodiscard]] double getAbsEtaRes(int pdg, float nch, float radius, float eta, float pt, int nHits) const;
 
  private:
   bool installTable(int pdg, std::unique_ptr<SecondaryLut> table, bool forceReload);
