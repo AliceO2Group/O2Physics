@@ -453,7 +453,7 @@ struct OnTheFlyTracker {
     }
     nHits = hits.count;
     hitRadii = {hits.innerRadius, hits.outerRadius};
-    float productionPosition[3];
+    std::array<float, 3> productionPosition;
     productionTrack.getXYZGlo(productionPosition);
     const float productionRadius = std::hypot(productionPosition[0], productionPosition[1]);
     return smearer->smearTrack(track, pdg, dNdEta, productionRadius, nHits, wasSmeared);
