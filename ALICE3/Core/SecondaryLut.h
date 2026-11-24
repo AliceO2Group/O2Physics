@@ -11,7 +11,7 @@
 
 /// \file SecondaryLut.h
 /// \brief ROOT-persistent LUT for secondary particles (weak decay products),
-///        binned in nch, eta, pt and the particle's number of hits.
+///        binned in nch, radius, eta, pt and the particle's number of hits.
 
 #ifndef ALICE3_CORE_SECONDARYLUT_H_
 #define ALICE3_CORE_SECONDARYLUT_H_
@@ -67,13 +67,14 @@ struct SecondaryLutEntry {
 };
 
 /// LUT for secondary particles. Entries are stored in one contiguous vector with
-/// layout index = (((nch * nEta + eta) * nHits + hits) * nPt + pt),
+/// layout index = ((((nch * nRad + rad) * nEta + eta) * nHits + hits) * nPt + pt),
 /// pt varying fastest. Can be written to / read from a ROOT file and inspected
 /// with Print(), Browse(), toTree() and projectEfficiency().
 class SecondaryLut : public TNamed
 {
  public:
   enum Dim : int { kNch = 0,
+                   kRad,
                    kEta,
                    kPt,
                    kNHits,
@@ -95,25 +96,25 @@ class SecondaryLut : public TNamed
   [[nodiscard]] float getField() const { return mField; }
   [[nodiscard]] std::size_t size() const { return mEntries.size(); }
 
-  [[nodiscard]] std::size_t index(int nch, int eta, int pt, int nHits) const
+  [[nodiscard]] std::size_t index(int nch, int rad, int eta, int pt, int nHits) const
   {
     const auto& a = mAxes;
-    return ((static_cast<std::size_t>(nch) * a[kEta].nbins + eta) * a[kNHits].nbins + nHits) * a[kPt].nbins + pt;
+    return (((static_cast<std::size_t>(nch) * a[kRad].nbins + rad) * a[kEta].nbins + eta) * a[kNHits].nbins + nHits) * a[kPt].nbins + pt;
   }
 
   /// Direct bin access (no bounds clamping)
-  SecondaryLutEntry& at(int nch, int eta, int pt, int nHits)
+  SecondaryLutEntry& at(int nch, int rad, int eta, int pt, int nHits)
   {
-    return mEntries[index(nch, eta, pt, nHits)];
+    return mEntries[index(nch, rad, eta, pt, nHits)];
   }
-  [[nodiscard]] const SecondaryLutEntry& at(int nch, int eta, int pt, int nHits) const
+  [[nodiscard]] const SecondaryLutEntry& at(int nch, int rad, int eta, int pt, int nHits) const
   {
-    return mEntries[index(nch, eta, pt, nHits)];
+    return mEntries[index(nch, rad, eta, pt, nHits)];
   }
 
   /// Lookup by physical values; out-of-range values are clamped to edge bins.
   /// Returns nullptr if the LUT is not initialised.
-  [[nodiscard]] const SecondaryLutEntry* lookup(float nch, float eta, float pt, float nHits) const;
+  [[nodiscard]] const SecondaryLutEntry* lookup(float nch, float rad, float eta, float pt, float nHits) const;
 
   [[nodiscard]] const std::vector<SecondaryLutEntry>& entries() const { return mEntries; }
 
