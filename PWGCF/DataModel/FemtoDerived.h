@@ -196,6 +196,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFind
                            [](uint8_t tpcNClsFindable, uint8_t tpcNClsCrossedRows) -> float {
                              return (float)tpcNClsCrossedRows / (float)tpcNClsFindable;
                            });
+DECLARE_SOA_COLUMN(TPCNSigmaTrk, tpcNSigmaTrk, float); //! TPC Nsigma for the configured associated-track species
+DECLARE_SOA_COLUMN(TOFNSigmaTrk, tofNSigmaTrk, float); //! TOF Nsigma for the configured associated-track species
 DECLARE_SOA_COLUMN(TPCNSigmaEl, tpcNSigmaEl, float); //! Nsigma separation with the TPC detector for electron
 DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float); //! Nsigma separation with the TPC detector for pion
 DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float); //! Nsigma separation with the TPC detector for kaon
@@ -326,6 +328,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,                                            
 
 DECLARE_SOA_COLUMN(K0sDcaToPv, k0sDcaToPv, float); //! DCA of the K0s candidate to the primary vertex (cm)
 DECLARE_SOA_COLUMN(OriginMcV0, originMcV0, int);   //! MC truth origin of the V0 candidate, see ParticleOriginMCTruth
+DECLARE_SOA_COLUMN(OriginMcTrack, originMcTrack, int); //! Track origin from ParticleOriginMCTruth; -1 if unavailable
 
 } // namespace fdhf
 
@@ -690,8 +693,9 @@ DECLARE_SOA_TABLE(FDHfTrk, "AOD", "FDHFTRK", //! table to store results for HF f
                   femtodreamparticle::TPCNClsFound,
                   track::TPCNClsFindable,
                   femtodreamparticle::TPCNClsCrossedRows,
-                  femtodreamparticle::TPCNSigmaPr,
-                  femtodreamparticle::TOFNSigmaPr);
+                  femtodreamparticle::TPCNSigmaTrk,
+                  femtodreamparticle::TOFNSigmaTrk,
+                  fdhf::OriginMcTrack);
 
 DECLARE_SOA_TABLE(FDHfV0, "AOD", "FDHFV0", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,
