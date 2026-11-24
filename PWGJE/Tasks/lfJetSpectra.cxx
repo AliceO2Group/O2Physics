@@ -23,7 +23,6 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetReducedDataV0.h"
-#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
@@ -204,7 +203,7 @@ struct LfJetSpectra {
   // Multiplicity binning
   ConfigurableAxis multBinning{"multBinning", {VARIABLE_WIDTH, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "Binning of multiplicity axis"};
 
-  Service<o2::framework::O2DatabasePDG> pdgDatabase;
+  Service<o2::framework::O2DatabasePDG> pdgDatabase{};
 
   // phiExclusionMin at or below this value: no phi exclusion region (same convention as the V0 jet finder)
   static constexpr float PhiExclusionUnset = -998.f;
