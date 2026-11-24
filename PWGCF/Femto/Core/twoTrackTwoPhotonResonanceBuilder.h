@@ -9,13 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file trackTrackTwoPhotonResonanceBuilder.h
+/// \file twoTrackTwoPhotonResonanceBuilder.h
 /// \brief builder for resonances reconstructed from two tracks and a two-photon resonance
 ///        (e.g. omega(782) -> pi+ pi- pi0)
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
-#ifndef PWGCF_FEMTO_CORE_TRACKTRACKTWOPHOTONRESONANCEBUILDER_H_
-#define PWGCF_FEMTO_CORE_TRACKTRACKTWOPHOTONRESONANCEBUILDER_H_
+#ifndef PWGCF_FEMTO_CORE_TWOTRACKTWOPHOTONRESONANCEBUILDER_H_
+#define PWGCF_FEMTO_CORE_TWOTRACKTWOPHOTONRESONANCEBUILDER_H_
 
 #include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
@@ -36,7 +36,7 @@
 
 #include <string>
 
-namespace o2::analysis::femto::trackstwophotonresonancebuilder
+namespace o2::analysis::femto::twotracktwophotonresonancebuilder
 {
 // filters applied in the producer task (loose pre-selection, applied before the mass window itself)
 struct ConfOmegaMesonFilters : o2::framework::ConfigurableGroup {
@@ -76,13 +76,13 @@ struct ConfOmegaMesonSelection : o2::framework::ConfigurableGroup {
 constexpr const char PrefixOmegaMesonSelection1[] = "OmegaMesonSelection1";
 using ConfOmegaMesonSelection1 = ConfOmegaMesonSelection<PrefixOmegaMesonSelection1>;
 
-struct TrackTrackTwoPhotonResonanceBuilderProducts : o2::framework::ProducesGroup {
+struct TwoTrackTwoPhotonResonanceBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FOmegaMesons> producedOmegaMesons;
   o2::framework::Produces<o2::aod::FOmegaMesonMasks> producedOmegaMesonMasks;
 };
 
-struct ConfTrackTrackTwoPhotonResonanceTables : o2::framework::ConfigurableGroup {
-  std::string prefix = std::string("TrackTrackTwoPhotonResonanceTables");
+struct ConfTwoTrackTwoPhotonResonanceTables : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("TwoTrackTwoPhotonResonanceTables");
   o2::framework::Configurable<int> produceOmegaMesons{"produceOmegaMesons", -1, "Produce OmegaMesons (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceOmegaMesonMasks{"produceOmegaMesonMasks", -1, "Produce OmegaMesonMasks (-1: auto; 0 off; 1 on)"};
 };
@@ -96,12 +96,12 @@ struct ConfTrackTrackTwoPhotonResonanceTables : o2::framework::ConfigurableGroup
 /// resonance's own mass window, and -- like TwoTrackResonanceBuilder -- copies the daughters'
 /// bitmasks onto the candidate so systematic variations can be reselected downstream from the
 /// candidate table alone, without rejoining the daughter tables.
-template <modes::TrackTrackTwoPhotonResonance resoType>
-class TrackTrackTwoPhotonResonanceBuilder
+template <modes::TwoTrackTwoPhotonResonance resoType>
+class TwoTrackTwoPhotonResonanceBuilder
 {
  public:
-  TrackTrackTwoPhotonResonanceBuilder() = default;
-  ~TrackTrackTwoPhotonResonanceBuilder() = default;
+  TwoTrackTwoPhotonResonanceBuilder() = default;
+  ~TwoTrackTwoPhotonResonanceBuilder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
   void init(T1& confFilter, T2& confPosDauSelection, T3& confNegDauSelection, T4& confTable, T5& initContext)
@@ -118,7 +118,7 @@ class TrackTrackTwoPhotonResonanceBuilder
     mPosDauThreshold = confPosDauSelection.pidThres.value;
     mNegDauThreshold = confNegDauSelection.pidThres.value;
 
-    if constexpr (modes::isEqual(resoType, modes::TrackTrackTwoPhotonResonance::kOmegaMeson)) {
+    if constexpr (modes::isEqual(resoType, modes::TwoTrackTwoPhotonResonance::kOmegaMeson)) {
       LOG(info) << "Initialize femto OmegaMeson builder...";
       mPosDauMass = o2::constants::physics::MassPiPlus;
       mNegDauMass = o2::constants::physics::MassPiMinus;
@@ -184,7 +184,7 @@ class TrackTrackTwoPhotonResonanceBuilder
     bool posDauHasHighMomentum = posDau.p() > mPosDauThreshold;
     bool negDauHasHighMomentum = negDau.p() > mNegDauThreshold;
 
-    if constexpr (modes::isEqual(resoType, modes::TrackTrackTwoPhotonResonance::kOmegaMeson)) {
+    if constexpr (modes::isEqual(resoType, modes::TwoTrackTwoPhotonResonance::kOmegaMeson)) {
       if (mProduceOmegaMesons) {
         resonanceProducts.producedOmegaMesons(col.globalIndex(),
                                               mPt,
@@ -231,5 +231,5 @@ class TrackTrackTwoPhotonResonanceBuilder
   bool mProduceOmegaMesonMasks = false;
 };
 
-} // namespace o2::analysis::femto::trackstwophotonresonancebuilder
-#endif // PWGCF_FEMTO_CORE_TRACKTRACKTWOPHOTONRESONANCEBUILDER_H_
+} // namespace o2::analysis::femto::twotracktwophotonresonancebuilder
+#endif // PWGCF_FEMTO_CORE_TWOTRACKTWOPHOTONRESONANCEBUILDER_H_
