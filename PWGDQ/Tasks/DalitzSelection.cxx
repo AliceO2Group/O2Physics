@@ -101,7 +101,7 @@ DECLARE_SOA_COLUMN(Eta2, eta2, float);
 DECLARE_SOA_COLUMN(Phi2, phi2, float);
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int16_t);
 } // namespace dqdalitzelectrons
-DECLARE_SOA_TABLE(DalitzElectronsInfo, "AOD", "DQDALITZSEL", dqdalitzelectrons::FilterMap,
+DECLARE_SOA_TABLE(DalitzElectrons, "AOD", "DQDALITZSEL", dqdalitzelectrons::FilterMap,
                   dqdalitzelectrons::Pt1, dqdalitzelectrons::Eta1, dqdalitzelectrons::Phi1,
                   dqdalitzelectrons::Pt2, dqdalitzelectrons::Eta2, dqdalitzelectrons::Phi2,
                   o2::aod::track::ITSClusterMap, o2::aod::track::TPCChi2NCl, dqdalitzelectrons::TPCNClsFound,
