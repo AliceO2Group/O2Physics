@@ -175,6 +175,12 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     Configurable<float> nSigmaCombKaMax{"nSigmaCombKaMax", 3.f, "Kaon PID Method2: require |nSigmaCombKa| < this"};
     Configurable<float> nSigmaCombKaTightMax{"nSigmaCombKaTightMax", 2.f, "Kaon PID Method2: for p > pTrackTightMin require |nSigmaCombKa| < this"};
     Configurable<float> nSigmaCombPiMax{"nSigmaCombPiMax", 6.f, "Kaon PID Method2: for p > pTrackTightMin require |nSigmaCombPi| < this"};
+    // Systematic variations of the kaon PID. Bit 0 of the PID container is the nominal selection,
+    // bit i (i >= 1) is the selection with the (i-1)-th element of each of the four vectors below.
+    Configurable<std::vector<float>> nSigmaTpcKaMaxVar{"nSigmaTpcKaMaxVar", std::vector<float>{2.5f, 3.5f}, "Kaon PID syst. variations of nSigmaTpcKaMax (bit i+1)"};
+    Configurable<std::vector<float>> nSigmaCombKaMaxVar{"nSigmaCombKaMaxVar", std::vector<float>{2.5f, 3.5f}, "Kaon PID syst. variations of nSigmaCombKaMax (bit i+1)"};
+    Configurable<std::vector<float>> nSigmaCombKaTightMaxVar{"nSigmaCombKaTightMaxVar", std::vector<float>{1.5f, 2.5f}, "Kaon PID syst. variations of nSigmaCombKaTightMax (bit i+1)"};
+    Configurable<std::vector<float>> nSigmaTpcPiMinVar{"nSigmaTpcPiMinVar", std::vector<float>{3.5f, 2.5f}, "Kaon PID syst. variations of nSigmaTpcPiMin (bit i+1)"};
   } kaonPidSel;
 
   struct : ConfigurableGroup {
@@ -308,6 +314,17 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     int const cutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
     trackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{cutBits + 1, -0.5, cutBits + 0.5}});
 
+    const auto nKaonPidVariations = kaonPidSel.nSigmaTpcKaMaxVar->size();
+    if (kaonPidSel.nSigmaCombKaMaxVar->size() != nKaonPidVariations || kaonPidSel.nSigmaCombKaTightMaxVar->size() != nKaonPidVariations || kaonPidSel.nSigmaTpcPiMinVar->size() != nKaonPidVariations) {
+      LOG(fatal) << "nSigmaTpcKaMaxVar, nSigmaCombKaMaxVar, nSigmaCombKaTightMaxVar and nSigmaTpcPiMinVar must have the same size.";
+    }
+    if (nKaonPidVariations + 1 > static_cast<std::size_t>(cutBits)) {
+      LOG(fatal) << "Too many kaon PID variations: at most " << cutBits - 1 << " are supported.";
+    }
+    if (trackCfg.trkPDGCode == kKPlus) {
+      trackRegistry.add("AnalysisQA/KaonPidBitCounter", "; Kaon PID bit (0: nominal, i: variation i); Counter", kTH1F, {{static_cast<int>(nKaonPidVariations) + 1, -0.5, static_cast<double>(nKaonPidVariations) + 0.5}});
+    }
+
     // event QA histograms
     constexpr int EventTypes = PairSelected + 1;
     std::array<std::string, EventTypes> labels;
@@ -404,8 +421,16 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   // -------------------------
   // Kaon PID selection
   // -------------------------
+  /// nSigma thresholds varied for the kaon PID systematics
+  struct KaonPidThresholds {
+    float nSigmaTpcKaMax;
+    float nSigmaCombKaMax;
+    float nSigmaCombKaTightMax;
+    float nSigmaTpcPiMin;
+  };
+
   template <typename TrackType>
-  bool isTrackKaonPidSelected(const TrackType& track)
+  bool isTrackKaonPidSelected(const TrackType& track, const KaonPidThresholds& thr)
   {
     const float pTrack = track.p();
 
@@ -417,13 +442,13 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     if (pTrack >= kaonPidSel.pTrackMethod1Max) {
       isTrackKaonPidMethod1 = false;
     }
-    if (std::abs(track.tpcNSigmaKa()) >= kaonPidSel.nSigmaTpcKaMax) {
+    if (std::abs(track.tpcNSigmaKa()) >= thr.nSigmaTpcKaMax) {
       isTrackKaonPidMethod1 = false;
     }
     if (pTrack >= kaonPidSel.pTrackExcludeMin && pTrack <= kaonPidSel.pTrackExcludeMax) {
       isTrackKaonPidMethod1 = false;
     }
-    if (pTrack > kaonPidSel.pTrackPiRejMin && std::abs(track.tpcNSigmaPi()) <= kaonPidSel.nSigmaTpcPiMin) {
+    if (pTrack > kaonPidSel.pTrackPiRejMin && std::abs(track.tpcNSigmaPi()) <= thr.nSigmaTpcPiMin) {
       isTrackKaonPidMethod1 = false;
     }
     if (pTrack > kaonPidSel.pTrackElRejMin && std::abs(track.tpcNSigmaEl()) <= kaonPidSel.nSigmaTpcElMin) {
@@ -442,12 +467,12 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     const float nSigmaCombKa = std::hypot(track.tpcNSigmaKa(), track.tofNSigmaKa());
     const float nSigmaCombPi = std::hypot(track.tpcNSigmaPi(), track.tofNSigmaPi());
 
-    if (std::abs(nSigmaCombKa) >= kaonPidSel.nSigmaCombKaMax) {
+    if (std::abs(nSigmaCombKa) >= thr.nSigmaCombKaMax) {
       isTrackKaonPidMethod2 = false;
     }
 
     if (pTrack > kaonPidSel.pTrackTightMin) {
-      if (std::abs(nSigmaCombKa) >= kaonPidSel.nSigmaCombKaTightMax) {
+      if (std::abs(nSigmaCombKa) >= thr.nSigmaCombKaTightMax) {
         isTrackKaonPidMethod2 = false;
       }
       if (std::abs(nSigmaCombPi) <= kaonPidSel.nSigmaCombPiMax) {
@@ -457,6 +482,26 @@ struct HfProducerCharmHadronsTrackFemtoDream {
 
     // OR between the two PID methods
     return isTrackKaonPidMethod1 || isTrackKaonPidMethod2;
+  }
+
+  /// Bit-wise kaon PID container: bit 0 = nominal selection, bit i = i-th systematic variation
+  template <typename TrackType>
+  o2::aod::femtodreamparticle::cutContainerType getKaonPidBits(const TrackType& track)
+  {
+    using BitType = o2::aod::femtodreamparticle::cutContainerType;
+    BitType pidBits = 0;
+    if (isTrackKaonPidSelected(track, {kaonPidSel.nSigmaTpcKaMax, kaonPidSel.nSigmaCombKaMax, kaonPidSel.nSigmaCombKaTightMax, kaonPidSel.nSigmaTpcPiMin})) {
+      pidBits |= BitType{1};
+      trackRegistry.fill(HIST("AnalysisQA/KaonPidBitCounter"), 0);
+    }
+    for (std::size_t iVar = 0; iVar < kaonPidSel.nSigmaTpcKaMaxVar->size(); ++iVar) {
+      const KaonPidThresholds thrVar{kaonPidSel.nSigmaTpcKaMaxVar->at(iVar), kaonPidSel.nSigmaCombKaMaxVar->at(iVar), kaonPidSel.nSigmaCombKaTightMaxVar->at(iVar), kaonPidSel.nSigmaTpcPiMinVar->at(iVar)};
+      if (isTrackKaonPidSelected(track, thrVar)) {
+        pidBits |= BitType{1} << (iVar + 1);
+        trackRegistry.fill(HIST("AnalysisQA/KaonPidBitCounter"), iVar + 1);
+      }
+    }
+    return pidBits;
   }
 
   /// Function to retrieve the nominal magnetic field in kG (0.1T) and convert it directly to T
@@ -623,7 +668,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
       // now the table is filled
 
       if (trackCfg.trkPDGCode == kKPlus) {
-        const auto pidTrackPassBit = static_cast<aod::femtodreamparticle::cutContainerType>(isTrackKaonPidSelected(track));
+        const auto pidTrackPassBit = getKaonPidBits(track);
 
         tables.outputParts(tables.outputCollision.lastIndex(),
                            track.pt(),
