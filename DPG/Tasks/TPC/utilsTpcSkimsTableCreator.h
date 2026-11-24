@@ -31,6 +31,7 @@
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <TFile.h>
 #include <TH2.h>

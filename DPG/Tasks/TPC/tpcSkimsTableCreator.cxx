@@ -37,7 +37,6 @@
 #include "Common/TableProducer/PID/pidTPCBase.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -126,13 +125,13 @@ struct TreeWriterTpcV0 {
 
   // an arbitrary value of N sigma TOF assigned by TOF task to tracks which are not matched to TOF hits
   constexpr static float NSigmaTofUnmatched{o2::aod::v0data::kNoTOFValue};
-  const float nSigmaTofUnmatchedEqualityTolerance{std::fabs(NSigmaTofUnmatched) / 1e4f};
+  const float nSigmaTofUnmatchedEqualityTolerance{std::fabs(NSigmaTofUnmatched) / 1e4f}; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members): should be constexpr, but constexpr-ness of std::fabs() is not guaranteed
   // an arbitrary value of "N sigma TOF" assigned to electorns (for uniformity reasons)
   constexpr static float NSigmaTofElectorn{1000.f};
 
   enum { // Reconstructed V0 and cascade
     MotherUndef = -1,
-    MotherGamma = 0,
+    MotherGamma,
     MotherK0S,
     MotherLambda,
     MotherAntiLambda,
@@ -142,7 +141,7 @@ struct TreeWriterTpcV0 {
 
   enum {
     DaughterUndef = -1,
-    DaughterElectron = 0,
+    DaughterElectron,
     DaughterPion,
     DaughterKaon,
     DaughterProton
@@ -165,9 +164,9 @@ struct TreeWriterTpcV0 {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
-  ctpRateFetcher mRateFetcher{};
+  ctpRateFetcher mRateFetcher;
 
-  o2::aod::rctsel::RCTFlagsChecker rctChecker{};
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
   TRandom3* fRndm = new TRandom3();
 
@@ -238,7 +237,7 @@ struct TreeWriterTpcV0 {
         return V0Daughter{track.tpcNSigmaKa(), getStrangenessTofNSigma(v0Casc, motherId, daughterId, isPositive), track.itsNSigmaKa(), track.tpcExpSignalKa(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidKaon, nSigmaTofDauTrackKa, rejectNoTofDauTrackKa};
       default: {
         LOGP(fatal, "createV0Daughter: unknown daughterId");
-        return V0Daughter();
+        return {};
       }
     }
   }
@@ -247,20 +246,20 @@ struct TreeWriterTpcV0 {
   {
     switch (motherId) {
       case MotherGamma:
-        return V0Mother{DaughterElectron, DaughterElectron};
+        return V0Mother{.posDaughterId = DaughterElectron, .negDaughterId = DaughterElectron};
       case MotherK0S:
-        return V0Mother{DaughterPion, DaughterPion};
+        return V0Mother{.posDaughterId = DaughterPion, .negDaughterId = DaughterPion};
       case MotherLambda:
-        return V0Mother{DaughterProton, DaughterPion};
+        return V0Mother{.posDaughterId = DaughterProton, .negDaughterId = DaughterPion};
       case MotherAntiLambda:
-        return V0Mother{DaughterPion, DaughterProton};
+        return V0Mother{.posDaughterId = DaughterPion, .negDaughterId = DaughterProton};
       case MotherOmega:
-        return V0Mother{DaughterUndef, DaughterKaon};
+        return V0Mother{.posDaughterId = DaughterUndef, .negDaughterId = DaughterKaon};
       case MotherAntiOmega:
-        return V0Mother{DaughterKaon, DaughterUndef};
+        return V0Mother{.posDaughterId = DaughterKaon, .negDaughterId = DaughterUndef};
       default: {
         LOGP(fatal, "createV0Mother: unknown motherId");
-        return V0Mother();
+        return {};
       }
     }
   }
@@ -269,21 +268,25 @@ struct TreeWriterTpcV0 {
   {
     if (motherId == MotherGamma && daughterId == DaughterElectron) {
       return NSigmaTofElectorn;
-    } else if (motherId == MotherK0S && daughterId == DaughterPion) {
-      if (isPositive)
-        return v0.tofNSigmaK0PiPlus();
-      else
-        return v0.tofNSigmaK0PiMinus();
-    } else if (motherId == MotherLambda) {
-      if (daughterId == DaughterProton && isPositive)
+    }
+    if (motherId == MotherK0S && daughterId == DaughterPion) {
+      return isPositive ? v0.tofNSigmaK0PiPlus() : v0.tofNSigmaK0PiMinus();
+    }
+    if (motherId == MotherLambda) {
+      if (daughterId == DaughterProton && isPositive) {
         return v0.tofNSigmaLaPr();
-      else if (daughterId == DaughterPion && !isPositive)
+      }
+      if (daughterId == DaughterPion && !isPositive) {
         return v0.tofNSigmaLaPi();
-    } else if (motherId == MotherAntiLambda) {
-      if (daughterId == DaughterProton && !isPositive)
+      }
+    }
+    if (motherId == MotherAntiLambda) {
+      if (daughterId == DaughterProton && !isPositive) {
         return v0.tofNSigmaALaPr();
-      else if (daughterId == DaughterPion && isPositive)
+      }
+      if (daughterId == DaughterPion && isPositive) {
         return v0.tofNSigmaALaPi();
+      }
     }
 
     LOGP(fatal, "getStrangenessTofNSigma for V0: wrong combination of motherId, daughterId and sign");
@@ -292,8 +295,9 @@ struct TreeWriterTpcV0 {
 
   float getStrangenessTofNSigma(CascsWithID::iterator const& casc, const int motherId, const int daughterId, bool)
   {
-    if ((motherId == MotherOmega || motherId == MotherAntiOmega) && daughterId == DaughterKaon)
+    if ((motherId == MotherOmega || motherId == MotherAntiOmega) && daughterId == DaughterKaon) {
       return casc.tofNSigmaOmKa();
+    }
 
     LOGP(fatal, "getStrangenessTofNSigma for cascade: wrong combination of motherId and daughterId");
     return UndefValueFloat;
@@ -415,30 +419,33 @@ struct TreeWriterTpcV0 {
   template <V0OrCasc V0Casc, typename CollisionType>
   double getCosPA(V0Casc const& v0casc, CollisionType const& collision)
   {
-    if constexpr (std::is_same_v<V0Casc, V0sWithID::iterator>)
+    if constexpr (std::is_same_v<V0Casc, V0sWithID::iterator>) {
       return v0casc.v0cosPA();
-    else
+    } else {
       return v0casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
+    }
   }
 
   /// Evaluate radius of v0 or casc
   template <V0OrCasc V0Casc>
   double getRadius(V0Casc const& v0casc)
   {
-    if constexpr (std::is_same_v<V0Casc, V0sWithID::iterator>)
+    if constexpr (std::is_same_v<V0Casc, V0sWithID::iterator>) {
       return v0casc.v0radius();
-    else
+    } else {
       return v0casc.cascradius();
+    }
   }
 
   /// Evaluate add id of v0 or casc
   template <V0OrCasc V0Casc>
   int getAddId(V0Casc const& v0casc)
   {
-    if constexpr (std::is_same_v<V0Casc, V0sWithID::iterator>)
+    if constexpr (std::is_same_v<V0Casc, V0sWithID::iterator>) {
       return v0casc.v0addid();
-    else
+    } else {
       return v0casc.cascaddid();
+    }
   }
 
   template <bool IsCorrectedDeDx, int ModeId, typename TrksType, typename BCType, typename TrkQAType>
@@ -468,7 +475,7 @@ struct TreeWriterTpcV0 {
     int nV0Entries{0};
     int nCascEntries{0};
 
-    const int64_t expectedOutputTableSize = static_cast<int64_t>(reserveV0Ratio * myV0s.size() + reserveCascRatio * myCascs.size());
+    const auto expectedOutputTableSize = static_cast<int64_t>(reserveV0Ratio * myV0s.size() + reserveCascRatio * myCascs.size());
     if constexpr (ModeId == ModeWithdEdxTrkQA || ModeId == ModeStandard) {
       rowTPCTree.reserve(expectedOutputTableSize);
     } else {
@@ -577,7 +584,7 @@ struct TreeWriterTpcV0 {
         }
         const auto bachTrack = casc.bachelor_as<TrksType>();
         // Omega and antiomega
-        const auto isDaughterPositive = cascId == MotherAntiOmega ? true : false;
+        const auto isDaughterPositive = cascId == MotherAntiOmega;
         if (fillDaughterTrack(casc, bachTrack, casc, isDaughterPositive)) {
           ++nCascEntries;
         }
@@ -727,9 +734,9 @@ struct TreeWriterTpcTof {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
-  ctpRateFetcher mRateFetcher{};
+  ctpRateFetcher mRateFetcher;
 
-  o2::aod::rctsel::RCTFlagsChecker rctChecker{};
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
   TRandom3* fRndm = new TRandom3();
 
