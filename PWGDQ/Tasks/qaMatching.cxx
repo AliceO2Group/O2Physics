@@ -3567,7 +3567,7 @@ struct QaMatching {
     //-------------------------------
     // Chi2-based matching from production
     if (writeQaMatchingAod) {
-    fillQaMatchingAodTablesForCollision(collision, muonTracks, mftTracks, collisionInfo.matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds, mftCovs);
+      fillQaMatchingAodTablesForCollision(collision, muonTracks, mftTracks, collisionInfo.matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds, mftCovs);
     }
     if constexpr (isMC) {
       fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, taggedMuons, collisionInfo.matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, cfgMatchingChi2ScoreMftMchLow, fChi2MatchingPlotter.get(), false);
@@ -3600,7 +3600,7 @@ struct QaMatching {
 
       matchingMethodCounter += 1;
       if (writeQaMatchingAod) {
-      fillQaMatchingAodTablesForCollision(collision, muonTracks, mftTracks, matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds, mftCovs);
+        fillQaMatchingAodTablesForCollision(collision, muonTracks, mftTracks, matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds, mftCovs);
       }
       if constexpr (isMC) {
         fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, taggedMuons, matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, matchingScoreCut, plotter, false);
@@ -3620,7 +3620,7 @@ struct QaMatching {
 
       matchingMethodCounter += 1;
       if (writeQaMatchingAod) {
-      fillQaMatchingAodTablesForCollision(collision, muonTracks, mftTracks, matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds, mftCovs);
+        fillQaMatchingAodTablesForCollision(collision, muonTracks, mftTracks, matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds, mftCovs);
       }
       if constexpr (isMC) {
         fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, taggedMuons, matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, matchingScoreCut, plotter);
