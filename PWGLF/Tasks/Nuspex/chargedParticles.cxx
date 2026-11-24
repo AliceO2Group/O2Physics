@@ -17,13 +17,18 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/MetadataHelper.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
+#include <DataFormatsCTP/Configuration.h>
+#include <DataFormatsCTP/Scalers.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -40,6 +45,7 @@
 #include <TAxis.h>
 #include <TH1.h>
 #include <TH2.h>
+#include <TProfile.h>
 
 #include <fairmq/Device.h>
 
@@ -52,6 +58,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <initializer_list>
+#include <map>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -104,17 +111,20 @@ struct ChargedParticles { // NOLINT(clang-analyzer-optin.performance.Padding): o
 
   HistogramRegistry histos;
   Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{}; // ctp scalers for the interaction rate
+  o2::ctpRateFetcher rateFetcher;
 
   enum DataRun : int { kRunAuto = 0,
                        kRun2 = 2,
                        kRun3 = 3 };
   Configurable<int> dataRun{"dataRun", kRunAuto, "lhc run of the data: 0 = auto (from ao2d metadata), 2 = run 2 (converted), 3 = run 3"};
   bool isRun3{true}; // from dataRun
-  Configurable<std::string> collisionSystem{"collisionSystem", "pp", "collision system (sets multiplicity axes and event selection default): pp, pPb, pO, OO, NeNe, XeXe, PbPb"};
+  Configurable<std::string> collisionSystem{"collisionSystem", "pp", "collision system (sets multiplicity axes, event selection default and interaction rate source): pp, pPb, pO, OO, NeNe, XeXe, PbPb"};
   int maxMultMeas{100}; // from collisionSystem
   int maxMultTrue{100};
+  std::string irSource{"T0VTX"}; // interaction rate estimator (ctp rate fetcher), from collisionSystem
   Configurable<float> etaCut{"etaCut", 0.8f, "eta cut"};
-  Configurable<std::string> ptRange{"ptRange", "nominal", "pt window and binning of tracks and particles: nominal (0.15-10), lowPt (0.05-10, low field), highPt (0.15-50)"};
+  Configurable<std::string> ptRange{"ptRange", "nominal", "pt window and binning of tracks and particles: nominal (0.15-10), lowPt (0.075-10, low field), highPt (0.15-50)"};
   Configurable<bool> fiducialMult{"fiducialMult", true, "count n_ch (measured and true, and so the event class fiducial) only in the fiducial window 0.15 < pt < 10, whatever ptRange"};
   Configurable<int> multEstimator{"multEstimator", 0, "measured multiplicity: 0 = selected tracks (ITS-TPC), 1 = also ITS-only tracks that pass all other selections (spectra stay ITS-TPC)"};
   static constexpr float FiducialPtMin = 0.15f;
@@ -147,8 +157,10 @@ struct ChargedParticles { // NOLINT(clang-analyzer-optin.performance.Padding): o
   bool isInDir(int dir) const { return ((vars.classMask >> (dir == kNClasses ? flatClass : dir)) & 1) != 0; }
   static constexpr int NStagesMC = 8;
   static constexpr int NLayersITS = 7;
-  std::string metaLabel; // qa: ao2d metadata label
-  int lastRunNumber{-1}; // qa: cached run label
+  std::string metaLabel;      // qa: ao2d metadata label
+  int lastRunNumber{-1};      // qa: cached run label
+  TProfile* rateRun{nullptr}; // qa: interaction rate per run (run 3, nominal)
+  bool hasRateInfo{false};    // qa: ccdb objects of the rate fetcher found for the current run
   struct ParticleTracks {
     float pt{0.f};
     int nTracks{0};
@@ -289,17 +301,18 @@ struct ChargedParticles { // NOLINT(clang-analyzer-optin.performance.Padding): o
 
   template <bool IS_MC, typename C>
   void fillEvSelQA(const C& collision, aod::FT0s const& ft0s, bool isRepresentative = false);
+  bool hasCtpRateInfo(uint64_t timestamp, int runNumber);
 
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
   using TrackTableData = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>;
-  void processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks, aod::FT0s const& ft0s, aod::BCs const&);
+  void processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks, aod::FT0s const& ft0s, aod::BCsWithTimestamps const&);
   PROCESS_SWITCH(ChargedParticles, processData, "process data", false);
 
   using CollisionTableMCTrue = aod::McCollisions;
   using CollisionTableMC = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>>;
   using TrackTableMC = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
   using ParticleTableMC = soa::Join<aod::McParticles, aod::ParticleCompositionCorrection>;
-  using BCsWithSel = soa::Join<aod::BCs, aod::BcSels>; // trigger info of the mc collision's bc
+  using BCsWithSel = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps>; // trigger info of the mc collision's bc; timestamp for the interaction rate
   Preslice<TrackTableMC> perCollision = aod::track::collisionId;
   template <typename P>
   void processMCImpl(CollisionTableMCTrue::iterator const& mcCollision, TrackTableMC const& tracks, CollisionTableMC const& collisions, P const& particles, aod::FT0s const& ft0s);
@@ -380,6 +393,7 @@ void ChargedParticles::init(InitContext& ic)
   } else {
     LOGP(fatal, "unknown collisionSystem '{}' (pp, pPb, pO, OO, NeNe, XeXe, PbPb)", collisionSystem.value);
   }
+  irSource = (collisionSystem.value == "PbPb") ? "ZNC hadronic" : "T0VTX";
 
   // event classes: one class -> flat output, several -> one subfolder per class
   int nClasses = 0;
@@ -456,7 +470,7 @@ void ChargedParticles::init(InitContext& ic)
                                     6.0, 6.5, 7.0, 8.0, 9.0, 10.0};
   // pt window = first and last edge
   if (ptRange.value == "lowPt") {
-    ptBinEdges.insert(ptBinEdges.begin(), {0.05, 0.075, 0.1, 0.125});
+    ptBinEdges.insert(ptBinEdges.begin(), {0.075, 0.1, 0.125});
   } else if (ptRange.value == "highPt") {
     ptBinEdges.insert(ptBinEdges.end(), {11., 12., 13., 14., 15., 16., 18., 20., 22., 24., 26., 30., 34., 40., 50.});
   } else if (ptRange.value != "nominal") {
@@ -493,6 +507,9 @@ void ChargedParticles::init(InitContext& ic)
     histos.add("QA/events/eventSelection", "", kTH1D, {{nStages, -0.5, nStages - 0.5}});
     histos.add("QA/events/eventSelectionRun", "", kTH2D, {{512, 0., 512.}, {nStages, -0.5, nStages - 0.5}}); // run axis labelled as runStatistics
     histos.add("QA/events/runStatistics", "", kTH1D, {{512, 0., 512.}});
+    if (isRun3) {
+      rateRun = histos.add<TProfile>("QA/events/rateRun", "", kTProfile, {{512, 0., 512.}}).get(); // mean interaction rate (khz) of accepted events per run; run axis labelled as runStatistics
+    }
     histos.add("QA/events/metaInfo", "", kTH1D, {{4, 0., 4.}});
     // track qa (selected tracks in selected events), run 2 names and binning (7 its layers, run 3 dca cut ranges)
     histos.add("QA/tracks/signed1Pt", "", kTH1D, {{200, -8., 8., "q/#it{p}_{T}"}});
@@ -765,6 +782,12 @@ void ChargedParticles::init(InitContext& ic)
   if (multEstimator.value == 1 && !isRun3) {
     LOGP(fatal, "multEstimator 1 (its-only tracks) is defined for run 3 only");
   }
+  if (rateRun != nullptr) { // ctp scalers: run 3 only
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false); // missing objects: run without rate logging (hasCtpRateInfo)
+  }
 }
 
 //**************************************************************************************************
@@ -772,7 +795,7 @@ void ChargedParticles::init(InitContext& ic)
  * Entrypoint to processes data.
  */
 //**************************************************************************************************
-void ChargedParticles::processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks, aod::FT0s const& ft0s, aod::BCs const&)
+void ChargedParticles::processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks, aod::FT0s const& ft0s, aod::BCsWithTimestamps const&)
 {
   initEvent<false>(collision, tracks);
   fillEvSelQA<false>(collision, ft0s);
@@ -1015,7 +1038,7 @@ void ChargedParticles::initEvent(const C& collision, const T& tracks)
       if constexpr (IS_MC) {
         runNumber = collision.template bc_as<BCsWithSel>().runNumber();
       } else {
-        runNumber = collision.template bc_as<aod::BCs>().runNumber();
+        runNumber = collision.template bc_as<aod::BCsWithTimestamps>().runNumber();
       }
       const bool isMC = doprocessMC || doprocessMCnoPCC;
       if (isINT1Period(runNumber)) {
@@ -1191,6 +1214,25 @@ void ChargedParticles::fillTrackQA(const T& track)
  * Event qa: cut-flow, z vertex, run statistics, metadata; for sel8 events in the z range every evsel bit separately and z_ft0 - z_pv.
  */
 //**************************************************************************************************
+/**
+ * Whether the ccdb holds the objects the ctp rate fetcher needs for this run (it stops the task when one is missing).
+ */
+//**************************************************************************************************
+bool ChargedParticles::hasCtpRateInfo(uint64_t timestamp, int runNumber)
+{
+  std::map<std::string, std::string> metadata;
+  const bool hasLhcIf = ccdb->getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timestamp, metadata) != nullptr;
+  metadata["runNumber"] = std::to_string(runNumber);
+  const bool hasConfig = ccdb->getSpecific<o2::ctp::CTPConfiguration>("CTP/Config/Config", timestamp, metadata) != nullptr;
+  const bool hasScalers = ccdb->getSpecific<o2::ctp::CTPRunScalers>("CTP/Calib/Scalers", timestamp, metadata) != nullptr;
+  if (!(hasLhcIf && hasConfig && hasScalers)) {
+    LOGP(warning, "run {}: no ctp rate information in the ccdb (lhcif {}, config {}, scalers {}), no interaction rate logged", runNumber, hasLhcIf, hasConfig, hasScalers);
+    return false;
+  }
+  return true;
+}
+
+//**************************************************************************************************
 template <bool IS_MC, typename C>
 void ChargedParticles::fillEvSelQA(const C& collision, aod::FT0s const& ft0s, bool isRepresentative)
 {
@@ -1201,7 +1243,7 @@ void ChargedParticles::fillEvSelQA(const C& collision, aod::FT0s const& ft0s, bo
   if constexpr (IS_MC) {
     evSelRunNumber = collision.template bc_as<BCsWithSel>().runNumber();
   } else {
-    evSelRunNumber = collision.template bc_as<aod::BCs>().runNumber();
+    evSelRunNumber = collision.template bc_as<aod::BCsWithTimestamps>().runNumber();
   }
   if (evSelRunNumber != lastEvSelRunNumber) {
     lastEvSelRunNumber = evSelRunNumber;
@@ -1233,17 +1275,29 @@ void ChargedParticles::fillEvSelQA(const C& collision, aod::FT0s const& ft0s, bo
   histos.fill(HIST("QA/events/zVtxMeas"), collision.posZ());
   if (vars.isAcceptedEvent) {
     int runNumber = -1;
+    uint64_t timestamp = 0;
     if constexpr (IS_MC) {
-      runNumber = collision.template bc_as<BCsWithSel>().runNumber();
+      const auto& bc = collision.template bc_as<BCsWithSel>();
+      runNumber = bc.runNumber();
+      timestamp = bc.timestamp();
     } else {
-      runNumber = collision.template bc_as<aod::BCs>().runNumber();
+      const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      runNumber = bc.runNumber();
+      timestamp = bc.timestamp();
     }
     if (runNumber != lastRunNumber) {
       lastRunNumber = runNumber;
       lastRunLabel = std::to_string(runNumber);
       phiRunBin = histos.get<TH2>(HIST("QA/tracks/phiRun"))->GetYaxis()->FindBin(lastRunLabel.c_str()); // adds the label once per run
+      hasRateInfo = (rateRun != nullptr) && hasCtpRateInfo(timestamp, runNumber);
     }
     histos.get<TH1>(HIST("QA/events/runStatistics"))->Fill(lastRunLabel.c_str(), 1.);
+    if (hasRateInfo) {
+      const double rate = rateFetcher.fetch(ccdb.service, timestamp, runNumber, irSource, false); // hz; negative: not available
+      if (rate >= 0.) {
+        rateRun->Fill(lastRunLabel.c_str(), rate * 1.e-3); // khz
+      }
+    }
   }
   if (std::abs(collision.posZ()) >= vtxZCut()) {
     return;
