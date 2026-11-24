@@ -3645,7 +3645,7 @@ struct QaMatching {
       return false;
     }
 
-    const int upcModeFilter = static_cast<int>(cfgUPCMode);
+    const int upcModeFilter = cfgUPCMode.value;
     if (upcModeFilter != 0 && upcModeFilter != 1) {
       return true;
     }
