@@ -128,6 +128,7 @@ struct FlowGenericFramework {
     O2_DEFINE_CONFIGURABLE(cfgFillQA, bool, false, "Fill QA histograms");
     O2_DEFINE_CONFIGURABLE(cfgFillV0QA, bool, true, "Fill QA histograms for V0 reconstruction");
     O2_DEFINE_CONFIGURABLE(cfgRejectXiFeeddown, bool, false, "Veto reconstructed MC Lambdas from charged or neutral Xi decays");
+    O2_DEFINE_CONFIGURABLE(cfgFillFeeddownTransfer, bool, false, "Store raw truth-matched Lambda counts for reference and analysis selections in processMC");
     O2_DEFINE_CONFIGURABLE(cfgFillRunByRunQA, bool, false, "Fill histograms on a run-by-run basis");
     O2_DEFINE_CONFIGURABLE(cfgAnalyseChargedHadrons, bool, true, "Store radial-flow and fraction outputs for charged tracks, pions, kaons, and protons");
     O2_DEFINE_CONFIGURABLE(cfgAnalyseK0Lambda, bool, true, "Store radial-flow and fraction outputs for K0 and Lambda candidates");
@@ -598,6 +599,9 @@ struct FlowGenericFramework {
     readMatrix(resonanceCuts->getData(), resoCutVals);
     readMatrix(resonanceSwitches->getData(), resoSwitchVals);
     printResoCuts();
+    if (cfgFill.cfgFillFeeddownTransfer && !doprocessMC) {
+      LOGF(fatal, "cfgFillFeeddownTransfer requires processMC");
+    }
 
     const auto& ptPtGaps = cfgPtPtGaps->getData();
 
@@ -682,6 +686,26 @@ struct FlowGenericFramework {
         }
       }
     }
+
+    if (cfgFill.cfgFillFeeddownTransfer) {
+      // Union of the supplied Romain raw-spectrum edges and the analysis edges.
+      std::vector<double> transferPtEdges{
+        0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9,
+        2., 2.2, 2.4, 2.6, 2.8, 3., 3.2, 3.4, 3.6, 3.8, 4., 4.4, 4.8, 5.2, 5.6, 6., 6.5, 7., 8., 10., 12., 16.};
+      transferPtEdges.insert(transferPtEdges.end(), gfwMemberCache.ptbinning.begin(), gfwMemberCache.ptbinning.end());
+      std::sort(transferPtEdges.begin(), transferPtEdges.end());
+      transferPtEdges.erase(std::unique(transferPtEdges.begin(), transferPtEdges.end()), transferPtEdges.end());
+      const AxisSpec transferPtAxis{transferPtEdges, "#it{p}_{T}^{#Lambda, reco} (GeV/#it{c})"};
+      const AxisSpec transferCentAxis{100, 0., 100., "Centrality (%)"};
+      const AxisSpec transferChargeAxis{2, -0.5, 1.5, "0: Lambda, 1: AntiLambda"};
+      const AxisSpec transferOriginAxis{6, -0.5, 5.5, "0: primary, 1/2: primary charged/neutral Xi, 3/4: secondary charged/neutral Xi, 5: other"};
+      registry.add("FeeddownTransfer/referenceEvents", "Selected reconstructed reference events", HistType::kTH1D, {transferCentAxis});
+      registry.add("FeeddownTransfer/analysisEvents", "Selected reconstructed analysis events", HistType::kTH1D, {transferCentAxis});
+      registry.add("FeeddownTransfer/reference", "Reference selection; raw counts", HistType::kTHnSparseF, {transferPtAxis, transferCentAxis, transferChargeAxis, transferOriginAxis, axisFeeddownXiPt});
+      registry.add("FeeddownTransfer/v0", "v0 and v00 selection; raw counts", HistType::kTHnSparseF, {transferPtAxis, transferCentAxis, transferChargeAxis, transferOriginAxis, axisFeeddownXiPt});
+      registry.add("FeeddownTransfer/v02", "v02 selection; raw counts", HistType::kTHnSparseF, {transferPtAxis, transferCentAxis, transferChargeAxis, transferOriginAxis, axisFeeddownXiPt});
+    }
+
     if (doprocessEfficiency) {
       registry.add("Efficiency/efficiencyHist", "; #it{p}_{T}^{MC}; Centrality (%)", {HistType::kTHnSparseF, {{ptAxis, centAxis, efficiencyParticleAxis, efficiencyStepAxis}}});
       registry.add("Efficiency/v0RecoDebug", "; #it{p}_{T}; Centrality (%)", {HistType::kTHnSparseF, {{ptAxis, centAxis, efficiencyParticleAxis, v0EfficiencyStageAxis}}});
@@ -2285,6 +2309,12 @@ struct FlowGenericFramework {
         }
       }
 
+      if constexpr (requires { tracks.begin().has_mcParticle(); }) {
+        if (cfgFill.cfgFillFeeddownTransfer) {
+          registry.fill(HIST("FeeddownTransfer/analysisEvents"), centrality);
+        }
+      }
+
       // Process V0s only for reconstructed-track workflows.
       if constexpr (dt != Gen) {
         for (const auto& v0 : v0s) {
@@ -2451,6 +2481,11 @@ struct FlowGenericFramework {
       using V0TrackTable = std::decay_t<TTracks>;
       auto postrack = v0.template posTrack_as<V0TrackTable>();
       auto negtrack = v0.template negTrack_as<V0TrackTable>();
+      if constexpr (requires { postrack.has_mcParticle(); }) {
+        if (cfgFill.cfgFillFeeddownTransfer) {
+          fillLambdaFeeddownTransfer(v0, collision, tracks, centrality, false);
+        }
+      }
 
       if (resoSwitchVals[UseParticle][K0] != 0) {
         double weff = 1;
@@ -3152,6 +3187,23 @@ struct FlowGenericFramework {
 
   void processMC(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>> const& collisions, aod::McParticles const& particles, aod::BCsWithTimestamps const&, GFWMCTracks const& tracks, aod::V0Datas const& v0s)
   {
+    // Reference events are counted before the analysis one-to-one MC matching requirement.
+    if (cfgFill.cfgFillFeeddownTransfer) {
+      for (const auto& collision : collisions) {
+        const float cent = getCentrality(collision);
+        if (!collision.sel8() || std::abs(collision.posZ()) >= 10.f || cent < 0.f || cent >= 100.f ||
+            !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) ||
+            !collision.selection_bit(aod::evsel::kNoSameBunchPileup) ||
+            collision.multNTracksPVeta1() < 1) {
+          continue;
+        }
+        registry.fill(HIST("FeeddownTransfer/referenceEvents"), cent);
+        const auto referenceV0s = v0s.sliceBy(mcV0sPerCollision, collision.globalIndex());
+        for (const auto& v0 : referenceV0s) {
+          fillLambdaFeeddownTransfer(v0, collision, tracks, cent, true);
+        }
+      }
+    }
     if (collisions.size() != 1) {
       return;
     }
@@ -3508,6 +3560,97 @@ struct FlowGenericFramework {
       }
     }
     return std::nullopt;
+  }
+
+  template <typename TV0, typename TCollision, typename TTracks>
+  void fillLambdaFeeddownTransfer(const TV0& v0, const TCollision& collision, const TTracks& tracks, float centrality, bool reference)
+  {
+    using V0TrackTable = std::decay_t<TTracks>;
+    const auto pos = v0.template posTrack_as<V0TrackTable>();
+    const auto neg = v0.template negTrack_as<V0TrackTable>();
+    if (!pos.has_mcParticle() || !neg.has_mcParticle()) {
+      return;
+    }
+    const auto posMC = pos.template mcParticle_as<aod::McParticles>();
+    const auto negMC = neg.template mcParticle_as<aod::McParticles>();
+    if (!posMC.has_mothers() || !negMC.has_mothers()) {
+      return;
+    }
+    for (const auto& mother : posMC.template mothers_as<aod::McParticles>()) {
+      if (std::abs(mother.pdgCode()) != PDG_t::kLambda0) {
+        continue;
+      }
+      for (const auto& negMother : negMC.template mothers_as<aod::McParticles>()) {
+        if (mother.globalIndex() != negMother.globalIndex()) {
+          continue;
+        }
+        const bool isLambda = mother.pdgCode() > 0;
+        if (posMC.pdgCode() != (isLambda ? kProton : kPiPlus) ||
+            negMC.pdgCode() != (isLambda ? -kPiPlus : -kProton)) {
+          return;
+        }
+        bool acceptedV0 = false;
+        bool acceptedV02 = false;
+        if (reference) {
+          // Reference cuts from Table 1 and Sec. III of the 2026-10-16 spectra note.
+          if (!v0.isStandardV0() || v0.pt() <= 0.4f || v0.pt() >= 16.f ||
+              std::abs(v0.yLambda()) >= 0.5f ||
+              std::abs(pos.eta()) >= 0.8f || std::abs(neg.eta()) >= 0.8f ||
+              pos.tpcNClsCrossedRows() <= 70 || neg.tpcNClsCrossedRows() <= 70 ||
+              v0.v0radius() <= 1.2f || v0.v0cosPA() <= 0.995f ||
+              std::abs(v0.dcaV0daughters()) >= 1.f ||
+              v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda >= 30. ||
+              std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) <= 0.010f) {
+            return;
+          }
+          const auto& proton = isLambda ? pos : neg;
+          const auto& pion = isLambda ? neg : pos;
+          if (std::abs(proton.tpcNSigmaPr()) >= 4.f || std::abs(pion.tpcNSigmaPi()) >= 4.f ||
+              std::abs(isLambda ? v0.dcapostopv() : v0.dcanegtopv()) <= 0.05f ||
+              std::abs(isLambda ? v0.dcanegtopv() : v0.dcapostopv()) <= 0.2f) {
+            return;
+          }
+        } else {
+          // Evaluate the configured analysis cuts without incrementing nominal QA.
+          const auto selection = selectLambda(collision, v0, tracks, false);
+          const double mass = isLambda ? v0.mLambda() : v0.mAntiLambda();
+          if (!selection.selected || selection.isL != isLambda ||
+              mass <= cfgPIDCuts.cfgLambdaSignalMin || mass >= cfgPIDCuts.cfgLambdaSignalMax) {
+            return;
+          }
+          acceptedV0 = pos.eta() >= cfgKinematics.cfgEtaNptV0->first && pos.eta() <= cfgKinematics.cfgEtaNptV0->second &&
+                       neg.eta() >= cfgKinematics.cfgEtaNptV0->first && neg.eta() <= cfgKinematics.cfgEtaNptV0->second;
+          acceptedV02 = pos.eta() >= cfgKinematics.cfgEtaNptV02->first && pos.eta() <= cfgKinematics.cfgEtaNptV02->second &&
+                        neg.eta() >= cfgKinematics.cfgEtaNptV02->first && neg.eta() <= cfgKinematics.cfgEtaNptV02->second;
+          if (!acceptedV0 && !acceptedV02) {
+            return;
+          }
+        }
+        const auto xi = findLambdaXiParent(pos, neg, false);
+        int origin = mother.isPhysicalPrimary() ? 0 : 5;
+        double xiPt = 0.;
+        if (xi) {
+          origin = std::abs(xi->pdgCode()) == PDG_t::kXiMinus ? 1 : 2;
+          if (!xi->isPhysicalPrimary()) {
+            origin += 2;
+          }
+          xiPt = xi->pt();
+        }
+        const int charge = isLambda ? 0 : 1;
+        // Unit weights. Counts precede the Xi veto and efficiency corrections.
+        if (reference) {
+          registry.fill(HIST("FeeddownTransfer/reference"), v0.pt(), centrality, charge, origin, xiPt);
+        } else {
+          if (acceptedV0) {
+            registry.fill(HIST("FeeddownTransfer/v0"), v0.pt(), centrality, charge, origin, xiPt);
+          }
+          if (acceptedV02) {
+            registry.fill(HIST("FeeddownTransfer/v02"), v0.pt(), centrality, charge, origin, xiPt);
+          }
+        }
+        return;
+      }
+    }
   }
 
   template <typename TV0, typename TCollision, typename TTracks>
