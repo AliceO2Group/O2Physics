@@ -778,27 +778,32 @@ struct zdc2stagecalibration {
       const auto fillRelative = [&](bool sideA, int neutronClass, const std::array<double, 4>& energy, double sum) {
         if (neutronClass == 0 || !(sum > 0.)) {
           return;
+        }
         const double f1 = energy[0] / sum, f2 = energy[1] / sum, f3 = energy[2] / sum;
         if (sideA) {
           if (neutronClass == 1) {
-            if (isValidation)
+            if (isValidation) {
               histos.fill(HIST("OneNeutronTowerCalibration/hRelative1nA_Validation"), f1, f2, f3);
-            else
+            } else {
               histos.fill(HIST("OneNeutronTowerCalibration/hRelative1nA_Train"), f1, f2, f3);
-          } else if (neutronClass == 2)
+            }
+          } else if (neutronClass == 2) {
             histos.fill(HIST("OneNeutronTowerCalibration/hRelative2nA"), f1, f2, f3);
-          else if (neutronClass == 3)
+          } else if (neutronClass == 3) {
             histos.fill(HIST("OneNeutronTowerCalibration/hRelative3nA"), f1, f2, f3);
+          }
         } else {
           if (neutronClass == 1) {
-            if (isValidation)
+            if (isValidation) {
               histos.fill(HIST("OneNeutronTowerCalibration/hRelative1nC_Validation"), f1, f2, f3);
-            else
+            } else {
               histos.fill(HIST("OneNeutronTowerCalibration/hRelative1nC_Train"), f1, f2, f3);
-          } else if (neutronClass == 2)
+            }
+          } else if (neutronClass == 2) {
             histos.fill(HIST("OneNeutronTowerCalibration/hRelative2nC"), f1, f2, f3);
-          else if (neutronClass == 3)
+          } else if (neutronClass == 3) {
             histos.fill(HIST("OneNeutronTowerCalibration/hRelative3nC"), f1, f2, f3);
+          }
         }
         const double f1 = energy[0] / sum, f2 = energy[1] / sum, f3 = energy[2] / sum;
         if (sideA) {
