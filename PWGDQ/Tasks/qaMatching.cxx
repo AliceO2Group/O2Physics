@@ -3493,9 +3493,12 @@ struct QaMatching {
     std::vector<int64_t> taggedMuons;
     getTaggedMuons(collisionInfo, collisions, muonTracks, taggedMuons);
 
+    const bool writeQaMatchingAod = shouldWriteQaMatchingAod(collisionInfo, collision);
     int debugCounter{0};
-    fillQaMatchingAodEventForCollision(collisionInfo, collision, collisionInfo.reducedEventId, debugCounter);
-    fillQaMatchingMchTracksForCollision(collision, muonTracks, taggedMuons, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds);
+    if (writeQaMatchingAod) {
+      fillQaMatchingAodEventForCollision(collisionInfo, collision, collisionInfo.reducedEventId, debugCounter);
+      fillQaMatchingMchTracksForCollision(collision, muonTracks, taggedMuons, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds);
+    }
 
     registry.get<TH1>(HIST("tracksMultiplicityMFT"))->Fill(collisionInfo.mftTracks.size());
     registry.get<TH1>(HIST("tracksMultiplicityMCH"))->Fill(collisionInfo.mchTracks.size());
@@ -3563,7 +3566,9 @@ struct QaMatching {
 
     //-------------------------------
     // Chi2-based matching from production
+    if (writeQaMatchingAod) {
     fillQaMatchingAodTablesForCollision(collision, muonTracks, mftTracks, collisionInfo.matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds, mftCovs);
+    }
     if constexpr (isMC) {
       fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, taggedMuons, collisionInfo.matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, cfgMatchingChi2ScoreMftMchLow, fChi2MatchingPlotter.get(), false);
     } else {
@@ -3594,7 +3599,9 @@ struct QaMatching {
       double matchingScoreCut = matchingScoreCuts.at(label);
 
       matchingMethodCounter += 1;
+      if (writeQaMatchingAod) {
       fillQaMatchingAodTablesForCollision(collision, muonTracks, mftTracks, matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds, mftCovs);
+      }
       if constexpr (isMC) {
         fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, taggedMuons, matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, matchingScoreCut, plotter, false);
       } else {
@@ -3612,7 +3619,9 @@ struct QaMatching {
       double matchingScoreCut = matchingScoreCuts.at(label);
 
       matchingMethodCounter += 1;
+      if (writeQaMatchingAod) {
       fillQaMatchingAodTablesForCollision(collision, muonTracks, mftTracks, matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds, mftCovs);
+      }
       if constexpr (isMC) {
         fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, taggedMuons, matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, matchingScoreCut, plotter);
       } else {
@@ -3630,8 +3639,12 @@ struct QaMatching {
   }
 
   template <class TCOLLISION>
-  bool shouldWriteQaMatchingAod(TCOLLISION const& collision) const
+  bool shouldWriteQaMatchingAod(const CollisionInfo& collisionInfo, TCOLLISION const& collision) const
   {
+    if (collisionInfo.mchTracks.empty() || collisionInfo.mftTracks.empty()) {
+      return false;
+    }
+
     if (cfgUPCMode != 0 && cfgUPCMode != 1) {
       return true;
     }
@@ -3650,10 +3663,6 @@ struct QaMatching {
                                            std::map<int64_t, int64_t> reducedMchTrackIds,
                                            CMFT const& mftCovs)
   {
-    if (!shouldWriteQaMatchingAod(collision)) {
-      return;
-    }
-
     for (const auto& [mchIndex, candidates] : matchingCandidates) {
       if (candidates.empty()) {
         continue;
@@ -3713,10 +3722,6 @@ struct QaMatching {
                                           int32_t reducedEventId,
                                           int& debugCounter)
   {
-    if (!shouldWriteQaMatchingAod(collision)) {
-      return;
-    }
-
     const bool upcMode = (collision.flags() & o2::dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0;
     int32_t mftMultiplicity = static_cast<int32_t>(collisionInfo.mftTracks.size());
     qaMatchingEvents(
@@ -3739,10 +3744,6 @@ struct QaMatching {
                                            int32_t reducedEventId,
                                            const std::map<int64_t, int64_t>& reducedMchTrackIds)
   {
-    if (!shouldWriteQaMatchingAod(collision)) {
-      return;
-    }
-
     std::vector<std::pair<int64_t, int64_t>> orderedMchIds;
     orderedMchIds.reserve(reducedMchTrackIds.size());
     for (const auto& [mchIndex, reducedMchTrackId] : reducedMchTrackIds) {
