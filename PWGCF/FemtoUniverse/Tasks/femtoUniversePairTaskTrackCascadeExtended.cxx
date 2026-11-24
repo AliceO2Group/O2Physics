@@ -113,6 +113,9 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
     Configurable<float> confNsigmaTOFParticleChild{"confNsigmaTOFParticleChild", 3.0, "TOF Sigma for particle (daugh & bach) momentum > cascparticleconfigs.confmom"};
     Configurable<bool> confUseStrangenessTOF{"confUseStrangenessTOF", true, "Enable strangeness TOF for cascade PID"};
     Configurable<bool> confQARejectByPDG{"confQARejectByPDG", false, "Reject particle 2 by PDG code (only for QA)"};
+    Configurable<bool> confRejectXiCompetingMass{"confRejectXiCompetingMass", false, "Reject Omega candidates whose invariant mass falls in the competing Xi mass window"};
+    Configurable<float> confXiCompetingMassLowLimit{"confXiCompetingMassLowLimit", 1.312f, "Lower limit of competing Xi invariant mass to reject"};
+    Configurable<float> confXiCompetingMassUpLimit{"confXiCompetingMassUpLimit", 1.332f, "Upper limit of competing Xi invariant mass to reject"};
   } cascparticleconfigs;
 
   /// configurations for correlation part - CPR
@@ -230,9 +233,33 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
   // Charges: = +--, +--, +-+, +-+
   static constexpr std::array<std::array<unsigned int, 3>, 4> CascChildTable = {{{0, 1, 2}, {0, 1, 1}, {1, 0, 2}, {1, 0, 1}}};
 
+  bool isOmegaCandidate(float invMassXi, float invMassOmega)
+  {
+    const bool inOmegaMassWindow =
+      (invMassOmega > confCascInvMassLowLimit && invMassOmega < confCascInvMassUpLimit);
+    if (!inOmegaMassWindow) {
+      return false;
+    }
+    if (cascparticleconfigs.confRejectXiCompetingMass) {
+      const bool isCompetingXi =
+        (invMassXi > cascparticleconfigs.confXiCompetingMassLowLimit &&
+         invMassXi < cascparticleconfigs.confXiCompetingMassUpLimit);
+      if (isCompetingXi) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   bool invMCascade(float invMassXi, float invMassOmega, int cascType)
   {
-    return (((cascType == 1 || cascType == 3) && (invMassXi > confCascInvMassLowLimit && invMassXi < confCascInvMassUpLimit)) || ((cascType == 0 || cascType == 2) && (invMassOmega > confCascInvMassLowLimit && invMassOmega < confCascInvMassUpLimit)));
+    if (cascType == 1 || cascType == 3) {
+      return (invMassXi > confCascInvMassLowLimit && invMassXi < confCascInvMassUpLimit);
+    }
+    if (cascType == 0 || cascType == 2) {
+      return isOmegaCandidate(invMassXi, invMassOmega);
+    }
+    return false;
   }
 
   bool isNSigmaTPC(float nsigmaTPCParticle)
