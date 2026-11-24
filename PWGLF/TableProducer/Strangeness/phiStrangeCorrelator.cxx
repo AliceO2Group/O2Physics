@@ -1090,9 +1090,11 @@ struct PionTrackProducer {
     histos.add("h3PionTPCnSigma", "Pion TPC nSigma distribution", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis});
     histos.add("h3PionTOFnSigma", "Pion TOF nSigma distribution", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaTOFPiAxis});
 
-    // The selected pions split as phiStrangeCorrelation counts them (inNSigmaRegion): with TOF, the TPC and TOF nSigma
-    // together; without TOF, the TPC one alone. Fits of these give the purity and the nSigma-window efficiency of the
-    // counted sample, which the two distributions above, each over every track, cannot
+    // The selected pions split by TOF: with TOF, the TPC and TOF nSigma together; without TOF, the TPC one alone.
+    // phiStrangeCorrelation counts in the TPC window alone below tofPIDThreshold and in both windows above it
+    // (useTOFInPID), so fits of these give the purity and the nSigma-window efficiency of the counted sample, which the
+    // two distributions above, each over every track, cannot. Below the threshold, the tracks with TOF also show what a
+    // TOF cut would remove there
     histos.add("h4PionTPCTOFnSigma", "Pion TPC and TOF nSigma, tracks with TOF", kTHnSparseF, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis, nSigmaTOFPiAxis});
     histos.add("h3PionTPCnSigmaNoTOF", "Pion TPC nSigma, tracks without TOF", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis});
     // The same for the true primary pions, to compare the nSigma shapes of data and MC
@@ -1143,6 +1145,16 @@ struct PionTrackProducer {
     return true;
   }*/
 
+  // The TOF enters the pion PID from tofPIDThreshold up and never below, here in the K/p rejection and in the nSigma
+  // window of phiStrangeCorrelation (the UseTOFInPID column). Below the threshold the TPC separates the pion alone; a
+  // TOF cut on the tracks that happen to have a TOF signal only adds the matching and the mismatch to the efficiency,
+  // on a fraction of the tracks that changes with pT, and the old fit-based analysis did not use the TOF there either
+  template <typename T>
+  bool useTOFInPID(const T& track)
+  {
+    return track.pt() >= trackConfigs.tofPIDThreshold && track.hasTOF();
+  }
+
   // PID Hypotheses rejection for Pions
   template <typename T>
   bool pidHypothesesRejection(const T& track)
@@ -1169,8 +1181,8 @@ struct PionTrackProducer {
       auto nSigmaTPC = aod::pidutils::tpcNSigma(pid, track);
 
       if (std::abs(nSigmaTPC) < trackConfigs.pidTPCMaxHadrons) {
-        // Reject if only TPC is within threshold and TOF is unavailable or if both TPC and TOF are within thresholds
-        if (!track.hasTOF() || std::abs(aod::pidutils::tofNSigma(pid, track)) < trackConfigs.pidTOFMaxHadrons) {
+        // Reject if only TPC is within threshold and TOF is not used or if both TPC and TOF are within thresholds
+        if (!useTOFInPID(track) || std::abs(aod::pidutils::tofNSigma(pid, track)) < trackConfigs.pidTOFMaxHadrons) {
           return false;
         }
       }
@@ -1271,7 +1283,7 @@ struct PionTrackProducer {
         histos.fill(HIST("h3PionTPCnSigmaNoTOF"), collision.centFT0M(), track.pt(), track.tpcNSigmaPi());
       }
 
-      pionTracksData(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(MassPi), track.phi(), track.hasTOF());
+      pionTracksData(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(MassPi), track.phi(), useTOFInPID(track));
     }
   }
 
@@ -1310,7 +1322,7 @@ struct PionTrackProducer {
         histos.fill(HIST("h3RecMCPionTPCnSigmaNoTOF"), collision.centFT0M(), track.pt(), track.tpcNSigmaPi());
       }
 
-      pionTracksMcReco(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(MassPi), track.phi(), track.hasTOF());
+      pionTracksMcReco(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(MassPi), track.phi(), useTOFInPID(track));
     }
   }
 
