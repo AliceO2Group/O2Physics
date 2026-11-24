@@ -1073,17 +1073,17 @@ struct FemtoUniversePairTaskTrackV0Extended {
       const auto& negChild = parts.iteratorAt(part.index() - 1);
       int pdgCode = static_cast<int>(part.pidCut());
       if ((ConfV0Selection.confV0Type1 == 0 && pdgCode == kLambda0) || (ConfV0Selection.confV0Type1 == 1 && pdgCode == kLambda0Bar)) {
-        trackHistoV0Type1.fillQABase<false, true>(part, HIST("V0Type1"));
-        posChildV0Type1.fillQABase<false, true>(posChild, HIST("posChildV0Type1"));
-        negChildV0Type1.fillQABase<false, true>(negChild, HIST("negChildV0Type1"));
+        trackHistoV0Type1.fillQABase<false, false>(part, HIST("V0Type1"));
+        posChildV0Type1.fillQABase<false, false>(posChild, HIST("posChildV0Type1"));
+        negChildV0Type1.fillQABase<false, false>(negChild, HIST("negChildV0Type1"));
         qaRegistry.fill(HIST("V0Type1/hInvMassLambdaVsCent"), multCol, part.mLambda());
         qaRegistry.fill(HIST("V0Type1/hInvMassAntiLambdaVsCent"), multCol, part.mAntiLambda());
         effCorrection.fillTruthHist<ParticleNo::ONE, FilteredFDCollisions>(part);
       }
       if ((ConfV0Selection.confV0Type2 == 0 && pdgCode == kLambda0) || (ConfV0Selection.confV0Type2 == 1 && pdgCode == kLambda0Bar)) {
-        trackHistoV0Type2.fillQABase<false, true>(part, HIST("V0Type2"));
-        posChildV0Type2.fillQABase<false, true>(posChild, HIST("posChildV0Type2"));
-        negChildV0Type2.fillQABase<false, true>(negChild, HIST("negChildV0Type2"));
+        trackHistoV0Type2.fillQABase<false, false>(part, HIST("V0Type2"));
+        posChildV0Type2.fillQABase<false, false>(posChild, HIST("posChildV0Type2"));
+        negChildV0Type2.fillQABase<false, false>(negChild, HIST("negChildV0Type2"));
         qaRegistry.fill(HIST("V0Type2/hInvMassLambdaVsCent"), multCol, part.mLambda());
         qaRegistry.fill(HIST("V0Type2/hInvMassAntiLambdaVsCent"), multCol, part.mAntiLambda());
         effCorrection.fillTruthHist<ParticleNo::TWO, FilteredFDCollisions>(part);
