@@ -693,8 +693,8 @@ DECLARE_SOA_TABLE(FDHfTrk, "AOD", "FDHFTRK", //! table to store results for HF f
                   femtodreamparticle::TPCNClsCrossedRows,
                   femtodreamparticle::TPCNSigmaPr,
                   femtodreamparticle::TOFNSigmaPr,
-                  fdhf::OriginMcTrack,
-                  track::DcaXY);
+                  track::DcaXY,
+                  fdhf::OriginMcTrack);
 
 DECLARE_SOA_TABLE(FDHfV0, "AOD", "FDHFV0", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,
