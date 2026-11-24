@@ -381,6 +381,7 @@ struct QaMatching {
   Configurable<int> cfgMftTrackMultiplicityMax{"cfgMftTrackMultiplicityMax", 1000, "Maximum number of MFT tracks per collision"};
 
   Configurable<int> cfgQaMatchingAodDebug{"cfgQaMatchingAodDebug", 0, "If >0, print AO2D filling debug (0=off, N=max collisions)"};
+  Configurable<int> cfgUPCMode{"cfgUPCMode", -1, "UPC mode for AO2D output (-1=all, 0=non-UPC, 1=UPC)"};
 
   double mBzAtMftCenter{0};
 
@@ -1311,6 +1312,10 @@ struct QaMatching {
 
   void init(o2::framework::InitContext&)
   {
+    if (cfgUPCMode < -1 || cfgUPCMode > 1) {
+      LOGF(warning, "Invalid cfgUPCMode=%d. Treating it as -1 and writing AO2D output for all UPC modes.", static_cast<int>(cfgUPCMode));
+    }
+
     // Load geometry
     ccdbManager->setURL(ccdbUrl);
     ccdbManager->setCaching(true);
@@ -3624,6 +3629,17 @@ struct QaMatching {
     }
   }
 
+  template <class TCOLLISION>
+  bool shouldWriteQaMatchingAod(TCOLLISION const& collision) const
+  {
+    if (cfgUPCMode != 0 && cfgUPCMode != 1) {
+      return true;
+    }
+
+    const bool upcMode = (collision.flags() & o2::dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0;
+    return static_cast<int>(upcMode) == cfgUPCMode;
+  }
+
   template <class TCOLLISION, class TMUON, class TMFT, class CMFT>
   void fillQaMatchingAodTablesForCollision(TCOLLISION const& collision,
                                            TMUON const& muonTracks,
@@ -3634,6 +3650,10 @@ struct QaMatching {
                                            std::map<int64_t, int64_t> reducedMchTrackIds,
                                            CMFT const& mftCovs)
   {
+    if (!shouldWriteQaMatchingAod(collision)) {
+      return;
+    }
+
     for (const auto& [mchIndex, candidates] : matchingCandidates) {
       if (candidates.empty()) {
         continue;
@@ -3693,6 +3713,10 @@ struct QaMatching {
                                           int32_t reducedEventId,
                                           int& debugCounter)
   {
+    if (!shouldWriteQaMatchingAod(collision)) {
+      return;
+    }
+
     const bool upcMode = (collision.flags() & o2::dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0;
     int32_t mftMultiplicity = static_cast<int32_t>(collisionInfo.mftTracks.size());
     qaMatchingEvents(
@@ -3715,6 +3739,10 @@ struct QaMatching {
                                            int32_t reducedEventId,
                                            const std::map<int64_t, int64_t>& reducedMchTrackIds)
   {
+    if (!shouldWriteQaMatchingAod(collision)) {
+      return;
+    }
+
     std::vector<std::pair<int64_t, int64_t>> orderedMchIds;
     orderedMchIds.reserve(reducedMchTrackIds.size());
     for (const auto& [mchIndex, reducedMchTrackId] : reducedMchTrackIds) {
