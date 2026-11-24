@@ -17,3 +17,7 @@
 
 #pragma link C++ class std::vector < std::vector < unsigned int>> + ;
 #pragma link C++ class std::vector < std::vector < std::uint32_t>> + ;
+#pragma link C++ class o2::fastsim::SecondaryLutAxis + ;
+#pragma link C++ class o2::fastsim::SecondaryLutEntry + ;
+#pragma link C++ class std::vector < o2::fastsim::SecondaryLutEntry> + ;
+#pragma link C++ class o2::fastsim::SecondaryLut + ;
