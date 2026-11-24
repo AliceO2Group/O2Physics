@@ -16,10 +16,10 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
+// #include "Common/CCDB/EventSelectionParams.h"
+// #include "Common/DataModel/Centrality.h"
+// #include "Common/DataModel/EventSelection.h"
+// #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -38,16 +38,15 @@
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
-#include <TH1.h>
+// #include <TH1.h>
 #include <TMath.h>
-#include <TString.h>
+// #include <TString.h>
 #include <TVector2.h>
 
 #include <chrono>
 #include <cmath>
-#include <cstddef>
+// #include <cstddef>
 #include <cstdlib>
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
