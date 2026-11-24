@@ -76,9 +76,9 @@ namespace o2::aod
 {
 namespace CandInfo
 {
-DECLARE_SOA_COLUMN(Pt, pt, float);         //! D candidate pT (GeV/c)
-DECLARE_SOA_COLUMN(Mass, mass, float);     //! D invariant mass (GeV/c^2)
-DECLARE_SOA_COLUMN(Eta, eta, float);       //! D candidate eta
+DECLARE_SOA_COLUMN(Pt, pt, float);                   //! D candidate pT (GeV/c)
+DECLARE_SOA_COLUMN(Mass, mass, float);               //! D invariant mass (GeV/c^2)
+DECLARE_SOA_COLUMN(Eta, eta, float);                 //! D candidate eta
 DECLARE_SOA_COLUMN(BdtScoreBkg, bdtScoreBkg, float); //! BDT background score = ML prob @ classMl[0]
 DECLARE_SOA_COLUMN(BdtScoreNp, bdtScoreNp, float);   //! BDT non-prompt score = ML prob @ classMl[1]
 } // namespace CandInfo
