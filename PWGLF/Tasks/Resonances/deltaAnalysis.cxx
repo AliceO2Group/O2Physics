@@ -191,7 +191,7 @@ struct DeltaAnalysis {
   } mixingCfg;
 
   struct : ConfigurableGroup {
-    Configurable<bool> enableRotationalBackground{"enableRotationalBackground", false, "Compute rotational background by rotating pion phi near PI"};
+    Configurable<bool> enableRotationalBackground{"enableRotationalBackground", true, "Compute rotational background by rotating pion phi near PI"};
     Configurable<int> numberOfRotations{"numberOfRotations", 10, "Number of pion-phi rotations for background"};
     Configurable<float> rotationAngleWindow{"rotationAngleWindow", 6.f, "Pion rotated by angles within PI +/- PI/rotationAngleWindow"};
   } rotBkg;
@@ -404,6 +404,19 @@ struct DeltaAnalysis {
       histos.add("THnSparseMCReco/hAntiDeltaPlusPlusReco", "THnSparse #bar{#Delta}^{++} MC reconstructed (pre-truth-matching)", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
       histos.add("THnSparseMCReco/hDeltaZeroReco", "THnSparse #Delta^{0} MC reconstructed (pre-truth-matching)", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
       histos.add("THnSparseMCReco/hAntiDeltaZeroReco", "THnSparse #bar{#Delta}^{0} MC reconstructed (pre-truth-matching)", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+
+      // Rotational background for MC reconstructed pairs (pre-truth-matching), same recipe as DATA.
+      if (rotBkg.enableRotationalBackground) {
+        histos.add("AnalysisMCReco/hDeltaPlusPlusInvMassRot", "#Delta^{++} invariant mass - MC reconstructed rotational background", kTH2F, {ptAxis, massAxis});
+        histos.add("AnalysisMCReco/hAntiDeltaPlusPlusInvMassRot", "#bar{#Delta}^{++} invariant mass - MC reconstructed rotational background", kTH2F, {ptAxis, massAxis});
+        histos.add("AnalysisMCReco/hDeltaZeroInvMassRot", "#Delta^{0} invariant mass - MC reconstructed rotational background", kTH2F, {ptAxis, massAxis});
+        histos.add("AnalysisMCReco/hAntiDeltaZeroInvMassRot", "#bar{#Delta}^{0} invariant mass - MC reconstructed rotational background", kTH2F, {ptAxis, massAxis});
+
+        histos.add("THnSparseMCReco/hDeltaPlusPlusRot", "THnSparse #Delta^{++} MC reconstructed rotational background", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+        histos.add("THnSparseMCReco/hAntiDeltaPlusPlusRot", "THnSparse #bar{#Delta}^{++} MC reconstructed rotational background", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+        histos.add("THnSparseMCReco/hDeltaZeroRot", "THnSparse #Delta^{0} MC reconstructed rotational background", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+        histos.add("THnSparseMCReco/hAntiDeltaZeroRot", "THnSparse #bar{#Delta}^{0} MC reconstructed rotational background", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      }
 
       histos.add("QAMC/Proton/dcaXYvsPt", "Proton DCA_{xy} vs p_{T} (MC reco, after cuts)", kTH2F, {ptForPIDAxis, dcaXYaxis});
       histos.add("QAMC/Proton/dcaZvsPt", "Proton DCA_{z} vs p_{T} (MC reco, after cuts)", kTH2F, {ptForPIDAxis, dcaZaxis});
@@ -1152,6 +1165,55 @@ struct DeltaAnalysis {
     }
   }
 
+  // Fills ONE rotated pair into the rotational-background histograms.
+  //   isMCReco = false -> DATA histograms        (Analysis/..Rot,        THnSparse/..Rot)
+  //   isMCReco = true  -> MC-reco histograms     (AnalysisMCReco/..Rot,  THnSparseMCReco/..Rot)
+  template <bool isMCReco>
+  void fillDeltaHistogramRotated(int protonSign, int pionSign, float pairPt, float pairMass, float centrality, float rapidity, float weight)
+  {
+    if constexpr (isMCReco) {
+      if (protonSign > 0) {
+        if (pionSign > 0) {
+          histos.fill(HIST("AnalysisMCReco/hDeltaPlusPlusInvMassRot"), pairPt, pairMass, weight);
+          histos.fill(HIST("THnSparseMCReco/hDeltaPlusPlusRot"), pairMass, pairPt, centrality, rapidity, weight);
+        } else {
+          histos.fill(HIST("AnalysisMCReco/hDeltaZeroInvMassRot"), pairPt, pairMass, weight);
+          histos.fill(HIST("THnSparseMCReco/hDeltaZeroRot"), pairMass, pairPt, centrality, rapidity, weight);
+        }
+      } else {
+        if (pionSign < 0) {
+          histos.fill(HIST("AnalysisMCReco/hAntiDeltaPlusPlusInvMassRot"), pairPt, pairMass, weight);
+          histos.fill(HIST("THnSparseMCReco/hAntiDeltaPlusPlusRot"), pairMass, pairPt, centrality, rapidity, weight);
+        } else {
+          histos.fill(HIST("AnalysisMCReco/hAntiDeltaZeroInvMassRot"), pairPt, pairMass, weight);
+          histos.fill(HIST("THnSparseMCReco/hAntiDeltaZeroRot"), pairMass, pairPt, centrality, rapidity, weight);
+        }
+      }
+    } else {
+      if (protonSign > 0) {
+        if (pionSign > 0) {
+          histos.fill(HIST("Analysis/hDeltaPlusPlusInvMassRot"), pairPt, pairMass, weight);
+          histos.fill(HIST("THnSparse/hDeltaPlusPlusRot"), pairMass, pairPt, centrality, rapidity, weight);
+        } else {
+          histos.fill(HIST("Analysis/hDeltaZeroInvMassRot"), pairPt, pairMass, weight);
+          histos.fill(HIST("THnSparse/hDeltaZeroRot"), pairMass, pairPt, centrality, rapidity, weight);
+        }
+      } else {
+        if (pionSign < 0) {
+          histos.fill(HIST("Analysis/hAntiDeltaPlusPlusInvMassRot"), pairPt, pairMass, weight);
+          histos.fill(HIST("THnSparse/hAntiDeltaPlusPlusRot"), pairMass, pairPt, centrality, rapidity, weight);
+        } else {
+          histos.fill(HIST("Analysis/hAntiDeltaZeroInvMassRot"), pairPt, pairMass, weight);
+          histos.fill(HIST("THnSparse/hAntiDeltaZeroRot"), pairMass, pairPt, centrality, rapidity, weight);
+        }
+      }
+    }
+  }
+
+  // Rotational background: rotate the pion phi by PI +/- PI/rotationAngleWindow (numberOfRotations
+  // steps), keep proton, pion pT and pion pz fixed. Default template argument keeps the DATA call
+  // site (fillInvariantMassHistogramsFromPools) unchanged; processMC calls fillRotationalBackground<true>.
+  template <bool isMCReco = false>
   void fillRotationalBackground(int protonSign, int pionSign, float pxProton, float pyProton, float pzProton, float pionPhi, float pionPt, float pzPion, float centrality)
   {
     if (rotBkg.numberOfRotations <= 0) {
@@ -1182,23 +1244,7 @@ struct DeltaAnalysis {
         continue;
       }
 
-      if (protonSign > 0) {
-        if (pionSign > 0) {
-          histos.fill(HIST("Analysis/hDeltaPlusPlusInvMassRot"), rotPt, rotMass, weight);
-          histos.fill(HIST("THnSparse/hDeltaPlusPlusRot"), rotMass, rotPt, centrality, rotY, weight);
-        } else {
-          histos.fill(HIST("Analysis/hDeltaZeroInvMassRot"), rotPt, rotMass, weight);
-          histos.fill(HIST("THnSparse/hDeltaZeroRot"), rotMass, rotPt, centrality, rotY, weight);
-        }
-      } else {
-        if (pionSign < 0) {
-          histos.fill(HIST("Analysis/hAntiDeltaPlusPlusInvMassRot"), rotPt, rotMass, weight);
-          histos.fill(HIST("THnSparse/hAntiDeltaPlusPlusRot"), rotMass, rotPt, centrality, rotY, weight);
-        } else {
-          histos.fill(HIST("Analysis/hAntiDeltaZeroInvMassRot"), rotPt, rotMass, weight);
-          histos.fill(HIST("THnSparse/hAntiDeltaZeroRot"), rotMass, rotPt, centrality, rotY, weight);
-        }
-      }
+      fillDeltaHistogramRotated<isMCReco>(protonSign, pionSign, rotPt, rotMass, centrality, rotY, weight);
     }
   }
 
@@ -1818,6 +1864,14 @@ struct DeltaAnalysis {
           const float pairYReco = RecoDecay::y(std::array{t0.px() + t1.px(), t0.py() + t1.py(), t0.pz() + t1.pz()}, pairMassReco);
           if (pairYReco >= trackCuts.cfgMinY && pairYReco <= trackCuts.cfgMaxY) {
             fillDeltaHistogramMCReco(t0.sign(), t1.sign(), pairPtReco, pairMassReco, centrality, pairYReco);
+            // Rotational background built from the SAME pre-truth-matching pair (t0 = proton, t1 = pion),
+            // exactly as in DATA. Deliberately placed BEFORE truth matching: the background must be made
+            // from all pairs, not only true Delta daughters.
+            if (rotBkg.enableRotationalBackground) {
+              fillRotationalBackground<true>(t0.sign(), t1.sign(),
+                                             t0.px(), t0.py(), t0.pz(),
+                                             t1.phi(), t1.pt(), t1.pz(), centrality);
+            }
           }
         }
 
