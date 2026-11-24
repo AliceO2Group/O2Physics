@@ -160,7 +160,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
       return false;
     }
     if (checkMotherPdg && static_cast<int>(part.mAntiLambda()) == motherPDG) {
-        return false;
+      return false;
     }
     return true;
   }

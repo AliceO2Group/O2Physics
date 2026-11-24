@@ -372,9 +372,9 @@ struct FemtoUniverseProducerMCTruthTask {
   PROCESS_SWITCH(FemtoUniverseProducerMCTruthTask, processTrackMc, "Provide MC data for track analysis", false);
 
   void processTrackMcWithHf(aod::McCollision const&,
-                      soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
-                      soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
-                      aod::BCsWithTimestamps const&)
+                            soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
+                            soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
+                            aod::BCsWithTimestamps const&)
   {
     // magnetic field for run not needed for mc truth
     // fill the tables
@@ -418,9 +418,9 @@ struct FemtoUniverseProducerMCTruthTask {
   PROCESS_SWITCH(FemtoUniverseProducerMCTruthTask, processTrackMcOnlyRecoColl, "Provide MC data for track analysis from truth coll which were recontructed ", false);
 
   void processTrackMcOnlyRecoCollWithHf(aod::McCollisions const& mccols,
-                                  soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const& collisions,
-                                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
-                                  aod::BCsWithTimestamps const&)
+                                        soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const& collisions,
+                                        soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
+                                        aod::BCsWithTimestamps const&)
   {
     // check on the reco collisions
     static std::set<int> mcColIds;
