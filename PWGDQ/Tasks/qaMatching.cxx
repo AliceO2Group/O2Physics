@@ -32,6 +32,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <CommonDataFormat/TimeStamp.h>
+#include <DCAFitter/FwdDCAFitterN.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
@@ -60,6 +61,7 @@
 #include <Math/ProbFuncMathCore.h>
 #include <Math/SMatrix.h>
 #include <Math/SVector.h>
+#include <Math/Vector3D.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TAxis.h>
@@ -618,7 +620,7 @@ struct QaMatching {
 
       AxisSpec resonanceTypeAxis = {8, 0, 8, ""};
       o2::framework::HistPtr histPtr;
-      auto setAxisLabels = [](std::shared_ptr<THnSparse> hn) {
+      auto setAxisLabels = [](const std::shared_ptr<THnSparse>& hn) {
         hn->GetAxis(4)->SetBinLabel(1, "");
         hn->GetAxis(4)->SetBinLabel(2, "#omega");
         hn->GetAxis(4)->SetBinLabel(3, "#phi");
@@ -724,7 +726,7 @@ struct QaMatching {
       AxisSpec uthetaAxis = {500, 0, 50, "pull(theta)"};
       AxisSpec utotAxis = {500, 0, 50, "pull(tot)"};
 
-      auto setResonanceAxisLabels = [](std::shared_ptr<THnSparse> hn) {
+      auto setResonanceAxisLabels = [](const std::shared_ptr<THnSparse>& hn) {
         hn->GetAxis(7)->SetBinLabel(1, "");
         hn->GetAxis(7)->SetBinLabel(2, "#omega");
         hn->GetAxis(7)->SetBinLabel(3, "#phi");
@@ -806,7 +808,7 @@ struct QaMatching {
       AxisSpec promptNonPromptAxis = {2, 0, 2, ""};
 
       o2::framework::HistPtr histPtr;
-      auto setResonanceAxisLabels = [](std::shared_ptr<THnSparse> hn) {
+      auto setResonanceAxisLabels = [](const std::shared_ptr<THnSparse>& hn) {
         hn->GetAxis(4)->SetBinLabel(1, "");
         hn->GetAxis(4)->SetBinLabel(2, "#omega");
         hn->GetAxis(4)->SetBinLabel(3, "#phi");
@@ -1127,7 +1129,7 @@ struct QaMatching {
     AxisSpec correctAssociationAxis = {4, 0, 4, "correct association"};
 
     o2::framework::HistPtr histPtr;
-    auto setResonanceAxisLabels = [](std::shared_ptr<THnSparse> hn) {
+    auto setResonanceAxisLabels = [](const std::shared_ptr<THnSparse>& hn) {
       hn->GetAxis(2)->SetBinLabel(1, "");
       hn->GetAxis(2)->SetBinLabel(2, "#omega");
       hn->GetAxis(2)->SetBinLabel(3, "#phi");
@@ -1137,12 +1139,12 @@ struct QaMatching {
       hn->GetAxis(2)->SetBinLabel(7, "#Upsilon(2S)");
       hn->GetAxis(2)->SetBinLabel(8, "#Upsilon(3S)");
     };
-    auto setPromptAxisLabels = [](std::shared_ptr<THnSparse> hn) {
+    auto setPromptAxisLabels = [](const std::shared_ptr<THnSparse>& hn) {
       hn->GetAxis(3)->SetBinLabel(1, "undef");
       hn->GetAxis(3)->SetBinLabel(2, "prompt");
       hn->GetAxis(3)->SetBinLabel(3, "non-prompt");
     };
-    auto setMotherAxisLabels = [](std::shared_ptr<THnSparse> hn) {
+    auto setMotherAxisLabels = [](const std::shared_ptr<THnSparse>& hn) {
       hn->GetAxis(4)->SetBinLabel(1, "undef");
       hn->GetAxis(4)->SetBinLabel(2, "c mesons");
       hn->GetAxis(4)->SetBinLabel(3, "b mesons");
