@@ -37,6 +37,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <cstdint>
+#include <cstdlib>
 #include <vector>
 
 using namespace o2;
@@ -128,16 +129,16 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
   {
 
     eventHisto.init(&qaRegistry);
-    trackHistoPartOne.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, 0, confPDGCodePartOne, false);
+    trackHistoPartOne.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, confPDGCodePartOne, false);
     if (!confIsSame) {
-      trackHistoPartTwo.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, 0, confPDGCodePartTwo, false);
+      trackHistoPartTwo.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, confPDGCodePartTwo, false);
     }
 
     mixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     mixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
 
-    sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, 0, confUse3D);
-    mixedEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, 0, confUse3D);
+    sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, false, confUse3D);
+    mixedEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, false, confUse3D);
     sameEventCont.setPDGCodes(confPDGCodePartOne, confPDGCodePartTwo);
     mixedEventCont.setPDGCodes(confPDGCodePartOne, confPDGCodePartTwo);
     pairCleaner.init(&qaRegistry);
@@ -232,11 +233,11 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
         if (!passesParticleSelection(p2, confNoPDGPartTwo, confPDGCodePartTwo, confCheckMotherPDGPart2, confMotherPdgPart2)) {
           continue;
         }
-        if (swpart)
+        if (swpart) {
           sameEventCont.setPair<isMC>(p1, p2, multCol, confUse3D);
-        else
+        } else {
           sameEventCont.setPair<isMC>(p2, p1, multCol, confUse3D);
-
+        }
         swpart = !swpart;
       }
     }
@@ -276,11 +277,11 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
       if ((!confNoPDGPartOne && static_cast<int>(p1.tempFitVar()) != confPDGCodePartOne) || (!confNoPDGPartTwo && static_cast<int>(p2.tempFitVar()) != confPDGCodePartTwo)) {
         continue;
       }
-      if (swpart)
+      if (swpart) {
         mixedEventCont.setPair<isMC>(p1, p2, multCol, confUse3D);
-      else
+      } else {
         mixedEventCont.setPair<isMC>(p2, p1, multCol, confUse3D);
-
+      }
       swpart = !swpart;
     }
   }
