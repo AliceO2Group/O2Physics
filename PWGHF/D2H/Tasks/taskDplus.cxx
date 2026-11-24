@@ -764,7 +764,7 @@ struct HfTaskDplus {
         auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus);
         if ((yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) || (std::abs(particle.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)) {
           continue;
-        } 
+        }
         if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
           auto bHadMother = mcGenParticles.rawIteratorAt(particle.idxBhadMotherPart() - mcGenParticles.offset());
           flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
