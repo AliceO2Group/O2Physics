@@ -105,7 +105,7 @@ DECLARE_SOA_TABLE(DalitzElectronsInfo, "AOD", "DQDALITZSEL", dqdalitzelectrons::
                   dqdalitzelectrons::Pt1, dqdalitzelectrons::Eta1, dqdalitzelectrons::Phi1,
                   dqdalitzelectrons::Pt2, dqdalitzelectrons::Eta2, dqdalitzelectrons::Phi2,
                   o2::aod::track::ITSClusterMap, o2::aod::track::TPCChi2NCl, dqdalitzelectrons::TPCNClsFound,
-                  o2::aod::track::Y, o2::aod::track::Z,
+                  o2::aod::track::DcaXY, o2::aod::track::DcaZ,
                   cent::CentFT0C, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange);
 } // namespace o2::aod
 
@@ -607,7 +607,7 @@ struct DalitzSelection {
           } else {
             dalitzInfo(pairFilterMap, track1.pt() * track1.sign(), track1.eta(), track1.phi(), track2.pt() * track2.sign(), track2.eta(), track2.phi(),
                        track2.itsClusterMap(), track2.tpcChi2NCl(), track2.tpcNClsFound() == 256 ? 0 : track2.tpcNClsFound(),
-                       track2.y(), track2.z(),
+                       track2.dcaXY(), track2.dcaZ(),
                        collision.centFT0C(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
           }
         }
