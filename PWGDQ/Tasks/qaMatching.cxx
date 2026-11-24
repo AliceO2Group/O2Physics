@@ -3645,12 +3645,13 @@ struct QaMatching {
       return false;
     }
 
-    if (cfgUPCMode != 0 && cfgUPCMode != 1) {
+    const int upcModeFilter = static_cast<int>(cfgUPCMode);
+    if (upcModeFilter != 0 && upcModeFilter != 1) {
       return true;
     }
 
     const bool upcMode = (collision.flags() & o2::dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0;
-    return static_cast<int>(upcMode) == cfgUPCMode;
+    return static_cast<int>(upcMode) == upcModeFilter;
   }
 
   template <class TCOLLISION, class TMUON, class TMFT, class CMFT>
