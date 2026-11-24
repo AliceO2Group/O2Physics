@@ -453,7 +453,10 @@ struct OnTheFlyTracker {
     }
     nHits = hits.count;
     hitRadii = {hits.innerRadius, hits.outerRadius};
-    return smearer->smearTrack(track, pdg, dNdEta, nHits, wasSmeared);
+    float productionPosition[3];
+    productionTrack.getXYZGlo(productionPosition);
+    const float productionRadius = std::hypot(productionPosition[0], productionPosition[1]);
+    return smearer->smearTrack(track, pdg, dNdEta, productionRadius, nHits, wasSmeared);
   }
 
   void init(o2::framework::InitContext& initContext)
