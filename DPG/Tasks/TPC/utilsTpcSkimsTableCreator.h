@@ -161,6 +161,8 @@ inline void initAdaptDwnsplHistograms(const std::string& ccdbPathForAdaptDwnsplF
     if (!isFileAvailable) {
       LOGF(fatal, "Failed to retrieve expected-momentum histograms file from CCDB: %s/%s", ccdbPathForAdaptDwnsplFile.c_str(), adaptDwnsplFileName.c_str());
     }
+  } else {
+    LOGF(fatal, "The file %s already exists. Make sure that 'adaptDwnsplFileName' has different values for V0 and TPC-TOF", adaptDwnsplFileName.c_str());
   }
   TFile* adaptDwsplFile = TFile::Open(adaptDwnsplFileName.c_str(), "read");
   if (adaptDwsplFile == nullptr || adaptDwsplFile->IsZombie()) {

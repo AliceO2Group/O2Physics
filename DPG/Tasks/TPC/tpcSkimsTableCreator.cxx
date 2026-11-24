@@ -705,7 +705,7 @@ struct TreeWriterTpcTof {
   // Configurable for output table reservation size
   Configurable<float> reserveTrackRatio{"reserveTrackRatio", 0.003, "Ratio of how many tracks are expected in the output table to the input Tracks table size"};
   // Configurables for run condtion table
-  Configurable<std::string> adaptDwnsplHistoName{"adaptDwnsplHistoName", "tree-writer-tpc-v0/hParticleVsMomentum", "Name of the histogram with expected-momentum of particles"};
+  Configurable<std::string> adaptDwnsplHistoName{"adaptDwnsplHistoName", "tree-writer-tpc-tof/hParticleVsMomentum", "Name of the histogram with expected-momentum of particles"};
 
   HistogramRegistry registry{"registry", {}};
 
