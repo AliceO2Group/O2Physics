@@ -12,6 +12,7 @@
 /// \file qSpaceBalanceFunction.cxx
 /// \brief K+K- pair densities in Q_inv, Q_long, Q_out and Q_side, the inputs of q-space balance functions
 /// \author Lakshitha Fernando <lakshithafernando@wayne.edu>
+/// \since Nov/08/2026
 ///
 /// Reads the tables of dpt-dpt-filter, which must run in the same workflow with only kaons enabled,
 /// so that trackacceptedid is 0 for K+ and 1 for K-.
@@ -81,6 +82,10 @@ namespace
 {
 constexpr int NCharges = 2;
 const std::array<std::string, NCharges> chargeTags{"P", "M"};
+/// Index of the per-charge histogram arrays (0 = K+, 1 = K-) from the charge sign (+1, -1)
+constexpr int chargeIndexOf(int sign) { return sign > 0 ? 0 : 1; }
+/// Charge sign (+1, -1) from the accepted id of the dpt-dpt filter (even = positive, odd = negative), as its Sign column
+constexpr int8_t signOf(int trackAcceptedId) { return trackAcceptedId % 2 == 0 ? 1 : -1; }
 enum IdCheckBin {
   kIdCheckGood = 1,
   kIdCheckNotKaonId,
@@ -131,7 +136,7 @@ struct MixKaon {
   float pt = 0.f;
   float eta = 0.f;
   float phi = 0.f;
-  int charge = 0; ///< 0 = K+, 1 = K-
+  int8_t sign = 0; ///< charge sign: +1 = K+, -1 = K-
 };
 using MixEvent = std::vector<MixKaon>;
 /// Balance-function inputs of one level, per event class (z_vtx, multiplicity)
@@ -366,7 +371,7 @@ struct QSpaceBalanceFunction {
   {
     for (auto const& kaon1 : eventA) {
       for (auto const& kaon2 : eventB) {
-        fillBfPair<false>(bf, eventClass, subsample, kaon1.charge, kaon2.charge, kaon1.pt, kaon1.eta, kaon1.phi, kaon2.pt, kaon2.eta, kaon2.phi);
+        fillBfPair<false>(bf, eventClass, subsample, chargeIndexOf(kaon1.sign), chargeIndexOf(kaon2.sign), kaon1.pt, kaon1.eta, kaon1.phi, kaon2.pt, kaon2.eta, kaon2.phi);
       }
     }
   }
@@ -407,7 +412,7 @@ struct QSpaceBalanceFunction {
       if (charge1 >= NCharges) {
         continue;
       }
-      current.push_back({particle1.pt(), particle1.eta(), particle1.phi(), charge1});
+      current.push_back({particle1.pt(), particle1.eta(), particle1.phi(), signOf(charge1)});
       for (auto const& particle2 : particles) {
         const int charge2 = particle2.trackacceptedid();
         if (charge2 >= NCharges || particle1.globalIndex() == particle2.globalIndex()) {
