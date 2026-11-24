@@ -205,7 +205,7 @@ struct EnergyFlowGfw {
   OutputObj<FlowContainer> flowContainer{"FlowContainer"};
   OutputObj<FlowContainer> flowContainerGen{"FlowContainer_gen"};
   OutputObj<GFWWeights> acceptanceWeights{GFWWeights("weights")};
-  OutputObj<TList> runByRunAcceptanceWeightsOutput{"RunByRunAcceptanceWeights", OutputObjHandlingPolicy::AnalysisObject};
+  OutputObj<TList> runByRunAcceptanceWeightsOutput{"RunByRunAcceptanceWeights"};
   std::map<int, GFWWeights*> runByRunAcceptanceWeights;
   GFWWeights* currentRunWeights = nullptr;
   HistogramRegistry registry{"registry"};
