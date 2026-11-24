@@ -160,20 +160,25 @@ inline void initAdaptDwnsplHistograms(const std::string& ccdbPathForAdaptDwnsplF
     const bool isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForAdaptDwnsplFile, ".", metadata, -1, false, adaptDwnsplFileName);
     if (!isFileAvailable) {
       LOGF(fatal, "Failed to retrieve expected-momentum histograms file from CCDB: %s/%s", ccdbPathForAdaptDwnsplFile.c_str(), adaptDwnsplFileName.c_str());
+      return;
     }
   } else {
     LOGF(fatal, "The file %s already exists. Make sure that 'adaptDwnsplFileName' has different values for V0 and TPC-TOF", adaptDwnsplFileName.c_str());
+    return;
   }
   TFile* adaptDwsplFile = TFile::Open(adaptDwnsplFileName.c_str(), "read");
   if (adaptDwsplFile == nullptr || adaptDwsplFile->IsZombie()) {
     LOGF(fatal, "Failed to open expected-momentum histograms file from CCDB: %s/%s", ccdbPathForAdaptDwnsplFile.c_str(), adaptDwnsplFileName.c_str());
+    return;
   }
   histo = dynamic_cast<TH2*>(adaptDwsplFile->Get<TH2>(adaptDwnsplHistoName.c_str())->Clone());
   if (histo == nullptr) {
     LOGF(fatal, "Histogram %s not found in expected-momentum histograms file!", adaptDwnsplHistoName.c_str());
+    return;
   }
   if (histo->GetXaxis()->IsVariableBinSize()) {
     LOGF(fatal, "Histogram %s has variable bin size, which is not allowed!", adaptDwnsplHistoName.c_str());
+    return;
   }
   histo->SetDirectory(nullptr);
   adaptDwsplFile->Close();
