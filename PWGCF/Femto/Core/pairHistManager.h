@@ -172,6 +172,9 @@ enum PairHist {
 
   // event shape enginerring
   kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector,
+  // q in the event-plane frame (see femtomath::rotateToEventPlane):
+  // q_x along Psi_EP (in-plane), q_y perpendicular to Psi_EP (out-of-plane), q_z = q_long (beam)
+  kQxVsQyVsQzVsMtVsCentVsEventPlaneAngle,
 
   kPairHistogramLast
 };
@@ -249,7 +252,6 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis dalitzM12{"dalitzM12", {{100, 0, 10}}, "Mass12 binning of darlitz plot"};
   o2::framework::ConfigurableAxis dalitzM13{"dalitzM13", {{100, 0, 10}}, "Mass13 binning of darlitz plot"};
   o2::framework::Configurable<int> transverseMassType{"transverseMassType", static_cast<int>(modes::TransverseMassType::kAveragePdgMass), "Type of transverse mass (0-> Average Pdg Mass, 1-> Reduced Pdg Mass, 2-> Mt from combined 4 vector)"};
-  o2::framework::Configurable<int> kinematicVariable{"kinematicVariable", static_cast<int>(modes::KinematicVariable::kKstar), "Type of kinematic variable (0->kstar, 1->kT, 2->mT) for PC and CPR plots"};
   o2::framework::ConfigurableAxis binningDeltaEta{"binningDeltaEta", {{35, -1.6, 1.6}}, "Delta eta"};
   o2::framework::ConfigurableAxis binningDeltaPhi{"binningDeltaPhi", {{35, -o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf}}, "Delta phi"};
   o2::framework::Configurable<bool> plotBertschPratt{"plotBertschPratt", false, "(Reco/Mc) Enable 1D projections and 3D (q_out, q_side, q_long) Bertsch-Pratt histograms in LCMS"};
@@ -257,6 +259,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis qside{"qside", {{300, -1.5f, 1.5f}}, "q_{side} (GeV/c) in LCMS"};
   o2::framework::ConfigurableAxis qlong{"qlong", {{300, -1.5f, 1.5f}}, "q_{long} (GeV/c) in LCMS"};
   o2::framework::Configurable<bool> plotEventShape{"plotEventShape", false, "(Reco/Mc) Enable 7D (q_out, q_side, q_long, mt, centrality event plane angle, qvector) histogram"};
+  o2::framework::Configurable<bool> plotEventShapeEpRotated{"plotEventShapeEpRotated", false, "(Reco/Mc) Enable 6D (q_x, q_y, q_z, mt, centrality, event plane angle) histogram with (q_out, q_side) rotated to the event-plane frame (q_x in-plane, q_y out-of-plane)"};
   o2::framework::ConfigurableAxis eventPlaneAngle{"eventPlaneAngle", {{10, 0.f, 1.f * o2::constants::math::TwoPI}}, "event plane angle"};
   o2::framework::ConfigurableAxis qvector{"qvector", {{o2::framework::VARIABLE_WIDTH, 0.50f, 68.50f, 100.50f, 126.50f, 151.50f, 176.50f, 203.50f, 232.50f, 269.50f, 322.50f, 833.50f}}, "qvector"};
   o2::framework::Configurable<bool> plotSH{"plotSH", false, "(Reco) Enable spherical-harmonics decomposition of the pair momentum-difference vector"};
@@ -282,6 +285,7 @@ struct ConfPairCuts : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> mixOnlyCommonAncestor{"mixOnlyCommonAncestor", false, "Require pair to have common ancestor (in the same event)"};
   o2::framework::Configurable<bool> mixOnlyNonCommonAncestor{"mixOnlyNonCommonAncestor", false, "Require pair to have non-common ancestor (in the same event)"};
   o2::framework::Configurable<bool> useMotherAsAncestor{"useMotherAsAncestor", false, "Use the first ancestor (i.e. the direct mother) instead of the partonic mother when requiring (non-)common ancestry"};
+  o2::framework::Configurable<int> kinematicVariable{"kinematicVariable", static_cast<int>(modes::KinematicVariable::kKstar), "Type of kinematic variable (0->kstar, 1->kT, 2->mT) reported by the pair-cleaner kinematic plot"};
 };
 
 // the enum gives the correct index in the array
@@ -328,13 +332,13 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kKstarVsMtVsMass1VsMass2VsPt1VsPt2, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMass1VsMass2VsPt1VsPt2", "k* vs m_{T} vs m_{1} vs m_{2} vs p_{T,1} vs p_{T,2}; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{1} (GeV/#it{c}^{2}); m_{2} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c});"},
       {kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMult", "k* vs m_{T} vs m_{1} vs m_{2} vs p_{T,1} vs p_{T,2} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{1} (GeV/#it{c}^{2}); m_{2} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity;"},
       {kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent", "k* vs m_{T} vs m_{1} vs m_{2} vs p_{T,1} vs p_{T,2} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{1} (GeV/#it{c}^{2}); m_{2} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity; Centrality (%);"},
-      {kKstarVsMtVsMinvVsPt1VsPt2, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2}; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c})"},
-      {kKstarVsMtVsMinvVsPt1VsPt2VsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2VsMult", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity"},
-      {kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity; Centrality (%)"},
-      {kKstarVsMinvVsKtVsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMinvVsKtVsMult", "k* vs m_{Inv} vs k_{T} vs multiplicity; k* (GeV/#it{c}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); Multiplicity"},
-      {kKstarVsMtVsMinvVsKtVsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsKtVsMult", "k* vs m_{T} vs m_{Inv} vs k_{T} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); Multiplicity"},
-      {kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult", "k* vs m_{T} vs m_{Inv} vs k_{T} vs p_{T,1} vs p_{T,2} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity"},
-      {kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent", "k* vs m_{T} vs m_{Inv} vs k_{T} vs p_{T,1} vs p_{T,2} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity; Centrality (%)"},
+      {kKstarVsMtVsMinvVsPt1VsPt2, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2}; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c});"},
+      {kKstarVsMtVsMinvVsPt1VsPt2VsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2VsMult", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity;"},
+      {kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity; Centrality (%);"},
+      {kKstarVsMinvVsKtVsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMinvVsKtVsMult", "k* vs m_{Inv} vs k_{T} vs multiplicity; k* (GeV/#it{c}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); Multiplicity;"},
+      {kKstarVsMtVsMinvVsKtVsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsKtVsMult", "k* vs m_{T} vs m_{Inv} vs k_{T} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); Multiplicity;"},
+      {kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult", "k* vs m_{T} vs m_{Inv} vs k_{T} vs p_{T,1} vs p_{T,2} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity;"},
+      {kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent", "k* vs m_{T} vs m_{Inv} vs k_{T} vs p_{T,1} vs p_{T,2} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity; Centrality (%);"},
       {kDalitz, o2::framework::HistType::kTHnSparseF, "hDalitz", "Dalitz plot; k* (GeV/#it{c}); m^{2}_{123} (GeV/#it{c}^{2})^{2}; m^{2}_{12} (GeV/#it{c}^{2})^{2}; m^{2}_{13} (GeV/#it{c}^{2})^{2};"},
       // reco-vs-mc-truth correlation
       {kTrueKstarVsKstar, o2::framework::HistType::kTH2F, "hTrueKstarVsKstar", "k*_{True} vs k*; k*_{True} (GeV/#it{c});  k* (GeV/#it{c})"},
@@ -374,7 +378,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kMeMixingWindowRaw, o2::framework::HistType::kTH1F, "hMeMixingWindowRaw", "Raw Mixing Window; Raw Mixing Window; Entries"},
       {kMeMixingWindowEffective, o2::framework::HistType::kTH1F, "hMeMixingWindowEffective", "Effective Mixing Window; Effective Mixing Window; Entries"},
       {kMeNpart1VsNpart2, o2::framework::HistType::kTH2F, "hMeNpart1VsNpart2", "# unique particle 1 vs # unique particle 2 in each mixing bin; # particle 1; # particle 2"},
-      {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, o2::framework::HistType::kTHnSparseF, "hVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2", "Mixing bins; V_{z,1} (cm); multiplicity_{1}; centrality_{1} (%); V_{z,2} (cm); multiplicity_{2}; centrality_{2} (%)"},
+      {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, o2::framework::HistType::kTHnSparseF, "hVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2", "Mixing bins; V_{z,1} (cm); multiplicity_{1}; centrality_{1} (%); V_{z,2} (cm); multiplicity_{2}; centrality_{2} (%);"},
       // angular
       {kDeltaEtaDeltaPhi, o2::framework::HistType::kTH2F, "hDeltaEtaDeltaPhi", "#Delta#phi vs #Delta#eta; #Delta#phi; #Delta#eta"},
       // angles
@@ -399,6 +403,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kTrueQsideVsQside, o2::framework::HistType::kTH2F, "hTrueQsideVsQside", "q_{side,True} vs q_{side}; q_{side,True} (GeV/#it{c}); q_{side} (GeV/#it{c})"},
       {kTrueQlongVsQlong, o2::framework::HistType::kTH2F, "hTrueQlongVsQlong", "q_{long,True} vs q_{long}; q_{long,True} (GeV/#it{c}); q_{long} (GeV/#it{c})"},
       {kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, o2::framework::HistType::kTHnSparseF, "hQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector", "Event shape enginering; q_{out} (GeV/#it{c}); q_{side} (GeV/#it{c}); q_{long} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); centrality (%); #varphi_{pair} - #Psi_{EP}; q-vector;"},
+      {kQxVsQyVsQzVsMtVsCentVsEventPlaneAngle, o2::framework::HistType::kTHnSparseF, "hQxVsQyVsQzVsMtVsCentVsEventPlaneAngle", "Event shape enginering, q in the event-plane frame; q_{x}^{EP} (in-plane) (GeV/#it{c}); q_{y}^{EP} (out-of-plane) (GeV/#it{c}); q_{z} = q_{long} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); centrality (%); #varphi_{pair} - #Psi_{EP};"},
     }};
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -461,6 +466,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
     {kQside, {(confAnalysis).qside}},                                                                                                                                                                                                        \
     {kQlong, {(confAnalysis).qlong}},                                                                                                                                                                                                        \
     {kQoutVsQsideVsQlong, {(confAnalysis).qout, (confAnalysis).qside, (confAnalysis).qlong}},                                                                                                                                                \
+    {kQxVsQyVsQzVsMtVsCentVsEventPlaneAngle, {(confAnalysis).qout, (confAnalysis).qside, (confAnalysis).qlong, (confAnalysis).mt, (confAnalysis).centrality, (confAnalysis).eventPlaneAngle}},                                               \
     {kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, {(confAnalysis).qout, (confAnalysis).qside, (confAnalysis).qlong, (confAnalysis).mt, (confAnalysis).centrality, (confAnalysis).eventPlaneAngle, (confAnalysis).qvector}},
 
 // mixing-qa entries are independent of reco vs mc-truth status — both the reco
@@ -648,6 +654,7 @@ class PairHistManager
     mPlotKstarVsBetaLabVsMtVsPt1VsPt2VsMult = ConfPairBinning.plotKstarVsBetaLabVsMtVsPt1VsPt2VsMult.value;
     mPlotBertschPratt = ConfPairBinning.plotBertschPratt.value;
     mPlotEventShape = ConfPairBinning.plotEventShape.value;
+    mPlotEventShapeEpRotated = ConfPairBinning.plotEventShapeEpRotated.value;
 
     mPlotSH = ConfPairBinning.plotSH.value;
     mShUseCent = ConfPairBinning.shUseCent.value;
@@ -666,9 +673,6 @@ class PairHistManager
 
     // transverse mass type
     mMtType = static_cast<modes::TransverseMassType>(ConfPairBinning.transverseMassType.value);
-
-    // kinematic variable
-    mKinematicVariable = static_cast<modes::KinematicVariable>(ConfPairBinning.kinematicVariable.value);
 
     // values for cuts
     mKstarMin = ConfPairCuts.kstarMin.value;
@@ -884,6 +888,12 @@ class PairHistManager
   template <modes::Mode mode>
   void fill()
   {
+    // track the closest (minimum) kstar among accepted pairs this event -- used by the dN/deta
+    // trigger (see dndetaBuilder.h) to tag its per-track entries with the triggering kinematic,
+    // independent of which mode (data/mc/mc-truth) accepted this particular pair
+    if (mMinimumAcceptedKstar < 0.f || mKstar < mMinimumAcceptedKstar) {
+      mMinimumAcceptedKstar = mKstar;
+    }
     if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       fillAnalysis();
     }
@@ -894,6 +904,10 @@ class PairHistManager
       fillMcTruth();
     }
   }
+
+  /// minimum kstar among pairs accepted since the last resetTrackedParticlesPerEvent() call, or -1
+  /// if no pair was accepted this event -- used by the dN/deta trigger (see dndetaBuilder.h)
+  [[nodiscard]] float getMinimumAcceptedKstar() const { return mMinimumAcceptedKstar; }
 
   template <typename T1, typename T2>
   void trackParticlesPerEvent(T1 const& particle1, T2 const& particle2)
@@ -919,6 +933,7 @@ class PairHistManager
     mParticles1PerEvent.reserve(100);
     mParticles2PerEvent.clear();
     mParticles2PerEvent.reserve(100);
+    mMinimumAcceptedKstar = -1.f;
   }
 
   void fillMixingQaSe()
@@ -943,9 +958,11 @@ class PairHistManager
     }
   }
 
-  float getKinematic() const
+  // kinematicVariable is supplied by the caller (CPR/pair cleaner), each of which carries its own
+  // Configurable for it -- this manager has no opinion of its own on which variable to report
+  float getKinematic(modes::KinematicVariable kinematicVariable) const
   {
-    switch (mKinematicVariable) {
+    switch (kinematicVariable) {
       case modes::KinematicVariable::kKstar:
         return mKstar;
         break;
@@ -1099,6 +1116,10 @@ class PairHistManager
 
     if (mPlotEventShape) {
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, HistTable), getHistDesc(kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, HistTable), getHistType(kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, HistTable), {Specs.at(kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector)});
+    }
+
+    if (mPlotEventShapeEpRotated) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kQxVsQyVsQzVsMtVsCentVsEventPlaneAngle, HistTable), getHistDesc(kQxVsQyVsQzVsMtVsCentVsEventPlaneAngle, HistTable), getHistType(kQxVsQyVsQzVsMtVsCentVsEventPlaneAngle, HistTable), {Specs.at(kQxVsQyVsQzVsMtVsCentVsEventPlaneAngle)});
     }
 
     if (mPlotSH) {
@@ -1327,15 +1348,18 @@ class PairHistManager
       std::tie(mQout, mQside, mQlong) = femtomath::computeBertschPrattLCMS(mParticle1, mParticle2);
     }
 
-    if (mPlotEventShape) {
+    if (mPlotEventShape || mPlotEventShapeEpRotated) {
       if (!mPlotBertschPratt) {
         std::tie(mQout, mQside, mQlong) = femtomath::computeBertschPrattLCMS(mParticle1, mParticle2);
       }
       if constexpr (utils::HasEventShape<T4>) {
         mPairPhiFromEventPlaneAngle = femtomath::getPairPhiFromEventPlaneAngle(mParticle1, mParticle2, col);
         mQvector = col.qvec();
+        if (mPlotEventShapeEpRotated) {
+          std::tie(mQxEp, mQyEp) = femtomath::rotateToEventPlane(mQout, mQside, mPairPhiFromEventPlaneAngle);
+        }
       } else {
-        LOG(fatal) << "plotEventShape is enabled but the collision table has no event-shape columns. Breaking...";
+        LOG(fatal) << "plotEventShape or plotEventShapeEpRotated is enabled but the collision table has no event-shape columns. Breaking...";
       }
     }
 
@@ -1502,6 +1526,9 @@ class PairHistManager
     if (mPlotEventShape) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, HistTable)), mQout, mQside, mQlong, mMt, mCent, mPairPhiFromEventPlaneAngle, mQvector);
     }
+    if (mPlotEventShapeEpRotated) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQxVsQyVsQzVsMtVsCentVsEventPlaneAngle, HistTable)), mQxEp, mQyEp, mQlong, mMt, mCent, mPairPhiFromEventPlaneAngle);
+    }
     if (mPlotSH) {
       const float shCentValue = mShUseCent ? mCent : mMult;
       const int iCent = femtomath::findShBin(shCentValue, mShCentEdges);
@@ -1614,7 +1641,6 @@ class PairHistManager
   double mPdgMassNegDau2 = 0;
 
   modes::TransverseMassType mMtType = modes::TransverseMassType::kAveragePdgMass;
-  modes::KinematicVariable mKinematicVariable = modes::KinematicVariable::kKstar;
 
   int mAbsCharge1 = 1;
   int mAbsCharge2 = 1;
@@ -1623,6 +1649,7 @@ class PairHistManager
   float mRecoMass1 = 0.f;
   float mRecoMass2 = 0.f;
   float mKstar = 0.f;
+  float mMinimumAcceptedKstar = -1.f; ///< minimum kstar among pairs accepted this event, see getMinimumAcceptedKstar()
   float mKt = 0.f;
   float mMt = 0.f;
   float mMassInv = 0.f;
@@ -1705,10 +1732,13 @@ class PairHistManager
   bool mPlotBertschPratt = false;
 
   bool mPlotEventShape = false;
+  bool mPlotEventShapeEpRotated = false;
 
   float mQout = 0.f;
   float mQside = 0.f;
   float mQlong = 0.f;
+  float mQxEp = 0.f;
+  float mQyEp = 0.f;
 
   float mDeltaEta = 0.f;
   float mDeltaPhi = 0.f;

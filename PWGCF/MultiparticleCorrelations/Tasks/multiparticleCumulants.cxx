@@ -947,17 +947,17 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
     // Book pt MC rec histogram with this run number:
     if (!wt.fPtRealByRunMap.contains(ebye.fRunNumber)) {
-      auto* hPtReal = new TH1F(Form("hPtReal_run%d", ebye.fRunNumber), Form("pt MC rec distribution for run %d", ebye.fRunNumber), static_cast<int>(tc.fPtBins[0]), tc.fPtBins[1], tc.fPtBins[2]);
-      hPtReal->SetDirectory(nullptr);
-      wt.fPtRealByRunMap.try_emplace(ebye.fRunNumber, hPtReal);
+      auto* hPtRec = new TH1F(Form("hPtRec_run%d", ebye.fRunNumber), Form("pt MC rec distribution for run %d", ebye.fRunNumber), static_cast<int>(tc.fPtBins[0]), tc.fPtBins[1], tc.fPtBins[2]);
+      hPtRec->SetDirectory(nullptr);
+      wt.fPtRealByRunMap.try_emplace(ebye.fRunNumber, hPtRec);
       wt.fWeightHistogramsList->Add(wt.fPtRealByRunMap[ebye.fRunNumber]);
     }
 
     // Book pt MC sim histogram with this run number:
     if (!wt.fPtMCByRunMap.contains(ebye.fRunNumber)) {
-      auto* hPtMC = new TH1F(Form("hPtMC_run%d", ebye.fRunNumber), Form("pt MC sim distribution for run %d", ebye.fRunNumber), static_cast<int>(tc.fPtBins[0]), tc.fPtBins[1], tc.fPtBins[2]);
-      hPtMC->SetDirectory(nullptr);
-      wt.fPtMCByRunMap.try_emplace(ebye.fRunNumber, hPtMC);
+      auto* hPtSim = new TH1F(Form("hPtSim_run%d", ebye.fRunNumber), Form("pt MC sim distribution for run %d", ebye.fRunNumber), static_cast<int>(tc.fPtBins[0]), tc.fPtBins[1], tc.fPtBins[2]);
+      hPtSim->SetDirectory(nullptr);
+      wt.fPtMCByRunMap.try_emplace(ebye.fRunNumber, hPtSim);
       wt.fWeightHistogramsList->Add(wt.fPtMCByRunMap[ebye.fRunNumber]);
     }
 
@@ -975,7 +975,11 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
           continue;
         }
         TString histName = hist->GetName();
-        if (histName.BeginsWith("wPhi")) {
+        if (histName.BeginsWith("wPhiReal") && doprocessRec) {
+          delete phiWeightHist;
+          phiWeightHist = dynamic_cast<TH1F*>(hist->Clone(Form("wPhi_run%d", ebye.fRunNumber)));
+          break;
+        } else if (histName.BeginsWith("wPhiMC") && doprocessRecSim) {
           delete phiWeightHist;
           phiWeightHist = dynamic_cast<TH1F*>(hist->Clone(Form("wPhi_run%d", ebye.fRunNumber)));
           break;

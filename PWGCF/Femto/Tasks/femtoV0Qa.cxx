@@ -52,7 +52,7 @@ struct FemtoV0Qa {
 
   using FemtoLambdas = o2::soa::Join<o2::aod::FLambdas, o2::aod::FLambdaMasks, o2::aod::FLambdaExtras>;
   using FemtoK0shorts = o2::soa::Join<o2::aod::FK0shorts, o2::aod::FK0shortMasks, o2::aod::FK0shortExtras>;
-  using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMass, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids, o2::aod::FItsPurity, o2::aod::FTpcPurity, o2::aod::FTofPurity>;
+  using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMass, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids>;
 
   using FemtoLambdasWithLabel = o2::soa::Join<FemtoLambdas, o2::aod::FLambdaLabels>;
   using FemtoK0shortsWithLabel = o2::soa::Join<FemtoK0shorts, o2::aod::FK0shortLabels>;
@@ -65,7 +65,7 @@ struct FemtoV0Qa {
   // setup for collisions
   collisionbuilder::ConfCollisionSelection collisionSelection;
   o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
-  colhistmanager::CollisionHistManager colHistManager;
+  colhistmanager::CollisionHistManager<colhistmanager::PrefixQa> colHistManager;
   colhistmanager::ConfCollisionBinning confCollisionBinning;
   colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 

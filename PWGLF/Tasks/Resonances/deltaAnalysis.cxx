@@ -48,6 +48,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -112,7 +113,6 @@ struct DeltaAnalysis {
     Configurable<float> cfgMaxY{"cfgMaxY", 0.5f, "Maximum rapidity of reconstructed Delta"};
     Configurable<int> cfgMinITSClusters{"cfgMinITSClusters", 5, "Minimum ITS clusters"};
     Configurable<int> cfgMinTPCClusters{"cfgMinTPCClusters", 70, "Minimum TPC clusters found"};
-    Configurable<int> numberOfInvMassBins{"numberOfInvMassBins", 120, "Number of bins along the invariant mass axis"};
     Configurable<int> cfgMinTPCCrossedRows{"cfgMinTPCCrossedRows", 70, "Minimum TPC crossed pad rows"};
     Configurable<float> cfgMinCrossedRowsOverFindable{"cfgMinCrossedRowsOverFindable", 0.8f, "Minimum ratio crossedRows/findableClusters"};
     Configurable<int> cfgMaxTPCSharedClusters{"cfgMaxTPCSharedClusters", 0, "Maximum TPC shared clusters"};
@@ -127,7 +127,8 @@ struct DeltaAnalysis {
     Configurable<bool> applyTPCChi2NClCut{"applyTPCChi2NClCut", true, "Enable/disable maximum TPC chi2/NCl cut"};
     Configurable<bool> applyITSChi2NClCut{"applyITSChi2NClCut", true, "Enable/disable maximum ITS chi2/NCl cut"};
     Configurable<bool> requirePrimaryTrack{"requirePrimaryTrack", true, "Require isPrimaryTrack flag"};
-    Configurable<bool> requireGlobalTrack{"requireGlobalTrack", true, "Require global track"};
+    Configurable<bool> requireGlobalTrack{"requireGlobalTrack", true, "Require global track (includes the DCA cuts of the standard global-track selection)"};
+    Configurable<bool> requireGlobalTrackWoDCA{"requireGlobalTrackWoDCA", false, "Require global track without DCA cuts (isGlobalTrackWoDCA). Mutually exclusive with requireGlobalTrack"};
     Configurable<bool> requirePVContributor{"requirePVContributor", true, "Require PV-contributor flag"};
   } trackCuts;
 
@@ -190,13 +191,16 @@ struct DeltaAnalysis {
   } mixingCfg;
 
   struct : ConfigurableGroup {
-    Configurable<bool> enableRotationalBackground{"enableRotationalBackground", false, "Compute rotational background by rotating pion phi near PI"};
+    Configurable<bool> enableRotationalBackground{"enableRotationalBackground", true, "Compute rotational background by rotating pion phi near PI"};
     Configurable<int> numberOfRotations{"numberOfRotations", 10, "Number of pion-phi rotations for background"};
     Configurable<float> rotationAngleWindow{"rotationAngleWindow", 6.f, "Pion rotated by angles within PI +/- PI/rotationAngleWindow"};
   } rotBkg;
 
   struct : ConfigurableGroup {
-    ConfigurableAxis cfgPtAxis{"cfgPtAxis", {VARIABLE_WIDTH, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4.0, 5.0, 7.0, 10.0}, "#it{p}_{T} (GeV/#it{c})"};
+    // Fixed-width {nBins, min, max} or variable-width {VARIABLE_WIDTH, edge0, edge1, ...}; both can be set from the JSON config.
+    ConfigurableAxis cfgPtAxis{"cfgPtAxis", {50, 0.0, 12.0}, "p_{T} (GeV/c)"};
+    ConfigurableAxis cfgMassAxis{"cfgMassAxis", {120, 1.0, 6.0}, "M_{inv} (GeV/#it{c}^{2})"};
+    ConfigurableAxis cfgMomentumAxis{"cfgMomentumAxis", {50, 0.0, 12.0}, "p (GeV/#it{c})"};
     ConfigurableAxis cfgCentAxis{"cfgCentAxis", {VARIABLE_WIDTH, 0.f, 10.f, 20.f, 30.f, 40.f, 50.f, 60.f, 70.f, 80.f, 90.f, 100.f}, "Centrality (%)"};
     ConfigurableAxis cfgVtxAxis{"cfgVtxAxis", {VARIABLE_WIDTH, -12.f, -10.f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 12.f}, "Vertex z [cm]"};
     ConfigurableAxis cfgRapAxis{"cfgRapAxis", {20, -1.0, 1.0}, "Rapidity y"};
@@ -226,6 +230,11 @@ struct DeltaAnalysis {
                    << ", bins=" << binsVec.size() << ")";
       }
     };
+    if (trackCuts.requireGlobalTrack && trackCuts.requireGlobalTrackWoDCA) {
+      LOG(fatal) << "requireGlobalTrack and requireGlobalTrackWoDCA are mutually exclusive: "
+                 << "enable only one of them (or neither).";
+    }
+
     chkSz(protonPID.protonTPCNSigmaCutPerBin, protonPID.protonTPCPIDMomentumBins, "proton TPC PID");
     chkSz(protonPID.protonTOFNSigmaCutPerBin, protonPID.protonTOFPIDMomentumBins, "proton TOF PID");
     chkSz(pionPID.pionTPCNSigmaCutPerBin, pionPID.pionTPCPIDMomentumBins, "pion TPC PID");
@@ -246,15 +255,15 @@ struct DeltaAnalysis {
     mPionDCAPtEdges = dcaCuts.pionDCAPtBinEdges.value;
     mPionMaxDCAxy = dcaCuts.pionMaxDCAxyPerPtBin.value;
 
-    const AxisSpec ptAxis{50, 0., 20., "p_{T} (GeV/c)"};
-    const AxisSpec massAxis{trackCuts.numberOfInvMassBins, 1.0, 6.0, "M_{inv} (GeV/#it{c}^{2})"};
+    const AxisSpec ptAxis{axes.cfgPtAxis, "p_{T} (GeV/c)"};
+    const AxisSpec massAxis{axes.cfgMassAxis, "M_{inv} (GeV/#it{c}^{2})"};
     const AxisSpec centAxis{axes.cfgCentAxis, "Centrality (%)"};
     const AxisSpec vtxAxis{axes.cfgVtxAxis, "Vertex z [cm]"};
     const AxisSpec rapAxis{axes.cfgRapAxis, "Rapidity y"};
     const AxisSpec nSigmaTPCaxis{100, -5., 5., "n#sigma^{TPC}"};
     const AxisSpec nSigmaTOFaxis{100, -5., 5., "n#sigma^{TOF}"};
-    const AxisSpec momentumAxis{50, 0., 20., "p (GeV/#it{c})"};
-    const AxisSpec ptForPIDAxis{50, 0., 20., "p_{T} (GeV/#it{c})"};
+    const AxisSpec momentumAxis{axes.cfgMomentumAxis, "p (GeV/#it{c})"};
+    const AxisSpec ptForPIDAxis{axes.cfgPtAxis, "p_{T} (GeV/#it{c})"};
     const AxisSpec dcaXYaxis{200, -0.2f, 0.2f, "DCA_{xy} (cm)"};
     const AxisSpec dcaZaxis{200, -1.2f, 1.2f, "DCA_{z} (cm)"};
     const AxisSpec tpcClusAxis{200, 0, 200, "N_{clusters}^{TPC}"};
@@ -395,6 +404,19 @@ struct DeltaAnalysis {
       histos.add("THnSparseMCReco/hAntiDeltaPlusPlusReco", "THnSparse #bar{#Delta}^{++} MC reconstructed (pre-truth-matching)", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
       histos.add("THnSparseMCReco/hDeltaZeroReco", "THnSparse #Delta^{0} MC reconstructed (pre-truth-matching)", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
       histos.add("THnSparseMCReco/hAntiDeltaZeroReco", "THnSparse #bar{#Delta}^{0} MC reconstructed (pre-truth-matching)", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+
+      // Rotational background for MC reconstructed pairs (pre-truth-matching), same recipe as DATA.
+      if (rotBkg.enableRotationalBackground) {
+        histos.add("AnalysisMCReco/hDeltaPlusPlusInvMassRot", "#Delta^{++} invariant mass - MC reconstructed rotational background", kTH2F, {ptAxis, massAxis});
+        histos.add("AnalysisMCReco/hAntiDeltaPlusPlusInvMassRot", "#bar{#Delta}^{++} invariant mass - MC reconstructed rotational background", kTH2F, {ptAxis, massAxis});
+        histos.add("AnalysisMCReco/hDeltaZeroInvMassRot", "#Delta^{0} invariant mass - MC reconstructed rotational background", kTH2F, {ptAxis, massAxis});
+        histos.add("AnalysisMCReco/hAntiDeltaZeroInvMassRot", "#bar{#Delta}^{0} invariant mass - MC reconstructed rotational background", kTH2F, {ptAxis, massAxis});
+
+        histos.add("THnSparseMCReco/hDeltaPlusPlusRot", "THnSparse #Delta^{++} MC reconstructed rotational background", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+        histos.add("THnSparseMCReco/hAntiDeltaPlusPlusRot", "THnSparse #bar{#Delta}^{++} MC reconstructed rotational background", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+        histos.add("THnSparseMCReco/hDeltaZeroRot", "THnSparse #Delta^{0} MC reconstructed rotational background", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+        histos.add("THnSparseMCReco/hAntiDeltaZeroRot", "THnSparse #bar{#Delta}^{0} MC reconstructed rotational background", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      }
 
       histos.add("QAMC/Proton/dcaXYvsPt", "Proton DCA_{xy} vs p_{T} (MC reco, after cuts)", kTH2F, {ptForPIDAxis, dcaXYaxis});
       histos.add("QAMC/Proton/dcaZvsPt", "Proton DCA_{z} vs p_{T} (MC reco, after cuts)", kTH2F, {ptForPIDAxis, dcaZaxis});
@@ -755,6 +777,9 @@ struct DeltaAnalysis {
       return false;
     }
     if (trackCuts.requireGlobalTrack && !track.isGlobalTrack()) {
+      return false;
+    }
+    if (trackCuts.requireGlobalTrackWoDCA && !track.isGlobalTrackWoDCA()) {
       return false;
     }
     if (trackCuts.requirePVContributor && !track.isPVContributor()) {
@@ -1140,6 +1165,55 @@ struct DeltaAnalysis {
     }
   }
 
+  // Fills ONE rotated pair into the rotational-background histograms.
+  //   isMCReco = false -> DATA histograms        (Analysis/..Rot,        THnSparse/..Rot)
+  //   isMCReco = true  -> MC-reco histograms     (AnalysisMCReco/..Rot,  THnSparseMCReco/..Rot)
+  template <bool isMCReco>
+  void fillDeltaHistogramRotated(int protonSign, int pionSign, float pairPt, float pairMass, float centrality, float rapidity, float weight)
+  {
+    if constexpr (isMCReco) {
+      if (protonSign > 0) {
+        if (pionSign > 0) {
+          histos.fill(HIST("AnalysisMCReco/hDeltaPlusPlusInvMassRot"), pairPt, pairMass, weight);
+          histos.fill(HIST("THnSparseMCReco/hDeltaPlusPlusRot"), pairMass, pairPt, centrality, rapidity, weight);
+        } else {
+          histos.fill(HIST("AnalysisMCReco/hDeltaZeroInvMassRot"), pairPt, pairMass, weight);
+          histos.fill(HIST("THnSparseMCReco/hDeltaZeroRot"), pairMass, pairPt, centrality, rapidity, weight);
+        }
+      } else {
+        if (pionSign < 0) {
+          histos.fill(HIST("AnalysisMCReco/hAntiDeltaPlusPlusInvMassRot"), pairPt, pairMass, weight);
+          histos.fill(HIST("THnSparseMCReco/hAntiDeltaPlusPlusRot"), pairMass, pairPt, centrality, rapidity, weight);
+        } else {
+          histos.fill(HIST("AnalysisMCReco/hAntiDeltaZeroInvMassRot"), pairPt, pairMass, weight);
+          histos.fill(HIST("THnSparseMCReco/hAntiDeltaZeroRot"), pairMass, pairPt, centrality, rapidity, weight);
+        }
+      }
+    } else {
+      if (protonSign > 0) {
+        if (pionSign > 0) {
+          histos.fill(HIST("Analysis/hDeltaPlusPlusInvMassRot"), pairPt, pairMass, weight);
+          histos.fill(HIST("THnSparse/hDeltaPlusPlusRot"), pairMass, pairPt, centrality, rapidity, weight);
+        } else {
+          histos.fill(HIST("Analysis/hDeltaZeroInvMassRot"), pairPt, pairMass, weight);
+          histos.fill(HIST("THnSparse/hDeltaZeroRot"), pairMass, pairPt, centrality, rapidity, weight);
+        }
+      } else {
+        if (pionSign < 0) {
+          histos.fill(HIST("Analysis/hAntiDeltaPlusPlusInvMassRot"), pairPt, pairMass, weight);
+          histos.fill(HIST("THnSparse/hAntiDeltaPlusPlusRot"), pairMass, pairPt, centrality, rapidity, weight);
+        } else {
+          histos.fill(HIST("Analysis/hAntiDeltaZeroInvMassRot"), pairPt, pairMass, weight);
+          histos.fill(HIST("THnSparse/hAntiDeltaZeroRot"), pairMass, pairPt, centrality, rapidity, weight);
+        }
+      }
+    }
+  }
+
+  // Rotational background: rotate the pion phi by PI +/- PI/rotationAngleWindow (numberOfRotations
+  // steps), keep proton, pion pT and pion pz fixed. Default template argument keeps the DATA call
+  // site (fillInvariantMassHistogramsFromPools) unchanged; processMC calls fillRotationalBackground<true>.
+  template <bool isMCReco = false>
   void fillRotationalBackground(int protonSign, int pionSign, float pxProton, float pyProton, float pzProton, float pionPhi, float pionPt, float pzPion, float centrality)
   {
     if (rotBkg.numberOfRotations <= 0) {
@@ -1170,23 +1244,7 @@ struct DeltaAnalysis {
         continue;
       }
 
-      if (protonSign > 0) {
-        if (pionSign > 0) {
-          histos.fill(HIST("Analysis/hDeltaPlusPlusInvMassRot"), rotPt, rotMass, weight);
-          histos.fill(HIST("THnSparse/hDeltaPlusPlusRot"), rotMass, rotPt, centrality, rotY, weight);
-        } else {
-          histos.fill(HIST("Analysis/hDeltaZeroInvMassRot"), rotPt, rotMass, weight);
-          histos.fill(HIST("THnSparse/hDeltaZeroRot"), rotMass, rotPt, centrality, rotY, weight);
-        }
-      } else {
-        if (pionSign < 0) {
-          histos.fill(HIST("Analysis/hAntiDeltaPlusPlusInvMassRot"), rotPt, rotMass, weight);
-          histos.fill(HIST("THnSparse/hAntiDeltaPlusPlusRot"), rotMass, rotPt, centrality, rotY, weight);
-        } else {
-          histos.fill(HIST("Analysis/hAntiDeltaZeroInvMassRot"), rotPt, rotMass, weight);
-          histos.fill(HIST("THnSparse/hAntiDeltaZeroRot"), rotMass, rotPt, centrality, rotY, weight);
-        }
-      }
+      fillDeltaHistogramRotated<isMCReco>(protonSign, pionSign, rotPt, rotMass, centrality, rotY, weight);
     }
   }
 
@@ -1429,18 +1487,6 @@ struct DeltaAnalysis {
   using BinningTypeFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
   using BinningTypeNTPV = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentNTPV>;
 
-  BinningTypeFT0M binningFT0M{{axes.cfgVtxAxis, axes.cfgCentAxis}};
-  BinningTypeFT0A binningFT0A{{axes.cfgVtxAxis, axes.cfgCentAxis}};
-  BinningTypeFT0C binningFT0C{{axes.cfgVtxAxis, axes.cfgCentAxis}};
-  BinningTypeFV0A binningFV0A{{axes.cfgVtxAxis, axes.cfgCentAxis}};
-  BinningTypeNTPV binningNTPV{{axes.cfgVtxAxis, axes.cfgCentAxis}};
-
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0M> pairFT0M{binningFT0M, mixingCfg.cfgNoMixedEvents, -1, &cache};
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0A> pairFT0A{binningFT0A, mixingCfg.cfgNoMixedEvents, -1, &cache};
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0C> pairFT0C{binningFT0C, mixingCfg.cfgNoMixedEvents, -1, &cache};
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFV0A> pairFV0A{binningFV0A, mixingCfg.cfgNoMixedEvents, -1, &cache};
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeNTPV> pairNTPV{binningNTPV, mixingCfg.cfgNoMixedEvents, -1, &cache};
-
   std::vector<TrackCandidate> mProtonPool;
   std::vector<TrackCandidate> mPionPool;
 
@@ -1524,31 +1570,6 @@ struct DeltaAnalysis {
     }
   }
 
-  void processMixedEvent(EventCandidates const&, TrackCandidates const&)
-  {
-    switch (evSel.cfgCentralityEstimator) {
-      case delta_analysis::kFT0M:
-        runMixedEvent(pairFT0M);
-        break;
-      case delta_analysis::kFT0A:
-        runMixedEvent(pairFT0A);
-        break;
-      case delta_analysis::kFT0C:
-        runMixedEvent(pairFT0C);
-        break;
-      case delta_analysis::kFV0A:
-        runMixedEvent(pairFV0A);
-        break;
-      case delta_analysis::kNTPV:
-        runMixedEvent(pairNTPV);
-        break;
-      default:
-        runMixedEvent(pairFT0M);
-        break;
-    }
-  }
-  PROCESS_SWITCH(DeltaAnalysis, processMixedEvent, "Process mixed event", true);
-
   // ── MC reconstructed event mixing ────────────────────────────────────────────────────────
   // Mirrors runMixedEvent()/processMixedEvent() above exactly (same event-selection call, same
   // "protons1+pions2" / "protons2+pions1" combinatorics, same centrality-estimator dispatch),
@@ -1574,31 +1595,56 @@ struct DeltaAnalysis {
     }
   }
 
-  void processMCEventMixing(EventCandidates const&, TrackCandidates const&)
+  template <typename BinningType>
+  void runMixingWithBinning(EventCandidates const& collisions, TrackCandidates const& tracks, bool isMC)
+  {
+    BinningType binning{{axes.cfgVtxAxis, axes.cfgCentAxis}, true};
+    const int nMixedEvents = mixingCfg.cfgNoMixedEvents;
+    auto tracksTuple = std::make_tuple(tracks);
+    SameKindPair<EventCandidates, TrackCandidates, BinningType> mixingPair{binning, nMixedEvents, -1, collisions, tracksTuple, &cache};
+    if (isMC) {
+      runMixedEventMC(mixingPair);
+    } else {
+      runMixedEvent(mixingPair);
+    }
+  }
+
+  void dispatchMixing(EventCandidates const& collisions, TrackCandidates const& tracks, bool isMC)
+  {
+    switch (evSel.cfgCentralityEstimator) {
+      case delta_analysis::kFT0M:
+        runMixingWithBinning<BinningTypeFT0M>(collisions, tracks, isMC);
+        break;
+      case delta_analysis::kFT0A:
+        runMixingWithBinning<BinningTypeFT0A>(collisions, tracks, isMC);
+        break;
+      case delta_analysis::kFT0C:
+        runMixingWithBinning<BinningTypeFT0C>(collisions, tracks, isMC);
+        break;
+      case delta_analysis::kFV0A:
+        runMixingWithBinning<BinningTypeFV0A>(collisions, tracks, isMC);
+        break;
+      case delta_analysis::kNTPV:
+        runMixingWithBinning<BinningTypeNTPV>(collisions, tracks, isMC);
+        break;
+      default:
+        runMixingWithBinning<BinningTypeFT0M>(collisions, tracks, isMC);
+        break;
+    }
+  }
+
+  void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
+  {
+    dispatchMixing(collisions, tracks, false);
+  }
+  PROCESS_SWITCH(DeltaAnalysis, processMixedEvent, "Process mixed event", true);
+
+  void processMCEventMixing(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     if (!mixingCfg.enableMCEventMixing) {
       return;
     }
-    switch (evSel.cfgCentralityEstimator) {
-      case delta_analysis::kFT0M:
-        runMixedEventMC(pairFT0M);
-        break;
-      case delta_analysis::kFT0A:
-        runMixedEventMC(pairFT0A);
-        break;
-      case delta_analysis::kFT0C:
-        runMixedEventMC(pairFT0C);
-        break;
-      case delta_analysis::kFV0A:
-        runMixedEventMC(pairFV0A);
-        break;
-      case delta_analysis::kNTPV:
-        runMixedEventMC(pairNTPV);
-        break;
-      default:
-        runMixedEventMC(pairFT0M);
-        break;
-    }
+    dispatchMixing(collisions, tracks, true);
   }
   PROCESS_SWITCH(DeltaAnalysis, processMCEventMixing, "Process MC reconstructed event mixing (reuses DATA mixing pairs; no truth matching)", false);
 
@@ -1818,6 +1864,14 @@ struct DeltaAnalysis {
           const float pairYReco = RecoDecay::y(std::array{t0.px() + t1.px(), t0.py() + t1.py(), t0.pz() + t1.pz()}, pairMassReco);
           if (pairYReco >= trackCuts.cfgMinY && pairYReco <= trackCuts.cfgMaxY) {
             fillDeltaHistogramMCReco(t0.sign(), t1.sign(), pairPtReco, pairMassReco, centrality, pairYReco);
+            // Rotational background built from the SAME pre-truth-matching pair (t0 = proton, t1 = pion),
+            // exactly as in DATA. Deliberately placed BEFORE truth matching: the background must be made
+            // from all pairs, not only true Delta daughters.
+            if (rotBkg.enableRotationalBackground) {
+              fillRotationalBackground<true>(t0.sign(), t1.sign(),
+                                             t0.px(), t0.py(), t0.pz(),
+                                             t1.phi(), t1.pt(), t1.pz(), centrality);
+            }
           }
         }
 

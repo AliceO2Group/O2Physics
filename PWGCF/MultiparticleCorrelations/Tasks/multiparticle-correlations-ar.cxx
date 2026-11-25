@@ -1304,7 +1304,7 @@ struct MultiParticleCorrelationsARTask {
     harmonic[counter1] = hhold;
     if (mult == 1)
       return c - c2;
-    return c - double(mult) * c2;
+    return c - static_cast<double>(mult) * c2;
   }
 
   using CollisionsInstance = soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::Mults>;

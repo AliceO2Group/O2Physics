@@ -44,9 +44,8 @@ namespace o2::analysis::femto::triplethistmanager
 enum TripletHist {
   // standard 1D
   kQ3,
-  kMt, // average mt of all pairs in the triplet
-  // kstar betweeen single particles
-  kKstar12,
+  kMt,      // average mt of all pairs in the triplet
+  kKstar12, // kstar between single particles, always computed
   kKstar13,
   kKstar23,
   // standard 2D
@@ -125,7 +124,6 @@ struct ConfTripletBinning : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("TripletBinning");
   o2::framework::Configurable<bool> plot1D{"plot1D", true, "Enable 1D histograms"};
   o2::framework::Configurable<bool> plot2D{"plot2D", true, "Enable 2D histograms"};
-  o2::framework::Configurable<bool> plotKstar{"plotKstar", false, "Enable kstar histograms"};
   o2::framework::Configurable<bool> plotPt1VsPt2VsPt3{"plotPt1VsPt2VsPt3", false, "Enable 3D histogram (Pt1 vs Pt2 vs Pt3)"};
   o2::framework::Configurable<bool> plotQ3VsPt1VsPt2VsPt3{"plotQ3VsPt1VsPt2VsPt3", false, "Enable 4D histogram (Q3 vs Pt1 vs Pt2 vs Pt3)"};
   o2::framework::Configurable<bool> plotQ3VsMtVsMult{"plotQ3VsMtVsMult", false, "Enable 3D histogram (Q3 vs Mt vs Mult)"};
@@ -145,7 +143,6 @@ struct ConfTripletBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis mass2{"mass2", {{100, 0, 2}}, "Mass binning for particle 2 (if particle has mass getter, otherwise PDG mass)"};
   o2::framework::ConfigurableAxis mass3{"mass3", {{100, 0, 2}}, "Mass binning for particle 3 (if particle has mass getter, otherwise PDG mass)"};
   o2::framework::Configurable<int> transverseMassType{"transverseMassType", static_cast<int>(modes::TransverseMassType::kAveragePdgMass), "Type of transverse mass (0-> Average Pdg Mass, 1-> Reduced Pdg Mass, 2-> Mt from combined 4 vector)"};
-  o2::framework::Configurable<int> kinematicVariable{"kinematicVariable", static_cast<int>(modes::KinematicVariable::kQ3), "Type of kinematic variable (2->mT, 3->Q3) for PC and CPR plots"};
 };
 
 struct ConfTripletCuts : o2::framework::ConfigurableGroup {
@@ -163,6 +160,7 @@ struct ConfTripletCuts : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> mixOnlyCommonAncestor{"mixOnlyCommonAncestor", false, "Require pair to have common ancestor (in the same event)"};
   o2::framework::Configurable<bool> mixOnlyNonCommonAncestor{"mixOnlyNonCommonAncestor", false, "Require pair to have non-common ancestor (in the same event)"};
   o2::framework::Configurable<bool> useMotherAsAncestor{"useMotherAsAncestor", false, "Use the first ancestor (i.e. the direct mother) instead of the partonic mother when requiring (non-)common ancestry"};
+  o2::framework::Configurable<int> kinematicVariable{"kinematicVariable", static_cast<int>(modes::KinematicVariable::kQ3), "Type of kinematic variable (2->mT, 3->Q3) reported by the triplet-cleaner kinematic plot"};
 };
 
 // the enum gives the correct index in the array
@@ -185,7 +183,7 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
       // n-D
       {kPt1VsPt2VsPt3, o2::framework::HistType::kTHnSparseF, "hPt1VsPt2VsPt3", "p_{T,1} vs p_{T,2} vs p_{T,3}; p_{T,1} (GeV/#it{c});p_{T,2} (GeV/#it{c});p_{T,3} (GeV/#it{c});"},
       {kQ3VsPt1VsPt2VsPt3, o2::framework::HistType::kTHnSparseF, "hQ3VsPt1VsPt2VsPt3", "Q_{3} vs p_{T,1} vs p_{T,2} vs p_{T,3}; Q_{3} (GeV/#it{c}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c});"},
-      {kQ3VsMtVsMult, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsMult", "Q_{3} vs m_{T} vs multiplicity; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity"},
+      {kQ3VsMtVsMult, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsMult", "Q_{3} vs m_{T} vs multiplicity; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity;"},
       {kQ3VsMtVsMultVsCent, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsMultVsCent", "Q_{3} vs m_{T} vs multiplicity vs centrality; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity; Centrality (%);"},
       // n-D with mass
       {kQ3VsMtVsPt1VsPt2VsPt3VsMult, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsPt1VsPt2VsPt3VsMult", "Q_{3} vs m_{T} vs p_{T,1} vs p_{T,2} vs p_{T,3} vs multiplicity; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}) ; p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c}); Multiplicity;"},
@@ -337,7 +335,6 @@ class TripletHistManager
 
     // transverse mass type
     mMtType = static_cast<modes::TransverseMassType>(ConfTripletBinning.transverseMassType.value);
-    mKinematicVariable = static_cast<modes::KinematicVariable>(ConfTripletBinning.kinematicVariable.value);
 
     // values for cuts
     mQ3Min = ConfTripletCuts.q3Min.value;
@@ -351,7 +348,6 @@ class TripletHistManager
     mKstar23Min = ConfTripletCuts.kstar23Min.value;
     mKstar23Max = ConfTripletCuts.kstar23Max.value;
 
-    mPlotKstar = ConfTripletBinning.plotKstar.value;
     mPlotPt1VsPt2VsPt3 = ConfTripletBinning.plotPt1VsPt2VsPt3.value;
     mPlotQ3VsPt1VsPt2VsPt3 = ConfTripletBinning.plotQ3VsPt1VsPt2VsPt3.value;
     mPlotQ3VsMtVsMult = ConfTripletBinning.plotQ3VsMtVsMult.value;
@@ -359,14 +355,6 @@ class TripletHistManager
     mPlotQ3VsMtVsPt1VsPt2VsPt3VsMult = ConfTripletBinning.plotQ3VsMtVsPt1VsPt2VsPt3VsMult.value;
     mPlotQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent = ConfTripletBinning.plotQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent.value;
     mPlotQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3 = ConfTripletBinning.plotQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3.value;
-
-    // kstar12/13/23 are only computed on demand (they cost 3 extra femtomath::getKstar() calls per
-    // triplet); anything that needs the value -- the 1D plots, the 7D histogram, or a cut --
-    // must be OR'ed in here, otherwise it silently stays at its default of 0
-    mRequireKstar = mPlotKstar || mPlotQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3 ||
-                    mKstar12Min > 0.f || mKstar12Max > 0.f ||
-                    mKstar13Min > 0.f || mKstar13Max > 0.f ||
-                    mKstar23Min > 0.f || mKstar23Max > 0.f;
 
     mPairCorrelationQa = ConfMixing.enablePairCorrelationQa.value;
     mEventMixingQa = ConfMixing.enableEventMixingQa.value;
@@ -417,11 +405,9 @@ class TripletHistManager
     // set Q3
     mQ3 = femtomath::getQ3(mParticle1, mParticle2, mParticle3);
 
-    if (mRequireKstar) {
-      mKstar12 = femtomath::getKstar(mParticle1, mParticle2);
-      mKstar13 = femtomath::getKstar(mParticle1, mParticle3);
-      mKstar23 = femtomath::getKstar(mParticle2, mParticle3);
-    }
+    mKstar12 = femtomath::getKstar(mParticle1, mParticle2);
+    mKstar13 = femtomath::getKstar(mParticle1, mParticle3);
+    mKstar23 = femtomath::getKstar(mParticle2, mParticle3);
 
     // if one of the particles has a mass getter, we cache the value for the filling later
     if constexpr (utils::HasMass<T1>) {
@@ -470,14 +456,12 @@ class TripletHistManager
     mMt = mTrueMt;
     mQ3 = mTrueQ3;
 
-    if (mRequireKstar) {
-      mTrueKstar12 = femtomath::getKstar(mTrueParticle1, mTrueParticle2);
-      mTrueKstar13 = femtomath::getKstar(mTrueParticle1, mTrueParticle3);
-      mTrueKstar23 = femtomath::getKstar(mTrueParticle2, mTrueParticle3);
-      mKstar12 = mTrueKstar12;
-      mKstar13 = mTrueKstar13;
-      mKstar23 = mTrueKstar23;
-    }
+    mTrueKstar12 = femtomath::getKstar(mTrueParticle1, mTrueParticle2);
+    mTrueKstar13 = femtomath::getKstar(mTrueParticle1, mTrueParticle3);
+    mTrueKstar23 = femtomath::getKstar(mTrueParticle2, mTrueParticle3);
+    mKstar12 = mTrueKstar12;
+    mKstar13 = mTrueKstar13;
+    mKstar23 = mTrueKstar23;
   }
 
   // same event: one (truth) collision for true mult/cent
@@ -586,6 +570,12 @@ class TripletHistManager
   template <modes::Mode mode>
   void fill()
   {
+    // track the closest (minimum) Q3 among accepted triplets this event -- used by the dN/deta
+    // trigger (see dndetaBuilder.h) to tag its per-track entries with the triggering kinematic,
+    // independent of which mode (data/mc/mc-truth) accepted this particular triplet
+    if (mMinimumAcceptedQ3 < 0.f || mQ3 < mMinimumAcceptedQ3) {
+      mMinimumAcceptedQ3 = mQ3;
+    }
     if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       fillAnalysis();
     }
@@ -597,9 +587,19 @@ class TripletHistManager
     }
   }
 
-  float getKinematic() const
+  /// minimum Q3 among triplets accepted since the last resetTrackedParticlesPerEvent() call, or -1
+  /// if no triplet was accepted this event -- used by the dN/deta trigger (see dndetaBuilder.h)
+  [[nodiscard]] float getMinimumAcceptedQ3() const { return mMinimumAcceptedQ3; }
+
+  // kinematicVariable is supplied by the caller (CPR/triplet cleaner), each of which carries its
+  // own Configurable for it -- this manager has no opinion of its own on which variable to report.
+  // kstar has no single value for a triplet, so kKstar reports the average of the three pair kstars.
+  float getKinematic(modes::KinematicVariable kinematicVariable) const
   {
-    switch (mKinematicVariable) {
+    switch (kinematicVariable) {
+      case modes::KinematicVariable::kKstar:
+        return (mKstar12 + mKstar13 + mKstar23) / 3.f;
+        break;
       case modes::KinematicVariable::kMt:
         return mMt;
         break;
@@ -642,6 +642,7 @@ class TripletHistManager
     mParticles2PerEvent.reserve(100);
     mParticles3PerEvent.clear();
     mParticles3PerEvent.reserve(100);
+    mMinimumAcceptedQ3 = -1.f;
   }
 
   void fillMixingQaSe()
@@ -673,6 +674,9 @@ class TripletHistManager
     if (mPlot1d) {
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3, HistTable), getHistDesc(kQ3, HistTable), getHistType(kQ3, HistTable), {Specs.at(kQ3)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kMt, HistTable), getHistDesc(kMt, HistTable), getHistType(kMt, HistTable), {Specs.at(kMt)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar12, HistTable), getHistDesc(kKstar12, HistTable), getHistType(kKstar12, HistTable), {Specs.at(kKstar12)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar13, HistTable), getHistDesc(kKstar13, HistTable), getHistType(kKstar13, HistTable), {Specs.at(kKstar13)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar23, HistTable), getHistDesc(kKstar23, HistTable), getHistType(kKstar23, HistTable), {Specs.at(kKstar23)});
     }
     if (mPlot2d) {
       mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsQ3, HistTable), getHistDesc(kPt1VsQ3, HistTable), getHistType(kPt1VsQ3, HistTable), {Specs.at(kPt1VsQ3)});
@@ -682,12 +686,6 @@ class TripletHistManager
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3VsMult, HistTable), getHistDesc(kQ3VsMult, HistTable), getHistType(kQ3VsMult, HistTable), {Specs.at(kQ3VsMult)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3VsCent, HistTable), getHistDesc(kQ3VsCent, HistTable), getHistType(kQ3VsCent, HistTable), {Specs.at(kQ3VsCent)});
       // TODO: implement histograms differential im mass of the particles
-    }
-
-    if (mPlotKstar) {
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar12, HistTable), getHistDesc(kKstar12, HistTable), getHistType(kKstar12, HistTable), {Specs.at(kKstar12)});
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar13, HistTable), getHistDesc(kKstar13, HistTable), getHistType(kKstar13, HistTable), {Specs.at(kKstar13)});
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar23, HistTable), getHistDesc(kKstar23, HistTable), getHistType(kKstar23, HistTable), {Specs.at(kKstar23)});
     }
 
     if (mPlotPt1VsPt2VsPt3) {
@@ -743,7 +741,7 @@ class TripletHistManager
     }
   }
 
-  // pure mc-truth triplet (kMc without kReco) — reuses the mPlot1d/mPlot2d/mPlotKstar flags,
+  // pure mc-truth triplet (kMc without kReco) — reuses the mPlot1d/mPlot2d flags,
   // since these are histogram-content flags, not mode flags
   void initMcTruth(std::map<TripletHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
@@ -751,6 +749,9 @@ class TripletHistManager
     if (mPlot1d) {
       mHistogramRegistry->add(mcDir + getHistNameV2(kTrueQ3, HistTable), getHistDesc(kTrueQ3, HistTable), getHistType(kTrueQ3, HistTable), {Specs.at(kTrueQ3)});
       mHistogramRegistry->add(mcDir + getHistNameV2(kTrueMt, HistTable), getHistDesc(kTrueMt, HistTable), getHistType(kTrueMt, HistTable), {Specs.at(kTrueMt)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueKstar12, HistTable), getHistDesc(kTrueKstar12, HistTable), getHistType(kTrueKstar12, HistTable), {Specs.at(kTrueKstar12)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueKstar13, HistTable), getHistDesc(kTrueKstar13, HistTable), getHistType(kTrueKstar13, HistTable), {Specs.at(kTrueKstar13)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueKstar23, HistTable), getHistDesc(kTrueKstar23, HistTable), getHistType(kTrueKstar23, HistTable), {Specs.at(kTrueKstar23)});
     }
     if (mPlot2d) {
       mHistogramRegistry->add(mcDir + getHistNameV2(kTruePt1VsTrueQ3, HistTable), getHistDesc(kTruePt1VsTrueQ3, HistTable), getHistType(kTruePt1VsTrueQ3, HistTable), {Specs.at(kTruePt1VsTrueQ3)});
@@ -760,11 +761,6 @@ class TripletHistManager
       mHistogramRegistry->add(mcDir + getHistNameV2(kTrueQ3VsTrueMult, HistTable), getHistDesc(kTrueQ3VsTrueMult, HistTable), getHistType(kTrueQ3VsTrueMult, HistTable), {Specs.at(kTrueQ3VsTrueMult)});
       mHistogramRegistry->add(mcDir + getHistNameV2(kTrueQ3VsTrueCent, HistTable), getHistDesc(kTrueQ3VsTrueCent, HistTable), getHistType(kTrueQ3VsTrueCent, HistTable), {Specs.at(kTrueQ3VsTrueCent)});
     }
-    if (mPlotKstar) {
-      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueKstar12, HistTable), getHistDesc(kTrueKstar12, HistTable), getHistType(kTrueKstar12, HistTable), {Specs.at(kTrueKstar12)});
-      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueKstar13, HistTable), getHistDesc(kTrueKstar13, HistTable), getHistType(kTrueKstar13, HistTable), {Specs.at(kTrueKstar13)});
-      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueKstar23, HistTable), getHistDesc(kTrueKstar23, HistTable), getHistType(kTrueKstar23, HistTable), {Specs.at(kTrueKstar23)});
-    }
   }
 
   void fillMcTruth()
@@ -772,6 +768,9 @@ class TripletHistManager
     if (mPlot1d) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueQ3, HistTable)), mTrueQ3);
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueMt, HistTable)), mTrueMt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueKstar12, HistTable)), mTrueKstar12);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueKstar13, HistTable)), mTrueKstar13);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueKstar23, HistTable)), mTrueKstar23);
     }
     if (mPlot2d) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTruePt1VsTrueQ3, HistTable)), mTrueParticle1.Pt(), mTrueQ3);
@@ -781,11 +780,6 @@ class TripletHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueQ3VsTrueMult, HistTable)), mTrueQ3, mTrueMult);
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueQ3VsTrueCent, HistTable)), mTrueQ3, mTrueCent);
     }
-    if (mPlotKstar) {
-      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueKstar12, HistTable)), mTrueKstar12);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueKstar13, HistTable)), mTrueKstar13);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueKstar23, HistTable)), mTrueKstar23);
-    }
   }
 
   void fillAnalysis()
@@ -793,6 +787,9 @@ class TripletHistManager
     if (mPlot1d) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3, HistTable)), mQ3);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kMt, HistTable)), mMt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar12, HistTable)), mKstar12);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar13, HistTable)), mKstar13);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar23, HistTable)), mKstar23);
     }
     if (mPlot2d) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsQ3, HistTable)), mParticle1.Pt(), mQ3);
@@ -801,12 +798,6 @@ class TripletHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsMt, HistTable)), mQ3, mMt);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsMult, HistTable)), mQ3, mMult);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsCent, HistTable)), mQ3, mCent);
-    }
-
-    if (mPlotKstar) {
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar12, HistTable)), mKstar12);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar13, HistTable)), mKstar13);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar23, HistTable)), mKstar23);
     }
 
     if (mPlotPt1VsPt2VsPt3) {
@@ -857,7 +848,6 @@ class TripletHistManager
   double mPdgMass3 = 0.;
 
   modes::TransverseMassType mMtType = modes::TransverseMassType::kAveragePdgMass;
-  modes::KinematicVariable mKinematicVariable = modes::KinematicVariable::kQ3;
 
   int mAbsCharge1 = 1;
   int mAbsCharge2 = 1;
@@ -869,6 +859,7 @@ class TripletHistManager
   float mMass2 = 0.f;
   float mMass3 = 0.f;
   float mQ3 = 0.f;
+  float mMinimumAcceptedQ3 = -1.f; ///< minimum Q3 among triplets accepted this event, see getMinimumAcceptedQ3()
   float mMt = 0.f;
   float mMult = 0.f;
   float mCent = 0.f;
@@ -906,8 +897,6 @@ class TripletHistManager
   bool mPlot1d = true;
   bool mPlot2d = true;
 
-  bool mPlotKstar = false;
-  bool mRequireKstar = false;
   bool mPlotPt1VsPt2VsPt3 = false;
   bool mPlotQ3VsPt1VsPt2VsPt3 = false;
   bool mPlotQ3VsMtVsMult = false;

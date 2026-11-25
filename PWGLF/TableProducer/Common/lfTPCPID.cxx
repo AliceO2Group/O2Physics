@@ -203,7 +203,7 @@ struct bbParams {
   void setValues(TList* l)
   {
     const char* bbname = Form("BBParameter_%s", name.c_str());
-    TH1F* h = static_cast<TH1F*>(l->FindObject(bbname));
+    TH1F* h = dynamic_cast<TH1F*>(l->FindObject(bbname));
     if (!h) {
       l->ls();
       LOG(fatal) << "bbParams `" << name << "` :: did not find BetheBloch parametrization " << bbname << " in the input list";
@@ -237,9 +237,9 @@ struct bbParams {
     } else {
       TString cn = obj->ClassName();
       if (cn.Contains("TF1")) {
-        postCorrectionFun = static_cast<TF1*>(l->FindObject(obj->GetName()));
+        postCorrectionFun = dynamic_cast<TF1*>(l->FindObject(obj->GetName()));
       } else if (cn.Contains("TGraph")) {
-        postCorrection = static_cast<TGraph*>(l->FindObject(obj->GetName()));
+        postCorrection = dynamic_cast<TGraph*>(l->FindObject(obj->GetName()));
       } else {
         LOG(fatal) << "Cannot hanlde class " << cn << " for post calib object " << objname;
       }
@@ -255,9 +255,9 @@ struct bbParams {
     } else {
       TString cn = obj->ClassName();
       if (cn.Contains("TF1")) {
-        postCorrectionFunSigma = static_cast<TF1*>(l->FindObject(obj->GetName()));
+        postCorrectionFunSigma = dynamic_cast<TF1*>(l->FindObject(obj->GetName()));
       } else if (cn.Contains("TGraph")) {
-        postCorrectionSigma = static_cast<TGraph*>(l->FindObject(obj->GetName()));
+        postCorrectionSigma = dynamic_cast<TGraph*>(l->FindObject(obj->GetName()));
       } else {
         LOG(fatal) << "Cannot hanlde class " << cn << " for post calib sigma object " << objname;
       }
@@ -349,7 +349,7 @@ struct bbParams {
         if (!f->IsOpen()) {
           LOG(fatal) << "The input file " << f->GetName() << " is not open";
         }
-        TList* l = static_cast<TList*>(f->Get("ccdb_object"));
+        TList* l = dynamic_cast<TList*>(f->Get("ccdb_object"));
         if (!l) {
           f->ls();
           LOG(fatal) << "The input file " << post << " does not contain the TList ccdb_object";

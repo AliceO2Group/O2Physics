@@ -18,6 +18,8 @@
 #include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
+#include "PWGCF/Femto/Core/collisionTagger.h"
+#include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairBuilder.h"
 #include "PWGCF/Femto/Core/pairCleaner.h"
@@ -33,11 +35,13 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
+#include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 
 #include <map>
@@ -55,6 +59,15 @@ struct FemtoPairTrackCascade {
   using FemtoCollisionsWithLabel = o2::soa::Join<FemtoCollisions, o2::aod::FColLabels>;
   using FilteredFemtoCollisionsWithLabel = o2::soa::Filtered<FemtoCollisionsWithLabel>;
   using FilteredFemtoCollisionWithLabel = FilteredFemtoCollisionsWithLabel::iterator;
+
+  // opt-in FColTags , only needed by processXiMixedEventWithTagging/processOmegaMixedEventWithTagging
+  using FemtoCollisionsWithTags = o2::soa::Join<FemtoCollisions, o2::aod::FColTags>;
+  using FilteredFemtoCollisionsWithTags = o2::soa::Filtered<FemtoCollisionsWithTags>;
+
+  // opt-in: carries both FColLabels and FColTags, for the processXxxMixedEventMcWithTagging
+  // functions below -- same collisionFilter auto-apply reasoning as FemtoCollisionsWithTags above.
+  using FemtoCollisionsWithLabelAndTags = o2::soa::Join<FemtoCollisionsWithLabel, o2::aod::FColTags>;
+  using FilteredFemtoCollisionsWithLabelAndTags = o2::soa::Filtered<FemtoCollisionsWithLabelAndTags>;
 
   using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMasks>;
   using FemtoXis = o2::soa::Join<o2::aod::FXis, o2::aod::FXiMasks>;
@@ -77,6 +90,11 @@ struct FemtoPairTrackCascade {
   collisionbuilder::ConfCollisionSelection collisionSelection;
   o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::ConfCollisionBinning confCollisionBinning;
+
+  // opt-in, only needed by processXiMixedEventWithTagging/processOmegaMixedEventWithTagging --
+  // two separate instances since Xi and Omega are tagged independently (see init()).
+  collisiontagger::ConfTagging<collisiontagger::role::TrackXiPair> confTaggingXi;
+  collisiontagger::ConfTagging<collisiontagger::role::TrackOmegaPair> confTaggingOmega;
 
   // setup tracks
   trackbuilder::ConfTrackSelection1 confTrackSelection;
@@ -185,18 +203,43 @@ struct FemtoPairTrackCascade {
   closepairrejection::ConfCprTrackCascadeBachelor confCprBachelor;
   closepairrejection::ConfCprTrackV0Daughter confCprV0Daughter;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
-    bool processData = doprocessXiSameEvent || doprocessXiMixedEvent || doprocessOmegaSameEvent || doprocessOmegaMixedEvent;
+    bool processData = doprocessXiSameEvent || doprocessXiMixedEvent || doprocessOmegaSameEvent || doprocessOmegaMixedEvent || doprocessXiMixedEventWithTagging || doprocessOmegaMixedEventWithTagging;
     bool processFitVars = doprocessXiSameEventWithFitVars || doprocessXiMixedEventWithFitVars || doprocessOmegaSameEventWithFitVars || doprocessOmegaMixedEventWithFitVars;
-    bool processMc = doprocessXiSameEventMc || doprocessXiMixedEventMc || doprocessOmegaSameEventMc || doprocessOmegaMixedEventMc;
+    bool processMc = doprocessXiSameEventMc || doprocessXiMixedEventMc || doprocessOmegaSameEventMc || doprocessOmegaMixedEventMc || doprocessXiMixedEventMcWithTagging || doprocessOmegaMixedEventMcWithTagging;
 
     if (static_cast<int>(processData) + static_cast<int>(processFitVars) + static_cast<int>(processMc) > 1) {
       LOG(fatal) << "More than one of data, FitVars or mc processing is activated. Breaking...";
     }
 
-    bool processXi = doprocessXiSameEvent || doprocessXiSameEventWithFitVars || doprocessXiSameEventMc || doprocessXiMixedEvent || doprocessXiMixedEventWithFitVars || doprocessXiMixedEventMc;
-    bool processOmega = doprocessOmegaSameEvent || doprocessOmegaSameEventWithFitVars || doprocessOmegaSameEventMc || doprocessOmegaMixedEvent || doprocessOmegaMixedEventWithFitVars || doprocessOmegaMixedEventMc;
+    bool processXi = doprocessXiSameEvent || doprocessXiSameEventWithFitVars || doprocessXiSameEventMc || doprocessXiMixedEvent || doprocessXiMixedEventWithFitVars || doprocessXiMixedEventMc || doprocessXiMixedEventWithTagging || doprocessXiMixedEventMcWithTagging;
+    bool processOmega = doprocessOmegaSameEvent || doprocessOmegaSameEventWithFitVars || doprocessOmegaSameEventMc || doprocessOmegaMixedEvent || doprocessOmegaMixedEventWithFitVars || doprocessOmegaMixedEventMc || doprocessOmegaMixedEventWithTagging || doprocessOmegaMixedEventMcWithTagging;
+
+    // Each species discovers its own tag bit independently (see Core/collisionTagger.h).
+    if (doprocessXiMixedEventWithTagging || doprocessOmegaMixedEventWithTagging || doprocessXiMixedEventMcWithTagging || doprocessOmegaMixedEventMcWithTagging) {
+      auto const& workflows = context.services().get<o2::framework::RunningWorkflowInfo const>();
+      auto const& ownDevice = context.services().get<o2::framework::DeviceSpec const>();
+      auto roles = collisiontagger::discoverTaggedRoles(workflows);
+      if (doprocessXiMixedEventWithTagging || doprocessXiMixedEventMcWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingXi.Role);
+        if (bit < 0) {
+          LOG(fatal) << "A processXiMixedEventWithTagging* function is enabled, but no femto-collision-tagger device "
+                     << "(with processTrackCascade enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingXi.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (Xi): " << bit;
+      }
+      if (doprocessOmegaMixedEventWithTagging || doprocessOmegaMixedEventMcWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingOmega.Role);
+        if (bit < 0) {
+          LOG(fatal) << "A processOmegaMixedEventWithTagging* function is enabled, but no femto-collision-tagger device "
+                     << "(with processTrackCascade enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingOmega.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (Omega): " << bit;
+      }
+    }
 
     if (processXi && processOmega) {
       LOG(fatal) << "Both xi-track and omega-track processing is enabled. Breaking...";
@@ -280,6 +323,17 @@ struct FemtoPairTrackCascade {
   }
   PROCESS_SWITCH(FemtoPairTrackCascade, processXiSameEventMc, "Enable processing same event processing for tracks and xis with mc information", false);
 
+  // Opt-in counterpart of processXiMixedEvent() below -- same "Partition declared and bound
+  // inside process()" idiom as femtoPairTrackTrack.cxx's processMixedEventWithTagging. Requires
+  // a femto-collision-tagger device (processTrackCascade enabled) in the same workflow -- see init().
+  void processXiMixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoXis const& /*xis*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingXi.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairTrackXiBuilder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, trackPartition, xiPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairTrackCascade, processXiMixedEventWithTagging, "Enable processing mixed event processing for tracks and xis, pre-filtered using the collision tagger", false);
+
   void processXiMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoXis const& /*xis*/)
   {
     pairTrackXiBuilder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, trackPartition, xiPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
@@ -304,6 +358,16 @@ struct FemtoPairTrackCascade {
   }
   PROCESS_SWITCH(FemtoPairTrackCascade, processXiMixedEventWithFitVars, "Enable processing mixed event processing for tracks and xis, carrying through FitVars tables", false);
 
+  // Same tagging filter as processXiMixedEventWithTagging above, on a collision table that also
+  // carries FColLabels, and the MC-aware processMixedEvent overload (same as processXiMixedEventMc).
+  void processXiMixedEventMcWithTagging(FilteredFemtoCollisionsWithLabelAndTags const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithLabelAndTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingXi.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairTrackXiBuilder.processMixedEvent<modes::Mode::kMe_Reco_Mc_FitVars>(taggedCollisions, mcCols, tracks, trackWithLabelPartition, xiWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairTrackCascade, processXiMixedEventMcWithTagging, "Enable processing mixed event processing for tracks and xis, pre-filtered using the collision tagger, with mc information", false);
+
   void processOmegaSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoOmegas const& omegas)
   {
     pairTrackOmegaBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition, omegas, omegaPartition, cache);
@@ -315,6 +379,15 @@ struct FemtoPairTrackCascade {
     pairTrackOmegaBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc_FitVars>(col, mcCols, tracks, trackWithLabelPartition, omegas, omegaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackCascade, processOmegaSameEventMc, "Enable processing same event processing for tracks and omegas with mc information", false);
+
+  // Opt-in counterpart of processOmegaMixedEvent() below -- same idiom as processXiMixedEventWithTagging above.
+  void processOmegaMixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoOmegas const& /*omegas*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingOmega.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairTrackOmegaBuilder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, trackPartition, omegaPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairTrackCascade, processOmegaMixedEventWithTagging, "Enable processing mixed event processing for tracks and omegas, pre-filtered using the collision tagger", false);
 
   void processOmegaMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoOmegas const& /*omegas*/)
   {
@@ -339,6 +412,16 @@ struct FemtoPairTrackCascade {
     pairTrackOmegaBuilder.processMixedEvent<modes::Mode::kMe_Reco_FitVars>(cols, tracks, trackWithFitVarsPartition, omegaWithFitVarsPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackCascade, processOmegaMixedEventWithFitVars, "Enable processing mixed event processing for tracks and omegas, carrying through FitVars tables", false);
+
+  // Same tagging filter as processOmegaMixedEventWithTagging above, on a collision table that
+  // also carries FColLabels, and the MC-aware processMixedEvent overload (same as processOmegaMixedEventMc).
+  void processOmegaMixedEventMcWithTagging(FilteredFemtoCollisionsWithLabelAndTags const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoOmegasWithLabel const& /*omegas*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithLabelAndTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingOmega.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairTrackOmegaBuilder.processMixedEvent<modes::Mode::kMe_Reco_Mc_FitVars>(taggedCollisions, mcCols, tracks, trackWithLabelPartition, omegaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairTrackCascade, processOmegaMixedEventMcWithTagging, "Enable processing mixed event processing for tracks and omegas, pre-filtered using the collision tagger, with mc information", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)

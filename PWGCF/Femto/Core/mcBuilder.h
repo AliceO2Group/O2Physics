@@ -673,25 +673,11 @@ class McBuilder
     if (!mcParticle.has_mothers()) {
       return -1;
     }
-    auto motherIds = mcParticle.mothersIds();
-    // adapted these checks from MCUtils in PWGEM
-    const int defaultMotherSize = 2;
-    std::vector<int> allMotherIds;
-    if (motherIds.size() == defaultMotherSize && motherIds[1] > motherIds[0]) {
-      // keep for now, might be needed later
-      // && ((80 < std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 90) || (100 < std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 110))) {
-      // Pythia: mother range
-      for (int i = motherIds[0]; i <= motherIds[1]; i++) {
-        allMotherIds.push_back(i);
-      }
-    } else {
-      // Otherwise just use them as given
-      for (const int& id : motherIds) {
-        allMotherIds.push_back(id);
-      }
-    }
+    // RecoDecay::getOrderedMotherIds() implements the Pythia mother-id-range expansion (gated on the particle's gen status code)
+    std::vector<int64_t> allMotherIds;
+    RecoDecay::getOrderedMotherIds(mcParticle, allMotherIds, /*searchUpToQuark=*/true);
     // Loop over all mothers
-    for (const int& i : allMotherIds) {
+    for (const int64_t& i : allMotherIds) {
 
       if (i < 0 || i >= mcParticles.size()) {
         continue;
@@ -722,19 +708,12 @@ class McBuilder
       if (!current.has_mothers()) {
         break;
       }
-      auto motherIds = current.mothersIds();
-      int nextIndex = -1;
-      const int defaultMotherSize = 2;
-      if (motherIds.size() == defaultMotherSize && motherIds[1] > motherIds[0]) {
-        nextIndex = motherIds[0];
-      } else {
-        for (const int& id : motherIds) {
-          if (id >= 0 && id < mcParticles.size()) {
-            nextIndex = id;
-            break;
-          }
-        }
-      }
+      // RecoDecay::getOrderedMotherIds() implements the Pythia mother-id-range expansion (gated on
+      // the particle's gen status code). This function only ever follows a single branch upward,
+      // so just the first ordered id is used.
+      std::vector<int64_t> motherIdsOrdered;
+      RecoDecay::getOrderedMotherIds(current, motherIdsOrdered, /*searchUpToQuark=*/true);
+      int64_t nextIndex = motherIdsOrdered.empty() ? -1 : motherIdsOrdered.front();
 
       if (nextIndex < 0 || nextIndex >= mcParticles.size()) {
         break;
@@ -802,6 +781,8 @@ struct McBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::StoredFSigmaLabels> producedSigmaLabels;
   o2::framework::Produces<o2::aod::StoredFSigmaPlusLabels> producedSigmaPlusLabels;
   o2::framework::Produces<o2::aod::StoredFSigmaPlusPcmLabels> producedSigmaPlusPcmLabels;
+  o2::framework::Produces<o2::aod::StoredFLambdaLabels> producedLambdaLabels;
+  o2::framework::Produces<o2::aod::StoredFXiLabels> producedXiLabels;
 };
 
 struct ConfMcTablesDerivedToDerived : o2::framework::ConfigurableGroup {
@@ -894,6 +875,32 @@ class McBuilderDerivedToDerived
     }
     auto mcParticle = sigmaPlusPcm.template fMcParticle_as<T3>();
     mcProducts.producedSigmaPlusPcmLabels(
+      this->getOrCreateMcParticleRow(mcParticle, mcCols, mcMothers, mcPartonicMothers, mcProducts));
+  }
+
+  /// Write one FLambdaLabels row. lambda must be joined with FLambdaLabels upstream.
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fillLambdaWithLabel(T1 const& lambda, T2 const& mcCols, T3 const& /*mcParticles*/, T4 const& mcMothers, T5 const& mcPartonicMothers, T6& mcProducts)
+  {
+    if (!lambda.has_fMcParticle()) {
+      mcProducts.producedLambdaLabels(-1);
+      return;
+    }
+    auto mcParticle = lambda.template fMcParticle_as<T3>();
+    mcProducts.producedLambdaLabels(
+      this->getOrCreateMcParticleRow(mcParticle, mcCols, mcMothers, mcPartonicMothers, mcProducts));
+  }
+
+  /// Write one FXiLabels row. xi must be joined with FXiLabels upstream.
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fillXiWithLabel(T1 const& xi, T2 const& mcCols, T3 const& /*mcParticles*/, T4 const& mcMothers, T5 const& mcPartonicMothers, T6& mcProducts)
+  {
+    if (!xi.has_fMcParticle()) {
+      mcProducts.producedXiLabels(-1);
+      return;
+    }
+    auto mcParticle = xi.template fMcParticle_as<T3>();
+    mcProducts.producedXiLabels(
       this->getOrCreateMcParticleRow(mcParticle, mcCols, mcMothers, mcPartonicMothers, mcProducts));
   }
 

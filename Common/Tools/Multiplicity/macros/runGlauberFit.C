@@ -357,8 +357,8 @@ int runGlauberFit(const TString& lInputFileName = "AnalysisResultsLHC24ar.root",
   c1->cd(1);
   TLatex* lat = new TLatex();
   lat->SetNDC();
-  Float_t lPosText = 0.76;
-  Float_t lYShift = 0.25;
+  // Float_t lPosText = 0.76; // FIXME: unused
+  // Float_t lYShift = 0.25; // FIXME: unused
   lat->SetTextSize(0.042);
 
   // save the glauber parameters explicitly

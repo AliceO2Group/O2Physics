@@ -10,8 +10,7 @@ are filled from the options. Output types are left to ONNX Runtime.
 
 Build O2Physics normally after loading its O2 environment. This target links
 `O2::ML`, `O2::GPUCommon`, `ONNXRuntime::ONNXRuntime`, and the platform dynamic
-loader. No HIP or CUDA headers are required for building the task. The O2 installation
-must contain `ML/3rdparty/GPUORTFloat16.h` and its GPUCommon headers.
+loader. No HIP or CUDA headers are required for building the task.
 
 For AMD GPU runs, ONNX Runtime must contain **MIGraphXExecutionProvider**, and its
 MIGraphX/ROCm shared libraries, including `libamdhip64.so`, must be discoverable
@@ -78,7 +77,7 @@ masking on AMD or `CUDA_VISIBLE_DEVICES` masking on NVIDIA. Run one benchmark pr
 GPU. Repeat with the same batch sizes and CPU thread count, and compare several
 runs. Small batches can be dominated by host overhead and transfers.
 
-`--fp16 true` selects O2's `o2::OrtDataType::Float16_t` input storage and checks
+`--fp16 true` selects O2's GCC/Clang's _Float16 input storage and checks
 that the model input is FLOAT16. It does not convert model weights or prove that
 every internal operation is FP16. Export/inspect the model accordingly. FP16
 models retaining FP32 input interfaces need an adapted input path; this small

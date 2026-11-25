@@ -72,15 +72,26 @@ using namespace constants::math;
 struct RadialFlowDecorr {
 
   // --- fixed constants ---------------------------------------------------------
-  static constexpr int KIntM = 4; // pT-moment order used in the sums (need m up to 3 for c3)
-  static constexpr int KIntK = 4; // weight-power order used in the sums (need k up to 3 for c3)
+  static constexpr int KIntM = 3; // pT-moment order used in the sums (m up to 2 for c2)
+  static constexpr int KIntK = 3; // weight-power order used in the sums (k up to 2 for c2)
 
-  static constexpr int KNEtaHalfBinsMax = 8;                // 0.8 / 0.1: finest (DATA) bins per side
+  static constexpr int KNEtaHalfBinsMax = 10;               // 1.0 / 0.1: finest bins per side (axes span |eta| < KEtaFineMax)
   static constexpr int KNEtaMax = 2 * KNEtaHalfBinsMax + 1; // + index-0 full-range reference bin
+  // Observable pT ranges (GeV/c), all filled in the same mean and fluctuation passes with every variation:
+  // 0 = nominal (0.2, 3], 1 = (0.5, 3] (suffix _pt1). Tracks and MC particles are
+  // selected in the map range [KPtMin, KPtMax] in every pass; each range is applied by ptRangeMask.
+  static constexpr int KNPtMax = 2;
+  static constexpr int KNFlatAxes = 5;            // flattening weight maps: (vz, sign, pT, eta, phi); raw maps add the weight-type axis
+  static constexpr std::size_t KMinEdges = 2;     // a binning needs at least two edges
+  static constexpr std::size_t KNAlignHalves = 2; // FT0 / FV0 alignment: one entry per detector half
+  static constexpr float KFwdTruthEtaMin = 1.5f;  // forward truth signal: charged primaries with |eta| >= this
+  static constexpr std::array<std::array<float, 2>, KNPtMax> KPtRanges = {{{0.2f, 3.f}, {0.5f, 3.f}}};
 
-  // Bootstrap: at most KMaxBoot replicas of 8 profiles each, in one registry of at most
-  // 512 objects. nBoot = min(cfgNBootstrap, KMaxBoot) replicas are filled.
+  // Bootstrap: at most KMaxBoot replicas; range 0 in histosBoot, range 1 in histosBoot2, each registry
+  // of at most KMaxRegistryObjects objects. bootstrap.n = min(cfgNBootstrap, KMaxBoot), further capped in init()
+  // so that the replicas fit the registries.
   static constexpr int KMaxBoot = 60;
+  static constexpr int KMaxRegistryObjects = 512;
 
   static constexpr float KFloatEpsilon = 1e-6f;
   static constexpr float KEtaEdgeTolerance = 1e-3f; // slack for cfgCutEta being an integer multiple of the bin width
@@ -97,6 +108,12 @@ struct RadialFlowDecorr {
   static constexpr float KEtaMin = -1.2f;
   static constexpr float KEtaMax = 1.2f;
   static constexpr int KNbinsPhi = 64;
+  static constexpr int KNbinsPhiFlat = 32; // flattening maps
+  // azimuthal harmonics n = 1 ... KNHarm (index ih = n - 1) of the pair maps. C_TA = (C_T + 2 C_A)/3 = c_0 + sum_n beta_n c_n
+  // uses n = 1, 5, 7 (beta_n = 0 for every n divisible by 2 or 3); the others are kept for the region-ratio cross-check
+  static constexpr int KNHarm = 7;
+  static constexpr int KNHarmComp = 4;      // per harmonic: {Re, Im} of sum w pT e^{in phi} and of sum w e^{in phi}
+  static constexpr int KNQMeanNchBins = 40; // coarse N_ch axis of the recentering offsets (acceptance effects, weakly N_ch dependent)
   static constexpr int KNbinsPtRes = 50;
   static constexpr int KNbinsEtaRes = 100;
   static constexpr int KNbinsVz = 80;
@@ -156,9 +173,9 @@ struct RadialFlowDecorr {
     kObsN = 0,    // N(eta), efficiency-corrected
     kObsMeanPt,   // [pT](eta)
     kObsC2,       // c2 within the bin
-    kObsC3,       // c3 within the bin
+    kObsUnused3,  // unused (formerly c3), kept for layout compatibility of the readers
     kObsC2Sub,    // <d[pT]_A d[pT]_C>, mirror pair, at the A bin
-    kObsC3Sub,    // c2_A <d[pT]>_C at A (AAB) and c2_C <d[pT]>_A at C (ABB), mirror pair
+    kObsUnused5,  // unused (formerly C3 mirror), kept for layout compatibility of the readers
     kNFlucObs
   };
   enum EEffCat {         // efficiency maps h3_* (centrality, pT, eta)
@@ -273,32 +290,24 @@ struct RadialFlowDecorr {
   // Systematic variations, all evaluated in every job. Base is the nominal measurement.
   // The cut values are the K* constants below; only the occupancy limits are configurable.
   //   Cent      : FT0M instead of the nominal estimator (cfgCentralityChoice, FT0C)
-  //   Chi2TPC   : chi2 per TPC cluster < 2 instead of cfgCutTpcChi2NCl
-  //   DCAxy     : |DCAxy| < 5/7 x (globalTrack pT-dependent DCAxy cut), i.e. 5 instead of 7 sigma
-  //   DCAz      : |DCAz| < 1 cm instead of cfgCutTracKDcaMaxZ
-  //               DCAxy and DCAz are null checks: with the nominal isPVContributor requirement even
-  //               5 sigma DCAxy or |DCAz| < 0.05 cm removes only ~0.2% of the selected tracks
-  //   Eff     : efficiency scaled by -10% at all pT (cancels in [pT]: a check)
-  //   EffpTDep  : efficiency scaled by -10% at cfgPtMin, linearly to 0 at 10 GeV/c
-  //   Flat      : no acceptance (flattening) weights
+  //   Chi2TPC   : chi2 per TPC cluster < 3 instead of cfgCutTpcChi2NCl (own efficiency and flattening maps)
+  //   EffpTDep  : efficiency scaled by -10% at 0.2 GeV/c (KEffVarPtAnchor), linearly to 0 at 10 GeV/c
+  //   Flat      : DATA: time-split acceptance weights. The Base flattening maps are filled separately for runs
+  //               < cfgFlatRunSplit (early) and >= cfgFlatRunSplit (late); each half is weighted with the map of
+  //               the other half. cfgFlatRunSplit = 0: the variation is dropped. MC: no flattening weights
   //   ITSLayer  : ITS good-layer requirement one step looser (All -> 0123, 0123 -> Layer3)
   //   NITS      : itsNCls >= 4 instead of cfgITScluster
   //   NTPC      : tpcNClsFound >= 80 instead of cfgTPCcluster
-  //   Pileup    : additionally kNoCollInRofStandard
+  //   Pileup    : additionally kNoCollInRofStandard (all passes; own efficiency and flattening maps) and
+  //               n-sigma pile-up bands narrower by 1 (mean and fluctuation passes, where the bands apply)
   //   Vz        : |z_vtx| < 8 cm instead of cfgVtxZCut
-  //   NchBin2   : Base selection and inputs, observables (and its own mean pass) in N_ch bins
-  //               of 2 (PbPb, OO) or 1 (pp) tracks: cross-check of the N_ch binning of the mean subtraction
   //   Occupancy : 0 <= trackOccupancyInTimeRange < cfgSystOccMax* of the system
-  //   PileupNSigma : n-sigma pile-up bands narrower by 1 (mean and fluctuation passes)
   // Since the observables are stored versus N_ch, Cent differs from Base only in the events
   // kept (cent < cfgCentMax) and in its (centrality, N_ch) map, which defines its classes.
   enum ESystType {
     kSystBase = 0,
     kSystCent,
     kSystChi2TPC,
-    kSystDCAxy,
-    kSystDCAz,
-    kSystEff,
     kSystEffPtDep,
     kSystFlat,
     kSystITSLayer,
@@ -306,53 +315,44 @@ struct RadialFlowDecorr {
     kSystNTPC,
     kSystPileup,
     kSystVz,
-    kSystNchBin,
     kSystOccupancy,
-    kSystPileupNSigma,
     kNSyst
   };
   inline static const std::array<std::string, kNSyst> systName = {
-    "Base", "systCent", "systChi2TPC", "systDCAxy", "systDCAz", "systEff", "systEffpTDep",
-    "systFlat", "systITSLayer", "systNITS", "systNTPC", "systPileup", "systVz", "systNchBin2",
-    "systOccupancy", "systPileupNSigma"};
+    "Base", "systCent", "systChi2TPC", "systEffpTDep", "systFlat", "systITSLayer",
+    "systNITS", "systNTPC", "systPileup", "systVz", "systOccupancy"};
   static constexpr uint32_t KAllSystMask = (1 << kNSyst) - 1;
-  static constexpr int KNSystPerRegistry = 4; // variations 1..15 are spread over 4 registries
+  static constexpr int KNSystPerRegistry = 4; // variations 1..10 are spread over 3 registries
   // Cut of each variation (fixed; the occupancy limits are configurables, cfgSystOccMax*).
-  // Pileup adds kNoCollInRofStandard; ITSLayer loosens the nominal ITS good-layer requirement by one step.
-  static constexpr int KSystCentralityChoice = 2;     // Cent: FT0M
-  static constexpr float KSystChi2TPC = 2.f;          // Chi2TPC: chi2 per TPC cluster < 2 (nominal 2.5)
-  static constexpr float KSystDcaXyScale = 5.f / 7.f; // DCAxy: 5 sigma (nominal 7 sigma)
-  static constexpr float KSystDcaMaxZ = 1.f;          // DCAz: |DCAz| < 1 cm (nominal 2 cm)
-  static constexpr float KEffVarPercent = -10.f;      // Eff, EffpTDep: efficiency scaled by -10%
-  static constexpr float KEffVarPtZero = 10.f;        // EffpTDep: variation falls linearly to 0 at 10 GeV/c
-  static constexpr int KSystITScluster = 4;           // NITS: itsNCls >= 4 (nominal 5)
-  static constexpr int KSystTPCcluster = 80;          // NTPC: tpcNClsFound >= 80 (nominal 70)
-  static constexpr float KSystVtxZCut = 8.f;          // Vz: |z_vtx| < 8 cm (nominal 10 cm)
-  static constexpr int KSystNchBinWidthPbPb = 2;      // NchBin2: N_ch bin width, PbPb (nominal 10)
-  static constexpr int KSystNchBinWidthOO = 2;        // NchBin2: OO and NeNe (nominal 5)
-  static constexpr int KSystNchBinWidthPP = 1;        // NchBin2: pp (nominal 2)
-  static constexpr float KSystPupnSigStep = 1.f;      // PileupNSigma: n-sigma bands narrower by 1
-  static constexpr double KMinBandEntries = 50.;      // n-sigma band bins with fewer flattening-pass events apply no band cut
+  // Pileup adds kNoCollInRofStandard and narrows the n-sigma bands; ITSLayer loosens the nominal ITS good-layer requirement by one step.
+  static constexpr int KSystCentralityChoice = 2; // Cent: FT0M
+  static constexpr float KSystChi2TPC = 3.f;      // Chi2TPC: chi2 per TPC cluster < 3 (nominal 2.5)
+  static constexpr float KEffVarPercent = -10.f;  // EffpTDep: efficiency scaled by -10% at KEffVarPtAnchor
+  static constexpr float KEffVarPtAnchor = 0.2f;  // EffpTDep: full variation at 0.2 GeV/c (lowest observable range edge)
+  static constexpr float KEffVarPtZero = 10.f;    // EffpTDep: variation falls linearly to 0 at 10 GeV/c
+  static constexpr int KSystITScluster = 4;       // NITS: itsNCls >= 4 (nominal 5)
+  static constexpr int KSystTPCcluster = 80;      // NTPC: tpcNClsFound >= 80 (nominal 70)
+  static constexpr float KSystVtxZCut = 8.f;      // Vz: |z_vtx| < 8 cm (nominal 10 cm)
+  static constexpr float KSystPupnSigStep = 1.f;  // Pileup: n-sigma bands narrower by 1
+  static constexpr double KMinBandEntries = 50.;  // n-sigma band bins with fewer flattening-pass events apply no band cut
 
   // Output folder of a variation (Base keeps the top level).
   static std::string systPrefix(int v) { return v == kSystBase ? std::string{} : systName[v] + "/"; }
   // Suffix appended to every CCDB object path of a variation.
   static std::string systSuffix(int v) { return v == kSystBase ? std::string{} : "_" + systName[v]; }
-  // Variation whose efficiency map v uses. Cent, Eff, EffpTDep, Flat, NchBin2 and PileupNSigma
-  // have the Base selection in the efficiency pass and use the Base map; Eff and EffpTDep scale
-  // it when applied. (The n-sigma bands are applied only in the mean and fluctuation passes.)
+  // Variation whose efficiency map v uses. Cent, EffpTDep and Flat have the Base selection in the
+  // efficiency pass and use the Base map; EffpTDep scales it when applied.
   static constexpr int effSource(int v)
   {
-    return (v == kSystCent || v == kSystEff || v == kSystEffPtDep || v == kSystFlat || v == kSystNchBin || v == kSystPileupNSigma) ? static_cast<int>(kSystBase) : v;
+    return (v == kSystCent || v == kSystEffPtDep || v == kSystFlat) ? static_cast<int>(kSystBase) : v;
   }
-  // Variation whose flattening map v uses. Cent, NchBin2 and PileupNSigma use the Base map;
-  // Flat uses none (-1).
+  // Variation whose flattening map v uses. Cent uses the Base map; Flat uses none (-1).
   static constexpr int flatSource(int v)
   {
     if (v == kSystFlat) {
       return -1;
     }
-    return (v == kSystCent || v == kSystNchBin || v == kSystPileupNSigma) ? static_cast<int>(kSystBase) : v;
+    return v == kSystCent ? static_cast<int>(kSystBase) : v;
   }
 
   static constexpr float KinvalidCentrality = -1.0f;
@@ -360,9 +360,31 @@ struct RadialFlowDecorr {
   // Observable eta binning, filled at init(): index 0 = full-range reference bin.
   std::vector<float> etaLw;
   std::vector<float> etaUp;
-  int nEta = 9;        // active eta-bin count (set in init())
-  int nBoot = 0;       // active bootstrap samples (set in init())
-  bool doBoot = false; // bootstrap active for this run (base data fluc only)
+  int nEta = 9; // active eta-bin count (set in init())
+  // Observable pT ranges (set in init()). Profiles with an eta-bin index axis carry the range as
+  // blocks of that axis, index ipt * (nEta + 1) + ieta (etaIdx); the (eta, eta) maps of
+  // range ipt > 0 are separate profiles with the suffix _pt<ipt>.
+  struct {
+    int n = 1; // number of ranges
+    std::array<float, KNPtMax> lo{};
+    std::array<float, KNPtMax> hi{};
+  } ptRange;
+  int etaIdx(int ipt, int ieta) const { return ipt * (nEta + 1) + ieta; }
+  uint32_t ptRangeMask(float pt) const
+  {
+    uint32_t m = 0;
+    for (int ipt = 0; ipt < ptRange.n; ++ipt) {
+      if (pt > ptRange.lo[ipt] && pt <= ptRange.hi[ipt]) {
+        SETBIT(m, ipt);
+      }
+    }
+    return m;
+  }
+  static std::string ptSuffix(int ipt) { return ipt == 0 ? std::string{} : "_pt" + std::to_string(ipt); }
+  struct {
+    int n = 0;       // active bootstrap samples (set in init())
+    bool on = false; // bootstrap active for this run (base data fluc only)
+  } bootstrap;
 
   // Variations filled by each pass (set in init()): maskEff in the MC efficiency pass,
   // maskFlat in the flattening passes, maskAll in the mean and fluctuation passes.
@@ -371,10 +393,9 @@ struct RadialFlowDecorr {
   uint32_t maskFlat = 1;
   int itsLayerNom = kITSLayersAll;
   int itsLayerVar = kITSLayer0123;
-  int occupancyMax = 0;    // Occupancy variation cut of this system
-  float pupNSigma = 5.f;   // width of the n-sigma pile-up bands of this system
-  int nchWidth = 10;       // N_ch bin width of the observables of this system
-  int nchWidthNchBin2 = 2; // N_ch bin width of NchBin2 for this system
+  int occupancyMax = 0;  // Occupancy variation cut of this system
+  float pupNSigma = 5.f; // width of the n-sigma pile-up bands of this system
+  int nchWidth = 10;     // N_ch bin width of the observables of this system
 
   // Forward bins: 0-2 detector totals (FT0A, FT0C, FV0A), then the eta sub-bins of each detector.
   int nFwd = kNFwdDet;
@@ -415,12 +436,8 @@ struct RadialFlowDecorr {
   } cfgPileup;
 
   // Track selection (nominal), on top of isGlobalTrack (Run 3 globalTrack, incl. its 7 sigma pT-dependent DCAxy cut)
-  Configurable<float> cfgPtMin{"cfgPtMin", 0.2f, "min pT for observables"};
-  Configurable<float> cfgPtMax{"cfgPtMax", 5.0f, "max pT for observables"};
-  Configurable<float> cfgCutPtLower{"cfgCutPtLower", 0.2f, "Lower pT cut (track selection)"};
-  Configurable<float> cfgCutPtUpper{"cfgCutPtUpper", 10.0f, "Higher pT cut (track selection)"};
-  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "absolute Eta cut"};
-  Configurable<float> cfgEtaBinWidth{"cfgEtaBinWidth", 0.1f, "DATA only: width of each narrow observable eta bin (eta units); cfgCutEta must be an integer multiple so eta=0 is a bin edge. MC is pinned to 0.2."};
+  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "|eta| cut of the reco tracks and of the reference eta bin; MC truth particles are kept to |eta| < 1, the edge of all eta axes"};
+  Configurable<float> cfgEtaBinWidth{"cfgEtaBinWidth", 0.1f, "Width of each narrow observable eta bin (eta units), MC and DATA; MC bins span |eta| < 1, DATA bins |eta| < cfgCutEta; the width must divide both. Use the same value in the mean and fluctuation passes."};
   Configurable<float> cfgCutTracKDcaMaxZ{"cfgCutTracKDcaMaxZ", 2.0f, "Maximum |DCAz| (cm)"};
   Configurable<int> cfgITScluster{"cfgITScluster", 5, "Nominal: itsNCls >= value"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Nominal: tpcNClsFound >= value"};
@@ -429,10 +446,8 @@ struct RadialFlowDecorr {
 
   // Systematic variations (names stay flat in the JSON)
   struct : ConfigurableGroup {
-    Configurable<int> cfgSystMask{"cfgSystMask", static_cast<int>(KAllSystMask), "Bitmask of active variations, bit i = ESystType i: 0 Base (always on), 1 Cent, 2 Chi2TPC, 3 DCAxy, 4 DCAz, 5 Eff, 6 EffpTDep, 7 Flat, 8 ITSLayer, 9 NITS, 10 NTPC, 11 Pileup, 12 Vz, 13 NchBin2, 14 Occupancy, 15 PileupNSigma"};
-    Configurable<float> cfgDcaXyP0{"cfgDcaXyP0", 0.0105f, "globalTrack DCAxy cut p0 + p1 / pT^p2 (trackselection dcaSetup=0; dcaSetup=1: 0.004, 0.013, 1)"};
-    Configurable<float> cfgDcaXyP1{"cfgDcaXyP1", 0.035f, "globalTrack DCAxy cut p1"};
-    Configurable<float> cfgDcaXyP2{"cfgDcaXyP2", 1.1f, "globalTrack DCAxy cut p2"};
+    Configurable<int> cfgSystMask{"cfgSystMask", static_cast<int>(KAllSystMask), "Bitmask of active variations, bit i = ESystType i: 0 Base (always on in the efficiency and flattening passes; may be off in mean/fluctuation split groups, the bootstrap needs it), 1 Cent, 2 Chi2TPC, 3 EffpTDep, 4 Flat, 5 ITSLayer, 6 NITS, 7 NTPC, 8 Pileup, 9 Vz, 10 Occupancy"};
+    Configurable<bool> cfgSystHarm{"cfgSystHarm", false, "Fluc: c_n (n = 2-7) and d_n (n = 1-7) maps for every active variation and both pT ranges (else Base only), no bootstrap; for a one-off test that the harmonic terms do not change the systematics"};
     Configurable<int> cfgSystOccMaxPbPb{"cfgSystOccMaxPbPb", 2000, "Occupancy: maximum trackOccupancyInTimeRange, PbPb"};
     Configurable<int> cfgSystOccMaxOO{"cfgSystOccMaxOO", 1000, "Occupancy: maximum trackOccupancyInTimeRange, OO and NeNe"};
     Configurable<int> cfgSystOccMaxPP{"cfgSystOccMaxPP", 500, "Occupancy: maximum trackOccupancyInTimeRange, pp"};
@@ -453,11 +468,14 @@ struct RadialFlowDecorr {
   Configurable<int> cfgBootstrapSeed{"cfgBootstrapSeed", 0, "TRandom3 seed for bootstrap (0 = machine-random per job)"};
 
   Configurable<bool> cfgFlat{"cfgFlat", false, "Whether to use flattening weights"};
+  Configurable<int> cfgFlatRunSplit{"cfgFlatRunSplit", 0, "DATA Flat variation: run number splitting the sample into early (< value) and late (>= value) runs, each flattened with the map of the other half; 0: Flat variation off"};
   Configurable<bool> cfgEff{"cfgEff", false, "Whether to use Efficiency weights"};
+  Configurable<bool> cfgAziTA{"cfgAziTA", true, "Mean: recentering offsets <q_n>, <o_n>; Fluc: C_TA map (transverse + away-side azimuthal regions, momentum-weighted harmonics n = 1, 5, 7) and dipole map c_1; Base: c_n and pair-density d_n maps, n = 1-7"};
 
   // Forward multiplicity (FT0A, FT0C, FV0A amplitudes) correlated with mid-rapidity [pT] and N
   struct : ConfigurableGroup {
     Configurable<bool> cfgFwd{"cfgFwd", true, "Mean/Fluc: forward amplitudes and their covariance with [pT](eta) and N(eta)"};
+    Configurable<bool> cfgRawMoments{"cfgRawMoments", true, "Fluc, Base, pT range 0 (data, every MC level, bootstrap): raw moments Prof_Raw_* vs N_ch (<N_A N_C>, <N_A>; with cfgFwd <a_i a_j>, <a_i>, <a_k N>, <N>, <a_k [pT]>, <[pT]>, <a_k>), no mean-pass reference; offline, N_ch bins are merged into centrality classes with the (cent, N_ch) map and Cov = <xy> - <x><y>"};
     Configurable<bool> cfgFwdGainEq{"cfgFwdGainEq", true, "DATA: apply the FT0/FV0 gain equalisation from cfgGainEqPath"};
     Configurable<std::string> cfgGainEqPath{"cfgGainEqPath", "Analysis/EventPlane/GainEq", "CCDB path of the FT0/FV0 gain equalisation (+ /FT0, /FV0); central objects per run for LHC23zzh Pb-Pb and 2025 O-O/Ne-Ne"};
     Configurable<bool> cfgFwdVzCorr{"cfgFwdVzCorr", true, "Channel eta relative to the primary vertex (else to z = 0)"};
@@ -473,25 +491,29 @@ struct RadialFlowDecorr {
   AxisSpec centAxis1Per{100, 0.0, 100.0, "Centrality (%)"};
   AxisSpec centAxisBoot{20, 0.0, 100.0, "Centrality (%)"};                                             // bootstrap replicas: final 5% classes
   AxisSpec multQAAxis{1, 0., 1., "Nch", "Nch"};                                                        // QA (N_PV correlations)
+  AxisSpec nchAxisQMean{1, 0., 1., "N_{ch}"};                                                          // recentering offsets, KNQMeanNchBins over the N_ch range
   AxisSpec nchAxisObs{1, 0., 1., "N_{ch}"};                                                            // every observable (bins of nchWidth)
-  AxisSpec nchAxisNchBin2{1, 0., 1., "N_{ch}"};                                                        // NchBin2 (bins of nchWidthNchBin2)
   AxisSpec centAxisEff{{0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "Centrality (%)"}; // efficiency maps
 
-  AxisSpec vzAxis{5, -12.5, 12.5, "Vz"};
-  AxisSpec chgAxis{3, -1.5, 1.5};
-  AxisSpec pTAxis{{0.0, 0.2, 0.4, 0.6, 0.8, 1, 3, 5, 7, 10}, "pT Axis"};
-  AxisSpec phiAxis{KNbinsPhi, KPhiMin, TwoPI, "#phi"};
+  AxisSpec vzAxis{24, -12., 12., "Vz"}; // flattening maps: 1 cm bins (edges at 8 and 10 match the vertex cuts)
+  AxisSpec chgAxis{2, -2., 2.};         // flattening maps: charge -1, +1
+  // One fixed pT axis for every weight map (efficiency, fake, secondary, other-collision, flattening) and the
+  // pT weight QA. The map passes fill [KPtMin, KPtMax], so the 0-0.15 bin stays empty by construction.
+  static constexpr std::array<double, 22> KPtMapEdges = {0., 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1., 1.2, 1.4, 1.6, 1.8, 2., 2.5, 3., 3.5, 4., 5., 7., 10.};
+  static std::vector<double> effPtEdges() { return {KPtMapEdges.begin(), KPtMapEdges.end()}; }
+  // flattening maps: a coarser pT axis whose edges are a subset of KPtMapEdges (the phi acceptance varies slowly with pT)
+  AxisSpec pTAxis{{0., 0.15, 0.2, 0.4, 0.6, 0.8, 1., 3., 5., 7., 10.}, "p_{T} (GeV/c)"};
+  AxisSpec phiAxis{KNbinsPhiFlat, KPhiMin, TwoPI, "#phi"}; // flattening maps
 
-  // etaFlatAxis is the *fixed* granularity used only for the flattening map, so
-  // that a flattening map is reusable across the 0.1/0.2 observable binnings.
-  AxisSpec etaFlatAxis{{-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8}, "#eta"};
+  // etaFlatAxis is the *fixed* eta granularity of the flattening maps, the same as the efficiency maps
+  // (KNbinsEtaFine bins of 0.1 on [-KEtaFineMax, KEtaFineMax]); its edges include those of the 0.1 and
+  // 0.2 observable binnings, so a map is reusable for both. |eta| > cfgCutEta bins stay empty.
+  AxisSpec etaFlatAxis{KNbinsEtaFine, -KEtaFineMax, KEtaFineMax, "#eta"};
 
   // etaAxis (physical) and etaBinAxis (integer index) follow the observable
   // binning and are rebuilt in init(). Placeholders here.
   AxisSpec etaAxis{9, -0.9, 0.9, "#eta"};
   AxisSpec etaBinAxis{10, -0.5, 9.5, "#eta bin Number"};
-  AxisSpec gapAxis{15, -1.5, 1.5, "#Delta#eta"};
-  AxisSpec sumAxis{15, -1.5, 1.5, "#Sigma#eta"};
   AxisSpec fwdAxis{kNFwdDet, -0.5, static_cast<double>(kNFwdDet) - 0.5, "forward bin"};
 
   // --- process switches --------------------------------------------------------
@@ -507,14 +529,14 @@ struct RadialFlowDecorr {
   Service<ccdb::BasicCCDBManager> ccdb{};
   Service<o2::framework::O2DatabasePDG> pdg{};
 
-  // histos: Base and QA; histosBoot: bootstrap replicas; histosSystA-D: the variations,
+  // histos: Base and QA; histosBoot: bootstrap replicas; histosSystA-C: the variations,
   // 4 per registry (a registry holds at most 512 objects).
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry histosBoot{"HistosBoot", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry histosBoot2{"HistosBoot2", {}, OutputObjHandlingPolicy::AnalysisObject}; // replicas of pT range 1
   HistogramRegistry histosSystA{"HistosSystA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry histosSystB{"HistosSystB", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry histosSystC{"HistosSystC", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry histosSystD{"HistosSystD", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   HistogramRegistry& reg(int v)
   {
@@ -526,15 +548,10 @@ struct RadialFlowDecorr {
         return histosSystA;
       case 1:
         return histosSystB;
-      case 2:
-        return histosSystC;
       default:
-        return histosSystD;
+        return histosSystC;
     }
   }
-
-  const AxisSpec& nchAxisOf(int v) const { return v == kSystNchBin ? nchAxisNchBin2 : nchAxisObs; }
-  int nchBinWidthOf(int v) const { return v == kSystNchBin ? nchWidthNchBin2 : nchWidth; }
 
   TRandom3 rng; // bootstrap Poisson weights
 
@@ -546,10 +563,13 @@ struct RadialFlowDecorr {
     TH3* hFake = nullptr;
     TH3* hEffPtEta = nullptr;
     TH3* hFakePtEta = nullptr;
-    THnSparseF* hFlat = nullptr;
+    THnF* hFlat = nullptr;      // flattening weights, dense (the builder sets every cell)
+    THnF* hFlatEarly = nullptr; // Flat variation (data): weights from the early runs, applied to the late runs
+    THnF* hFlatLate = nullptr;  // and from the late runs, applied to the early runs
     // mean pass, per level: <[pT]> and <N> vs (N_ch, eta bin), <a> vs (N_ch, forward bin)
     std::array<TProfile3D*, kNLevels> pmean{};
     std::array<TProfile2D*, kNLevels> pmeanFwd{};
+    std::array<TProfile3D*, kNLevels> pqmean{}; // recentering offsets <q_n>, <o_n> (nullptr: no recentering)
   };
   std::array<SystInputs, kNSyst> inputs{};
 
@@ -571,21 +591,42 @@ struct RadialFlowDecorr {
     std::array<std::shared_ptr<TH3>, kNEffCat> maps{}; // (centrality, pT, eta), one per EEffCat
   };
   struct FlatHists {
-    std::shared_ptr<THnSparse> maps; // (vz, sign, pT, eta, phi, EFlatType)
+    std::shared_ptr<THnSparse> maps;        // (vz, sign, pT, eta, phi, EFlatType)
+    std::shared_ptr<THnSparse> early, late; // Flat variation (data): Base selection, runs < / >= cfgFlatRunSplit
   };
   struct MeanHists {
     std::shared_ptr<TProfile3D> mean;    // (N_ch, eta bin, EMeanObs)
     std::shared_ptr<TProfile2D> fwdMean; // (N_ch, forward bin): <a>
+    std::shared_ptr<TProfile3D> qMean;   // (N_ch, eta bin, 4 (n - 1) + {Re q_n, Im q_n, Re o_n, Im o_n}): recentering offsets
   };
   struct FlucHists {
-    std::shared_ptr<TProfile3D> obs;        // (N_ch, eta bin, EFlucObs)
-    std::shared_ptr<TProfile3D> c2Sub2D;    // (N_ch, eta_A, eta_C)
-    std::shared_ptr<TProfile3D> c3Sub2D;    // (N_ch, eta_A pair, eta_C single)
-    std::shared_ptr<TProfile3D> gapSum2D;   // (N_ch, Delta eta, Sigma eta) of the C2 map
-    std::shared_ptr<TProfile3D> c3GapSum2D; // (N_ch, eta_pair - eta_single, eta_pair + eta_single)
-    std::shared_ptr<TProfile2D> fwdVar;     // (N_ch, forward bin): <da^2>
-    std::shared_ptr<TProfile3D> covFwdPt;   // (N_ch, eta bin, forward bin): <d[pT] da>
-    std::shared_ptr<TProfile3D> covFwdN;    // (N_ch, eta bin, forward bin): <dN da>
+    std::shared_ptr<TProfile3D> obs;                        // (N_ch, eta bin, EFlucObs)
+    std::shared_ptr<TProfile3D> c2Sub2D;                    // (N_ch, eta_A, eta_C)
+    std::shared_ptr<TProfile3D> cNN2D;                      // (N_ch, eta_A, eta_C): <dN_A dN_C>, diagonal without the self-pair term
+    std::shared_ptr<TProfile3D> c2TA2D;                     // (N_ch, eta_A, eta_C): C_TA = c_0 + sum_n beta_n c_n, n = 1, 5, 7
+    std::shared_ptr<TProfile3D> c1Sub2D;                    // (N_ch, eta_A, eta_C): momentum-weighted dipole c_1
+    std::array<std::shared_ptr<TProfile3D>, KNHarm> cn2D{}; // Base (all with cfgSystHarm), n >= 2: momentum-weighted c_n (n = 1 is c1Sub2D)
+    std::array<std::shared_ptr<TProfile3D>, KNHarm> dn2D{}; // Base (all with cfgSystHarm): pair-density harmonics d_n = <cos n dphi> of the pairs
+    std::shared_ptr<TProfile2D> fwdVar;                     // (N_ch, forward bin): <da^2>
+    std::shared_ptr<TProfile3D> covFwdPt;                   // (N_ch, eta bin, forward bin): <d[pT] da>
+    std::shared_ptr<TProfile3D> covFwdN;                    // (N_ch, eta bin, forward bin): <dN da>
+    std::shared_ptr<TProfile3D> covFwdFwd;                  // (N_ch, forward bin i, forward bin j): <da_i da_j>
+  };
+  // Raw moments (cfgRawMoments; Base, pT range 0): x = N_ch, or the Base centrality in the bootstrap replicas.
+  // No mean-pass reference: the covariance of a class of x bins is <xy> - <x><y> of the merged profiles,
+  // each pair with its means over the same events. N = sum w (efficiency and flattening weighted, as kObsN),
+  // [pT] = sum w pT / sum w (events with sum w > 0), a = forward amplitude (events with the detector read out).
+  // Eta-bin index axis: 0 = reference |eta| < cfgCutEta, i >= 1 the narrow bins (the eta_A, eta_C bins of nAnC).
+  struct RawHists {
+    std::shared_ptr<TProfile3D> nAnC;     // (x, eta_A, eta_C): <N_A N_C>, every event; diagonal <N^2 - sum w^2> (as Prof_CNN2D)
+    std::shared_ptr<TProfile3D> nA;       // (x, eta_A, eta_C): <N_A>, every event (<N_C> is its transpose)
+    std::shared_ptr<TProfile3D> fwd;      // (x, forward bin i, forward bin j): <a_i>, events with i and j read out (diagonal: <a_i>)
+    std::shared_ptr<TProfile3D> fwdFwd;   // (x, forward bin i, forward bin j): <a_i a_j>, same events
+    std::shared_ptr<TProfile3D> fwdN;     // (x, eta bin, forward bin k): <a_k N>, events with k read out
+    std::shared_ptr<TProfile3D> nFwdSel;  // (x, eta bin, forward bin k): <N>, same events
+    std::shared_ptr<TProfile3D> fwdPt;    // (x, eta bin, forward bin k): <a_k [pT]>, events with k read out and sum w > 0
+    std::shared_ptr<TProfile3D> ptFwdSel; // (x, eta bin, forward bin k): <[pT]>, same events
+    std::shared_ptr<TProfile3D> fwdPtSel; // (x, eta bin, forward bin k): <a_k>, same events
   };
   struct {
     std::shared_ptr<TH2> evtCount;                         // (EEvtCut, variation)
@@ -600,9 +641,12 @@ struct RadialFlowDecorr {
     std::array<std::shared_ptr<TH2>, kNSyst> nchCent{}; // (centrality, N_ch) per variation
     std::array<EffHists, kNSyst> eff{};
     std::array<FlatHists, kNSyst> flat{};
-    std::array<std::array<MeanHists, kNLevels>, kNSyst> mean{};
-    std::array<std::array<FlucHists, kNLevels>, kNSyst> fluc{};
-    std::array<FlucHists, KMaxBoot> boot{};
+    std::array<std::array<MeanHists, kNLevels>, kNSyst> mean{}; // all pT ranges (eta-bin index axis)
+    // per pT range: the index-axis profiles are shared with range 0, the maps are separate
+    std::array<std::array<std::array<FlucHists, KNPtMax>, kNLevels>, kNSyst> fluc{};
+    std::array<std::array<FlucHists, KNPtMax>, KMaxBoot> boot{};
+    std::array<RawHists, kNLevels> raw{}; // raw moments of Base, pT range 0, per level
+    std::array<RawHists, KMaxBoot> bootRaw{};
     std::shared_ptr<TProfile2D> fwdChannel; // (channel: FT0 0-207, FV0 208-255; EChanQA)
     std::shared_ptr<TProfile> fwdEta;       // amplitude-weighted eta per forward bin
     std::shared_ptr<TH3> mcTrackOrigin;     // (N_ch, pT, ETrackOrigin) of the Base tracks
@@ -625,16 +669,13 @@ struct RadialFlowDecorr {
   struct PowerSums {
     std::array<std::array<std::array<double, KIntK>, KIntM>, KNEtaMax> pmwk{};
     std::array<std::array<double, KIntK>, KNEtaMax> wk{};
+    // per eta bin and harmonic n = ih + 1: {sum w pT cos(n phi), sum w pT sin(n phi), sum w cos(n phi), sum w sin(n phi)}
+    std::array<std::array<std::array<double, KNHarmComp>, KNHarm>, KNEtaMax> harm{};
     void reset()
     {
-      for (auto& a : pmwk) {
-        for (auto& b : a) {
-          b.fill(0.);
-        }
-      }
-      for (auto& a : wk) {
-        a.fill(0.);
-      }
+      harm = {};
+      pmwk = {};
+      wk = {};
     }
     void add(int ieta, double pt, double w)
     {
@@ -649,10 +690,85 @@ struct RadialFlowDecorr {
         wPow *= w;
       }
     }
+    // cs = {cos(phi), sin(phi), cos(2 phi), sin(2 phi), ...}
+    void addHarm(int ieta, double pt, double w, const std::array<double, 2 * KNHarm>& cs)
+    {
+      for (int ih = 0; ih < KNHarm; ++ih) {
+        auto& q = harm[ieta][ih];
+        q[0] += w * pt * cs[2 * ih];
+        q[1] += w * pt * cs[2 * ih + 1];
+        q[2] += w * cs[2 * ih];
+        q[3] += w * cs[2 * ih + 1];
+      }
+    }
   };
-  std::array<std::array<PowerSums, kNLevels>, kNSyst> sums{};
+  // beta_n = 2/3 [<cos n dphi>_T + 2 <cos n dphi>_A], <cos n dphi>_T = 3 [sin(2n pi/3) - sin(n pi/3)]/(n pi),
+  // <cos n dphi>_A = 3 [sin(n pi) - sin(2n pi/3)]/(n pi): beta_1 = -2 sqrt(3)/pi, beta_5 = +0.221, beta_7 = -0.158, 0 for n = 2, 3, 4, 6
+  std::array<double, KNHarm> betaTA = [] {
+    std::array<double, KNHarm> b{};
+    for (int ih = 0; ih < KNHarm; ++ih) {
+      // double-precision pi (o2::constants::math::PI is a float): beta_n for n = 2, 3, 4, 6 then comes out of the formula at
+      // ~1e-16. Whether these harmonics cancel in data (pair density not flat in dphi) is checked with the c_n and d_n maps.
+      const double pi = std::acos(-1.);
+      const double n = ih + 1;
+      const double cT = 3. * (std::sin(2. * n * pi / 3.) - std::sin(n * pi / 3.)) / (n * pi);
+      const double cA = 3. * (std::sin(n * pi) - std::sin(2. * n * pi / 3.)) / (n * pi);
+      b[ih] = 2. / 3. * (cT + 2. * cA);
+    }
+    return b;
+  }();
+  // recentering offsets: per event and eta bin, q_n = sum w e^{in phi} / W and o_n = sum w pT e^{in phi} / W,
+  // filled at the eta-bin index y = etaIdx(ipt, ieta)
+  static void fillQMean(const std::shared_ptr<TProfile3D>& h, const PowerSums& s, int ieta, int y, float nCh)
+  {
+    const double wSum = s.wk[ieta][1];
+    if (!h || wSum <= KFloatEpsilon) {
+      return;
+    }
+    for (int ih = 0; ih < KNHarm; ++ih) {
+      const auto& q = s.harm[ieta][ih];
+      h->Fill(nCh, y, KNHarmComp * ih, q[2] / wSum);
+      h->Fill(nCh, y, KNHarmComp * ih + 1, q[3] / wSum);
+      h->Fill(nCh, y, KNHarmComp * ih + 2, q[0] / wSum);
+      h->Fill(nCh, y, KNHarmComp * ih + 3, q[1] / wSum);
+    }
+  }
+  static std::array<double, 2 * KNHarm> harmTerms(float phi)
+  {
+    std::array<double, 2 * KNHarm> cs{};
+    for (int ih = 0; ih < KNHarm; ++ih) {
+      cs[2 * ih] = std::cos((ih + 1) * phi);
+      cs[2 * ih + 1] = std::sin((ih + 1) * phi);
+    }
+    return cs;
+  }
+  // power sums per (variation, level, pT range)
+  using PtSums = std::array<PowerSums, KNPtMax>;
+  std::array<std::array<PtSums, kNLevels>, kNSyst> sums{};
+  void resetSums(int v)
+  {
+    for (int l = 0; l < kNLevels; ++l) {
+      for (int ipt = 0; ipt < ptRange.n; ++ipt) {
+        sums[v][l][ipt].reset();
+      }
+    }
+  }
+  // one track (or particle) into the sums of every pT range in ptMask
+  void addTrack(PtSums& s, uint32_t ptMask, int ieta, double pt, double w, const std::array<double, 2 * KNHarm>& cs)
+  {
+    for (int ipt = 0; ipt < ptRange.n; ++ipt) {
+      if (TESTBIT(ptMask, ipt)) {
+        s[ipt].add(ieta, pt, w);
+        if (cfgAziTA) {
+          s[ipt].addHarm(ieta, pt, w, cs);
+        }
+      }
+    }
+  }
   // track cut flow of the current event, added to hTrkCount once per event
   std::array<std::array<double, kNTrkCut>, kNSyst> trkCounts{};
+  // Flat variation (data): weight map of the other run half for the current event (nullptr: no weights)
+  const THnF* flatCross = nullptr;
 
   struct FwdSignal {
     std::array<double, KNFwdMax> ampl{}; // amplitude (data, MC reco) or number of particles (MC truth)
@@ -668,9 +784,18 @@ struct RadialFlowDecorr {
   // Per-event observables of one (variation, level).
   struct EventObs {
     float nCh = 0.f;
-    std::array<double, KNEtaMax> nW{}, mean{}, c2{}, c3{}, p1kBar{}, dN{};
+    std::array<double, KNEtaMax> nW{}, nW2{}, mean{}, c2{}, p1kBar{}, dN{};
+    // per eta bin and harmonic, recentred and weighted back to the full vectors: momentum-weighted
+    // Q_n = W [(o_n - <o_n>) - <[pT]> (q_n - <q_n>)] and unweighted B_n = W (q_n - <q_n>), with q_n = sum w e^{in phi} / W,
+    // o_n = sum w pT e^{in phi} / W, W = sum w; selfTA = sum_i w_i^2 (pT_i - <[pT]>)^2. Valid only when <[pT]> exists.
+    std::array<std::array<std::array<double, 2>, KNHarm>, KNEtaMax> qTA{};
+    std::array<std::array<std::array<double, 2>, KNHarm>, KNEtaMax> bTA{};
+    std::array<double, KNEtaMax> selfTA{};
+    std::array<bool, KNEtaMax> qTAValid{};
     std::array<double, KNFwdMax> fwd{}, dFwd{};
     std::array<bool, KNFwdMax> fwdValid{};
+    std::array<double, KNFwdMax> fwdAmp{}; // amplitude of every read-out forward bin (raw moments: no mean-pass reference)
+    std::array<bool, KNFwdMax> fwdRead{};
   };
 
   // ===========================================================================
@@ -776,6 +901,7 @@ struct RadialFlowDecorr {
     countAll(kEvVertexITSTPC);
 
     const float centBase = getCentrality(col, cfgEvSel.cfgCentralityChoice);
+    ev.cent[kSystBase] = centBase; // the track weights use the Base centrality, also when Base itself is off
     const float multPV = col.multNTracksPV();
     ev.occupancy = col.trackOccupancyInTimeRange();
     const bool passAddPileup = isPassAddPileup(multPV, nCh, centBase, pupNSigma);
@@ -804,7 +930,7 @@ struct RadialFlowDecorr {
         continue;
       }
       countOne(kEvITSLayer);
-      if (!(v == kSystPileupNSigma ? passAddPileupTight : passAddPileup)) {
+      if (!(v == kSystPileup ? passAddPileupTight : passAddPileup)) {
         continue;
       }
       countOne(kEvAddPileup);
@@ -861,7 +987,7 @@ struct RadialFlowDecorr {
       return 0;
     }
     countAll(kTrkPVContrib);
-    if (trk.pt() < cfgCutPtLower || trk.pt() > cfgCutPtUpper || std::abs(trk.eta()) > cfgCutEta) {
+    if (trk.pt() < KPtMin || trk.pt() > KPtMax || std::abs(trk.eta()) > cfgCutEta) {
       return 0;
     }
     countAll(kTrkPtEta);
@@ -870,7 +996,6 @@ struct RadialFlowDecorr {
     }
     countAll(kTrkGlobal);
 
-    const float maxDcaXY = KSystDcaXyScale * (cfgSyst.cfgDcaXyP0 + cfgSyst.cfgDcaXyP1 / std::pow(trk.pt(), cfgSyst.cfgDcaXyP2.value));
     uint32_t mask = 0;
     for (int v = 0; v < kNSyst; ++v) {
       if (!TESTBIT(evMask, v)) {
@@ -888,14 +1013,10 @@ struct RadialFlowDecorr {
         continue;
       }
       trkCounts[v][kTrkTPCChi2] += inc;
-      if (!(std::abs(trk.dcaZ()) < (v == kSystDCAz ? KSystDcaMaxZ : cfgCutTracKDcaMaxZ.value))) {
+      if (!(std::abs(trk.dcaZ()) < cfgCutTracKDcaMaxZ.value)) {
         continue;
       }
       trkCounts[v][kTrkDCAz] += inc;
-      // the cut of the DCAxy variation
-      if (v == kSystDCAxy && !(std::abs(trk.dcaXY()) < maxDcaXY)) {
-        continue;
-      }
       trkCounts[v][kTrkVariationCut] += inc;
       SETBIT(mask, v);
     }
@@ -929,7 +1050,9 @@ struct RadialFlowDecorr {
     if (std::abs(pd->Charge()) == 0) {
       return false;
     }
-    if (particle.pt() < cfgCutPtLower || particle.pt() > cfgCutPtUpper || std::abs(particle.eta()) > cfgCutEta) {
+    // truth particles out to the edge of the eta axes (|eta| < KEtaFineMax = 1), so that tracks migrating
+    // across |eta| = cfgCutEta between truth and reco stay inside the efficiency maps and observable bins
+    if (particle.pt() < KPtMin || particle.pt() > KPtMax || std::abs(particle.eta()) >= KEtaFineMax) {
       return false;
     }
     return true;
@@ -970,7 +1093,7 @@ struct RadialFlowDecorr {
   int etaBinsOf(float eta, std::array<int, 2>& bins) const
   {
     int n = 0;
-    for (int ieta = 0; ieta < nEta && n < 2; ++ieta) {
+    for (int ieta = 0; ieta < nEta && n < static_cast<int>(bins.size()); ++ieta) {
       if (eta > etaLw[ieta] && eta <= etaUp[ieta]) {
         bins[n++] = ieta;
       }
@@ -1038,23 +1161,20 @@ struct RadialFlowDecorr {
 
   float efficiencyVariationFactor(int v, float pt)
   {
-    if (v == kSystEff) {
-      return 1.f + 0.01f * KEffVarPercent;
-    }
     if (v == kSystEffPtDep) {
-      // Linear in pT: full variation at cfgPtMin, none at KEffVarPtZero.
-      const float shape = std::clamp((KEffVarPtZero - pt) / (KEffVarPtZero - cfgPtMin), 0.f, 1.f);
+      // Linear in pT: full variation at KEffVarPtAnchor, none at KEffVarPtZero.
+      const float shape = std::clamp((KEffVarPtZero - pt) / (KEffVarPtZero - KEffVarPtAnchor), 0.f, 1.f);
       return 1.f + 0.01f * KEffVarPercent * shape;
     }
     return 1.f;
   }
 
-  static float getFlatteningWeight(const THnSparseF* h, float vz, float chg, float pt, float eta, float phi)
+  static float getFlatteningWeight(const THnF* h, float vz, float chg, float pt, float eta, float phi)
   {
     if (!h) {
       return 0.0;
     }
-    std::array<int, 5> bins{};
+    std::array<int, KNFlatAxes> bins{};
     bins[0] = h->GetAxis(0)->FindBin(vz);
     bins[1] = h->GetAxis(1)->FindBin(chg);
     bins[2] = h->GetAxis(2)->FindBin(pt);
@@ -1099,6 +1219,8 @@ struct RadialFlowDecorr {
           flatDone[fs] = true;
         }
         flat = flatS[fs];
+      } else if (useFlat && cfgFlat && v == kSystFlat && flatCross) {
+        flat = getFlatteningWeight(flatCross, vz, sign, pt, eta, phi);
       }
       const float weight = flat * (1.0f - fakeS[es]) / eff;
       if (!std::isfinite(weight) || weight <= 0.f) {
@@ -1116,49 +1238,29 @@ struct RadialFlowDecorr {
     return weightMask;
   }
 
-  // Per-event two- and three-particle pT correlators (standard method) from the
-  // power sums, following arXiv:2112.03397, Eqs. 2-3.
-  struct C2C3Result {
-    double c2 = std::numeric_limits<double>::quiet_NaN();
-    double c3 = std::numeric_limits<double>::quiet_NaN();
-  };
-
+  // Per-event two-particle pT correlator c2 (standard method) from the power sums,
+  // following arXiv:2112.03397, Eq. 2. NaN if it is not defined.
   template <int M, int K>
-  C2C3Result calculateC2C3FromSums(const std::array<std::array<double, K>, M>& sumpmwk, const std::array<double, K>& sumwk, float referenceMeanPt) const
+  double calculateC2FromSums(const std::array<std::array<double, K>, M>& sumpmwk, const std::array<double, K>& sumwk, float referenceMeanPt) const
   {
-    C2C3Result r;
     const double s1 = sumwk[1];
     if (s1 <= 0.) {
-      return r;
+      return std::numeric_limits<double>::quiet_NaN();
     }
     const double refpt = referenceMeanPt;
     const double p11 = sumpmwk[1][1] / s1;
     const double p1Bar1 = p11 - refpt;
 
-    // --- c2: needs >=2 particles (D2 = 1 - tau1 > eps) ---
+    // needs >=2 particles (D2 = 1 - tau1 > eps)
     const double tau1 = sumwk[2] / (s1 * s1);
     const double denom2 = 1. - tau1;
     if (denom2 > KFloatEpsilon) {
       const double p12 = sumpmwk[1][2] / sumwk[2];
       const double p22 = sumpmwk[2][2] / sumwk[2];
       const double p2Bar2 = p22 - 2.0 * p12 * refpt + refpt * refpt;
-      r.c2 = (p1Bar1 * p1Bar1 - tau1 * p2Bar2) / denom2;
+      return (p1Bar1 * p1Bar1 - tau1 * p2Bar2) / denom2;
     }
-
-    // --- c3: needs >=3 particles (D3 = 1 - 3 tau1 + 2 tau2 > eps) ---
-    const double tau2 = sumwk[3] / (s1 * s1 * s1);
-    const double denom3 = 1. - 3.0 * tau1 + 2.0 * tau2;
-    if (denom3 > KFloatEpsilon) {
-      const double p12 = sumpmwk[1][2] / sumwk[2];
-      const double p22 = sumpmwk[2][2] / sumwk[2];
-      const double p13 = sumpmwk[1][3] / sumwk[3];
-      const double p23 = sumpmwk[2][3] / sumwk[3];
-      const double p33 = sumpmwk[3][3] / sumwk[3];
-      const double p2Bar2 = p22 - 2.0 * p12 * refpt + refpt * refpt;
-      const double p3Bar3 = p33 - 3.0 * p23 * refpt + 3.0 * p13 * refpt * refpt - refpt * refpt * refpt;
-      r.c3 = (p1Bar1 * p1Bar1 * p1Bar1 - 3.0 * tau1 * p2Bar2 * p1Bar1 + 2.0 * tau2 * p3Bar3) / denom3;
-    }
-    return r;
+    return std::numeric_limits<double>::quiet_NaN();
   }
 
   // ===========================================================================
@@ -1168,7 +1270,7 @@ struct RadialFlowDecorr {
   int fwdSubBin(int det, float eta) const
   {
     const auto& e = fwdEdges[det];
-    if (e.size() < 2 || eta < e.front() || eta >= e.back()) {
+    if (e.size() < KMinEdges || eta < e.front() || eta >= e.back()) {
       return -1;
     }
     const int i = static_cast<int>(std::upper_bound(e.begin(), e.end(), eta) - e.begin()) - 1;
@@ -1227,7 +1329,7 @@ struct RadialFlowDecorr {
 
     auto* alFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", ts);
     auto* alFV0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align", ts);
-    if (!alFT0 || alFT0->size() < 2 || !alFV0 || alFV0->size() < 2) {
+    if (!alFT0 || alFT0->size() < KNAlignHalves || !alFV0 || alFV0->size() < KNAlignHalves) {
       LOGF(fatal, "Could not load FT0/FV0 alignment (FT0/Calib/Align, FV0/Calib/Align) for timestamp %llu", ts);
       return;
     }
@@ -1337,7 +1439,7 @@ struct RadialFlowDecorr {
         continue;
       }
       const float eta = particle.eta();
-      if (std::abs(eta) < 1.5f) {
+      if (std::abs(eta) < KFwdTruthEtaMin) {
         continue;
       }
       auto* pd = pdg->GetParticle(particle.pdgCode());
@@ -1381,30 +1483,59 @@ struct RadialFlowDecorr {
     return p->GetBinContent(gb);
   }
 
-  void computeEventObs(const PowerSums& s, int v, int level, const FwdSignal* fwd, float nCh, EventObs& evObs)
+  // Observables of pT range ipt; the mean-pass references are read at the eta-bin index etaIdx(ipt, ieta).
+  void computeEventObs(const PowerSums& s, int v, int level, const FwdSignal* fwd, float nCh, EventObs& evObs, int ipt)
   {
     const auto& input = inputs[v];
     const double nan = std::numeric_limits<double>::quiet_NaN();
     evObs.nCh = nCh;
     for (int ieta = 0; ieta < nEta; ++ieta) {
       evObs.nW[ieta] = s.wk[ieta][1];
+      evObs.nW2[ieta] = s.wk[ieta][2];
       evObs.mean[ieta] = (s.wk[ieta][1] > KFloatEpsilon) ? (s.pmwk[ieta][1][1] / s.wk[ieta][1]) : nan;
       evObs.c2[ieta] = nan;
-      evObs.c3[ieta] = nan;
       evObs.p1kBar[ieta] = nan;
-      // c2 (>=2 tracks), c3 (>=3 tracks) and the pT deviation need a usable reference
-      const double mmpt = profileValue(input.pmean[level], nCh, ieta + 1, kMeanPt + 1);
+      evObs.qTAValid[ieta] = false;
+      // c2 (>=2 tracks) and the pT deviation need a usable reference
+      const int ybin = etaIdx(ipt, ieta) + 1;
+      const double mmpt = profileValue(input.pmean[level], nCh, ybin, kMeanPt + 1);
       if (std::isfinite(mmpt) && mmpt != 0) {
-        const auto corr = calculateC2C3FromSums<KIntM, KIntK>(s.pmwk[ieta], s.wk[ieta], mmpt);
-        evObs.c2[ieta] = corr.c2;
-        evObs.c3[ieta] = corr.c3;
+        evObs.c2[ieta] = calculateC2FromSums<KIntM, KIntK>(s.pmwk[ieta], s.wk[ieta], mmpt);
         if (std::isfinite(evObs.mean[ieta])) {
           evObs.p1kBar[ieta] = evObs.mean[ieta] - mmpt;
         }
+        const double wSum = s.wk[ieta][1];
+        if (cfgAziTA && wSum > KFloatEpsilon) {
+          const auto* pq = input.pqmean[level];
+          for (int ih = 0; ih < KNHarm; ++ih) {
+            const auto& q = s.harm[ieta][ih];
+            // per-particle vectors, recentred by their event averages at this N_ch and eta bin (offsets 0 without the input)
+            std::array<double, KNHarmComp> off{};
+            if (pq) {
+              for (int c = 0; c < KNHarmComp; ++c) {
+                const double o = profileValue(pq, nCh, ybin, KNHarmComp * ih + c + 1);
+                off[c] = std::isfinite(o) ? o : 0.;
+              }
+            }
+            const double oRe = q[0] / wSum - off[2], oIm = q[1] / wSum - off[3];
+            const double qRe = q[2] / wSum - off[0], qIm = q[3] / wSum - off[1];
+            evObs.qTA[ieta][ih] = {wSum * (oRe - mmpt * qRe), wSum * (oIm - mmpt * qIm)};
+            evObs.bTA[ieta][ih] = {wSum * qRe, wSum * qIm};
+          }
+          evObs.selfTA[ieta] = s.pmwk[ieta][2][2] - 2. * mmpt * s.pmwk[ieta][1][2] + mmpt * mmpt * s.wk[ieta][2];
+          evObs.qTAValid[ieta] = true;
+        }
       }
-      evObs.dN[ieta] = evObs.nW[ieta] - profileValue(input.pmean[level], nCh, ieta + 1, kMeanN + 1);
+      evObs.dN[ieta] = evObs.nW[ieta] - profileValue(input.pmean[level], nCh, ybin, kMeanN + 1);
     }
     evObs.fwdValid.fill(false);
+    evObs.fwdRead.fill(false);
+    if (fwd) {
+      for (int k = 0; k < nFwd; ++k) {
+        evObs.fwdRead[k] = fwd->valid[k];
+        evObs.fwdAmp[k] = fwd->ampl[k];
+      }
+    }
     if (!fwd || !input.pmeanFwd[level]) {
       return;
     }
@@ -1422,9 +1553,9 @@ struct RadialFlowDecorr {
     }
   }
 
-  // Fill the fluctuation profiles of one (variation, level) at x = N_ch, or of one bootstrap
-  // replica with weight w at x = centrality.
-  void fillFluc(const FlucHists& h, const EventObs& evObs, double w, float x)
+  // Fill the fluctuation profiles of one (variation, level, pT range ipt) at x = N_ch, or of one
+  // bootstrap replica with weight w at x = centrality. The eta-bin index axes are filled at etaIdx(ipt, ieta).
+  void fillFluc(const FlucHists& h, const EventObs& evObs, double w, float x, int ipt)
   {
     auto fill = [w](const std::shared_ptr<TProfile3D>& p, double a, double b, double c, double val) {
       if (p) {
@@ -1432,69 +1563,74 @@ struct RadialFlowDecorr {
       }
     };
 
-    // multiplicity, meanpT, C2, C3 vs eta bin
+    // multiplicity, meanpT, C2 vs eta bin (obs 3 and 5 stay empty)
     for (int ieta = 0; ieta < nEta; ++ieta) {
-      fill(h.obs, x, ieta, kObsN, evObs.nW[ieta]);
+      const int y = etaIdx(ipt, ieta);
+      fill(h.obs, x, y, kObsN, evObs.nW[ieta]);
       if (std::isfinite(evObs.mean[ieta])) {
-        fill(h.obs, x, ieta, kObsMeanPt, evObs.mean[ieta]);
+        fill(h.obs, x, y, kObsMeanPt, evObs.mean[ieta]);
       }
       if (std::isfinite(evObs.c2[ieta])) {
-        fill(h.obs, x, ieta, kObsC2, evObs.c2[ieta]);
-      }
-      if (std::isfinite(evObs.c3[ieta])) {
-        fill(h.obs, x, ieta, kObsC3, evObs.c3[ieta]);
+        fill(h.obs, x, y, kObsC2, evObs.c2[ieta]);
       }
     }
 
-    // mirror-pair subevent (C2Sub, C3Sub) vs eta bin
+    // mirror-pair subevent C2Sub vs eta bin
     for (int ietaA = 1; ietaA <= (nEta - 1) / 2; ++ietaA) {
       int ietaC = nEta - ietaA;
       float c2Sub = evObs.p1kBar[ietaA] * evObs.p1kBar[ietaC];
-      // Mirror pairs (A, C = -A): both orderings are filled, each at the bin of its pair,
-      // so bins A < 0 hold AAB and bins C > 0 hold ABB of the same mirror pair.  For a
-      // symmetric collision system the two agree in expectation: eta -> -eta maps
-      // AAB(a, -a) onto AAB(-a, a) = ABB(a, -a).  Comparing bin A with bin nEta - A is
-      // therefore a forward/backward check, not two independent observables.
-      float c3SubA = evObs.c2[ietaA] * evObs.p1kBar[ietaC]; // AAB: 2 particles from A, 1 from C
-      float c3SubC = evObs.c2[ietaC] * evObs.p1kBar[ietaA]; // ABB: 2 particles from C, 1 from A
-
       if (std::isfinite(c2Sub)) {
-        fill(h.obs, x, ietaA, kObsC2Sub, c2Sub);
-      }
-      if (std::isfinite(c3SubA)) {
-        fill(h.obs, x, ietaA, kObsC3Sub, c3SubA);
-      }
-      if (std::isfinite(c3SubC)) {
-        fill(h.obs, x, ietaC, kObsC3Sub, c3SubC);
+        fill(h.obs, x, etaIdx(ipt, ietaA), kObsC2Sub, c2Sub);
       }
     }
 
-    // full 2D subevent maps, in (eta_A, eta_C) and in (Delta eta, Sigma eta)
+    // full 2D subevent maps in (eta_A, eta_C)
     for (int ietaA = 1; ietaA < nEta; ++ietaA) {
       for (int ietaC = 1; ietaC < nEta; ++ietaC) {
         float etaValA = (etaLw[ietaA] + etaUp[ietaA]) / 2.0f;
         float etaValB = (etaLw[ietaC] + etaUp[ietaC]) / 2.0f;
-        const float bw = etaUp[ietaA] - etaLw[ietaA];
-        const float gap = (ietaA - ietaC) * bw;
-        const float sum = 2.f * etaLw[1] + (ietaA + ietaC - 1) * bw; // = cA + cC on the lattice
 
         float c2Sub = (ietaA == ietaC) ? static_cast<float>(evObs.c2[ietaA]) : evObs.p1kBar[ietaA] * evObs.p1kBar[ietaC];
-        // C3 sub-event map, ORDERED: cell (A,C) = c2[A] p1kBar[C] = <dpT dpT>_A <dpT>_C,
-        // two particles from A and one from C ("AAB").  The same pair of bins read the
-        // other way round, cell (C,A) = c2[C] p1kBar[A], is "ABB" (one from A, two from C).
-        // Both are filled, so the map carries AAB and ABB of every bin pair: the row at
-        // eta_A = eta_ref is AAB with the pair at eta_ref, the column is ABB.  Unlike C2,
-        // this map is NOT symmetric under A <-> C, and the two triangles must not be
-        // averaged or treated as duplicates.  Diagonal: the within-bin c3 ("AAA").
-        float c3Sub2D = (ietaA == ietaC) ? static_cast<float>(evObs.c3[ietaA]) : evObs.c2[ietaA] * evObs.p1kBar[ietaC];
 
+        // multiplicity map <dN_A dN_C>, dN = N - <N> at N_ch from the mean pass (efficiency-weighted counts).
+        // Diagonal: dN^2 - sum w^2, i.e. the variance without the self-pair (Poisson) term, as c2 for [pT].
+        const double cNN = (ietaA == ietaC) ? evObs.dN[ietaA] * evObs.dN[ietaA] - evObs.nW2[ietaA] : evObs.dN[ietaA] * evObs.dN[ietaC];
+        if (std::isfinite(cNN)) {
+          fill(h.cNN2D, x, etaValA, etaValB, cNN);
+        }
         if (std::isfinite(c2Sub)) {
           fill(h.c2Sub2D, x, etaValA, etaValB, c2Sub);
-          fill(h.gapSum2D, x, gap, sum, c2Sub);
         }
-        if (std::isfinite(c3Sub2D)) {
-          fill(h.c3Sub2D, x, etaValA, etaValB, c3Sub2D);
-          fill(h.c3GapSum2D, x, gap, sum, c3Sub2D);
+        // C_TA = (C_T + 2 C_A)/3 = c_0 + sum_n beta_n c_n: the pair covariance averaged over the transverse
+        // (pi/3 <= |dphi| < 2pi/3) and away-side (|dphi| >= 2pi/3) regions with weights 1/3 and 2/3. It contains no
+        // near-side pairs and no harmonic divisible by 2 or 3. c_n = Re(Q_n,A Q*_n,C) / (W_A W_C) is the
+        // momentum-weighted pair average of cos(n dphi), the same normalisation as c_0 = C2Sub; on the diagonal the
+        // self pairs are removed as for c2. Valid for a pair density flat in dphi (flattening weights applied).
+        if (h.c2TA2D && std::isfinite(c2Sub) && evObs.qTAValid[ietaA] && evObs.qTAValid[ietaC]) {
+          const bool diag = (ietaA == ietaC);
+          const double den = diag ? evObs.nW[ietaA] * evObs.nW[ietaA] - evObs.nW2[ietaA] : evObs.nW[ietaA] * evObs.nW[ietaC];
+          if (den > KFloatEpsilon) {
+            double cTA = c2Sub;
+            for (int ih = 0; ih < KNHarm; ++ih) {
+              const auto& qa = evObs.qTA[ietaA][ih];
+              const auto& qc = evObs.qTA[ietaC][ih];
+              const double cn = (qa[0] * qc[0] + qa[1] * qc[1] - (diag ? evObs.selfTA[ietaA] : 0.)) / den;
+              cTA += betaTA[ih] * cn;
+              if (ih == 0) {
+                fill(h.c1Sub2D, x, etaValA, etaValB, cn);
+              } else {
+                fill(h.cn2D[ih], x, etaValA, etaValB, cn);
+              }
+              // pair-density harmonic of the same pairs (booked: Base, or all with cfgSystHarm); the self pairs
+              // contribute sum w^2 on the diagonal
+              if (h.dn2D[ih]) {
+                const auto& ba = evObs.bTA[ietaA][ih];
+                const auto& bc = evObs.bTA[ietaC][ih];
+                fill(h.dn2D[ih], x, etaValA, etaValB, (ba[0] * bc[0] + ba[1] * bc[1] - (diag ? evObs.nW2[ietaA] : 0.)) / den);
+              }
+            }
+            fill(h.c2TA2D, x, etaValA, etaValB, cTA);
+          }
         }
       }
     }
@@ -1511,10 +1647,58 @@ struct RadialFlowDecorr {
       }
       for (int ieta = 0; ieta < nEta; ++ieta) {
         if (std::isfinite(evObs.p1kBar[ieta])) {
-          fill(h.covFwdPt, x, ieta, k, evObs.p1kBar[ieta] * da);
+          fill(h.covFwdPt, x, etaIdx(ipt, ieta), k, evObs.p1kBar[ieta] * da);
         }
         if (std::isfinite(evObs.dN[ieta])) {
-          fill(h.covFwdN, x, ieta, k, evObs.dN[ieta] * da);
+          fill(h.covFwdN, x, etaIdx(ipt, ieta), k, evObs.dN[ieta] * da);
+        }
+      }
+      // tag-tag covariances <da_k da_j> (all pairs; the diagonal repeats Prof_FwdAmpVar): forward subevents, e.g. A +- C
+      for (int j = 0; j < nFwd; ++j) {
+        if (evObs.fwdValid[j]) {
+          fill(h.covFwdFwd, x, k, j, da * evObs.dFwd[j]);
+        }
+      }
+    }
+  }
+
+  // Raw moments of one level (or bootstrap replica with weight w) at x = N_ch (replica: centrality).
+  void fillRaw(const RawHists& h, const EventObs& evObs, double w, float x)
+  {
+    if (!h.nAnC) {
+      return;
+    }
+    for (int ietaA = 1; ietaA < nEta; ++ietaA) {
+      const float etaValA = (etaLw[ietaA] + etaUp[ietaA]) / 2.0f;
+      for (int ietaC = 1; ietaC < nEta; ++ietaC) {
+        const float etaValC = (etaLw[ietaC] + etaUp[ietaC]) / 2.0f;
+        // diagonal without the self pairs, the convention of Prof_CNN2D
+        const double nn = (ietaA == ietaC) ? evObs.nW[ietaA] * evObs.nW[ietaA] - evObs.nW2[ietaA] : evObs.nW[ietaA] * evObs.nW[ietaC];
+        h.nAnC->Fill(x, etaValA, etaValC, nn, w);
+        h.nA->Fill(x, etaValA, etaValC, evObs.nW[ietaA], w);
+      }
+    }
+    if (!h.fwd) {
+      return;
+    }
+    for (int k = 0; k < nFwd; ++k) {
+      if (!evObs.fwdRead[k]) {
+        continue;
+      }
+      const double a = evObs.fwdAmp[k];
+      for (int j = 0; j < nFwd; ++j) {
+        if (evObs.fwdRead[j]) {
+          h.fwd->Fill(x, k, j, a, w);
+          h.fwdFwd->Fill(x, k, j, a * evObs.fwdAmp[j], w);
+        }
+      }
+      for (int ieta = 0; ieta < nEta; ++ieta) {
+        h.fwdN->Fill(x, ieta, k, a * evObs.nW[ieta], w);
+        h.nFwdSel->Fill(x, ieta, k, evObs.nW[ieta], w);
+        if (std::isfinite(evObs.mean[ieta])) {
+          h.fwdPt->Fill(x, ieta, k, a * evObs.mean[ieta], w);
+          h.ptFwdSel->Fill(x, ieta, k, evObs.mean[ieta], w);
+          h.fwdPtSel->Fill(x, ieta, k, a, w);
         }
       }
     }
@@ -1681,7 +1865,7 @@ struct RadialFlowDecorr {
       if (!TESTBIT(mask, v) || hists.nchCent[v]) {
         continue;
       }
-      hists.nchCent[v] = reg(v).add<TH2>((systPrefix(v) + "Hist2D_globalTracks_cent").c_str(), "cent (%);N_{ch} (global tracks)", kTH2F, {{centAxis1Per}, {nchAxisOf(v)}});
+      hists.nchCent[v] = reg(v).add<TH2>((systPrefix(v) + "Hist2D_globalTracks_cent").c_str(), "cent (%);N_{ch} (global tracks)", kTH2F, {{centAxis1Per}, {nchAxisObs}});
     }
   }
 
@@ -1702,7 +1886,7 @@ struct RadialFlowDecorr {
       }
       for (int c = 0; c < kNEffCat; ++c) {
         hists.eff[v].maps[c] = reg(v).add<TH3>((systPrefix(v) + effMapName[c]).c_str(), ";centrality (%);p_{T} (GeV/c);#eta", kTH3F,
-                                               {{centAxisEff}, {KNbinsPtRes, KPtMin, KPtMax}, {KNbinsEtaFine, -KEtaFineMax, KEtaFineMax}});
+                                               {{centAxisEff}, {effPtEdges(), "p_{T} (GeV/c)"}, {KNbinsEtaFine, -KEtaFineMax, KEtaFineMax}});
       }
     }
   }
@@ -1714,7 +1898,7 @@ struct RadialFlowDecorr {
     histos.add("etaTruthReco", ";#eta^{MC};#eta^{reco}", kTH2F, {{KNbinsEtaRes, -KEtaFineMax, KEtaFineMax}, {KNbinsEtaRes, -KEtaFineMax, KEtaFineMax}});
     histos.add("TruthTracKVz", ";Vz^{MC};Vz^{Reco}", kTH2F, {{KNbinsVz, KVzMin, KVzMax}, {KNbinsVz, KVzMin, KVzMax}});
     histos.add("vzResolution", ";Vz^{MC};(Vz^{reco}-Vz^{MC})/Vz^{MC}", kTH2F, {{KNbinsVz, KVzMin, KVzMax}, {100, -0.1, 0.1}});
-    hists.mcTrackOrigin = histos.add<TH3>("MCQA/Hist3D_Nch_pT_origin", ";N_{ch};p_{T} (GeV/c);origin (0 primary, 1 secondary, 2 other MC collision, 3 no label)", kTH3F, {{nchAxisObs}, {KNbinsPtRes, KPtMin, KPtMax}, {kNOrigin, -0.5, static_cast<double>(kNOrigin) - 0.5}});
+    hists.mcTrackOrigin = histos.add<TH3>("MCQA/Hist3D_Nch_pT_origin", ";N_{ch};p_{T} (GeV/c);origin (0 primary, 1 secondary, 2 other MC collision, 3 no label)", kTH3F, {{nchAxisObs}, {effPtEdges(), "p_{T} (GeV/c)"}, {kNOrigin, -0.5, static_cast<double>(kNOrigin) - 0.5}});
   }
 
   // vertex QA of all MC passes
@@ -1754,36 +1938,110 @@ struct RadialFlowDecorr {
       for (int l = 0; l < nLev; ++l) {
         const std::string p = systPrefix(v) + (isMC ? mcDir[l] : std::string{});
         auto& h = hists.mean[v][l];
-        h.mean = r.add<TProfile3D>((p + "Prof_Mean_Nch_etabin_obs").c_str(), ";N_{ch};#eta-bin;observable (0 #LT[p_{T}]#GT, 1 #LT N#GT)", kTProfile3D, {{nchAxisOf(v)}, {etaBinAxis}, {kNMeanObs, -0.5, static_cast<double>(kNMeanObs) - 0.5}});
-        if (cfgFwdOpt.cfgFwd) {
-          h.fwdMean = r.add<TProfile2D>((p + "Prof_FwdAmpMean_Nch_fwdbin").c_str(), ";N_{ch};forward bin;#LT a#GT", kTProfile2D, {{nchAxisOf(v)}, {fwdAxis}});
+        h.mean = r.add<TProfile3D>((p + "Prof_Mean_Nch_etabin_obs").c_str(), ";N_{ch};#eta-bin;observable (0 #LT[p_{T}]#GT, 1 #LT N#GT)", kTProfile3D, {{nchAxisObs}, {etaBinAxis}, {kNMeanObs, -0.5, static_cast<double>(kNMeanObs) - 0.5}});
+        if (cfgAziTA) {
+          h.qMean = r.add<TProfile3D>((p + "Prof_QMean_Nch_etabin_comp").c_str(), ";N_{ch};#eta-bin;4(n-1) + {Re q_{n}, Im q_{n}, Re o_{n}, Im o_{n}}", kTProfile3D, {{nchAxisQMean}, {etaBinAxis}, {KNHarmComp * KNHarm, -0.5, KNHarmComp * KNHarm - 0.5}});
         }
+        if (cfgFwdOpt.cfgFwd) {
+          h.fwdMean = r.add<TProfile2D>((p + "Prof_FwdAmpMean_Nch_fwdbin").c_str(), ";N_{ch};forward bin;#LT a#GT", kTProfile2D, {{nchAxisObs}, {fwdAxis}});
+        }
+        dropBinSumw2(h.mean);
+        dropBinSumw2(h.qMean);
+        dropBinSumw2(h.fwdMean);
       }
     }
   }
 
   // Fluctuation-pass profiles named prefix + name + suffix, with x axis ax.
-  // withGapSum: also the maps in (Delta eta, Sigma eta).
-  FlucHists declareFluc(HistogramRegistry& r, const std::string& p, const std::string& s, const AxisSpec& ax, bool withGapSum)
+  // withHarm: also the c_n (n >= 2) and d_n maps (Base, or every variation with cfgSystHarm; not in the
+  // bootstrap replicas).
+  // pT range ipt > 0: the eta-bin index profiles are those of range 0 (h0), the maps get the suffix _pt<ipt>,
+  // and the forward-only profiles (no pT dependence) are not booked again.
+  FlucHists declareFluc(HistogramRegistry& r, const std::string& p, const std::string& s, const AxisSpec& ax, bool withHarm, int ipt, const FlucHists* h0)
   {
     FlucHists h;
-    auto n = [&](const char* name) { return p + name + s; };
-    h.obs = r.add<TProfile3D>(n("Prof_Obs_Nch_etabin_obs").c_str(), ";N_{ch};#eta-bin;observable (0 N, 1 [p_{T}], 2 c_{2}, 3 c_{3}, 4 C_{2}^{sub} mirror, 5 C_{3}^{sub} mirror)", kTProfile3D, {{ax}, {etaBinAxis}, {kNFlucObs, -0.5, static_cast<double>(kNFlucObs) - 0.5}});
-    h.c2Sub2D = r.add<TProfile3D>(n("Prof_C2Sub2D_Nch_etaA_etaC").c_str(), ";N_{ch};#eta_{A};#eta_{C}", kTProfile3D, {{ax}, {etaAxis}, {etaAxis}});
-    h.c3Sub2D = r.add<TProfile3D>(n("Prof_C3Sub2D_Nch_etaA_etaC").c_str(), ";N_{ch};#eta_{A} (pair);#eta_{C} (single)", kTProfile3D, {{ax}, {etaAxis}, {etaAxis}});
-    if (withGapSum) {
-      h.gapSum2D = r.add<TProfile3D>(n("Prof_GapSum2D_Nch_gap_sum").c_str(), ";N_{ch};#eta_{A} #minus #eta_{C} (Gap);#eta_{A} + #eta_{C} (Sum)", kTProfile3D, {{ax}, {gapAxis}, {sumAxis}});
-      h.c3GapSum2D = r.add<TProfile3D>(n("Prof_C3GapSum2D_Nch_gap_sum").c_str(), ";N_{ch};#eta_{pair} #minus #eta_{single};#eta_{pair} + #eta_{single}", kTProfile3D, {{ax}, {gapAxis}, {sumAxis}});
+    auto n = [&](const char* name) { return p + name + s + ptSuffix(ipt); };
+    if (ipt > 0) {
+      h.obs = h0->obs;
+      h.covFwdPt = h0->covFwdPt;
+      h.covFwdN = h0->covFwdN;
+    } else {
+      h.obs = r.add<TProfile3D>(n("Prof_Obs_Nch_etabin_obs").c_str(), ";N_{ch};#eta-bin;observable (0 N, 1 [p_{T}], 2 c_{2}, 3 unused, 4 C_{2}^{sub} mirror, 5 unused; 3 and 5 kept for layout compatibility)", kTProfile3D, {{ax}, {etaBinAxis}, {kNFlucObs, -0.5, static_cast<double>(kNFlucObs) - 0.5}});
     }
-    if (cfgFwdOpt.cfgFwd) {
+    h.c2Sub2D = r.add<TProfile3D>(n("Prof_C2Sub2D_Nch_etaA_etaC").c_str(), ";N_{ch};#eta_{A};#eta_{C}", kTProfile3D, {{ax}, {etaAxis}, {etaAxis}});
+    h.cNN2D = r.add<TProfile3D>(n("Prof_CNN2D_Nch_etaA_etaC").c_str(), ";N_{ch};#eta_{A};#eta_{C};#LT #delta N_{A} #delta N_{C}#GT", kTProfile3D, {{ax}, {etaAxis}, {etaAxis}});
+    if (cfgAziTA) {
+      h.c2TA2D = r.add<TProfile3D>(n("Prof_C2SubTA2D_Nch_etaA_etaC").c_str(), ";N_{ch};#eta_{A};#eta_{C};C_{TA} = (C_{T} + 2C_{A})/3", kTProfile3D, {{ax}, {etaAxis}, {etaAxis}});
+      h.c1Sub2D = r.add<TProfile3D>(n("Prof_C2SubCos1_2D_Nch_etaA_etaC").c_str(), ";N_{ch};#eta_{A};#eta_{C};c_{1}", kTProfile3D, {{ax}, {etaAxis}, {etaAxis}});
+      if (withHarm) {
+        for (int ih = 0; ih < KNHarm; ++ih) {
+          if (ih > 0) {
+            h.cn2D[ih] = r.add<TProfile3D>(n(Form("Prof_C2SubCos%d_2D_Nch_etaA_etaC", ih + 1)).c_str(), Form(";N_{ch};#eta_{A};#eta_{C};c_{%d}", ih + 1), kTProfile3D, {{ax}, {etaAxis}, {etaAxis}});
+          }
+          h.dn2D[ih] = r.add<TProfile3D>(n(Form("Prof_PairCos%d_2D_Nch_etaA_etaC", ih + 1)).c_str(), Form(";N_{ch};#eta_{A};#eta_{C};d_{%d}", ih + 1), kTProfile3D, {{ax}, {etaAxis}, {etaAxis}});
+        }
+      }
+    }
+    if (cfgFwdOpt.cfgFwd && ipt == 0) {
       h.fwdVar = r.add<TProfile2D>(n("Prof_FwdAmpVar_Nch_fwdbin").c_str(), ";N_{ch};forward bin;#LT #delta a^{2}#GT", kTProfile2D, {{ax}, {fwdAxis}});
       h.covFwdPt = r.add<TProfile3D>(n("Prof_CovFwdAmpMeanpT_Nch_etabin_fwdbin").c_str(), ";N_{ch};#eta-bin;forward bin;#LT #delta[p_{T}] #delta a#GT", kTProfile3D, {{ax}, {etaBinAxis}, {fwdAxis}});
       h.covFwdN = r.add<TProfile3D>(n("Prof_CovFwdAmpNch_Nch_etabin_fwdbin").c_str(), ";N_{ch};#eta-bin;forward bin;#LT #delta N #delta a#GT", kTProfile3D, {{ax}, {etaBinAxis}, {fwdAxis}});
+      h.covFwdFwd = r.add<TProfile3D>(n("Prof_CovFwdAmpFwdAmp_Nch_fwdbin_fwdbin").c_str(), ";N_{ch};forward bin i;forward bin j;#LT #delta a_{i} #delta a_{j}#GT", kTProfile3D, {{ax}, {fwdAxis}, {fwdAxis}});
     }
     return h;
   }
 
-  // Gap/sum maps for every DATA variation; in MC only for Base, to limit the memory.
+  // Profiles filled with unit weights only (everything but the bootstrap replicas) do not need the per-bin
+  // sum of squared weights: it equals the bin entries. Dropping it saves a quarter of their memory.
+  template <typename P>
+  static void dropBinSumw2(const std::shared_ptr<P>& p)
+  {
+    if (p) {
+      p->Sumw2(false);
+    }
+  }
+  static void dropBinSumw2(const FlucHists& h)
+  {
+    for (const auto& p : {h.obs, h.c2Sub2D, h.cNN2D, h.c2TA2D, h.c1Sub2D, h.covFwdPt, h.covFwdN, h.covFwdFwd}) {
+      dropBinSumw2(p);
+    }
+    for (const auto& p : h.cn2D) {
+      dropBinSumw2(p);
+    }
+    for (const auto& p : h.dn2D) {
+      dropBinSumw2(p);
+    }
+    dropBinSumw2(h.fwdVar);
+  }
+
+  // Raw-moment profiles (cfgRawMoments) named prefix + name + suffix, x axis ax titled xTitle.
+  RawHists declareRaw(HistogramRegistry& r, const std::string& p, const std::string& s, const AxisSpec& ax, const std::string& xTitle)
+  {
+    RawHists h;
+    auto n = [&](const char* name) { return p + name + s; };
+    auto t = [&](const char* rest) { return ";" + xTitle + rest; };
+    const AxisSpec etaIdxAxis{nEta, -0.5, nEta - 0.5, "#eta bin (0: |#eta| < cfgCutEta)"};
+    h.nAnC = r.add<TProfile3D>(n("Prof_Raw_NANC_Nch_etaA_etaC").c_str(), t(";#eta_{A};#eta_{C};#LT N_{A} N_{C}#GT (diagonal #LT N^{2} - #Sigma w^{2}#GT)").c_str(), kTProfile3D, {{ax}, {etaAxis}, {etaAxis}});
+    h.nA = r.add<TProfile3D>(n("Prof_Raw_NA_Nch_etaA_etaC").c_str(), t(";#eta_{A};#eta_{C};#LT N_{A}#GT").c_str(), kTProfile3D, {{ax}, {etaAxis}, {etaAxis}});
+    if (cfgFwdOpt.cfgFwd) {
+      h.fwd = r.add<TProfile3D>(n("Prof_Raw_FwdAmp_Nch_fwdbin_fwdbin").c_str(), t(";forward bin i;forward bin j;#LT a_{i}#GT (i and j read out)").c_str(), kTProfile3D, {{ax}, {fwdAxis}, {fwdAxis}});
+      h.fwdFwd = r.add<TProfile3D>(n("Prof_Raw_FwdAmpFwdAmp_Nch_fwdbin_fwdbin").c_str(), t(";forward bin i;forward bin j;#LT a_{i} a_{j}#GT").c_str(), kTProfile3D, {{ax}, {fwdAxis}, {fwdAxis}});
+      h.fwdN = r.add<TProfile3D>(n("Prof_Raw_FwdAmpN_Nch_etabin_fwdbin").c_str(), t(";#eta bin (0: |#eta| < cut);forward bin;#LT a N#GT").c_str(), kTProfile3D, {{ax}, {etaIdxAxis}, {fwdAxis}});
+      h.nFwdSel = r.add<TProfile3D>(n("Prof_Raw_NFwdSel_Nch_etabin_fwdbin").c_str(), t(";#eta bin (0: |#eta| < cut);forward bin;#LT N#GT (forward bin read out)").c_str(), kTProfile3D, {{ax}, {etaIdxAxis}, {fwdAxis}});
+      h.fwdPt = r.add<TProfile3D>(n("Prof_Raw_FwdAmpMeanpT_Nch_etabin_fwdbin").c_str(), t(";#eta bin (0: |#eta| < cut);forward bin;#LT a [p_{T}]#GT").c_str(), kTProfile3D, {{ax}, {etaIdxAxis}, {fwdAxis}});
+      h.ptFwdSel = r.add<TProfile3D>(n("Prof_Raw_MeanpTFwdSel_Nch_etabin_fwdbin").c_str(), t(";#eta bin (0: |#eta| < cut);forward bin;#LT [p_{T}]#GT (forward bin read out)").c_str(), kTProfile3D, {{ax}, {etaIdxAxis}, {fwdAxis}});
+      h.fwdPtSel = r.add<TProfile3D>(n("Prof_Raw_FwdAmpPtSel_Nch_etabin_fwdbin").c_str(), t(";#eta bin (0: |#eta| < cut);forward bin;#LT a#GT ([p_{T}] defined)").c_str(), kTProfile3D, {{ax}, {etaIdxAxis}, {fwdAxis}});
+    }
+    return h;
+  }
+  static void dropBinSumw2(const RawHists& h)
+  {
+    for (const auto& p : {h.nAnC, h.nA, h.fwd, h.fwdFwd, h.fwdN, h.nFwdSel, h.fwdPt, h.ptFwdSel, h.fwdPtSel}) {
+      dropBinSumw2(p);
+    }
+  }
+
+  // Fluctuation profiles of every variation, level and pT range.
   void declareFlucAll(uint32_t mask, bool isMC)
   {
     static const std::array<std::string, kNLevels> mcDir = {"MCGen/", "MCReco/", "MCRecoEffCorr/"};
@@ -1793,7 +2051,16 @@ struct RadialFlowDecorr {
         continue;
       }
       for (int l = 0; l < nLev; ++l) {
-        hists.fluc[v][l] = declareFluc(reg(v), systPrefix(v) + (isMC ? mcDir[l] : std::string{}), "", nchAxisOf(v), !isMC || v == kSystBase);
+        for (int ipt = 0; ipt < ptRange.n; ++ipt) {
+          hists.fluc[v][l][ipt] = declareFluc(reg(v), systPrefix(v) + (isMC ? mcDir[l] : std::string{}), "", nchAxisObs, v == kSystBase || cfgSyst.cfgSystHarm, ipt, &hists.fluc[v][l][0]);
+          dropBinSumw2(hists.fluc[v][l][ipt]);
+        }
+      }
+    }
+    if (cfgFwdOpt.cfgRawMoments && TESTBIT(mask, kSystBase)) {
+      for (int l = 0; l < nLev; ++l) {
+        hists.raw[l] = declareRaw(histos, isMC ? mcDir[l] : std::string{}, "", nchAxisObs, "N_{ch}");
+        dropBinSumw2(hists.raw[l]);
       }
     }
   }
@@ -1802,8 +2069,15 @@ struct RadialFlowDecorr {
   // is the Base centrality in 5% classes, the binning in which the errors are evaluated.
   void declareBootstrapHists()
   {
-    for (int s = 0; s < nBoot; ++s) {
-      hists.boot[s] = declareFluc(histosBoot, "Bootstrap/", Form("_sample%d", s), centAxisBoot, true);
+    for (int s = 0; s < bootstrap.n; ++s) {
+      for (int ipt = 0; ipt < ptRange.n; ++ipt) {
+        hists.boot[s][ipt] = declareFluc(ipt == 0 ? histosBoot : histosBoot2, "Bootstrap/", Form("_sample%d", s), centAxisBoot, false, ipt, &hists.boot[s][0]);
+      }
+      if (cfgFwdOpt.cfgRawMoments) {
+        // the replica means do not need the per-bin sum of squared weights (errors from the replica spread)
+        hists.bootRaw[s] = declareRaw(histosBoot, "Bootstrap/", Form("_sample%d", s), centAxisBoot, "Centrality (%)");
+        dropBinSumw2(hists.bootRaw[s]);
+      }
     }
   }
 
@@ -1829,7 +2103,7 @@ struct RadialFlowDecorr {
       declareFwdQA();
     }
     declareMean(maskAll, true);
-    histos.add("Prof_Weights_pT_type", ";p_{T};weight (0 eff, 1 fake, 2 w)", kTProfile2D, {{KNbinsPtRes, KPtMin, KPtMax}, {3, -0.5, 2.5}});
+    histos.add("Prof_Weights_pT_type", ";p_{T};weight (0 eff, 1 fake, 2 w)", kTProfile2D, {{effPtEdges(), "p_{T} (GeV/c)"}, {3, -0.5, 2.5}});
   }
 
   void declareMCFlucHists()
@@ -1846,6 +2120,15 @@ struct RadialFlowDecorr {
   {
     declareNchCent(maskFlat);
     declareFlat(maskFlat, "");
+    if (TESTBIT(maskAll, kSystFlat) && cfgFlatRunSplit > 0) {
+      auto& h = hists.flat[kSystFlat];
+      auto book = [&](const char* nm) {
+        return reg(kSystFlat).add<THnSparse>((systPrefix(kSystFlat) + nm).c_str(), ";vz;sign;pt;eta;phi;weight", kTHnSparseF,
+                                             {{vzAxis}, {chgAxis}, {pTAxis}, {etaFlatAxis}, {phiAxis}, {kNFlatType, -0.5, static_cast<double>(kNFlatType) - 0.5}});
+      };
+      h.early = book("hFlatMapsEarly");
+      h.late = book("hFlatMapsLate");
+    }
   }
 
   void declareDataMeanHists()
@@ -1856,7 +2139,7 @@ struct RadialFlowDecorr {
       declareFwdQA();
     }
     declareMean(maskAll, false);
-    histos.add("Prof_Weights_pt_eta_type", ";p_{T} (GeV/c);#eta;weight (0 eff, 1 fake, 2 w_{#phi})", kTProfile3D, {{KNbinsPtRes, KPtMin, KPtMax}, {KNbinsEtaFine, -KEtaFineMax, KEtaFineMax}, {3, -0.5, 2.5}});
+    histos.add("Prof_Weights_pt_eta_type", ";p_{T} (GeV/c);#eta;weight (0 eff, 1 fake, 2 w_{#phi})", kTProfile3D, {{effPtEdges(), "p_{T} (GeV/c)"}, {KNbinsEtaFine, -KEtaFineMax, KEtaFineMax}, {3, -0.5, 2.5}});
   }
 
   void declareDataFlucHists()
@@ -1867,7 +2150,7 @@ struct RadialFlowDecorr {
       declareFwdQA();
     }
     declareFlucAll(maskAll, false);
-    if (doBoot) {
+    if (bootstrap.on) {
       declareBootstrapHists();
     }
   }
@@ -1886,23 +2169,29 @@ struct RadialFlowDecorr {
   }
 
   // Flattening weights w_phi = <N_phi> / N_phi from bin `type` of the last axis of hFlatMaps.
-  THnSparseF* buildWeightMapFromRaw(const THnSparse* hRaw, int type, const char* mapName)
+  // Dense weight map (THnF): the builder sets every cell, so a sparse map would hold all of them anyway.
+  THnF* buildWeightMapFromRaw(const THnSparse* hRaw, int type, const char* mapName)
   {
-    if (!hRaw || hRaw->GetNdimensions() != 6) {
+    if (!hRaw || hRaw->GetNdimensions() != KNFlatAxes + 1) {
       LOGF(error, "Raw eta-phi map for '%s' is null or not 6D; no flattening will be applied.", mapName);
       return nullptr;
     }
-    std::array<int, 5> nb{};
-    for (int i = 0; i < 5; ++i) {
+    std::array<int, KNFlatAxes> nb{};
+    for (int i = 0; i < KNFlatAxes; ++i) {
       nb[i] = hRaw->GetAxis(i)->GetNbins();
     }
-    auto* hWMap = new THnSparseF(mapName, Form("Flattening Weight Map %s (w_{#phi} = <N_{#phi}> / N_{#phi})", mapName), 5, nb.data());
-    for (int i = 0; i < 5; ++i) {
+    std::array<double, KNFlatAxes> xMin{}, xMax{};
+    for (int i = 0; i < KNFlatAxes; ++i) {
+      xMin[i] = hRaw->GetAxis(i)->GetXmin();
+      xMax[i] = hRaw->GetAxis(i)->GetXmax();
+    }
+    auto* hWMap = new THnF(mapName, Form("Flattening Weight Map %s (w_{#phi} = <N_{#phi}> / N_{#phi})", mapName), KNFlatAxes, nb.data(), xMin.data(), xMax.data());
+    for (int i = 0; i < KNFlatAxes; ++i) {
       copyAxis(hWMap->GetAxis(i), hRaw->GetAxis(i));
     }
 
-    std::array<int, 6> bins{};
-    std::array<int, 5> wbins{};
+    std::array<int, KNFlatAxes + 1> bins{};
+    std::array<int, KNFlatAxes> wbins{};
     bins[5] = type + 1;
     for (int iv = 1; iv <= nb[0]; ++iv) {
       bins[0] = wbins[0] = iv;
@@ -2007,19 +2296,19 @@ struct RadialFlowDecorr {
     return true;
   }
 
-  THnSparseF* loadFlatMap(int s, const std::string& path, const std::string& dir, int64_t now)
+  THnF* loadFlatMap(int s, const std::string& path, const std::string& dir, int64_t now, const char* name = "hFlatMaps")
   {
     auto* lst = ccdb->getForTimeStamp<TList>(path, now);
     if (!lst) {
       return nullptr;
     }
-    const std::string hName = dir + "hFlatMaps";
+    const std::string hName = dir + name;
     const auto* hRaw = dynamic_cast<const THnSparse*>(lst->FindObject(hName.c_str()));
     if (!hRaw) {
       LOGF(error, "Flattening map '%s' not found in %s", hName.c_str(), path.c_str());
       return nullptr;
     }
-    return buildWeightMapFromRaw(hRaw, cfgEff ? kFlatWtd : kFlatRaw, Form("hFlatWeight_%d", s));
+    return buildWeightMapFromRaw(hRaw, cfgEff ? kFlatWtd : kFlatRaw, Form("hFlatWeight_%d_%s", s, name));
   }
 
   // Mean-pass objects of variation v for the fluctuation pass.
@@ -2042,14 +2331,23 @@ struct RadialFlowDecorr {
       // The fluctuation pass reads its reference at (N_ch bin, eta bin), so the binning of the
       // mean pass has to be the same.
       const auto* p = inputs[v].pmean[l];
-      if (p->GetYaxis()->GetNbins() != nEta + 1 ||
-          p->GetXaxis()->GetNbins() != nchAxisOf(v).getNbins() ||
-          std::abs(p->GetXaxis()->GetBinWidth(1) - nchBinWidthOf(v)) > KFloatEpsilon) {
+      if (p->GetYaxis()->GetNbins() != ptRange.n * (nEta + 1) ||
+          p->GetXaxis()->GetNbins() != nchAxisObs.getNbins() ||
+          std::abs(p->GetXaxis()->GetBinWidth(1) - nchWidth) > KFloatEpsilon) {
         LOGF(fatal,
-             "Mean pass %s has %d N_ch bins of width %.1f and %d eta bins; this job uses %d bins of "
-             "width %d and %d eta bins. Rerun the mean pass with the same binning.",
+             "Mean pass %s has %d N_ch bins of width %.1f and %d (pT range, eta) bins; this job uses %d bins of "
+             "width %d and %d = %d pT range(s) x %d eta bins. Rerun the mean pass with the same binning "
+             "(cfgEtaBinWidth).",
              path.c_str(), p->GetXaxis()->GetNbins(), p->GetXaxis()->GetBinWidth(1), p->GetYaxis()->GetNbins(),
-             nchAxisOf(v).getNbins(), nchBinWidthOf(v), nEta + 1);
+             nchAxisObs.getNbins(), nchWidth, ptRange.n * (nEta + 1), ptRange.n, nEta + 1);
+      }
+      if (cfgAziTA) {
+        loadProfileFromList(lst, (d + "Prof_QMean_Nch_etabin_comp").c_str(), inputs[v].pqmean[l]);
+        if (!inputs[v].pqmean[l] || inputs[v].pqmean[l]->GetZaxis()->GetNbins() != KNHarmComp * KNHarm ||
+            inputs[v].pqmean[l]->GetYaxis()->GetNbins() != ptRange.n * (nEta + 1)) {
+          LOGF(warning, "%s: no recentering offsets Prof_QMean_Nch_etabin_comp (rerun the mean pass with cfgAziTA); flow vectors not recentred", path.c_str());
+          inputs[v].pqmean[l] = nullptr;
+        }
       }
       if (cfgFwdOpt.cfgFwd) {
         loadProfileFromList(lst, (d + "Prof_FwdAmpMean_Nch_fwdbin").c_str(), inputs[v].pmeanFwd[l]);
@@ -2068,7 +2366,7 @@ struct RadialFlowDecorr {
   void init(InitContext&)
   {
     TH1::SetDefaultSumw2(true);
-    // Multiplicity axes: multQAAxis for the QA, nchAxisObs (nchAxisNchBin2) for the observables.
+    // Multiplicity axes: multQAAxis for the QA, nchAxisObs for the observables.
     const int nMax = (cfgSys == kPbPb) ? cfgNch.cfgNchPbMax.value : (cfgSys == kpp ? cfgNch.cfgNchPPMax.value : cfgNch.cfgNchOMax.value);
     if (cfgSys == kPbPb) {
       multQAAxis = {nMax / 2, KBinOffset, nMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
@@ -2086,47 +2384,63 @@ struct RadialFlowDecorr {
       };
       const bool pp = (cfgSys == kpp);
       nchWidth = (cfgSys == kPbPb) ? cfgNch.cfgNchBinWidthPbPb.value : (pp ? cfgNch.cfgNchBinWidthPP.value : cfgNch.cfgNchBinWidthOO.value);
-      nchWidthNchBin2 = (cfgSys == kPbPb) ? KSystNchBinWidthPbPb : (pp ? KSystNchBinWidthPP : KSystNchBinWidthOO);
       nchAxisObs = makeNchAxis(nchWidth);
-      nchAxisNchBin2 = makeNchAxis(nchWidthNchBin2);
+      nchAxisQMean = AxisSpec{KNQMeanNchBins, -KBinOffset, nMax - KBinOffset, "N_{ch}"};
     }
 
-    // ---- run type: MC is pinned to the reference binning, DATA is configurable ----
-    // cfgEtaBinWidth exists only to vary the DATA measurement. MC (efficiency,
-    // closure) always uses 0.2-wide bins so its mean and fluctuation passes stay
-    // mutually consistent and reproducible.
+    // ---- run type ----
+    // cfgEtaBinWidth sets the observable eta bins for MC and DATA alike. The efficiency and
+    // flattening maps have their own fixed eta axes and do not depend on it. The MC mean and
+    // fluctuation passes must use the same width, since the fluctuation pass reads the mean
+    // pass output per eta bin.
     const bool isMcRun = (cfgRunGetEff || cfgRunGetMCFlat || cfgRunMCMean || cfgRunMCFluc);
     const bool isDataRun = (cfgRunGetDataFlat || cfgRunDataMean || cfgRunDataFluc);
     if (isMcRun && isDataRun) {
       LOGF(fatal,
-           "MC and DATA process switches are both enabled in one job: MC binning is "
-           "pinned to 0.2 while DATA uses cfgEtaBinWidth. Run them as separate jobs.");
+           "MC and DATA process switches are both enabled in one job: they read and write "
+           "different CCDB objects. Run them as separate jobs.");
     }
-    const float mcEtaBinWidth = 0.2f;
-    const float effEtaBinWidth = isMcRun ? mcEtaBinWidth : static_cast<float>(cfgEtaBinWidth);
+    const float effEtaBinWidth = static_cast<float>(cfgEtaBinWidth);
+
+    // ---- observable pT ranges: fixed, all filled in the mean and fluctuation passes ----
+    ptRange.n = KNPtMax;
+    for (int k = 0; k < KNPtMax; ++k) {
+      ptRange.lo[k] = KPtRanges[k][0];
+      ptRange.hi[k] = KPtRanges[k][1];
+    }
+    if (cfgRunGetEff || cfgRunGetMCFlat || cfgRunGetDataFlat) {
+      LOGF(info, "Efficiency/flattening pass: maps filled over the pT range [%.2f, %.2f] GeV/c", KPtMin, KPtMax);
+    }
+    if (cfgRunMCMean || cfgRunMCFluc || cfgRunDataMean || cfgRunDataFluc) {
+      LOGF(info, "Mean/fluctuation pass: tracks in [%.2f, %.2f] GeV/c, observable pT ranges (%.2f, %.2f], (%.2f, %.2f] (_pt1) GeV/c",
+           KPtMin, KPtMax, ptRange.lo[0], ptRange.hi[0], ptRange.lo[1], ptRange.hi[1]);
+    }
 
     // ---- observable eta binning (width = effEtaBinWidth) --------------------------
     {
-      const float halfEta = cfgCutEta;
+      // narrow bins: MC over the full axis |eta| < KEtaFineMax (truth particles fill it, reco |eta| < cfgCutEta),
+      // DATA over |eta| < cfgCutEta (no track beyond it); the reference bin (index 0) is |eta| < cfgCutEta
+      const float halfEta = isMcRun ? KEtaFineMax : static_cast<float>(cfgCutEta);
       const float width = effEtaBinWidth;
       if (width <= 0.f) {
         LOGF(fatal, "eta bin width must be > 0 (got %.3f)", width);
       }
       const int nHalf = static_cast<int>(std::lround(halfEta / width));
-      if (nHalf < 1 || std::abs(nHalf * width - halfEta) > KEtaEdgeTolerance) {
+      const int nHalfCut = static_cast<int>(std::lround(cfgCutEta / width));
+      if (nHalf < 1 || std::abs(nHalf * width - halfEta) > KEtaEdgeTolerance || nHalfCut < 1 ||
+          std::abs(nHalfCut * width - cfgCutEta) > KEtaEdgeTolerance || cfgCutEta > halfEta + KEtaEdgeTolerance) {
         LOGF(fatal,
-             "cfgCutEta=%.3f is not an integer multiple of the eta bin width=%.3f; "
-             "eta=0 must be a bin edge for mirror pairing.",
-             halfEta, width);
+             "the eta bin width %.3f must divide both cfgCutEta = %.3f and the axis edge %.1f (cfgCutEta <= %.1f); "
+             "eta = 0 and |eta| = cfgCutEta must be bin edges.",
+             width, cfgCutEta.value, halfEta, halfEta);
       }
       const int nbins = 2 * nHalf; // even -> symmetric about eta = 0
       const float lo = -halfEta;
-      const float hi = halfEta;
 
       etaLw.clear();
       etaUp.clear();
-      etaLw.push_back(lo); // index 0: full-range reference bin
-      etaUp.push_back(hi);
+      etaLw.push_back(-cfgCutEta); // index 0: reference bin |eta| < cfgCutEta
+      etaUp.push_back(cfgCutEta);
       for (int i = 0; i < nbins; ++i) {
         etaLw.push_back(lo + i * width);
         etaUp.push_back(lo + (i + 1) * width);
@@ -2143,13 +2457,9 @@ struct RadialFlowDecorr {
         obsEdges.push_back(etaUp[i]);
       }
       etaAxis = AxisSpec{obsEdges, "#eta"};
-      etaBinAxis = AxisSpec{nEta + 1, -0.5, static_cast<double>(nEta) + 0.5, "#eta bin Number"};
-      // (Delta eta, Sigma eta): fills are integer multiples of w, so 2N-1 bins
-      // of width w centred on them, out to (N-1/2) w.
-      const int nGS = 2 * nbins - 1;
-      const double gsMax = (nbins - 0.5) * width;
-      gapAxis = AxisSpec{nGS, -gsMax, gsMax, "#Delta#eta"};
-      sumAxis = AxisSpec{nGS, -gsMax, gsMax, "#Sigma#eta"};
+      // index axis: pT range ipt, eta bin ieta at etaIdx(ipt, ieta) = ipt * (nEta + 1) + ieta
+      const int nIdx = ptRange.n * (nEta + 1);
+      etaBinAxis = AxisSpec{nIdx, -0.5, static_cast<double>(nIdx) - 0.5, ptRange.n > 1 ? "p_{T} range #times (n_{#eta} + 1) + #eta bin" : "#eta bin Number"};
     }
 
     // ---- forward bins: detector totals, then the eta sub-bins of each detector ----
@@ -2160,7 +2470,7 @@ struct RadialFlowDecorr {
       nFwd = kNFwdDet;
       for (int det = 0; det < kNFwdDet; ++det) {
         auto& e = fwdEdges[det];
-        if (e.size() < 2 || !std::is_sorted(e.begin(), e.end())) {
+        if (e.size() < KMinEdges || !std::is_sorted(e.begin(), e.end())) {
           LOGF(fatal, "%s eta edges must be >= 2 increasing values", detName[det]);
         }
         fwdOffset[det] = nFwd;
@@ -2181,7 +2491,16 @@ struct RadialFlowDecorr {
     }
 
     // ---- variations ----
-    const uint32_t active = (static_cast<uint32_t>(cfgSyst.cfgSystMask.value) | 1) & KAllSystMask;
+    // Base is always on in the efficiency and flattening passes (other variations borrow its maps); a
+    // mean/fluctuation job may leave it out, so that split groups of variations do not all repeat Base.
+    const bool mapPassMask = cfgRunGetEff || cfgRunGetMCFlat || cfgRunGetDataFlat;
+    const uint32_t active = (static_cast<uint32_t>(cfgSyst.cfgSystMask.value) | (mapPassMask ? 1u : 0u)) & KAllSystMask;
+    if (active == 0) {
+      LOGF(fatal, "cfgSystMask = %d selects no variation", cfgSyst.cfgSystMask.value);
+    }
+    if (!TESTBIT(active, kSystBase)) {
+      LOGF(info, "Base is off in this job (cfgSystMask = %d): split group of variations only", cfgSyst.cfgSystMask.value);
+    }
     maskAll = maskEff = maskFlat = 0;
     for (int v = 0; v < kNSyst; ++v) {
       if (!TESTBIT(active, v)) {
@@ -2211,10 +2530,24 @@ struct RadialFlowDecorr {
     }
 
     // bootstrap: Base data fluctuation pass only
-    doBoot = cfgRunDataFluc && (cfgNBootstrap > 0);
-    nBoot = std::min<int>(cfgNBootstrap, KMaxBoot);
+    bootstrap.on = cfgRunDataFluc && (cfgNBootstrap > 0) && TESTBIT(maskAll, kSystBase); // replicas of Base only
+    bootstrap.n = std::min<int>(cfgNBootstrap, KMaxBoot);
     if (cfgNBootstrap > KMaxBoot) {
       LOGF(warning, "cfgNBootstrap=%d capped at %d", cfgNBootstrap.value, KMaxBoot);
+    }
+    {
+      // objects per replica, as booked in declareFluc (C2Sub, CNN, C_TA, c1; Obs and forward in range 0 only)
+      // and declareRaw (N_A N_C, N_A; 7 forward): range 0 and raw moments in histosBoot, range 1 in histosBoot2
+      const int nTA = cfgAziTA ? 2 : 0;
+      const int nFwdObj = cfgFwdOpt.cfgFwd ? 4 : 0;
+      const int nRawObj = cfgFwdOpt.cfgRawMoments ? 2 + (cfgFwdOpt.cfgFwd ? 7 : 0) : 0;
+      const int perReplica0 = 3 + nTA + nFwdObj + nRawObj;
+      const int perReplicaExtra = (ptRange.n - 1) * (2 + nTA);
+      const int nFit = std::min(KMaxRegistryObjects / perReplica0, perReplicaExtra > 0 ? KMaxRegistryObjects / perReplicaExtra : KMaxBoot);
+      if (bootstrap.on && bootstrap.n > nFit) {
+        LOGF(warning, "%d bootstrap replicas (%d + %d profiles each) exceed the %d objects of a registry: capped at %d", bootstrap.n, perReplica0, perReplicaExtra, KMaxRegistryObjects, nFit);
+        bootstrap.n = nFit;
+      }
     }
     rng.SetSeed(cfgBootstrapSeed);
 
@@ -2308,6 +2641,19 @@ struct RadialFlowDecorr {
         }
         inputs[v].hFlat = inputs[s].hFlat;
       }
+      // Flat variation (data): time-split maps from the data flattening pass
+      if (!mc && TESTBIT(maskAll, kSystFlat)) {
+        if (cfgFlatRunSplit <= 0) {
+          dropSyst(kSystFlat, "cfgFlatRunSplit = 0: time-split Flat variation off");
+        } else {
+          const std::string pf = path + systSuffix(kSystFlat);
+          inputs[kSystFlat].hFlatEarly = loadFlatMap(kSystFlat, pf, dir, now, "hFlatMapsEarly");
+          inputs[kSystFlat].hFlatLate = loadFlatMap(kSystFlat, pf, dir, now, "hFlatMapsLate");
+          if (!inputs[kSystFlat].hFlatEarly || !inputs[kSystFlat].hFlatLate) {
+            dropSyst(kSystFlat, "no time-split flattening maps at " + pf);
+          }
+        }
+      }
     }
 
     // ---- n-sigma pile-up bands, from the Base flattening output of the same production ----
@@ -2343,7 +2689,7 @@ struct RadialFlowDecorr {
             }
           }
           band.applied = true;
-          LOGF(info, "n-sigma pile-up band (%.1f sigma, PileupNSigma %.1f) from %s in %s", pupNSigma,
+          LOGF(info, "n-sigma pile-up band (%.1f sigma, Pileup %.1f) from %s in %s", pupNSigma,
                pupNSigma - KSystPupnSigStep, name, bandPath.c_str());
         };
         if (wantCent) {
@@ -2403,8 +2749,8 @@ struct RadialFlowDecorr {
         list += " " + systName[v];
       }
     }
-    LOGF(info, "RadialFlowDecorr variations in this job:%s (ITS layer cut nominal %d, variation %d; N_ch bins of %d, NchBin2 %d; occupancy cut %d)",
-         list.c_str(), itsLayerNom, itsLayerVar, nchWidth, nchWidthNchBin2, occupancyMax);
+    LOGF(info, "RadialFlowDecorr variations in this job:%s (ITS layer cut nominal %d, variation %d; N_ch bins of %d; occupancy cut %d)",
+         list.c_str(), itsLayerNom, itsLayerVar, nchWidth, occupancyMax);
     LOGF(info, "CCDB initialization complete for RadialFlowDecorr.");
   }
 
@@ -2581,7 +2927,7 @@ struct RadialFlowDecorr {
           continue;
         }
         float pt = track.pt();
-        if (pt <= cfgPtMin || pt > cfgPtMax) {
+        if (pt <= KPtMin || pt > KPtMax) { // map range
           continue;
         }
         float eta = track.eta(), phi = track.phi();
@@ -2643,35 +2989,39 @@ struct RadialFlowDecorr {
 
       for (int v = 0; v < kNSyst; ++v) {
         if (TESTBIT(ev.mask, v)) {
-          for (auto& s : sums[v]) {
-            s.reset();
-          }
+          resetSums(v);
         }
       }
 
       // --- truth: independent of the track cuts, copied to every selected variation ---
-      PowerSums& sumsTru = sums[kSystBase][kGen];
+      PtSums& sumsTru = sums[kSystBase][kGen];
       if (!TESTBIT(ev.mask, kSystBase)) {
-        sumsTru.reset();
+        for (int ipt = 0; ipt < ptRange.n; ++ipt) {
+          sumsTru[ipt].reset();
+        }
       }
       for (const auto& particle : mcParticles) {
         if (!isParticleSelected(particle) || !particle.isPhysicalPrimary()) {
           continue;
         }
         float pt = particle.pt(), eta = particle.eta();
-        if (pt <= cfgPtMin || pt > cfgPtMax) {
+        const uint32_t ptMask = ptRangeMask(pt);
+        if (ptMask == 0) {
           continue;
         }
+        const auto csTru = harmTerms(particle.phi());
         for (int ieta = 0; ieta < nEta; ++ieta) {
           if (eta <= etaLw[ieta] || eta > etaUp[ieta]) {
             continue;
           }
-          sumsTru.add(ieta, pt, 1.);
+          addTrack(sumsTru, ptMask, ieta, pt, 1., csTru);
         }
       }
       for (int v = 1; v < kNSyst; ++v) {
         if (TESTBIT(ev.mask, v)) {
-          sums[v][kGen] = sumsTru;
+          for (int ipt = 0; ipt < ptRange.n; ++ipt) {
+            sums[v][kGen][ipt] = sumsTru[ipt];
+          }
         }
       }
 
@@ -2683,25 +3033,28 @@ struct RadialFlowDecorr {
           continue;
         }
         float pt = track.pt();
-        if (pt <= cfgPtMin || pt > cfgPtMax) {
+        const uint32_t ptMask = ptRangeMask(pt);
+        if (ptMask == 0) {
           continue;
         }
+        const bool inPt0 = TESTBIT(ptMask, 0); // QA of range 0 only
         float eta = track.eta(), phi = track.phi();
         float sign = track.sign();
-        if (TESTBIT(trackMask, kSystBase)) {
+        if (TESTBIT(trackMask, kSystBase) && inPt0) {
           histos.fill(HIST("hPt"), pt);
           histos.fill(HIST("hEta"), eta);
           histos.fill(HIST("hPhi"), phi);
         }
 
         // reco level: every selected track, independent of the corrections
+        const auto cs = harmTerms(phi);
         for (int ieta = 0; ieta < nEta; ++ieta) {
           if (eta <= etaLw[ieta] || eta > etaUp[ieta]) {
             continue;
           }
           for (int v = 0; v < kNSyst; ++v) {
             if (TESTBIT(trackMask, v)) {
-              sums[v][kReco].add(ieta, pt, 1.);
+              addTrack(sums[v][kReco], ptMask, ieta, pt, 1., cs);
             }
           }
         }
@@ -2711,7 +3064,7 @@ struct RadialFlowDecorr {
         if (weightMask == 0) {
           continue;
         }
-        if (TESTBIT(weightMask, kSystBase)) {
+        if (TESTBIT(weightMask, kSystBase) && inPt0) {
           histos.fill(HIST("Prof_Weights_pT_type"), pt, 0, eff);
           histos.fill(HIST("Prof_Weights_pT_type"), pt, 1, fake);
           histos.fill(HIST("Prof_Weights_pT_type"), pt, 2, w[kSystBase]);
@@ -2725,7 +3078,7 @@ struct RadialFlowDecorr {
           }
           for (int v = 0; v < kNSyst; ++v) {
             if (TESTBIT(weightMask, v)) {
-              sums[v][kRecoEffCorr].add(ieta, pt, w[v]);
+              addTrack(sums[v][kRecoEffCorr], ptMask, ieta, pt, w[v], cs);
             }
           }
         }
@@ -2746,17 +3099,21 @@ struct RadialFlowDecorr {
           continue;
         }
         for (int l = 0; l < kNLevels; ++l) {
-          const auto& s = sums[v][l];
           const auto& h = hists.mean[v][l];
-          for (int ieta = 0; ieta < nEta; ++ieta) {
-            const double n = s.wk[ieta][1];
-            h.mean->Fill(nCh, ieta, kMeanN, n);
-            if (n <= KFloatEpsilon) {
-              continue;
-            }
-            const double mpt = s.pmwk[ieta][1][1] / n;
-            if (std::isfinite(mpt)) {
-              h.mean->Fill(nCh, ieta, kMeanPt, mpt);
+          for (int ipt = 0; ipt < ptRange.n; ++ipt) {
+            const auto& s = sums[v][l][ipt];
+            for (int ieta = 0; ieta < nEta; ++ieta) {
+              const int y = etaIdx(ipt, ieta);
+              const double n = s.wk[ieta][1];
+              h.mean->Fill(nCh, y, kMeanN, n);
+              fillQMean(h.qMean, s, ieta, y, nCh);
+              if (n <= KFloatEpsilon) {
+                continue;
+              }
+              const double mpt = s.pmwk[ieta][1][1] / n;
+              if (std::isfinite(mpt)) {
+                h.mean->Fill(nCh, y, kMeanPt, mpt);
+              }
             }
           }
           const FwdSignal& fwd = (l == kGen) ? fwdTru : fwdReco;
@@ -2810,35 +3167,39 @@ struct RadialFlowDecorr {
 
       for (int v = 0; v < kNSyst; ++v) {
         if (TESTBIT(ev.mask, v)) {
-          for (auto& s : sums[v]) {
-            s.reset();
-          }
+          resetSums(v);
         }
       }
 
       // --- truth sums: independent of the track cuts, copied to every selected variation ---
-      PowerSums& sumsTru = sums[kSystBase][kGen];
+      PtSums& sumsTru = sums[kSystBase][kGen];
       if (!TESTBIT(ev.mask, kSystBase)) {
-        sumsTru.reset();
+        for (int ipt = 0; ipt < ptRange.n; ++ipt) {
+          sumsTru[ipt].reset();
+        }
       }
       for (const auto& particle : mcParticles) {
         if (!isParticleSelected(particle) || !particle.isPhysicalPrimary()) {
           continue;
         }
         float pt = particle.pt(), eta = particle.eta();
-        if (pt <= cfgPtMin || pt > cfgPtMax) {
+        const uint32_t ptMask = ptRangeMask(pt);
+        if (ptMask == 0) {
           continue;
         }
+        const auto csTru = harmTerms(particle.phi());
         for (int ieta = 0; ieta < nEta; ++ieta) {
           if (eta <= etaLw[ieta] || eta > etaUp[ieta]) {
             continue;
           }
-          sumsTru.add(ieta, pt, 1.);
+          addTrack(sumsTru, ptMask, ieta, pt, 1., csTru);
         }
       }
       for (int v = 1; v < kNSyst; ++v) {
         if (TESTBIT(ev.mask, v)) {
-          sums[v][kGen] = sumsTru;
+          for (int ipt = 0; ipt < ptRange.n; ++ipt) {
+            sums[v][kGen][ipt] = sumsTru[ipt];
+          }
         }
       }
 
@@ -2850,25 +3211,28 @@ struct RadialFlowDecorr {
           continue;
         }
         float pt = track.pt();
-        if (pt <= cfgPtMin || pt > cfgPtMax) {
+        const uint32_t ptMask = ptRangeMask(pt);
+        if (ptMask == 0) {
           continue;
         }
+        const bool inPt0 = TESTBIT(ptMask, 0); // QA of range 0 only
         float eta = track.eta(), phi = track.phi();
         float sign = track.sign();
-        if (TESTBIT(trackMask, kSystBase)) {
+        if (TESTBIT(trackMask, kSystBase) && inPt0) {
           histos.fill(HIST("hPt"), pt);
           histos.fill(HIST("hEta"), eta);
           histos.fill(HIST("hPhi"), phi);
         }
 
         // reco level: every selected track, independent of the corrections
+        const auto cs = harmTerms(phi);
         for (int ieta = 0; ieta < nEta; ++ieta) {
           if (eta <= etaLw[ieta] || eta > etaUp[ieta]) {
             continue;
           }
           for (int v = 0; v < kNSyst; ++v) {
             if (TESTBIT(trackMask, v)) {
-              sums[v][kReco].add(ieta, pt, 1.);
+              addTrack(sums[v][kReco], ptMask, ieta, pt, 1., cs);
             }
           }
         }
@@ -2878,7 +3242,7 @@ struct RadialFlowDecorr {
         if (weightMask == 0) {
           continue;
         }
-        if (TESTBIT(weightMask, kSystBase)) {
+        if (TESTBIT(weightMask, kSystBase) && inPt0) {
           fillFlat(kSystBase, vz, sign, pt, eta, phi, w[kSystBase], (1.f - fake) / eff);
         }
 
@@ -2889,7 +3253,7 @@ struct RadialFlowDecorr {
           }
           for (int v = 0; v < kNSyst; ++v) {
             if (TESTBIT(weightMask, v)) {
-              sums[v][kRecoEffCorr].add(ieta, pt, w[v]);
+              addTrack(sums[v][kRecoEffCorr], ptMask, ieta, pt, w[v], cs);
             }
           }
         }
@@ -2904,7 +3268,7 @@ struct RadialFlowDecorr {
         computeFwdReco(coll, vz, fwdReco, TESTBIT(ev.mask, kSystBase));
       }
 
-      // --- c2, c3, subevent correlators and forward covariances of every variation and level ---
+      // --- c2, subevent correlators and forward covariances of every variation and level ---
       EventObs evObs;
       for (int v = 0; v < kNSyst; ++v) {
         if (!TESTBIT(ev.mask, v)) {
@@ -2912,8 +3276,13 @@ struct RadialFlowDecorr {
         }
         for (int l = 0; l < kNLevels; ++l) {
           const FwdSignal* fwd = cfgFwdOpt.cfgFwd ? (l == kGen ? &fwdTru : &fwdReco) : nullptr;
-          computeEventObs(sums[v][l], v, l, fwd, nCh, evObs);
-          fillFluc(hists.fluc[v][l], evObs, 1., nCh);
+          for (int ipt = 0; ipt < ptRange.n; ++ipt) {
+            computeEventObs(sums[v][l][ipt], v, l, fwd, nCh, evObs, ipt);
+            fillFluc(hists.fluc[v][l][ipt], evObs, 1., nCh, ipt);
+            if (v == kSystBase && ipt == 0) {
+              fillRaw(hists.raw[l], evObs, 1., nCh);
+            }
+          }
         }
       }
     }
@@ -2923,7 +3292,7 @@ struct RadialFlowDecorr {
   // ===========================================================================
   // DATA: build flattening maps (inclusive)
   // ===========================================================================
-  void processGetDataFlat(AodCollisionsSel::iterator const& coll, AodTracksSel const& tracks)
+  void processGetDataFlat(AodCollisionsSel::iterator const& coll, aod::BCs const&, AodTracksSel const& tracks)
   {
     histos.fill(HIST("hVtxZ"), coll.posZ());
     const auto ev = isEventSelected(coll, tracks.size(), maskFlat);
@@ -2947,6 +3316,11 @@ struct RadialFlowDecorr {
       }
     }
 
+    // Flat variation: Base tracks also enter the map of their run half
+    std::shared_ptr<THnSparse> hSplit;
+    if (TESTBIT(ev.mask, kSystBase) && cfgFlatRunSplit > 0) {
+      hSplit = (coll.bc_as<aod::BCs>().runNumber() < cfgFlatRunSplit) ? hists.flat[kSystFlat].early : hists.flat[kSystFlat].late;
+    }
     std::array<float, kNSyst> w{};
     for (const auto& track : tracks) {
       const uint32_t trackMask = isTrackSelected(track, ev.mask);
@@ -2954,7 +3328,7 @@ struct RadialFlowDecorr {
         continue;
       }
       float pt = track.pt();
-      if (pt <= cfgPtMin || pt > cfgPtMax) {
+      if (pt <= KPtMin || pt > KPtMax) { // map range
         continue;
       }
       float eta = track.eta(), phi = track.phi();
@@ -2973,6 +3347,12 @@ struct RadialFlowDecorr {
           fillFlat(v, vz, sign, pt, eta, phi, w[v], w[v]);
         }
       }
+      if (hSplit && TESTBIT(weightMask, kSystBase)) {
+        std::array<double, 6> x = {vz, sign, pt, eta, phi, static_cast<double>(kFlatRaw)};
+        hSplit->Fill(x.data(), 1.);
+        x[5] = kFlatWtd;
+        hSplit->Fill(x.data(), w[kSystBase]);
+      }
     }
     flushTrackCounts();
   }
@@ -2990,6 +3370,11 @@ struct RadialFlowDecorr {
     const float nCh = tracks.size();
     const float multPV = coll.multNTracksPV();
     const float vz = coll.posZ();
+    // Flat variation: weights from the other run half
+    flatCross = nullptr;
+    if (TESTBIT(ev.mask, kSystFlat) && inputs[kSystFlat].hFlatEarly && inputs[kSystFlat].hFlatLate) {
+      flatCross = (coll.template bc_as<aod::BCsWithTimestamps>().runNumber() < cfgFlatRunSplit) ? inputs[kSystFlat].hFlatLate : inputs[kSystFlat].hFlatEarly;
+    }
 
     if (TESTBIT(ev.mask, kSystBase)) {
       histos.fill(HIST("hVtxZ_after_sel"), vz);
@@ -3006,7 +3391,7 @@ struct RadialFlowDecorr {
 
     for (int v = 0; v < kNSyst; ++v) {
       if (TESTBIT(ev.mask, v)) {
-        sums[v][0].reset();
+        resetSums(v);
       }
     }
     std::array<float, kNSyst> w{};
@@ -3020,12 +3405,14 @@ struct RadialFlowDecorr {
       if (p < KFloatEpsilon) {
         continue;
       }
-      if (pt <= cfgPtMin || pt > cfgPtMax) {
+      const uint32_t ptMask = ptRangeMask(pt);
+      if (ptMask == 0) {
         continue;
       }
+      const bool inPt0 = TESTBIT(ptMask, 0); // QA of range 0 only
       float eta = track.eta(), phi = track.phi();
       float sign = track.sign();
-      if (TESTBIT(trackMask, kSystBase)) {
+      if (TESTBIT(trackMask, kSystBase) && inPt0) {
         histos.fill(HIST("hP"), p);
         histos.fill(HIST("hPt"), pt);
         histos.fill(HIST("hEta"), eta);
@@ -3037,20 +3424,21 @@ struct RadialFlowDecorr {
       if (weightMask == 0) {
         continue;
       }
-      if (TESTBIT(weightMask, kSystBase)) {
+      if (TESTBIT(weightMask, kSystBase) && inPt0) {
         histos.fill(HIST("Prof_Weights_pt_eta_type"), pt, eta, 0, eff);
         histos.fill(HIST("Prof_Weights_pt_eta_type"), pt, eta, 1, fake);
         histos.fill(HIST("Prof_Weights_pt_eta_type"), pt, eta, 2, flatWeight);
         fillFlat(kSystBase, vz, sign, pt, eta, phi, w[kSystBase], (1.f - fake) / eff);
       }
 
+      const auto cs = harmTerms(phi);
       for (int ieta = 0; ieta < nEta; ++ieta) {
         if (eta <= etaLw[ieta] || eta > etaUp[ieta]) {
           continue;
         }
         for (int v = 0; v < kNSyst; ++v) {
           if (TESTBIT(weightMask, v)) {
-            sums[v][0].add(ieta, pt, w[v]);
+            addTrack(sums[v][0], ptMask, ieta, pt, w[v], cs);
           }
         }
       }
@@ -3069,17 +3457,21 @@ struct RadialFlowDecorr {
       if (!TESTBIT(ev.mask, v)) {
         continue;
       }
-      const auto& s = sums[v][0];
       const auto& h = hists.mean[v][0];
-      for (int ieta = 0; ieta < nEta; ++ieta) {
-        const double n = s.wk[ieta][1];
-        h.mean->Fill(nCh, ieta, kMeanN, n);
-        if (n <= KFloatEpsilon) {
-          continue;
-        }
-        const double mpt = s.pmwk[ieta][1][1] / n;
-        if (std::isfinite(mpt)) {
-          h.mean->Fill(nCh, ieta, kMeanPt, mpt);
+      for (int ipt = 0; ipt < ptRange.n; ++ipt) {
+        const auto& s = sums[v][0][ipt];
+        for (int ieta = 0; ieta < nEta; ++ieta) {
+          const int y = etaIdx(ipt, ieta);
+          const double n = s.wk[ieta][1];
+          h.mean->Fill(nCh, y, kMeanN, n);
+          fillQMean(h.qMean, s, ieta, y, nCh);
+          if (n <= KFloatEpsilon) {
+            continue;
+          }
+          const double mpt = s.pmwk[ieta][1][1] / n;
+          if (std::isfinite(mpt)) {
+            h.mean->Fill(nCh, y, kMeanPt, mpt);
+          }
         }
       }
       if (cfgFwdOpt.cfgFwd && h.fwdMean) {
@@ -3105,6 +3497,11 @@ struct RadialFlowDecorr {
     const float nCh = tracks.size();
     const float multPV = coll.multNTracksPV();
     const float vz = coll.posZ();
+    // Flat variation: weights from the other run half
+    flatCross = nullptr;
+    if (TESTBIT(ev.mask, kSystFlat) && inputs[kSystFlat].hFlatEarly && inputs[kSystFlat].hFlatLate) {
+      flatCross = (coll.template bc_as<aod::BCsWithTimestamps>().runNumber() < cfgFlatRunSplit) ? inputs[kSystFlat].hFlatLate : inputs[kSystFlat].hFlatEarly;
+    }
 
     if (TESTBIT(ev.mask, kSystBase)) {
       histos.fill(HIST("hVtxZ_after_sel"), vz);
@@ -3121,7 +3518,7 @@ struct RadialFlowDecorr {
 
     for (int v = 0; v < kNSyst; ++v) {
       if (TESTBIT(ev.mask, v)) {
-        sums[v][0].reset();
+        resetSums(v);
       }
     }
     std::array<float, kNSyst> w{};
@@ -3135,12 +3532,14 @@ struct RadialFlowDecorr {
       if (p < KFloatEpsilon) {
         continue;
       }
-      if (pt <= cfgPtMin || pt > cfgPtMax) {
+      const uint32_t ptMask = ptRangeMask(pt);
+      if (ptMask == 0) {
         continue;
       }
+      const bool inPt0 = TESTBIT(ptMask, 0); // QA of range 0 only
       float eta = track.eta(), phi = track.phi();
       float sign = track.sign();
-      if (TESTBIT(trackMask, kSystBase)) {
+      if (TESTBIT(trackMask, kSystBase) && inPt0) {
         histos.fill(HIST("hP"), p);
         histos.fill(HIST("hPt"), pt);
         histos.fill(HIST("hEta"), eta);
@@ -3152,17 +3551,18 @@ struct RadialFlowDecorr {
       if (weightMask == 0) {
         continue;
       }
-      if (TESTBIT(weightMask, kSystBase)) {
+      if (TESTBIT(weightMask, kSystBase) && inPt0) {
         fillFlat(kSystBase, vz, sign, pt, eta, phi, w[kSystBase], (1.f - fake) / eff);
       }
 
+      const auto cs = harmTerms(phi);
       for (int ieta = 0; ieta < nEta; ++ieta) {
         if (eta <= etaLw[ieta] || eta > etaUp[ieta]) {
           continue;
         }
         for (int v = 0; v < kNSyst; ++v) {
           if (TESTBIT(weightMask, v)) {
-            sums[v][0].add(ieta, pt, w[v]);
+            addTrack(sums[v][0], ptMask, ieta, pt, w[v], cs);
           }
         }
       }
@@ -3178,25 +3578,33 @@ struct RadialFlowDecorr {
 
     // --- Poisson bootstrap: one weight per sample per event ---
     std::array<double, KMaxBoot> poisW{};
-    if (doBoot) {
-      for (int s = 0; s < nBoot; ++s) {
+    if (bootstrap.on) {
+      for (int s = 0; s < bootstrap.n; ++s) {
         poisW[s] = rng.Poisson(1.0);
       }
     }
 
-    // --- c2, c3, subevent correlators and forward covariances of every variation ---
+    // --- c2, subevent correlators and forward covariances of every variation ---
     EventObs evObs;
     for (int v = 0; v < kNSyst; ++v) {
       if (!TESTBIT(ev.mask, v)) {
         continue;
       }
-      computeEventObs(sums[v][0], v, 0, cfgFwdOpt.cfgFwd ? &fwd : nullptr, nCh, evObs);
-      fillFluc(hists.fluc[v][0], evObs, 1., nCh);
-      // bootstrap replicas of Base, in the 5% centrality classes
-      if (v == kSystBase && doBoot) {
-        for (int s = 0; s < nBoot; ++s) {
-          if (poisW[s] > 0.) {
-            fillFluc(hists.boot[s], evObs, poisW[s], ev.cent[kSystBase]);
+      for (int ipt = 0; ipt < ptRange.n; ++ipt) {
+        computeEventObs(sums[v][0][ipt], v, 0, cfgFwdOpt.cfgFwd ? &fwd : nullptr, nCh, evObs, ipt);
+        fillFluc(hists.fluc[v][0][ipt], evObs, 1., nCh, ipt);
+        if (v == kSystBase && ipt == 0) {
+          fillRaw(hists.raw[0], evObs, 1., nCh);
+        }
+        // bootstrap replicas of Base, in the 5% centrality classes
+        if (v == kSystBase && bootstrap.on) {
+          for (int s = 0; s < bootstrap.n; ++s) {
+            if (poisW[s] > 0.) {
+              fillFluc(hists.boot[s][ipt], evObs, poisW[s], ev.cent[kSystBase], ipt);
+              if (ipt == 0) {
+                fillRaw(hists.bootRaw[s], evObs, poisW[s], ev.cent[kSystBase]);
+              }
+            }
           }
         }
       }

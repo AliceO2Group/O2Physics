@@ -19,9 +19,10 @@
 /// - cluster energy over track momentum
 /// - difference in eta
 /// - difference in phi
-/// Simple event selection using the flag doEventSel is provided, which selects INT7 events if set to 1
-/// For pilot beam data, instead of relying on the event selection, one can veto specific BC IDS using the flag
-/// fDoVetoBCID.
+/// The event selection (eventCuts) applies the standard cuts of the event selection task: sel8, z vertex, the evsel
+/// flags (pile-up, ITS/TF frame borders, vertex quality, ITS layers), occupancy, RCT flags and a centrality or
+/// multiplicity range with a configurable estimator. Optionally EMCal in the readout (Run 2: kINT7, Run 3: kTVXinEMC).
+/// For pilot beam data, specific BC IDs can be vetoed (vetoBCID) or selected (selectBCID).
 /// The MC process (processMCTruth) follows the leading MC particle of each cluster through the matching chain:
 /// is its track reconstructed, extrapolated to the EMCal, a matching candidate (global track or V0 leg),
 /// and matched to the cluster as primary or secondary track.
@@ -29,11 +30,16 @@
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h" // for the V0 legs used in the secondary matching
 #include "PWGJE/DataModel/EMCALClusters.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/MathConstants.h>
 #include <EMCALBase/Geometry.h>
 #include <EMCALBase/GeometryBase.h>
@@ -58,6 +64,7 @@
 #include <TPDGCode.h>
 #include <TParticlePDG.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -68,11 +75,12 @@
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using CollisionEvSelIt = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator;
+using CollisionEvSelIt = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::CentFT0Cs, o2::aod::CentFT0Ms, o2::aod::CentFT0As, o2::aod::FT0Mults, o2::aod::PVMults>::iterator;
 using BcEvSelIt = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>::iterator;
 using SelectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 using TracksPID = o2::soa::Join<o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi, o2::aod::FullTracks, o2::aod::TrackSelection>;
@@ -113,6 +121,47 @@ enum class TmTrackType : uint8_t {
   kNTypes
 };
 
+/// \brief Steps of the event selection, bins of the cut flow histogram (a disabled cut passes every event)
+enum class EventCut : uint8_t {
+  kAll = 0,
+  kBC,
+  kSel8,
+  kEmcalReadout,
+  kZVertex,
+  kNoTimeFrameBorder,
+  kNoITSROFrameBorder,
+  kNoSameBunchPileup,
+  kGoodZvtxFT0vsPV,
+  kVertexITSTPC,
+  kVertexTOFmatched,
+  kNoCollInTimeRangeStandard,
+  kNoCollInTimeRangeNarrow,
+  kNoCollInRofStandard,
+  kNoHighMultCollInPrevRof,
+  kGoodITSLayer3,
+  kGoodITSLayer0123,
+  kGoodITSLayersAll,
+  kTrackOccupancy,
+  kFT0COccupancy,
+  kRCT,
+  kCentMult,
+  kSelected,
+  kNCuts
+};
+
+/// \brief Estimator of the centrality / multiplicity cut
+enum class CentMultEstimator : int {
+  kOff = 0,
+  kCentFT0C,
+  kCentFT0M,
+  kCentFT0A,
+  kMultFT0C,
+  kMultFT0A,
+  kMultFT0M,
+  kMultNTracksPV,
+  kNEstimators
+};
+
 struct EmcTmMonitor {
   HistogramRegistry mHistManager{"TrackMatchingMonitorHistograms", {}, OutputObjHandlingPolicy::AnalysisObject};
   o2::emcal::Geometry* mGeometry = nullptr;
@@ -123,11 +172,10 @@ struct EmcTmMonitor {
   Preslice<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalclustercell::emcalclusterId;
   Preslice<o2::aod::EMCMatchSecs> perClusterMatchedSecondaries = o2::aod::emcalclustercell::emcalclusterId;
   // configurable parameters
-  // TODO adapt doEventSel switch to also allow selection of other triggers (e.g. EMC7)
-  Configurable<bool> doEventSel{"doEventSel", false, "demand kINT7"};
+  Configurable<bool> doEventSel{"doEventSel", false, "deprecated, use eventCuts.requireEmcalReadout: demand kINT7 (Run 2) / kTVXinEMC (Run 3)"};
   Configurable<std::string> vetoBCID{"vetoBCID", "", "BC ID(s) to be excluded, this should be used as an alternative to the event selection"};
   Configurable<std::string> selectBCID{"selectBCID", "all", "BC ID(s) to be included, this should be used as an alternative to the event selection"};
-  Configurable<double> vertexCut{"vertexCut", -1, "apply z-vertex cut with value in cm"};
+  Configurable<double> vertexCut{"vertexCut", -1, "deprecated, use eventCuts.zVertexMax: if > 0, overrides it"};
   Configurable<int> clusterDefinition{"clusterDefinition", 10, "cluster definition to be selected, e.g. 10=kV3Default"};
   ConfigurableAxis clusterTimeBinning{"clusterTimeBinning", {1500, -600, 900}, ""};
   Configurable<bool> usePionRejection{"usePionRejection", false, "demand pion rection for electron signal with TPC PID"};
@@ -146,8 +194,40 @@ struct EmcTmMonitor {
   Configurable<bool> hasTRD{"hasTRD", false, "demand track to have a hit in TRD."};
   Configurable<float> emcalRadius{"emcalRadius", 440.f, "MC truth: radius (cm) used to move the cluster eta from the vertex to the origin frame of the track extrapolation"};
 
+  struct : ConfigurableGroup {
+    std::string prefix = "eventCuts";
+    Configurable<bool> requireSel8{"requireSel8", true, "require sel8"};
+    Configurable<bool> requireEmcalReadout{"requireEmcalReadout", false, "require EMCal in the readout: kINT7 (Run 2) / kTVXinEMC (Run 3)"};
+    Configurable<float> zVertexMax{"zVertexMax", 10.f, "maximum |z| of the primary vertex (cm), <= 0: off"};
+    Configurable<bool> requireNoTimeFrameBorder{"requireNoTimeFrameBorder", false, "require kNoTimeFrameBorder"};
+    Configurable<bool> requireNoITSROFrameBorder{"requireNoITSROFrameBorder", false, "require kNoITSROFrameBorder"};
+    Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", false, "require kNoSameBunchPileup"};
+    Configurable<bool> requireGoodZvtxFT0vsPV{"requireGoodZvtxFT0vsPV", false, "require kIsGoodZvtxFT0vsPV"};
+    Configurable<bool> requireVertexITSTPC{"requireVertexITSTPC", false, "require kIsVertexITSTPC"};
+    Configurable<bool> requireVertexTOFmatched{"requireVertexTOFmatched", false, "require kIsVertexTOFmatched"};
+    Configurable<bool> requireNoCollInTimeRangeStandard{"requireNoCollInTimeRangeStandard", false, "require kNoCollInTimeRangeStandard"};
+    Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "require kNoCollInTimeRangeNarrow"};
+    Configurable<bool> requireNoCollInRofStandard{"requireNoCollInRofStandard", false, "require kNoCollInRofStandard"};
+    Configurable<bool> requireNoHighMultCollInPrevRof{"requireNoHighMultCollInPrevRof", false, "require kNoHighMultCollInPrevRof"};
+    Configurable<bool> requireGoodITSLayer3{"requireGoodITSLayer3", false, "require kIsGoodITSLayer3"};
+    Configurable<bool> requireGoodITSLayer0123{"requireGoodITSLayer0123", false, "require kIsGoodITSLayer0123"};
+    Configurable<bool> requireGoodITSLayersAll{"requireGoodITSLayersAll", false, "require kIsGoodITSLayersAll"};
+    Configurable<float> trackOccupancyMin{"trackOccupancyMin", -1.f, "minimum track occupancy (trackOccupancyInTimeRange), < 0: off"};
+    Configurable<float> trackOccupancyMax{"trackOccupancyMax", -1.f, "maximum track occupancy (trackOccupancyInTimeRange), < 0: off"};
+    Configurable<float> ft0cOccupancyMin{"ft0cOccupancyMin", -1.f, "minimum FT0C occupancy (ft0cOccupancyInTimeRange), < 0: off"};
+    Configurable<float> ft0cOccupancyMax{"ft0cOccupancyMax", -1.f, "maximum FT0C occupancy (ft0cOccupancyInTimeRange), < 0: off"};
+    Configurable<bool> applyRCT{"applyRCT", false, "apply the RCT flags of rctLabel"};
+    Configurable<std::string> rctLabel{"rctLabel", "CBT_calo", "RCT selection label: CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo"};
+    Configurable<bool> rctCheckZDC{"rctCheckZDC", false, "RCT: also require good ZDC quality (Pb-Pb)"};
+    Configurable<bool> rctTreatLimitedAcceptanceAsBad{"rctTreatLimitedAcceptanceAsBad", false, "RCT: reject runs flagged LimitedAcceptanceMCReproducible"};
+    Configurable<int> centMultEstimator{"centMultEstimator", 0, "centrality / multiplicity cut: 0 = off, 1 = cent FT0C, 2 = cent FT0M, 3 = cent FT0A, 4 = mult FT0C, 5 = mult FT0A, 6 = mult FT0M, 7 = mult NTracksPV"};
+    Configurable<float> centMultMin{"centMultMin", 0.f, "minimum centrality (%) / multiplicity"};
+    Configurable<float> centMultMax{"centMultMax", 100.f, "maximum centrality (%) / multiplicity"};
+  } eventCuts;
+
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
+  o2::aod::rctsel::RCTFlagsChecker mRctChecker;
 
   /// \brief Create output histograms and initialize geometry
   void init(InitContext const&)
@@ -182,6 +262,37 @@ struct EmcTmMonitor {
     mHistManager.add("eventsSelected", "Number of events", HistType::kTH1F, {{1, 0.5, 1.5}});
     mHistManager.add("eventVertexZAll", "z-vertex of event (all events)", HistType::kTH1F, {{200, -20, 20}});
     mHistManager.add("eventVertexZSelected", "z-vertex of event (selected events)", HistType::kTH1F, {{200, -20, 20}});
+    auto hCutFlow = mHistManager.add<TH1>("Event/hCutFlow", "events after each step of the event selection (a disabled cut passes every event);;events", HistType::kTH1D, {{static_cast<int>(EventCut::kNCuts), -0.5, static_cast<int>(EventCut::kNCuts) - 0.5}});
+    static constexpr std::array<std::string_view, static_cast<int>(EventCut::kNCuts)> CutLabels = {"all", "BC ID", "sel8", "EMCal readout", "z vertex", "NoTimeFrameBorder", "NoITSROFrameBorder", "NoSameBunchPileup", "GoodZvtxFT0vsPV", "VertexITSTPC", "VertexTOFmatched", "NoCollInTimeRangeStandard", "NoCollInTimeRangeNarrow", "NoCollInRofStandard", "NoHighMultCollInPrevRof", "GoodITSLayer3", "GoodITSLayer0123", "GoodITSLayersAll", "track occupancy", "FT0C occupancy", "RCT", "cent/mult", "selected"};
+    for (std::size_t i = 0; i < CutLabels.size(); ++i) {
+      hCutFlow->GetXaxis()->SetBinLabel(static_cast<int>(i) + 1, CutLabels[i].data());
+    }
+    const AxisSpec trackOccupancyAxis{200, 0., 20000., "track occupancy"};
+    const AxisSpec ft0cOccupancyAxis{200, 0., 200000., "FT0C occupancy"};
+    const bool isCentrality = eventCuts.centMultEstimator.value <= static_cast<int>(CentMultEstimator::kCentFT0A);
+    const AxisSpec centMultAxis{isCentrality ? AxisSpec{110, -5., 105., "centrality (%)"} : AxisSpec{500, 0., 50000., "multiplicity"}};
+    mHistManager.add("Event/hTrackOccupancyBefore", "track occupancy (before the event selection);;events", HistType::kTH1D, {trackOccupancyAxis});
+    mHistManager.add("Event/hTrackOccupancyAfter", "track occupancy (after the event selection);;events", HistType::kTH1D, {trackOccupancyAxis});
+    mHistManager.add("Event/hFT0COccupancyBefore", "FT0C occupancy (before the event selection);;events", HistType::kTH1D, {ft0cOccupancyAxis});
+    mHistManager.add("Event/hFT0COccupancyAfter", "FT0C occupancy (after the event selection);;events", HistType::kTH1D, {ft0cOccupancyAxis});
+    if (eventCuts.centMultEstimator.value != static_cast<int>(CentMultEstimator::kOff)) {
+      mHistManager.add("Event/hCentMultBefore", "centrality / multiplicity of the cut (before the event selection);;events", HistType::kTH1D, {centMultAxis});
+      mHistManager.add("Event/hCentMultAfter", "centrality / multiplicity of the cut (after the event selection);;events", HistType::kTH1D, {centMultAxis});
+    }
+    mHistManager.add("Event/hBCId", "BC ID of the selected events;BC ID;events", HistType::kTH1D, {{o2::constants::lhc::LHCMaxBunches, -0.5, o2::constants::lhc::LHCMaxBunches - 0.5}});
+
+    if (eventCuts.centMultEstimator.value < static_cast<int>(CentMultEstimator::kOff) || eventCuts.centMultEstimator.value >= static_cast<int>(CentMultEstimator::kNEstimators)) {
+      LOG(fatal) << "eventCuts.centMultEstimator " << eventCuts.centMultEstimator.value << " unknown, see the configurable description";
+    }
+    if (eventCuts.applyRCT.value) {
+      mRctChecker.init(eventCuts.rctLabel.value, eventCuts.rctCheckZDC.value, eventCuts.rctTreatLimitedAcceptanceAsBad.value);
+    }
+    if (doEventSel.value) {
+      LOG(warning) << "doEventSel is deprecated, use eventCuts.requireEmcalReadout. Requiring EMCal in the readout.";
+    }
+    if (vertexCut.value > 0.) {
+      LOG(warning) << "vertexCut is deprecated, use eventCuts.zVertexMax. Using |z| < " << vertexCut.value << " cm instead of eventCuts.zVertexMax.";
+    }
 
     // cluster properties (matched clusters)
     mHistManager.add("TrackEtaPhi", "#eta vs #varphi of all selected tracks", HistType::kTH2F, {etaAxis, phiAxis});                                                                             // eta vs phi of all selected tracks
@@ -326,46 +437,153 @@ struct EmcTmMonitor {
   // an integer instead
   Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == clusterDefinition) && (o2::aod::emcalcluster::time >= minTime) && (o2::aod::emcalcluster::time <= maxTime) && (o2::aod::emcalcluster::m02 > minM02) && (o2::aod::emcalcluster::m02 < maxM02);
 
-  /// \brief Event selection of the monitor: trigger alias (if doEventSel) and z vertex
+  /// \brief Centrality / multiplicity of the collision for the estimator of eventCuts.centMultEstimator
+  static float getCentMult(CollisionEvSelIt const& collision, const CentMultEstimator estimator)
+  {
+    switch (estimator) {
+      case CentMultEstimator::kCentFT0C:
+        return collision.centFT0C();
+      case CentMultEstimator::kCentFT0M:
+        return collision.centFT0M();
+      case CentMultEstimator::kCentFT0A:
+        return collision.centFT0A();
+      case CentMultEstimator::kMultFT0C:
+        return collision.multFT0C();
+      case CentMultEstimator::kMultFT0A:
+        return collision.multFT0A();
+      case CentMultEstimator::kMultFT0M:
+        return collision.multFT0M();
+      case CentMultEstimator::kMultNTracksPV:
+        return collision.multNTracksPV();
+      default:
+        return 0.f;
+    }
+  }
+
+  /// \brief Whether a value lies in [min, max], a negative limit is off
+  static bool isInRange(const float value, const float min, const float max)
+  {
+    return (min < 0.f || value >= min) && (max < 0.f || value <= max);
+  }
+
+  /// \brief BC ID veto / selection of vetoBCID and selectBCID
+  bool isBCSelected(const int bcId) const
+  {
+    if (std::find(mVetoBCIDs.begin(), mVetoBCIDs.end(), bcId) != mVetoBCIDs.end()) {
+      return false;
+    }
+    return mSelectBCIDs.empty() || std::find(mSelectBCIDs.begin(), mSelectBCIDs.end(), bcId) != mSelectBCIDs.end();
+  }
+
+  /// \brief Event selection of the monitor, see eventCuts. The cuts are applied in the order of EventCut.
   /// \param theCollision collision to check
   /// \param fillHistos fill the event histograms (only once if several process functions run)
   bool isEventSelected(CollisionEvSelIt const& theCollision, const bool fillHistos)
   {
+    // fill the cut flow bin of a passed step
+    auto passed = [&](const EventCut cut) {
+      if (fillHistos) {
+        mHistManager.fill(HIST("Event/hCutFlow"), static_cast<int>(cut));
+      }
+    };
+    const auto estimator = static_cast<CentMultEstimator>(eventCuts.centMultEstimator.value);
+    const bool applyCentMult = estimator != CentMultEstimator::kOff;
     if (fillHistos) {
       mHistManager.fill(HIST("eventsAll"), 1);
-    }
-
-    // do event selection if doEventSel is specified
-    // currently the event selection is hard coded to kINT7
-    // but other selections are possible that are defined in TriggerAliases.h
-    bool isSelected = true;
-    const int beginningRun3 = 300000;
-    if (doEventSel) {
-      // needs aod::BCs in the process function, otherwise the bc() index is not bound
-      if (theCollision.bc().runNumber() < beginningRun3) {
-        if (!theCollision.alias_bit(kINT7)) {
-          isSelected = false;
-        }
-      } else {
-        if (!theCollision.alias_bit(kTVXinEMC)) {
-          isSelected = false;
-        }
+      mHistManager.fill(HIST("eventVertexZAll"), theCollision.posZ());
+      mHistManager.fill(HIST("Event/hTrackOccupancyBefore"), theCollision.trackOccupancyInTimeRange());
+      mHistManager.fill(HIST("Event/hFT0COccupancyBefore"), theCollision.ft0cOccupancyInTimeRange());
+      if (applyCentMult) {
+        mHistManager.fill(HIST("Event/hCentMultBefore"), getCentMult(theCollision, estimator));
       }
     }
-    if (!isSelected) {
-      LOG(debug) << "Event not selected because it is not kINT7 or does not have EMCAL in readout, skipping";
+    passed(EventCut::kAll);
+
+    // BC ID veto / selection (pilot beams); needs aod::BCs in the process function, otherwise the bc() index is not bound
+    const auto bc = theCollision.bc();
+    const int bcId = static_cast<int>(bc.globalBC() % o2::constants::lhc::LHCMaxBunches);
+    if (!isBCSelected(bcId)) {
       return false;
     }
-    if (fillHistos) {
-      mHistManager.fill(HIST("eventVertexZAll"), theCollision.posZ());
-    }
-    if (vertexCut > 0 && std::abs(theCollision.posZ()) > vertexCut) {
-      LOG(debug) << "Event not selected because of z-vertex cut z= " << theCollision.posZ() << " > " << vertexCut << " cm, skipping";
+    passed(EventCut::kBC);
+
+    if (eventCuts.requireSel8.value && !theCollision.sel8()) {
       return false;
     }
+    passed(EventCut::kSel8);
+
+    // EMCal in the readout: kINT7 in Run 2, kTVXinEMC in Run 3
+    if (eventCuts.requireEmcalReadout.value || doEventSel.value) {
+      constexpr int BeginningRun3 = 300000;
+      const bool hasEmcal = bc.runNumber() < BeginningRun3 ? theCollision.alias_bit(kINT7) : theCollision.alias_bit(kTVXinEMC);
+      if (!hasEmcal) {
+        return false;
+      }
+    }
+    passed(EventCut::kEmcalReadout);
+
+    const double zVertexMax = vertexCut.value > 0. ? vertexCut.value : static_cast<double>(eventCuts.zVertexMax.value);
+    if (zVertexMax > 0. && std::abs(theCollision.posZ()) > zVertexMax) {
+      return false;
+    }
+    passed(EventCut::kZVertex);
+
+    // evsel flags, in the order of EventCut
+    const std::array<std::pair<bool, o2::aod::evsel::EventSelectionFlags>, static_cast<int>(EventCut::kGoodITSLayersAll) - static_cast<int>(EventCut::kNoTimeFrameBorder) + 1> flags = {{
+      {eventCuts.requireNoTimeFrameBorder.value, o2::aod::evsel::kNoTimeFrameBorder},
+      {eventCuts.requireNoITSROFrameBorder.value, o2::aod::evsel::kNoITSROFrameBorder},
+      {eventCuts.requireNoSameBunchPileup.value, o2::aod::evsel::kNoSameBunchPileup},
+      {eventCuts.requireGoodZvtxFT0vsPV.value, o2::aod::evsel::kIsGoodZvtxFT0vsPV},
+      {eventCuts.requireVertexITSTPC.value, o2::aod::evsel::kIsVertexITSTPC},
+      {eventCuts.requireVertexTOFmatched.value, o2::aod::evsel::kIsVertexTOFmatched},
+      {eventCuts.requireNoCollInTimeRangeStandard.value, o2::aod::evsel::kNoCollInTimeRangeStandard},
+      {eventCuts.requireNoCollInTimeRangeNarrow.value, o2::aod::evsel::kNoCollInTimeRangeNarrow},
+      {eventCuts.requireNoCollInRofStandard.value, o2::aod::evsel::kNoCollInRofStandard},
+      {eventCuts.requireNoHighMultCollInPrevRof.value, o2::aod::evsel::kNoHighMultCollInPrevRof},
+      {eventCuts.requireGoodITSLayer3.value, o2::aod::evsel::kIsGoodITSLayer3},
+      {eventCuts.requireGoodITSLayer0123.value, o2::aod::evsel::kIsGoodITSLayer0123},
+      {eventCuts.requireGoodITSLayersAll.value, o2::aod::evsel::kIsGoodITSLayersAll},
+    }};
+    for (std::size_t i = 0; i < flags.size(); ++i) {
+      if (flags[i].first && !theCollision.selection_bit(flags[i].second)) {
+        return false;
+      }
+      passed(static_cast<EventCut>(static_cast<int>(EventCut::kNoTimeFrameBorder) + static_cast<int>(i)));
+    }
+
+    // occupancy, track and FT0C based, each with its own range
+    if (!isInRange(static_cast<float>(theCollision.trackOccupancyInTimeRange()), eventCuts.trackOccupancyMin.value, eventCuts.trackOccupancyMax.value)) {
+      return false;
+    }
+    passed(EventCut::kTrackOccupancy);
+    if (!isInRange(theCollision.ft0cOccupancyInTimeRange(), eventCuts.ft0cOccupancyMin.value, eventCuts.ft0cOccupancyMax.value)) {
+      return false;
+    }
+    passed(EventCut::kFT0COccupancy);
+
+    if (eventCuts.applyRCT.value && !mRctChecker.checkTable(theCollision)) {
+      return false;
+    }
+    passed(EventCut::kRCT);
+
+    if (applyCentMult) {
+      const float centMult = getCentMult(theCollision, estimator);
+      if (centMult < eventCuts.centMultMin.value || centMult > eventCuts.centMultMax.value) {
+        return false;
+      }
+    }
+    passed(EventCut::kCentMult);
+
+    passed(EventCut::kSelected);
     if (fillHistos) {
       mHistManager.fill(HIST("eventsSelected"), 1);
       mHistManager.fill(HIST("eventVertexZSelected"), theCollision.posZ());
+      mHistManager.fill(HIST("Event/hTrackOccupancyAfter"), theCollision.trackOccupancyInTimeRange());
+      mHistManager.fill(HIST("Event/hFT0COccupancyAfter"), theCollision.ft0cOccupancyInTimeRange());
+      if (applyCentMult) {
+        mHistManager.fill(HIST("Event/hCentMultAfter"), getCentMult(theCollision, estimator));
+      }
+      mHistManager.fill(HIST("Event/hBCId"), bcId);
     }
     return true;
   }

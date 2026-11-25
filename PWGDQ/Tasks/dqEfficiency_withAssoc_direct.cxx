@@ -263,9 +263,11 @@ using MyMuonTracksWithCovWithAmbiguities = soa::Join<aod::ReducedMuons, aod::Red
 */
 // using MyMuonTracksSelectedWithColl = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsInfo, aod::MuonTrackCuts>;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::McCollisionLabels>;
+using MyEventsGlobalMult = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::GlobalTrackMultiplicity, aod::McCollisionLabels>;
 using MyEventsSelected = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::McCollisionLabels, aod::EventCuts>;
 using MyEventsWithCentAndMults = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::Mults, aod::MultsExtra, aod::McCollisionLabels>;
 using MyEventsSelectedWithCentAndMults = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::Mults, aod::MultsExtra, aod::McCollisionLabels, aod::EventCuts>;
+using MyEventsGlobalMultSelected = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::GlobalTrackMultiplicity, aod::McCollisionLabels, aod::EventCuts>;
 using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA,
                                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                         aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -558,6 +560,12 @@ struct AnalysisEventSelection {
     // cout << "AnalysisEventSelection::processDirect() completed" << endl;
   }
 
+  void processDirectGlobalMult(MyEventsGlobalMult const& events, BCsWithTimestamps const& bcs, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras, aod::McGlobalMultiplicities> const& mcEvents)
+  {
+    runEventSelection<gkEventFillMapWithMults>(events, bcs, mcEvents);
+    publishSelections<gkEventFillMapWithMults>(events);
+  }
+
   void processPbPbDirect(MyEventsWithCentAndMults const& events, BCsWithTimestamps const& bcs, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras> const& mcEvents)
   {
     // cout << "AnalysisEventSelection::processPbPbDirect() called" << endl;
@@ -572,6 +580,7 @@ struct AnalysisEventSelection {
   }
 
   PROCESS_SWITCH(AnalysisEventSelection, processDirect, "Run event selection on framework AO2Ds", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processDirectGlobalMult, "Run event selection on framework AO2Ds with global tracking counter", false);
   PROCESS_SWITCH(AnalysisEventSelection, processPbPbDirect, "Run PbPb event selection on framework AO2Ds", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", true);
 };
@@ -600,7 +609,7 @@ struct AnalysisTrackSelection {
   Service<o2::pid::tof::TOFResponse> fTofResponse{};
 
   HistogramManager* fHistMan = nullptr;
-  std::vector<AnalysisCompositeCut*> fTrackCuts;
+  std::vector<AnalysisCut*> fTrackCuts;
   std::vector<MCSignal*> fMCSignals; // list of signals to be checked
   std::vector<TString> fHistNamesReco;
   std::vector<TString> fHistNamesMCMatched;
@@ -631,7 +640,7 @@ struct AnalysisTrackSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (const auto& t : addTrackCuts) {
-        fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(t);
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -916,6 +925,13 @@ struct AnalysisTrackSelection {
     runTrackSelection<gkEventFillMapWithMults, gkTrackFillMapWithCov>(assocs, bcs, events, tracks, eventsMC, tracksMC);
     // cout << "AnalysisTrackSelection::processWithCov() completed" << endl;
   }
+  void processWithCent(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, MyEventsSelectedWithCentAndMults const& events, MyBarrelTracksWithCov const& tracks,
+                       McCollisions const& eventsMC, McParticles const& tracksMC)
+  {
+    // cout << "AnalysisTrackSelection::processWithCent() called" << endl;
+    runTrackSelection<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov>(assocs, bcs, events, tracks, eventsMC, tracksMC);
+    // cout << "AnalysisTrackSelection::processWithCent() completed" << endl;
+  }
   void processWithCovTOFService(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, MyEventsSelected const& events, MyBarrelTracksWithCovNoTOF const& tracks,
                                 McCollisions const& eventsMC, McParticles const& tracksMC)
   {
@@ -936,6 +952,7 @@ struct AnalysisTrackSelection {
   }
 
   PROCESS_SWITCH(AnalysisTrackSelection, processWithCov, "Run barrel track selection on DQ skimmed tracks w/ cov matrix associations", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processWithCent, "Run barrel track selection on DQ skimmed tracks w/ centrality", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processWithCovTOFService, "Run barrel track selection on DQ skimmed tracks w/ cov matrix associations, with TOF service", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processWithDalitzBits, "Run barrel track selection on DQ skimmed tracks w/ dalitz bits obtained from DalitzSelection task", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy function", true);
@@ -1243,7 +1260,8 @@ struct AnalysisSameEventPairing {
     }
     VarManager::SetDefaultVarNames();
 
-    fEnableBarrelHistos = context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelPbPbOnly");
+    fEnableBarrelHistos = context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelPbPbOnly") || context.mOptions.get<bool>("processBarrelOnlyWithGlobalMults");
+    ;
     // fEnableMuonHistos = context.mOptions.get<bool>("processMuonOnlySkimmed");
 
     // Keep track of all the histogram class names to avoid composing strings in the pairing loop
@@ -1599,7 +1617,7 @@ struct AnalysisSameEventPairing {
     fHistMan->SetUseDefaultVariableNames(kTRUE);
     fHistMan->SetDefaultVarNames(static_cast<TString*>(VarManager::fgVariableNames), static_cast<TString*>(VarManager::fgVariableUnits));
 
-    VarManager::SetCollisionSystem((TString)fConfigOptions.collisionSystem, fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
+    VarManager::SetCollisionSystem(TString(fConfigOptions.collisionSystem), fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
 
     DefineHistograms(fHistMan, histNames.Data(), fConfigOptions.fConfigAddSEPHistogram.value.data());     // define all histograms
     dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigOptions.fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
@@ -2317,6 +2335,14 @@ struct AnalysisSameEventPairing {
     // cout << "AnalysisSameEventPairing::processBarrelOnly() completed" << endl;
   }
 
+  void processBarrelOnlyWithGlobalMults(MyEventsGlobalMultSelected const& events, BCsWithTimestamps const& bcs,
+                                        soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                        MyBarrelTracksWithCovWithAmbiguities const& barrelTracks, McCollisions const& mcEvents, McParticles const& mcTracks)
+  {
+    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithMults, gkTrackFillMapWithCov>(events, bcs, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
+    runMCGen<VarManager::kDecayToEE, gkEventFillMapWithMults>(events, mcEvents, mcTracks);
+  }
+
   void processBarrelPbPbOnly(MyEventsSelectedWithCentAndMults const& events, BCsWithTimestamps const& bcs,
                              soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
                              MyBarrelTracksWithCovWithAmbiguities const& barrelTracks, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras> const& mcEvents, McParticles const& mcTracks)
@@ -2333,6 +2359,7 @@ struct AnalysisSameEventPairing {
   }
 
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnly, "Run barrel only pairing", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithGlobalMults, "Run barrel only pairing with global track estimation", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelPbPbOnly, "Run barrel PbPb only pairing", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", true);
 };
@@ -3475,7 +3502,7 @@ struct AnalysisDileptonTrackTrack {
     uint32_t mcDecision = static_cast<uint32_t>(0);
     // size_t isig = 0;
 
-    for (auto dilepton : dileptons) {
+    for (const auto& dilepton : dileptons) {
       // get full track info of tracks based on the index
 
       int indexLepton1 = dilepton.index0Id();

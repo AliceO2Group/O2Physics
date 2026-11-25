@@ -475,19 +475,19 @@ struct FlattenictyPikp {
 
   void init(InitContext&)
   {
-    auto vecParamsMIPposEtaP = (std::vector<float>)defOpt.paramsFuncMIPposEtaP;
-    auto vecParamsMIPposEtaN = (std::vector<float>)defOpt.paramsFuncMIPposEtaN;
-    auto vecParamsMIPnegEtaP = (std::vector<float>)defOpt.paramsFuncMIPnegEtaP;
-    auto vecParamsMIPnegEtaN = (std::vector<float>)defOpt.paramsFuncMIPnegEtaN;
-    auto vecParamsMIPallEtaP = (std::vector<float>)defOpt.paramsFuncMIPallEtaP;
-    auto vecParamsMIPallEtaN = (std::vector<float>)defOpt.paramsFuncMIPallEtaN;
+    auto vecParamsMIPposEtaP = std::vector<float>(defOpt.paramsFuncMIPposEtaP);
+    auto vecParamsMIPposEtaN = std::vector<float>(defOpt.paramsFuncMIPposEtaN);
+    auto vecParamsMIPnegEtaP = std::vector<float>(defOpt.paramsFuncMIPnegEtaP);
+    auto vecParamsMIPnegEtaN = std::vector<float>(defOpt.paramsFuncMIPnegEtaN);
+    auto vecParamsMIPallEtaP = std::vector<float>(defOpt.paramsFuncMIPallEtaP);
+    auto vecParamsMIPallEtaN = std::vector<float>(defOpt.paramsFuncMIPallEtaN);
 
-    auto vecParamsPLAposEtaP = (std::vector<float>)defOpt.paramsFuncPlateaUposEtaP;
-    auto vecParamsPLAposEtaN = (std::vector<float>)defOpt.paramsFuncPlateaUposEtaN;
-    auto vecParamsPLAnegEtaP = (std::vector<float>)defOpt.paramsFuncPlateaUnegEtaP;
-    auto vecParamsPLAnegEtaN = (std::vector<float>)defOpt.paramsFuncPlateaUnegEtaN;
-    auto vecParamsPLAallEtaP = (std::vector<float>)defOpt.paramsFuncPlateaUallEtaP;
-    auto vecParamsPLAallEtaN = (std::vector<float>)defOpt.paramsFuncPlateaUallEtaN;
+    auto vecParamsPLAposEtaP = std::vector<float>(defOpt.paramsFuncPlateaUposEtaP);
+    auto vecParamsPLAposEtaN = std::vector<float>(defOpt.paramsFuncPlateaUposEtaN);
+    auto vecParamsPLAnegEtaP = std::vector<float>(defOpt.paramsFuncPlateaUnegEtaP);
+    auto vecParamsPLAnegEtaN = std::vector<float>(defOpt.paramsFuncPlateaUnegEtaN);
+    auto vecParamsPLAallEtaP = std::vector<float>(defOpt.paramsFuncPlateaUallEtaP);
+    auto vecParamsPLAallEtaN = std::vector<float>(defOpt.paramsFuncPlateaUallEtaN);
 
     auto addVec = [&](std::vector<std::vector<float>>& targetVec, const std::string& name, bool isMIP) {
       if (isMIP) {

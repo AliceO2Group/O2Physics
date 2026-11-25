@@ -187,8 +187,8 @@ struct SingleTrackQCMC {
     o2::framework::Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3, kTOFif = 4, kPIDML = 5]"};
     o2::framework::Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
     o2::framework::Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron inclusion"};
-    // o2::framework::Configurable<float> cfg_min_TPCNsigmaMu{"cfg_min_TPCNsigmaMu", -0.0, "min. TPC n sigma for muon exclusion"};
-    // o2::framework::Configurable<float> cfg_max_TPCNsigmaMu{"cfg_max_TPCNsigmaMu", +0.0, "max. TPC n sigma for muon exclusion"};
+    o2::framework::Configurable<float> cfg_min_TPCNsigmaMu{"cfg_min_TPCNsigmaMu", -0.0, "min. TPC n sigma for muon exclusion"};
+    o2::framework::Configurable<float> cfg_max_TPCNsigmaMu{"cfg_max_TPCNsigmaMu", +0.0, "max. TPC n sigma for muon exclusion"};
     o2::framework::Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -1e+10, "min. TPC n sigma for pion exclusion"};
     o2::framework::Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +3.0, "max. TPC n sigma for pion exclusion"};
     o2::framework::Configurable<float> cfg_min_TPCNsigmaKa{"cfg_min_TPCNsigmaKa", -3.0, "min. TPC n sigma for kaon exclusion"};
@@ -203,6 +203,7 @@ struct SingleTrackQCMC {
     o2::framework::Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks only for MC. switch ON only if needed."};
     o2::framework::Configurable<bool> acceptOnlyCorrectMatch{"acceptOnlyCorrectMatch", false, "flag to accept only correct match between ITS and TPC"}; // this is only for MC study, as we don't know correct match in data.
     o2::framework::Configurable<bool> acceptOnlyWrongMatch{"acceptOnlyWrongMatch", false, "flag to accept only wrong match between ITS and TPC"};       // this is only for MC study, as we don't know correct match in data.
+    o2::framework::Configurable<bool> cfg_separatePromptLF{"cfg_separatePromptLF", false, "flag to separate the promptLF sources. Can not be set ON together with cfgFillQA."};
 
     // configuration for PID ML
     // o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
@@ -265,6 +266,8 @@ struct SingleTrackQCMC {
   o2::framework::HistogramRegistry fRegistry{"output", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject, false, false}; // 1  o2::framework::HistogramRegistry can keep up to 512 histograms
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
   static constexpr std::string_view lepton_source_types[8] = {"PromptLF/", "NonPromptLF/", "Photon/", "PromptJPsi/", "NonPromptJPsi/", "c2l/", "b2l/", "b2c2l/"};
+  // static constexpr std::string_view lepton_source_types_more[13] = {"PromptPi0/", "NonPromptPi0/", "Photon/", "PromptJPsi/", "NonPromptJPsi/", "c2l/", "b2l/", "b2c2l/", "Eta/", "EtaPrime/", "Rho/", "Omega/", "Phi/"};
+  static constexpr std::string_view lepton_source_types_more[13] = {"PromptPi0/", "NonPromptPi0/", "Photon/", "PromptJPsi/", "NonPromptJPsi/", "c2l/", "b2l/", "b2c2l/", "Eta/", "Omega/", "Phi/"};
 
   ~SingleTrackQCMC() {}
 
@@ -287,50 +290,70 @@ struct SingleTrackQCMC {
       const o2::framework::AxisSpec axis_dcaZ{ConfDCAZBins, "DCA_{e}^{Z} (#sigma)"};
 
       // generated info
-      fRegistry.add("Generated/PromptLF/hs", "gen. single electron", o2::framework::HistType::kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
-      fRegistry.addClone("Generated/PromptLF/", "Generated/NonPromptLF/");
-      fRegistry.addClone("Generated/PromptLF/", "Generated/PromptJPsi/");
-      fRegistry.addClone("Generated/PromptLF/", "Generated/NonPromptJPsi/");
-      fRegistry.addClone("Generated/PromptLF/", "Generated/c2l/");
-      fRegistry.addClone("Generated/PromptLF/", "Generated/b2l/");
-      fRegistry.addClone("Generated/PromptLF/", "Generated/b2c2l/");
-
+      fRegistry.add("Generated/PromptJPsi/hs", "gen. single electron", o2::framework::HistType::kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
+      fRegistry.addClone("Generated/PromptJPsi/", "Generated/NonPromptJPsi/");
+      fRegistry.addClone("Generated/PromptJPsi/", "Generated/c2l/");
+      fRegistry.addClone("Generated/PromptJPsi/", "Generated/b2l/");
+      fRegistry.addClone("Generated/PromptJPsi/", "Generated/b2c2l/");
+      if (!dielectroncuts.cfg_separatePromptLF) {
+        fRegistry.addClone("Generated/PromptJPsi/", "Generated/PromptLF/");
+        fRegistry.addClone("Generated/PromptJPsi/", "Generated/NonPromptLF/");
+      } else {
+        fRegistry.addClone("Generated/PromptJPsi/", "Generated/Eta/");
+        // fRegistry.addClone("Generated/PromptJPsi/", "Generated/EtaPrime/");
+        // fRegistry.addClone("Generated/PromptJPsi/", "Generated/Rho/");
+        fRegistry.addClone("Generated/PromptJPsi/", "Generated/Omega/");
+        fRegistry.addClone("Generated/PromptJPsi/", "Generated/Phi/");
+        fRegistry.addClone("Generated/PromptJPsi/", "Generated/PromptPi0/");
+        fRegistry.addClone("Generated/PromptJPsi/", "Generated/NonPromptPi0/");
+      }
       // track info
-      fRegistry.add("Track/PromptLF/positive/hs", "rec. single electron", o2::framework::HistType::kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca3D, axis_dcaXY, axis_dcaZ, axis_charge_gen}, true);
+      fRegistry.add("Track/PromptJPsi/positive/hs", "rec. single electron", o2::framework::HistType::kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca3D, axis_dcaXY, axis_dcaZ, axis_charge_gen}, true);
       if (fillGenValuesForRec) {
-        fRegistry.add("Track/PromptLF/positive/hsGenRec", "rec. single electron", o2::framework::HistType::kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca3D, axis_dcaXY, axis_dcaZ, axis_charge_gen}, true);
+        fRegistry.add("Track/PromptJPsi/positive/hsGenRec", "rec. single electron", o2::framework::HistType::kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca3D, axis_dcaXY, axis_dcaZ, axis_charge_gen}, true);
       }
       if (cfgFillQA) {
-        fRegistry.add("Track/PromptLF/positive/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", o2::framework::HistType::kTH1F, {{4000, -20, 20}}, false);
-        fRegistry.add("Track/PromptLF/positive/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", o2::framework::HistType::kTH2F, {{200, -1.0f, 1.0f}, {200, -1.f, 1.f}}, false);
-        fRegistry.add("Track/PromptLF/positive/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", o2::framework::HistType::kTH2F, {{400, -20.0f, 20.0f}, {400, -20.0f, 20.0f}}, false);
-        fRegistry.add("Track/PromptLF/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", o2::framework::HistType::kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
-        fRegistry.add("Track/PromptLF/positive/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", o2::framework::HistType::kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
-        fRegistry.add("Track/PromptLF/positive/hDCA3dRes_Pt", "DCA_{3D} resolution vs. pT;p_{T} (GeV/c);DCA_{3D} resolution (#mum)", o2::framework::HistType::kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
-        fRegistry.add("Track/PromptLF/positive/hNclsTPC_Pt", "number of TPC clusters;p_{T,e} (GeV/c);TPC N_{cls}", o2::framework::HistType::kTH2F, {axis_pt, {161, -0.5, 160.5}}, false);
-        fRegistry.add("Track/PromptLF/positive/hNcrTPC_Pt", "number of TPC crossed rows;p_{T,e} (GeV/c);TPC N_{CR}", o2::framework::HistType::kTH2F, {axis_pt, {161, -0.5, 160.5}}, false);
-        fRegistry.add("Track/PromptLF/positive/hChi2TPC", "chi2/number of TPC clusters;TPC #chi^{2}/N_{CR}", o2::framework::HistType::kTH1F, {{100, 0, 10}}, false);
-        fRegistry.add("Track/PromptLF/positive/hTPCNcr2Nf", "TPC Ncr/Nfindable;TPC N_{CR}/N_{cls}^{findable}", o2::framework::HistType::kTH1F, {{200, 0, 2}}, false);
-        fRegistry.add("Track/PromptLF/positive/hTPCNcls2Nf", "TPC Ncls/Nfindable;TPC N_{cls}/N_{cls}^{findable}", o2::framework::HistType::kTH1F, {{200, 0, 2}}, false);
-        fRegistry.add("Track/PromptLF/positive/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
-        fRegistry.add("Track/PromptLF/positive/hNclsITS", "number of ITS clusters;ITS N_{cls}", o2::framework::HistType::kTH1F, {{8, -0.5, 7.5}}, false);
-        fRegistry.add("Track/PromptLF/positive/hChi2ITS", "chi2/number of ITS clusters;ITS #chi^{2}/N_{cls}", o2::framework::HistType::kTH1F, {{400, 0, 40}}, false);
-        fRegistry.add("Track/PromptLF/positive/hDeltaPin", "p_{in} vs. p_{pv};p_{in} (GeV/c);(p_{pv} - p_{in})/p_{in}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {200, -1, +1}}, false);
-        fRegistry.add("Track/PromptLF/positive/hChi2TOF", "TOF Chi2;p_{pv} (GeV/c);TOF #chi^{2}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, 0, 10}}, false);
-        fRegistry.add("Track/PromptLF/positive/hITSClusterMap", "ITS cluster map", o2::framework::HistType::kTH1F, {{128, -0.5, 127.5}}, false);
-        fRegistry.add("Track/PromptLF/positive/hPIDForTracking", "PID for tracking", o2::framework::HistType::kTH1F, {{9, -0.5, 8.5}}, false); // see numbering in O2/DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h
-        fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", o2::framework::HistType::kTH2F, {{200, 0, 10}, {200, -1.0f, 1.0f}}, true);
-        fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", o2::framework::HistType::kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
-        fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", o2::framework::HistType::kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
+        fRegistry.add("Track/PromptJPsi/positive/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", o2::framework::HistType::kTH1F, {{4000, -20, 20}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", o2::framework::HistType::kTH2F, {{200, -1.0f, 1.0f}, {200, -1.f, 1.f}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", o2::framework::HistType::kTH2F, {{400, -20.0f, 20.0f}, {400, -20.0f, 20.0f}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", o2::framework::HistType::kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", o2::framework::HistType::kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hDCA3dRes_Pt", "DCA_{3D} resolution vs. pT;p_{T} (GeV/c);DCA_{3D} resolution (#mum)", o2::framework::HistType::kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hNclsTPC_Pt", "number of TPC clusters;p_{T,e} (GeV/c);TPC N_{cls}", o2::framework::HistType::kTH2F, {axis_pt, {161, -0.5, 160.5}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hNcrTPC_Pt", "number of TPC crossed rows;p_{T,e} (GeV/c);TPC N_{CR}", o2::framework::HistType::kTH2F, {axis_pt, {161, -0.5, 160.5}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hChi2TPC", "chi2/number of TPC clusters;TPC #chi^{2}/N_{CR}", o2::framework::HistType::kTH1F, {{100, 0, 10}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hTPCNcr2Nf", "TPC Ncr/Nfindable;TPC N_{CR}/N_{cls}^{findable}", o2::framework::HistType::kTH1F, {{200, 0, 2}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hTPCNcls2Nf", "TPC Ncls/Nfindable;TPC N_{cls}/N_{cls}^{findable}", o2::framework::HistType::kTH1F, {{200, 0, 2}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hNclsITS", "number of ITS clusters;ITS N_{cls}", o2::framework::HistType::kTH1F, {{8, -0.5, 7.5}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hChi2ITS", "chi2/number of ITS clusters;ITS #chi^{2}/N_{cls}", o2::framework::HistType::kTH1F, {{400, 0, 40}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hDeltaPin", "p_{in} vs. p_{pv};p_{in} (GeV/c);(p_{pv} - p_{in})/p_{in}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {200, -1, +1}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hChi2TOF", "TOF Chi2;p_{pv} (GeV/c);TOF #chi^{2}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, 0, 10}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hITSClusterMap", "ITS cluster map", o2::framework::HistType::kTH1F, {{128, -0.5, 127.5}}, false);
+        fRegistry.add("Track/PromptJPsi/positive/hPIDForTracking", "PID for tracking", o2::framework::HistType::kTH1F, {{9, -0.5, 8.5}}, false); // see numbering in O2/DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h
+        fRegistry.add("Track/PromptJPsi/positive/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", o2::framework::HistType::kTH2F, {{200, 0, 10}, {200, -1.0f, 1.0f}}, true);
+        fRegistry.add("Track/PromptJPsi/positive/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", o2::framework::HistType::kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
+        fRegistry.add("Track/PromptJPsi/positive/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", o2::framework::HistType::kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
       }
-      fRegistry.addClone("Track/PromptLF/positive/", "Track/PromptLF/negative/");
-      fRegistry.addClone("Track/PromptLF/", "Track/NonPromptLF/");
-      fRegistry.addClone("Track/PromptLF/", "Track/Photon/"); // this is not for efficiency! only for contamination. We don't store generated photon conversions.
-      fRegistry.addClone("Track/PromptLF/", "Track/PromptJPsi/");
-      fRegistry.addClone("Track/PromptLF/", "Track/NonPromptJPsi/");
-      fRegistry.addClone("Track/PromptLF/", "Track/c2l/");
-      fRegistry.addClone("Track/PromptLF/", "Track/b2l/");
-      fRegistry.addClone("Track/PromptLF/", "Track/b2c2l/");
+      fRegistry.addClone("Track/PromptJPsi/positive/", "Track/PromptJPsi/negative/");
+      fRegistry.addClone("Track/PromptJPsi/", "Track/Photon/"); // this is not for efficiency! only for contamination. We don't store generated photon conversions.
+      fRegistry.addClone("Track/PromptJPsi/", "Track/NonPromptJPsi/");
+      fRegistry.addClone("Track/PromptJPsi/", "Track/c2l/");
+      fRegistry.addClone("Track/PromptJPsi/", "Track/b2l/");
+      fRegistry.addClone("Track/PromptJPsi/", "Track/b2c2l/");
+      if (!dielectroncuts.cfg_separatePromptLF) {
+        fRegistry.addClone("Track/PromptJPsi/", "Track/NonPromptLF/");
+        fRegistry.addClone("Track/PromptJPsi/", "Track/PromptLF/");
+      } else {
+        fRegistry.addClone("Track/PromptJPsi/", "Track/Eta/");
+        // fRegistry.addClone("Track/PromptJPsi/", "Track/EtaPrime/");
+        // fRegistry.addClone("Track/PromptJPsi/", "Track/Rho/");
+        fRegistry.addClone("Track/PromptJPsi/", "Track/Omega/");
+        fRegistry.addClone("Track/PromptJPsi/", "Track/Phi/");
+        fRegistry.addClone("Track/PromptJPsi/", "Track/PromptPi0/");
+        fRegistry.addClone("Track/PromptJPsi/", "Track/NonPromptPi0/");
+      }
+
       fRegistry.add("Track/Photon/positive/hProdVtx", "production vertex of e from #gamma;p_{T,e}^{rec} (GeV/c);r_{xy}^{gen} (cm);", o2::framework::HistType::kTH2F, {axis_pt, {100, 0, 100}}, false);
       fRegistry.addClone("Track/Photon/positive/hProdVtx", "Track/Photon/negative/hProdVtx");
 
@@ -338,7 +361,7 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/PID/positive/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
         fRegistry.add("Track/PID/positive/hTPCdEdxMC", "TPC dE/dx MC;p_{in} (GeV/c);TPC dE/dx (a.u.)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-        // fRegistry.add("Track/PID/positive/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+        fRegistry.add("Track/PID/positive/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -550,7 +573,7 @@ struct SingleTrackQCMC {
     // for eID
     fDielectronCut.SetPIDScheme(dielectroncuts.cfg_pid_scheme);
     fDielectronCut.SetTPCNsigmaElRange(dielectroncuts.cfg_min_TPCNsigmaEl, dielectroncuts.cfg_max_TPCNsigmaEl);
-    // fDielectronCut.SetTPCNsigmaMuRange(dielectroncuts.cfg_min_TPCNsigmaMu, dielectroncuts.cfg_max_TPCNsigmaMu);
+    fDielectronCut.SetTPCNsigmaMuRange(dielectroncuts.cfg_min_TPCNsigmaMu, dielectroncuts.cfg_max_TPCNsigmaMu);
     fDielectronCut.SetTPCNsigmaPiRange(dielectroncuts.cfg_min_TPCNsigmaPi, dielectroncuts.cfg_max_TPCNsigmaPi);
     fDielectronCut.SetTPCNsigmaKaRange(dielectroncuts.cfg_min_TPCNsigmaKa, dielectroncuts.cfg_max_TPCNsigmaKa);
     fDielectronCut.SetTPCNsigmaPrRange(dielectroncuts.cfg_min_TPCNsigmaPr, dielectroncuts.cfg_max_TPCNsigmaPr);
@@ -629,17 +652,17 @@ struct SingleTrackQCMC {
     }
   }
 
-  template <int lepton_source_id, typename TMCParticles, typename TTrack, typename TCollision>
+  template <bool moresources, int lepton_source_id, typename TMCParticles, typename TTrack, typename TCollision>
   void fillTrackInfo(TTrack const& track, TCollision const& collision)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      fillElectronInfo<lepton_source_id, TMCParticles>(track);
+      fillElectronInfo<moresources, lepton_source_id, TMCParticles>(track);
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       fillMuonInfo<lepton_source_id, TMCParticles>(track, collision);
     }
   }
 
-  template <int lepton_source_id, typename TMCParticles, typename TTrack>
+  template <bool moresources, int lepton_source_id, typename TMCParticles, typename TTrack>
   void fillElectronInfo(TTrack const& track)
   {
     auto mctrack = track.template emmcparticle_as<TMCParticles>();
@@ -654,39 +677,72 @@ struct SingleTrackQCMC {
     // LOGF(info, "map_weight[%d] = %f", track.globalIndex(), weight);
 
     if (track.sign() > 0) {
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+      if constexpr (!moresources) {
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+      } else {
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+      }
       if constexpr (lepton_source_id == 2) { // for electron from photon conversion
         fRegistry.fill(HIST("Track/Photon/positive/hProdVtx"), track.pt(), std::sqrt(std::pow(mctrack.vx(), 2) + std::pow(mctrack.vy(), 2)), weight);
       }
 
       if (fillGenValuesForRec) {
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+        if constexpr (!moresources) {
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+        } else {
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+        }
       }
       if (cfgFillQA) {
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hQoverPt"), track.sign() / track.pt());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyz"), track.dcaXY(), track.dcaZ());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyzSigma"), dcaXY, dcaZ);
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4);                                          // convert cm to um
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);                                           // convert cm to um
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCA3dRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaDca3D(track) * 1e+4); // convert cm to um
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hNclsITS"), track.itsNCls());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hNclsTPC_Pt"), track.pt(), track.tpcNClsFound());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hNcrTPC_Pt"), track.pt(), track.tpcNClsCrossedRows());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2TPC"), track.tpcChi2NCl());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2ITS"), track.itsChi2NCl());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2TOF"), track.p(), track.tofChi2());
-        if (track.hasTPC()) {
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDeltaPin"), track.tpcInnerParam(), (track.p() - track.tpcInnerParam()) / track.tpcInnerParam());
+        if constexpr (!moresources) {
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hQoverPt"), track.sign() / track.pt());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyz"), track.dcaXY(), track.dcaZ());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyzSigma"), dcaXY, dcaZ);
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4);                                          // convert cm to um
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);                                           // convert cm to um
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCA3dRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaDca3D(track) * 1e+4); // convert cm to um
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hNclsITS"), track.itsNCls());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hNclsTPC_Pt"), track.pt(), track.tpcNClsFound());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hNcrTPC_Pt"), track.pt(), track.tpcNClsCrossedRows());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2TPC"), track.tpcChi2NCl());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2ITS"), track.itsChi2NCl());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2TOF"), track.p(), track.tofChi2());
+          if (track.hasTPC()) {
+            fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDeltaPin"), track.tpcInnerParam(), (track.p() - track.tpcInnerParam()) / track.tpcInnerParam());
+          }
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hITSClusterMap"), track.itsClusterMap());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPIDForTracking"), track.pidForTracking());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
+        } else {
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hQoverPt"), track.sign() / track.pt());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hDCAxyz"), track.dcaXY(), track.dcaZ());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hDCAxyzSigma"), dcaXY, dcaZ);
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4);                                          // convert cm to um
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);                                           // convert cm to um
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hDCA3dRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaDca3D(track) * 1e+4); // convert cm to um
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hNclsITS"), track.itsNCls());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hNclsTPC_Pt"), track.pt(), track.tpcNClsFound());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hNcrTPC_Pt"), track.pt(), track.tpcNClsCrossedRows());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hChi2TPC"), track.tpcChi2NCl());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hChi2ITS"), track.itsChi2NCl());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hChi2TOF"), track.p(), track.tofChi2());
+          if (track.hasTPC()) {
+            fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hDeltaPin"), track.tpcInnerParam(), (track.p() - track.tpcInnerParam()) / track.tpcInnerParam());
+          }
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hITSClusterMap"), track.itsClusterMap());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hPIDForTracking"), track.pidForTracking());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
         }
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hITSClusterMap"), track.itsClusterMap());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPIDForTracking"), track.pidForTracking());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
-
         fRegistry.fill(HIST("Track/PID/positive/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
         fRegistry.fill(HIST("Track/PID/positive/hTPCdEdxMC"), track.tpcInnerParam(), track.mcTunedTPCSignal());
         fRegistry.fill(HIST("Track/PID/positive/hTOFbeta"), track.p(), track.beta());
@@ -694,45 +750,78 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/PID/positive/hMeanClusterSizeITSib"), track.p(), track.meanClusterSizeITSib() * std::cos(std::atan(track.tgl())));
         fRegistry.fill(HIST("Track/PID/positive/hMeanClusterSizeITSob"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
         fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-        // fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
+        fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
         fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
         fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
         fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
         fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
       }
     } else {
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+      if constexpr (!moresources) {
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+      } else {
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+      }
       if constexpr (lepton_source_id == 2) { // for electron from photon conversion
         fRegistry.fill(HIST("Track/Photon/negative/hProdVtx"), track.pt(), std::sqrt(std::pow(mctrack.vx(), 2) + std::pow(mctrack.vy(), 2)), weight);
       }
       if (fillGenValuesForRec) {
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+        if constexpr (!moresources) {
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+        } else {
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+        }
       }
       if (cfgFillQA) {
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hQoverPt"), track.sign() / track.pt());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyz"), track.dcaXY(), track.dcaZ());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyzSigma"), dcaXY, dcaZ);
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4);                                          // convert cm to um
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);                                           // convert cm to um
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCA3dRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaDca3D(track) * 1e+4); // convert cm to um
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hNclsITS"), track.itsNCls());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hNclsTPC_Pt"), track.pt(), track.tpcNClsFound());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hNcrTPC_Pt"), track.pt(), track.tpcNClsCrossedRows());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2TPC"), track.tpcChi2NCl());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2ITS"), track.itsChi2NCl());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2TOF"), track.p(), track.tofChi2());
-        if (track.hasTPC()) {
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDeltaPin"), track.tpcInnerParam(), (track.p() - track.tpcInnerParam()) / track.tpcInnerParam());
+        if constexpr (!moresources) {
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hQoverPt"), track.sign() / track.pt());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyz"), track.dcaXY(), track.dcaZ());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyzSigma"), dcaXY, dcaZ);
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4);                                          // convert cm to um
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);                                           // convert cm to um
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCA3dRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaDca3D(track) * 1e+4); // convert cm to um
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hNclsITS"), track.itsNCls());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hNclsTPC_Pt"), track.pt(), track.tpcNClsFound());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hNcrTPC_Pt"), track.pt(), track.tpcNClsCrossedRows());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2TPC"), track.tpcChi2NCl());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2ITS"), track.itsChi2NCl());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2TOF"), track.p(), track.tofChi2());
+          if (track.hasTPC()) {
+            fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDeltaPin"), track.tpcInnerParam(), (track.p() - track.tpcInnerParam()) / track.tpcInnerParam());
+          }
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hITSClusterMap"), track.itsClusterMap());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPIDForTracking"), track.pidForTracking());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
+        } else {
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hQoverPt"), track.sign() / track.pt());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hDCAxyz"), track.dcaXY(), track.dcaZ());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hDCAxyzSigma"), dcaXY, dcaZ);
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4);                                          // convert cm to um
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);                                           // convert cm to um
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hDCA3dRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaDca3D(track) * 1e+4); // convert cm to um
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hNclsITS"), track.itsNCls());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hNclsTPC_Pt"), track.pt(), track.tpcNClsFound());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hNcrTPC_Pt"), track.pt(), track.tpcNClsCrossedRows());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hChi2TPC"), track.tpcChi2NCl());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hChi2ITS"), track.itsChi2NCl());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hChi2TOF"), track.p(), track.tofChi2());
+          if (track.hasTPC()) {
+            fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hDeltaPin"), track.tpcInnerParam(), (track.p() - track.tpcInnerParam()) / track.tpcInnerParam());
+          }
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hITSClusterMap"), track.itsClusterMap());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hPIDForTracking"), track.pidForTracking());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
         }
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hITSClusterMap"), track.itsClusterMap());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPIDForTracking"), track.pidForTracking());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
-
         fRegistry.fill(HIST("Track/PID/negative/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
         fRegistry.fill(HIST("Track/PID/negative/hTPCdEdxMC"), track.tpcInnerParam(), track.mcTunedTPCSignal());
         fRegistry.fill(HIST("Track/PID/negative/hTOFbeta"), track.p(), track.beta());
@@ -740,7 +829,7 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/PID/negative/hMeanClusterSizeITSib"), track.p(), track.meanClusterSizeITSib() * std::cos(std::atan(track.tgl())));
         fRegistry.fill(HIST("Track/PID/negative/hMeanClusterSizeITSob"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
         fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-        // fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
+        fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
         fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
         fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
         fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
@@ -781,7 +870,7 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxy2DinSigma"), track.fwdDcaX() / std::sqrt(track.cXXatDCA()), track.fwdDcaY() / std::sqrt(track.cYYatDCA()));
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxRes_Pt"), track.pt(), std::sqrt(track.cXXatDCA()) * 1e+4);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAyRes_Pt"), track.pt(), std::sqrt(track.cYYatDCA()) * 1e+4);
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaFwdDcaXY(track) * 1e+4);
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaFwdDcaXY(track) * 1e+4 / std::sqrt(2.f));
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAx_PosZ"), collision.posZ(), track.fwdDcaX());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAy_PosZ"), collision.posZ(), track.fwdDcaY());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAx_Phi"), track.phi(), track.fwdDcaX());
@@ -815,7 +904,7 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxy2DinSigma"), track.fwdDcaX() / std::sqrt(track.cXXatDCA()), track.fwdDcaY() / std::sqrt(track.cYYatDCA()));
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxRes_Pt"), track.pt(), std::sqrt(track.cXXatDCA()) * 1e+4);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAyRes_Pt"), track.pt(), std::sqrt(track.cYYatDCA()) * 1e+4);
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaFwdDcaXY(track) * 1e+4);
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaFwdDcaXY(track) * 1e+4 / std::sqrt(2.f));
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAx_PosZ"), collision.posZ(), track.fwdDcaX());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAy_PosZ"), collision.posZ(), track.fwdDcaY());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAx_Phi"), track.phi(), track.fwdDcaX());
@@ -918,31 +1007,101 @@ struct SingleTrackQCMC {
         auto mcmother = mcparticles.iteratorAt(mctrack.mothersIds()[0]);
         int pdg_mother = std::abs(mcmother.pdgCode());
 
-        if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
-          if (pdg_mother == 111 || pdg_mother == 221 || pdg_mother == 331 || pdg_mother == 113 || pdg_mother == 223 || pdg_mother == 333) {
-            if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromCharm(mcmother, mcparticles) < 0 && o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) < 0) {
-              fillTrackInfo<0, TMCParticles>(track, collision); // PromptLF
-            } else {
-              fillTrackInfo<1, TMCParticles>(track, collision); // NonPromptLF
+        if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
+          if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
+            if (pdg_mother == 111 || pdg_mother == 221 || pdg_mother == 331 || pdg_mother == 113 || pdg_mother == 223 || pdg_mother == 333) {
+              if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromCharm(mcmother, mcparticles) < 0 && o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) < 0) {
+                fillTrackInfo<false, 0, TMCParticles>(track, collision); // PromptLF
+              } else {
+                fillTrackInfo<false, 1, TMCParticles>(track, collision); // NonPromptLF
+              }
+            } else if (pdg_mother == 443) {
+              if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
+                fillTrackInfo<false, 4, TMCParticles>(track, collision);
+              } else {
+                fillTrackInfo<false, 3, TMCParticles>(track, collision);
+              }
+            } else if (o2::aod::pwgem::dilepton::utils::mcutil::isWeakDecayFromBeautyHadron(mctrack, mcparticles)) { // hb->l is found in full decay chain.
+              fillTrackInfo<false, 6, TMCParticles>(track, collision);
+            } else if (o2::aod::pwgem::dilepton::utils::mcutil::isWeakDecayFromCharmHadron(mctrack, mcparticles)) { // hc->l is found in full decay chain.
+              if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) > 0) {
+                fillTrackInfo<false, 7, TMCParticles>(track, collision); // hb->hc->l is fond.
+              } else {
+                fillTrackInfo<false, 5, TMCParticles>(track, collision); // prompt hc->l is found.
+              }
             }
-          } else if (pdg_mother == 443) {
-            if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
-              fillTrackInfo<4, TMCParticles>(track, collision);
-            } else {
-              fillTrackInfo<3, TMCParticles>(track, collision);
-            }
-          } else if (o2::aod::pwgem::dilepton::utils::mcutil::isWeakDecayFromBeautyHadron(mctrack, mcparticles)) { // hb->l is found in full decay chain.
-            fillTrackInfo<6, TMCParticles>(track, collision);
-          } else if (o2::aod::pwgem::dilepton::utils::mcutil::isWeakDecayFromCharmHadron(mctrack, mcparticles)) { // hc->l is found in full decay chain.
-            if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) > 0) {
-              fillTrackInfo<7, TMCParticles>(track, collision); // hb->hc->l is fond.
-            } else {
-              fillTrackInfo<5, TMCParticles>(track, collision); // prompt hc->l is found.
+          } else {
+            if (pdg_mother == 22) { // photon conversion
+              fillTrackInfo<false, 2, TMCParticles>(track, collision);
             }
           }
-        } else {
-          if (pdg_mother == 22) { // photon conversion
-            fillTrackInfo<2, TMCParticles>(track, collision);
+        } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+          if (!dielectroncuts.cfg_separatePromptLF) {
+            if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
+              if (pdg_mother == 111 || pdg_mother == 221 || pdg_mother == 331 || pdg_mother == 113 || pdg_mother == 223 || pdg_mother == 333) {
+                if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromCharm(mcmother, mcparticles) < 0 && o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) < 0) {
+                  fillTrackInfo<false, 0, TMCParticles>(track, collision); // PromptLF
+                } else {
+                  fillTrackInfo<false, 1, TMCParticles>(track, collision); // NonPromptLF
+                }
+              } else if (pdg_mother == 443) {
+                if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
+                  fillTrackInfo<false, 4, TMCParticles>(track, collision);
+                } else {
+                  fillTrackInfo<false, 3, TMCParticles>(track, collision);
+                }
+              } else if (o2::aod::pwgem::dilepton::utils::mcutil::isWeakDecayFromBeautyHadron(mctrack, mcparticles)) { // hb->l is found in full decay chain.
+                fillTrackInfo<false, 6, TMCParticles>(track, collision);
+              } else if (o2::aod::pwgem::dilepton::utils::mcutil::isWeakDecayFromCharmHadron(mctrack, mcparticles)) { // hc->l is found in full decay chain.
+                if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) > 0) {
+                  fillTrackInfo<false, 7, TMCParticles>(track, collision); // hb->hc->l is fond.
+                } else {
+                  fillTrackInfo<false, 5, TMCParticles>(track, collision); // prompt hc->l is found.
+                }
+              }
+            } else {
+              if (pdg_mother == 22) { // photon conversion
+                fillTrackInfo<false, 2, TMCParticles>(track, collision);
+              }
+            }
+          } else {
+            if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
+              if (pdg_mother == 111) {
+                if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromCharm(mcmother, mcparticles) < 0 && o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) < 0) {
+                  fillTrackInfo<true, 0, TMCParticles>(track, collision); // PromptPi0
+                } else {
+                  fillTrackInfo<true, 1, TMCParticles>(track, collision); // NonPromptPi0
+                }
+              } else if (pdg_mother == 221) {
+                fillTrackInfo<true, 8, TMCParticles>(track, collision); // Eta
+                // } else if (pdg_mother == 331) {
+                // fillTrackInfo<true, 9, TMCParticles>(track, collision); // EtaPrime
+                // } else if (pdg_mother == 113) {
+                // fillTrackInfo<true, 10, TMCParticles>(track, collision); // Rho
+              } else if (pdg_mother == 223) {
+                fillTrackInfo<true, 9, TMCParticles>(track, collision); // Omega
+              } else if (pdg_mother == 333) {
+                fillTrackInfo<true, 10, TMCParticles>(track, collision); // Phi
+              } else if (pdg_mother == 443) {
+                if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
+                  fillTrackInfo<true, 4, TMCParticles>(track, collision);
+                } else {
+                  fillTrackInfo<true, 3, TMCParticles>(track, collision);
+                }
+              } else if (o2::aod::pwgem::dilepton::utils::mcutil::isWeakDecayFromBeautyHadron(mctrack, mcparticles)) { // hb->l is found in full decay chain.
+                fillTrackInfo<true, 6, TMCParticles>(track, collision);
+              } else if (o2::aod::pwgem::dilepton::utils::mcutil::isWeakDecayFromCharmHadron(mctrack, mcparticles)) { // hc->l is found in full decay chain.
+                if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) > 0) {
+                  fillTrackInfo<true, 7, TMCParticles>(track, collision); // hb->hc->l is fond.
+                } else {
+                  fillTrackInfo<true, 5, TMCParticles>(track, collision); // prompt hc->l is found.
+                }
+              }
+            } else {
+              if (pdg_mother == 22) { // photon conversion
+                fillTrackInfo<true, 2, TMCParticles>(track, collision);
+              }
+            }
           }
         }
       } // end of track loop
@@ -1026,10 +1185,30 @@ struct SingleTrackQCMC {
         }
 
         if (pdg_mother == 111 || pdg_mother == 221 || pdg_mother == 331 || pdg_mother == 113 || pdg_mother == 223 || pdg_mother == 333) {
-          if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromCharm(mcmother, mcparticles) < 0 && o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) < 0) {
-            fRegistry.fill(HIST("Generated/PromptLF/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+          if (!dielectroncuts.cfg_separatePromptLF) {
+            if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromCharm(mcmother, mcparticles) < 0 && o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) < 0) {
+              fRegistry.fill(HIST("Generated/PromptLF/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+            } else {
+              fRegistry.fill(HIST("Generated/NonPromptLF/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+            }
           } else {
-            fRegistry.fill(HIST("Generated/NonPromptLF/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+            if (pdg_mother == 111) {
+              if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromCharm(mcmother, mcparticles) < 0 && o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) < 0) {
+                fRegistry.fill(HIST("Generated/PromptPi0/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+              } else {
+                fRegistry.fill(HIST("Generated/NonPromptPi0/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+              }
+            } else if (pdg_mother == 221) {
+              fRegistry.fill(HIST("Generated/Eta/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+              // } else if (pdg_mother == 331) {
+              // fRegistry.fill(HIST("Generated/EtaPrime/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+              // } else if (pdg_mother == 113) {
+              // fRegistry.fill(HIST("Generated/Rho/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+            } else if (pdg_mother == 223) {
+              fRegistry.fill(HIST("Generated/Omega/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+            } else if (pdg_mother == 333) {
+              fRegistry.fill(HIST("Generated/Phi/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+            }
           }
         } else if (pdg_mother == 443) {
           if (o2::aod::pwgem::dilepton::utils::mcutil::IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
@@ -1162,21 +1341,21 @@ struct SingleTrackQCMC {
   o2::framework::expressions::Filter ttcaFilter_electron = ifnode(dielectroncuts.enableTTCA.node(), true, o2::aod::emprimaryelectron::isAssociatedToMPC == true);
 
   o2::framework::expressions::Filter prefilter_derived_electron = ifnode(dielectroncuts.cfg_apply_cuts_from_prefilter_derived.node() && dielectroncuts.cfg_prefilter_bits_derived.node() >= static_cast<uint16_t>(1),
-                                                                         ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kMee))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kMee))) <= static_cast<uint16_t>(0), true) &&
-                                                                           ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kPhiV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kPhiV))) <= static_cast<uint16_t>(0), true) &&
-                                                                           ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS))) <= static_cast<uint16_t>(0), true) &&
-                                                                           ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS))) <= static_cast<uint16_t>(0), true),
+                                                                         ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kMee))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kMee))) <= static_cast<uint16_t>(0), true) &&
+                                                                           ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kPhiV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kPhiV))) <= static_cast<uint16_t>(0), true) &&
+                                                                           ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS))) <= static_cast<uint16_t>(0), true) &&
+                                                                           ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS))) <= static_cast<uint16_t>(0), true),
                                                                          o2::aod::emprimaryelectron::pfbderived >= static_cast<uint16_t>(0));
 
   o2::framework::expressions::Filter prefilter_electron = ifnode(dielectroncuts.cfg_apply_cuts_from_prefilter.node() && dielectroncuts.cfg_prefilter_bits.node() >= static_cast<uint16_t>(1),
-                                                                 ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC))) <= static_cast<uint8_t>(0), true) &&
-                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV))) <= static_cast<uint8_t>(0), true) &&
-                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_40MeV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_40MeV))) <= static_cast<uint8_t>(0), true) &&
-                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_60MeV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_60MeV))) <= static_cast<uint8_t>(0), true) &&
-                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_80MeV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_80MeV))) <= static_cast<uint8_t>(0), true) &&
-                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_100MeV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_100MeV))) <= static_cast<uint8_t>(0), true) &&
-                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_120MeV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_120MeV))) <= static_cast<uint8_t>(0), true) &&
-                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_140MeV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_140MeV))) <= static_cast<uint8_t>(0), true),
+                                                                 ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC))) <= static_cast<uint8_t>(0), true) &&
+                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV))) <= static_cast<uint8_t>(0), true) &&
+                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_40MeV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_40MeV))) <= static_cast<uint8_t>(0), true) &&
+                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_60MeV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_60MeV))) <= static_cast<uint8_t>(0), true) &&
+                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_80MeV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_80MeV))) <= static_cast<uint8_t>(0), true) &&
+                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_100MeV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_100MeV))) <= static_cast<uint8_t>(0), true) &&
+                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_120MeV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_120MeV))) <= static_cast<uint8_t>(0), true) &&
+                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_140MeV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_140MeV))) <= static_cast<uint8_t>(0), true),
                                                                  o2::aod::emprimaryelectron::pfb >= static_cast<uint8_t>(0));
 
   o2::framework::Preslice<MyMCMuons> perCollision_muon = o2::aod::emprimarymuon::emeventId;

@@ -53,7 +53,7 @@ struct FemtoTrackTrackTwoPhotonResonanceQa {
   // setup for collisions
   collisionbuilder::ConfCollisionSelection collisionSelection;
   o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
-  colhistmanager::CollisionHistManager colHistManager;
+  colhistmanager::CollisionHistManager<colhistmanager::PrefixQa> colHistManager;
   colhistmanager::ConfCollisionBinning confCollisionBinning;
   colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 

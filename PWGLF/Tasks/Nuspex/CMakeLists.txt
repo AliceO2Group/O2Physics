@@ -92,7 +92,7 @@ o2physics_add_dpl_workflow(spectra-tpc-tiny-pikapr
 
 o2physics_add_dpl_workflow(charged-particles
     SOURCES chargedParticles.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(pcc-qa
@@ -209,6 +209,11 @@ o2physics_add_dpl_workflow(flattenicity-pt-spectra
 o2physics_add_dpl_workflow(deuteron-in-jets-trg-pt
     SOURCES deuteronInJetsTrgPt.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(pcc-mc-spectra
+    SOURCES pccMcSpectra.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
 endif()

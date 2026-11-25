@@ -17,6 +17,8 @@
 #include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
+#include "PWGCF/Femto/Core/collisionTagger.h"
+#include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/kinkBuilder.h"
 #include "PWGCF/Femto/Core/kinkHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
@@ -34,11 +36,13 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
+#include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 
 #include <map>
@@ -56,6 +60,10 @@ struct FemtoPairTrackKink {
   using FemtoCollisionsWithLabel = o2::soa::Join<FemtoCollisions, o2::aod::FColLabels>;
   using FilteredFemtoCollisionsWithLabel = o2::soa::Filtered<FemtoCollisionsWithLabel>;
   using FilteredFemtoCollisionWithLabel = FilteredFemtoCollisionsWithLabel::iterator;
+
+  // opt-in: carries FColTags, only needed by the processXxxMixedEventWithTagging functions below.
+  using FemtoCollisionsWithTags = o2::soa::Join<FemtoCollisions, o2::aod::FColTags>;
+  using FilteredFemtoCollisionsWithTags = o2::soa::Filtered<FemtoCollisionsWithTags>;
 
   using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMasks>;
   using FemtoSigmas = o2::soa::Join<o2::aod::FSigmas, o2::aod::FSigmaMasks>;
@@ -75,6 +83,12 @@ struct FemtoPairTrackKink {
   collisionbuilder::ConfCollisionSelection collisionSelection;
   o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::ConfCollisionBinning confCollisionBinning;
+
+  // opt-in, only needed by the processXxxMixedEventWithTagging functions below -- three separate
+  // instances since Sigma/SigmaPlus/SigmaPlusPcm are tagged independently (see init()).
+  collisiontagger::ConfTagging<collisiontagger::role::TrackSigmaPair> confTaggingSigma;
+  collisiontagger::ConfTagging<collisiontagger::role::TrackSigmaPlusPair> confTaggingSigmaPlus;
+  collisiontagger::ConfTagging<collisiontagger::role::TrackSigmaPlusPcmPair> confTaggingSigmaPlusPcm;
 
   // setup tracks
   trackbuilder::ConfTrackSelection1 confTrackSelection;
@@ -184,25 +198,59 @@ struct FemtoPairTrackKink {
   // setup cpr
   closepairrejection::ConfCprTrackKinkDaughter confCpr;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
-    bool processData = doprocessSigmaSameEvent || doprocessSigmaMixedEvent || doprocessSigmaPlusSameEvent || doprocessSigmaPlusMixedEvent || doprocessSigmaPlusPcmSameEvent || doprocessSigmaPlusPcmMixedEvent;
+    bool processData = doprocessSigmaSameEvent || doprocessSigmaMixedEvent || doprocessSigmaPlusSameEvent || doprocessSigmaPlusMixedEvent || doprocessSigmaPlusPcmSameEvent || doprocessSigmaPlusPcmMixedEvent || doprocessSigmaMixedEventWithTagging || doprocessSigmaPlusMixedEventWithTagging || doprocessSigmaPlusPcmMixedEventWithTagging;
     bool processMc = doprocessSigmaSameEventMc || doprocessSigmaMixedEventMc || doprocessSigmaPlusSameEventMc || doprocessSigmaPlusMixedEventMc || doprocessSigmaPlusPcmSameEventMc || doprocessSigmaPlusPcmMixedEventMc;
 
     if (processData && processMc) {
       LOG(fatal) << "Both data and mc processing is enabled. Breaking...";
     }
 
-    bool processSigma = doprocessSigmaSameEvent || doprocessSigmaSameEventMc || doprocessSigmaMixedEvent || doprocessSigmaMixedEventMc;
-    bool processSigmaPlus = doprocessSigmaPlusSameEvent || doprocessSigmaPlusSameEventMc || doprocessSigmaPlusMixedEvent || doprocessSigmaPlusMixedEventMc;
+    bool processSigma = doprocessSigmaSameEvent || doprocessSigmaSameEventMc || doprocessSigmaMixedEvent || doprocessSigmaMixedEventMc || doprocessSigmaMixedEventWithTagging;
+    bool processSigmaPlus = doprocessSigmaPlusSameEvent || doprocessSigmaPlusSameEventMc || doprocessSigmaPlusMixedEvent || doprocessSigmaPlusMixedEventMc || doprocessSigmaPlusMixedEventWithTagging;
 
-    bool processSigmaPlusPcm = doprocessSigmaPlusPcmSameEvent || doprocessSigmaPlusPcmSameEventMc || doprocessSigmaPlusPcmMixedEvent || doprocessSigmaPlusPcmMixedEventMc;
+    bool processSigmaPlusPcm = doprocessSigmaPlusPcmSameEvent || doprocessSigmaPlusPcmSameEventMc || doprocessSigmaPlusPcmMixedEvent || doprocessSigmaPlusPcmMixedEventMc || doprocessSigmaPlusPcmMixedEventWithTagging;
 
     if (processSigma && processSigmaPlus) {
       LOG(fatal) << "Both Sigma-track and SigmaPlus-track processing is enabled. Breaking...";
     }
     if ((processSigma || processSigmaPlus) && processSigmaPlusPcm) {
       LOG(fatal) << "Both Sigma/SigmaPlus-track and SigmaPlusPcm-track processing is enabled. Breaking...";
+    }
+
+    // Each species discovers its own tag bit independently (see Core/collisionTagger.h).
+    if (doprocessSigmaMixedEventWithTagging || doprocessSigmaPlusMixedEventWithTagging || doprocessSigmaPlusPcmMixedEventWithTagging) {
+      auto const& workflows = context.services().get<o2::framework::RunningWorkflowInfo const>();
+      auto const& ownDevice = context.services().get<o2::framework::DeviceSpec const>();
+      auto roles = collisiontagger::discoverTaggedRoles(workflows);
+      if (doprocessSigmaMixedEventWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingSigma.Role);
+        if (bit < 0) {
+          LOG(fatal) << "processSigmaMixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                     << "(with processTrackKink enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingSigma.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (Sigma): " << bit;
+      }
+      if (doprocessSigmaPlusMixedEventWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingSigmaPlus.Role);
+        if (bit < 0) {
+          LOG(fatal) << "processSigmaPlusMixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                     << "(with processTrackKink enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingSigmaPlus.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (SigmaPlus): " << bit;
+      }
+      if (doprocessSigmaPlusPcmMixedEventWithTagging) {
+        int bit = collisiontagger::findOwnBit(roles, ownDevice.name, confTaggingSigmaPlusPcm.Role);
+        if (bit < 0) {
+          LOG(fatal) << "processSigmaPlusPcmMixedEventWithTagging is enabled, but no femto-collision-tagger device "
+                     << "(with processTrackSigmaPlusPcm enabled) tagging this device (" << ownDevice.name << ") was found in this workflow.";
+        }
+        confTaggingSigmaPlusPcm.internalTagMask.value = static_cast<datatypes::CollisionTagType>(1) << bit;
+        LOG(info) << "Collision tagger bit for " << ownDevice.name << " (SigmaPlusPcm): " << bit;
+      }
     }
 
     // setup columnpolicy for binning
@@ -267,6 +315,16 @@ struct FemtoPairTrackKink {
   }
   PROCESS_SWITCH(FemtoPairTrackKink, processSigmaSameEventMc, "Enable processing same event processing for tracks and sigmas with MC information", false);
 
+  // Opt-in counterpart of processSigmaMixedEvent() below -- same "Partition declared and bound
+  // inside process()" idiom as femtoPairTrackTrack.cxx's processMixedEventWithTagging.
+  void processSigmaMixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoSigmas const& /*sigmas*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingSigma.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairTrackSigmaBuilder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, trackPartition, sigmaPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairTrackKink, processSigmaMixedEventWithTagging, "Enable processing mixed event processing for tracks and sigmas, pre-filtered using the collision tagger", false);
+
   void processSigmaMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoSigmas const& /*sigmas*/)
   {
     pairTrackSigmaBuilder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, trackPartition, sigmaPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
@@ -291,6 +349,15 @@ struct FemtoPairTrackKink {
   }
   PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusSameEventMc, "Enable processing same event processing for tracks and sigma plus with MC information", false);
 
+  // Opt-in counterpart of processSigmaPlusMixedEvent() below -- same idiom as processSigmaMixedEventWithTagging above.
+  void processSigmaPlusMixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoSigmaPlus const& /*sigmaplus*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingSigmaPlus.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairTrackSigmaPlusBuilder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, trackPartition, sigmaPlusPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusMixedEventWithTagging, "Enable processing mixed event processing for tracks and sigma plus, pre-filtered using the collision tagger", false);
+
   void processSigmaPlusMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoSigmaPlus const& /*sigmaplus*/)
   {
     pairTrackSigmaPlusBuilder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, trackPartition, sigmaPlusPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
@@ -314,6 +381,15 @@ struct FemtoPairTrackKink {
     pairTrackSigmaPlusPcmBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc>(col, mcCols, tracks, trackWithLabelPartition, sigmapluspcm, sigmaPlusPcmWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusPcmSameEventMc, "Enable processing same event processing for tracks and sigma plus (PCM) with MC information", false);
+
+  // Opt-in counterpart of processSigmaPlusPcmMixedEvent() below -- same idiom as processSigmaMixedEventWithTagging above.
+  void processSigmaPlusPcmMixedEventWithTagging(FilteredFemtoCollisionsWithTags const& cols, FemtoTracks const& tracks, FemtoSigmaPlusPcm const& /*sigmapluspcm*/)
+  {
+    o2::framework::Partition<FilteredFemtoCollisionsWithTags> taggedCollisions = ncheckbit(o2::aod::femtocollisions::collisionTag, confTaggingSigmaPlusPcm.internalTagMask);
+    taggedCollisions.bindTable(cols);
+    pairTrackSigmaPlusPcmBuilder.processMixedEvent<modes::Mode::kMe_Reco>(taggedCollisions, tracks, trackPartition, sigmaPlusPcmPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusPcmMixedEventWithTagging, "Enable processing mixed event processing for tracks and sigma plus (PCM), pre-filtered using the collision tagger", false);
 
   void processSigmaPlusPcmMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoSigmaPlusPcm const& /*sigmapluspcm*/)
   {

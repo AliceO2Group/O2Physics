@@ -34,6 +34,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
@@ -119,14 +120,14 @@ struct FemtoUniversePairTaskTrackV0Extended {
   using FilteredFDCollision = FilteredFDCollisions::iterator;
 
   /// Partition for particle 1 using extended table (track)
-  Partition<FemtoFullParticles> partsOneFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == as<int8_t>(ConfTrkSelection.confChargePart1)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < ConfTrkSelection.confHPtPart1) && (aod::femtouniverseparticle::pt > ConfTrkSelection.confLPtPart1) && (nabs(aod::track::dcaXY) < (ConfTrkSelection.confDcaXYCustom1FilterCut + ConfTrkSelection.confDcaXYCustom2FilterCut / aod::femtouniverseparticle::pt)) && (aod::femtouniverseparticle::tpcNClsFound) > as<uint8_t>(ConfTrkSelection.confTrkTPCnclsMin) && (aod::femtouniverseparticle::tpcNClsCrossedRows) > as<uint8_t>(ConfTrkSelection.confTrkTPCcRowsMin);
-  Partition<FemtoFullParticles> partsOneMCFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < ConfTrkSelection.confHPtPart1) && (aod::femtouniverseparticle::pt > ConfTrkSelection.confLPtPart1);
-  Partition<FemtoRecoParticles> partsOneMCRecoFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == as<int8_t>(ConfTrkSelection.confChargePart1)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < ConfTrkSelection.confHPtPart1) && (aod::femtouniverseparticle::pt > ConfTrkSelection.confLPtPart1);
+  Partition<FemtoFullParticles> partsOneFull = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == as<int8_t>(ConfTrkSelection.confChargePart1)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < ConfTrkSelection.confHPtPart1) && (aod::femtouniverseparticle::pt > ConfTrkSelection.confLPtPart1) && (nabs(aod::track::dcaXY) < (ConfTrkSelection.confDcaXYCustom1FilterCut + ConfTrkSelection.confDcaXYCustom2FilterCut / aod::femtouniverseparticle::pt)) && (aod::femtouniverseparticle::tpcNClsFound) > as<uint8_t>(ConfTrkSelection.confTrkTPCnclsMin) && (aod::femtouniverseparticle::tpcNClsCrossedRows) > as<uint8_t>(ConfTrkSelection.confTrkTPCcRowsMin);
+  Partition<FemtoFullParticles> partsOneMCFull = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < ConfTrkSelection.confHPtPart1) && (aod::femtouniverseparticle::pt > ConfTrkSelection.confLPtPart1);
+  Partition<FemtoRecoParticles> partsOneMCRecoFull = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == as<int8_t>(ConfTrkSelection.confChargePart1)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < ConfTrkSelection.confHPtPart1) && (aod::femtouniverseparticle::pt > ConfTrkSelection.confLPtPart1);
 
   /// Partition for particle 1 without extended table (track)
-  Partition<aod::FDParticles> partsOneBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == as<int8_t>(ConfTrkSelection.confChargePart1)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < ConfTrkSelection.confHPtPart1) && (aod::femtouniverseparticle::pt > ConfTrkSelection.confLPtPart1);
-  Partition<aod::FDParticles> partsOneMCBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < ConfTrkSelection.confHPtPart1) && (aod::femtouniverseparticle::pt > ConfTrkSelection.confLPtPart1);
-  Partition<aod::FDParticles> partsOneMCRecoBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == as<int8_t>(ConfTrkSelection.confChargePart1)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < ConfTrkSelection.confHPtPart1) && (aod::femtouniverseparticle::pt > ConfTrkSelection.confLPtPart1);
+  Partition<aod::FDParticles> partsOneBasic = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == as<int8_t>(ConfTrkSelection.confChargePart1)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < ConfTrkSelection.confHPtPart1) && (aod::femtouniverseparticle::pt > ConfTrkSelection.confLPtPart1);
+  Partition<aod::FDParticles> partsOneMCBasic = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < ConfTrkSelection.confHPtPart1) && (aod::femtouniverseparticle::pt > ConfTrkSelection.confLPtPart1);
+  Partition<aod::FDParticles> partsOneMCRecoBasic = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::mAntiLambda == as<int8_t>(ConfTrkSelection.confChargePart1)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < ConfTrkSelection.confHPtPart1) && (aod::femtouniverseparticle::pt > ConfTrkSelection.confLPtPart1);
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 3> trackHistoPartOnePos;
@@ -167,14 +168,14 @@ struct FemtoUniversePairTaskTrackV0Extended {
   Partition<FemtoFullParticles>
     partsTwoFull = (aod::femtouniverseparticle::decayVtxX < additionalcutsV0.confV0MaxRadius && aod::femtouniverseparticle::decayVtxY < additionalcutsV0.confV0MaxRadius && aod::femtouniverseparticle::decayVtxZ < additionalcutsV0.confV0MaxRadius &&
                     aod::femtouniverseparticle::transRadius > additionalcutsV0.confV0MinTransRadius && aod::femtouniverseparticle::daughDCA < additionalcutsV0.confV0DaughMaxDCA && aod::femtouniverseparticle::tempFitVar > additionalcutsV0.confV0MinCosPA &&
-                    aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0) && (aod::femtouniverseparticle::pt < ConfV0Selection.confHPtPart2) && (aod::femtouniverseparticle::pt > ConfV0Selection.confLPtPart2));
-  Partition<FemtoFullParticles> partsTwoMCFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < ConfV0Selection.confHPtPart2) && (aod::femtouniverseparticle::pt > ConfV0Selection.confLPtPart2);
-  Partition<FemtoRecoParticles> partsTwoMCRecoFull = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < ConfV0Selection.confHPtPart2) && (aod::femtouniverseparticle::pt > ConfV0Selection.confLPtPart2);
+                    aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kV0) && (aod::femtouniverseparticle::pt < ConfV0Selection.confHPtPart2) && (aod::femtouniverseparticle::pt > ConfV0Selection.confLPtPart2));
+  Partition<FemtoFullParticles> partsTwoMCFull = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < ConfV0Selection.confHPtPart2) && (aod::femtouniverseparticle::pt > ConfV0Selection.confLPtPart2);
+  Partition<FemtoRecoParticles> partsTwoMCRecoFull = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < ConfV0Selection.confHPtPart2) && (aod::femtouniverseparticle::pt > ConfV0Selection.confLPtPart2);
 
   /// Partition for particle 2 without extended table
-  Partition<aod::FDParticles> partsTwoBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < ConfV0Selection.confHPtPart2) && (aod::femtouniverseparticle::pt > ConfV0Selection.confLPtPart2);
-  Partition<aod::FDParticles> partsTwoMCBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < ConfV0Selection.confHPtPart2) && (aod::femtouniverseparticle::pt > ConfV0Selection.confLPtPart2);
-  Partition<aod::FDParticles> partsTwoMCRecoBasic = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < ConfV0Selection.confHPtPart2) && (aod::femtouniverseparticle::pt > ConfV0Selection.confLPtPart2);
+  Partition<aod::FDParticles> partsTwoBasic = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < ConfV0Selection.confHPtPart2) && (aod::femtouniverseparticle::pt > ConfV0Selection.confLPtPart2);
+  Partition<aod::FDParticles> partsTwoMCBasic = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < ConfV0Selection.confHPtPart2) && (aod::femtouniverseparticle::pt > ConfV0Selection.confLPtPart2);
+  Partition<aod::FDParticles> partsTwoMCRecoBasic = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < ConfV0Selection.confHPtPart2) && (aod::femtouniverseparticle::pt > ConfV0Selection.confLPtPart2);
 
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0, 2> trackHistoPartTwo;
@@ -221,6 +222,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
     Configurable<bool> confRandomizeCPR{"confRandomizeCPR", false, "Fill Dete-Dphi histograms in random order: v01, v02 or v02, v01 - does not apply to track-V0"};
     ConfigurableAxis confDeltaEtaAxis{"confDeltaEtaAxis", {100, -0.15, 0.15}, "DeltaEta"};
     ConfigurableAxis confDeltaPhiStarAxis{"confDeltaPhiStarAxis", {100, -0.15, 0.15}, "DeltaPhiStar"};
+    Configurable<LabeledArray<double>> confCPRTrackV0Cuts{"confCPRTrackV0Cuts", {cpr_track_v0_cuts::Cuts[0].data(), cpr_track_v0_cuts::NDaughters, cpr_track_v0_cuts::NCutVars, cpr_track_v0_cuts::labelsDaughter, cpr_track_v0_cuts::labelsCutVar}, "Per-daughter CPR DeltaPhi*/DeltaEta cuts for track-V0 (rows: posChild/negChild, cols: dPhiStarMin/dPhiStarMax/dEtaMin/dEtaMax). The track-V0 branch applies an elliptic cut, so only dPhiStarMax/dEtaMax are used. A row left at all zeros falls back to the scalar confCPRdeltaPhi/dEtaCutMin/Max; when a row is used, all four of its columns apply"};
+    Configurable<LabeledArray<double>> confCPRV0V0Cuts{"confCPRV0V0Cuts", {cpr_v0_v0_cuts::Cuts[0].data(), cpr_v0_v0_cuts::NPairs, cpr_v0_v0_cuts::NCutVars, cpr_v0_v0_cuts::labelsPair, cpr_v0_v0_cuts::labelsCutVar}, "Per-pair CPR DeltaPhi*/DeltaEta cuts for V0-V0 (rows: pos-pos/neg-neg, cols: dPhiStarMin/dPhiStarMax/dEtaMin/dEtaMax). All columns are used for the rectangular cut (confRectV0V0CPR=true); only dPhiStarMax/dEtaMax for the elliptic cut. A row left at all zeros falls back to the scalar confCPRdeltaPhi/dEtaCutMin/Max; when a row is used, all four of its columns apply"};
   } ConfCPR;
 
   // Efficiency
@@ -457,7 +460,9 @@ struct FemtoUniversePairTaskTrackV0Extended {
     pairCleanerV0.init(&qaRegistry);
     if (ConfCPR.confIsCPR.value) {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPR.confDeltaEtaAxis, ConfCPR.confDeltaPhiStarAxis, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
+      pairCloseRejection.setCPRCuts(ConfCPR.confCPRTrackV0Cuts.value);
       pairCloseRejectionV0.init(&resultRegistry, &qaRegistry, ConfCPR.confDeltaEtaAxis, ConfCPR.confDeltaPhiStarAxis, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
+      pairCloseRejectionV0.setCPRCuts(ConfCPR.confCPRV0V0Cuts.value);
     }
 
     if (!ccdbEffLoader.confLocalEfficiency.value.empty()) {
@@ -1496,7 +1501,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
   void processMCTruth(aod::FDParticles const& parts)
   {
     for (const auto& part : parts) {
-      if (part.partType() != uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) {
+      if (part.partType() != static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) {
         continue;
       }
 

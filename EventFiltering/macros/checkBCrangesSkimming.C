@@ -46,8 +46,8 @@ struct bcTuple {
 };
 
 struct selectedFrames : public IRFrame {
-  selectedFrames(ULong64_t bcAO2D, ULong64_t bcEvSel, const IRFrame& frame) : IRFrame(frame), bcAO2D(bcAO2D), bcEvSel(bcEvSel), triMask{0, 0}, selMask{0, 0} {}
-  selectedFrames(ULong64_t bcAO2D, ULong64_t bcEvSel, ULong64_t triMask[2], ULong64_t selMask[2], const IRFrame& frame) : IRFrame(frame), bcAO2D(bcAO2D), bcEvSel(bcEvSel), triMask{triMask[0], triMask[1]}, selMask{selMask[0], selMask[1]} {}
+  selectedFrames(ULong64_t bcAO2D, ULong64_t bcEvSel, const IRFrame& frame) : IRFrame(frame), triMask{0, 0}, selMask{0, 0}, bcAO2D(bcAO2D), bcEvSel(bcEvSel) {}
+  selectedFrames(ULong64_t bcAO2D, ULong64_t bcEvSel, ULong64_t triMask[2], ULong64_t selMask[2], const IRFrame& frame) : IRFrame(frame), triMask{triMask[0], triMask[1]}, selMask{selMask[0], selMask[1]}, bcAO2D(bcAO2D), bcEvSel(bcEvSel) {}
   ULong64_t triMask[2]{0ull}, selMask[2]{0ull}, bcAO2D, bcEvSel;
   int numSameTriggerInNearbyBCs = 0; // related to bcDiffTolerance
   bool isSingle() { return numSameTriggerInNearbyBCs == 0; }
@@ -447,7 +447,7 @@ void checkBCrangesSkimming(std::string AnaFileName = "AnalysisResults.root", std
     }
 
     // Check BC differences
-    int npair{0}, npairedBCAO2D{0}, npairedBCEvSel{0}, ncloseskimmed{0}, maxdeltaBCAO2D{0}, maxdeltaBCEvSel{0};
+    int npair{0}, npairedBCAO2D{0}, npairedBCEvSel{0}, ncloseskimmed{0}; //, maxdeltaBCAO2D{0}, maxdeltaBCEvSel{0}; // FIXME: unused
     int firstTrg = 0;
     for (int i = 0; i < originalFrames.size(); i++) {
       auto& frame = originalFrames[i];

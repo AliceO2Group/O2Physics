@@ -297,9 +297,9 @@ struct femtoDreamProducerReducedTask {
 
       if (ConfIsDebug) {
         outputDebugParts(track.sign(),
-                         (uint8_t)track.tpcNClsFound(),
+                         static_cast<uint8_t>(track.tpcNClsFound()),
                          track.tpcNClsFindable(),
-                         (uint8_t)track.tpcNClsCrossedRows(),
+                         static_cast<uint8_t>(track.tpcNClsCrossedRows()),
                          track.tpcNClsShared(),
                          track.tpcInnerParam(),
                          track.itsNCls(),

@@ -174,20 +174,20 @@ struct BuilderModule {
   coreConfigurables baseOpts;
 
   TList* MCCentralityCalibObjects = nullptr;
-  TH1D* h1dFV0A = nullptr;
-  TH1D* h1dFT0M = nullptr;
-  TH1D* h1dFT0A = nullptr;
-  TH1D* h1dFT0C = nullptr;
-  TH1D* h1dFT0CVariant1 = nullptr;
-  TH1D* h1dFT0CVariant2 = nullptr;
-  TH1D* h1dFDDM = nullptr;
-  TH1D* h1dNTPV = nullptr;
-  TH1D* h1dNGlobal = nullptr;
-  TH1D* h1dMFT = nullptr;
+  TH1* h1dFV0A = nullptr;
+  TH1* h1dFT0M = nullptr;
+  TH1* h1dFT0A = nullptr;
+  TH1* h1dFT0C = nullptr;
+  TH1* h1dFT0CVariant1 = nullptr;
+  TH1* h1dFT0CVariant2 = nullptr;
+  TH1* h1dFDDM = nullptr;
+  TH1* h1dNTPV = nullptr;
+  TH1* h1dNGlobal = nullptr;
+  TH1* h1dMFT = nullptr;
 
   // Calibration objects for candidate-by-candidate sampling (assignCentralityPerCandidate):
   // x = centrality (%) of the matched reconstructed MC collision, y = generated multiplicity (|eta| < 0.5)
-  std::vector<TH2D*> h2dCentVsGenMult;
+  std::vector<TH2*> h2dCentVsGenMult;
   TRandom3 fRandomSampler;
 
   // QA of the on-the-fly calibration (recalibrateCentrality): mean <N_PV>_{|eta|<0.5} in data and MC
@@ -229,7 +229,7 @@ struct BuilderModule {
   // sampled percentile vs the generated multiplicity (|eta| < 0.5) actually used to key the sampling, so
   // it can be visually compared against the input calibration (hGenMultEta05VsCentrality<estimator>) to
   // check that the sampled distribution reproduces the expected P(centrality|genMult). This is a plain
-  // TH2D (not a TProfile): unlike the calibration QA above, it stores a distribution to look at, not a
+  // TH2 (not a TProfile): unlike the calibration QA above, it stores a distribution to look at, not a
   // mean to merge, so ordinary bin-content-sum merging across grid jobs is exactly what's wanted here.
   template <typename THistoRegistry>
   void registerCandidateQAHistos(THistoRegistry& histos, const char* name)
@@ -377,9 +377,9 @@ struct BuilderModule {
   THist* getHist(const char* name)
   {
     if (!this->MCCentralityCalibObjects) {
-      return (THist*)0x0;
+      return nullptr;
     }
-    auto hist = reinterpret_cast<THist*>(this->MCCentralityCalibObjects->FindObject(name));
+    auto hist = dynamic_cast<THist*>(this->MCCentralityCalibObjects->FindObject(name));
     if (!hist) {
       if (this->baseOpts.verbose) {
         this->MCCentralityCalibObjects->ls();
@@ -393,7 +393,7 @@ struct BuilderModule {
     return hist;
   }
 
-  TH1D* extractCentralityCalibration(int idx, const char* name, bool reverse = false)
+  TH1* extractCentralityCalibration(int idx, const char* name, bool reverse = false)
   {
 
     auto CalibMC = [&](TString const& estimator) {
@@ -403,10 +403,10 @@ struct BuilderModule {
       std::vector<double> epercentile_center(nCentBins);
 
       // Histograms
-      TH2D* h2dMultVsCent_Data = getHist<TH2D>(Form("hMultEta05VsCent%s_Data", estimator.Data()));
-      TH2D* h2dMultRecoVsMultGen_MC = getHist<TH2D>(Form("hMultEta05VsGenMult%s", estimator.Data()));
+      TH2* h2dMultVsCent_Data = getHist<TH2>(Form("hMultEta05VsCent%s_Data", estimator.Data()));
+      TH2* h2dMultRecoVsMultGen_MC = getHist<TH2>(Form("hMultEta05VsGenMult%s", estimator.Data()));
       if (!h2dMultVsCent_Data || !h2dMultRecoVsMultGen_MC) {
-        return (TH1D*)0x0;
+        return static_cast<TH1*>(nullptr);
       }
 
       // QA of this on-the-fly calibration: mean <N_PV>_{|eta|<0.5} in data/MC per centrality class,
@@ -416,7 +416,7 @@ struct BuilderModule {
       TProfile* hPVData = hCalibPVData[idx].get();
       TProfile* hPVMC = hCalibPVMC[idx].get();
 
-      TH1D* h1dCalib = h2dMultRecoVsMultGen_MC->ProjectionX(Form("h1d%s", estimator.Data()), 1, h2dMultRecoVsMultGen_MC->GetNbinsX());
+      TH1* h1dCalib = h2dMultRecoVsMultGen_MC->ProjectionX(Form("h1d%s", estimator.Data()), 1, h2dMultRecoVsMultGen_MC->GetNbinsX());
       h1dCalib->Reset();
       h1dCalib->SetTitle(Form("%s calibration object", estimator.Data()));
       h1dCalib->GetXaxis()->SetTitle(Form("#it{N}_{%s, gen.}", estimator.Data()));
@@ -438,8 +438,8 @@ struct BuilderModule {
         for (int i = 0; i < nCentBins; i++) { // Loop over centrality bins
           // start from the end (from the high multiplicity collisions)
           int irev = i;
-          TH1D* projData = h2dMultVsCent_Data->ProjectionY(Form("projData_%d", i), h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev] + 1e-5),
-                                                           h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev + 1] - 1e-5));
+          TH1* projData = h2dMultVsCent_Data->ProjectionY(Form("projData_%d", i), h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev] + 1e-5),
+                                                          h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev + 1] - 1e-5));
 
           double meanMult_Data = projData->GetMean();
 
@@ -448,7 +448,7 @@ struct BuilderModule {
           int endBinMc = startBinMc;
           for (int j = startBinMc - 1; j >= 1; j--) {
             // Loop over MC bins
-            TH1D* projMC = h2dMultRecoVsMultGen_MC->ProjectionY("", j, startBinMc);
+            TH1* projMC = h2dMultRecoVsMultGen_MC->ProjectionY("", j, startBinMc);
             int nEntries = projMC->Integral();
             double meanMC = projMC->GetMean();
             double ldiff = std::abs(meanMC - meanMult_Data);
@@ -469,7 +469,7 @@ struct BuilderModule {
             endBinMc = 1;
           }
 
-          TH1D* projMC = h2dMultRecoVsMultGen_MC->ProjectionY(Form("projMC_%d", i), endBinMc, startBinMc);
+          TH1* projMC = h2dMultRecoVsMultGen_MC->ProjectionY(Form("projMC_%d", i), endBinMc, startBinMc);
 
           // Refill the per-class mean from the underlying (data/MC) multiplicity distributions, bin by
           // bin, so the TProfile accumulates real sum(w)/sum(wy)/sum(wy^2) rather than a precomputed mean.
@@ -511,8 +511,8 @@ struct BuilderModule {
         for (int i = 0; i < nCentBins; i++) { // Loop over centrality bins
           // start from the end (from the low multiplicity collisions)
           int irev = nCentBins - i;
-          TH1D* projData = h2dMultVsCent_Data->ProjectionY(Form("projData_%d", i), h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev - 1] + 1e-5),
-                                                           h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev] - 1e-5));
+          TH1* projData = h2dMultVsCent_Data->ProjectionY(Form("projData_%d", i), h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev - 1] + 1e-5),
+                                                          h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev] - 1e-5));
 
           double meanMult_Data = projData->GetMean();
 
@@ -521,7 +521,7 @@ struct BuilderModule {
           int endBinMc = h1dCalib->GetNbinsX();
           for (int j = startBinMc + 1; j <= h1dCalib->GetNbinsX(); j++) {
             // Loop over MC bins
-            TH1D* projMC = h2dMultRecoVsMultGen_MC->ProjectionY("", startBinMc, j);
+            TH1* projMC = h2dMultRecoVsMultGen_MC->ProjectionY("", startBinMc, j);
             int nEntries = projMC->Integral();
             double meanMC = projMC->GetMean();
             double ldiff = std::abs(meanMC - meanMult_Data);
@@ -542,7 +542,7 @@ struct BuilderModule {
             endBinMc = h2dMultRecoVsMultGen_MC->GetNbinsX();
           }
 
-          TH1D* projMC = h2dMultRecoVsMultGen_MC->ProjectionY(Form("projMC_%d", i), startBinMc, endBinMc);
+          TH1* projMC = h2dMultRecoVsMultGen_MC->ProjectionY(Form("projMC_%d", i), startBinMc, endBinMc);
 
           // Refill the per-class mean from the underlying (data/MC) multiplicity distributions, bin by
           // bin, so the TProfile accumulates real sum(w)/sum(wy)/sum(wy^2) rather than a precomputed mean.
@@ -586,7 +586,7 @@ struct BuilderModule {
 
   // Loads the calibration object(s) for a single estimator: either the class-averaged TH1D (statistical
   // assignment) or, in candidate-by-candidate mode, the raw joint TH2D used to sample P(centrality|genMult).
-  void loadEstimatorCalibration(int idx, const char* name, TH1D*& h1dOut)
+  void loadEstimatorCalibration(int idx, const char* name, TH1*& h1dOut)
   {
     if (!baseOpts.mEnabledTables[idx]) {
       return;
@@ -595,10 +595,10 @@ struct BuilderModule {
       // x = reco centrality of the matched MC collision, y = generated multiplicity (|eta| < 0.5)
       // filled directly by the calibration-producing task (e.g. centralityQa.cxx); used as-is, no
       // mean-matching required since it is already a genuine joint distribution.
-      h2dCentVsGenMult[idx] = getHist<TH2D>(Form("hGenMultEta05VsCentrality%s", name));
+      h2dCentVsGenMult[idx] = getHist<TH2>(Form("hGenMultEta05VsCentrality%s", name));
       return;
     }
-    h1dOut = baseOpts.recalibrateCentrality ? extractCentralityCalibration(idx, name, baseOpts.recalibrateMode) : getHist<TH1D>(Form("h1d%s", name));
+    h1dOut = baseOpts.recalibrateCentrality ? extractCentralityCalibration(idx, name, baseOpts.recalibrateMode) : getHist<TH1>(Form("h1d%s", name));
   }
 
   template <typename TCCDB, typename TBCs>
@@ -691,7 +691,7 @@ struct BuilderModule {
       const double nFT0M = nFT0A + nFT0C;
       const double nFDDM = nFDDA + nFDDC;
 
-      auto populateTable = [&](auto& table, TH1D* h1dMultCalib, TH2D* h2dCentCalib, double multiplicity, auto tableIndex) {
+      auto populateTable = [&](auto& table, TH1* h1dMultCalib, TH2* h2dCentCalib, double multiplicity, auto tableIndex) {
         double percentile = 105.0f;
         if (baseOpts.mEnabledTables[tableIndex]) {
           if (baseOpts.assignCentralityPerCandidate && h2dCentCalib) {
@@ -699,7 +699,7 @@ struct BuilderModule {
             // y-bin (generated mult |eta|<0.5) matching this collision and draw from that 1-D distribution.
             fRandomSampler.SetSeed(computeSamplingSeed(mcCollisionCounter, tableIndex.value));
             int yBin = h2dCentCalib->GetYaxis()->FindBin(nGenMultEta05);
-            std::unique_ptr<TH1D> pdf{h2dCentCalib->ProjectionX(Form("pdfCent_%d", tableIndex.value), yBin, yBin)};
+            std::unique_ptr<TH1> pdf{h2dCentCalib->ProjectionX(Form("pdfCent_%d", tableIndex.value), yBin, yBin)};
             if (pdf->Integral() > 0) {
               percentile = pdf->GetRandom(&fRandomSampler);
             }

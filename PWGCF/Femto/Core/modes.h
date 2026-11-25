@@ -282,5 +282,22 @@ enum class KinematicVariable : o2::analysis::femto::datatypes::KinematicVariable
   kKinematicVariableLast = 4
 };
 
+/// axis title for the kinematic variable plotted by CPR / pair- and triplet-cleaner QA histograms
+constexpr const char* kinematicVariableToAxisTitle(KinematicVariable type)
+{
+  switch (type) {
+    case KinematicVariable::kKstar:
+      return "k* (GeV/#it{c})";
+    case KinematicVariable::kKt:
+      return "k_{T} (GeV/#it{c})";
+    case KinematicVariable::kMt:
+      return "m_{T} (GeV/#it{c}^{2})";
+    case KinematicVariable::kQ3:
+      return "Q_{3} (GeV/#it{c})";
+    default:
+      return "kinematic variable (GeV/#it{c})";
+  }
+}
+
 }; // namespace o2::analysis::femto::modes
 #endif // PWGCF_FEMTO_CORE_MODES_H_

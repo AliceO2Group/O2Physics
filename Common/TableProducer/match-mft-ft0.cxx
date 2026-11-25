@@ -367,7 +367,7 @@ struct matchmftft0 {
 
         auto ft0s = bc.ft0s();
         i = 0; // reinitialise
-        D = 0.0;
+        // D = 0.0; // FIXME: unused
         minD = 999.9;
         for (auto const& ft0 : ft0s) {
           // printf("---------ft0.bcId %d\n", ft0.bcId());

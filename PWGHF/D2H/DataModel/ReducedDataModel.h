@@ -888,7 +888,8 @@ using HfRedCandLb = soa::Join<HfCandLbExt, HfRedLbProngs>;
 
 namespace hf_cand_mc_flag
 {
-DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t); //! reconstruction level
+DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);     //! reconstruction level
+DECLARE_SOA_COLUMN(IsHadronLeptonSwapped, isHadronLeptonSwapped, bool); //! flag to tag candidates with swapped hypotheses between leptons and hadrons
 }
 
 namespace hf_b0_mc
@@ -951,7 +952,8 @@ DECLARE_SOA_TABLE(HfMcRecRedJPK0ss, "AOD", "HFMCRECREDJPK0S", //! Table with rec
                   hf_cand_mc_flag::FlagMcDecayChanRec,
                   hf_cand_mc_flag::FlagWrongCollision,
                   hf_cand_mc_flag::DebugMcRec,
-                  hf_b0_mc::PtMother);
+                  hf_b0_mc::PtMother,
+                  hf_cand_mc_flag::IsHadronLeptonSwapped);
 
 // Table with same size as HFCANDB0
 DECLARE_SOA_TABLE(HfMcRecRedB0s, "AOD", "HFMCRECREDB0", //! Reconstruction-level MC information on B0 candidates for reduced workflow
@@ -1041,7 +1043,8 @@ DECLARE_SOA_TABLE(HfMcRecRedJPKs, "AOD", "HFMCRECREDJPK", //! Table with reconst
                   hf_cand_mc_flag::FlagMcDecayChanRec,
                   hf_cand_mc_flag::FlagWrongCollision,
                   hf_cand_mc_flag::DebugMcRec,
-                  hf_bplus_mc::PtMother);
+                  hf_bplus_mc::PtMother,
+                  hf_cand_mc_flag::IsHadronLeptonSwapped);
 
 // DECLARE_SOA_EXTENDED_TABLE_USER(ExTable, Tracks, "EXTABLE",
 DECLARE_SOA_TABLE(HfMcCheckD0Pis, "AOD", "HFMCCHECKD0PI", //! Table with reconstructed MC information on D0Pi(<-B0) pairs for MC checks in reduced workflow
@@ -1143,7 +1146,8 @@ DECLARE_SOA_TABLE(HfMcRecRedJPPhis, "AOD", "HFMCRECREDJPPHI", //! Table with rec
                   hf_cand_mc_flag::FlagMcDecayChanRec,
                   hf_cand_mc_flag::FlagWrongCollision,
                   hf_cand_mc_flag::DebugMcRec,
-                  hf_bs_mc::PtMother);
+                  hf_bs_mc::PtMother,
+                  hf_cand_mc_flag::IsHadronLeptonSwapped);
 
 // try with extended table ?
 // DECLARE_SOA_EXTENDED_TABLE_USER(ExTable, Tracks, "EXTABLE",
@@ -1287,6 +1291,9 @@ DECLARE_SOA_COLUMN(MyInvMassWindowLcPi, myInvMassWindowLcPi, float); //! Half-wi
 DECLARE_SOA_TABLE(HfCandLbConfigs, "AOD", "HFCANDLBCONFIG", //! Table with configurables information for reduced workflow
                   hf_cand_lb_config::MySelectionFlagLc,
                   hf_cand_lb_config::MyInvMassWindowLcPi);
+
+DECLARE_SOA_TABLE(HfMcRecBJpSwaps, "AOD", "HFMCRECBJPSWAP", //! Table with configurables information for reduced workflow
+                  hf_cand_mc_flag::IsHadronLeptonSwapped);
 
 // Charm resonances analysis
 namespace hf_reso_3_prong

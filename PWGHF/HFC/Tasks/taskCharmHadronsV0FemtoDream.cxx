@@ -22,6 +22,7 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 #include "PWGHF/Core/DecayChannels.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -321,13 +322,13 @@ struct HfTaskCharmHadronsV0FemtoDream {
 
   void init(InitContext& /*context*/)
   {
-    std::array<bool, 5> processes = {doprocessDataLcV0, doprocessDataDplusV0, doprocessDataD0V0, doprocessDataDstarV0, doprocessMcDplusV0};
+    std::array<bool, 6> processes = {doprocessDataLcV0, doprocessDataDplusV0, doprocessDataD0V0, doprocessDataDstarV0, doprocessMcDplusV0, doprocessMcDstarV0};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
     bool process3Prong = doprocessDataLcV0 || doprocessDataDplusV0 || doprocessMcDplusV0;
     bool process2Prong = doprocessDataD0V0;
-    bool processDstar = doprocessDataDstarV0;
+    bool processDstar = doprocessDataDstarV0 || doprocessMcDstarV0;
 
     // setup columnpolicy for binning
     colBinningMult = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult}};
@@ -617,7 +618,8 @@ struct HfTaskCharmHadronsV0FemtoDream {
   void fillTables(const CollType& col,
                   const V0Type& sliceV01,
                   const CandType& sliceCharmHad,
-                  const FDParticles& femtoParts)
+                  const FDParticles& femtoParts,
+                  o2::aod::V0Datas const& fullV0s)
   {
     int64_t timeStamp = -999;
 
@@ -707,8 +709,17 @@ struct HfTaskCharmHadronsV0FemtoDream {
       }
       std::vector<int> childIds = {part.childrenIds()[0], part.childrenIds()[1]};
       timeStamp = part.timeStamp();
+
+      int originMcV0 = -1; // MC truth origin of the V0 candidate
+      if constexpr (IsMc) {
+        if (part.has_fdMCParticle()) {
+          originMcV0 = static_cast<int>(part.fdMCParticle().partOriginMCTruth());
+        }
+      }
+
       float tpcNSigma = 999.f;
       float tofNSigma = 999.f;
+      float k0sDcaToPv = -999.f; // DCA of the K0s candidate to the primary vertex
       switch (v0Sel.pdgCodeV0.value) {
         case kLambda0:
           tpcNSigma = posChild.tpcNSigmaPr(); // todo: add neg case
@@ -717,6 +728,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
         case kK0Short:
           tpcNSigma = posChild.tpcNSigmaPi(); // todo: add neg case
           tofNSigma = posChild.tofNSigmaPi(); // todo: add neg case
+          k0sDcaToPv = fullV0s.iteratorAt(part.trackId()).dcav0topv();
           break;
         default:
           LOG(fatal) << "Unhandled PDG code in PID switch: "
@@ -738,7 +750,9 @@ struct HfTaskCharmHadronsV0FemtoDream {
         posChild.tpcNClsFindable(),
         posChild.tpcNClsCrossedRows(),
         tpcNSigma,
-        tofNSigma);
+        tofNSigma,
+        k0sDcaToPv,
+        originMcV0);
     }
 
     // ---- Fill Collision Table ----
@@ -806,7 +820,8 @@ struct HfTaskCharmHadronsV0FemtoDream {
 
   void processDataLcV0(FilteredCollisions const& cols,
                        FDV0Particles const& parts,
-                       FilteredCharmCand3Prongs const& candidates)
+                       FilteredCharmCand3Prongs const& candidates,
+                       o2::aod::V0Datas const& fullV0s)
   {
 
     rowFemtoResultCharm3Prong.reserve(candidates.size() + 1);
@@ -819,14 +834,14 @@ struct HfTaskCharmHadronsV0FemtoDream {
       }
       if (v0Sel.pdgCodeV0 == kLambda0) {
         auto sliceV0 = partitionLambda->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-        fillTables<false, DecayChannel::LcToPKPi>(col, sliceV0, sliceCharmHad, parts);
+        fillTables<false, DecayChannel::LcToPKPi>(col, sliceV0, sliceCharmHad, parts, fullV0s);
         if (sliceCharmHad.size() > 0 && sliceV0.size() > 0) {
           doSameEvent<false, DecayChannel::LcToPKPi, FilteredCharmCand3Prongs>(sliceCharmHad, sliceV0, parts, col);
         }
 
       } else if (v0Sel.pdgCodeV0 == kK0Short) {
         auto sliceV0 = partitionK0Short->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-        fillTables<false, DecayChannel::LcToPKPi>(col, sliceV0, sliceCharmHad, parts);
+        fillTables<false, DecayChannel::LcToPKPi>(col, sliceV0, sliceCharmHad, parts, fullV0s);
 
         if (sliceCharmHad.size() > 0 && sliceV0.size() > 0) {
           doSameEvent<false, DecayChannel::LcToPKPi, FilteredCharmCand3Prongs>(sliceCharmHad, sliceV0, parts, col);
@@ -841,7 +856,8 @@ struct HfTaskCharmHadronsV0FemtoDream {
 
   void processDataDplusV0(FilteredCollisions const& cols,
                           FDV0Particles const& parts,
-                          FilteredCharmCand3Prongs const& candidates)
+                          FilteredCharmCand3Prongs const& candidates,
+                          o2::aod::V0Datas const& fullV0s)
   {
     rowFemtoResultCharm3Prong.reserve(candidates.size() + 1);
 
@@ -853,14 +869,14 @@ struct HfTaskCharmHadronsV0FemtoDream {
       }
       if (v0Sel.pdgCodeV0 == kLambda0) {
         auto sliceV0 = partitionLambda->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-        fillTables<false, DecayChannel::DplusToPiKPi>(col, sliceV0, sliceCharmHad, parts);
+        fillTables<false, DecayChannel::DplusToPiKPi>(col, sliceV0, sliceCharmHad, parts, fullV0s);
         if (sliceCharmHad.size() > 0 && sliceV0.size() > 0) {
           doSameEvent<false, DecayChannel::DplusToPiKPi, FilteredCharmCand3Prongs>(sliceCharmHad, sliceV0, parts, col);
         }
 
       } else if (v0Sel.pdgCodeV0 == kK0Short) {
         auto sliceV0 = partitionK0Short->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-        fillTables<false, DecayChannel::DplusToPiKPi>(col, sliceV0, sliceCharmHad, parts);
+        fillTables<false, DecayChannel::DplusToPiKPi>(col, sliceV0, sliceCharmHad, parts, fullV0s);
 
         if (sliceCharmHad.size() > 0 && sliceV0.size() > 0) {
           doSameEvent<false, DecayChannel::DplusToPiKPi, FilteredCharmCand3Prongs>(sliceCharmHad, sliceV0, parts, col);
@@ -875,7 +891,8 @@ struct HfTaskCharmHadronsV0FemtoDream {
 
   void processDataD0V0(FilteredCollisions const& cols,
                        FDV0Particles const& parts,
-                       FilteredCharmCand2Prongs const& candidates)
+                       FilteredCharmCand2Prongs const& candidates,
+                       o2::aod::V0Datas const& fullV0s)
   {
     rowFemtoResultCharm2Prong.reserve(candidates.size() + 1);
 
@@ -887,14 +904,14 @@ struct HfTaskCharmHadronsV0FemtoDream {
       }
       if (v0Sel.pdgCodeV0 == kLambda0) {
         auto sliceV0 = partitionLambda->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-        fillTables<false, DecayChannel::D0ToPiK>(col, sliceV0, sliceCharmHad, parts);
+        fillTables<false, DecayChannel::D0ToPiK>(col, sliceV0, sliceCharmHad, parts, fullV0s);
         if (sliceCharmHad.size() > 0 && sliceV0.size() > 0) {
           doSameEvent<false, DecayChannel::D0ToPiK, FilteredCharmCand2Prongs>(sliceCharmHad, sliceV0, parts, col);
         }
 
       } else if (v0Sel.pdgCodeV0 == kK0Short) {
         auto sliceV0 = partitionK0Short->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-        fillTables<false, DecayChannel::D0ToPiK>(col, sliceV0, sliceCharmHad, parts);
+        fillTables<false, DecayChannel::D0ToPiK>(col, sliceV0, sliceCharmHad, parts, fullV0s);
 
         if (sliceCharmHad.size() > 0 && sliceV0.size() > 0) {
           doSameEvent<false, DecayChannel::D0ToPiK, FilteredCharmCand2Prongs>(sliceCharmHad, sliceV0, parts, col);
@@ -909,7 +926,8 @@ struct HfTaskCharmHadronsV0FemtoDream {
 
   void processDataDstarV0(FilteredCollisions const& cols,
                           FDV0Particles const& parts,
-                          FilteredCharmCandDstars const& candidates)
+                          FilteredCharmCandDstars const& candidates,
+                          o2::aod::V0Datas const& fullV0s)
   {
 
     rowFemtoResultCharmDstar.reserve(candidates.size() + 1);
@@ -922,14 +940,14 @@ struct HfTaskCharmHadronsV0FemtoDream {
       }
       if (v0Sel.pdgCodeV0 == kLambda0) {
         auto sliceV0 = partitionLambda->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-        fillTables<false, DecayChannel::DstarToD0Pi>(col, sliceV0, sliceCharmHad, parts);
+        fillTables<false, DecayChannel::DstarToD0Pi>(col, sliceV0, sliceCharmHad, parts, fullV0s);
         if (sliceCharmHad.size() > 0 && sliceV0.size() > 0) {
           doSameEvent<false, DecayChannel::DstarToD0Pi, FilteredCharmCandDstars>(sliceCharmHad, sliceV0, parts, col);
         }
 
       } else if (v0Sel.pdgCodeV0 == kK0Short) {
         auto sliceV0 = partitionK0Short->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-        fillTables<false, DecayChannel::DstarToD0Pi>(col, sliceV0, sliceCharmHad, parts);
+        fillTables<false, DecayChannel::DstarToD0Pi>(col, sliceV0, sliceCharmHad, parts, fullV0s);
 
         if (sliceCharmHad.size() > 0 && sliceV0.size() > 0) {
           doSameEvent<false, DecayChannel::DstarToD0Pi, FilteredCharmCandDstars>(sliceCharmHad, sliceV0, parts, col);
@@ -946,7 +964,8 @@ struct HfTaskCharmHadronsV0FemtoDream {
                         FDMcV0Particles const& parts,
                         o2::aod::FDMCParticles const&,
                         o2::aod::FDExtMCParticles const&,
-                        FilteredCharmMcCand3Prongs const&)
+                        FilteredCharmMcCand3Prongs const&,
+                        o2::aod::V0Datas const& fullV0s)
   {
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
@@ -956,14 +975,14 @@ struct HfTaskCharmHadronsV0FemtoDream {
       }
       if (v0Sel.pdgCodeV0 == kLambda0) {
         auto sliceMcV0 = partitionMcLambda->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-        fillTables<true, DecayChannel::DplusToPiKPi>(col, sliceMcV0, sliceMcCharmHad, parts);
+        fillTables<true, DecayChannel::DplusToPiKPi>(col, sliceMcV0, sliceMcCharmHad, parts, fullV0s);
         if (sliceMcCharmHad.size() > 0 && sliceMcV0.size() > 0) {
           doSameEvent<true, DecayChannel::DplusToPiKPi, FilteredCharmMcCand3Prongs>(sliceMcCharmHad, sliceMcV0, parts, col);
         }
 
       } else if (v0Sel.pdgCodeV0 == kK0Short) {
         auto sliceMcV0 = partitionMcK0Short->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-        fillTables<true, DecayChannel::DplusToPiKPi>(col, sliceMcV0, sliceMcCharmHad, parts);
+        fillTables<true, DecayChannel::DplusToPiKPi>(col, sliceMcV0, sliceMcCharmHad, parts, fullV0s);
 
         if (sliceMcCharmHad.size() > 0 && sliceMcV0.size() > 0) {
           doSameEvent<true, DecayChannel::DplusToPiKPi, FilteredCharmMcCand3Prongs>(sliceMcCharmHad, sliceMcV0, parts, col);
@@ -975,6 +994,43 @@ struct HfTaskCharmHadronsV0FemtoDream {
     runMixing<true, DecayChannel::DplusToPiKPi>(cols, parts, partitionMcCharmHadron3Prong);
   }
   PROCESS_SWITCH(HfTaskCharmHadronsV0FemtoDream, processMcDplusV0, "Enable processing DplusToPiKPi and V0 correlation for Monte Carlo", false);
+
+  void processMcDstarV0(FilteredMcCollisions const& cols,
+                        FDMcV0Particles const& parts,
+                        o2::aod::FDMCParticles const&,
+                        o2::aod::FDExtMCParticles const&,
+                        FilteredCharmMcCandDstars const& candidates,
+                        o2::aod::V0Datas const& fullV0s)
+  {
+    rowFemtoResultCharmDstar.reserve(candidates.size() + 1);
+
+    for (const auto& col : cols) {
+      eventHisto.fillQA(col);
+      auto sliceMcCharmHad = partitionMcCharmHadronDstar->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+      if (fillTableWithCharm.value && sliceMcCharmHad.size() == 0) {
+        continue;
+      }
+      if (v0Sel.pdgCodeV0 == kLambda0) {
+        auto sliceMcV0 = partitionMcLambda->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+        fillTables<true, DecayChannel::DstarToD0Pi>(col, sliceMcV0, sliceMcCharmHad, parts, fullV0s);
+        if (sliceMcCharmHad.size() > 0 && sliceMcV0.size() > 0) {
+          doSameEvent<true, DecayChannel::DstarToD0Pi, FilteredCharmMcCandDstars>(sliceMcCharmHad, sliceMcV0, parts, col);
+        }
+
+      } else if (v0Sel.pdgCodeV0 == kK0Short) {
+        auto sliceMcV0 = partitionMcK0Short->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+        fillTables<true, DecayChannel::DstarToD0Pi>(col, sliceMcV0, sliceMcCharmHad, parts, fullV0s);
+
+        if (sliceMcCharmHad.size() > 0 && sliceMcV0.size() > 0) {
+          doSameEvent<true, DecayChannel::DstarToD0Pi, FilteredCharmMcCandDstars>(sliceMcCharmHad, sliceMcV0, parts, col);
+        }
+      } else {
+        LOG(fatal) << "Unsupported V0 PDG: " << v0Sel.pdgCodeV0 << " (allowed: 3122, 310)";
+      }
+    }
+    runMixing<true, DecayChannel::DstarToD0Pi>(cols, parts, partitionMcCharmHadronDstar);
+  }
+  PROCESS_SWITCH(HfTaskCharmHadronsV0FemtoDream, processMcDstarV0, "Enable processing DstarToD0Pi and V0 correlation for Monte Carlo", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
