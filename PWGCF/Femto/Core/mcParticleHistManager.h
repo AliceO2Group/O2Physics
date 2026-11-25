@@ -16,6 +16,7 @@
 #ifndef PWGCF_FEMTO_CORE_MCPARTICLEHISTMANAGER_H_
 #define PWGCF_FEMTO_CORE_MCPARTICLEHISTMANAGER_H_
 
+#include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/histManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 
@@ -52,6 +53,7 @@ enum McParticleHist {
   kMotherEta,
   kMotherPhi,
   kMotherSign,
+  kMotherY,
   // origin (kept in sync with TrackHist, even though some categories
   // are not expected to be populated for pure MC truth particles)
   kOrigin,
@@ -105,6 +107,7 @@ constexpr std::array<histmanager::HistInfo<McParticleHist>, kMcParticleHistLast>
       {kMotherEta, o2::framework::HistType::kTH1F, "hMotherEta", "Mother pseudorapidity; #eta; Entries"},
       {kMotherPhi, o2::framework::HistType::kTH1F, "hMotherPhi", "Mother azimuthal angle; #varphi; Entries"},
       {kMotherSign, o2::framework::HistType::kTH1F, "hMotherSign", "Sign of mother charge; Sign; Entries"},
+      {kMotherY, o2::framework::HistType::kTH1F, "hMotherY", "Mother rapidity; Y; Entries"},
       {kOrigin, o2::framework::HistType::kTH1F, "hOrigin", "Status Codes (=Origin); Status Code; Entries"},
       {kNoMcParticle, o2::framework::HistType::kTH1F, "hNoMcParticle", "Particles with no associated MC information; p_{T} (GeV/#it{c}); Entries"},
       {kPrimary, o2::framework::HistType::kTH1F, "hPrimary", "Primary particles; p_{T} (GeV/#it{c}); Entries"},
@@ -132,6 +135,7 @@ auto makeMcParticleHistSpecMap(const T& confBinning)
     {kMotherEta, {confBinning.eta}},
     {kMotherPhi, {confBinning.phi}},
     {kMotherSign, {confBinning.sign}},
+    {kMotherY, {confBinning.eta}},
     {kNoMcParticle, {confBinning.pt}},
     {kPrimary, {confBinning.pt}},
     {kFromWrongCollision, {confBinning.pt}},
@@ -146,7 +150,12 @@ auto makeMcParticleHistSpecMap(const T& confBinning)
 
 inline constexpr char PrefixMcParticle1[] = "McParticle1/";
 inline constexpr char PrefixMcParticle2[] = "McParticle2/";
-inline constexpr char PrefixMcParticle3[] = "McParticle3/";
+inline constexpr char PrefixMcParticle1Se[] = "McParticle1/SE/";
+inline constexpr char PrefixMcParticle2Se[] = "McParticle2/SE/";
+inline constexpr char PrefixMcParticle3Se[] = "McParticle3/SE/";
+inline constexpr char PrefixMcParticle1Me[] = "McParticle1/ME/";
+inline constexpr char PrefixMcParticle2Me[] = "McParticle2/ME/";
+inline constexpr char PrefixMcParticle3Me[] = "McParticle3/ME/";
 
 constexpr std::string_view McDir = "MC/";
 
@@ -177,6 +186,7 @@ class McParticleHistManager
     mHistogramRegistry->add(mcDir + getHistNameV2(kMotherEta, HistTable), getHistDesc(kMotherEta, HistTable), getHistType(kMotherEta, HistTable), {Specs.at(kMotherEta)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kMotherPhi, HistTable), getHistDesc(kMotherPhi, HistTable), getHistType(kMotherPhi, HistTable), {Specs.at(kMotherPhi)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kMotherSign, HistTable), getHistDesc(kMotherSign, HistTable), getHistType(kMotherSign, HistTable), {Specs.at(kMotherSign)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kMotherY, HistTable), getHistDesc(kMotherY, HistTable), getHistType(kMotherY, HistTable), {Specs.at(kMotherY)});
 
     this->enableOptionalHistograms(confBinning);
     this->initOrigin(Specs);
@@ -199,6 +209,7 @@ class McParticleHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kMotherEta, HistTable)), mother.eta());
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kMotherPhi, HistTable)), mother.phi());
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kMotherSign, HistTable)), mother.sign());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kMotherY, HistTable)), mother.y(utils::getPdgMass(mother.pdgCode())));
     } else {
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
     }
@@ -213,9 +224,10 @@ class McParticleHistManager
     if (mPlotOrigins) {
       // NOTE: kNoMcParticle and kMissidentified are kept here only for enum/histogram
       // symmetry with TrackHist — they describe reco-vs-truth mismatches that cannot
-      // occur for a pure MC-truth particle, so these bins are expected to stay empty
-      // unless the producer assigns those origin codes for some other reason
-      // (e.g. pileup-associated particles tagged as kFromWrongCollision).
+      // occur for a pure MC-truth particle, so these bins are expected to stay empty.
+      // kFromWrongCollision is not handled here at all: mcBuilder.h's getOrigin() never
+      // assigns it (only kPhysicalPrimary/kFromSecondaryDecay/kFromMaterial), so it would
+      // be dead code the same way it was in the per-candidate hist managers.
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), mcParticle.origin());
       switch (static_cast<modes::McOrigin>(mcParticle.origin())) {
         case modes::McOrigin::kNoMcParticle:
@@ -223,9 +235,6 @@ class McParticleHistManager
           break;
         case modes::McOrigin::kPhysicalPrimary:
           mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), mcParticle.pt());
-          break;
-        case modes::McOrigin::kFromWrongCollision:
-          mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), mcParticle.pt());
           break;
         case modes::McOrigin::kFromMaterial:
           mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), mcParticle.pt());

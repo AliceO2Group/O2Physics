@@ -65,6 +65,7 @@ struct JetFinderHFHFBarTask {
   o2::framework::Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   o2::framework::Configurable<bool> skipMBGapEvents{"skipMBGapEvents", true, "decide to run over MB gap events or not"};
   o2::framework::Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
+  o2::framework::Configurable<bool> isEmbedding{"isEmbedding", false, "running on an embedded dataset"};
 
   // track level configurables
   o2::framework::Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum track pT"};
@@ -131,10 +132,10 @@ struct JetFinderHFHFBarTask {
 
   void init(o2::framework::InitContext const&)
   {
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    particleSelection = static_cast<std::string>(particleSelections);
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    particleSelection = particleSelections;
 
     jetFinder.etaMin = trackEtaMin;
     jetFinder.etaMax = trackEtaMax;
@@ -164,8 +165,8 @@ struct JetFinderHFHFBarTask {
     if (jetEtaMin < -98.0) {
       jetFinder.jetEtaDefault = true;
     }
-    jetFinder.algorithm = static_cast<fastjet::JetAlgorithm>(static_cast<int>(jetAlgorithm));
-    jetFinder.recombScheme = static_cast<fastjet::RecombinationScheme>(static_cast<int>(jetRecombScheme));
+    jetFinder.algorithm = static_cast<fastjet::JetAlgorithm>(jetAlgorithm.value);
+    jetFinder.recombScheme = static_cast<fastjet::RecombinationScheme>(jetRecombScheme.value);
     jetFinder.ghostArea = jetGhostArea;
     jetFinder.ghostRepeatN = ghostRepeat;
     if (DoTriggering) {
@@ -173,7 +174,7 @@ struct JetFinderHFHFBarTask {
     }
     jetFinder.fastjetExtraParam = jetExtraParam;
 
-    auto jetRadiiBins = (std::vector<double>)jetRadius;
+    auto jetRadiiBins = jetRadius.value;
     if (jetRadiiBins.size() > 1) {
       jetRadiiBins.push_back(jetRadiiBins[jetRadiiBins.size() - 1] + (TMath::Abs(jetRadiiBins[jetRadiiBins.size() - 1] - jetRadiiBins[jetRadiiBins.size() - 2])));
     } else {
@@ -191,7 +192,7 @@ struct JetFinderHFHFBarTask {
     registry.add("hJetMCP", "sparse for mcp jets", {o2::framework::HistType::kTHnD, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
   }
 
-  o2::aod::EMCALClusterDefinition clusterDefinition = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
+  o2::aod::EMCALClusterDefinition clusterDefinition = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS);
   o2::framework::expressions::Filter collisionFilter = (nabs(o2::aod::jcollision::posZ) < vertexZCut && o2::aod::jcollision::centFT0M >= centralityMin && o2::aod::jcollision::centFT0M < centralityMax && o2::aod::jcollision::trackOccupancyInTimeRange <= trackOccupancyInTimeRangeMax);
   o2::framework::expressions::Filter mcCollisionFilter = (nabs(o2::aod::jmccollision::posZ) < vertexZCut);
   o2::framework::expressions::Filter trackCuts = (o2::aod::jtrack::pt >= trackPtMin && o2::aod::jtrack::pt < trackPtMax && o2::aod::jtrack::eta >= trackEtaMin && o2::aod::jtrack::eta <= trackEtaMax && o2::aod::jtrack::phi >= trackPhiMin && o2::aod::jtrack::phi <= trackPhiMax && (phiExclusionMin < -998.0 || (o2::aod::jtrack::phi <= phiExclusionMin || o2::aod::jtrack::phi >= phiExclusionMax)));
@@ -244,7 +245,7 @@ struct JetFinderHFHFBarTask {
         return;
       }
     }
-    jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, &candidate);
+    jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, isEmbedding, &candidate);
 
     jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, registry.get<THn>(HIST("hJet")), fillTHnSparse, true);
   }

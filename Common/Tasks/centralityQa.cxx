@@ -332,6 +332,9 @@ struct CentralityQa {
       getHist<TH1>("hBCSelection")->GetXaxis()->SetBinLabel(8, "isFlangeEvent");
       insertHist("hAmpVsChFT0A", "hAmpVsChFT0A;Channel; Amplitude", kTH2D, {{96, -0.5, 95.5}, axisChannelAmplitude});
       insertHist("hAmpVsChFT0C", "hAmpVsChFT0C;Channel; Amplitude", kTH2D, {{112, -0.5, 111.5}, axisChannelAmplitude});
+      insertHist("hAmpVsChFV0A", "hAmpVsChFV0A;Channel; Amplitude", kTH2D, {{48, -0.5, 47.5}, axisChannelAmplitude});
+      insertHist("hAmpVsChFDDA", "hAmpVsChFDDA;Channel; Amplitude", kTH2D, {{8, -0.5, 7.5}, axisChannelAmplitude});
+      insertHist("hAmpVsChFDDC", "hAmpVsChFDDC;Channel; Amplitude", kTH2D, {{8, -0.5, 7.5}, axisChannelAmplitude});
     }
 
     histos.print();
@@ -883,7 +886,7 @@ struct CentralityQa {
   }
 
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
-  void processBunchCrossings(soa::Join<BCsWithRun3Matchings, aod::BCFlags, aod::BcSels>::iterator const& bc, aod::FT0s const&, aod::FV0As const&)
+  void processBunchCrossings(soa::Join<BCsWithRun3Matchings, aod::BCFlags, aod::BcSels>::iterator const& bc, aod::FT0s const&, aod::FV0As const&, aod::FDDs const&)
   {
     if (!isBunchCrossingAccepted(bc, true)) {
       return;
@@ -897,6 +900,24 @@ struct CentralityQa {
 
       for (size_t ii{0}; ii < ft0.channelC().size(); ++ii) {
         histos.fill(HIST("hAmpVsChFT0C"), ft0.channelC()[ii], ft0.amplitudeC()[ii]);
+      }
+    }
+
+    if (bc.has_fv0a()) {
+      const auto& fv0a = bc.fv0a();
+      for (size_t ii{0}; ii < fv0a.channel().size(); ++ii) {
+        histos.fill(HIST("hAmpVsChFV0A"), fv0a.channel()[ii], fv0a.amplitude()[ii]);
+      }
+    }
+
+    if (bc.has_fdd()) {
+      const auto& fdd = bc.fdd();
+      for (size_t ii{0}; ii < std::size(fdd.chargeA()); ++ii) {
+        histos.fill(HIST("hAmpVsChFDDA"), ii, fdd.chargeA()[ii]);
+      }
+
+      for (size_t ii{0}; ii < std::size(fdd.chargeC()); ++ii) {
+        histos.fill(HIST("hAmpVsChFDDC"), ii, fdd.chargeC()[ii]);
       }
     }
   }

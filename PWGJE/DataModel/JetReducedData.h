@@ -374,6 +374,9 @@ DECLARE_SOA_COLUMN(E, e, float);
 DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
 DECLARE_SOA_COLUMN(StatusCode, statusCode, int);
 DECLARE_SOA_COLUMN(Flags, flags, uint8_t);
+DECLARE_SOA_COLUMN(Vx, vx, float);
+DECLARE_SOA_COLUMN(Vy, vy, float);
+DECLARE_SOA_COLUMN(Vz, vz, float);
 
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);
 DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters);
@@ -415,6 +418,9 @@ DECLARE_SOA_TABLE_STAGED(JMcParticles, "JMCPARTICLE",
                          jmcparticle::PdgCode,
                          jmcparticle::StatusCode,
                          jmcparticle::Flags,
+                         jmcparticle::Vx,
+                         jmcparticle::Vy,
+                         jmcparticle::Vz,
                          jmcparticle::MothersIds,
                          jmcparticle::DaughtersIdSlice,
                          jmcparticle::Px<jmcparticle::Pt, jmcparticle::Phi>,

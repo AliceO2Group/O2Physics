@@ -19,7 +19,6 @@
 
 #include "Common/Core/TableHelper.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 
@@ -41,15 +40,15 @@ void GeometryContainer::init(o2::framework::InitContext& initContext)
   }
   LOG(info) << "Size of detector configuration: " << detectorConfiguration.size();
 
-  bool cleanLutWhenLoaded;
-  const bool foundCleanLutWhenLoaded = common::core::getTaskOptionValue(initContext, "on-the-fly-detector-geometry-provider", "cleanLutWhenLoaded", cleanLutWhenLoaded, false);
+  bool cleanLut;
+  const bool foundCleanLutWhenLoaded = common::core::getTaskOptionValue(initContext, "on-the-fly-detector-geometry-provider", "cleanLutWhenLoaded", cleanLut, false);
   if (!foundCleanLutWhenLoaded) {
     LOG(fatal) << "Could not retrieve foundCleanLutWhenLoaded option from OnTheFlyDetectorGeometryProvider task.";
     return;
   }
-  setLutCleanupSetting(cleanLutWhenLoaded);
+  setLutCleanupSetting(cleanLut);
 
-  for (std::string& configFile : detectorConfiguration) {
+  for (const std::string& configFile : detectorConfiguration) {
     LOG(info) << "Detector geometry configuration file used: " << configFile;
     addEntry(configFile);
   }

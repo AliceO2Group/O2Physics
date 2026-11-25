@@ -360,7 +360,7 @@ struct TrackTypes {
       }
       for (auto ii = 0; ii < nTypes; ii++) {
         if ((fwdtrack.trackType() & (1 << ii)) > 0) {
-          registry.get<TH2>(HIST("FwdType"))->Fill((Double_t)(ii + 2), 0., 1.);
+          registry.get<TH2>(HIST("FwdType"))->Fill(static_cast<Double_t>(ii + 2), 0., 1.);
         }
       }
     }

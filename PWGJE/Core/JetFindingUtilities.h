@@ -24,12 +24,14 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 
 #include <THn.h>
+#include <TParticlePDG.h>
 
 #include <fastjet/ClusterSequenceArea.hh>
 #include <fastjet/PseudoJet.hh>
@@ -38,10 +40,7 @@
 #include <memory>
 #include <string>
 #include <type_traits>
-#include <utility>
 #include <vector>
-
-#include <math.h>
 
 namespace jetfindingutilities
 {
@@ -91,10 +90,10 @@ constexpr bool isEMCALClusterTable()
  */
 
 template <typename T, typename U>
-bool isTrackSelected(T const& track, int trackSelection, const U* candidate = nullptr)
+bool isTrackSelected(T const& track, int trackSelection, bool rejectNonEmbedded = false, const U* candidate = nullptr)
 {
 
-  if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+  if (!jetderiveddatautilities::selectTrack(track, trackSelection, rejectNonEmbedded)) {
     return false;
   }
   if (candidate != nullptr) {
@@ -115,10 +114,10 @@ bool isTrackSelected(T const& track, int trackSelection, const U* candidate = nu
  */
 
 template <typename T, typename U>
-void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, const U* candidate = nullptr)
+void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, bool rejectNonEmbedded = false, const U* candidate = nullptr)
 {
   for (auto& track : tracks) {
-    if (isTrackSelected(track, trackSelection, candidate)) {
+    if (isTrackSelected(track, trackSelection, rejectNonEmbedded, candidate)) {
       fastjetutilities::fillTracks(track, inputParticles, track.globalIndex());
     }
   }
@@ -134,11 +133,11 @@ void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tra
  */
 
 template <typename T, typename U>
-void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, U const& candidates)
+void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, bool rejectNonEmbedded, U const& candidates)
 {
   for (auto& track : tracks) {
     bool isSelected = true;
-    if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+    if (!jetderiveddatautilities::selectTrack(track, trackSelection, rejectNonEmbedded)) {
       continue;
     }
     for (auto& candidate : candidates) {
@@ -239,6 +238,9 @@ bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, f
   int nSelectedV0s = 0;
   for (auto const& v0 : v0s) {
     if constexpr (jetv0utilities::isV0McTable<T>()) {
+      if (!v0.isPhysicalPrimary()) {
+        continue;
+      }
       v0Mass = v0.m();
       v0Y = v0.y();
     } else {
@@ -284,17 +286,16 @@ bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, f
  * @param doHFJetFinding set whether only jets containing a HF candidate are saved
  */
 template <typename T, typename U, typename V>
-void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputParticles, float jetPtMin, float jetPtMax, std::vector<double> jetRadius, float jetAreaFractionMin, T const& collision, U& jetsTable, V& constituentsTable, const std::shared_ptr<THn>& thnSparseJet, bool fillThnSparse, bool doCandidateJetFinding = false)
+void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet> const& inputParticles, float jetPtMin, float jetPtMax, std::vector<double> const& jetRadius, float jetAreaFractionMin, T const& collision, U& jetsTable, V& constituentsTable, const std::shared_ptr<THn>& thnSparseJet, bool fillThnSparse, bool doCandidateJetFinding = false)
 {
-  auto jetRValues = static_cast<std::vector<double>>(std::move(jetRadius));
   jetFinder.jetPtMin = jetPtMin;
   jetFinder.jetPtMax = jetPtMax;
-  for (auto R : jetRValues) {
+  for (auto R : jetRadius) {
     jetFinder.jetR = R;
     std::vector<fastjet::PseudoJet> jets;
     fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
     for (const auto& jet : jets) {
-      if (jet.has_area() && jet.area() < jetAreaFractionMin * M_PI * R * R) {
+      if (jet.has_area() && jet.area() < jetAreaFractionMin * o2::constants::math::PI * R * R) {
         continue;
       }
       if (fillThnSparse) {
@@ -335,6 +336,49 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
 }
 
 /**
+ * Applies the particle status and charge selections shared by jet finding and background QA.
+ * Kinematic acceptance cuts are applied to the input particle table separately.
+ */
+template <typename T, typename U>
+bool isParticleSelected(T const& particle, const std::string& particleSelection, int jetTypeParticleLevel, U const& pdgDatabase, TParticlePDG const*& pdgParticle)
+{
+  if (particleSelection == "PhysicalPrimary" && !particle.isPhysicalPrimary()) {
+    return false;
+  } else if (particleSelection == "HepMCStatus" && particle.getHepMCStatusCode() != 1) {
+    return false;
+  } else if (particleSelection == "GenStatus" && particle.getGenStatusCode() != 1) {
+    return false;
+  } else if (particleSelection == "PhysicalPrimaryAndHepMCStatus" && (!particle.isPhysicalPrimary() || particle.getHepMCStatusCode() != 1)) {
+    return false;
+  }
+  if (std::isinf(particle.eta())) {
+    return false;
+  }
+  pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
+  if (pdgParticle == nullptr) {
+    return false;
+  }
+  auto pdgCharge = std::abs(pdgParticle->Charge());
+  if (jetTypeParticleLevel == static_cast<int>(JetType::charged) && pdgCharge < 3.0) {
+    return false;
+  }
+  if (jetTypeParticleLevel == static_cast<int>(JetType::neutral) && pdgCharge != 0.0) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Overload of isParticleSelected without the pdgParticle output parameter.
+ */
+template <typename T, typename U>
+bool isParticleSelected(T const& particle, const std::string& particleSelection, int jetTypeParticleLevel, U const& pdgDatabase)
+{
+  TParticlePDG const* pdgParticle = nullptr;
+  return isParticleSelected(particle, particleSelection, jetTypeParticleLevel, pdgDatabase, pdgParticle);
+}
+
+/**
  * Adds particles to a fastjet inputParticles list
  *
  * @param inputParticles fastjet container
@@ -348,24 +392,8 @@ template <bool checkIsDaughter, typename T, typename U>
 void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, const std::string& particleSelection, int jetTypeParticleLevel, T const& particles, o2::framework::Service<o2::framework::O2DatabasePDG> pdgDatabase, const U* candidate = nullptr)
 {
   for (auto& particle : particles) {
-    if (particleSelection == "PhysicalPrimary" && !particle.isPhysicalPrimary()) { // CHECK : Does this exclude the HF hadron?
-      continue;
-    } else if (particleSelection == "HepMCStatus" && particle.getHepMCStatusCode() != 1) { // do we need isPhysicalPrimary as well? Note: Might give unforseen results if the generator isnt PYTHIA
-      continue;
-    } else if (particleSelection == "GenStatus" && particle.getGenStatusCode() != 1) {
-      continue;
-    } else if (particleSelection == "PhysicalPrimaryAndHepMCStatus" && (!particle.isPhysicalPrimary() || particle.getHepMCStatusCode() != 1)) {
-      continue;
-    }
-    if (std::isinf(particle.eta())) {
-      continue;
-    }
-    auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
-    auto pdgCharge = pdgParticle ? std::abs(pdgParticle->Charge()) : -1.0;
-    if (jetTypeParticleLevel == static_cast<int>(JetType::charged) && pdgCharge < 3.0) {
-      continue;
-    }
-    if (jetTypeParticleLevel == static_cast<int>(JetType::neutral) && pdgCharge != 0.0) {
+    TParticlePDG const* pdgParticle = nullptr;
+    if (!isParticleSelected(particle, particleSelection, jetTypeParticleLevel, pdgDatabase, pdgParticle)) {
       continue;
     }
     if constexpr (jetcandidateutilities::isMcCandidate<U>() && !jetv0utilities::isV0McCandidate<U>()) {

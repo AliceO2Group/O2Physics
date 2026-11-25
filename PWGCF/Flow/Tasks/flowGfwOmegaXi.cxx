@@ -238,7 +238,7 @@ struct FlowGfwOmegaXi {
   AxisSpec axisMultiplicity{{0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksExtra, TracksPID, aod::TracksIU, aod::TracksDCA>>; // tracks filter
@@ -767,8 +767,9 @@ struct FlowGfwOmegaXi {
   }
 
   // input HIST("name")
-  template <char... chars>
-  void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfile(const GFW::CorrConfig& corrconf, const TName& tarName, const double& cent)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -799,8 +800,9 @@ struct FlowGfwOmegaXi {
     return;
   }
 
-  template <char... chars>
-  void fillProfilepT(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const int& ptbin, const double& cent)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfilepT(const GFW::CorrConfig& corrconf, const TName& tarName, const int& ptbin, const double& cent)
   {
     float dnx = 0;
     float val = 0;
@@ -814,8 +816,9 @@ struct FlowGfwOmegaXi {
     return;
   }
 
-  template <char... chars>
-  void fillProfilepTMC(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const int& ptbin, const int& PDGCode, const double& cent)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfilepTMC(const GFW::CorrConfig& corrconf, const TName& tarName, const int& ptbin, const int& PDGCode, const double& cent)
   {
     TAxis* fpt = nullptr;
     if (PDGCode == kXiMinus) {
@@ -843,8 +846,9 @@ struct FlowGfwOmegaXi {
   }
 
   // input HIST("name")
-  template <char... chars>
-  void fillProfilepTMass(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const int& ptbin, const int& PDGCode, const float& cent)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfilepTMass(const GFW::CorrConfig& corrconf, const TName& tarName, const int& ptbin, const int& PDGCode, const float& cent)
   {
     int nMassBins = 0;
     int nptbins = 0;

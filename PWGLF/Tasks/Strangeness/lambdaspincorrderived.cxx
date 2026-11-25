@@ -59,6 +59,66 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
+// Compute the competing mass under the K0s (pi+, pi-) hypothesis.
+template <typename T>
+static double getK0sCompetingMass(T const& v0)
+{
+  const ROOT::Math::PtEtaPhiMVector lambda(
+    v0.lambdaPt(), v0.lambdaEta(), v0.lambdaPhi(), v0.lambdaMass());
+
+  const ROOT::Math::PtEtaPhiMVector posDaugh(
+    v0.protonPt(), v0.protonEta(), v0.protonPhi(),
+    o2::constants::physics::MassProton);
+
+  const auto negDaugh = lambda - posDaugh;
+
+  const ROOT::Math::PtEtaPhiMVector pi1(
+    posDaugh.Pt(), posDaugh.Eta(), posDaugh.Phi(),
+    o2::constants::physics::MassPionCharged);
+
+  const ROOT::Math::PtEtaPhiMVector pi2(
+    negDaugh.Pt(), negDaugh.Eta(), negDaugh.Phi(),
+    o2::constants::physics::MassPionCharged);
+
+  return (pi1 + pi2).M();
+}
+
+template <typename Container, typename SelectionFunc>
+static std::vector<int64_t> getCleanCandidateIndices(
+  const Container& candidates,
+  SelectionFunc&& passSelection)
+{
+  std::vector<int64_t> selected;
+  selected.reserve(candidates.size());
+
+  for (auto const& c : candidates) {
+    if (passSelection(c)) {
+      selected.push_back(c.globalIndex());
+    }
+  }
+
+  std::vector<bool> dirty(selected.size(), false);
+  for (size_t i = 0; i < selected.size(); ++i) {
+    for (size_t j = i + 1; j < selected.size(); ++j) {
+      auto a = candidates.iteratorAt(selected[i]);
+      auto b = candidates.iteratorAt(selected[j]);
+      if (hasSharedDaughters(a, b)) {
+        dirty[i] = true;
+        dirty[j] = true;
+      }
+    }
+  }
+
+  std::vector<int64_t> clean;
+  clean.reserve(selected.size());
+  for (size_t i = 0; i < selected.size(); ++i) {
+    if (!dirty[i]) {
+      clean.push_back(selected[i]);
+    }
+  }
+  return clean;
+}
+
 static inline double getKStar(
   const ROOT::Math::PtEtaPhiMVector& p1,
   const ROOT::Math::PtEtaPhiMVector& p2)
@@ -292,6 +352,7 @@ struct lambdaspincorrderived {
   Configurable<int> cfgV5NeighborEta{"cfgV5NeighborEta", 0, "v5: neighbor bins in eta (use symmetric ±N, edge-safe)"};
   Configurable<int> cfgV5NeighborPhi{"cfgV5NeighborPhi", 0, "v5: neighbor bins in phi (use symmetric ±N, periodic wrap)"};
   Configurable<int> cfgV5MaxMatches{"cfgV5MaxMatches", 50, "v5: max ME replacements per SE pair (after all cuts)"};
+
   Configurable<uint64_t> cfgMixSeed{"cfgMixSeed", 0xdecafbadULL, "RNG seed for downsampling matches (deterministic)"};
   Configurable<bool> cfgV6CarryUnmatched{"cfgV6CarryUnmatched", false, "Carry data and MC V6 replacement branches with zero matches to later data frames"};
   Configurable<int> cfgV6MaxPendingBranches{"cfgV6MaxPendingBranches", 0, "Maximum retained V6 branches per data or MC buffer; <=0 means unlimited"};
@@ -350,7 +411,19 @@ struct lambdaspincorrderived {
     Configurable<float> dcaPion{"dcaPion", 0.2, "DCA Pion"};
     Configurable<float> dcaDaughters{"dcaDaughters", 1.0, "DCA between daughters"};
     Configurable<float> dcaV0ToPV{"dcaV0ToPV", 1.2, "DCA V0 to PV cut on lambda"};
-    Configurable<float> v0etaMixBuffer{"v0etaMixBuffer", 0.8, "Eta cut on mix event buffer"};
+    Configurable<float> v0etaMixBuffer{"v0etaMixBuffer", 0.5, "Eta cut on mix event buffer"};
+
+    Configurable<bool> useK0sRejection{"useK0sRejection", true, "Apply K0s competing mass rejection"};
+    Configurable<float> confK0sMassWindow{"confK0sMassWindow", 0.01f, "K0s competing mass rejection window (GeV/c^2)"};
+
+    Configurable<bool> useAdditionalCut{"useAdditionalCut", false, "Apply additional cut"};
+
+    // tpcnclustercorssedrows ()
+    Configurable<float> minTpcNClsCrossedRows{"minTpcNClsCrossedRows", 70.f, "Minimum TPC crossed rows for daughter"};
+    // ctau (lifetime)
+    Configurable<float> maxCtau{"maxCtau", 30.f, "Maximum ctau of Lambda candidate (cm)"};
+    // TPC nsigma
+    Configurable<float> maxTpcNsigma{"maxTpcNsigma", 4.f, "Maximum |TPC nsigma| for Lambda daughters"};
 
   } v0Configurations;
 
@@ -453,7 +526,7 @@ struct lambdaspincorrderived {
     // sysId = 10
     sysCuts.push_back(buildFromIdx(0, 0, 0, 0, 0, 0, 2));
 
-    nSysTotal = (int)sysCuts.size();
+    nSysTotal = static_cast<int>(sysCuts.size());
 
     // print all configurations
     LOGF(info, "========================================");
@@ -528,9 +601,9 @@ struct lambdaspincorrderived {
 
     buildSystematicCuts();
 
-    nSysTotal = (int)sysCuts.size(); // or whatever vector you fill
+    nSysTotal = static_cast<int>(sysCuts.size()); // or whatever vector you fill
     LOGF(info, "sysCuts.size()=%zu  nSysTotal=%d", sysCuts.size(), nSysTotal);
-    const AxisSpec thnAxisSys{nSysTotal, -0.5f, float(nSysTotal) - 0.5f, "sysId"};
+    const AxisSpec thnAxisSys{nSysTotal, -0.5f, static_cast<float>(nSysTotal) - 0.5f, "sysId"};
 
     if (fillHistConfig.fillBasicQAHistos) {
       histos.add("hPtRadiusV0", "V0 QA;#it{p}_{T}^{V0} (GeV/#it{c});V0 decay radius (cm)", kTH2F, {{100, 0.0, 10.0}, {120, 0.0, 45.0}});
@@ -543,6 +616,8 @@ struct lambdaspincorrderived {
       histos.add("deltaPhiMix", "deltaPhiMix", HistType::kTH1D, {{72, -TMath::Pi(), TMath::Pi()}}, true);
       histos.add("ptCent", "ptCent", HistType::kTH2D, {{100, 0.0, 10.0}, {8, 0.0, 80.0}}, true);
       histos.add("etaCent", "etaCent", HistType::kTH2D, {{32, -0.8, 0.8}, {8, 0.0, 80.0}}, true);
+      histos.add("hNMEperSE_leg1", "ME replacements per SE pair, leg1", HistType::kTH1D, {{12, -0.5, 11.5}}, true);
+      histos.add("hNMEperSE_leg2", "ME replacements per SE pair, leg2", HistType::kTH1D, {{12, -0.5, 11.5}}, true);
     }
 
     if (fillHistConfig.fillWeightQAHistos) {
@@ -694,7 +769,7 @@ struct lambdaspincorrderived {
     if (fillHistConfig.fillAnalysisSparses) {
       histos.add("hSparseLambdaLambdaAnalysis", "hSparseLambdaLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
       histos.add("hSparseLambdaAntiLambdaAnalysis", "hSparseLambdaAntiLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
-      histos.add("hSparseAntiLambdaLambdaAnalysis", "hSparseAntiLambdLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
+      histos.add("hSparseAntiLambdaLambdaAnalysis", "hSparseAntiLambdaLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
       histos.add("hSparseAntiLambdaAntiLambdaAnalysis", "hSparseAntiLambdaAntiLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
 
       histos.add("hSparseLambdaLambdaMixedAnalysis", "hSparseLambdaLambdaMixedAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
@@ -858,6 +933,30 @@ struct lambdaspincorrderived {
     if (candidate.lambdaPt() > ptMax) {
       return false;
     }
+
+    if (v0Configurations.useAdditionalCut) {
+
+      if (std::abs(candidate.tpcNsigmaPos()) > v0Configurations.maxTpcNsigma ||
+          std::abs(candidate.tpcNsigmaNeg()) > v0Configurations.maxTpcNsigma) {
+        return false;
+      }
+
+      if (candidate.tpcPosNClsCrossedRows() < v0Configurations.minTpcNClsCrossedRows ||
+          candidate.tpcNegNClsCrossedRows() < v0Configurations.minTpcNClsCrossedRows) {
+        return false;
+      }
+
+      if (std::abs(candidate.ctau()) > v0Configurations.maxCtau) {
+        return false;
+      }
+
+      if (v0Configurations.useK0sRejection &&
+          std::abs(candidate.mK0Short() - o2::constants::physics::MassK0Short) <
+            v0Configurations.confK0sMassWindow) {
+        return false;
+      }
+    }
+
     return true;
   }
 
@@ -929,7 +1028,7 @@ struct lambdaspincorrderived {
       }
     }
 
-    const float dphi = deltaPhiMinusPiToPi((float)c1.lambdaPhi(), (float)c2.lambdaPhi());
+    const float dphi = deltaPhiMinusPiToPi(static_cast<float>(c1.lambdaPhi()), static_cast<float>(c2.lambdaPhi()));
     if (std::abs(dphi) > phiMix) {
       return false;
     }
@@ -1739,7 +1838,7 @@ struct lambdaspincorrderived {
           fillHistograms(0, 1, lambda, lambda2, proton, proton2, 0, 1.0);
         }
         if (v0.v0Status() == 1 && v02.v0Status() == 0) {
-          fillHistograms(0, 1, lambda2, lambda, proton2, proton, 0, 1.0);
+          fillHistograms(1, 0, lambda, lambda2, proton, proton2, 0, 1.0);
         }
         if (v0.v0Status() == 1 && v02.v0Status() == 1) {
           fillHistograms(1, 1, lambda, lambda2, proton, proton2, 0, 1.0);
@@ -1754,7 +1853,7 @@ struct lambdaspincorrderived {
     for (const auto& v0 : V0s) {
 
       std::vector<int> activeSys;
-      activeSys.reserve((size_t)nSysTotal);
+      activeSys.reserve(static_cast<size_t>(nSysTotal));
 
       for (int sysId = 0; sysId < nSysTotal; ++sysId) {
         const auto& sc = sysCuts[sysId];
@@ -1811,7 +1910,7 @@ struct lambdaspincorrderived {
       }
     }
   }
-  PROCESS_SWITCH(lambdaspincorrderived, processDataSys, "Process Sys analysis", true);
+  PROCESS_SWITCH(lambdaspincorrderived, processDataSys, "Process Sys analysis", false);
 
   template <typename LV>
   void fillReplacementControlMap(int tag1, int tag2, int leg, bool isTarget, LV const& particle, float weight)
@@ -1951,7 +2050,7 @@ struct lambdaspincorrderived {
   // Processing Event Mixing
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::lambdaevent::Posz, aod::lambdaevent::Cent>;
-  BinningType colBinning{{CfgVtxBins, CfgMultBins}};
+  BinningType colBinning{{CfgVtxBins, CfgMultBins}, true};
   Preslice<aod::LambdaPairs> tracksPerCollisionV0 = aod::lambdapair::lambdaeventId;
 
   void processMEV3(EventCandidates const& collisions, AllTrackCandidates const& V0s)
@@ -1970,7 +2069,7 @@ struct lambdaspincorrderived {
       // if pool empty, push and continue
       if (eventPools[bin].empty()) {
         eventPools[bin].emplace_back(collision1.index(), std::move(poolA));
-        if ((int)eventPools[bin].size() > nEvtMixing) {
+        if (static_cast<int>(eventPools[bin].size()) > nEvtMixing) {
           eventPools[bin].pop_front();
         }
         continue;
@@ -2137,7 +2236,7 @@ struct lambdaspincorrderived {
       // push current event into pool
       auto sliced = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
       eventPools[bin].emplace_back(collision1.index(), std::move(sliced));
-      if ((int)eventPools[bin].size() > nEvtMixing) {
+      if (static_cast<int>(eventPools[bin].size()) > nEvtMixing) {
         eventPools[bin].pop_front();
       }
     }
@@ -2162,7 +2261,7 @@ struct lambdaspincorrderived {
     usedEvents.reserve(nMixEvents * 2);
 
     for (const auto& m : matches) {
-      if (usedEvents.count(m.collisionIdx) || (int)usedEvents.size() < nMixEvents) {
+      if (usedEvents.count(m.collisionIdx) || static_cast<int>(usedEvents.size()) < nMixEvents) {
         kept.push_back(m);
         usedEvents.insert(m.collisionIdx);
       }
@@ -2351,13 +2450,13 @@ struct lambdaspincorrderived {
       fillFixedLegControlMap(repStatus, fixedStatus, 1, false, fixedLambda, controlWeight);
       if ((repStatus == 0 && fixedStatus == 1) || (repStatus == 1 && fixedStatus == 0)) {
         if (fillHistConfig.fillBasicQAHistos) {
-          histos.fill(HIST("deltaPhiMix"), deltaPhiMinusPiToPi((float)repLambda.Phi(), (float)fixedLambda.Phi()), mixWeight);
+          histos.fill(HIST("deltaPhiMix"), deltaPhiMinusPiToPi(static_cast<float>(repLambda.Phi()), static_cast<float>(fixedLambda.Phi())), mixWeight);
         }
       }
       if (repStatus == 0 && fixedStatus == 1) {
         fillHistograms(0, 1, repLambda, fixedLambda, repProton, fixedProton, 1, mixWeight, 1, 1);
       } else if (repStatus == 1 && fixedStatus == 0) {
-        fillHistograms(0, 1, fixedLambda, repLambda, fixedProton, repProton, 1, mixWeight, 2, 1);
+        fillHistograms(1, 0, repLambda, fixedLambda, repProton, fixedProton, 1, mixWeight, 1, 1);
       } else {
         fillHistograms(repStatus, fixedStatus, repLambda, fixedLambda, repProton, fixedProton, 1, mixWeight, 1, 1);
       }
@@ -2367,12 +2466,12 @@ struct lambdaspincorrderived {
     fillReplacementControlMap(fixedStatus, repStatus, 2, false, repLambda, controlWeight);
     fillFixedLegControlMap(fixedStatus, repStatus, 2, false, fixedLambda, controlWeight);
     if (fillHistConfig.fillBasicQAHistos) {
-      histos.fill(HIST("deltaPhiMix"), deltaPhiMinusPiToPi((float)fixedLambda.Phi(), (float)repLambda.Phi()), mixWeight);
+      histos.fill(HIST("deltaPhiMix"), deltaPhiMinusPiToPi(static_cast<float>(fixedLambda.Phi()), static_cast<float>(repLambda.Phi())), mixWeight);
     }
     if (fixedStatus == 0 && repStatus == 1) {
       fillHistograms(0, 1, fixedLambda, repLambda, fixedProton, repProton, 1, mixWeight, 2, 2);
     } else if (fixedStatus == 1 && repStatus == 0) {
-      fillHistograms(0, 1, repLambda, fixedLambda, repProton, fixedProton, 1, mixWeight, 1, 2);
+      fillHistograms(1, 0, fixedLambda, repLambda, fixedProton, repProton, 1, mixWeight, 2, 2);
     } else {
       fillHistograms(fixedStatus, repStatus, fixedLambda, repLambda, fixedProton, repProton, 1, mixWeight, 2, 2);
     }
@@ -2456,7 +2555,7 @@ struct lambdaspincorrderived {
       fillReplacementControlMap(repStatus, fixedStatus, 1, false, repLambda, controlWeight);
       fillFixedLegControlMap(repStatus, fixedStatus, 1, false, fixedLambda, controlWeight);
       if (fillHistConfig.fillBasicQAHistos) {
-        histos.fill(HIST("deltaPhiMix"), deltaPhiMinusPiToPi((float)repLambda.Phi(), (float)fixedLambda.Phi()), mixWeight);
+        histos.fill(HIST("deltaPhiMix"), deltaPhiMinusPiToPi(static_cast<float>(repLambda.Phi()), static_cast<float>(fixedLambda.Phi())), mixWeight);
       }
       if (repStatus == 0 && fixedStatus == 1) {
         fillHistograms(0, 1, repLambda, fixedLambda, repProton, fixedProton, 1, mixWeight, 1, 1);
@@ -2471,7 +2570,7 @@ struct lambdaspincorrderived {
     fillReplacementControlMap(fixedStatus, repStatus, 2, false, repLambda, controlWeight);
     fillFixedLegControlMap(fixedStatus, repStatus, 2, false, fixedLambda, controlWeight);
     if (fillHistConfig.fillBasicQAHistos) {
-      histos.fill(HIST("deltaPhiMix"), deltaPhiMinusPiToPi((float)fixedLambda.Phi(), (float)repLambda.Phi()), mixWeight);
+      histos.fill(HIST("deltaPhiMix"), deltaPhiMinusPiToPi(static_cast<float>(fixedLambda.Phi()), static_cast<float>(repLambda.Phi())), mixWeight);
     }
     if (fixedStatus == 0 && repStatus == 1) {
       fillHistograms(0, 1, fixedLambda, repLambda, fixedProton, repProton, 1, mixWeight, 2, 2);
@@ -2569,8 +2668,8 @@ struct lambdaspincorrderived {
     }
 
     // delta-phi window (wrapped)
-    const float dphi = deltaPhiMinusPiToPi((float)mcacc::lamPhi(candidate1),
-                                           (float)mcacc::lamPhi(candidate2));
+    const float dphi = deltaPhiMinusPiToPi(static_cast<float>(mcacc::lamPhi(candidate1)),
+                                           static_cast<float>(mcacc::lamPhi(candidate2)));
     if (std::abs(dphi) > phiMix) {
       return false;
     }
@@ -2844,8 +2943,8 @@ struct lambdaspincorrderived {
                                       nStat, nPt, nEta, nPhi, nM, nR);
 
         buffer[key].push_back(BufferCandR{
-          .collisionIdx = static_cast<int64_t>(col.index()),
-          .rowIndex = static_cast<int64_t>(t.globalIndex()),
+          .collisionIdx = col.index(),
+          .rowIndex = t.globalIndex(),
           .v0Status = static_cast<uint8_t>(status),
           .ptBin = static_cast<uint16_t>(ptB),
           .etaBin = static_cast<uint16_t>(etaB),
@@ -2940,7 +3039,7 @@ struct lambdaspincorrderived {
       // 2) if exact bin gives fewer than required matches, also search neighbors
       const int targetMatches = (cfgV5MaxMatches.value > 0) ? cfgV5MaxMatches.value : 1;
 
-      if ((int)matches.size() < targetMatches) {
+      if (static_cast<int>(matches.size()) < targetMatches) {
         std::vector<int> ptBinsN, etaBinsN, phiBinsN;
         collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBinsN);
         collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBinsN);
@@ -2995,12 +3094,12 @@ struct lambdaspincorrderived {
     };
 
     auto downsampleMatches = [&](std::vector<MatchRef>& matches, uint64_t seedBase) {
-      if (cfgV5MaxMatches.value > 0 && (int)matches.size() > cfgV5MaxMatches.value) {
+      if (cfgV5MaxMatches.value > 0 && static_cast<int>(matches.size()) > cfgV5MaxMatches.value) {
         uint64_t seed = cfgMixSeed.value ^ splitmix64(seedBase);
         const int K = cfgV5MaxMatches.value;
         for (int i = 0; i < K; ++i) {
           seed = splitmix64(seed);
-          const int j = i + (int)(seed % (uint64_t)(matches.size() - i));
+          const int j = i + static_cast<int>(seed % static_cast<uint64_t>(matches.size() - i));
           std::swap(matches[i], matches[j]);
         }
         matches.resize(K);
@@ -3043,7 +3142,7 @@ struct lambdaspincorrderived {
           ++nAccepted;
         }
 
-        if (nAccepted == 0) {
+        if (nAccepted < 1) {
           ++it;
           continue;
         }
@@ -3076,7 +3175,7 @@ struct lambdaspincorrderived {
         continue;
       }
 
-      const int64_t curColIdx = static_cast<int64_t>(col1.index());
+      const int64_t curColIdx = col1.index();
       auto poolA = V0s.sliceBy(tracksPerCollisionV0, col1.index());
 
       for (auto const& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
@@ -3114,7 +3213,7 @@ struct lambdaspincorrderived {
         if (doMixLeg1) {
           collectMatchesForReplacedLeg(t1, t2, colBin, curColIdx, matches1);
           limitMatchesToNEvents(matches1, nEvtMixing.value);
-          downsampleMatches(matches1, (uint64_t)t1.globalIndex() ^ (splitmix64((uint64_t)t2.globalIndex()) + 0x111ULL) ^ splitmix64((uint64_t)curColIdx));
+          downsampleMatches(matches1, static_cast<uint64_t>(t1.globalIndex()) ^ (splitmix64(static_cast<uint64_t>(t2.globalIndex())) + 0x111ULL) ^ splitmix64(static_cast<uint64_t>(curColIdx)));
         } else {
           matches1.clear();
         }
@@ -3122,7 +3221,7 @@ struct lambdaspincorrderived {
         if (doMixLeg2) {
           collectMatchesForReplacedLeg(t2, t1, colBin, curColIdx, matches2);
           limitMatchesToNEvents(matches2, nEvtMixing.value);
-          downsampleMatches(matches2, (uint64_t)t2.globalIndex() ^ (splitmix64((uint64_t)t1.globalIndex()) + 0x222ULL) ^ splitmix64((uint64_t)curColIdx));
+          downsampleMatches(matches2, static_cast<uint64_t>(t2.globalIndex()) ^ (splitmix64(static_cast<uint64_t>(t1.globalIndex())) + 0x222ULL) ^ splitmix64(static_cast<uint64_t>(curColIdx)));
         } else {
           matches2.clear();
         }
@@ -3179,17 +3278,21 @@ struct lambdaspincorrderived {
           const auto hasPendingSpace = [&]() {
             return cfgV6MaxPendingBranches.value <= 0 || static_cast<int>(v6Pending.data.size()) < cfgV6MaxPendingBranches.value;
           };
-          if (doMixLeg1 && nFill1 == 0 && hasPendingSpace()) {
+          if (doMixLeg1 && nFill1 < 1 && hasPendingSpace()) {
             v6Pending.data.push_back({storeV6Candidate(t1, curColIdx), storeV6Candidate(t2, curColIdx), colBin, 1, 0,
                                       static_cast<uint64_t>(t1.globalIndex()) ^ splitmix64(static_cast<uint64_t>(t2.globalIndex())) ^ splitmix64(static_cast<uint64_t>(curColIdx))});
             ++pendingAdded;
           }
-          if (doMixLeg2 && nFill2 == 0 && hasPendingSpace()) {
+          if (doMixLeg2 && nFill2 < 1 && hasPendingSpace()) {
             v6Pending.data.push_back({storeV6Candidate(t2, curColIdx), storeV6Candidate(t1, curColIdx), colBin, 2, 0,
                                       static_cast<uint64_t>(t2.globalIndex()) ^ splitmix64(static_cast<uint64_t>(t1.globalIndex())) ^ splitmix64(static_cast<uint64_t>(curColIdx))});
             ++pendingAdded;
           }
         }
+        histos.fill(HIST("hNMEperSE_leg2"), nFill2);
+        histos.fill(HIST("hNMEperSE_leg1"), nFill1);
+
+        // Reject branches with fewer accepted mixed pairs than required.
 
         if (nFill1 <= 0 && nFill2 <= 0) {
           continue;
@@ -3247,7 +3350,7 @@ struct lambdaspincorrderived {
             // const int ptype = pairTypeCode(tX.v0Status(), t2.v0Status());
 
             const float meWeight = finalMixWeightLeg1;
-            const float dPhi = deltaPhiMinusPiToPi((float)lambda.Phi(), (float)lambda2.Phi());
+            const float dPhi = deltaPhiMinusPiToPi(static_cast<float>(lambda.Phi()), static_cast<float>(lambda2.Phi()));
             if ((tX.v0Status() == 0 && t2.v0Status() == 1) || (tX.v0Status() == 1 && t2.v0Status() == 0))
               if (fillHistConfig.fillBasicQAHistos)
                 histos.fill(HIST("deltaPhiMix"), dPhi, meWeight);
@@ -3257,7 +3360,7 @@ struct lambdaspincorrderived {
             if (s1 == 0 && s2 == 1) {
               fillHistograms(0, 1, lambda, lambda2, proton, proton2, 1, meWeight, 1, 1);
             } else if (s1 == 1 && s2 == 0) {
-              fillHistograms(0, 1, lambda2, lambda, proton2, proton, 1, meWeight, 2, 1);
+              fillHistograms(1, 0, lambda, lambda2, proton, proton2, 1, meWeight, 1, 1);
             } else {
               fillHistograms(s1, s2, lambda, lambda2, proton, proton2, 1, meWeight, 1, 1);
             }
@@ -3297,7 +3400,7 @@ struct lambdaspincorrderived {
 
             // const int ptype = pairTypeCode(t1.v0Status(), tY.v0Status());
             const float meWeight = finalMixWeightLeg2;
-            const float dPhi = deltaPhiMinusPiToPi((float)lambda.Phi(), (float)lambda2.Phi());
+            const float dPhi = deltaPhiMinusPiToPi(static_cast<float>(lambda.Phi()), static_cast<float>(lambda2.Phi()));
             if (fillHistConfig.fillBasicQAHistos)
               histos.fill(HIST("deltaPhiMix"), dPhi, meWeight);
             const int s1 = t1.v0Status();
@@ -3305,7 +3408,7 @@ struct lambdaspincorrderived {
             if (s1 == 0 && s2 == 1) {
               fillHistograms(0, 1, lambda, lambda2, proton, proton2, 1, meWeight, 2, 2);
             } else if (s1 == 1 && s2 == 0) {
-              fillHistograms(0, 1, lambda2, lambda, proton2, proton, 1, meWeight, 1, 2);
+              fillHistograms(1, 0, lambda, lambda2, proton, proton2, 1, meWeight, 2, 2);
             } else {
               fillHistograms(s1, s2, lambda, lambda2, proton, proton2, 1, meWeight, 2, 2);
             }
@@ -3318,7 +3421,7 @@ struct lambdaspincorrderived {
            pendingAtStart, pendingMatched, pendingExpired, pendingAdded, v6Pending.data.size());
     }
   }
-  PROCESS_SWITCH(lambdaspincorrderived, processMEV6, "Process data ME v6 with radius buffer", false);
+  PROCESS_SWITCH(lambdaspincorrderived, processMEV6, "Process data ME v6 with radius buffer", true);
 
   void processMEV6Sys(EventCandidates const& collisions, AllTrackCandidates const& V0s)
   {
@@ -3391,8 +3494,8 @@ struct lambdaspincorrderived {
                                       nStat, nPt, nEta, nPhi, nM, nR);
 
         buffer[key].push_back(BufferCandR{
-          .collisionIdx = static_cast<int64_t>(col.index()),
-          .rowIndex = static_cast<int64_t>(t.globalIndex()),
+          .collisionIdx = col.index(),
+          .rowIndex = t.globalIndex(),
           .v0Status = static_cast<uint8_t>(status),
           .ptBin = static_cast<uint16_t>(ptB),
           .etaBin = static_cast<uint16_t>(etaB),
@@ -3495,7 +3598,7 @@ struct lambdaspincorrderived {
       // 2) if exact bin gives fewer than required matches, also search neighbors
       const int targetMatches = (cfgV5MaxMatches.value > 0) ? cfgV5MaxMatches.value : 1;
 
-      if ((int)matches.size() < targetMatches) {
+      if (static_cast<int>(matches.size()) < targetMatches) {
         std::vector<int> ptBinsN, etaBinsN, phiBinsN;
         collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBinsN);
         collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBinsN);
@@ -3558,12 +3661,12 @@ struct lambdaspincorrderived {
     };
 
     auto downsampleMatches = [&](std::vector<MatchRef>& matches, uint64_t seedBase) {
-      if (cfgV5MaxMatches.value > 0 && (int)matches.size() > cfgV5MaxMatches.value) {
+      if (cfgV5MaxMatches.value > 0 && static_cast<int>(matches.size()) > cfgV5MaxMatches.value) {
         uint64_t seed = cfgMixSeed.value ^ splitmix64(seedBase);
         const int K = cfgV5MaxMatches.value;
         for (int i = 0; i < K; ++i) {
           seed = splitmix64(seed);
-          const int j = i + (int)(seed % (uint64_t)(matches.size() - i));
+          const int j = i + static_cast<int>(seed % static_cast<uint64_t>(matches.size() - i));
           std::swap(matches[i], matches[j]);
         }
         matches.resize(K);
@@ -3639,7 +3742,7 @@ struct lambdaspincorrderived {
         continue;
       }
 
-      const int64_t curColIdx = static_cast<int64_t>(col1.index());
+      const int64_t curColIdx = col1.index();
       auto poolA = V0s.sliceBy(tracksPerCollisionV0, col1.index());
 
       for (auto const& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
@@ -3682,7 +3785,7 @@ struct lambdaspincorrderived {
         if (doMixLeg1) {
           collectMatchesForReplacedLeg(t1, t2, colBin, curColIdx, matches1);
           limitMatchesToNEvents(matches1, nEvtMixing.value);
-          downsampleMatches(matches1, (uint64_t)t1.globalIndex() ^ (splitmix64((uint64_t)t2.globalIndex()) + 0x111ULL) ^ splitmix64((uint64_t)curColIdx));
+          downsampleMatches(matches1, static_cast<uint64_t>(t1.globalIndex()) ^ (splitmix64(static_cast<uint64_t>(t2.globalIndex())) + 0x111ULL) ^ splitmix64(static_cast<uint64_t>(curColIdx)));
         } else {
           matches1.clear();
         }
@@ -3690,7 +3793,7 @@ struct lambdaspincorrderived {
         if (doMixLeg2) {
           collectMatchesForReplacedLeg(t2, t1, colBin, curColIdx, matches2);
           limitMatchesToNEvents(matches2, nEvtMixing.value);
-          downsampleMatches(matches2, (uint64_t)t2.globalIndex() ^ (splitmix64((uint64_t)t1.globalIndex()) + 0x222ULL) ^ splitmix64((uint64_t)curColIdx));
+          downsampleMatches(matches2, static_cast<uint64_t>(t2.globalIndex()) ^ (splitmix64(static_cast<uint64_t>(t1.globalIndex())) + 0x222ULL) ^ splitmix64(static_cast<uint64_t>(curColIdx)));
         } else {
           matches2.clear();
         }
@@ -3819,7 +3922,7 @@ struct lambdaspincorrderived {
             auto lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass());
 
             const float meWeight = finalMixWeightLeg1;
-            const float dPhi = deltaPhiMinusPiToPi((float)lambda.Phi(), (float)lambda2.Phi());
+            const float dPhi = deltaPhiMinusPiToPi(static_cast<float>(lambda.Phi()), static_cast<float>(lambda2.Phi()));
             if ((tX.v0Status() == 0 && t2.v0Status() == 1) || (tX.v0Status() == 1 && t2.v0Status() == 0))
               if (fillHistConfig.fillBasicQAHistos)
                 histos.fill(HIST("deltaPhiMix"), dPhi, meWeight);
@@ -3872,7 +3975,7 @@ struct lambdaspincorrderived {
             auto lambda2 = ROOT::Math::PtEtaPhiMVector(tY.lambdaPt(), tY.lambdaEta(), tY.lambdaPhi(), tY.lambdaMass());
 
             const float meWeight = finalMixWeightLeg2;
-            const float dPhi = deltaPhiMinusPiToPi((float)lambda.Phi(), (float)lambda2.Phi());
+            const float dPhi = deltaPhiMinusPiToPi(static_cast<float>(lambda.Phi()), static_cast<float>(lambda2.Phi()));
             if (fillHistConfig.fillBasicQAHistos)
               histos.fill(HIST("deltaPhiMix"), dPhi, meWeight);
 
@@ -3965,8 +4068,8 @@ struct lambdaspincorrderived {
                                       nStat, nPt, nEta, nPhi, nM, nR);
 
         buffer[key].push_back(BufferCandR{
-          .collisionIdx = static_cast<int64_t>(col.index()),
-          .rowIndex = static_cast<int64_t>(t.globalIndex()),
+          .collisionIdx = col.index(),
+          .rowIndex = t.globalIndex(),
           .v0Status = static_cast<uint8_t>(status),
           .ptBin = static_cast<uint16_t>(ptB),
           .etaBin = static_cast<uint16_t>(etaB),
@@ -4060,7 +4163,7 @@ struct lambdaspincorrderived {
       // 2) if exact bin gives fewer than required matches, also search neighbors
       const int targetMatches = (cfgV5MaxMatches.value > 0) ? cfgV5MaxMatches.value : 1;
 
-      if ((int)matches.size() < targetMatches) {
+      if (static_cast<int>(matches.size()) < targetMatches) {
         std::vector<int> ptBinsN, etaBinsN, phiBinsN;
         collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBinsN);
         collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBinsN);
@@ -4122,12 +4225,12 @@ struct lambdaspincorrderived {
     };
 
     auto downsampleMatches = [&](std::vector<MatchRef>& matches, uint64_t seedBase) {
-      if (cfgV5MaxMatches.value > 0 && (int)matches.size() > cfgV5MaxMatches.value) {
+      if (cfgV5MaxMatches.value > 0 && static_cast<int>(matches.size()) > cfgV5MaxMatches.value) {
         uint64_t seed = cfgMixSeed.value ^ splitmix64(seedBase);
         const int K = cfgV5MaxMatches.value;
         for (int i = 0; i < K; ++i) {
           seed = splitmix64(seed);
-          const int j = i + (int)(seed % (uint64_t)(matches.size() - i));
+          const int j = i + static_cast<int>(seed % static_cast<uint64_t>(matches.size() - i));
           std::swap(matches[i], matches[j]);
         }
         matches.resize(K);
@@ -4203,7 +4306,7 @@ struct lambdaspincorrderived {
         continue;
       }
 
-      const int64_t curColIdx = static_cast<int64_t>(col1.index());
+      const int64_t curColIdx = col1.index();
       auto poolA = V0sMC.sliceBy(tracksPerCollisionV0mc, col1.index());
 
       for (auto const& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
@@ -4240,14 +4343,14 @@ struct lambdaspincorrderived {
         if (doMixLeg1) {
           collectMatchesForReplacedLeg(t1, t2, colBin, curColIdx, matches1);
           limitMatchesToNEvents(matches1, nEvtMixing.value);
-          downsampleMatches(matches1, (uint64_t)t1.globalIndex() ^ (splitmix64((uint64_t)t2.globalIndex()) + 0x111ULL) ^ splitmix64((uint64_t)curColIdx));
+          downsampleMatches(matches1, static_cast<uint64_t>(t1.globalIndex()) ^ (splitmix64(static_cast<uint64_t>(t2.globalIndex())) + 0x111ULL) ^ splitmix64(static_cast<uint64_t>(curColIdx)));
         } else {
           matches1.clear();
         }
         if (doMixLeg2) {
           collectMatchesForReplacedLeg(t2, t1, colBin, curColIdx, matches2);
           limitMatchesToNEvents(matches2, nEvtMixing.value);
-          downsampleMatches(matches2, (uint64_t)t2.globalIndex() ^ (splitmix64((uint64_t)t1.globalIndex()) + 0x222ULL) ^ splitmix64((uint64_t)curColIdx));
+          downsampleMatches(matches2, static_cast<uint64_t>(t2.globalIndex()) ^ (splitmix64(static_cast<uint64_t>(t1.globalIndex())) + 0x222ULL) ^ splitmix64(static_cast<uint64_t>(curColIdx)));
         } else {
           matches2.clear();
         }
@@ -4375,7 +4478,7 @@ struct lambdaspincorrderived {
 
             // const int ptype = pairTypeCode(mcacc::v0Status(tX), mcacc::v0Status(t2));
             const float meWeight = finalMixWeightLeg1;
-            const float dPhi = deltaPhiMinusPiToPi((float)lX.Phi(), (float)l2.Phi());
+            const float dPhi = deltaPhiMinusPiToPi(static_cast<float>(lX.Phi()), static_cast<float>(l2.Phi()));
             if (fillHistConfig.fillBasicQAHistos)
               histos.fill(HIST("deltaPhiMix"), dPhi, meWeight);
             const int s1 = mcacc::v0Status(tX);
@@ -4430,7 +4533,7 @@ struct lambdaspincorrderived {
 
             // const int ptype = pairTypeCode(mcacc::v0Status(t1), mcacc::v0Status(tY));
             const float meWeight = finalMixWeightLeg2;
-            const float dPhi = deltaPhiMinusPiToPi((float)l1.Phi(), (float)lY.Phi());
+            const float dPhi = deltaPhiMinusPiToPi(static_cast<float>(l1.Phi()), static_cast<float>(lY.Phi()));
             if (fillHistConfig.fillBasicQAHistos)
               histos.fill(HIST("deltaPhiMix"), dPhi, meWeight);
             const int s1 = mcacc::v0Status(t1);

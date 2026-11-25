@@ -496,9 +496,9 @@ struct TagTwoProngDisplacedVertices {
               }
             }
           }
-        } else if (channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) { ///  K∓π± for D0 from D±* → D0π± decays
+        } else if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) { ///  K∓π± for D0 from D±* → D0π± decays
           // we first check D0
-          auto dzeroIdx = RecoDecay::getMatchedMCRec<false, false, false, true, true, 2>(mcParticles, arrayDaughters, constants::physics::Pdg::kD0, std::array{+kPiPlus, -kKPlus}, false, &sign, 1);
+          auto dzeroIdx = RecoDecay::getMatchedMCRec<false, false, false, true, true, 2>(mcParticles, arrayDaughters, constants::physics::Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1);
           if (dzeroIdx > -1) {
             motherIdx = RecoDecay::getMatchedMCRec<false, false, true, true, true, 2>(mcParticles, arrayDaughters, constants::physics::Pdg::kDStar, std::array{+kPiPlus, -kKPlus}, true, &sign, 2);
             if (motherIdx > -1) {
@@ -1169,6 +1169,10 @@ struct ProbeThirdTrack {
   ConfigurableAxis axisPtMinTagdaught{"axisPtMinTagdaught", {10, 0.f, 1.f}, "Axis for Pt Min of Tag daughter"};
   ConfigurableAxis axisAbsEtaMaxTagdaught{"axisAbsEtaMaxTagdaught", {10, 0.f, 1.f}, "Axis for AbsEtaMax for Tag daughter"};
   ConfigurableAxis axisRadiusTag{"axisRadiusTag", {100, 0.f, 0.5f}, "Axis for Tag Radius (cm)"};
+  ConfigurableAxis axisMassDplusToKPiPi{"axisMassDplusToKPiPi", {225, 1.65f, 2.10f}, "Axis for mass of D+ -> Kpipi"};
+  ConfigurableAxis axisMassDsOrDplusToKKPi{"axisMassDsOrDplusToKKPi", {225, 1.65f, 2.10f}, "Axis for mass of Ds+/D+ -> KKpi"};
+  ConfigurableAxis axisMassDstarToDzeroPi{"axisMassDstarToDzeroPi", {350, 0.135f, 0.17f}, "Axis for mass of D*+ -> D0 pi"};
+  ConfigurableAxis axisMassDstarToDzeroToKK{"axisMassDstarToDzeroToKK", {350, 0.135f, 0.17f}, "Axis for mass of D*+ -> D0 -> KK"};
 
   Filter tagMcFilter = aod::tagandprobe::isSignal > static_cast<uint8_t>(0);
 
@@ -1251,7 +1255,7 @@ struct ProbeThirdTrack {
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoTpc].SetMaxChi2PerClusterITS(36.f);
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoTpc].SetMaxDcaZ(2.f);
 
-    std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMass = {AxisSpec{225, 1.65f, 2.10f}, AxisSpec{225, 1.65f, 2.10f}, AxisSpec{350, 0.135f, 0.17f}, AxisSpec{350, 0.135f, 0.17f}, AxisSpec{350, 0.135f, 0.17f}};
+    std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMass = {axisMassDplusToKPiPi, axisMassDsOrDplusToKKPi, axisMassDstarToDzeroPi, axisMassDstarToDzeroPi, axisMassDstarToDzeroToKK};
     std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMassTag = {AxisSpec{125, 0.f, 2.5f}, AxisSpec{100, constants::physics::MassPhi - 0.05f, constants::physics::MassPhi + 0.05f}, AxisSpec{200, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}, AxisSpec{200, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}, AxisSpec{200, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}};
 
     std::string trackTypes[aod::tagandprobe::TrackTypes::NTrackTypes] = {"ItsTpc", "ItsTpcNoIb", "Tpc", "Its"};

@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file twoParticleCorrelationsRegisterSkimming.cxx
+/// \brief Registers the skimming configuration
+/// \author victor.gonzalez.sebastian@gmail.com
+
 #include "PWGCF/TwoParticleCorrelations/Core/EventSelectionFilterAndAnalysis.h"
 #include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
 #include "PWGCF/TwoParticleCorrelations/Core/PIDSelectionFilterAndAnalysis.h"
@@ -26,14 +30,14 @@ using namespace o2::soa;
 using namespace o2::framework::expressions;
 using namespace o2::analysis;
 
-void o2::analysis::PWGCF::registerConfiguration(PWGCF::FilterAndAnalysisFramework* fFilterFramework)
+void o2::analysis::pwgcf::registerConfiguration(pwgcf::FilterAndAnalysisFramework* fFilterFramework)
 {
-  fFilterFramework->RegisterConfiguration();
+  fFilterFramework->registerConfiguration();
 }
 
 struct TwoParticleCorrelationsRegisterSkimming {
   bool registered = false;
-  PWGCF::FilterAndAnalysisFramework* fFilterFramework = nullptr;
+  pwgcf::FilterAndAnalysisFramework* fFilterFramework = nullptr;
 
 #include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h" // NOLINT
 
@@ -43,21 +47,21 @@ struct TwoParticleCorrelationsRegisterSkimming {
     LOGF(info, "TwoParticleCorrelationsRegisterSkimming::init()");
 
     /* collision filtering configuration */
-    PWGCF::EventSelectionConfigurable eventsel(eventfilter.bfield, eventfilter.centmultsel, {}, eventfilter.zvtxsel, eventfilter.pileuprej);
+    pwgcf::EventSelectionConfigurable eventsel(eventfilter.bfield, eventfilter.centmultsel, {}, eventfilter.zvtxsel, eventfilter.pileuprej);
     /* track filtering configuration */
-    PWGCF::TrackSelectionConfigurable trksel(trackfilter.ttype, trackfilter.nclstpc, trackfilter.nxrtpc, trackfilter.nclsits, trackfilter.chi2clustpc,
+    pwgcf::TrackSelectionConfigurable trksel(trackfilter.ttype, trackfilter.nclstpc, trackfilter.nxrtpc, trackfilter.nclsits, trackfilter.chi2clustpc,
                                              trackfilter.chi2clusits, trackfilter.xrofctpc, trackfilter.dcaxy, trackfilter.dcaz, trackfilter.ptrange, trackfilter.etarange);
 #ifdef INCORPORATEBAYESIANPID
-    PWGCF::PIDSelectionConfigurable pidsel(pidfilter.pidtpcfilter.tpcel, pidfilter.pidtpcfilter.tpcmu, pidfilter.pidtpcfilter.tpcpi, pidfilter.pidtpcfilter.tpcka, pidfilter.pidtpcfilter.tpcpr,
+    pwgcf::PIDSelectionConfigurable pidsel(pidfilter.pidtpcfilter.tpcel, pidfilter.pidtpcfilter.tpcmu, pidfilter.pidtpcfilter.tpcpi, pidfilter.pidtpcfilter.tpcka, pidfilter.pidtpcfilter.tpcpr,
                                            pidfilter.pidtoffilter.tpcel, pidfilter.pidtoffilter.tpcmu, pidfilter.pidtoffilter.tpcpi, pidfilter.pidtoffilter.tpcka, pidfilter.pidtoffilter.tpcpr,
                                            pidfilter.pidbayesfilter.bayel, pidfilter.pidbayesfilter.baymu, pidfilter.pidbayesfilter.baypi, pidfilter.pidbayesfilter.bayka, pidfilter.pidbayesfilter.baypr);
 #else
-    PWGCF::PIDSelectionConfigurable pidsel(pidfilter.pidtpcfilter.tpcel, pidfilter.pidtpcfilter.tpcmu, pidfilter.pidtpcfilter.tpcpi, pidfilter.pidtpcfilter.tpcka, pidfilter.pidtpcfilter.tpcpr,
+    pwgcf::PIDSelectionConfigurable pidsel(pidfilter.pidtpcfilter.tpcel, pidfilter.pidtpcfilter.tpcmu, pidfilter.pidtpcfilter.tpcpi, pidfilter.pidtpcfilter.tpcka, pidfilter.pidtpcfilter.tpcpr,
                                            pidfilter.pidtoffilter.tpcel, pidfilter.pidtoffilter.tpcmu, pidfilter.pidtoffilter.tpcpi, pidfilter.pidtoffilter.tpcka, pidfilter.pidtoffilter.tpcpr);
 #endif
 
-    fFilterFramework = new PWGCF::FilterAndAnalysisFramework(filterccdb.ccdburl.value, filterccdb.ccdbpath.value, filterccdb.filterdate.value);
-    fFilterFramework->SetConfiguration(eventsel, trksel, pidsel, PWGCF::SelectionFilterAndAnalysis::kFilter);
+    fFilterFramework = new pwgcf::FilterAndAnalysisFramework(filterccdb.ccdburl.value, filterccdb.ccdbpath.value, filterccdb.filterdate.value);
+    fFilterFramework->setConfiguration(eventsel, trksel, pidsel, pwgcf::SelectionFilterAndAnalysis::KFilter);
     registered = false;
   }
 
@@ -65,7 +69,7 @@ struct TwoParticleCorrelationsRegisterSkimming {
   {
     if (!registered) {
       LOGF(info, "Registering filter configuration");
-      PWGCF::registerConfiguration(fFilterFramework);
+      pwgcf::registerConfiguration(fFilterFramework);
       registered = true;
     }
   }

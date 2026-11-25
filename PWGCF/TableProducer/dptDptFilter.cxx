@@ -360,9 +360,9 @@ struct Multiplicity {
   void setMultiplicityPercentiles(TList* list)
   {
     LOGF(info, "setMultiplicityPercentiles(). From list %s", list->GetName());
-    fhV0MMultPercentile = reinterpret_cast<TH1*>(list->FindObject("V0MCentMult"));
-    fhCL1MultPercentile = reinterpret_cast<TH1*>(list->FindObject("CL1MCentMult"));
-    fhCL1EtaGapMultPercentile = reinterpret_cast<TH1*>(list->FindObject("CL1EtaGapMCentMult"));
+    fhV0MMultPercentile = dynamic_cast<TH1*>(list->FindObject("V0MCentMult"));
+    fhCL1MultPercentile = dynamic_cast<TH1*>(list->FindObject("CL1MCentMult"));
+    fhCL1EtaGapMultPercentile = dynamic_cast<TH1*>(list->FindObject("CL1EtaGapMCentMult"));
 
     if (fhV0MMultPercentile == nullptr || fhCL1MultPercentile == nullptr || fhCL1EtaGapMultPercentile == nullptr) {
       LOGF(fatal, "setMultiplicityPercentiles()", "Percentiles histograms not correctly loaded. ABORTING!!!");
@@ -888,7 +888,7 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
   fhCentMultB->Fill(tentativecentmult);
   fhMultB->Fill(mult);
   fhVertexZB->Fill(collision.posZ());
-  uint8_t acceptedevent = uint8_t(false);
+  uint8_t acceptedevent = static_cast<uint8_t>(false);
   float centormult = tentativecentmult;
   int64_t orbit = collision.template bc_as<aod::BCsWithTimestamps>().globalBC() / nBCsPerOrbit;
   bool withinOrbitOfInterest = (cfgEventSelection.minOrbit <= orbit) && (orbit < cfgEventSelection.maxOrbit);
@@ -906,7 +906,7 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
   } else {
     if (!fullDerivedData) {
       /* the tracks are done at a different level */
-      collisionsinfo(uint8_t(false), 105.0);
+      collisionsinfo(static_cast<uint8_t>(false), 105.0);
     }
   }
   /* report the trigger and event selection */
@@ -1015,9 +1015,9 @@ bool DptDptFilter::processGenerated(CollisionObject const& mccollision, Particle
 {
   using namespace dptdptfilter;
 
-  uint8_t acceptedevent = uint8_t(false);
+  uint8_t acceptedevent = static_cast<uint8_t>(false);
   if (isEventSelected(mccollision, centormult)) {
-    acceptedevent = uint8_t(true);
+    acceptedevent = static_cast<uint8_t>(true);
   }
   if (fullDerivedData) {
     acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), acceptedevent, centormult);
@@ -1061,7 +1061,7 @@ void DptDptFilter::processGeneratorLevel(aod::McCollision const& mccollision,
     }
   }
   if (!processed && !fullDerivedData) {
-    gencollisionsinfo(uint8_t(false), 105.0);
+    gencollisionsinfo(static_cast<uint8_t>(false), 105.0);
   }
 }
 
@@ -1095,7 +1095,7 @@ void DptDptFilter::processWithoutCentGeneratorLevel(aod::McCollision const& mcco
 void DptDptFilter::processOnTheFlyGeneratorLevel(aod::McCollision const& mccollision,
                                                  aod::McParticles const& mcparticles)
 {
-  uint8_t acceptedEvent = uint8_t(false);
+  uint8_t acceptedEvent = static_cast<uint8_t>(false);
   fhTrueVertexZB->Fill(mccollision.posZ());
   /* we assign a default value for the time being */
   float centormult = 50.0f;

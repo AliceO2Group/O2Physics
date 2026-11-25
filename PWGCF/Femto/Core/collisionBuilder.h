@@ -32,12 +32,17 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 
+#include <TH1.h>
+
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <random>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -57,31 +62,32 @@ struct ConfCollisionFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> sphericityMax{"sphericityMax", 1.f, "Maximum sphericity"};
   o2::framework::Configurable<int> magFieldMin{"magFieldMin", -5, "Minimum magnetic field strength (kG)"};
   o2::framework::Configurable<int> magFieldMax{"magFieldMax", 5, "Maximum magnetic field strength (kG)"};
-  o2::framework::Configurable<int> subGeneratorId{"subGeneratorId", 0, "MC ONLY: If positive, keep 0 = MB, <0 triggered on something"};
+  o2::framework::Configurable<int> subGeneratorId{"subGeneratorId", -1, "MC ONLY: Sub-generator ID to keep (0 = MB). Only applied if >= 0; set to -1 (default) to disable and keep all sub-generators"};
 };
 
 struct ConfCollisionBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CollisionBits");
   o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all collisions are passed through. Bits for all enabled (non-zero) selection flags are stored, disabled flags (0) are not."};
-  o2::framework::Configurable<int> sel8{"sel8", 1, "Use sel8 (-1: stored in bitmaks; 0 off; 1 on)"};
-  o2::framework::Configurable<int> rctFlags{"rctFlags", 1, "RCT flags ok, checker configured via CollisionRctFlags (-1: stored in bitmaks; 0 off; 1 on)"};
-  o2::framework::Configurable<int> noSameBunchPileup{"noSameBunchPileup", 0, "Reject collisions in case of pileup with another collision in the same foundBC (-1: stored in bitmaks; 0 off; 1 on)"};
-  o2::framework::Configurable<int> isVertexItsTpc{"isVertexItsTpc", 0, "At least one ITS-TPC track found for the vertex (-1: stored in bitmaks; 0 off; 1 on)"};
-  o2::framework::Configurable<int> isGoodZvtxFt0VsPv{"isGoodZvtxFt0VsPv", 0, "small difference between z-vertex from PV and from FT0 (-1: stored in bitmaks; 0 off; 1 on)"};
-  o2::framework::Configurable<int> noCollInTimeRangeNarrow{"noCollInTimeRangeNarrow", 0, "no other collisions in specified time range (narrower than Strict)(-1: stored in bitmaks; 0 off; 1 on)"};
-  o2::framework::Configurable<int> noCollInTimeRangeStrict{"noCollInTimeRangeStrict", 0, "no other collisions in specified time range strict (-1: stored in bitmaks; 0 off; 1 on)"};
-  o2::framework::Configurable<int> noCollInTimeRangeStandard{"noCollInTimeRangeStandard", 0, "no other collisions in specified time range with per-collision multiplicity above threshold (-1: stored in bitmaks; 0 off; 1 on)"};
-  o2::framework::Configurable<int> noCollInRofStrict{"noCollInRofStrict", 0, "no other collisions in this Readout Frame strict (-1: stored in bitmaks; 0 off; 1 on)"};
-  o2::framework::Configurable<int> noCollInRofStandard{"noCollInRofStandard", 0, "no other collisions in this Readout Frame with per-collision multiplicity above threshold (-1: stored in bitmaks; 0 off; 1 on)"};
-  o2::framework::Configurable<int> noHighMultCollInPrevRof{"noHighMultCollInPrevRof", 0, "veto an event if FT0C amplitude in previous ITS ROF is above threshold (-1: stored in bitmaks; 0 off; 1 on)"};
-  o2::framework::Configurable<int> isGoodItsLayer3{"isGoodItsLayer3", 0, "number of inactive chips on ITS layer 3 is below maximum allowed value (-1: stored in bitmaks; 0 off; 1 on)"};
-  o2::framework::Configurable<int> isGoodItsLayer0123{"isGoodItsLayer0123", 0, "numbers of inactive chips on ITS layers 0-3 are below maximum allowed values (-1: stored in bitmaks; 0 off; 1 on)"};
-  o2::framework::Configurable<int> isGoodItsLayerAll{"isGoodItsLayerAll", 0, "numbers of inactive chips on all ITS layers are below maximum allowed values (-1: stored in bitmaks; 0 off; 1 on)"};
-  o2::framework::Configurable<std::vector<float>> occupancyMin{"occupancyMin", {}, "Minimum occpancy"};
-  o2::framework::Configurable<std::vector<float>> occupancyMax{"occupancyMax", {}, "Maximum occpancy"};
+  o2::framework::Configurable<int> sel8{"sel8", 1, "Use sel8 (-1: stored in bitmask; 0 off; 1 on)"};
+  o2::framework::Configurable<int> rctFlags{"rctFlags", 1, "RCT flags ok, checker configured via CollisionRctFlags (-1: stored in bitmask; 0 off; 1 on)"};
+  o2::framework::Configurable<int> noSameBunchPileup{"noSameBunchPileup", 0, "Reject collisions in case of pileup with another collision in the same foundBC (-1: stored in bitmask; 0 off; 1 on)"};
+  o2::framework::Configurable<int> isVertexItsTpc{"isVertexItsTpc", 0, "At least one ITS-TPC track found for the vertex (-1: stored in bitmask; 0 off; 1 on)"};
+  o2::framework::Configurable<int> isGoodZvtxFt0VsPv{"isGoodZvtxFt0VsPv", 0, "small difference between z-vertex from PV and from FT0 (-1: stored in bitmask; 0 off; 1 on)"};
+  o2::framework::Configurable<int> noCollInTimeRangeNarrow{"noCollInTimeRangeNarrow", 0, "no other collisions in specified time range (narrower than Strict)(-1: stored in bitmask; 0 off; 1 on)"};
+  o2::framework::Configurable<int> noCollInTimeRangeStrict{"noCollInTimeRangeStrict", 0, "no other collisions in specified time range strict (-1: stored in bitmask; 0 off; 1 on)"};
+  o2::framework::Configurable<int> noCollInTimeRangeStandard{"noCollInTimeRangeStandard", 0, "no other collisions in specified time range with per-collision multiplicity above threshold (-1: stored in bitmask; 0 off; 1 on)"};
+  o2::framework::Configurable<int> noCollInRofStrict{"noCollInRofStrict", 0, "no other collisions in this Readout Frame strict (-1: stored in bitmask; 0 off; 1 on)"};
+  o2::framework::Configurable<int> noCollInRofStandard{"noCollInRofStandard", 0, "no other collisions in this Readout Frame with per-collision multiplicity above threshold (-1: stored in bitmask; 0 off; 1 on)"};
+  o2::framework::Configurable<int> noHighMultCollInPrevRof{"noHighMultCollInPrevRof", 0, "veto an event if FT0C amplitude in previous ITS ROF is above threshold (-1: stored in bitmask; 0 off; 1 on)"};
+  o2::framework::Configurable<int> isGoodItsLayer3{"isGoodItsLayer3", 0, "number of inactive chips on ITS layer 3 is below maximum allowed value (-1: stored in bitmask; 0 off; 1 on)"};
+  o2::framework::Configurable<int> isGoodItsLayer0123{"isGoodItsLayer0123", 0, "numbers of inactive chips on ITS layers 0-3 are below maximum allowed values (-1: stored in bitmask; 0 off; 1 on)"};
+  o2::framework::Configurable<int> isGoodItsLayerAll{"isGoodItsLayerAll", 0, "numbers of inactive chips on all ITS layers are below maximum allowed values (-1: stored in bitmask; 0 off; 1 on)"};
+  o2::framework::Configurable<std::vector<float>> occupancyMin{"occupancyMin", {}, "Minimum occupancy"};
+  o2::framework::Configurable<std::vector<float>> occupancyMax{"occupancyMax", {}, "Maximum occupancy"};
   o2::framework::Configurable<std::vector<float>> sphericityMin{"sphericityMin", {}, "Minimum sphericity"};
   o2::framework::Configurable<std::vector<float>> sphericityMax{"sphericityMax", {}, "Maximum sphericity"};
   o2::framework::Configurable<std::vector<std::string>> triggers{"triggers", {}, "List of all triggers to be used"};
+  o2::framework::Configurable<int> triggerBcTolerance{"triggerBcTolerance", 100, "Tolerance for +-(bc range) around triggered collisions"};
   o2::framework::Configurable<int> eventPlaneAngleDetector{"eventPlaneAngleDetector", 0, "Detector used to estimate the event plane angle: 0 -> FT0C, 1 -> FT0A"};
   o2::framework::Configurable<int> qvecDetector{"qvecDetector", 0, "Detector used to estimate the Q-vector: 0 -> FT0C, 1 -> FT0A"};
   o2::framework::Configurable<int> qvecHarmonic{"qvecHarmonic", 2, "Harmonic n of the Q-vector and event plane angle Psi_n: 2 -> elliptic, 3 -> triangular"};
@@ -90,7 +96,7 @@ struct ConfCollisionBits : o2::framework::ConfigurableGroup {
 struct ConfCcdb : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("ConfCcdb");
   o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL to ccdb"};
-  o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/Config/GRPMagField", "Path to GRP object (Run3 -> GLO/Config/GRPMagField, Run2 -> GLO/GRP/GRP"};
+  o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/Config/GRPMagField", "Path to GRP object (Run3 -> GLO/Config/GRPMagField, Run2 -> GLO/GRP/GRP)"};
   o2::framework::Configurable<std::string> triggerPath{"triggerPath", "EventFiltering/Zorro/", "CCDB path for trigger information"};
   o2::framework::Configurable<int> magFieldForced{"magFieldForced", 0, "Force value for magnetic field (kG). This will skip calls to the ccdb. Deactivate by setting value to 0"};
 };
@@ -118,7 +124,7 @@ struct ConfCollisionSelection : o2::framework::ConfigurableGroup {
 
 /// enum for all collision selections
 enum CollisionSels {
-  // collsion selection flags
+  // collision selection flags
   kSel8,                      ///< Sel8
   kRctFlags,                  ///< RCT flags ok
   kNoSameBunchPileUp,         ///< Reject collisions in case of pileup with another collision in the same foundBC
@@ -144,6 +150,7 @@ enum CollisionSels {
 };
 
 constexpr char ColSelHistName[] = "hCollisionSelection";
+constexpr char GenCollisionSelHistName[] = "hGenCollisionSelection";
 const char colSelsName[] = "Collision Selection Object";
 const std::unordered_map<CollisionSels, std::string> collisionSelectionNames = {
   {kSel8, "Sel8"},
@@ -153,10 +160,10 @@ const std::unordered_map<CollisionSels, std::string> collisionSelectionNames = {
   {kIsGoodZvtxFt0VsPv, "Is good zvtx FT0 vs PV"},
   {kNoCollInTimeRangeNarrow, "No collision in time range narrow"},
   {kNoCollInTimeRangeStrict, "No collision in time range strict"},
-  {kNoCollInTimeRangeStandard, "No collission in time range standard"},
-  {kNoCollInRofStrict, "No collsion in ROF strict"},
+  {kNoCollInTimeRangeStandard, "No collision in time range standard"},
+  {kNoCollInRofStrict, "No collision in ROF strict"},
   {kNoCollInRofStandard, "No collision in ROF standard"},
-  {kNoHighMultCollInPrevRof, "No high mult collsions in previous ROF"},
+  {kNoHighMultCollInPrevRof, "No high mult collisions in previous ROF"},
   {kIsGoodItsLayer3, "Is good ITS layer 3"},
   {kIsGoodItsLayer0123, "Is good ITS layer 0-3"},
   {kIsGoodItsLayerAll, "Is good ITS layer all"},
@@ -235,6 +242,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     // trigger (Zorro) setup
     if (!config.triggers.value.empty()) {
       mUseTrigger = true;
+      mTriggerBcTolerance = config.triggerBcTolerance.value;
       for (size_t i = 0; i < config.triggers.value.size(); ++i) {
         mTriggerNames += config.triggers.value[i];
         if (i != config.triggers.value.size() - 1) {
@@ -262,6 +270,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
 
     this->addSelection(kSel8, collisionSelectionNames.at(kSel8), config.sel8.value);
     this->addSelection(kRctFlags, collisionSelectionNames.at(kRctFlags), config.rctFlags.value);
+    this->addComments(kRctFlags, "label = " + confRct.label.value + "; useZdc = " + std::to_string(confRct.useZdc.value) + "; treatLimitedAcceptanceAsBad = " + std::to_string(confRct.treatLimitedAcceptanceAsBad.value));
     this->addSelection(kNoSameBunchPileUp, collisionSelectionNames.at(kNoSameBunchPileUp), config.noSameBunchPileup.value);
     this->addSelection(kIsVertexItsTpc, collisionSelectionNames.at(kIsVertexItsTpc), config.isVertexItsTpc.value);
     this->addSelection(kIsGoodZvtxFt0VsPv, collisionSelectionNames.at(kIsGoodZvtxFt0VsPv), config.isGoodZvtxFt0VsPv.value);
@@ -308,7 +317,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
       return;
     }
     LOG(info) << "Init Zorro with Run Number: " << runNumber << "; timestamp: " << timestamp << "; Trigger Names: " << mTriggerNames;
-    mZorro.initCCDB(ccdb.service, runNumber, timestamp, mTriggerNames);
+    mZorro.initCCDB(ccdb.service, runNumber, timestamp, mTriggerNames, mTriggerBcTolerance);
     mZorro.populateHistRegistry(histRegistry, runNumber);
   }
 
@@ -319,7 +328,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     if (!mUseTrigger) {
       return {};
     }
-    return mZorro.getTriggerOfInterestResults(globalBC);
+    return mZorro.getTriggerOfInterestResults(globalBC, mTriggerBcTolerance);
   }
 
   void setMagneticField(int MagField)
@@ -333,7 +342,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   }
 
   template <typename T>
-  void setSphericity(T tracks)
+  void setSphericity(T const& tracks)
   {
     mSphericity = computeSphericity(tracks);
   }
@@ -462,7 +471,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   {
     this->reset();
 
-    // casting bool to float gurantees false -> 0 and true -> 1
+    // casting bool to float guarantees false -> 0 and true -> 1
     // and we check for equality to 1, so evaluation succeeds if the selection bit is true
     this->evaluateObservable(kSel8, static_cast<float>(col.sel8()));
     this->evaluateObservable(kNoSameBunchPileUp, static_cast<float>(col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)));
@@ -586,6 +595,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   // trigger (Zorro)
   Zorro mZorro;
   bool mUseTrigger = false;
+  int mTriggerBcTolerance = 100;
   std::string mTriggerNames = std::string("");
 };
 
@@ -629,6 +639,22 @@ class CollisionBuilder
     mMagFieldForced = confCcdb.magFieldForced.value;
     mGrpPath = confCcdb.grpPath.value;
     mSubGeneratorId = confFilter.subGeneratorId.value;
+
+    if (mSubGeneratorId >= 0) {
+      LOG(warn) << "CollisionFilter.subGeneratorId = " << mSubGeneratorId << " is active: only collisions "
+                << "whose generated collision has this exact sub-generator ID (0 = MB, >0 = injected signal) "
+                << "are kept. This only makes sense for productions with an injected signal, where "
+                << "sub-generator IDs distinguish the injected signal from the underlying event. General-"
+                << "purpose MC never sets a sub-generator ID, so this filter silently discards the entire "
+                << "sample -- with no trace in hCollisionSelection, since that histogram is filled earlier, "
+                << "independent of this check. Check hGenCollisionSelection, and only use this filter on "
+                << "injected-signal productions.";
+
+      mHistRegistry = registry;
+      mHistRegistry->add(static_cast<char const*>(GenCollisionSelHistName), "; ; Entries", o2::framework::HistType::kTH1F, {{2, -0.5, 1.5}});
+      mHistRegistry->get<TH1>(HIST(GenCollisionSelHistName))->GetXaxis()->SetBinLabel(1, "All analyzed");
+      mHistRegistry->get<TH1>(HIST(GenCollisionSelHistName))->GetXaxis()->SetBinLabel(2, "Passed sub-generator ID filter");
+    }
 
     mProducedCollisions = utils::enableTable("FCols_001", confTable.produceCollisions.value, initContext);
     mProducedLiteCollisions = utils::enableTable("FLiteCols_001", confTable.produceLiteCollisions.value, initContext);
@@ -724,9 +750,11 @@ class CollisionBuilder
     if (mSubGeneratorId >= 0) {
       if (col.has_mcCollision()) {
         auto mcCol = col.template mcCollision_as<T2>();
+        mHistRegistry->fill(HIST(GenCollisionSelHistName), 0);
         if (mcCol.getSubGeneratorId() != mSubGeneratorId) {
           return false;
         }
+        mHistRegistry->fill(HIST(GenCollisionSelHistName), 1);
       }
     }
 
@@ -827,6 +855,7 @@ class CollisionBuilder
 
  private:
   CollisionSelection<SelectionHistName, FilterHistName> mCollisionSelection;
+  o2::framework::HistogramRegistry* mHistRegistry = nullptr;
   bool mCollisionAlreadyFilled = false;
   int64_t mCurrentCollisionIndex = -1;
   int mRunNumber = -1;
@@ -851,11 +880,36 @@ struct CollisionBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::StoredFColMasks> producedCollisionMask;
 };
 
+// configurable for uniform collision downsampling
+struct ConfCollisionDownsampling : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("CollisionDownsampling");
+  o2::framework::Configurable<float> fraction{"fraction", 1.f, "Fraction of collisions (that already passed all other selections) to keep via uniform random downsampling. 1 = keep all (default, no-op), 0 = keep none."};
+  o2::framework::Configurable<int64_t> seed{"seed", 0, "Seed for the downsampling RNG. Set to 0 to generate a unique seed from the current time, or to a fixed positive value for reproducible downsampling."};
+};
+
 class CollisionBuilderDerivedToDerived
 {
  public:
   CollisionBuilderDerivedToDerived() = default;
   ~CollisionBuilderDerivedToDerived() = default;
+
+  void init(ConfCollisionDownsampling const& confDownsampling)
+  {
+    mFraction = confDownsampling.fraction.value;
+    uint64_t randomSeed = confDownsampling.seed.value == 0
+                            ? static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
+                            : static_cast<uint64_t>(confDownsampling.seed.value);
+    mRng = std::mt19937(randomSeed);
+  }
+
+  /// \return true if this collision is randomly rejected by the configured downsampling fraction
+  bool collisionFailsDownsampling()
+  {
+    if (mFraction >= 1.f) {
+      return false;
+    }
+    return mDist(mRng) >= mFraction;
+  }
 
   template <typename T1, typename T2>
   void processCollision(T1& col, T2& newCollisionTable)
@@ -866,6 +920,11 @@ class CollisionBuilderDerivedToDerived
                                         col.magField());
     newCollisionTable.producedCollisionMask(col.mask());
   }
+
+ private:
+  float mFraction = 1.f;
+  std::mt19937 mRng;
+  std::uniform_real_distribution<float> mDist{0.f, 1.f};
 };
 
 } // namespace o2::analysis::femto::collisionbuilder

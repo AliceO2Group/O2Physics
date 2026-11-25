@@ -46,9 +46,11 @@
 
 #include <RtypesCore.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <utility>
@@ -111,6 +113,7 @@ struct SginclusivePhiKstarSD {
   Configurable<float> pt3{"pt3", 0.5, "pid selection pt3"};
 
   Configurable<bool> useMultCut{"useMultCut", false, "Multipicity cut on good tracks"};
+  Configurable<bool> applyTrackTofMatching{"applyTrackTofMatching", false, "Require at least one track with a TOF hit"};
 
   Configurable<bool> rapiditycut{"rapiditycut", true, "Rapidity Cut"};
   Configurable<float> rapiditycutvalue{"rapiditycutvalue", 0.5, "Rapidity Cut value"};
@@ -154,6 +157,27 @@ struct SginclusivePhiKstarSD {
   ConfigurableAxis axisrhomass{"axisrhomass", {200, 1.0, 2.0}, ""};
   ConfigurableAxis axispt{"axispt", {200, 0.0, 20.0}, ""};
   ConfigurableAxis axisrapdity{"axisrapdity", {40, -2.0, 2.0}, ""};
+
+  std::vector<int> runNumbers = {
+    544013, 544028, 544032, 544091, 544095, 544098, 544116, 544121, 544122, 544123,
+    544124, 544184, 544185, 544389, 544390, 544391, 544392, 544451, 544454, 544474,
+    544475, 544476, 544477, 544490, 544491, 544492, 544508, 544510, 544511, 544512,
+    544514, 544515, 544518, 544548, 544549, 544550, 544551, 544564, 544565, 544567,
+    544568, 544580, 544582, 544583, 544585, 544614, 544640, 544652, 544653, 544672,
+    544674, 544692, 544693, 544694, 544696, 544739, 544742, 544754, 544767, 544794,
+    544795, 544797, 544813, 544868, 544886, 544887, 544896, 544913, 544914, 544917,
+    544931, 544947, 544961, 544963, 544964, 544968, 544992, 545009, 545044, 545047,
+    545063, 545064, 545066, 545185, 545210, 545223, 545249, 545291, 545294, 545295,
+    545296, 545312};
+
+  int getRunBin(int runNumber)
+  {
+    auto it = std::lower_bound(runNumbers.begin(), runNumbers.end(), runNumber);
+    if (it == runNumbers.end() || *it != runNumber) {
+      return -1;
+    }
+    return static_cast<int>(std::distance(runNumbers.begin(), it)) + 1;
+  }
 
   int numTwoTracks = 2;
   int numFourTracks = 4;
@@ -307,6 +331,13 @@ struct SginclusivePhiKstarSD {
       rQA.add("V0A_2", "V0A amplitude", kTH1F, {{1000, 0.0, 1000.0}});
       rQA.add("V0A_0", "V0A amplitude", kTH1F, {{1000, 0.0, 1000.0}});
       rQA.add("V0A_1", "V0A amplitude", kTH1F, {{1000, 0.0, 1000.0}});
+
+      rQA.add("hIntRateVsRun", "Hadronic interaction rate; Run number; Hadronic interaction rate (kHz)", kTH2F, {{92, 0.5, 92.5}, {1000, 0., 50.}});
+      auto hIntRateVsRun = rQA.get<TH2>(HIST("hIntRateVsRun"));
+      for (size_t i = 0; i < runNumbers.size(); ++i) {
+        hIntRateVsRun->GetXaxis()->SetBinLabel(i + 1, Form("%d", runNumbers[i]));
+      }
+      hIntRateVsRun->GetXaxis()->LabelsOption("v");
     }
     registry.add("gap_mult0", "Mult 0", kTH1F, {{100, 0.0, 100.0}});
     registry.add("gap_mult1", "Mult 1", kTH1F, {{100, 0.0, 100.0}});
@@ -785,6 +816,11 @@ struct SginclusivePhiKstarSD {
   {
     if (qa) {
       rQA.fill(HIST("hOcc_before"), collision.occupancyInTime());
+
+      int runBin = getRunBin(collision.runNumber());
+      if (runBin > 0 && collision.hadronicRate() > 0.) {
+        rQA.fill(HIST("hIntRateVsRun"), runBin, collision.hadronicRate());
+      }
     }
 
     ROOT::Math::PxPyPzMVector v0;
@@ -941,6 +977,10 @@ struct SginclusivePhiKstarSD {
         continue;
       }
 
+      if (applyTrackTofMatching && !t0.hasTOF() && !t1.hasTOF()) {
+        continue;
+      }
+
       if (phi && selectionPIDKaon1(t0) && selectionPIDKaon1(t1)) {
         // Apply kaon hypothesis and create pairs
         v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
@@ -1023,6 +1063,11 @@ struct SginclusivePhiKstarSD {
       if (t0.globalIndex() == t1.globalIndex()) {
         continue;
       }
+
+      if (applyTrackTofMatching && !t0.hasTOF() && !t1.hasTOF()) {
+        continue;
+      }
+
       if (rho && selectionPIDProton(t0, useTof, nsigmaTpcCut, nsigmaTofCut) && selectionPIDKaon1(t1)) {
         v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassProton);
         v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
@@ -1212,6 +1257,11 @@ struct SginclusivePhiKstarSD {
         if ((trackselector(track1, parameters) == 0) || (trackselector(track2, parameters) == 0)) {
           continue;
         }
+
+        if (applyTrackTofMatching && !track1.hasTOF() && !track2.hasTOF()) {
+          continue;
+        }
+
         if (phi && selectionPIDKaon1(track1) && selectionPIDKaon1(track2)) {
           v0.SetCoordinates(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassKaonCharged);
           v1.SetCoordinates(track2.px(), track2.py(), track2.pz(), o2::constants::physics::MassKaonCharged);
@@ -1237,6 +1287,11 @@ struct SginclusivePhiKstarSD {
         if (track1.globalIndex() == track2.globalIndex()) {
           continue;
         }
+
+        if (applyTrackTofMatching && !track1.hasTOF() && !track2.hasTOF()) {
+          continue;
+        }
+
         if (kstar && selectionPIDKaon1(track1) && selectionPIDPion1(track2)) {
           v0.SetCoordinates(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassKaonCharged);
           v1.SetCoordinates(track2.px(), track2.py(), track2.pz(), o2::constants::physics::MassPionCharged);
@@ -1824,6 +1879,11 @@ struct SginclusivePhiKstarSD {
       if (!tr1.has_udMcParticle() || !tr2.has_udMcParticle()) {
         continue;
       }
+
+      if (applyTrackTofMatching && !tr1.hasTOF() && !tr2.hasTOF()) {
+        continue;
+      }
+
       if (!selectionPIDPion1(tr1) || !selectionPIDKaon1(tr2)) {
         continue;
       }
@@ -2092,6 +2152,10 @@ struct SginclusivePhiKstarSD {
         continue;
       }
 
+      if (applyTrackTofMatching && !t0.hasTOF() && !t1.hasTOF()) {
+        continue;
+      }
+
       if (phi && selectionPIDKaon1(t0) && selectionPIDKaon1(t1)) {
         // Apply kaon hypothesis and create pairs
         v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
@@ -2174,6 +2238,11 @@ struct SginclusivePhiKstarSD {
       if (t0.globalIndex() == t1.globalIndex()) {
         continue;
       }
+
+      if (applyTrackTofMatching && !t0.hasTOF() && !t1.hasTOF()) {
+        continue;
+      }
+
       if (rho && selectionPIDProton(t0, useTof, nsigmaTpcCut, nsigmaTofCut) && selectionPIDKaon1(t1)) {
         v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassProton);
         v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
@@ -2365,6 +2434,11 @@ struct SginclusivePhiKstarSD {
         if ((trackselector(track1, parameters) == 0) || (trackselector(track2, parameters) == 0)) {
           continue;
         }
+
+        if (applyTrackTofMatching && !track1.hasTOF() && !track2.hasTOF()) {
+          continue;
+        }
+
         if (phi && selectionPIDKaon1(track1) && selectionPIDKaon1(track2)) {
           v0.SetCoordinates(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassKaonCharged);
           v1.SetCoordinates(track2.px(), track2.py(), track2.pz(), o2::constants::physics::MassKaonCharged);
@@ -2390,6 +2464,11 @@ struct SginclusivePhiKstarSD {
         if (track1.globalIndex() == track2.globalIndex()) {
           continue;
         }
+
+        if (applyTrackTofMatching && !track1.hasTOF() && !track2.hasTOF()) {
+          continue;
+        }
+
         if (kstar && selectionPIDKaon1(track1) && selectionPIDPion1(track2)) {
           v0.SetCoordinates(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassKaonCharged);
           v1.SetCoordinates(track2.px(), track2.py(), track2.pz(), o2::constants::physics::MassPionCharged);

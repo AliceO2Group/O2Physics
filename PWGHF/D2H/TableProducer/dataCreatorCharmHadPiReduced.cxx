@@ -187,7 +187,8 @@ struct HfDataCreatorCharmHadPiReduced {
     Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
     Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
     Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B0 is smaller than this"};
-    Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+    Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old < this"};
+    Configurable<double> maxChi2{"maxChi2", 1.e9, "maximum chi2 for vertex reconstruction"};
   } vertexConfigurations;
   // selection
   struct : o2::framework::ConfigurableGroup {
@@ -201,6 +202,7 @@ struct HfDataCreatorCharmHadPiReduced {
   struct : o2::framework::ConfigurableGroup {
     Configurable<double> cpaMin{"cpaMin", 0., "Minimum cosine of pointing angle for B candidates"};
     Configurable<double> decLenMin{"decLenMin", 0., "Minimum decay length for B candidates"};
+    Configurable<double> impParProductMax{"impParProductMax", 10., "Maximum product of the impact parameters of the B daughters (cm^2)"};
   } bhadronConfigurations;
   // HF flags
   struct : o2::framework::ConfigurableGroup {
@@ -255,6 +257,7 @@ struct HfDataCreatorCharmHadPiReduced {
   using CollisionsWCentAndMcLabels = soa::Join<CollisionsWCent, aod::McCollisionLabels>;
   using CollisionsWCentAndQvectors = soa::Join<CollisionsWCent, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls>;
   using BCsInfo = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
+  using McCollisionsWMult = soa::Join<aod::McCollisions, aod::MultsExtraMC>;
 
   Filter filterSelectDplusCandidates = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= hfflagConfigurations.selectionFlagDplus);
   Filter filterSelectDsCandidates = (aod::hf_sel_candidate_ds::isSelDsToKKPi >= hfflagConfigurations.selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= hfflagConfigurations.selectionFlagDs);
@@ -325,6 +328,7 @@ struct HfDataCreatorCharmHadPiReduced {
     df2.setMinRelChi2Change(vertexConfigurations.minRelChi2Change);
     df2.setUseAbsDCA(vertexConfigurations.useAbsDCA);
     df2.setWeightedFinalPCA(vertexConfigurations.useWeightedFinalPCA);
+    df2.setMaxChi2(vertexConfigurations.maxChi2);
     df2.setMatCorrType(noMatCorr);
     if (doprocessDplusPiData || doprocessDplusPiDataWithMl || doprocessDplusPiDataWithQvec || doprocessDplusPiDataWithMlAndQvec || doprocessDplusPiMc || doprocessDplusPiMcWithMl ||
         doprocessDsPiData || doprocessDsPiDataWithMl || doprocessDsPiDataWithQvec || doprocessDsPiDataWithMlAndQvec || doprocessDsPiMc || doprocessDsPiMcWithMl ||
@@ -336,6 +340,7 @@ struct HfDataCreatorCharmHadPiReduced {
       df3.setMinRelChi2Change(vertexConfigurations.minRelChi2Change);
       df3.setUseAbsDCA(vertexConfigurations.useAbsDCA);
       df3.setWeightedFinalPCA(vertexConfigurations.useWeightedFinalPCA);
+      df3.setMaxChi2(vertexConfigurations.maxChi2);
       df3.setMatCorrType(noMatCorr);
     }
 
@@ -1031,8 +1036,9 @@ struct HfDataCreatorCharmHadPiReduced {
   /// \param momentum is the B meson momentum
   /// \param secondaryVertex is the reconstructed secondary vertex
   /// \param collision is the reconstructed collision
+  /// \param impParProduct is the product of the impact parameters of the B daughters
   template <typename T1, typename T2, typename T3>
-  bool isBHadronSelected(const T1& momentum, const T2& secondaryVertex, const T3& collision)
+  bool isBHadronSelected(const T1& momentum, const T2& secondaryVertex, const T3& collision, const float impParProduct)
   {
     // B candidate CPA
     if (RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex, momentum) < bhadronConfigurations.cpaMin) {
@@ -1041,6 +1047,11 @@ struct HfDataCreatorCharmHadPiReduced {
 
     // B candidate decay length
     if (RecoDecay::distance(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex) < bhadronConfigurations.decLenMin) {
+      return false;
+    }
+
+    // B candidate product of daughter impact parameters
+    if (impParProduct > bhadronConfigurations.impParProductMax) {
       return false;
     }
 
@@ -1361,7 +1372,10 @@ struct HfDataCreatorCharmHadPiReduced {
         df2.getTrack(0).getPxPyPzGlo(pVecDHad);
         df2.getTrack(1).getPxPyPzGlo(pVecDau);
         pVecBHad = RecoDecay::pVec(pVecDHad, pVecDau);
-        if (!isBHadronSelected(pVecBHad, secondaryVertexBHad, collision)) {
+        o2::track::TrackParCov trackParCovCharmHadAtPv = trackParCovCharmHad;
+        std::array<float, 2> dcaCharmHad{};
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovCharmHadAtPv, 2.f, noMatCorr, &dcaCharmHad);
+        if (!isBHadronSelected(pVecBHad, secondaryVertexBHad, collision, dcaCharmHad[0] * dcaPion[0])) {
           continue;
         }
         // fill Pion tracks table
@@ -1557,7 +1571,7 @@ struct HfDataCreatorCharmHadPiReduced {
   }
 
   template <uint8_t DecayChannel>
-  void runMcGen(aod::McCollision const& mcCollision,
+  void runMcGen(McCollisionsWMult::iterator const& mcCollision,
                 aod::McParticles const& particlesMc,
                 CollisionsWCentAndMcLabels const& collisions,
                 BCsInfo const&)
@@ -2333,7 +2347,7 @@ struct HfDataCreatorCharmHadPiReduced {
                         TracksPidWithSelAndMc const& tracks,
                         aod::McParticles const& particlesMc,
                         BCsInfo const& bcs,
-                        McCollisions const& mcCollisions)
+                        McCollisionsWMult const& mcCollisions)
   {
     // store configurables needed for B0 workflow
     if (!isHfCandBhadConfigFilled) {
@@ -2368,7 +2382,7 @@ struct HfDataCreatorCharmHadPiReduced {
                               TracksPidWithSelAndMc const& tracks,
                               aod::McParticles const& particlesMc,
                               BCsInfo const& bcs,
-                              McCollisions const& mcCollisions)
+                              McCollisionsWMult const& mcCollisions)
   {
     // store configurables needed for B0 workflow
     if (!isHfCandBhadConfigFilled) {
@@ -2403,7 +2417,7 @@ struct HfDataCreatorCharmHadPiReduced {
                         TracksPidWithSelAndMc const& tracks,
                         aod::McParticles const& particlesMc,
                         BCsInfo const& bcs,
-                        McCollisions const& mcCollisions,
+                        McCollisionsWMult const& mcCollisions,
                         aod::Hf2Prongs const&)
   {
     // store configurables needed for B0 workflow
@@ -2439,7 +2453,7 @@ struct HfDataCreatorCharmHadPiReduced {
                               TracksPidWithSelAndMc const& tracks,
                               aod::McParticles const& particlesMc,
                               BCsInfo const& bcs,
-                              McCollisions const& mcCollisions,
+                              McCollisionsWMult const& mcCollisions,
                               aod::Hf2Prongs const&)
   {
     // store configurables needed for B0 workflow
@@ -2475,7 +2489,7 @@ struct HfDataCreatorCharmHadPiReduced {
                      TracksPidWithSelAndMc const& tracks,
                      aod::McParticles const& particlesMc,
                      BCsInfo const& bcs,
-                     McCollisions const& mcCollisions)
+                     McCollisionsWMult const& mcCollisions)
   {
     // store configurables needed for Bs workflow
     if (!isHfCandBhadConfigFilled) {
@@ -2510,7 +2524,7 @@ struct HfDataCreatorCharmHadPiReduced {
                            TracksPidWithSelAndMc const& tracks,
                            aod::McParticles const& particlesMc,
                            BCsInfo const& bcs,
-                           McCollisions const& mcCollisions)
+                           McCollisionsWMult const& mcCollisions)
   {
     // store configurables needed for Bs workflow
     if (!isHfCandBhadConfigFilled) {
@@ -2545,7 +2559,7 @@ struct HfDataCreatorCharmHadPiReduced {
                      TracksPidWithSelAndMc const& tracks,
                      aod::McParticles const& particlesMc,
                      BCsInfo const& bcs,
-                     McCollisions const& mcCollisions)
+                     McCollisionsWMult const& mcCollisions)
   {
     // store configurables needed for B+ workflow
     if (!isHfCandBhadConfigFilled) {
@@ -2580,7 +2594,7 @@ struct HfDataCreatorCharmHadPiReduced {
                            TracksPidWithSelAndMc const& tracks,
                            aod::McParticles const& particlesMc,
                            BCsInfo const& bcs,
-                           McCollisions const& mcCollisions)
+                           McCollisionsWMult const& mcCollisions)
   {
     // store configurables needed for B+ workflow
     if (!isHfCandBhadConfigFilled) {
@@ -2615,7 +2629,7 @@ struct HfDataCreatorCharmHadPiReduced {
                      TracksPidWithSelAndMc const& tracks,
                      aod::McParticles const& particlesMc,
                      BCsInfo const& bcs,
-                     McCollisions const& mcCollisions)
+                     McCollisionsWMult const& mcCollisions)
   {
     // store configurables needed for Lb workflow
     if (!isHfCandBhadConfigFilled) {
@@ -2650,7 +2664,7 @@ struct HfDataCreatorCharmHadPiReduced {
                            TracksPidWithSelAndMc const& tracks,
                            aod::McParticles const& particlesMc,
                            BCsInfo const& bcs,
-                           McCollisions const& mcCollisions)
+                           McCollisionsWMult const& mcCollisions)
   {
     // store configurables needed for Lb workflow
     if (!isHfCandBhadConfigFilled) {

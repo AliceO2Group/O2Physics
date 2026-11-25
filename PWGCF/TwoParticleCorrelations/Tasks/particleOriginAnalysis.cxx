@@ -328,7 +328,7 @@ struct ParticleOriginAnalysis {
     }
   }
 
-  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == uint8_t(true));
+  Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == static_cast<uint8_t>(true));
 
   /// \brief Process: one accepted generator-level collision at a time
   /// with its associated MC particles joined with filter information.

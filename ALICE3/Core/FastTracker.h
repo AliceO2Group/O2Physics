@@ -58,7 +58,7 @@ class FastTracker
   /// \param phiEnd End angle of the dead region (in radians)
   void addDeadPhiRegionInLayer(const std::string& layerName, float phiStart, float phiEnd);
   [[nodiscard]] DetLayer getLayer(const int layer) const { return layers[layer]; }
-  [[nodiscard]] std::vector<DetLayer> getLayers() const { return layers; }
+  [[nodiscard]] const std::vector<DetLayer>& getLayers() const { return layers; }
   [[nodiscard]] int getLayerIndex(const std::string& name) const;
   [[nodiscard]] size_t getNLayers() const { return layers.size(); }
   [[nodiscard]] bool isLayerInert(const int layer) const { return layers[layer].isInert(); }
@@ -93,6 +93,7 @@ class FastTracker
    *
    * Propagates the given input track through the detector layers, applying
    * relevant corrections and updates, and stores the result in outputTrack.
+   * Silicon disks are not included in this tracking calculation.
    *
    * @param inputTrack The input track parameters and covariance (const, by value).
    * @param outputTrack Reference to the output track parameters and covariance, to be filled.
@@ -100,6 +101,16 @@ class FastTracker
    * @return int i.e. number of intercepts (implementation-defined).
    */
   int fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, const float nch, const float maxRadius = 100.f);
+
+  struct SiliconLayerHits {
+    int count = 0;
+    float innerRadius = -1.f;
+    float outerRadius = -1.f;
+  };
+  /// Count distinct silicon cylinders and disks crossed in the first turn of
+  /// the ideal production helix, including their longitudinal/radial acceptance.
+  /// Material, dead regions and layer efficiencies are not applied. count is -1 on error.
+  [[nodiscard]] SiliconLayerHits countSiliconLayerHits(const o2::track::TrackParCov& track) const;
 
   // For efficiency calculation
   float dist(float z, float radius);
@@ -117,6 +128,7 @@ class FastTracker
   void setLhcUPCscale(float s) { lhcUPCScale = s; }
   void setBField(float b) { magneticField = b; }
   void setMinRadTrack(float r) { fMinRadTrack = r; }
+  void setMaxSnp(float snp) { mMaxSnp = snp; }
   void setMagneticField(float b) { magneticField = b; }
   void setApplyZacceptance(bool b) { mApplyZacceptance = b; }
   void setApplyMSCorrection(bool b) { mApplyMSCorrection = b; }
@@ -127,6 +139,8 @@ class FastTracker
   [[nodiscard]] int getNIntercepts() const { return nIntercepts; }
   [[nodiscard]] int getNSiliconPoints() const { return nSiliconPoints; }
   [[nodiscard]] int getNGasPoints() const { return nGasPoints; }
+  [[nodiscard]] float getTrackIU() const { return trackIU; }
+  [[nodiscard]] float getTrackOU() const { return trackOU; }
   [[nodiscard]] float getGoodHitProb(int layer) const
   {
     return (layer >= 0 && static_cast<size_t>(layer) < goodHitProbability.size()) ? goodHitProbability[layer] : 0.0f;
@@ -163,6 +177,7 @@ class FastTracker
   float lhcUPCScale = 1.0f;             /// scale factor for LHC UPC events
   float upcBackgroundMultiplier = 1.0f; /// multiplier for UPC background
   float fMinRadTrack = 132.f;           /// minimum radius for track propagation in cm
+  float mMaxSnp = 0.85f;                /// max. |sin(phi)| at a layer in its own frame for the layer to count as reached (DetectorK fMaxSnp)
 
   /// counters for covariance matrix statuses
   uint64_t covMatOK = 0;    /// cov mat has positive eigenvals
@@ -172,6 +187,8 @@ class FastTracker
   int nIntercepts = 0;    /// found in first outward propagation
   int nSiliconPoints = 0; /// silicon-based space points added to track
   int nGasPoints = 0;     /// tpc-based space points added to track
+  float trackIU = -1.f;   /// innermost update: radius of the innermost active-layer hit added to track
+  float trackOU = -1.f;   /// outermost update: radius of the outermost active-layer hit added to track
   std::vector<float> goodHitProbability;
 
   ClassDef(FastTracker, 1);

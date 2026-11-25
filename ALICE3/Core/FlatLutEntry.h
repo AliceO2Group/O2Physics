@@ -122,6 +122,14 @@ class FlatLutData
    */
   void initialize(const lutHeader_t& header);
 
+  /**
+   * @brief the number of entries in the LUT, based on the cached dimensions.
+   */
+  [[nodiscard]] size_t lutSize() const { return mNchBins * mRadBins * mEtaBins * mPtBins; }
+
+  /**
+   * @brief Calculate the linear index of a LUT entry based on its bin indices.
+   */
   [[nodiscard]] size_t getEntryIndex(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const
   {
     // Linear index: nch varies slowest, pt varies fastest
@@ -138,6 +146,11 @@ class FlatLutData
    * @brief Get LUT entry by bin indices (owned)
    */
   lutEntry_t* getEntry(int nch_bin, int rad_bin, int eta_bin, int pt_bin);
+
+  /**
+   * @brief Set LUT entry
+   */
+  void setEntry(int rad_bin, const lutEntry_t& entry);
 
   /**
    * @brief Get LUT header (view)
@@ -200,12 +213,12 @@ class FlatLutData
    */
   void reset();
 
- private:
   /**
    * @brief Linear index calculation for entry access
    */
   [[nodiscard]] size_t getEntryOffset(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const;
 
+ private:
   /**
    * @brief Update dimensions from the current header
    */

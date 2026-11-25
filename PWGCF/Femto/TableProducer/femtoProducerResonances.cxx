@@ -47,16 +47,16 @@ struct FemtoProducerResonances {
 
   // setup for resonance daughter tracks
   trackbuilder::ConfPionPlusSelection confPionPlusSelection;
-  o2::framework::Partition<FemtoTracks> pionPlusPartition = MAKE_TRACK_PARTITION(confPionPlusSelection);
+  o2::framework::Partition<FemtoTracks> pionPlusPartition = MAKE_RESONANCE_DAUGHTER_PARTITION(confPionPlusSelection);
 
   trackbuilder::ConfPionMinusSelection confPionMinusSelection;
-  o2::framework::Partition<FemtoTracks> pionMinusPartition = MAKE_TRACK_PARTITION(confPionMinusSelection);
+  o2::framework::Partition<FemtoTracks> pionMinusPartition = MAKE_RESONANCE_DAUGHTER_PARTITION(confPionMinusSelection);
 
   trackbuilder::ConfKaonPlusSelection confKaonPlusSelection;
-  o2::framework::Partition<FemtoTracks> kaonPlusPartition = MAKE_TRACK_PARTITION(confKaonPlusSelection);
+  o2::framework::Partition<FemtoTracks> kaonPlusPartition = MAKE_RESONANCE_DAUGHTER_PARTITION(confKaonPlusSelection);
 
   trackbuilder::ConfKaonMinusSelection confKaonMinusSelection;
-  o2::framework::Partition<FemtoTracks> kaonMinusPartition = MAKE_TRACK_PARTITION(confKaonMinusSelection);
+  o2::framework::Partition<FemtoTracks> kaonMinusPartition = MAKE_RESONANCE_DAUGHTER_PARTITION(confKaonMinusSelection);
 
   o2::framework::Preslice<FemtoTracks> perColtracks = o2::aod::femtobase::stored::fColId;
 

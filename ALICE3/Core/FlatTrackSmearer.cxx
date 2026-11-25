@@ -21,6 +21,7 @@
 
 #include <TRandom.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -171,7 +172,7 @@ bool TrackSmearer::viewTable(int pdg, const uint8_t* buffer, size_t size, bool f
 
 bool TrackSmearer::viewTable(int pdg, std::span<std::byte> const& span, bool forceReload)
 {
-  return viewTable(pdg, reinterpret_cast<const uint8_t*>(span.data()), span.size_bytes(), forceReload);
+  return viewTable(pdg, reinterpret_cast<const uint8_t*>(span.data()), span.size_bytes(), forceReload); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 }
 
 bool TrackSmearer::hasTable(int pdg) const
@@ -323,7 +324,10 @@ bool TrackSmearer::smearTrack(O2Track& o2track, const lutEntry_t* lutEntry, cons
     for (int j = 0; j < kNumEigenModes; ++j) {
       val += lutEntry->eigvec[j][i] * o2track.getParam(j);
     }
-    params[i] = gRandom->Gaus(val, std::sqrt(lutEntry->eigval[i]));
+    // A LUT covariance close to singular (strongly correlated parameters at low pT) can carry a tiny negative
+    // eigenvalue from numerical precision. std::sqrt of it gives NaN and the track is dropped later on, which
+    // shows up as holes in the tracking efficiency. Such a mode has practically zero width: do not smear along it.
+    params[i] = gRandom->Gaus(val, std::sqrt(std::max(0.f, lutEntry->eigval[i])));
   }
 
   // Transform back params vector

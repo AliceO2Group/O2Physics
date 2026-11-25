@@ -2635,8 +2635,8 @@ struct lfNucleiBATask {
     }
 
     tracks.copyIndexBindings(tracksWithITS);
-    auto tpcChi2NclRange = (std::vector<float>)trkqcOptions.tpcChi2NclCuts;
-    auto itsChi2NclRange = (std::vector<float>)trkqcOptions.itsChi2NclCuts;
+    auto tpcChi2NclRange = std::vector<float>(trkqcOptions.tpcChi2NclCuts);
+    auto itsChi2NclRange = std::vector<float>(trkqcOptions.itsChi2NclCuts);
 
     for (auto const& track : tracksWithITS) {
       // Init all temp variables inside the track loop
@@ -6081,7 +6081,7 @@ struct lfNucleiBATask {
             }
             break;
           case PDGHelium:
-            if (isHelium && passDCAzCutHe && passDCAxyCutHe) {
+            if (isHe && passDCAzCutHe && passDCAxyCutHe) {
               histos.fill(HIST("tracks/helium/h1HeliumSpectraTrue_Z2"), 2 * hePt);
               if (enableCentrality)
                 histos.fill(HIST("tracks/helium/h2HeliumSpectraTrueVsMult_Z2"), 2 * hePt, centFT0M);
@@ -6170,12 +6170,10 @@ struct lfNucleiBATask {
             }
             break;
           case -PDGHelium:
-            if (isHelium && passDCAzCutAntiHe && passDCAxyCutAntiHe) {
+            if (isAntiHe && passDCAzCutAntiHe && passDCAxyCutAntiHe) {
               histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTrue_Z2"), 2 * antihePt);
               if (enableCentrality) {
                 histos.fill(HIST("tracks/helium/h2antiHeliumSpectraTrueVsMult_Z2"), 2 * antihePt, centFT0M);
-                if (hasTOFplots)
-                  histos.fill(HIST("tracks/helium/TOF/h2antiHeliumSpectraTrueWPIDVsMult_Z2"), 2 * antihePt, centFT0M);
               }
               if (outFlagOptions.makeDCAAfterCutPlots) {
                 histos.fill(HIST("tracks/helium/dca/after/hDCAxyVsPtantiHeliumTrue"), antihePt, track.dcaXY());

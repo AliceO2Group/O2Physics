@@ -240,7 +240,6 @@ struct femtoWorldProducerTask {
   int mRunNumber;
   float mMagField;
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
-  HfHelper hfHelper;
 
   void init(InitContext&)
   {
@@ -445,9 +444,9 @@ struct femtoWorldProducerTask {
                   track.tpcChi2NCl(),
                   track.tpcNSigmaKa(),
                   track.tofNSigmaKa(),
-                  (uint8_t)track.tpcNClsFound(),
+                  static_cast<uint8_t>(track.tpcNClsFound()),
                   track.tpcNClsFindable(),
-                  (uint8_t)track.tpcNClsCrossedRows(),
+                  static_cast<uint8_t>(track.tpcNClsCrossedRows()),
                   track.tpcNClsShared(),
                   track.tpcInnerParam(),
                   track.itsNCls(),
@@ -534,9 +533,9 @@ struct femtoWorldProducerTask {
                   track.tpcChi2NCl(),
                   track.tpcNSigmaKa(),
                   track.tofNSigmaKa(),
-                  (uint8_t)track.tpcNClsFound(),
+                  static_cast<uint8_t>(track.tpcNClsFound()),
                   track.tpcNClsFindable(),
-                  (uint8_t)track.tpcNClsCrossedRows(),
+                  static_cast<uint8_t>(track.tpcNClsCrossedRows()),
                   track.tpcNClsShared(),
                   track.tpcInnerParam(),
                   track.itsNCls(),
@@ -614,9 +613,9 @@ struct femtoWorldProducerTask {
                     postrack.tpcChi2NCl(),
                     postrack.tpcNSigmaKa(),
                     postrack.tofNSigmaKa(),
-                    (uint8_t)postrack.tpcNClsFound(),
+                    static_cast<uint8_t>(postrack.tpcNClsFound()),
                     postrack.tpcNClsFindable(),
-                    (uint8_t)postrack.tpcNClsCrossedRows(),
+                    static_cast<uint8_t>(postrack.tpcNClsCrossedRows()),
                     postrack.tpcNClsShared(),
                     postrack.tpcInnerParam(),
                     postrack.itsNCls(),
@@ -670,9 +669,9 @@ struct femtoWorldProducerTask {
                     negtrack.tpcChi2NCl(),
                     negtrack.tpcNSigmaKa(),
                     negtrack.tofNSigmaKa(),
-                    (uint8_t)negtrack.tpcNClsFound(),
+                    static_cast<uint8_t>(negtrack.tpcNClsFound()),
                     negtrack.tpcNClsFindable(),
-                    (uint8_t)negtrack.tpcNClsCrossedRows(),
+                    static_cast<uint8_t>(negtrack.tpcNClsCrossedRows()),
                     negtrack.tpcNClsShared(),
                     negtrack.tpcInnerParam(),
                     negtrack.itsNCls(),
@@ -722,9 +721,9 @@ struct femtoWorldProducerTask {
                     postrack.tpcChi2NCl(),
                     postrack.tpcNSigmaKa(),
                     postrack.tofNSigmaKa(),
-                    (uint8_t)postrack.tpcNClsFound(),
+                    static_cast<uint8_t>(postrack.tpcNClsFound()),
                     postrack.tpcNClsFindable(),
-                    (uint8_t)postrack.tpcNClsCrossedRows(),
+                    static_cast<uint8_t>(postrack.tpcNClsCrossedRows()),
                     postrack.tpcNClsShared(),
                     postrack.tpcInnerParam(),
                     postrack.itsNCls(),
@@ -811,9 +810,9 @@ struct femtoWorldProducerTask {
                   track.tpcChi2NCl(),
                   track.tpcNSigmaKa(),
                   track.tofNSigmaKa(),
-                  (uint8_t)track.tpcNClsFound(),
+                  static_cast<uint8_t>(track.tpcNClsFound()),
                   track.tpcNClsFindable(),
-                  (uint8_t)track.tpcNClsCrossedRows(),
+                  static_cast<uint8_t>(track.tpcNClsCrossedRows()),
                   track.tpcNClsShared(),
                   track.tpcInnerParam(),
                   track.itsNCls(),
@@ -915,9 +914,9 @@ struct femtoWorldProducerTask {
                     p1.tpcChi2NCl(),
                     p1.tpcNSigmaKa(),
                     p1.tofNSigmaKa(),
-                    (uint8_t)p1.tpcNClsFound(),
+                    static_cast<uint8_t>(p1.tpcNClsFound()),
                     p1.tpcNClsFindable(),
-                    (uint8_t)p1.tpcNClsCrossedRows(),
+                    static_cast<uint8_t>(p1.tpcNClsCrossedRows()),
                     p1.tpcNClsShared(),
                     p1.tpcInnerParam(),
                     p1.itsNCls(),
@@ -971,9 +970,9 @@ struct femtoWorldProducerTask {
                     p2.tpcChi2NCl(),
                     p2.tpcNSigmaKa(),
                     p2.tofNSigmaKa(),
-                    (uint8_t)p2.tpcNClsFound(),
+                    static_cast<uint8_t>(p2.tpcNClsFound()),
                     p2.tpcNClsFindable(),
-                    (uint8_t)p2.tpcNClsCrossedRows(),
+                    static_cast<uint8_t>(p2.tpcNClsCrossedRows()),
                     p2.tpcNClsShared(),
                     p2.tpcInnerParam(),
                     p2.itsNCls(),
@@ -1030,7 +1029,7 @@ struct femtoWorldProducerTask {
                     p1.tpcChi2NCl(),
                     p1.tpcNSigmaKa(),
                     p1.tofNSigmaKa(),
-                    (uint8_t)p1.tpcNClsFound(),
+                    static_cast<uint8_t>(p1.tpcNClsFound()),
                     0, // p1.tpcNClsFindable(),
                     0, //(uint8_t)p1.tpcNClsCrossedRows(),
                     p1.tpcNClsShared(),
@@ -1132,9 +1131,9 @@ struct femtoWorldProducerTask {
                   track.tpcChi2NCl(),
                   track.tpcNSigmaKa(),
                   track.tofNSigmaKa(),
-                  (uint8_t)track.tpcNClsFound(),
+                  static_cast<uint8_t>(track.tpcNClsFound()),
                   track.tpcNClsFindable(),
-                  (uint8_t)track.tpcNClsCrossedRows(),
+                  static_cast<uint8_t>(track.tpcNClsCrossedRows()),
                   track.tpcNClsShared(),
                   track.tpcInnerParam(),
                   track.itsNCls(),
@@ -1168,7 +1167,7 @@ struct femtoWorldProducerTask {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
-      if (config.yCandMax >= 0. && std::abs(hfHelper.yD0(candidate)) > config.yCandMax) {
+      if (config.yCandMax >= 0. && std::abs(HfHelper::yD0(candidate)) > config.yCandMax) {
         continue;
       }
 
@@ -1297,11 +1296,11 @@ struct femtoWorldProducerTask {
                     candidate.eta(),
                     candidate.phi(),
                     candidate.p(),
-                    0.,                                    // general mass
-                    hfHelper.invMassD0ToPiK(candidate),    // D0mass
-                    hfHelper.invMassD0barToKPi(candidate), // D0bar mass
-                    candidate.isSelD0(),                   // D0 flag
-                    candidate.isSelD0bar(),                // D0bar flag
+                    0.,                                     // general mass
+                    HfHelper::invMassD0ToPiK(candidate),    // D0mass
+                    HfHelper::invMassD0barToKPi(candidate), // D0bar mass
+                    candidate.isSelD0(),                    // D0 flag
+                    candidate.isSelD0bar(),                 // D0bar flag
                     aod::femtoworldparticle::ParticleType::kD0D0bar,
                     0., // cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
                     0,
@@ -1403,9 +1402,9 @@ struct femtoWorldProducerTask {
                   track.tpcChi2NCl(),
                   track.tpcNSigmaKa(),
                   track.tofNSigmaKa(),
-                  (uint8_t)track.tpcNClsFound(),
+                  static_cast<uint8_t>(track.tpcNClsFound()),
                   track.tpcNClsFindable(),
-                  (uint8_t)track.tpcNClsCrossedRows(),
+                  static_cast<uint8_t>(track.tpcNClsCrossedRows()),
                   track.tpcNClsShared(),
                   track.tpcInnerParam(),
                   track.itsNCls(),
@@ -1492,9 +1491,9 @@ struct femtoWorldProducerTask {
                   track.tpcChi2NCl(),
                   track.tpcNSigmaKa(),
                   track.tofNSigmaKa(),
-                  (uint8_t)track.tpcNClsFound(),
+                  static_cast<uint8_t>(track.tpcNClsFound()),
                   track.tpcNClsFindable(),
-                  (uint8_t)track.tpcNClsCrossedRows(),
+                  static_cast<uint8_t>(track.tpcNClsCrossedRows()),
                   track.tpcNClsShared(),
                   track.tpcInnerParam(),
                   track.itsNCls(),
@@ -1573,9 +1572,9 @@ struct femtoWorldProducerTask {
                       postrack.tpcChi2NCl(),
                       postrack.tpcNSigmaKa(),
                       postrack.tofNSigmaKa(),
-                      (uint8_t)postrack.tpcNClsFound(),
+                      static_cast<uint8_t>(postrack.tpcNClsFound()),
                       postrack.tpcNClsFindable(),
-                      (uint8_t)postrack.tpcNClsCrossedRows(),
+                      static_cast<uint8_t>(postrack.tpcNClsCrossedRows()),
                       postrack.tpcNClsShared(),
                       postrack.tpcInnerParam(),
                       postrack.itsNCls(),
@@ -1629,9 +1628,9 @@ struct femtoWorldProducerTask {
                       negtrack.tpcChi2NCl(),
                       negtrack.tpcNSigmaKa(),
                       negtrack.tofNSigmaKa(),
-                      (uint8_t)negtrack.tpcNClsFound(),
+                      static_cast<uint8_t>(negtrack.tpcNClsFound()),
                       negtrack.tpcNClsFindable(),
-                      (uint8_t)negtrack.tpcNClsCrossedRows(),
+                      static_cast<uint8_t>(negtrack.tpcNClsCrossedRows()),
                       negtrack.tpcNClsShared(),
                       negtrack.tpcInnerParam(),
                       negtrack.itsNCls(),
@@ -1681,9 +1680,9 @@ struct femtoWorldProducerTask {
                       postrack.tpcChi2NCl(),
                       postrack.tpcNSigmaKa(),
                       postrack.tofNSigmaKa(),
-                      (uint8_t)postrack.tpcNClsFound(),
+                      static_cast<uint8_t>(postrack.tpcNClsFound()),
                       postrack.tpcNClsFindable(),
-                      (uint8_t)postrack.tpcNClsCrossedRows(),
+                      static_cast<uint8_t>(postrack.tpcNClsCrossedRows()),
                       postrack.tpcNClsShared(),
                       postrack.tpcInnerParam(),
                       postrack.itsNCls(),
@@ -1771,9 +1770,9 @@ struct femtoWorldProducerTask {
                   track.tpcChi2NCl(),
                   track.tpcNSigmaKa(),
                   track.tofNSigmaKa(),
-                  (uint8_t)track.tpcNClsFound(),
+                  static_cast<uint8_t>(track.tpcNClsFound()),
                   track.tpcNClsFindable(),
-                  (uint8_t)track.tpcNClsCrossedRows(),
+                  static_cast<uint8_t>(track.tpcNClsCrossedRows()),
                   track.tpcNClsShared(),
                   track.tpcInnerParam(),
                   track.itsNCls(),
@@ -1875,9 +1874,9 @@ struct femtoWorldProducerTask {
                     p1.tpcChi2NCl(),
                     p1.tpcNSigmaKa(),
                     p1.tofNSigmaKa(),
-                    (uint8_t)p1.tpcNClsFound(),
+                    static_cast<uint8_t>(p1.tpcNClsFound()),
                     p1.tpcNClsFindable(),
-                    (uint8_t)p1.tpcNClsCrossedRows(),
+                    static_cast<uint8_t>(p1.tpcNClsCrossedRows()),
                     p1.tpcNClsShared(),
                     p1.tpcInnerParam(),
                     p1.itsNCls(),
@@ -1931,9 +1930,9 @@ struct femtoWorldProducerTask {
                     p2.tpcChi2NCl(),
                     p2.tpcNSigmaKa(),
                     p2.tofNSigmaKa(),
-                    (uint8_t)p2.tpcNClsFound(),
+                    static_cast<uint8_t>(p2.tpcNClsFound()),
                     p2.tpcNClsFindable(),
-                    (uint8_t)p2.tpcNClsCrossedRows(),
+                    static_cast<uint8_t>(p2.tpcNClsCrossedRows()),
                     p2.tpcNClsShared(),
                     p2.tpcInnerParam(),
                     p2.itsNCls(),
@@ -1990,7 +1989,7 @@ struct femtoWorldProducerTask {
                     p1.tpcChi2NCl(),
                     p1.tpcNSigmaKa(),
                     p1.tofNSigmaKa(),
-                    (uint8_t)p1.tpcNClsFound(),
+                    static_cast<uint8_t>(p1.tpcNClsFound()),
                     0, // p1.tpcNClsFindable(),
                     0, //(uint8_t)p1.tpcNClsCrossedRows(),
                     p1.tpcNClsShared(),
@@ -2080,9 +2079,9 @@ struct femtoWorldProducerTask {
                   track.tpcChi2NCl(),
                   track.tpcNSigmaKa(),
                   track.tofNSigmaKa(),
-                  (uint8_t)track.tpcNClsFound(),
+                  static_cast<uint8_t>(track.tpcNClsFound()),
                   track.tpcNClsFindable(),
-                  (uint8_t)track.tpcNClsCrossedRows(),
+                  static_cast<uint8_t>(track.tpcNClsCrossedRows()),
                   track.tpcNClsShared(),
                   track.tpcInnerParam(),
                   track.itsNCls(),
@@ -2115,7 +2114,7 @@ struct femtoWorldProducerTask {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
-      if (config.yCandMax >= 0. && std::abs(hfHelper.yD0(candidate)) > config.yCandMax) {
+      if (config.yCandMax >= 0. && std::abs(HfHelper::yD0(candidate)) > config.yCandMax) {
         continue;
       }
 
@@ -2246,11 +2245,11 @@ struct femtoWorldProducerTask {
                     candidate.eta(),
                     candidate.phi(),
                     candidate.p(),
-                    0.,                                    // general mass
-                    hfHelper.invMassD0ToPiK(candidate),    // D0mass
-                    hfHelper.invMassD0barToKPi(candidate), // D0bar mass
-                    candidate.isSelD0(),                   // D0 flag
-                    candidate.isSelD0bar(),                // D0bar flag
+                    0.,                                     // general mass
+                    HfHelper::invMassD0ToPiK(candidate),    // D0mass
+                    HfHelper::invMassD0barToKPi(candidate), // D0bar mass
+                    candidate.isSelD0(),                    // D0 flag
+                    candidate.isSelD0bar(),                 // D0bar flag
                     aod::femtoworldparticle::ParticleType::kD0D0bar,
                     0., // cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0),
                     0,

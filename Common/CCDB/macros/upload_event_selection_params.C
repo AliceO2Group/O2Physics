@@ -18,6 +18,7 @@
 
 #include <RtypesCore.h>
 
+#include <array>
 #include <cstdio>
 #include <map>
 #include <string>
@@ -33,12 +34,12 @@ void upload_event_selection_params()
   // ccdb.truncate("EventSelection/EventSelectionParams");
   ccdb.init("https://alice-ccdb.cern.ch");
 
-  const int nPeriodsMax = 100;
-  EventSelectionParams* par[nPeriodsMax];
-  string period[nPeriodsMax];
-  int runFirst[nPeriodsMax];
-  int runLast[nPeriodsMax];
-  bool isNew[nPeriodsMax] = {0};
+  constexpr int NPeriodsMax{100};
+  std::array<EventSelectionParams*, NPeriodsMax> par{};
+  std::array<string, NPeriodsMax> period{};
+  std::array<int, NPeriodsMax> runFirst{};
+  std::array<int, NPeriodsMax> runLast{};
+  std::array<bool, NPeriodsMax> isNew{};
 
   int n = 0;
   period[n] = "pp2010";
@@ -256,7 +257,7 @@ void upload_event_selection_params()
     auto sor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdb, runFirst[i]).first;
     auto eor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdb, runLast[i]).second;
 
-    printf("sor=%llu eor=%llu\n", sor, eor);
+    printf("sor=%ld eor=%ld\n", sor, eor);
     metadata["period"] = period[i];
     metadata["run_first"] = Form("%d", runFirst[i]);
     metadata["run_last"] = Form("%d", runLast[i]);

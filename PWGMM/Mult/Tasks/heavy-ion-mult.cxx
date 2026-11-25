@@ -571,7 +571,7 @@ struct HeavyIonMultiplicity {
         if (!IsTrackSelected(Rectrack)) {
           continue;
         }
-        histos.fill(HIST("FillMCrecSpecies"), SelectColCentrality(RecCollision), OccupancyValue, Rectrack.eta(), Double_t(kSpAll));
+        histos.fill(HIST("FillMCrecSpecies"), SelectColCentrality(RecCollision), OccupancyValue, Rectrack.eta(), static_cast<Double_t>(kSpAll));
         if (Rectrack.has_mcParticle()) {
           Int_t pid = kBkg;
           auto mcpart = Rectrack.template mcParticle_as<aod::McParticles>();
@@ -603,9 +603,9 @@ struct HeavyIonMultiplicity {
             pid = kBkg;
           }
           mclabels.push_back(Rectrack.mcParticleId());
-          histos.fill(HIST("FillMCrecSpecies"), SelectColCentrality(RecCollision), OccupancyValue, Rectrack.eta(), Double_t(pid));
+          histos.fill(HIST("FillMCrecSpecies"), SelectColCentrality(RecCollision), OccupancyValue, Rectrack.eta(), static_cast<Double_t>(pid));
         } else {
-          histos.fill(HIST("FillMCrecSpecies"), SelectColCentrality(RecCollision), OccupancyValue, Rectrack.eta(), Double_t(kBkg));
+          histos.fill(HIST("FillMCrecSpecies"), SelectColCentrality(RecCollision), OccupancyValue, Rectrack.eta(), static_cast<Double_t>(kBkg));
         }
       } // rec track loop
 
@@ -613,7 +613,7 @@ struct HeavyIonMultiplicity {
         if (!IsGenTrackSelected(particle)) {
           continue;
         }
-        histos.fill(HIST("FillMCgenSpecies"), SelectColCentrality(RecCollision), particle.eta(), Double_t(kSpAll));
+        histos.fill(HIST("FillMCgenSpecies"), SelectColCentrality(RecCollision), particle.eta(), static_cast<Double_t>(kSpAll));
         Int_t pid = 0;
         switch (std::abs(particle.pdgCode())) {
           case 211:
@@ -629,7 +629,7 @@ struct HeavyIonMultiplicity {
             pid = kSpOther;
             break;
         }
-        histos.fill(HIST("FillMCgenSpecies"), SelectColCentrality(RecCollision), particle.eta(), Double_t(pid));
+        histos.fill(HIST("FillMCgenSpecies"), SelectColCentrality(RecCollision), particle.eta(), static_cast<Double_t>(pid));
       } // gen track loop
     } // collision loop
   }

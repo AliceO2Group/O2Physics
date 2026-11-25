@@ -2327,7 +2327,7 @@ struct KaonIsospinFluctuations {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      centrality = -1;
+      // centrality = -1; // FIXME: unused
       const auto& mcColl = collision.mcCollision();
 
       centrality = collision.centFT0C();
@@ -2440,15 +2440,15 @@ struct KaonIsospinFluctuations {
 
   void processSim(MyMcCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    auto finalParticleIdList = (std::vector<int>)cfgFinalParticleIdList;
-    auto nonFinalParticleIdList = (std::vector<int>)cfgNonFinalParticleIdList;
+    auto finalParticleIdList = std::vector<int>(cfgFinalParticleIdList);
+    auto nonFinalParticleIdList = std::vector<int>(cfgNonFinalParticleIdList);
     std::sort(finalParticleIdList.begin(), finalParticleIdList.end());
     std::sort(nonFinalParticleIdList.begin(), nonFinalParticleIdList.end());
 
     recoEvent.fill(HIST("recoEvent/ProcessType"), doSimProcessing);
     float centrality = -1;
     for (const auto& mcColl : mcCollisions) {
-      centrality = -1;
+      // centrality = -1; // FIXME: unused
 
       if (cfgVtxZCheck) {
         if (std::abs(mcColl.posZ()) >= cutZvertex) {

@@ -366,7 +366,8 @@ struct HfCandidateCreatorBplus {
                            pVecD0[0], pVecD0[1], pVecD0[2],
                            pVecBach[0], pVecBach[1], pVecBach[2],
                            impactParameter0.getY(), impactParameter1.getY(),
-                           std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()));
+                           std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
+                           candD0.xSecondaryVertex(), candD0.ySecondaryVertex(), candD0.zSecondaryVertex());
 
           rowCandidateProngs(candD0.globalIndex(), trackPion.globalIndex()); // index D0 and bachelor
         } // track loop

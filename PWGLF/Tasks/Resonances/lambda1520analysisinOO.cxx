@@ -422,14 +422,14 @@ struct Lstaranalysis {
   float massKa = MassKaonCharged;
   float massPr = MassProton;
 
-  int kLambda1520PDG = static_cast<int>(102134); // PDG code for Lambda(1520)
+  int kLambda1520PDG = 102134; // PDG code for Lambda(1520)
 
   template <typename CollisionType>
   float getCentrality(CollisionType const& collision)
   {
-    if (cfgCentEst == static_cast<int>(1)) {
+    if (cfgCentEst == 1) {
       return collision.multFT0C();
-    } else if (cfgCentEst == static_cast<int>(2)) {
+    } else if (cfgCentEst == 2) {
       return collision.multFT0M();
     } else {
       return -999;

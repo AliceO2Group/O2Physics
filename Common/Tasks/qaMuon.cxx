@@ -13,6 +13,8 @@
 /// \author Paul Veen <paul.veen@cern.ch>
 /// \author Chi Zhang <chi.zhang@cern.ch>
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/EventSelection.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -83,6 +85,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
+using MyBCs = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 using MyMFTs = aod::MFTTracks;
 
@@ -185,6 +188,16 @@ struct muonQa {
     Configurable<bool> fEnableSingleMuonDiMuonCorrelations{"cfgEnableMuonDiMuonCorrelations", false, "Enable muon-dimuon QA checks"};
   } configQAs;
 
+  ////   Variables for selecting events
+  struct : ConfigurableGroup {
+    Configurable<bool> fEvSelRequireGoodRCT{"cfgEvSelRequireGoodRCT", false, "Require good detector flags in Run Condition Table"};
+    Configurable<bool> fEvSelRequireFrameBordersExclusion{"cfgEvSelRequireFrameBordersExclusion", false, "Exclude events in the TF and ITS ROF borders"};
+    Configurable<bool> fEvSelRequireNoCollInTimeRange{"cfgEvSelRequireNoCollInTimeRange", false, "Exclude events with multiple collisions in time range (standard)"};
+    Configurable<bool> fEvSelRequireNoSameBunch{"cfgEvSelRequireNoSameBunch", false, "Exclude events with multiple collisions in the same bunch crossing"};
+    Configurable<float> fEvSelVtxZMin{"cfgEvSelVtxZMin", -10.0f, "Minimum accepted value for vertex z position"};
+    Configurable<float> fEvSelVtxZMax{"cfgEvSelVtxZMax", 10.0f, "Maximum accepted value for vertex z position"};
+  } configEvSel;
+
   ////   Variables for selecting muon tracks
   struct : ConfigurableGroup {
     Configurable<float> fPMchLow{"cfgPMchLow", 0.0f, ""};
@@ -213,6 +226,9 @@ struct muonQa {
   ////   Variables for selecting dimuon DCA candidates
   Configurable<float> fDimuonDCAMassLow{"cfgDimuonDCAMassLow", 2.8f, ""};
   Configurable<float> fDimuonDCAMassHigh{"cfgDimuonDCAMassHigh", 3.4f, ""};
+
+  // Magnetic field position bias
+  Configurable<float> fFieldOriginBiasZ{"cfgFieldOriginBiasZ", 0.0f, "Bias applied to the magnetic field z position"};
 
   ////   Variables for alignment corrections
   Configurable<bool> fEnableMFTAlignmentCorrections{"cfgEnableMFTAlignmentCorrections", false, ""};
@@ -272,6 +288,8 @@ struct muonQa {
   Service<ccdb::BasicCCDBManager> ccdb;
   o2::field::MagneticField* fieldB = nullptr;
   double Bz; // Bz for MFT
+
+  o2::aod::rctsel::RCTFlagsChecker rctChecker{"CBT_muon_glo", false, false, true};
 
   geo::TransformationCreator transformation;
   std::map<int, math_utils::Transform3D> transformRef; // reference geometry w.r.t track data
@@ -372,7 +390,7 @@ struct muonQa {
     // Global muons plots
     // ======================
     int nTrackTypes = static_cast<int>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack) + 1;
-    AxisSpec trackTypeAxis = {static_cast<int>(nTrackTypes), 0.0, static_cast<double>(nTrackTypes), "track type"};
+    AxisSpec trackTypeAxis = {nTrackTypes, 0.0, static_cast<double>(nTrackTypes), "track type"};
     registry.add("global-muons/nTracksPerType", "Number of tracks per type", {HistType::kTH1F, {trackTypeAxis}});
 
     AxisSpec nCandidatesAxis = {static_cast<int>(fNCandidatesMax), 0.0, static_cast<double>(fNCandidatesMax), "match candidate rank"};
@@ -1104,7 +1122,7 @@ struct muonQa {
   template <bool GlobalFwdFillMap, typename TTrack>
   void TransformMFT(TTrack& track)
   {
-    if constexpr (static_cast<bool>(GlobalFwdFillMap)) {
+    if constexpr (GlobalFwdFillMap) {
       auto mchTrack = mMatching.FwdtoMCH(track);
       doTransformMFT(mchTrack);
 
@@ -1604,7 +1622,7 @@ struct muonQa {
     fgValues.nClusters = muon.nClusters();
     fgValues.sign = muon.sign();
 
-    if constexpr (static_cast<bool>(MuonFillMap)) {
+    if constexpr (MuonFillMap) {
       // Direct info from AO2D without re-propagation
       fgValues.pDca = muon.pDca();
       fgValues.rabs = muon.rAtAbsorberEnd();
@@ -1772,7 +1790,7 @@ struct muonQa {
     fgValues.nClusters = muon.nClusters();
     fgValues.sign = muon.sign();
 
-    if constexpr (static_cast<bool>(MuonFillMap)) {
+    if constexpr (MuonFillMap) {
       o2::dataformats::GlobalFwdTrack track;
 
       SMatrix5 tpars(muon.x(), muon.y(), muon.phi(), muon.tgl(), muon.signed1Pt());
@@ -1809,7 +1827,7 @@ struct muonQa {
 
       o2::dataformats::GlobalFwdTrack track;
 
-      if constexpr (static_cast<bool>(Scaled)) {
+      if constexpr (Scaled) {
         double pMCH = fgValuesMCH.p;
         int sign = fgValuesMCH.sign;
 
@@ -1897,7 +1915,7 @@ struct muonQa {
       float dcaXY = std::sqrt(fgValues.dcaX * fgValues.dcaX + fgValues.dcaY * fgValues.dcaY);
       fgValues.dcaXY = dcaXY;
 
-      if constexpr (static_cast<bool>(MuonFillMap)) {
+      if constexpr (MuonFillMap) {
         float p = muon.p();
         fgValues.pDca = p * dcaXY;
       }
@@ -1920,7 +1938,7 @@ struct muonQa {
   template <bool MuonFillMap, bool GlobalMuonFillMap, bool GlobalMatchingFillMap, typename Var, typename VarVector>
   void FillMuonHistograms(Var const& fgValuesMCH, Var const& fgValuesMCHpv, Var const& fgValuesMFT, Var const& fgValuesGlobal, VarVector const& fgValuesCandidates)
   {
-    if constexpr (static_cast<bool>(MuonFillMap)) {
+    if constexpr (MuonFillMap) {
       // Muon histograms
       if (IsGoodMuon(fgValuesMCH, fgValuesMCHpv, 1.E10, configMuons.fPMchLow, configMuons.fPtMchLow, configMuons.fEtaMchLow, configMuons.fEtaMchUp, configMuons.fRabsLow, configMuons.fRabsUp, configMuons.fSigmaPdcaUp)) {
         registry.get<TH1>(HIST("muons/TrackChi2"))->Fill(fgValuesMCH.chi2);
@@ -1996,7 +2014,7 @@ struct muonQa {
       }
     }
 
-    if constexpr (static_cast<bool>(GlobalMuonFillMap)) {
+    if constexpr (GlobalMuonFillMap) {
       // Global muon histograms
       if (IsGoodMuon(fgValuesMCH, fgValuesMCHpv, 1.E10, configMuons.fPMchLow, configMuons.fPtMchLow, configMFTs.fEtaMftLow, configMFTs.fEtaMftUp, configMuons.fRabsLow, configMuons.fRabsUp, configMuons.fSigmaPdcaUp)) {
         registry.get<TH1>(HIST("global-muons/TrackChi2"))->Fill(fgValuesMCH.chi2);
@@ -2048,7 +2066,7 @@ struct muonQa {
       }
     }
 
-    if constexpr (static_cast<bool>(GlobalMatchingFillMap)) {
+    if constexpr (GlobalMatchingFillMap) {
       // Global muon histograms
       if (IsGoodMuon(fgValuesMCH, fgValuesMCHpv, 1.E10, configMuons.fPMchLow, configMuons.fPtMchLow, configMFTs.fEtaMftLow, configMFTs.fEtaMftUp, configMuons.fRabsLow, configMuons.fRabsUp, configMuons.fSigmaPdcaUp)) {
         if (IsGoodGlobalMatching(fgValuesMFT, configMFTs.fTrackChi2MftUp, configMFTs.fTrackNClustMftLow, fMatchingChi2MftMchUp)) {
@@ -2155,7 +2173,7 @@ struct muonQa {
   template <bool MuonFillMap, bool GlobalMuonFillMap, bool GlobalMatchingFillMap, typename VarT, typename VarC>
   void FillDCAHistograms(VarT const& fgValuesMCH, VarT const& fgValuesMCHpv, VarT const& fgValuesMFT, VarC const& fgValuesColl, int sign, int quadrant, bool same, bool mixed)
   {
-    if constexpr (static_cast<bool>(MuonFillMap)) {
+    if constexpr (MuonFillMap) {
       auto phiDeg = fgValuesMCH.phi * 180.f / TMath::Pi();
       if (same) {
         std::get<std::shared_ptr<TH1>>(dcaHistos[1][quadrant][0]["DCA_x"])->Fill(fgValuesMCH.dcaX);
@@ -2184,7 +2202,7 @@ struct muonQa {
       }
     }
 
-    if constexpr (static_cast<bool>(GlobalMuonFillMap)) {
+    if constexpr (GlobalMuonFillMap) {
       auto phiDeg = fgValuesMFT.phi * 180.f / TMath::Pi();
       if (same) {
         std::get<std::shared_ptr<TH1>>(dcaHistos[0][quadrant][0]["DCA_x"])->Fill(fgValuesMFT.dcaX);
@@ -2212,7 +2230,7 @@ struct muonQa {
       }
     }
 
-    if constexpr (static_cast<bool>(GlobalMatchingFillMap)) {
+    if constexpr (GlobalMatchingFillMap) {
       auto phiDegMCH = fgValuesMCH.phi * 180.f / TMath::Pi();
       auto phiDegMFT = fgValuesMFT.phi * 180.f / TMath::Pi();
       if (same) {
@@ -2290,7 +2308,7 @@ struct muonQa {
     std::array<double, 2> yPos{yCls, fgValuesProp.y};
     double phiClus = std::atan2(yCls, xCls) * 180 / TMath::Pi();
 
-    if constexpr (static_cast<bool>(MuonFillMap)) {
+    if constexpr (MuonFillMap) {
       if (IsGoodMuon(fgValuesMCH, fgValuesMCHpv, configMuons.fTrackChi2MchUp, 20., configMuons.fPtMchLow, configMFTs.fEtaMftLow, configMFTs.fEtaMftUp, configMuons.fRabsLow, configMuons.fRabsUp, configMuons.fSigmaPdcaUp)) {
         if (same) {
           std::get<std::shared_ptr<TH2>>(mchResidualsHistosPerDE[topBottom][posNeg][chamber]["dx_vs_de"])->Fill(deIndex, xPos[0] - xPos[1]);
@@ -2303,7 +2321,7 @@ struct muonQa {
       }
     }
 
-    if constexpr (static_cast<bool>(MFTFillMap)) {
+    if constexpr (MFTFillMap) {
       if (IsGoodMuon(fgValuesMCH, fgValuesMCHpv, configMuons.fTrackChi2MchUp, 20., configMuons.fPtMchLow, configMFTs.fEtaMftLow, configMFTs.fEtaMftUp, configMuons.fRabsLow, configMuons.fRabsUp, configMuons.fSigmaPdcaUp)) {
         if (IsGoodMFT(fgValuesMFT, configMFTs.fTrackChi2MftUp, configMFTs.fTrackNClustMftLow)) {
           if (same) {
@@ -2345,7 +2363,8 @@ struct muonQa {
     fgValues = {};
   }
 
-  void initCCDB(aod::BCsWithTimestamps const& bcs)
+  template <typename BC>
+  void initCCDB(BC const& bcs)
   {
     // Update CCDB informations
     if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
@@ -2356,9 +2375,9 @@ struct muonQa {
         base::Propagator::initFieldFromGRP(grpmag);
         TrackExtrap::setField();
         TrackExtrap::useExtrapV2();
-        fieldB = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField()); // for MFT
-        double centerMFT[3] = {0, 0, -61.4};                                                         // or use middle point between Vtx and MFT?
-        Bz = fieldB->getBz(centerMFT);                                                               // Get field at centre of MFT
+        fieldB = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField()); // for MFT
+        double centerMFT[3] = {0, 0, -61.4};                                                          // or use middle point between Vtx and MFT?
+        Bz = fieldB->getBz(centerMFT);                                                                // Get field at centre of MFT
       } else {
         LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", bcs.begin().timestamp());
       }
@@ -2407,6 +2426,9 @@ struct muonQa {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
+    // configure magnetic field position bias
+    o2::conf::ConfigurableParam::setValue("FieldOriginBias.z", std::to_string(fFieldOriginBiasZ.value));
+
     // Configuration for track fitter
     const auto& trackerParam = TrackerParam::Instance();
     trackFitter.setBendingVertexDispersion(trackerParam.bendingVertexDispersion);
@@ -2424,7 +2446,7 @@ struct muonQa {
             typename TMCHTrack, typename VarC, typename VarT>
   void runDCA(TEventMap const& collisions, TMFTTracks const& mfts, TMFTTrack const& mfttrack, TTrack const& muon, TMCHTrack const& mchtrack, mch::Track const& mchrealigned, VarC& fgValuesColl, VarT& fgValuesMCH, VarT& fgValuesMCHpv, VarT& fgValuesMFT)
   {
-    if constexpr (static_cast<bool>(MuonFillMap)) {
+    if constexpr (MuonFillMap) {
 
       // track selection
       if (!IsGoodMuon(fgValuesMCH, fgValuesMCHpv, configMuons.fTrackChi2MchUp, 30., 4., configMFTs.fEtaMftLow, configMFTs.fEtaMftUp, configMuons.fRabsLow, configMuons.fRabsUp, configMuons.fSigmaPdcaUp)) {
@@ -2456,7 +2478,7 @@ struct muonQa {
       }
     }
 
-    if constexpr (static_cast<bool>(GlobalMuonFillMap)) {
+    if constexpr (GlobalMuonFillMap) {
 
       auto mftsThisCollision = mfts.sliceBy(mftPerCollision, fgValuesColl.globalIndex);
       for (auto const& mft : mftsThisCollision) {
@@ -2499,7 +2521,7 @@ struct muonQa {
       }
     }
 
-    if constexpr (static_cast<bool>(GlobalMatchingFillMap)) {
+    if constexpr (GlobalMatchingFillMap) {
 
       // track selection
       if (!IsGoodMuon(fgValuesMCH, fgValuesMCHpv, configMuons.fTrackChi2MchUp, 30., 4., configMFTs.fEtaMftLow, configMFTs.fEtaMftUp, configMuons.fRabsLow, configMuons.fRabsUp, configMuons.fSigmaPdcaUp)) {
@@ -2685,6 +2707,38 @@ struct muonQa {
   {
     for (auto const& collision : collisions) {
 
+      const auto& bc = bcs.rawIteratorAt(collision.bcId());
+
+      if (configEvSel.fEvSelRequireFrameBordersExclusion) {
+        // remove TF/ROF borders and ambiguous collisions
+        if (!bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) ||
+            !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+          continue;
+        }
+      }
+
+      // remove events with multiple collisions in one bunch crossing
+      if (configEvSel.fEvSelRequireNoCollInTimeRange &&
+          !bc.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        continue;
+      }
+
+      // remove events with multiple collisions in one bunch crossing
+      if (configEvSel.fEvSelRequireNoSameBunch &&
+          !bc.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+        continue;
+      }
+
+      // remove events with bad RCT flags
+      if (configEvSel.fEvSelRequireGoodRCT && !rctChecker(collision)) {
+        continue;
+      }
+
+      if (collision.posZ() < configEvSel.fEvSelVtxZMin ||
+          collision.posZ() > configEvSel.fEvSelVtxZMax) {
+        continue;
+      }
+
       uint64_t collisionIndex = collision.globalIndex();
       auto muonsThisCollision = muons.sliceBy(fwdtracksPerCollision, collisionIndex);
       auto mftsThisCollision = mfts.sliceBy(mftPerCollision, collisionIndex);
@@ -2695,7 +2749,7 @@ struct muonQa {
 
       auto& fgValuesColl = collisionSel[collisionIndex];
       FillCollision(collision, fgValuesColl);
-      fgValuesColl.bc = bcs.rawIteratorAt(collision.bcId()).globalBC();
+      fgValuesColl.bc = bc.globalBC();
       fgValuesColl.multMFT = mftsThisCollision.size();
     }
   }
@@ -2708,7 +2762,7 @@ struct muonQa {
 
       //// Get collision information if associated
       VarColl fgValuesColl;
-      if (muon.has_collision()) {
+      if (muon.has_collision() && collisions.contains(muon.collisionId())) {
         fgValuesColl = collisions.at(muon.collisionId());
       } else {
         continue;
@@ -2897,8 +2951,14 @@ struct muonQa {
 
     for (const auto& [muon1, muon2] : muonPairs) {
       auto collisionIndex1 = muon1.first;
+      if (!collisions.contains(collisionIndex1)) {
+        continue;
+      }
       auto const& collision1 = collisions.at(collisionIndex1);
       auto collisionIndex2 = muon2.first;
+      if (!collisions.contains(collisionIndex2)) {
+        continue;
+      }
       auto const& collision2 = collisions.at(collisionIndex2);
 
       auto mchIndex1 = muon1.second;
@@ -3840,7 +3900,7 @@ struct muonQa {
     }
   }
 
-  void processMuonQa(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs, MyMuonsWithCov const& muontracks, MyMFTs const& mfttracks, aod::FwdTrkCls const& muonclusters)
+  void processMuonQa(MyEvents const& collisions, MyBCs const& bcs, MyMuonsWithCov const& muontracks, MyMFTs const& mfttracks, aod::FwdTrkCls const& muonclusters)
   {
     std::map<uint64_t, VarColl> collisionSel;
     std::map<uint64_t, std::vector<uint64_t>> matchingCandidates;

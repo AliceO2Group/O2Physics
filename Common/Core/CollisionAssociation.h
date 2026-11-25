@@ -273,8 +273,8 @@ class CollisionAssociation
               // then the track is an MFT track, or an MFT track with additionnal joined info
               // in this case TrackTimeResIsRange
               thresholdTime = trackTimeRes + mNumSigmaForTimeCompat * std::sqrt(collTimeRes2) + mTimeMargin;
-            } else if constexpr (TTracks::template contains<o2::aod::FwdTracks>()) {
-              // the track is a fwd track, with a gaussian time resolution
+            } else {
+              // the track is FwdTrack or FwdTracksReAlign, with a gaussian time resolution
               thresholdTime = mNumSigmaForTimeCompat * std::sqrt(sigmaTimeRes2) + mTimeMargin;
             }
           }

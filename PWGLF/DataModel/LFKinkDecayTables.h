@@ -163,6 +163,12 @@ DECLARE_SOA_TABLE(SlimKinkCandsMC, "AOD", "SLIMKINKCANDSMC",
 namespace sigmapluscand
 {
 
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                          //! Collision of the candidate (the proton's collision), -1 for generated-only MC rows
+DECLARE_SOA_INDEX_COLUMN_FULL(ProtonTrack, protonTrack, int, TracksIU, "_Proton");       //! Proton track
+DECLARE_SOA_INDEX_COLUMN_FULL(PhotonPosTrack, photonPosTrack, int, TracksIU, "_PosDau"); //! Positive daughter track of the measured photon
+DECLARE_SOA_INDEX_COLUMN_FULL(PhotonNegTrack, photonNegTrack, int, TracksIU, "_NegDau"); //! Negative daughter track of the measured photon
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);                                        //! MC particle of the true Sigma+ if proton and photon come from it, -1 otherwise
+
 DECLARE_SOA_COLUMN(XDecVtx, xDecVtx, float);                   //! Decay vertex of the candidate (x direction)
 DECLARE_SOA_COLUMN(YDecVtx, yDecVtx, float);                   //! Decay vertex of the candidate (y direction)
 DECLARE_SOA_COLUMN(ZDecVtx, zDecVtx, float);                   //! Decay vertex of the candidate (z direction)
@@ -221,6 +227,7 @@ DECLARE_SOA_COLUMN(PhotonPosTpcNClsFindable, photonPosTpcNClsFindable, int16_t);
 DECLARE_SOA_COLUMN(PhotonNegTpcNClsFindable, photonNegTpcNClsFindable, int16_t); //! Number of findable TPC clusters of the photon's negative daughter
 DECLARE_SOA_COLUMN(PhotonPosTpcChi2NCl, photonPosTpcChi2NCl, float);             //! TPC chi2 per cluster of the photon's positive daughter
 DECLARE_SOA_COLUMN(PhotonNegTpcChi2NCl, photonNegTpcChi2NCl, float);             //! TPC chi2 per cluster of the photon's negative daughter
+DECLARE_SOA_COLUMN(MlScore, mlScore, float);                                     //! BDT score of the candidate (signal probability), -1 if not computed
 
 // MC columns
 DECLARE_SOA_COLUMN(CollisionIdCheck, collisionIdCheck, bool); //! True if the proton's collision ID matches the reconstructed collision ID
@@ -281,6 +288,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(YSigmaPlusMC, ySigmaPlusMC, //! True rapidity of the 
 } // namespace sigmapluscand
 
 DECLARE_SOA_TABLE(SigmaPlusCands, "AOD", "SIGMAPLUSCANDS",
+                  sigmapluscand::CollisionId, sigmapluscand::ProtonTrackId, sigmapluscand::PhotonPosTrackId, sigmapluscand::PhotonNegTrackId,
                   sigmapluscand::XDecVtx, sigmapluscand::YDecVtx, sigmapluscand::ZDecVtx, sigmapluscand::FlightDistance,
                   sigmapluscand::DcaProtonGamma,
                   sigmapluscand::PxProton, sigmapluscand::PyProton, sigmapluscand::PzProton,
@@ -297,6 +305,7 @@ DECLARE_SOA_TABLE(SigmaPlusCands, "AOD", "SIGMAPLUSCANDS",
                   sigmapluscand::PhotonDcaDau, sigmapluscand::PhotonCosPAToPV, sigmapluscand::PhotonDcaXYToPV, sigmapluscand::PhotonDcaZToPV, sigmapluscand::PhotonPsiPair,
                   sigmapluscand::PhotonPosDcaXY, sigmapluscand::PhotonPosDcaZ, sigmapluscand::PhotonNegDcaXY, sigmapluscand::PhotonNegDcaZ,
                   sigmapluscand::PhotonPosTpcNClsFindable, sigmapluscand::PhotonNegTpcNClsFindable, sigmapluscand::PhotonPosTpcChi2NCl, sigmapluscand::PhotonNegTpcChi2NCl,
+                  sigmapluscand::MlScore,
 
                   // dynamic columns
                   sigmapluscand::Radius<sigmapluscand::XDecVtx, sigmapluscand::YDecVtx>,
@@ -308,6 +317,8 @@ DECLARE_SOA_TABLE(SigmaPlusCands, "AOD", "SIGMAPLUSCANDS",
                   sigmapluscand::MassSigmaPlus<sigmapluscand::PxProton, sigmapluscand::PyProton, sigmapluscand::PzProton, sigmapluscand::PxGamma1, sigmapluscand::PyGamma1, sigmapluscand::PzGamma1, sigmapluscand::PxGamma2, sigmapluscand::PyGamma2, sigmapluscand::PzGamma2>);
 
 DECLARE_SOA_TABLE(SigmaPlusCandsMC, "AOD", "SIGMAPLUSMC",
+                  sigmapluscand::CollisionId, sigmapluscand::ProtonTrackId, sigmapluscand::PhotonPosTrackId, sigmapluscand::PhotonNegTrackId,
+                  sigmapluscand::McParticleId,
                   sigmapluscand::XDecVtx, sigmapluscand::YDecVtx, sigmapluscand::ZDecVtx, sigmapluscand::FlightDistance,
                   sigmapluscand::DcaProtonGamma,
                   sigmapluscand::PxProton, sigmapluscand::PyProton, sigmapluscand::PzProton,
@@ -324,6 +335,7 @@ DECLARE_SOA_TABLE(SigmaPlusCandsMC, "AOD", "SIGMAPLUSMC",
                   sigmapluscand::PhotonDcaDau, sigmapluscand::PhotonCosPAToPV, sigmapluscand::PhotonDcaXYToPV, sigmapluscand::PhotonDcaZToPV, sigmapluscand::PhotonPsiPair,
                   sigmapluscand::PhotonPosDcaXY, sigmapluscand::PhotonPosDcaZ, sigmapluscand::PhotonNegDcaXY, sigmapluscand::PhotonNegDcaZ,
                   sigmapluscand::PhotonPosTpcNClsFindable, sigmapluscand::PhotonNegTpcNClsFindable, sigmapluscand::PhotonPosTpcChi2NCl, sigmapluscand::PhotonNegTpcChi2NCl,
+                  sigmapluscand::MlScore,
                   sigmapluscand::CollisionIdCheck,
                   sigmapluscand::IsSignal, sigmapluscand::IsProtonFromSigma, sigmapluscand::IsPhotonFromSigma,
                   sigmapluscand::XDecVtxMC, sigmapluscand::YDecVtxMC, sigmapluscand::ZDecVtxMC,
@@ -344,6 +356,7 @@ DECLARE_SOA_TABLE(SigmaPlusCandsMC, "AOD", "SIGMAPLUSMC",
                   sigmapluscand::YSigmaPlusMC<sigmapluscand::PxSigmaPlusMC, sigmapluscand::PySigmaPlusMC, sigmapluscand::PzSigmaPlusMC>);
 
 DECLARE_SOA_TABLE(SlimSigmaPlusCands, "AOD", "SLIMSIGMAPLUS",
+                  sigmapluscand::CollisionId, sigmapluscand::ProtonTrackId, sigmapluscand::PhotonPosTrackId, sigmapluscand::PhotonNegTrackId,
                   sigmapluscand::TransDecayRadius,
                   sigmapluscand::CandDcaToPV, sigmapluscand::FlightDirTilt,
                   sigmapluscand::DcaProtonGamma,
@@ -358,6 +371,7 @@ DECLARE_SOA_TABLE(SlimSigmaPlusCands, "AOD", "SLIMSIGMAPLUS",
                   sigmapluscand::PhotonDcaDau, sigmapluscand::PhotonCosPAToPV, sigmapluscand::PhotonDcaXYToPV, sigmapluscand::PhotonDcaZToPV, sigmapluscand::PhotonPsiPair,
                   sigmapluscand::PhotonPosDcaXY, sigmapluscand::PhotonPosDcaZ, sigmapluscand::PhotonNegDcaXY, sigmapluscand::PhotonNegDcaZ,
                   sigmapluscand::PhotonPosTpcNClsFindable, sigmapluscand::PhotonNegTpcNClsFindable, sigmapluscand::PhotonPosTpcChi2NCl, sigmapluscand::PhotonNegTpcChi2NCl,
+                  sigmapluscand::MlScore,
 
                   // dynamic columns
                   sigmapluscand::PxSigmaPlus<sigmapluscand::PxProton, sigmapluscand::PxGamma1, sigmapluscand::PxGamma2>,
@@ -367,6 +381,8 @@ DECLARE_SOA_TABLE(SlimSigmaPlusCands, "AOD", "SLIMSIGMAPLUS",
                   sigmapluscand::MassSigmaPlus<sigmapluscand::PxProton, sigmapluscand::PyProton, sigmapluscand::PzProton, sigmapluscand::PxGamma1, sigmapluscand::PyGamma1, sigmapluscand::PzGamma1, sigmapluscand::PxGamma2, sigmapluscand::PyGamma2, sigmapluscand::PzGamma2>);
 
 DECLARE_SOA_TABLE(SlimSigmaPlusCandsMC, "AOD", "SLIMSIGMAPLUSMC",
+                  sigmapluscand::CollisionId, sigmapluscand::ProtonTrackId, sigmapluscand::PhotonPosTrackId, sigmapluscand::PhotonNegTrackId,
+                  sigmapluscand::McParticleId,
                   sigmapluscand::TransDecayRadius,
                   sigmapluscand::CandDcaToPV, sigmapluscand::FlightDirTilt,
                   sigmapluscand::DcaProtonGamma,
@@ -381,6 +397,7 @@ DECLARE_SOA_TABLE(SlimSigmaPlusCandsMC, "AOD", "SLIMSIGMAPLUSMC",
                   sigmapluscand::PhotonDcaDau, sigmapluscand::PhotonCosPAToPV, sigmapluscand::PhotonDcaXYToPV, sigmapluscand::PhotonDcaZToPV, sigmapluscand::PhotonPsiPair,
                   sigmapluscand::PhotonPosDcaXY, sigmapluscand::PhotonPosDcaZ, sigmapluscand::PhotonNegDcaXY, sigmapluscand::PhotonNegDcaZ,
                   sigmapluscand::PhotonPosTpcNClsFindable, sigmapluscand::PhotonNegTpcNClsFindable, sigmapluscand::PhotonPosTpcChi2NCl, sigmapluscand::PhotonNegTpcChi2NCl,
+                  sigmapluscand::MlScore,
                   sigmapluscand::CollisionIdCheck,
                   sigmapluscand::IsSignal, sigmapluscand::IsProtonFromSigma, sigmapluscand::IsPhotonFromSigma,
                   sigmapluscand::DecayRadiusMC, sigmapluscand::MassMC,

@@ -40,6 +40,7 @@
 
 #include <algorithm>
 #include <array>
+#include <limits>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -179,7 +180,9 @@ class PhotonSelection : public baseselection::BaseSelection<float, datatypes::Ph
     this->addSelection(kV0RadiusMax, photonSelectionNames.at(kV0RadiusMax), config.v0RadiusMax.value, limits::kUpperLimit, true, true, false);
     this->addSelection(kDauAbsEtaMax, photonSelectionNames.at(kDauAbsEtaMax), config.dauAbsEtaMax.value, limits::kAbsUpperLimit, true, true, false);
     this->addSelection(kPosDauTpcNSigmaEl, photonSelectionNames.at(kPosDauTpcNSigmaEl), config.dauTpcNSigmaElAbsMax.value, limits::kAbsUpperLimit, true, true, false);
+    this->addComments(kPosDauTpcNSigmaEl, "keepDaughtersWithoutTpc = " + std::to_string(mKeepDaughtersWithoutTpc));
     this->addSelection(kNegDauTpcNSigmaEl, photonSelectionNames.at(kNegDauTpcNSigmaEl), config.dauTpcNSigmaElAbsMax.value, limits::kAbsUpperLimit, true, true, false);
+    this->addComments(kNegDauTpcNSigmaEl, "keepDaughtersWithoutTpc = " + std::to_string(mKeepDaughtersWithoutTpc));
 
     this->setupSelectionHistogram<SelectionHistName>(registry);
     this->template setupFilterHistogram<FilterHistName>(
@@ -213,12 +216,17 @@ class PhotonSelection : public baseselection::BaseSelection<float, datatypes::Ph
     this->evaluateObservable(kDauAbsEtaMax, *std::max_element(etaAbsDaughters.begin(), etaAbsDaughters.end()));
 
     // TPC electron PID: evaluate only when a TPC signal is available, matching
-    // EMPhotonFilter::isSelectedSecondary(), which never rejects a daughter without TPC
+    // EMPhotonFilter::isSelectedSecondary(), which never rejects a daughter without TPC.
+    // If keepDaughtersWithoutTpc is false, feed a value that fails every limit instead of
+    // skipping evaluation entirely, so this (always mandatory) cut correctly rejects the
+    // candidate instead of silently letting it through
     auto evaluateDaughterTpcEl = [this](PhotonSels bit, bool hasTpc, float tpcNSigmaEl) {
       if (hasTpc) {
         this->evaluateObservable(bit, tpcNSigmaEl);
       } else if (mKeepDaughtersWithoutTpc) {
         this->evaluateObservable(bit, 0.f);
+      } else {
+        this->evaluateObservable(bit, std::numeric_limits<float>::max());
       }
     };
     evaluateDaughterTpcEl(kPosDauTpcNSigmaEl, posDaughter.hasTPC(), posDaughter.tpcNSigmaEl());
@@ -296,9 +304,11 @@ struct ConfPhotonTables : o2::framework::ConfigurableGroup {
 
 /// \brief Builder for PCM photons (V0PhotonsKF + V0Legs, from PWGEM/PhotonMeson)
 ///
-/// Unlike the strangeness V0 builder, daughter tracks are not indexed into FTracks: the
-/// conversion legs (V0Legs) carry a reduced set of columns and are not meant to be paired
-/// individually in femtoscopy, so only photon-level kinematics plus daughter PID/quality
+/// Unlike the strangeness V0 builder, daughter (conversion electron) tracks are, for now, not
+/// indexed into FTracks: the legs (V0Legs) are TPC-only tracks, so they cannot be confused for
+/// (i.e. share hits with/be the same reconstructed object as) a global track the way two V0
+/// daughters or a track and a V0 daughter can -- there is no detector-overlap effect for close
+/// pair rejection to correct for. Only photon-level kinematics plus daughter PID/quality
 /// diagnostics (FPhotonExtras) are stored.
 class PhotonBuilder
 {

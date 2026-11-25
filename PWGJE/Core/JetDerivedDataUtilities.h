@@ -58,8 +58,9 @@ enum JCollisionSel {
 };
 
 enum JCollisionSubGeneratorId {
-  none = -1,
-  mbGap = 0
+  none = -1,      // for MC events in general purpose MC
+  mbGap = 0,      // for MB gap events in gap-triggered MCs (like jet-jet and gamma-jet)
+  hardProcess = 1 // for hard process / signal events in jet-jet and gamma-jet MCs
 };
 
 template <typename T>
@@ -653,12 +654,12 @@ bool applyTrackKinematics(T const& track, float pTMin = 0.15, float pTMax = 100.
 }
 
 template <typename T>
-bool selectTrack(T const& track, int trackSelection, bool isEmbedded = false)
+bool selectTrack(T const& track, int trackSelection, bool rejectNonEmbedded = false)
 {
   if (!(track.trackSel() & (1ULL << JTrackSel::notBadMcTrack))) {
     return false;
   }
-  if (isEmbedded && !(track.trackSel() & (1ULL << JTrackSel::embeddedTrack))) { // will get rid of non embedded tracks
+  if (rejectNonEmbedded && !(track.trackSel() & (1ULL << JTrackSel::embeddedTrack))) { // will get rid of non embedded tracks
     return false;
   }
   if (trackSelection == -1) {

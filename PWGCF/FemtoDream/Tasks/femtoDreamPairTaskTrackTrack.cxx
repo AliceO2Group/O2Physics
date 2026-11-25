@@ -115,6 +115,7 @@ struct femtoDreamPairTaskTrackTrack {
     ConfigurableAxis DKlong{"DKlong", {500, -2., 2.}, "binning DKlong for the 3-D femtoscopy plot: R_long(LCMS) vs mT vs multiplicity percentile vs qnBin vs pait phi wrt EP (set <<do3DFemto>> to true)"};
     ConfigurableAxis qnBins{"qnBins", {10, 0, 10}, "binning of qn interval"};
     ConfigurableAxis pairPhiBins{"pairPhiBins", {12, 0., TMath::Pi()}, "binning of pair phi"};
+    Configurable<bool> storeEProt{"storeEProt", false, "Store EP-rotated (B-frame) DK_x,DK_y,DK_z instead of out,side,long in the 3D qn histogram"};
   } EPCal;
 
   using FilteredCollisions = soa::Filtered<FDCollisions>;
@@ -152,7 +153,7 @@ struct femtoDreamPairTaskTrackTrack {
 
   /// Partition for particle 1
   Partition<aod::FDParticles> PartitionTrk1 =
-    (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+    (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
     (ncheckbit(aod::femtodreamparticle::cut, Track1.CutBit)) &&
     ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track1.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCBit) && ((aod::femtodreamparticle::pidcut & Track1.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCTOFBit)) &&
     (aod::femtodreamparticle::pt >= Track1.PtMin) &&
@@ -164,7 +165,7 @@ struct femtoDreamPairTaskTrackTrack {
             (aod::femtodreamparticle::tempFitVar <= Track1.TempFitVarMax)));
 
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> PartitionMCTrk1 =
-    (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+    (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
     (ncheckbit(aod::femtodreamparticle::cut, Track1.CutBit)) &&
     ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track1.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCBit) && ((aod::femtodreamparticle::pidcut & Track1.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCTOFBit)) &&
     (aod::femtodreamparticle::pt >= Track1.PtMin) &&
@@ -197,7 +198,7 @@ struct femtoDreamPairTaskTrackTrack {
 
   /// Partition for track 2
   Partition<aod::FDParticles> PartitionTrk2 =
-    (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+    (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
     (ncheckbit(aod::femtodreamparticle::cut, Track2.CutBit)) &&
     ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track2.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track2.TPCBit) && ((aod::femtodreamparticle::pidcut & Track2.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track2.TPCTOFBit)) &&
     (aod::femtodreamparticle::pt >= Track2.PtMin) &&
@@ -209,7 +210,7 @@ struct femtoDreamPairTaskTrackTrack {
             (aod::femtodreamparticle::tempFitVar <= Track2.TempFitVarMax)));
 
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> PartitionMCTrk2 =
-    (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+    (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
     (ncheckbit(aod::femtodreamparticle::cut, Track2.CutBit)) &&
     ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track2.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track2.TPCBit) && ((aod::femtodreamparticle::pidcut & Track2.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track2.TPCTOFBit)) &&
     (aod::femtodreamparticle::pt >= Track2.PtMin) &&
@@ -333,6 +334,8 @@ struct femtoDreamPairTaskTrackTrack {
     }
 
     if (EPCal.do3DFemto) {
+      sameEventQnCont.setStoreEProt(EPCal.storeEProt);
+      mixedEventQnCont.setStoreEProt(EPCal.storeEProt);
       sameEventQnCont.init_3Dqn(&Registry, EPCal.DKout, EPCal.DKside, EPCal.DKlong,
                                 Binning4D.mT, Binning4D.multPercentile, Option.IsMC, EPCal.qnBins, EPCal.pairPhiBins, Option.SmearingByOrigin);
       mixedEventQnCont.init_3Dqn(&Registry, EPCal.DKout, EPCal.DKside, EPCal.DKlong,

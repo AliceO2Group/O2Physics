@@ -86,7 +86,7 @@ class FemtoUniverseCascadeSelection
 
  public:
   FemtoUniverseCascadeSelection()
-    : nPtCascadeMinSel(0), nPtCascadeMaxSel(0), nEtaCascadeMaxSel(0), nDCAV0DaughMax(0), nCPAV0Min(0), nTranRadV0Min(0), nTranRadV0Max(0), nV0DecVtxMax(0), nDCACascadeDaughMax(0), nCPACascadeMin(0), nTranRadCascadeMin(0), nTranRadCascadeMax(0), nDecVtxMax(0), nDCAPosToPV(0), nDCANegToPV(0), nDCABachToPV(0), nDCAV0ToPV(0), pTCascadeMin(9999999.), pTCascadeMax(-9999999.), etaCascadeMax(-9999999.), fDCAV0DaughMax(-9999999.), fCPAV0Min(9999999.), fTranRadV0Min(9999999.), fTranRadV0Max(-9999999.), fV0DecVtxMax(-9999999.), fDCACascadeDaughMax(-9999999.), fCPACascadeMin(9999999.), fTranRadCascadeMin(9999999.), fTranRadCascadeMax(-9999999.), fDecVtxMax(-9999999.), fDCAPosToPV(9999999.), fDCANegToPV(9999999.), fDCABachToPV(9999999.), fDCAV0ToPV(9999999.), fV0InvMassLowLimit(1.05), fV0InvMassUpLimit(1.3), fInvMassLowLimitXi(1.25), fInvMassUpLimitXi(1.4), fInvMassLowLimitOmega(1.6), fInvMassUpLimitOmega(1.8) /*, fRejectCompetingMass(false), fInvMassCompetingLowLimit(1.5), fInvMassCompetingUpLimit(2.0), nSigmaPIDOffsetTPC(0.)*/
+    : nPtCascadeMinSel(0), nPtCascadeMaxSel(0), nEtaCascadeMaxSel(0), nDCAV0DaughMax(0), nCPAV0Min(0), nTranRadV0Min(0), nTranRadV0Max(0), nV0DecVtxMax(0), nDCACascadeDaughMax(0), nCPACascadeMin(0), nTranRadCascadeMin(0), nTranRadCascadeMax(0), nDecVtxMax(0), nDCAPosToPV(0), nDCANegToPV(0), nDCABachToPV(0), nDCAV0ToPV(0), pTCascadeMin(9999999.), pTCascadeMax(-9999999.), etaCascadeMax(-9999999.), fDCAV0DaughMax(-9999999.), fCPAV0Min(9999999.), fTranRadV0Min(9999999.), fTranRadV0Max(-9999999.), fV0DecVtxMax(-9999999.), fDCACascadeDaughMax(-9999999.), fCPACascadeMin(9999999.), fTranRadCascadeMin(9999999.), fTranRadCascadeMax(-9999999.), fDecVtxMax(-9999999.), fDCAPosToPV(9999999.), fDCANegToPV(9999999.), fDCABachToPV(9999999.), fDCAV0ToPV(9999999.), fV0InvMassLowLimit(1.05), fV0InvMassUpLimit(1.3), fInvMassLowLimitXi(1.25), fInvMassUpLimitXi(1.4), fInvMassLowLimitOmega(1.6), fInvMassUpLimitOmega(1.8), fRejectCompetingMass(false) /*, fInvMassCompetingLowLimit(1.5), fInvMassCompetingUpLimit(2.0), nSigmaPIDOffsetTPC(0.)*/
   {
   }
 
@@ -176,6 +176,13 @@ class FemtoUniverseCascadeSelection
     fInvMassCompetingUpLimit = upLimit;
   }*/
 
+  /// Set whether to reject competing mass for Omega
+  /// \param reject Boolean flag
+  void setRejectCompetingMassOmega(bool reject)
+  {
+    fRejectCompetingMass = reject;
+  }
+
  private:
   int nPtCascadeMinSel;
   int nPtCascadeMaxSel;
@@ -226,6 +233,8 @@ class FemtoUniverseCascadeSelection
   float fInvMassCompetingUpLimit;*/
 
   // float nSigmaPIDOffsetTPC;
+
+  bool fRejectCompetingMass;
 
   FemtoUniverseTrackSelection posDaughTrack;
   FemtoUniverseTrackSelection negDaughTrack;
@@ -437,11 +446,15 @@ bool FemtoUniverseCascadeSelection::isSelectedMinimal(Col const& col, Casc const
   const float invMassXi = cascade.mXi();
   const float invMassOmega = cascade.mOmega();
 
+  // Check individual mass window hypotheses
+  const bool isXi = (invMassXi >= fInvMassLowLimitXi && invMassXi <= fInvMassUpLimitXi);
+  const bool isOmega = (invMassOmega >= fInvMassLowLimitOmega && invMassOmega <= fInvMassUpLimitOmega);
+  const bool passOmega = isOmega && (!fRejectCompetingMass || !isXi);
+
   if (invMassLambda < fV0InvMassLowLimit || invMassLambda > fV0InvMassUpLimit) {
     return false;
   }
-  // Accepts the cascade candidates as either Xi or Omega but not both
-  if ((invMassXi < fInvMassLowLimitXi || invMassXi > fInvMassUpLimitXi) == (invMassOmega < fInvMassLowLimitOmega || invMassOmega > fInvMassUpLimitOmega)) {
+  if (!isXi && !passOmega) {
     return false;
   }
   /*if (fRejectCompetingMass) {

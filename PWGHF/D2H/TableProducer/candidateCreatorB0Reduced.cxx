@@ -65,6 +65,7 @@ struct HfCandidateCreatorB0Reduced {
   Configurable<float> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<float> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B0 is smaller than this"};
   Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<float> maxChi2{"maxChi2", 1.e9, "maximum chi2 for vertex reconstruction"};
   // selection
   Configurable<float> invMassWindowDPiTolerance{"invMassWindowDPiTolerance", 0.01, "invariant-mass window tolerance for DPi pair preselections (GeV/c2)"};
 
@@ -94,21 +95,27 @@ struct HfCandidateCreatorB0Reduced {
     }
 
     // Initialize fitter
-    df2.setPropagateToPCA(propagateToPCA);
-    df2.setMaxR(maxR);
-    df2.setMaxDZIni(maxDZIni);
-    df2.setMinParamChange(minParamChange);
-    df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(useAbsDCA);
-    df2.setWeightedFinalPCA(useWeightedFinalPCA);
+    if (doprocessDataDplusPi || doprocessDataDplusPiWithDmesMl) {
+      df2.setPropagateToPCA(propagateToPCA);
+      df2.setMaxR(maxR);
+      df2.setMaxDZIni(maxDZIni);
+      df2.setMinParamChange(minParamChange);
+      df2.setMinRelChi2Change(minRelChi2Change);
+      df2.setUseAbsDCA(useAbsDCA);
+      df2.setWeightedFinalPCA(useWeightedFinalPCA);
+      df2.setMaxChi2(maxChi2);
+    }
 
-    df3.setPropagateToPCA(propagateToPCA);
-    df3.setMaxR(maxR);
-    df3.setMaxDZIni(maxDZIni);
-    df3.setMinParamChange(minParamChange);
-    df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(useAbsDCA);
-    df3.setWeightedFinalPCA(useWeightedFinalPCA);
+    if (doprocessDataDstarPi || doprocessDataDstarPiWithDmesMl) {
+      df3.setPropagateToPCA(propagateToPCA);
+      df3.setMaxR(maxR);
+      df3.setMaxDZIni(maxDZIni);
+      df3.setMinParamChange(minParamChange);
+      df3.setMinRelChi2Change(minRelChi2Change);
+      df3.setUseAbsDCA(useAbsDCA);
+      df3.setWeightedFinalPCA(useWeightedFinalPCA);
+      df3.setMaxChi2(maxChi2);
+    }
 
     // histograms
     if (doprocessDataDplusPi || doprocessDataDplusPiWithDmesMl) {

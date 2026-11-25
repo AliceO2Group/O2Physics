@@ -1359,7 +1359,7 @@ struct QaEfficiency {
 
     const char* partName = particleName(pdgSign, id);
     LOG(debug) << "Filling efficiency for particle " << static_cast<int>(id) << " " << partName;
-    THashList* subList = static_cast<THashList*>(listEfficiencyMC->FindObject(partName));
+    THashList* subList = dynamic_cast<THashList*>(listEfficiencyMC->FindObject(partName));
     if (!subList) {
       LOG(warning) << "Cannot find list of efficiency objects for particle " << partName;
       return;
@@ -1367,7 +1367,7 @@ struct QaEfficiency {
 
     // Filling 1D efficiencies
     auto doFillEfficiency = [&](const TString& effname, const auto& num, const auto& den) {
-      TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
+      TEfficiency* eff = dynamic_cast<TEfficiency*>(subList->FindObject(effname));
       if (!eff) {
         LOG(warning) << "Cannot find TEfficiency " << effname;
         return;
@@ -1437,7 +1437,7 @@ struct QaEfficiency {
 
     // Filling 2D efficiencies
     auto fillEfficiency2D = [&](const TString& effname, const auto& num, const auto& den) {
-      TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
+      TEfficiency* eff = dynamic_cast<TEfficiency*>(subList->FindObject(effname));
       if (!eff) {
         LOG(warning) << "Cannot find TEfficiency " << effname;
         return;
@@ -1802,10 +1802,10 @@ struct QaEfficiency {
       }
       float centrality = -1.;
       float occupancy = -1.;
-      if (doOccupancy) {
-        centrality = getCentralityColl(groupedCollisions);
-        occupancy = getOccupancyColl(groupedCollisions);
-      }
+      // if (doOccupancy) {
+      //   centrality = getCentralityColl(groupedCollisions); // FIXME: unused
+      //   occupancy = getOccupancyColl(groupedCollisions); // FIXME: unused
+      // }
       histos.fill(HIST("MC/generatedCollisions"), 2);
       if (skipEventsWithoutTPCTracks) {
         int nTPCTracks = 0;

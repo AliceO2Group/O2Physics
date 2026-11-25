@@ -48,7 +48,8 @@ template <modes::Mode mode,
           typename T4,
           typename T5,
           typename T6,
-          typename T7>
+          typename T7,
+          typename T8>
 bool processSameEvent(T1 const& SliceParticle,
                       T2 const& TrackTable,
                       T3 const& Collision,
@@ -56,14 +57,11 @@ bool processSameEvent(T1 const& SliceParticle,
                       T5& TripletHistManager,
                       T6& CtrManager,
                       T7& TcManager,
-                      TripletOrder tripletOrder)
+                      TripletOrder tripletOrder,
+                      T8& ColHistManager)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
   bool foundTriplet = false;
-
-  for (auto const& part : SliceParticle) {
-    ParticleHistManager.template fill<mode>(part, TrackTable);
-  }
 
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle, SliceParticle))) {
 
@@ -110,6 +108,15 @@ bool processSameEvent(T1 const& SliceParticle,
     }
   }
 
+  // Single-particle and collision histograms only get filled for events that actually contributed
+  // at least one accepted triplet -- same acceptance as the mixed-event side
+  if (foundTriplet) {
+    ColHistManager.template fill<mode>(Collision);
+    for (auto const& part : SliceParticle) {
+      ParticleHistManager.template fill<mode>(part, TrackTable);
+    }
+  }
+
   TripletHistManager.fillMixingQaSe();
   return foundTriplet;
 }
@@ -117,7 +124,7 @@ bool processSameEvent(T1 const& SliceParticle,
 // process same event for identical 2 particles and 1 other particle
 template <modes::Mode mode,
           typename T1, typename T2, typename T3, typename T4,
-          typename T5, typename T6, typename T7, typename T8, typename T9>
+          typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
 bool processSameEvent(T1 const& SliceParticle1, // 1&2 have same species
                       T2 const& SliceParticle3,
                       T3 const& TrackTable,
@@ -127,17 +134,11 @@ bool processSameEvent(T1 const& SliceParticle1, // 1&2 have same species
                       T7& TripletHistManager,
                       T8& CtrManager,
                       T9& TcManager,
-                      TripletOrder tripletOrder)
+                      TripletOrder tripletOrder,
+                      T10& ColHistManager)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
   bool foundTriplet = false;
-
-  for (auto const& part : SliceParticle1) {
-    ParticleHistManager1.template fill<mode>(part, TrackTable);
-  }
-  for (auto const& part : SliceParticle3) {
-    ParticleHistManager3.template fill<mode>(part, TrackTable);
-  }
 
   for (auto const& p3 : SliceParticle3) {
     for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle1, SliceParticle1))) {
@@ -173,6 +174,18 @@ bool processSameEvent(T1 const& SliceParticle1, // 1&2 have same species
     }
   }
 
+  // Single-particle and collision histograms only get filled for events that actually contributed
+  // at least one accepted triplet -- same acceptance as the mixed-event side
+  if (foundTriplet) {
+    ColHistManager.template fill<mode>(Collision);
+    for (auto const& part : SliceParticle1) {
+      ParticleHistManager1.template fill<mode>(part, TrackTable);
+    }
+    for (auto const& part : SliceParticle3) {
+      ParticleHistManager3.template fill<mode>(part, TrackTable);
+    }
+  }
+
   TripletHistManager.fillMixingQaSe();
   return foundTriplet;
 }
@@ -189,7 +202,8 @@ template <modes::Mode mode,
           typename T8,
           typename T9,
           typename T10,
-          typename T11>
+          typename T11,
+          typename T12>
 bool processSameEvent(T1 const& SliceParticle1,
                       T2 const& SliceParticle2,
                       T3 const& SliceParticle3,
@@ -200,20 +214,11 @@ bool processSameEvent(T1 const& SliceParticle1,
                       T8& ParticleHistManager3,
                       T9& TripletHistManager,
                       T10& CtrManager,
-                      T11& TcManager)
+                      T11& TcManager,
+                      T12& ColHistManager)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
   bool foundTriplet = false;
-
-  for (auto const& part : SliceParticle1) {
-    ParticleHistManager1.template fill<mode>(part, TrackTable);
-  }
-  for (auto const& part : SliceParticle2) {
-    ParticleHistManager2.template fill<mode>(part, TrackTable);
-  }
-  for (auto const& part : SliceParticle3) {
-    ParticleHistManager3.template fill<mode>(part, TrackTable);
-  }
 
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2, SliceParticle3))) {
 
@@ -238,6 +243,21 @@ bool processSameEvent(T1 const& SliceParticle1,
     }
   }
 
+  // Single-particle and collision histograms only get filled for events that actually contributed
+  // at least one accepted triplet -- same acceptance as the mixed-event side
+  if (foundTriplet) {
+    ColHistManager.template fill<mode>(Collision);
+    for (auto const& part : SliceParticle1) {
+      ParticleHistManager1.template fill<mode>(part, TrackTable);
+    }
+    for (auto const& part : SliceParticle2) {
+      ParticleHistManager2.template fill<mode>(part, TrackTable);
+    }
+    for (auto const& part : SliceParticle3) {
+      ParticleHistManager3.template fill<mode>(part, TrackTable);
+    }
+  }
+
   TripletHistManager.fillMixingQaSe();
   return foundTriplet;
 }
@@ -255,7 +275,8 @@ template <modes::Mode mode,
           typename T9,
           typename T10,
           typename T11,
-          typename T12>
+          typename T12,
+          typename T13>
 bool processSameEvent(T1 const& SliceParticle,
                       T2 const& TrackTable,
                       T3 const& mcParticles,
@@ -268,17 +289,11 @@ bool processSameEvent(T1 const& SliceParticle,
                       T10& Cleaner,
                       T11& CtrManager,
                       T12& TcManager,
-                      TripletOrder tripletOrder)
+                      TripletOrder tripletOrder,
+                      T13& ColHistManager)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
   bool foundTriplet = false;
-
-  for (auto const& part : SliceParticle) {
-    if (!Cleaner.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
-  }
 
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle, SliceParticle))) {
     // check if all three particles are clean
@@ -331,6 +346,18 @@ bool processSameEvent(T1 const& SliceParticle,
     }
   }
 
+  // Single-particle and collision histograms only get filled for events that actually contributed
+  // at least one accepted triplet -- same acceptance as the mixed-event side
+  if (foundTriplet) {
+    ColHistManager.template fill<mode>(Collision, mcCollisions);
+    for (auto const& part : SliceParticle) {
+      if (!Cleaner.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
+    }
+  }
+
   TripletHistManager.fillMixingQaSe();
   return foundTriplet;
 }
@@ -338,7 +365,7 @@ bool processSameEvent(T1 const& SliceParticle,
 // process same event for 2 identical particles and one other with mc information
 template <modes::Mode mode,
           typename T1, typename T2, typename T3, typename T4, typename T5, typename T6,
-          typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13, typename T14, typename T15>
+          typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13, typename T14, typename T15, typename T16>
 bool processSameEvent(T1 const& SliceParticle1,
                       T2 const& SliceParticle3,
                       T3 const& TrackTable,
@@ -354,23 +381,11 @@ bool processSameEvent(T1 const& SliceParticle1,
                       T13& Cleaner3,
                       T14& CtrManager,
                       T15& TcManager,
-                      TripletOrder tripletOrder)
+                      TripletOrder tripletOrder,
+                      T16& ColHistManager)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
   bool foundTriplet = false;
-
-  for (auto const& part : SliceParticle1) {
-    if (!Cleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager1.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
-  }
-  for (auto const& part : SliceParticle3) {
-    if (!Cleaner3.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager3.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
-  }
 
   for (auto const& p3 : SliceParticle3) {
     for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle1, SliceParticle1))) {
@@ -412,6 +427,24 @@ bool processSameEvent(T1 const& SliceParticle1,
     }
   }
 
+  // Single-particle and collision histograms only get filled for events that actually contributed
+  // at least one accepted triplet -- same acceptance as the mixed-event side
+  if (foundTriplet) {
+    ColHistManager.template fill<mode>(Collision, mcCollisions);
+    for (auto const& part : SliceParticle1) {
+      if (!Cleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager1.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
+    }
+    for (auto const& part : SliceParticle3) {
+      if (!Cleaner3.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager3.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
+    }
+  }
+
   TripletHistManager.fillMixingQaSe();
   return foundTriplet;
 }
@@ -435,7 +468,8 @@ template <modes::Mode mode,
           typename T15,
           typename T16,
           typename T17,
-          typename T18>
+          typename T18,
+          typename T19>
 bool processSameEvent(T1 const& SliceParticle1,
                       T2 const& SliceParticle2,
                       T3 const& SliceParticle3,
@@ -453,29 +487,11 @@ bool processSameEvent(T1 const& SliceParticle1,
                       T15& Cleaner2,
                       T16& Cleaner3,
                       T17& CtrManager,
-                      T18& TcManager)
+                      T18& TcManager,
+                      T19& ColHistManager)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
   bool foundTriplet = false;
-
-  for (auto const& part : SliceParticle1) {
-    if (!Cleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager1.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
-  }
-  for (auto const& part : SliceParticle2) {
-    if (!Cleaner2.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager2.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
-  }
-  for (auto const& part : SliceParticle3) {
-    if (!Cleaner3.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager3.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
-  }
 
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2, SliceParticle3))) {
     // check if all three particles are clean
@@ -506,6 +522,30 @@ bool processSameEvent(T1 const& SliceParticle1,
     }
   }
 
+  // Single-particle and collision histograms only get filled for events that actually contributed
+  // at least one accepted triplet -- same acceptance as the mixed-event side
+  if (foundTriplet) {
+    ColHistManager.template fill<mode>(Collision, mcCollisions);
+    for (auto const& part : SliceParticle1) {
+      if (!Cleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager1.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
+    }
+    for (auto const& part : SliceParticle2) {
+      if (!Cleaner2.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager2.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
+    }
+    for (auto const& part : SliceParticle3) {
+      if (!Cleaner3.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager3.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
+    }
+  }
+
   TripletHistManager.fillMixingQaSe();
   return foundTriplet;
 }
@@ -522,7 +562,8 @@ template <modes::Mode mode,
           typename T7,
           typename T8,
           typename T9,
-          typename T10>
+          typename T10,
+          typename T11>
 bool processSameEventMcTruth(T1 const& SliceParticle,
                              T2 const& /*mcParticles*/,
                              T3 const& mcMothers,
@@ -533,17 +574,11 @@ bool processSameEventMcTruth(T1 const& SliceParticle,
                              T8& ParticleCleaner,
                              T9& CtrManager,
                              T10& TcManager,
-                             TripletOrder tripletOrder)
+                             TripletOrder tripletOrder,
+                             T11& ColHistManager)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
   bool foundTriplet = false;
-
-  for (auto const& part : SliceParticle) {
-    if (!ParticleCleaner.isClean(part, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager.fill(part, mcMothers, mcPartonicMothers);
-  }
 
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle, SliceParticle))) {
     if (!ParticleCleaner.isClean(p1, mcMothers, mcPartonicMothers) ||
@@ -592,6 +627,18 @@ bool processSameEventMcTruth(T1 const& SliceParticle,
     }
   }
 
+  // Single-particle and collision histograms only get filled for events that actually contributed
+  // at least one accepted triplet -- same acceptance as the mixed-event side
+  if (foundTriplet) {
+    ColHistManager.template fill<mode>(Collision);
+    for (auto const& part : SliceParticle) {
+      if (!ParticleCleaner.isClean(part, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager.fill(part, mcMothers, mcPartonicMothers);
+    }
+  }
+
   TripletHistManager.fillMixingQaSe();
   return foundTriplet;
 }
@@ -599,7 +646,7 @@ bool processSameEventMcTruth(T1 const& SliceParticle,
 // process same event for 2 identical mc particles and 1 other mc particle
 template <modes::Mode mode,
           typename T1, typename T2, typename T3, typename T4, typename T5, typename T6,
-          typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13>
+          typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13, typename T14>
 bool processSameEventMcTruth(T1 const& SliceParticle1, // 1&2 have same species
                              T2 const& SliceParticle3,
                              T3 const& /*mcParticles*/,
@@ -613,23 +660,11 @@ bool processSameEventMcTruth(T1 const& SliceParticle1, // 1&2 have same species
                              T11& ParticleCleaner3,
                              T12& CtrManager,
                              T13& TcManager,
-                             TripletOrder tripletOrder)
+                             TripletOrder tripletOrder,
+                             T14& ColHistManager)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
   bool foundTriplet = false;
-
-  for (auto const& part : SliceParticle1) {
-    if (!ParticleCleaner1.isClean(part, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager1.fill(part, mcMothers, mcPartonicMothers);
-  }
-  for (auto const& part : SliceParticle3) {
-    if (!ParticleCleaner3.isClean(part, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager3.fill(part, mcMothers, mcPartonicMothers);
-  }
 
   for (auto const& p3 : SliceParticle3) {
     if (!ParticleCleaner3.isClean(p3, mcMothers, mcPartonicMothers)) {
@@ -667,6 +702,24 @@ bool processSameEventMcTruth(T1 const& SliceParticle1, // 1&2 have same species
     }
   }
 
+  // Single-particle and collision histograms only get filled for events that actually contributed
+  // at least one accepted triplet -- same acceptance as the mixed-event side
+  if (foundTriplet) {
+    ColHistManager.template fill<mode>(Collision);
+    for (auto const& part : SliceParticle1) {
+      if (!ParticleCleaner1.isClean(part, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager1.fill(part, mcMothers, mcPartonicMothers);
+    }
+    for (auto const& part : SliceParticle3) {
+      if (!ParticleCleaner3.isClean(part, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager3.fill(part, mcMothers, mcPartonicMothers);
+    }
+  }
+
   TripletHistManager.fillMixingQaSe();
   return foundTriplet;
 }
@@ -674,7 +727,7 @@ bool processSameEventMcTruth(T1 const& SliceParticle1, // 1&2 have same species
 // process same event for 3 different mc particles
 template <modes::Mode mode,
           typename T1, typename T2, typename T3, typename T4, typename T5, typename T6,
-          typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13, typename T14, typename T15, typename T16>
+          typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13, typename T14, typename T15, typename T16, typename T17>
 bool processSameEventMcTruth(T1 const& SliceParticle1,
                              T2 const& SliceParticle2,
                              T3 const& SliceParticle3,
@@ -690,29 +743,11 @@ bool processSameEventMcTruth(T1 const& SliceParticle1,
                              T13& ParticleCleaner2,
                              T14& ParticleCleaner3,
                              T15& CtrManager,
-                             T16& TcManager)
+                             T16& TcManager,
+                             T17& ColHistManager)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
   bool foundTriplet = false;
-
-  for (auto const& part : SliceParticle1) {
-    if (!ParticleCleaner1.isClean(part, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager1.fill(part, mcMothers, mcPartonicMothers);
-  }
-  for (auto const& part : SliceParticle2) {
-    if (!ParticleCleaner2.isClean(part, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager2.fill(part, mcMothers, mcPartonicMothers);
-  }
-  for (auto const& part : SliceParticle3) {
-    if (!ParticleCleaner3.isClean(part, mcMothers, mcPartonicMothers)) {
-      continue;
-    }
-    ParticleHistManager3.fill(part, mcMothers, mcPartonicMothers);
-  }
 
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2, SliceParticle3))) {
     if (!ParticleCleaner1.isClean(p1, mcMothers, mcPartonicMothers) ||
@@ -738,6 +773,30 @@ bool processSameEventMcTruth(T1 const& SliceParticle1,
     }
   }
 
+  // Single-particle and collision histograms only get filled for events that actually contributed
+  // at least one accepted triplet -- same acceptance as the mixed-event side
+  if (foundTriplet) {
+    ColHistManager.template fill<mode>(Collision);
+    for (auto const& part : SliceParticle1) {
+      if (!ParticleCleaner1.isClean(part, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager1.fill(part, mcMothers, mcPartonicMothers);
+    }
+    for (auto const& part : SliceParticle2) {
+      if (!ParticleCleaner2.isClean(part, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager2.fill(part, mcMothers, mcPartonicMothers);
+    }
+    for (auto const& part : SliceParticle3) {
+      if (!ParticleCleaner3.isClean(part, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      ParticleHistManager3.fill(part, mcMothers, mcPartonicMothers);
+    }
+  }
+
   TripletHistManager.fillMixingQaSe();
   return foundTriplet;
 }
@@ -754,7 +813,11 @@ template <modes::Mode mode,
           typename T8,
           typename T9,
           typename T10,
-          typename T11>
+          typename T11,
+          typename T12,
+          typename T13,
+          typename T14,
+          typename T15>
 void processMixedEvent(T1 const& Collisions,
                        T2& Partition1,
                        T3& Partition2,
@@ -765,12 +828,21 @@ void processMixedEvent(T1 const& Collisions,
                        T8 const& depth,
                        T9& TripletHistManager,
                        T10& CtrManager,
-                       T11& TcManager)
+                       T11& TcManager,
+                       int eventStride,
+                       T12& ParticleHistManagerMe1,
+                       T13& ParticleHistManagerMe2,
+                       T14& ParticleHistManagerMe3,
+                       T15& ColHistManager)
 {
   int64_t lastCollisionIndex1 = -1;
   int64_t lastCollisionIndex2 = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
+  // counts actual outer-anchor windows encountered (not raw collision IDs, which may have gaps
+  // from upstream event selection) so "every Nth anchor" is evenly spaced regardless of such gaps
+  int64_t windowCounter = -1;
+  bool skipThisWindow = false;
 
   // collision1 stays fixed across the outer mixing window, and collision2 stays fixed across each inner sub-window (it only advances once collision3 wraps
   // back to its start Both slices are therefore materialized once per window/sub-window and reused, instead of being re-sliced, i.e. a fresh arrow Slice + selection copy
@@ -781,14 +853,25 @@ void processMixedEvent(T1 const& Collisions,
 
     // outer window
     if (collision1.globalIndex() != lastCollisionIndex1) {
-      if (lastCollisionIndex1 != -1) {
+      if (lastCollisionIndex1 != -1 && !skipThisWindow) {
         TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex1 = collision1.globalIndex();
       lastCollisionIndex2 = -1; // force sliceParticle2 to refresh below
-      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      ++windowCounter;
+      // skip entire outer-anchor windows to reduce mixed-event combinatorics without truncating
+      // any single event's particle content -- every anchor that IS processed still gets its
+      // full `depth` worth of mixing partners
+      skipThisWindow = eventStride > 1 && windowCounter % eventStride != 0;
+      if (!skipThisWindow) {
+        sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      }
+    }
+
+    if (skipThisWindow) {
+      continue;
     }
 
     // inner sub-window
@@ -839,11 +922,21 @@ void processMixedEvent(T1 const& Collisions,
         hasValidTriplet = true;
         TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
         TripletHistManager.template fill<mode>();
+        // single-particle histograms for particles that make it into an accepted mixed-event triplet
+        ParticleHistManagerMe1.template fill<mode>(p1, TrackTable);
+        ParticleHistManagerMe2.template fill<mode>(p2, TrackTable);
+        ParticleHistManagerMe3.template fill<mode>(p3, TrackTable);
       }
     }
 
     if (hasValidTriplet) {
       ++windowSizeEffective;
+      // collision histograms only get filled for collisions that actually contributed at least
+      // one accepted mixed-event triplet -- all three real collisions go into the same manager
+      // used by the same-event side
+      ColHistManager.template fill<mode>(collision1);
+      ColHistManager.template fill<mode>(collision2);
+      ColHistManager.template fill<mode>(collision3);
     }
 
     TripletHistManager.fillMixingQaMePerEvent();
@@ -874,7 +967,11 @@ template <modes::Mode mode,
           typename T15,
           typename T16,
           typename T17,
-          typename T18>
+          typename T18,
+          typename T19,
+          typename T20,
+          typename T21,
+          typename T22>
 void processMixedEvent(T1 const& Collisions,
                        T2 const& mcCollisions,
                        T3& Partition1,
@@ -892,12 +989,21 @@ void processMixedEvent(T1 const& Collisions,
                        T15& Cleaner2,
                        T16& Cleaner3,
                        T17& CtrManager,
-                       T18& TcManager)
+                       T18& TcManager,
+                       int eventStride,
+                       T19& ParticleHistManagerMe1,
+                       T20& ParticleHistManagerMe2,
+                       T21& ParticleHistManagerMe3,
+                       T22& ColHistManager)
 {
   int64_t lastCollisionIndex1 = -1;
   int64_t lastCollisionIndex2 = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
+  // counts actual outer-anchor windows encountered (not raw collision IDs, which may have gaps
+  // from upstream event selection) so "every Nth anchor" is evenly spaced regardless of such gaps
+  int64_t windowCounter = -1;
+  bool skipThisWindow = false;
 
   // collision1 stays fixed across the outer mixing window, and collision2 stays fixed across each inner sub-window (it only advances once collision3 wraps
   // back to its start Both slices are therefore materialized once per window/sub-window and reused, instead of being re-sliced, i.e. a fresh arrow Slice + selection copy
@@ -908,14 +1014,25 @@ void processMixedEvent(T1 const& Collisions,
 
     // outer window
     if (collision1.globalIndex() != lastCollisionIndex1) {
-      if (lastCollisionIndex1 != -1) {
+      if (lastCollisionIndex1 != -1 && !skipThisWindow) {
         TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex1 = collision1.globalIndex();
       lastCollisionIndex2 = -1; // force sliceParticle2 to refresh below
-      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      ++windowCounter;
+      // skip entire outer-anchor windows to reduce mixed-event combinatorics without truncating
+      // any single event's particle content -- every anchor that IS processed still gets its
+      // full `depth` worth of mixing partners
+      skipThisWindow = eventStride > 1 && windowCounter % eventStride != 0;
+      if (!skipThisWindow) {
+        sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+      }
+    }
+
+    if (skipThisWindow) {
+      continue;
     }
 
     // inner sub-window
@@ -973,11 +1090,20 @@ void processMixedEvent(T1 const& Collisions,
         hasValidTriplet = true;
         TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
         TripletHistManager.template fill<mode>();
+        // single-particle histograms for particles that make it into an accepted mixed-event triplet
+        ParticleHistManagerMe1.template fill<mode>(p1, TrackTable);
+        ParticleHistManagerMe2.template fill<mode>(p2, TrackTable);
+        ParticleHistManagerMe3.template fill<mode>(p3, TrackTable);
       }
     }
 
     if (hasValidTriplet) {
       ++windowSizeEffective;
+      // collision histograms only get filled for collisions that actually contributed at least
+      // one accepted mixed-event triplet
+      ColHistManager.template fill<mode>(collision1, mcCollisions);
+      ColHistManager.template fill<mode>(collision2, mcCollisions);
+      ColHistManager.template fill<mode>(collision3, mcCollisions);
     }
 
     TripletHistManager.fillMixingQaMePerEvent();
@@ -993,7 +1119,8 @@ void processMixedEvent(T1 const& Collisions,
 // mc collisions carry no magnetic field, so there is no magnetic field check here
 template <modes::Mode mode,
           typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8,
-          typename T9, typename T10, typename T11, typename T12, typename T13, typename T14, typename T15, typename T16>
+          typename T9, typename T10, typename T11, typename T12, typename T13, typename T14, typename T15, typename T16,
+          typename T17, typename T18, typename T19, typename T20>
 void processMixedEventMcTruth(T1 const& McCollisions,
                               T2& Partition1,
                               T3& Partition2,
@@ -1009,12 +1136,21 @@ void processMixedEventMcTruth(T1 const& McCollisions,
                               T13& ParticleCleaner2,
                               T14& ParticleCleaner3,
                               T15& CtrManager,
-                              T16& TcManager)
+                              T16& TcManager,
+                              int eventStride,
+                              T17& ParticleHistManagerMe1,
+                              T18& ParticleHistManagerMe2,
+                              T19& ParticleHistManagerMe3,
+                              T20& ColHistManager)
 {
   int64_t lastCollisionIndex1 = -1;
   int64_t lastCollisionIndex2 = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
+  // counts actual outer-anchor windows encountered (not raw collision IDs, which may have gaps
+  // from upstream event selection) so "every Nth anchor" is evenly spaced regardless of such gaps
+  int64_t windowCounter = -1;
+  bool skipThisWindow = false;
 
   std::optional<decltype(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle1;
   std::optional<decltype(Partition2->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle2;
@@ -1023,14 +1159,25 @@ void processMixedEventMcTruth(T1 const& McCollisions,
 
     // outer window
     if (collision1.globalIndex() != lastCollisionIndex1) {
-      if (lastCollisionIndex1 != -1) {
+      if (lastCollisionIndex1 != -1 && !skipThisWindow) {
         TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex1 = collision1.globalIndex();
       lastCollisionIndex2 = -1; // force sliceParticle2 to refresh below
-      sliceParticle1.emplace(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, collision1.globalIndex(), cache));
+      ++windowCounter;
+      // skip entire outer-anchor windows to reduce mixed-event combinatorics without truncating
+      // any single event's particle content -- every anchor that IS processed still gets its
+      // full `depth` worth of mixing partners
+      skipThisWindow = eventStride > 1 && windowCounter % eventStride != 0;
+      if (!skipThisWindow) {
+        sliceParticle1.emplace(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, collision1.globalIndex(), cache));
+      }
+    }
+
+    if (skipThisWindow) {
+      continue;
     }
 
     // inner sub-window
@@ -1077,11 +1224,20 @@ void processMixedEventMcTruth(T1 const& McCollisions,
         hasValidTriplet = true;
         TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
         TripletHistManager.template fill<mode>();
+        // single-particle histograms for particles that make it into an accepted mixed-event triplet
+        ParticleHistManagerMe1.fill(p1, mcMothers, mcPartonicMothers);
+        ParticleHistManagerMe2.fill(p2, mcMothers, mcPartonicMothers);
+        ParticleHistManagerMe3.fill(p3, mcMothers, mcPartonicMothers);
       }
     }
 
     if (hasValidTriplet) {
       ++windowSizeEffective;
+      // collision histograms only get filled for collisions that actually contributed at least
+      // one accepted mixed-event triplet
+      ColHistManager.template fill<mode>(collision1);
+      ColHistManager.template fill<mode>(collision2);
+      ColHistManager.template fill<mode>(collision3);
     }
 
     TripletHistManager.fillMixingQaMePerEvent();

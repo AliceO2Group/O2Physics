@@ -40,15 +40,15 @@ class AnalysisCut : public TNamed
   // NOTE: If a dependent variable is specified, then the selection is applied only if the dependent variable is in the range [depCutLow,depCutHigh]
   // NOTE:       or outside if "depCutExclude" is true
   template <typename T1, typename T2>
-  void AddCut(int var, T1 cutLow, T2 cutHigh, bool exclude = false,
+  void addCut(int var, T1 cutLow, T2 cutHigh, bool exclude = false,
               int dependentVar = -1, float depCutLow = 0., float depCutHigh = 0., bool depCutExclude = false,
               int dependentVar2 = -1, float depCut2Low = 0., float depCut2High = 0., bool depCut2Exclude = false);
 
-  virtual bool IsSelected(float* values);
+  virtual bool isSelected(float* values);
 
   static std::vector<int> fgUsedVars; //! vector of used variables
 
-  void PrintCuts();
+  void printCuts();
 
   struct CutContainer {
     int16_t fVar;  // variable to be cut upon
@@ -76,7 +76,7 @@ class AnalysisCut : public TNamed
 
 //____________________________________________________________________________
 template <typename T1, typename T2>
-void AnalysisCut::AddCut(int var, T1 cutLow, T2 cutHigh, bool exclude,
+void AnalysisCut::addCut(int var, T1 cutLow, T2 cutHigh, bool exclude,
                          int dependentVar, float depCutLow, float depCutHigh, bool depCutExclude,
                          int dependentVar2, float depCut2Low, float depCut2High, bool depCut2Exclude)
 {
@@ -129,7 +129,7 @@ void AnalysisCut::AddCut(int var, T1 cutLow, T2 cutHigh, bool exclude,
 }
 
 //____________________________________________________________________________
-inline bool AnalysisCut::IsSelected(float* values)
+inline bool AnalysisCut::isSelected(float* values)
 {
   //
   // apply the configured cuts

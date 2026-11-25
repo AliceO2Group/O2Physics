@@ -179,7 +179,6 @@ struct Filter2Prong {
   ConfigurableAxis axisVertexMix{"axisVertexMix", {7, -7, 7}, "vertex axis for phi event mixing"};
   ConfigurableAxis axisMultiplicityMix{"axisMultiplicityMix", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity axis for phi event mixing"};
 
-  HfHelper hfHelper;
   Produces<aod::CF2ProngTracks> output2ProngTracks;
   Produces<aod::CF2ProngTrackmls> output2ProngTrackmls;
 
@@ -246,7 +245,7 @@ struct Filter2Prong {
       // look-up the collision id
       if ((c.hfflag() & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) == 0)
         continue;
-      if (cfgYMax >= 0.0f && std::abs(hfHelper.yD0(c)) > cfgYMax)
+      if (cfgYMax >= 0.0f && std::abs(HfHelper::yD0(c)) > cfgYMax)
         continue;
       if constexpr (std::experimental::is_detected<HasFlagMcMatchRec, typename HFCandidatesType::iterator>::value) {
         if (std::abs(c.flagMcMatchRec()) != o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)
@@ -255,7 +254,7 @@ struct Filter2Prong {
 
       if (c.isSelD0() > 0) {
         output2ProngTracks(cfcollisions.begin().globalIndex(),
-                           prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0ToPiK(c), aod::cf2prongtrack::D0ToPiK);
+                           prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), HfHelper::invMassD0ToPiK(c), aod::cf2prongtrack::D0ToPiK);
         if constexpr (std::experimental::is_detected<HasMLProb, typename HFCandidatesType::iterator>::value) {
           mlvecd.clear();
           for (const float val : c.mlProbD0())
@@ -269,7 +268,7 @@ struct Filter2Prong {
 
       if (c.isSelD0bar() > 0) {
         output2ProngTracks(cfcollisions.begin().globalIndex(),
-                           prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0barToKPi(c),
+                           prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), HfHelper::invMassD0barToKPi(c),
                            c.isSelD0() > 0 ? aod::cf2prongtrack::D0barToKPi : aod::cf2prongtrack::D0barToKPiExclusive);
         if constexpr (std::experimental::is_detected<HasMLProb, typename HFCandidatesType::iterator>::value) {
           mlvecd.clear();

@@ -79,6 +79,8 @@ DECLARE_SOA_COLUMN(OuterTOFExpectedTimeDe, outerTOFExpectedTimeDe, float);   //!
 DECLARE_SOA_COLUMN(OuterTOFExpectedTimeTr, outerTOFExpectedTimeTr, float);   //! Reconstructed expected time at the OuterTOF for the Triton mass hypotheses
 DECLARE_SOA_COLUMN(OuterTOFExpectedTimeHe3, outerTOFExpectedTimeHe3, float); //! Reconstructed expected time at the OuterTOF for the Helium3 mass hypotheses
 DECLARE_SOA_COLUMN(OuterTOFExpectedTimeAl, outerTOFExpectedTimeAl, float);   //! Reconstructed expected time at the OuterTOF for the Alpha mass hypotheses
+DECLARE_SOA_COLUMN(HasInnerTOF, hasInnerTOF, bool);                          //! InnerTOF short-lived values are filled (false if dummy)
+DECLARE_SOA_COLUMN(HasOuterTOF, hasOuterTOF, bool);                          //! OuterTOF short-lived values are filled (false if dummy)
 DECLARE_SOA_DYNAMIC_COLUMN(NSigmaInnerTOF, nSigmaInnerTOF,                   //! General function to get the nSigma for the InnerTOF
                            [](const float el,
                               const float mu,
@@ -260,10 +262,15 @@ DECLARE_SOA_TABLE(UpgradeTofShortLiveds, "AOD", "UPGRTOFSHRTLVD",
                   upgrade_tof::OuterTOFExpectedTimeXi,
                   upgrade_tof::OuterTOFExpectedTimeOm);
 
+DECLARE_SOA_TABLE(UpgradeTofShortLivedSignals, "AOD", "UPGRTOFSLSIGNAL",
+                  upgrade_tof::HasInnerTOF,
+                  upgrade_tof::HasOuterTOF);
+
 using UpgradeTofMC = UpgradeTofMCs::iterator;
 using UpgradeTof = UpgradeTofs::iterator;
 using UpgradeTofExpectedTime = UpgradeTofExpectedTimes::iterator;
 using UpgradeTofShortLived = UpgradeTofShortLiveds::iterator;
+using UpgradeTofShortLivedSignal = UpgradeTofShortLivedSignals::iterator;
 
 } // namespace o2::aod
 

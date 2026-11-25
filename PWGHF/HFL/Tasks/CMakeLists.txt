@@ -21,7 +21,7 @@ o2physics_add_dpl_workflow(task-muon-charm-beauty-separation
 
 o2physics_add_dpl_workflow(task-single-electron
                     SOURCES taskSingleElectron.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-single-muon

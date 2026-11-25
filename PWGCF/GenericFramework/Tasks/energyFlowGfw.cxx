@@ -18,6 +18,7 @@
 #include "PWGCF/GenericFramework/Core/GFWConfig.h"
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -26,6 +27,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -39,13 +41,13 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TFile.h>
 #include <TH1.h>
 #include <THn.h>
 #include <TNamed.h>
 #include <TObjArray.h>
 #include <TPDGCode.h>
 #include <TRandom3.h>
+#include <TString.h>
 
 #include <algorithm>
 #include <array>
@@ -54,6 +56,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -89,7 +92,8 @@ struct EnergyFlowGfw {
     TriggerSelected,
     CentralitySelected,
     HasValidZdc,
-    SpectatorSelected
+    SpectatorSelected,
+    SelectedWithoutZdc
   };
 
   enum ZdcQaStep : uint8_t {
@@ -119,6 +123,14 @@ struct EnergyFlowGfw {
     Configurable<float> vertexZ{"vertexZ", 10.f, "Accepted |z-vertex| (cm)"};
     Configurable<std::pair<float, float>> ptCuts{"ptCuts", {0.2f, 5.f}, "Track pT cuts (GeV/c)"};
     Configurable<float> etaMax{"etaMax", 0.8f, "Maximum absolute track pseudorapidity"};
+    Configurable<float> cfgDCAxyNSigma{"cfgDCAxyNSigma", 7, "Cut on number of sigma deviations from expected DCA in the transverse direction"};
+    Configurable<std::string> cfgDCAxyPtDep{"cfgDCAxyPtDep", "(0.0105 + 0.0350/(x^1.1))", "Functional form of pt-dependent 7 sigma DCAxy cut"};
+    Configurable<float> cfgDCAz{"cfgDCAz", 2, "Cut on DCA in the longitudinal direction (cm)"};
+    Configurable<float> cfgNTPCCls{"cfgNTPCCls", 50, "Cut on number of TPC clusters found"};
+    Configurable<float> cfgNTPCXrows{"cfgNTPCXrows", 70, "Cut on number of TPC crossed rows"};
+    Configurable<float> cfgMinNITSCls{"cfgMinNITSCls", 5, "Cut on minimum number of ITS clusters found"};
+    Configurable<float> cfgChi2PrITSCls{"cfgChi2PrITSCls", 36, "Cut on chi^2 per ITS clusters found"};
+    Configurable<float> cfgChi2PrTPCCls{"cfgChi2PrTPCCls", 2.5, "Cut on chi^2 per TPC clusters found"};
   } cuts;
 
   struct : ConfigurableGroup {
@@ -136,6 +148,7 @@ struct EnergyFlowGfw {
   Configurable<float> cfgMaxCentrality{"cfgMaxCentrality", 100.f, "Maximum accepted centrality percentile"};
   Configurable<bool> cfgFillEfficiency{"fillEfficiency", false, "Fill MC tracking efficiency; ignored by data processes"};
   Configurable<bool> cfgFillAcceptance{"fillAcceptance", false, "Fill GFW acceptance weights instead of running the reconstructed analysis"};
+  Configurable<bool> cfgUseRun2EventSelectionWithoutZdc{"cfgUseRun2EventSelectionWithoutZdc", false, "For Run 2 data, omit the ZDC beam-beam sel7 criteria even when the activity axis requires ZDC"};
 
   Configurable<float> cfgSpectatorEnergyPerNucleon{"cfgSpectatorEnergyPerNucleon", 1.f, "ZDC energy corresponding to one spectator nucleon"};
   Configurable<float> cfgMaxTotalSpectators{"cfgMaxTotalSpectators", 500.f, "Maximum accepted spectator count from ZNA+ZNC+ZPA+ZPC"};
@@ -145,8 +158,10 @@ struct EnergyFlowGfw {
   Configurable<float> cfgZdcResponseZPC{"cfgZdcResponseZPC", 1.f, "ZPC efficiency/acceptance response factor alpha; corrected energy is E_ZPC/alpha_ZPC"};
   Configurable<float> cfgZdcMaxAbsTimeForQa{"cfgZdcMaxAbsTimeForQa", 100.f, "Maximum absolute ZDC time considered available in QA; excludes missing-time sentinels"};
 
-  Configurable<std::string> efficiencyPath{"efficiencyPath", "", "CCDB path or local ROOT file containing a 4D efficiency-correction THn"};
-  Configurable<bool> efficiencyFromLocalFile{"efficiencyFromLocalFile", false, "Load efficiencyPath from a local ROOT file"};
+  struct : ConfigurableGroup {
+    Configurable<std::string> cfgEfficiencyPath{"cfgEfficiencyPath", "", "CCDB path to efficiency object"};
+    Configurable<bool> cfgUsePIDEfficiencies{"cfgUsePIDEfficiencies", false, "Use separate charged, pion, kaon, and proton efficiencies"};
+  } cfgEfficiency;
   Configurable<std::string> acceptancePath{"acceptancePath", "", "CCDB path to GFW acceptance weights"};
   Configurable<bool> acceptanceRunByRun{"acceptanceRunByRun", false, "Load acceptance weights from the RunByRun subdirectory"};
 
@@ -154,6 +169,8 @@ struct EnergyFlowGfw {
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.1}, "centrality"};
   ConfigurableAxis axisNGlobalTracks{"axisNGlobalTracks", {500, 0., 5000.}, "number of filtered global tracks"};
   ConfigurableAxis axisPt{"axisPt", {100, 0., 5.}, "pT (GeV/c)"};
+  ConfigurableAxis axisPhi{"axisPhi", {72, -o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf}, "#varphi (rad)"};
+  ConfigurableAxis axisEta{"axisEta", {100, -1., 1.}, "#eta"};
   ConfigurableAxis axisEnergy{"axisEnergy", {200, 0., 20.}, "transverse-energy weight (GeV)"};
   ConfigurableAxis axisTotalSpectators{"axisTotalSpectators", {500, 0., 500.}, "total spectator count"};
   ConfigurableAxis axisSpectatorActivity{"axisSpectatorActivity", {500, 0., 500.}, "spectator count used by the FlowContainer"};
@@ -167,16 +184,16 @@ struct EnergyFlowGfw {
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cuts.vertexZ;
   Filter trackFilter = (nabs(aod::track::eta) < cuts.etaMax) && (aod::track::pt > cuts.ptCuts->first) && (aod::track::pt < cuts.ptCuts->second) &&
-                       ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true)));
+                       ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::itsChi2NCl < cuts.cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cuts.cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cuts.cfgDCAz;
 
   using CollisionsRun2 = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>;
   using CollisionsRun2MC = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::McCollisionLabels>;
   using CollisionsRun3 = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
   using CollisionsRun3MC = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::McCollisionLabels>;
-  using Tracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
+  using Tracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA,
                                          aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                          aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
-  using TracksMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
+  using TracksMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA,
                                            aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                            aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
                                            aod::McTrackLabels>>;
@@ -186,7 +203,11 @@ struct EnergyFlowGfw {
   Preslice<TracksMC> tracksPerCollision = aod::track::collisionId;
 
   OutputObj<FlowContainer> flowContainer{"FlowContainer"};
+  OutputObj<FlowContainer> flowContainerGen{"FlowContainer_gen"};
   OutputObj<GFWWeights> acceptanceWeights{GFWWeights("weights")};
+  OutputObj<TList> runByRunAcceptanceWeightsOutput{"RunByRunAcceptanceWeights"};
+  std::map<int, GFWWeights*> runByRunAcceptanceWeights;
+  GFWWeights* currentRunWeights = nullptr;
   HistogramRegistry registry{"registry"};
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
   Service<o2::framework::O2DatabasePDG> pdgDB{};
@@ -197,10 +218,13 @@ struct EnergyFlowGfw {
   std::vector<bool> zeroHarmonicConfigs;
   int gfwMask = 0;
 
-  std::unique_ptr<THn> localEfficiency;
-  THn* efficiency = nullptr;
+  TH1* efficiency = nullptr;
+  std::vector<TH1*> pidEfficiencies;
+  bool efficiencyLoaded = false;
   GFWWeights* acceptance = nullptr;
   int acceptanceRunNumber = -1;
+
+  TF1* fPtDepDCAxy = nullptr;
 
   void init(InitContext const&)
   {
@@ -229,6 +253,11 @@ struct EnergyFlowGfw {
     if (cfgMaxCentrality > 100.f) {
       LOGF(warning, "cfgMaxCentrality is %.1f (> 100); dummy centrality values will be accepted. Use the Nch or spectator activity axis when calibrated centrality is unavailable", cfgMaxCentrality.value);
     }
+
+    // List for run-by-run NUA
+    auto* outputList = new TList();
+    outputList->SetOwner(true);
+    runByRunAcceptanceWeightsOutput.setObject(outputList);
 
     const int numberOfRegions = cfgRegions->GetSize();
     if (numberOfRegions <= 0 || cfgCorrConfig->GetSize() <= 0) {
@@ -277,7 +306,6 @@ struct EnergyFlowGfw {
       corrConfigs.push_back(std::move(config));
     }
     gfw->CreateRegions();
-    flowContainer.setObject(new FlowContainer("FlowContainer"));
     const AxisSpec activityAxis = [this]() {
       if (cfgActivityAxis.value == NchAxis) {
         return AxisSpec{axisNGlobalTracks, "N_{global tracks}"};
@@ -287,24 +315,42 @@ struct EnergyFlowGfw {
       }
       return AxisSpec{axisCentrality, "centrality (%)"};
     }();
-    if (activityAxis.nBins.has_value()) {
-      flowContainer->Initialize(profileNames.get(), activityAxis.nBins.value(), activityAxis.binEdges.front(), activityAxis.binEdges.back(), cfgBootstrapSamples);
-    } else {
-      flowContainer->Initialize(profileNames.get(), activityAxis, cfgBootstrapSamples);
+    const auto initializeFlowContainer = [&](auto& output, const char* name) {
+      output.setObject(new FlowContainer(name));
+      if (activityAxis.nBins.has_value()) {
+        output->Initialize(profileNames.get(), activityAxis.nBins.value(), activityAxis.binEdges.front(), activityAxis.binEdges.back(), cfgBootstrapSamples);
+      } else {
+        output->Initialize(profileNames.get(), activityAxis, cfgBootstrapSamples);
+      }
+    };
+    initializeFlowContainer(flowContainer, "FlowContainer");
+    if (doprocessRun2MC || doprocessRun3MC) {
+      initializeFlowContainer(flowContainerGen, "FlowContainer_gen");
+      if (cfgActivityAxis.value == ZdcSpectatorAxis) {
+        LOGF(warning, "The generated-level FlowContainer cannot be filled with the ZDC spectator activity axis because no generator-level spectator estimator is implemented");
+      }
     }
     if (cfgFillAcceptance) {
       acceptanceWeights->init(true, false);
     }
 
-    const AxisSpec etaAxis{32, -cuts.etaMax.value, cuts.etaMax.value, "#eta"};
     registry.add("event/centrality", "Accepted events;centrality;events", HistType::kTH1F, {axisCentrality});
     registry.add("event/activity", "Accepted events;event activity;events", HistType::kTH1F, {activityAxis});
     registry.add("event/vertex", "Accepted events;z-vtx (cm);events", HistType::kTH1F, {axisVertex});
-    registry.add("event/aodSelection", "AOD event selection;selection;events", HistType::kTH1F, {{5, -0.5, 4.5}});
+    registry.add("event/aodSelection", "AOD event selection;selection;events", HistType::kTH1F, {{6, -0.5, 5.5}});
     registry.add("event/totalSpectators", "ZDC spectator estimate;N_{spectators};events", HistType::kTH1F, {axisTotalSpectators});
-    registry.add("track/ptEta", "Selected tracks;p_{T} (GeV/c);#eta", HistType::kTH2F, {axisPt, etaAxis});
+    registry.add("track/ptEta", "Selected tracks;p_{T} (GeV/c);#eta", HistType::kTH2F, {axisPt, axisEta});
     registry.add("track/energy", "Energy entering the GFW;E_{T} (GeV);tracks", HistType::kTH1F, {axisEnergy});
     registry.add("track/pid", "PID mass assignment;species;tracks", HistType::kTH1F, {{4, -0.5, 3.5}});
+
+    if (doprocessRun2MC || doprocessRun3MC) {
+      registry.add("generated/event/centrality", "Generated-level accepted events;reconstructed centrality;events", HistType::kTH1F, {axisCentrality});
+      registry.add("generated/event/activity", "Generated-level accepted events;event activity;events", HistType::kTH1F, {activityAxis});
+      registry.add("generated/event/vertex", "Generated-level accepted events;generated z-vtx (cm);events", HistType::kTH1F, {axisVertex});
+      registry.add("generated/particle/ptEta", "Selected physical-primary charged particles;p_{T} (GeV/c);#eta", HistType::kTH2F, {axisPt, axisEta});
+      registry.add("generated/particle/energy", "Generated energy entering the GFW;E_{T} (GeV);particles", HistType::kTH1F, {axisEnergy});
+      registry.add("generated/particle/pid", "Generated particle species;species;particles", HistType::kTH1F, {{4, -0.5, 3.5}});
+    }
 
     if (cfgFillEfficiency && (doprocessRun2MC || doprocessRun3MC)) {
       const AxisSpec efficiencySpeciesAxis{EfficiencySpeciesCount, -0.5, static_cast<float>(EfficiencySpeciesCount) - 0.5, "particle"};
@@ -344,11 +390,11 @@ struct EnergyFlowGfw {
     registry.add("zdc/energyZnVsNGlobalTracks", "Triggered events with finite ZN energies;N_{global tracks};E_{ZNA}+E_{ZNC}", HistType::kTH2F, {axisZdcTrackMultiplicity, axisZdcTotalEnergy});
     registry.add("zdc/energyZpVsNGlobalTracks", "Triggered events with finite ZP energies;N_{global tracks};E_{ZPA}+E_{ZPC}", HistType::kTH2F, {axisZdcTrackMultiplicity, axisZdcTotalEnergy});
     registry.add("zdc/energyTotalVsNGlobalTracks", "Triggered events with finite common energies;N_{global tracks};#Sigma E_{ZDC}^{common}", HistType::kTH2F, {axisZdcTrackMultiplicity, axisZdcTotalEnergy});
-    registry.add("zdc/spectatorEstimateVsNGlobalTracks", "Triggered events passing current nonnegative-energy requirement;N_{global tracks};current N_{spectators} estimate", HistType::kTH2F, {axisZdcTrackMultiplicity, axisTotalSpectators});
+    registry.add("zdc/spectatorEstimateVsNGlobalTracks", "Triggered events with finite common energies;N_{global tracks};N_{spectators} estimate", HistType::kTH2F, {axisZdcTrackMultiplicity, axisTotalSpectators});
     registry.add("zdc/energyZnVsCentrality", "Triggered events with finite ZN energies;centrality (%);E_{ZNA}+E_{ZNC}", HistType::kTH2F, {axisCentrality, axisZdcTotalEnergy});
     registry.add("zdc/energyZpVsCentrality", "Triggered events with finite ZP energies;centrality (%);E_{ZPA}+E_{ZPC}", HistType::kTH2F, {axisCentrality, axisZdcTotalEnergy});
     registry.add("zdc/energyTotalVsCentrality", "Triggered events with finite common energies;centrality (%);#Sigma E_{ZDC}^{common}", HistType::kTH2F, {axisCentrality, axisZdcTotalEnergy});
-    registry.add("zdc/spectatorEstimateVsCentrality", "Triggered events passing current nonnegative-energy requirement;centrality (%);current N_{spectators} estimate", HistType::kTH2F, {axisCentrality, axisTotalSpectators});
+    registry.add("zdc/spectatorEstimateVsCentrality", "Triggered events with finite common energies;centrality (%);N_{spectators} estimate", HistType::kTH2F, {axisCentrality, axisTotalSpectators});
     registry.add("zdc/meanZNAByNGlobalTracks", "Mean ZNA response;N_{global tracks};#LT E_{ZNA} #GT", HistType::kTProfile, {axisZdcTrackMultiplicity});
     registry.add("zdc/meanZNCByNGlobalTracks", "Mean ZNC response;N_{global tracks};#LT E_{ZNC} #GT", HistType::kTProfile, {axisZdcTrackMultiplicity});
     registry.add("zdc/meanZPAByNGlobalTracks", "Mean ZPA response;N_{global tracks};#LT E_{ZPA} #GT", HistType::kTProfile, {axisZdcTrackMultiplicity});
@@ -370,6 +416,7 @@ struct EnergyFlowGfw {
     selectionHistogram->GetXaxis()->SetBinLabel(CentralitySelected + 1, "centrality threshold");
     selectionHistogram->GetXaxis()->SetBinLabel(HasValidZdc + 1, "valid ZDC");
     selectionHistogram->GetXaxis()->SetBinLabel(SpectatorSelected + 1, "spectator threshold");
+    selectionHistogram->GetXaxis()->SetBinLabel(SelectedWithoutZdc + 1, "selection (no ZDC)");
     auto zdcQaHistogram = registry.get<TH1>(HIST("zdc/qaSelection"));
     zdcQaHistogram->GetXaxis()->SetBinLabel(MatchedZdc + 1, "matched ZDC");
     zdcQaHistogram->GetXaxis()->SetBinLabel(FiniteCommonEnergy + 1, "finite common energies");
@@ -382,6 +429,13 @@ struct EnergyFlowGfw {
     pidHistogram->GetXaxis()->SetBinLabel(Pion + 1, "pion");
     pidHistogram->GetXaxis()->SetBinLabel(Kaon + 1, "kaon");
     pidHistogram->GetXaxis()->SetBinLabel(Proton + 1, "proton");
+    if (doprocessRun2MC || doprocessRun3MC) {
+      auto generatedPidHistogram = registry.get<TH1>(HIST("generated/particle/pid"));
+      generatedPidHistogram->GetXaxis()->SetBinLabel(Unidentified + 1, "other charged");
+      generatedPidHistogram->GetXaxis()->SetBinLabel(Pion + 1, "pion");
+      generatedPidHistogram->GetXaxis()->SetBinLabel(Kaon + 1, "kaon");
+      generatedPidHistogram->GetXaxis()->SetBinLabel(Proton + 1, "proton");
+    }
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -398,12 +452,14 @@ struct EnergyFlowGfw {
     float totalEnergy = 0.f;
     for (int index = 0; index < 4; ++index) {
       const float value = energies[index];
-      if (!std::isfinite(value) || value < 0.f) {
+      if (!std::isfinite(value)) {
         return -1.f;
       }
       totalEnergy += value / responseFactors[index];
     }
-    return totalEnergy / cfgSpectatorEnergyPerNucleon.value;
+    const float spectators = totalEnergy / cfgSpectatorEnergyPerNucleon.value;
+    // Preserve signed pedestal fluctuations in the sum, then enforce the physical boundary.
+    return std::isfinite(spectators) ? std::max(0.f, spectators) : -1.f;
   }
 
   template <typename TZdc>
@@ -553,8 +609,8 @@ struct EnergyFlowGfw {
         registry.fill(HIST("zdc/energyTotalVsCentrality"), centrality, totalEnergy);
         registry.fill(HIST("zdc/meanTotalByCentrality"), centrality, totalEnergy);
       }
-      if (allNonnegative) {
-        const float spectators = totalSpectators(zdc);
+      const float spectators = totalSpectators(zdc);
+      if (spectators >= 0.f) {
         registry.fill(HIST("zdc/spectatorEstimateVsNGlobalTracks"), numberOfGlobalTracks, spectators);
         if (validCentrality) {
           registry.fill(HIST("zdc/spectatorEstimateVsCentrality"), centrality, spectators);
@@ -564,7 +620,7 @@ struct EnergyFlowGfw {
   }
 
   template <typename TBCs, typename TCollision>
-  bool eventSelected(TCollision const& collision, bool triggerSelected, float numberOfGlobalTracks, float centrality, float& spectators)
+  bool eventSelected(TCollision const& collision, bool triggerSelected, float numberOfGlobalTracks, float centrality, bool requireZdc, float& spectators)
   {
     spectators = -1.f;
     registry.fill(HIST("event/aodSelection"), AllAodEvents);
@@ -572,6 +628,15 @@ struct EnergyFlowGfw {
       return false;
     }
     registry.fill(HIST("event/aodSelection"), TriggerSelected);
+
+    if (!requireZdc) {
+      if (!std::isfinite(centrality) || centrality < 0.f || centrality > cfgMaxCentrality) {
+        return false;
+      }
+      registry.fill(HIST("event/aodSelection"), CentralitySelected);
+      registry.fill(HIST("event/aodSelection"), SelectedWithoutZdc);
+      return true;
+    }
 
     if (!collision.has_foundBC()) {
       return false;
@@ -601,39 +666,87 @@ struct EnergyFlowGfw {
     return true;
   }
 
+  bool activityRequiresZdc() const
+  {
+    return cfgActivityAxis.value == ZdcSpectatorAxis;
+  }
+
+  static bool isZdcBeamBeamSelectionFlag(int flag)
+  {
+    return flag == aod::evsel::kIsBBZNA || flag == aod::evsel::kIsBBZNC || flag == aod::evsel::kIsBBZAC;
+  }
+
+  template <bool IsMC, typename TBCs, typename TCollision>
+  bool run2EventSelected(TCollision const& collision, bool requireZdc)
+  {
+    if constexpr (IsMC) {
+      return collision.sel7();
+    }
+    if (!collision.alias_bit(kINT7)) {
+      return false;
+    }
+    if (requireZdc && !cfgUseRun2EventSelectionWithoutZdc.value) {
+      return collision.sel7();
+    }
+    if (!collision.has_foundBC()) {
+      return false;
+    }
+
+    const auto& bc = collision.template foundBC_as<TBCs>();
+    auto* selectionParameters = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
+    if (!selectionParameters) {
+      LOGF(fatal, "Could not load the Run 2 event-selection parameters");
+    }
+    const bool* enabledSelections = selectionParameters->getSelection(0);
+    for (int flag = 0; flag < aod::evsel::kNsel; ++flag) {
+      if (isZdcBeamBeamSelectionFlag(flag)) {
+        continue;
+      }
+      if (enabledSelections[flag] && !collision.selection_bit(flag)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  template <typename TTrack>
+  bool trackSelected(const TTrack& track)
+  {
+    if (cuts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > fPtDepDCAxy->Eval(track.pt()))) {
+      return false;
+    }
+    return ((track.tpcNClsCrossedRows() >= cuts.cfgNTPCXrows) && (track.tpcNClsFound() >= cuts.cfgNTPCCls) && (track.itsNCls() >= cuts.cfgMinNITSCls));
+  }
+
   void loadEfficiency(uint64_t timestamp)
   {
-    if (efficiencyPath.value.empty()) {
-      efficiency = nullptr;
+    if (efficiencyLoaded) {
       return;
     }
-    if (efficiencyFromLocalFile) {
-      if (localEfficiency) {
-        efficiency = localEfficiency.get();
-        return;
-      }
-      std::unique_ptr<TFile> input(TFile::Open(efficiencyPath.value.c_str(), "READ"));
-      if (!input || input->IsZombie()) {
-        LOGF(fatal, "Could not open efficiency file %s", efficiencyPath.value.c_str());
-        return;
-      }
-      auto* source = dynamic_cast<THn*>(input->Get("ccdb_object"));
-      if (!source || source->GetNdimensions() != 4) {
-        LOGF(fatal, "Efficiency object must be a 4D THn with axes eta, pT, centrality, z-vtx");
-      }
-      localEfficiency.reset(dynamic_cast<THn*>(source->Clone("eecEfficiency")));
-      if (!localEfficiency) {
-        LOGF(fatal, "Could not clone the efficiency object from %s", efficiencyPath.value.c_str());
-      }
-      efficiency = localEfficiency.get();
+    if (cfgEfficiency.cfgEfficiencyPath.value.empty()) {
+      efficiencyLoaded = true;
       return;
     }
-    if (!efficiency || !ccdb->isCachedObjectValid(efficiencyPath.value, timestamp)) {
-      efficiency = ccdb->getForTimeStamp<THnT<float>>(efficiencyPath.value, timestamp);
-      if (!efficiency || efficiency->GetNdimensions() != 4) {
-        LOGF(fatal, "Could not load a 4D efficiency correction from %s", efficiencyPath.value.c_str());
+
+    if (!cfgEfficiency.cfgUsePIDEfficiencies) {
+      efficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency.cfgEfficiencyPath.value, timestamp);
+      if (!efficiency) {
+        LOGF(fatal, "Could not load efficiency histogram from %s", cfgEfficiency.cfgEfficiencyPath.value.c_str());
+      }
+      LOGF(info, "Loaded efficiency histogram from %s", cfgEfficiency.cfgEfficiencyPath.value.c_str());
+    } else {
+      static constexpr std::array<const char*, EfficiencySpeciesCount> EfficiencySpeciesNames{"ch", "pi", "ka", "pr"};
+      pidEfficiencies.reserve(EfficiencySpeciesNames.size());
+      for (const auto& speciesName : EfficiencySpeciesNames) {
+        const std::string path = cfgEfficiency.cfgEfficiencyPath.value + "/" + speciesName;
+        pidEfficiencies.push_back(ccdb->getForTimeStamp<TH1D>(path, timestamp));
+        if (!pidEfficiencies.back()) {
+          LOGF(fatal, "Could not load PID efficiency histogram from %s", path.c_str());
+        }
+        LOGF(info, "Loaded PID efficiency histogram from %s", path.c_str());
       }
     }
+    efficiencyLoaded = true;
   }
 
   void loadAcceptance(uint64_t timestamp, int runNumber)
@@ -659,17 +772,20 @@ struct EnergyFlowGfw {
     acceptanceRunNumber = runNumber;
   }
 
-  double efficiencyWeight(float eta, float pt, float centrality, float posZ) const
+  double getEfficiency(float pt, int pid) const
   {
-    if (!efficiency) {
+    TH1* efficiencyHistogram = efficiency;
+    if (cfgEfficiency.cfgUsePIDEfficiencies.value) {
+      if (pidEfficiencies.empty()) {
+        return 1.;
+      }
+      efficiencyHistogram = pidEfficiencies[pid];
+    } else if (!efficiencyHistogram) {
       return 1.;
     }
-    std::array<int, 4> bins{
-      efficiency->GetAxis(0)->FindBin(eta),
-      efficiency->GetAxis(1)->FindBin(pt),
-      efficiency->GetAxis(2)->FindBin(centrality),
-      efficiency->GetAxis(3)->FindBin(posZ)};
-    return efficiency->GetBinContent(bins.data());
+
+    const double value = efficiencyHistogram->GetBinContent(efficiencyHistogram->FindBin(pt));
+    return value == 0. ? -1. : 1. / value;
   }
 
   template <typename TTrack>
@@ -734,6 +850,39 @@ struct EnergyFlowGfw {
   }
 
   template <typename TParticle>
+  int generatedParticleId(TParticle const& particle) const
+  {
+    const int absolutePdg = std::abs(particle.pdgCode());
+    if (absolutePdg == PDG_t::kPiPlus) {
+      return Pion;
+    }
+    if (absolutePdg == PDG_t::kKPlus) {
+      return Kaon;
+    }
+    if (absolutePdg == PDG_t::kProton) {
+      return Proton;
+    }
+    return Unidentified;
+  }
+
+  template <typename TParticle>
+  double generatedTransverseEnergy(TParticle const& particle) const
+  {
+    if (energy.weightMode.value == PtWeight) {
+      return particle.pt();
+    }
+    const auto* pdgParticle = pdgDB->GetParticle(particle.pdgCode());
+    if (!pdgParticle) {
+      return -1.;
+    }
+    const double mass = pdgParticle->Mass();
+    if (energy.weightMode.value == MtWeight) {
+      return std::hypot(particle.pt(), mass);
+    }
+    return std::hypot(particle.pt(), mass / std::cosh(particle.eta()));
+  }
+
+  template <typename TParticle>
   bool isEfficiencyParticle(TParticle const& particle) const
   {
     if (!particle.isPhysicalPrimary() || std::abs(particle.eta()) >= cuts.etaMax.value || particle.pt() <= cuts.ptCuts.value.first || particle.pt() >= cuts.ptCuts.value.second) {
@@ -793,10 +942,33 @@ struct EnergyFlowGfw {
     }
   }
 
-  template <typename TCollision, typename TTracks>
-  void fillAcceptanceWeights(TCollision const& collision, TTracks const& tracks, float centrality)
+  GFWWeights* getOrCreateRunNUA(int run)
   {
+    const auto found = runByRunAcceptanceWeights.find(run);
+    if (found != runByRunAcceptanceWeights.end()) {
+      return found->second;
+    }
+
+    auto* weights = new GFWWeights(Form("weights_%d", run));
+    weights->init(true, false);
+
+    runByRunAcceptanceWeightsOutput->Add(weights);
+    runByRunAcceptanceWeights.emplace(run, weights);
+
+    return weights;
+  }
+
+  template <typename TCollision, typename TTracks>
+  void fillAcceptanceWeights(TCollision const& collision, TTracks const& tracks, float centrality, int run)
+  {
+    if (acceptanceRunByRun && run != acceptanceRunNumber) {
+      currentRunWeights = getOrCreateRunNUA(run);
+      acceptanceRunNumber = run;
+    }
     for (const auto& track : tracks) {
+      if (acceptanceRunByRun) {
+        currentRunWeights->fill(track.phi(), track.eta(), collision.posZ(), track.pt(), centrality, 0);
+      }
       acceptanceWeights->fill(track.phi(), track.eta(), collision.posZ(), track.pt(), centrality, 0);
     }
   }
@@ -816,9 +988,12 @@ struct EnergyFlowGfw {
 
     gfw->Clear();
     for (const auto& track : tracks) {
-      const int pid = energy.weightMode.value == PtWeight ? Unidentified : particleId(track);
+      if (!trackSelected(track))
+        continue;
+      const bool needsParticleId = energy.weightMode.value != PtWeight || cfgEfficiency.cfgUsePIDEfficiencies;
+      const int pid = needsParticleId ? particleId(track) : Unidentified;
       const double et = transverseEnergy(track, pid);
-      const double weff = efficiencyWeight(track.eta(), track.pt(), centrality, collision.posZ());
+      const double weff = getEfficiency(track.pt(), pid);
       const double wacc = acceptance ? acceptance->getNUA(track.phi(), track.eta(), collision.posZ()) : 1.;
       if (!std::isfinite(et) || !std::isfinite(weff) || !std::isfinite(wacc) || et <= 0. || weff <= 0. || wacc <= 0.) {
         continue;
@@ -834,10 +1009,11 @@ struct EnergyFlowGfw {
     registry.fill(HIST("event/centrality"), centrality);
     registry.fill(HIST("event/activity"), activity);
     registry.fill(HIST("event/vertex"), collision.posZ());
-    fillFlowContainer(activity);
+    fillFlowContainer(flowContainer, activity);
   }
 
-  void fillFlowContainer(float activity)
+  template <typename TFlowContainer>
+  void fillFlowContainer(TFlowContainer& output, float activity)
   {
     const double randomNumber = random->Rndm();
     for (std::size_t index = 0; index < corrConfigs.size(); ++index) {
@@ -846,7 +1022,7 @@ struct EnergyFlowGfw {
         const double raw = gfw->Calculate(config, 0, false).real();
         if (std::isfinite(raw) && raw > 0.) {
           const std::string rawName = config.Head + "_raw";
-          flowContainer->FillProfile(rawName.c_str(), activity, raw, 1., randomNumber);
+          output->FillProfile(rawName.c_str(), activity, raw, 1., randomNumber);
         }
         continue;
       }
@@ -860,22 +1036,55 @@ struct EnergyFlowGfw {
         continue;
       }
       const std::string rawName = config.Head + "_raw";
-      flowContainer->FillProfile(rawName.c_str(), activity, raw, 1., randomNumber);
-      flowContainer->FillProfile(config.Head.c_str(), activity, raw / denominator, denominator, randomNumber);
+      output->FillProfile(rawName.c_str(), activity, raw, 1., randomNumber);
+      output->FillProfile(config.Head.c_str(), activity, raw / denominator, denominator, randomNumber);
     }
+  }
+
+  template <typename TMcCollision, typename TParticles>
+  void processGeneratedCollision(TMcCollision const& mcCollision, TParticles const& particles, float centrality)
+  {
+    if (std::abs(mcCollision.posZ()) >= cuts.vertexZ.value || !std::isfinite(centrality) || centrality < 0.f || centrality > cfgMaxCentrality.value || cfgActivityAxis.value == ZdcSpectatorAxis) {
+      return;
+    }
+
+    gfw->Clear();
+    int numberOfSelectedParticles = 0;
+    for (const auto& particle : particles) {
+      if (!isEfficiencyParticle(particle)) {
+        continue;
+      }
+      const double et = generatedTransverseEnergy(particle);
+      if (!std::isfinite(et) || et <= 0.) {
+        continue;
+      }
+      const int pid = generatedParticleId(particle);
+      gfw->Fill(particle.eta(), 0, particle.phi(), et, gfwMask);
+      ++numberOfSelectedParticles;
+      registry.fill(HIST("generated/particle/ptEta"), particle.pt(), particle.eta());
+      registry.fill(HIST("generated/particle/energy"), et);
+      registry.fill(HIST("generated/particle/pid"), pid);
+    }
+
+    const float activity = cfgActivityAxis.value == NchAxis ? static_cast<float>(numberOfSelectedParticles) : centrality;
+    registry.fill(HIST("generated/event/centrality"), centrality);
+    registry.fill(HIST("generated/event/activity"), activity);
+    registry.fill(HIST("generated/event/vertex"), mcCollision.posZ());
+    fillFlowContainer(flowContainerGen, activity);
   }
 
   void processRun2(CollisionsRun2::iterator const& collision, Tracks const& tracks, BCsRun2 const&, aod::Zdcs const&)
   {
     float spectators = -1.f;
-    if (!eventSelected<BCsRun2>(collision, collision.alias_bit(kINT7) && collision.sel7(), static_cast<float>(tracks.size()), collision.centRun2V0M(), spectators)) {
-      return;
-    }
-    if (cfgFillAcceptance) {
-      fillAcceptanceWeights(collision, tracks, collision.centRun2V0M());
+    const bool requireZdc = !cfgFillAcceptance.value && activityRequiresZdc();
+    if (!eventSelected<BCsRun2>(collision, run2EventSelected<false, BCsRun2>(collision, requireZdc), static_cast<float>(tracks.size()), collision.centRun2V0M(), requireZdc, spectators)) {
       return;
     }
     const auto& bc = collision.foundBC_as<BCsRun2>();
+    if (cfgFillAcceptance) {
+      fillAcceptanceWeights(collision, tracks, collision.centRun2V0M(), bc.runNumber());
+      return;
+    }
     loadEfficiency(bc.timestamp());
     loadAcceptance(bc.timestamp(), bc.runNumber());
     processCollision(collision, tracks, collision.centRun2V0M(), spectators);
@@ -894,12 +1103,16 @@ struct EnergyFlowGfw {
     }
 
     for (const auto& collision : collisions) {
+      if (!cfgFillEfficiency.value && !cfgFillAcceptance.value) {
+        processGeneratedCollision(mcCollision, mcParticles, collision.centRun2V0M());
+      }
       if (std::abs(collision.posZ()) >= cuts.vertexZ.value) {
         return;
       }
       const auto groupedTracks = tracks.sliceBy(tracksPerCollision, collision.globalIndex());
       float spectators = -1.f;
-      if (!eventSelected<BCsRun2>(collision, collision.alias_bit(kINT7) && collision.sel7(), static_cast<float>(groupedTracks.size()), collision.centRun2V0M(), spectators)) {
+      const bool requireZdc = !cfgFillEfficiency.value && !cfgFillAcceptance.value && activityRequiresZdc();
+      if (!eventSelected<BCsRun2>(collision, run2EventSelected<true, BCsRun2>(collision, requireZdc), static_cast<float>(groupedTracks.size()), collision.centRun2V0M(), requireZdc, spectators)) {
         return;
       }
 
@@ -908,34 +1121,34 @@ struct EnergyFlowGfw {
         fillTrackingEfficiency(mcCollision.globalIndex(), mcParticles, groupedTracks, collision.centRun2V0M());
         filledCorrections = true;
       }
+      const auto& bc = collision.foundBC_as<BCsRun2>();
       if (cfgFillAcceptance) {
-        fillAcceptanceWeights(collision, groupedTracks, collision.centRun2V0M());
+        fillAcceptanceWeights(collision, groupedTracks, collision.centRun2V0M(), bc.runNumber());
         filledCorrections = true;
       }
       if (filledCorrections) {
         return;
       }
-
-      const auto& bc = collision.foundBC_as<BCsRun2>();
       loadEfficiency(bc.timestamp());
       loadAcceptance(bc.timestamp(), bc.runNumber());
       processCollision(collision, groupedTracks, collision.centRun2V0M(), spectators);
       return;
     }
   }
-  PROCESS_SWITCH(EnergyFlowGfw, processRun2MC, "Process matched Run 2 MC for efficiency, acceptance, or reconstructed closure", false);
+  PROCESS_SWITCH(EnergyFlowGfw, processRun2MC, "Process matched Run 2 MC for corrections or simultaneous generated and reconstructed analyses", false);
 
   void processRun3(CollisionsRun3::iterator const& collision, Tracks const& tracks, BCsRun3 const&, aod::Zdcs const&)
   {
     float spectators = -1.f;
-    if (!eventSelected<BCsRun3>(collision, collision.sel8(), static_cast<float>(tracks.size()), collision.centFT0C(), spectators)) {
-      return;
-    }
-    if (cfgFillAcceptance) {
-      fillAcceptanceWeights(collision, tracks, collision.centFT0C());
+    const bool requireZdc = !cfgFillAcceptance.value && activityRequiresZdc();
+    if (!eventSelected<BCsRun3>(collision, collision.sel8(), static_cast<float>(tracks.size()), collision.centFT0C(), requireZdc, spectators)) {
       return;
     }
     const auto& bc = collision.foundBC_as<BCsRun3>();
+    if (cfgFillAcceptance) {
+      fillAcceptanceWeights(collision, tracks, collision.centFT0C(), bc.runNumber());
+      return;
+    }
     loadEfficiency(bc.timestamp());
     loadAcceptance(bc.timestamp(), bc.runNumber());
     processCollision(collision, tracks, collision.centFT0C(), spectators);
@@ -954,12 +1167,16 @@ struct EnergyFlowGfw {
     }
 
     for (const auto& collision : collisions) {
+      if (!cfgFillEfficiency.value && !cfgFillAcceptance.value) {
+        processGeneratedCollision(mcCollision, mcParticles, collision.centFT0C());
+      }
       if (std::abs(collision.posZ()) >= cuts.vertexZ.value) {
         return;
       }
       const auto groupedTracks = tracks.sliceBy(tracksPerCollision, collision.globalIndex());
       float spectators = -1.f;
-      if (!eventSelected<BCsRun3>(collision, collision.sel8(), static_cast<float>(groupedTracks.size()), collision.centFT0C(), spectators)) {
+      const bool requireZdc = !cfgFillEfficiency.value && !cfgFillAcceptance.value && activityRequiresZdc();
+      if (!eventSelected<BCsRun3>(collision, collision.sel8(), static_cast<float>(groupedTracks.size()), collision.centFT0C(), requireZdc, spectators)) {
         return;
       }
 
@@ -968,22 +1185,22 @@ struct EnergyFlowGfw {
         fillTrackingEfficiency(mcCollision.globalIndex(), mcParticles, groupedTracks, collision.centFT0C());
         filledCorrections = true;
       }
+
+      const auto& bc = collision.foundBC_as<BCsRun3>();
       if (cfgFillAcceptance) {
-        fillAcceptanceWeights(collision, groupedTracks, collision.centFT0C());
+        fillAcceptanceWeights(collision, groupedTracks, collision.centFT0C(), bc.runNumber());
         filledCorrections = true;
       }
       if (filledCorrections) {
         return;
       }
-
-      const auto& bc = collision.foundBC_as<BCsRun3>();
       loadEfficiency(bc.timestamp());
       loadAcceptance(bc.timestamp(), bc.runNumber());
       processCollision(collision, groupedTracks, collision.centFT0C(), spectators);
       return;
     }
   }
-  PROCESS_SWITCH(EnergyFlowGfw, processRun3MC, "Process matched Run 3 MC for efficiency, acceptance, or reconstructed closure", false);
+  PROCESS_SWITCH(EnergyFlowGfw, processRun3MC, "Process matched Run 3 MC for corrections or simultaneous generated and reconstructed analyses", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& context)

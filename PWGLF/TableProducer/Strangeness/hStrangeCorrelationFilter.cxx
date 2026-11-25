@@ -138,6 +138,10 @@ struct HStrangeCorrelationFilter {
     // formula: |DCAxy| <  0.004f + (0.013f / pt)
     Configurable<float> dcaXYconstant{"dcaXYconstant", 0.004, "[0] in |DCAxy| < [0]+[1]/pT"};
     Configurable<float> dcaXYpTdep{"dcaXYpTdep", 0.013, "[1] in |DCAxy| < [0]+[1]/pT"};
+
+    // perform P-Lambda correlation analysis
+    Configurable<float> performPLambdacorrelation{"performPLambdacorrelation", 3, "do p-Lambda correlation study"};
+    Configurable<float> triggerProtonNSigmaTPCFOF{"triggerProtonNSigmaTPCFOF", 3, "minimal n sigma in TOF and TPC for Proton ID"};
   } trackSelections;
   struct : ConfigurableGroup {
     // V0 selections
@@ -213,8 +217,8 @@ struct HStrangeCorrelationFilter {
 
   // using V0LinkedTagged = soa::Join<aod::V0sLinked, aod::V0Tags>;
   // using CascadesLinkedTagged = soa::Join<aod::CascadesLinked, aod::CascTags>;
-  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackCompColls>;
-  using FullTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackCompColls>;
+  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackCompColls>;
+  using FullTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackCompColls>;
   using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA, aod::TrackCompColls>;
   using DauTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA, aod::McTrackLabels, aod::TrackCompColls>;
   // using IDTracks= soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::TOFSignal>; // prepared for Bayesian PID
@@ -382,6 +386,14 @@ struct HStrangeCorrelationFilter {
     if (!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) && eventSelections.requireAllGoodITSLayers) {
       return false;
     }
+    // same occupancy / time frame / ITS ROF border selections as in Pb-Pb
+    auto occupancy = collision.trackOccupancyInTimeRange();
+    if (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh) {
+      return false;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
     if (zorroMask.value != "") {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -447,7 +459,8 @@ struct HStrangeCorrelationFilter {
     if (track.pt() > generalSelections.triggerPtCutMax || track.pt() < generalSelections.triggerPtCutMin) {
       return false;
     }
-    if (track.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+    // hasTPC() is needed: since O2-7038 (Oct 2026) tracks without TPC report 256 crossed rows
+    if (!track.hasTPC() || track.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
       return false; // crossed rows
     }
     if (!track.hasITS() && trackSelections.triggerRequireITS) {
@@ -458,6 +471,13 @@ struct HStrangeCorrelationFilter {
     }
     if (!(TESTBIT(track.itsClusterMap(), 0)) && trackSelections.triggerRequireL0) {
       return false; // skip, doesn't have cluster in ITS L0
+    }
+    bool isProton = std::sqrt(track.tofNSigmaPr() * track.tofNSigmaPr() + track.tpcNSigmaPr() * track.tpcNSigmaPr()) <= trackSelections.triggerProtonNSigmaTPCFOF;
+    if (trackSelections.performPLambdacorrelation <= 1 && !isProton) {
+      return false;
+    }
+    if (trackSelections.performPLambdacorrelation == 2 && isProton) {
+      return false;
     }
     return true;
   }
@@ -470,7 +490,7 @@ struct HStrangeCorrelationFilter {
     if (assoc.pt() > generalSelections.assocPtCutMax || assoc.pt() < generalSelections.assocPtCutMin) {
       return false;
     }
-    if (assoc.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+    if (!assoc.hasTPC() || assoc.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
       return false; // crossed rows
     }
     if (!assoc.hasITS() && trackSelections.assocRequireITS) {
@@ -837,10 +857,10 @@ struct HStrangeCorrelationFilter {
       auto posdau = v0.posTrack_as<DauTracks>();
       auto negdau = v0.negTrack_as<DauTracks>();
 
-      if (negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!negdau.hasTPC() || negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!posdau.hasTPC() || posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
       if (trackSelections.requireClusterInITS && (posdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks)) {
@@ -851,57 +871,62 @@ struct HStrangeCorrelationFilter {
         continue;
       }
 
+      // proper lifetime (c tau): required in both pp and PbPb, DCA and Armenteros below stay PbPb only
+      const float v0DistOverTotMom = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ());
+      const bool passesLifetimeK0S = v0DistOverTotMom * o2::constants::physics::MassK0Short < v0Selection.lifetimecutK0S;
+      const bool passesLifetimeLambda = v0DistOverTotMom * o2::constants::physics::MassLambda0 < v0Selection.lifetimecutLambda;
+      const bool passesLifetimeAntiLambda = v0DistOverTotMom * o2::constants::physics::MassLambda0Bar < v0Selection.lifetimecutLambda;
       float dcaDauCutForK0s = v0Selection.dcaDaugToPVForK0s == 0 ? v0Selection.dcaMesonToPV : v0Selection.dcaDaugToPVForK0s;
-      bool isGoodK0Short = (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < v0Selection.lifetimecutK0S &&
+      bool isGoodK0Short = (passesLifetimeK0S &&
                             std::abs(v0.dcapostopv()) > dcaDauCutForK0s && std::abs(v0.dcanegtopv()) > dcaDauCutForK0s &&
                             v0.qtarm() * v0Selection.armPodCut > std::abs(v0.alpha()));
-      bool isGoodLambda = (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < v0Selection.lifetimecutLambda &&
+      bool isGoodLambda = (passesLifetimeLambda &&
                            std::abs(v0.dcapostopv()) > v0Selection.dcaBaryonToPV && std::abs(v0.dcanegtopv()) > v0Selection.dcaMesonToPV);
-      bool isGoodAntiLambda = (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar < v0Selection.lifetimecutLambda &&
+      bool isGoodAntiLambda = (passesLifetimeAntiLambda &&
                                std::abs(v0.dcapostopv()) > v0Selection.dcaMesonToPV && std::abs(v0.dcanegtopv()) > v0Selection.dcaBaryonToPV);
       if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose) {
-        if (doPPAnalysis || isGoodK0Short) {
+        if (doPPAnalysis ? passesLifetimeK0S : isGoodK0Short) {
           SETBIT(compatibleK0Short, 0);
         }
       }
       if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma) {
-        if (doPPAnalysis || isGoodK0Short) {
+        if (doPPAnalysis ? passesLifetimeK0S : isGoodK0Short) {
           SETBIT(compatibleK0Short, 1);
         }
       }
       if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaTight) {
-        if (doPPAnalysis || isGoodK0Short) {
+        if (doPPAnalysis ? passesLifetimeK0S : isGoodK0Short) {
           SETBIT(compatibleK0Short, 2);
         }
       }
       if (v0.v0cosPA() > v0Selection.lambdaCospa) {
         if (std::abs(posdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose) {
-          if (doPPAnalysis || isGoodLambda) {
+          if (doPPAnalysis ? passesLifetimeLambda : isGoodLambda) {
             SETBIT(compatibleLambda, 0);
           }
         }
         if (std::abs(posdau.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma) {
-          if (doPPAnalysis || isGoodLambda) {
+          if (doPPAnalysis ? passesLifetimeLambda : isGoodLambda) {
             SETBIT(compatibleLambda, 1);
           }
         }
         if (std::abs(posdau.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaTight) {
-          if (doPPAnalysis || isGoodLambda) {
+          if (doPPAnalysis ? passesLifetimeLambda : isGoodLambda) {
             SETBIT(compatibleLambda, 2);
           }
         }
         if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose) {
-          if (doPPAnalysis || isGoodAntiLambda) {
+          if (doPPAnalysis ? passesLifetimeAntiLambda : isGoodAntiLambda) {
             SETBIT(compatibleAntiLambda, 0);
           }
         }
         if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(negdau.tpcNSigmaPr()) < strangedEdxNSigma) {
-          if (doPPAnalysis || isGoodAntiLambda) {
+          if (doPPAnalysis ? passesLifetimeAntiLambda : isGoodAntiLambda) {
             SETBIT(compatibleAntiLambda, 1);
           }
         }
         if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaTight) {
-          if (doPPAnalysis || isGoodAntiLambda) {
+          if (doPPAnalysis ? passesLifetimeAntiLambda : isGoodAntiLambda) {
             SETBIT(compatibleAntiLambda, 2);
           }
         }
@@ -976,10 +1001,10 @@ struct HStrangeCorrelationFilter {
       auto posdau = v0.posTrack_as<DauTracksMC>();
       auto negdau = v0.negTrack_as<DauTracksMC>();
 
-      if (negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!negdau.hasTPC() || negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!posdau.hasTPC() || posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
       if (trackSelections.requireClusterInITS && (posdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks)) {
@@ -990,58 +1015,63 @@ struct HStrangeCorrelationFilter {
         continue;
       }
 
+      // proper lifetime (c tau): required in both pp and PbPb, DCA and Armenteros below stay PbPb only
+      const float v0DistOverTotMom = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ());
+      const bool passesLifetimeK0S = v0DistOverTotMom * o2::constants::physics::MassK0Short < v0Selection.lifetimecutK0S;
+      const bool passesLifetimeLambda = v0DistOverTotMom * o2::constants::physics::MassLambda0 < v0Selection.lifetimecutLambda;
+      const bool passesLifetimeAntiLambda = v0DistOverTotMom * o2::constants::physics::MassLambda0Bar < v0Selection.lifetimecutLambda;
       float dcaDauCutForK0s = v0Selection.dcaDaugToPVForK0s == 0 ? v0Selection.dcaMesonToPV : v0Selection.dcaDaugToPVForK0s;
-      bool isGoodK0Short = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < v0Selection.lifetimecutK0S &&
+      bool isGoodK0Short = passesLifetimeK0S &&
                            std::abs(v0.dcapostopv()) > dcaDauCutForK0s && std::abs(v0.dcanegtopv()) > dcaDauCutForK0s &&
                            v0.qtarm() * v0Selection.armPodCut > std::abs(v0.alpha());
-      bool isGoodLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < v0Selection.lifetimecutLambda &&
+      bool isGoodLambda = passesLifetimeLambda &&
                           std::abs(v0.dcapostopv()) > v0Selection.dcaBaryonToPV && std::abs(v0.dcanegtopv()) > v0Selection.dcaMesonToPV;
-      bool isGoodAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar < v0Selection.lifetimecutLambda &&
+      bool isGoodAntiLambda = passesLifetimeAntiLambda &&
                               std::abs(v0.dcapostopv()) > v0Selection.dcaMesonToPV && std::abs(v0.dcanegtopv()) > v0Selection.dcaBaryonToPV;
       if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose) {
-        if (doPPAnalysis || isGoodK0Short) {
+        if (doPPAnalysis ? passesLifetimeK0S : isGoodK0Short) {
           SETBIT(compatibleK0Short, 0);
         }
       }
       if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma) {
-        if (doPPAnalysis || isGoodK0Short) {
+        if (doPPAnalysis ? passesLifetimeK0S : isGoodK0Short) {
           SETBIT(compatibleK0Short, 1);
         }
       }
       if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaTight) {
-        if (doPPAnalysis || isGoodK0Short) {
+        if (doPPAnalysis ? passesLifetimeK0S : isGoodK0Short) {
           SETBIT(compatibleK0Short, 2);
         }
       }
       if (v0.v0cosPA() > v0Selection.lambdaCospa) {
         if (std::abs(posdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose) {
-          if (doPPAnalysis || isGoodLambda) {
+          if (doPPAnalysis ? passesLifetimeLambda : isGoodLambda) {
             SETBIT(compatibleLambda, 0);
           }
         }
         if (std::abs(posdau.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma) {
-          if (doPPAnalysis || isGoodLambda) {
+          if (doPPAnalysis ? passesLifetimeLambda : isGoodLambda) {
             SETBIT(compatibleLambda, 1);
           }
         }
 
         if (std::abs(posdau.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaTight) {
-          if (doPPAnalysis || isGoodLambda) {
+          if (doPPAnalysis ? passesLifetimeLambda : isGoodLambda) {
             SETBIT(compatibleLambda, 2);
           }
         }
         if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose) {
-          if (doPPAnalysis || isGoodAntiLambda) {
+          if (doPPAnalysis ? passesLifetimeAntiLambda : isGoodAntiLambda) {
             SETBIT(compatibleAntiLambda, 0);
           }
         }
         if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(negdau.tpcNSigmaPr()) < strangedEdxNSigma) {
-          if (doPPAnalysis || isGoodAntiLambda) {
+          if (doPPAnalysis ? passesLifetimeAntiLambda : isGoodAntiLambda) {
             SETBIT(compatibleAntiLambda, 1);
           }
         }
         if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaTight) {
-          if (doPPAnalysis || isGoodAntiLambda) {
+          if (doPPAnalysis ? passesLifetimeAntiLambda : isGoodAntiLambda) {
             SETBIT(compatibleAntiLambda, 2);
           }
         }
@@ -1134,13 +1164,13 @@ struct HStrangeCorrelationFilter {
       auto negTrackCast = casc.negTrack_as<DauTracks>();
 
       // minimum TPC crossed rows
-      if (bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!bachTrackCast.hasTPC() || bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!posTrackCast.hasTPC() || posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!negTrackCast.hasTPC() || negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
       if (rejectAmbiguousAssoc && (isAmbiguousTrack(bachTrackCast) || isAmbiguousTrack(posTrackCast) || isAmbiguousTrack(negTrackCast))) {
@@ -1307,13 +1337,13 @@ struct HStrangeCorrelationFilter {
       auto negTrackCast = casc.negTrack_as<DauTracks>();
 
       // minimum TPC crossed rows
-      if (bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!bachTrackCast.hasTPC() || bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!posTrackCast.hasTPC() || posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
-      if (negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+      if (!negTrackCast.hasTPC() || negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
       }
       if (rejectAmbiguousAssoc && (isAmbiguousTrack(bachTrackCast) || isAmbiguousTrack(posTrackCast) || isAmbiguousTrack(negTrackCast))) {

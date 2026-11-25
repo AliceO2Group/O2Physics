@@ -30,6 +30,7 @@
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFTOF.h"
+#include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/Core/trackUtilities.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -77,6 +78,7 @@ struct OnTheFlyTofPid {
   Produces<aod::UpgradeTof> upgradeTof;
   Produces<aod::UpgradeTofExpectedTime> upgradeTofExpectedTime;
   Produces<aod::UpgradeTofShortLived> upgradeTofShortLived;
+  Produces<aod::UpgradeTofShortLivedSignal> upgradeTofShortLivedSignal;
 
   // necessary for particle charges
   Service<o2::framework::O2DatabasePDG> pdgDatabase{};
@@ -103,6 +105,7 @@ struct OnTheFlyTofPid {
     Configurable<float> multiplicityEtaRange{"multiplicityEtaRange", 0.800000012, "eta range to compute the multiplicity"};
     Configurable<bool> flagIncludeTrackTimeRes{"flagIncludeTrackTimeRes", true, "flag to include or exclude track time resolution"};
     Configurable<bool> flagTOFLoadDelphesLUTs{"flagTOFLoadDelphesLUTs", false, "flag to load Delphes LUTs for tracking correction (use recoTrack parameters if false)"};
+    Configurable<float> shortLivedRadiusTolerance{"shortLivedRadiusTolerance", 0.1f, "tolerance (cm) when checking if a TOF layer is within the innermost and outermost track update of short-lived particles"};
   } simConfig;
 
   struct : ConfigurableGroup {
@@ -210,6 +213,39 @@ struct OnTheFlyTofPid {
                                                                      particleTr,
                                                                      particleHe,
                                                                      particleAl};
+
+  template <typename TTrack>
+  void fillShortLivedTables(const TTrack& track,
+                            std::array<float, NParticles> nSigmaInnerTOF,
+                            std::array<float, NParticles> nSigmaOuterTOF,
+                            std::array<float, NParticles> expectedTimeInnerTOF,
+                            std::array<float, NParticles> expectedTimeOuterTOF,
+                            const std::pair<float, float>& trackLengthInnerTOF,
+                            const std::pair<float, float>& trackLengthOuterTOF)
+  {
+    const auto isWithinTrackUpdates = [&](const float tofRadius) {
+      return (track.trackIU() - simConfig.shortLivedRadiusTolerance <= tofRadius) && (tofRadius <= track.trackOU() + simConfig.shortLivedRadiusTolerance);
+    };
+
+    const bool hasInnerTOF = isWithinTrackUpdates(simConfig.innerTOFRadius) && trackLengthInnerTOF.first > 0 && trackLengthInnerTOF.second > 0;
+    const bool hasOuterTOF = isWithinTrackUpdates(simConfig.outerTOFRadius) && trackLengthOuterTOF.first > 0 && trackLengthOuterTOF.second > 0;
+    static constexpr float DummyValue = -999.f;
+    for (const int ii : {Sp, Sm, Xi, Om}) {
+      if (!hasInnerTOF) {
+        nSigmaInnerTOF[ii] = DummyValue;
+        expectedTimeInnerTOF[ii] = DummyValue;
+      }
+      if (!hasOuterTOF) {
+        nSigmaOuterTOF[ii] = DummyValue;
+        expectedTimeOuterTOF[ii] = DummyValue;
+      }
+    }
+    upgradeTofShortLived(nSigmaInnerTOF[Sp], nSigmaInnerTOF[Sm], nSigmaInnerTOF[Xi], nSigmaInnerTOF[Om],
+                         nSigmaOuterTOF[Sp], nSigmaOuterTOF[Sm], nSigmaOuterTOF[Xi], nSigmaOuterTOF[Om],
+                         expectedTimeInnerTOF[Sp], expectedTimeInnerTOF[Sm], expectedTimeInnerTOF[Xi], expectedTimeInnerTOF[Om],
+                         expectedTimeOuterTOF[Sp], expectedTimeOuterTOF[Sm], expectedTimeOuterTOF[Xi], expectedTimeOuterTOF[Om]);
+    upgradeTofShortLivedSignal(hasInnerTOF, hasOuterTOF);
+  }
 
   bool doQaForParticle(const int pdgCode)
   {
@@ -652,7 +688,7 @@ struct OnTheFlyTofPid {
   }
 
   void process(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::OTFLUTConfigId>::iterator const& collision,
-               soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels> const& tracks,
+               soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels, aod::TracksAlice3> const& tracks,
                aod::McParticles const&,
                aod::McCollisions const&)
   {
@@ -971,10 +1007,8 @@ struct OnTheFlyTofPid {
                  measuredTimeOuterTOF, trackLengthRecoOuterTOF);
       upgradeTofExpectedTime(expectedTimeInnerTOF[El], expectedTimeInnerTOF[Mu], expectedTimeInnerTOF[Pi], expectedTimeInnerTOF[Ka], expectedTimeInnerTOF[Pr], expectedTimeInnerTOF[De], expectedTimeInnerTOF[Tr], expectedTimeInnerTOF[He], expectedTimeInnerTOF[Al],
                              expectedTimeOuterTOF[El], expectedTimeOuterTOF[Mu], expectedTimeOuterTOF[Pi], expectedTimeOuterTOF[Ka], expectedTimeOuterTOF[Pr], expectedTimeOuterTOF[De], expectedTimeOuterTOF[Tr], expectedTimeOuterTOF[He], expectedTimeOuterTOF[Al]);
-      upgradeTofShortLived(nSigmaInnerTOF[Sp], nSigmaInnerTOF[Sm], nSigmaInnerTOF[Xi], nSigmaInnerTOF[Om],
-                           nSigmaOuterTOF[Sp], nSigmaOuterTOF[Sm], nSigmaOuterTOF[Xi], nSigmaOuterTOF[Om],
-                           expectedTimeInnerTOF[Sp], expectedTimeInnerTOF[Sm], expectedTimeInnerTOF[Xi], expectedTimeInnerTOF[Om],
-                           expectedTimeOuterTOF[Sp], expectedTimeOuterTOF[Sm], expectedTimeOuterTOF[Xi], expectedTimeOuterTOF[Om]);
+      fillShortLivedTables(track, nSigmaInnerTOF, nSigmaOuterTOF, expectedTimeInnerTOF, expectedTimeOuterTOF,
+                           trkWithTime.mTrackLengthInnerTOF, trkWithTime.mTrackLengthOuterTOF);
     }
 
     if (trackWithTimeIndex != tracks.size()) {

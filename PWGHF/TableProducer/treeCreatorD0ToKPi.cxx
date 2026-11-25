@@ -228,8 +228,8 @@ DECLARE_SOA_TABLE(HfCandD0FullPs, "AOD", "HFCANDD0FULLP",
 
 DECLARE_SOA_TABLE(HfCandD0Mls, "AOD", "HFCANDD0ML",
                   ml::BdtOutputBkg,
-                  ml::BdtOutputNonPrompt,
-                  ml::BdtOutputPrompt);
+                  ml::BdtOutputPrompt,
+                  ml::BdtOutputNonPrompt);
 
 } // namespace o2::aod
 

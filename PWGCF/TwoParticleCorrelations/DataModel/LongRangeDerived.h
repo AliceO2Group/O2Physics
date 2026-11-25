@@ -18,8 +18,6 @@
 #ifndef PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_LONGRANGEDERIVED_H_
 #define PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_LONGRANGEDERIVED_H_
 
-#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
-
 #include "Common/DataModel/Multiplicity.h"
 
 #include <Framework/ASoA.h>
@@ -75,14 +73,6 @@ DECLARE_SOA_TABLE(LRFt0cMcTracks, "AOD", "LRFT0CMCTRACK",
                   lrcorrmctrktable::Eta,
                   lrcorrmctrktable::Phi);
 using LRFt0cMcTrack = LRFt0cMcTracks::iterator;
-
-DECLARE_SOA_TABLE(LRMftMcTracks, "AOD", "LRMFTMCTRACK",
-                  o2::soa::Index<>,
-                  lrcorrmctrktable::LRMcCollisionId,
-                  lrcorrmctrktable::Pt,
-                  lrcorrmctrktable::Eta,
-                  lrcorrmctrktable::Phi);
-using LRMftMcTrack = LRMftMcTracks::iterator;
 
 namespace lrcorrcolltable
 {
@@ -221,20 +211,6 @@ DECLARE_SOA_TABLE(LRV0Tracks, "AOD", "LRV0TRACK",
                   lrcorrtrktable::V0Type);
 using LRV0Track = LRV0Tracks::iterator;
 
-DECLARE_SOA_TABLE(LRMftTracks, "AOD", "LRMFTTRACK",
-                  o2::soa::Index<>,
-                  lrcorrtrktable::LRCollisionId,
-                  lrcorrtrktable::AmbDegree,
-                  lrcorrtrktable::Pt,
-                  lrcorrtrktable::Eta,
-                  lrcorrtrktable::Phi,
-                  fwdtrack::NClusters,
-                  fwdtrack::BestDCAXY,
-                  fwdtrack::BestDCAZ,
-                  lrcorrtrktable::IsCA,
-                  lrcorrtrktable::IsReassigned);
-using LRMftTrack = LRMftTracks::iterator;
-
 DECLARE_SOA_TABLE(UpcLRMidTracks, "AOD", "UPCLRMIDTRACK",
                   o2::soa::Index<>,
                   lrcorrtrktable::UpcLRCollisionId,
@@ -280,19 +256,6 @@ DECLARE_SOA_TABLE(UpcLRV0Tracks, "AOD", "UPCLRV0TRACK",
                   lrcorrtrktable::V0Type);
 using UpcLRV0Track = UpcLRV0Tracks::iterator;
 
-DECLARE_SOA_TABLE(UpcLRMftTracks, "AOD", "UPCLRMFTTRACK",
-                  o2::soa::Index<>,
-                  lrcorrtrktable::UpcLRCollisionId,
-                  lrcorrtrktable::AmbDegree,
-                  lrcorrtrktable::Pt,
-                  lrcorrtrktable::Eta,
-                  lrcorrtrktable::Phi,
-                  fwdtrack::NClusters,
-                  fwdtrack::BestDCAXY,
-                  fwdtrack::BestDCAZ,
-                  lrcorrtrktable::IsCA,
-                  lrcorrtrktable::IsReassigned);
-using UpcLRMftTrack = UpcLRMftTracks::iterator;
 } // namespace o2::aod
 
 #endif // PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_LONGRANGEDERIVED_H_

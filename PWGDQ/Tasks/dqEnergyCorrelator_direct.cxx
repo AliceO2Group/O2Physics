@@ -116,6 +116,8 @@ struct AnalysisEnergyCorrelator {
     Configurable<float> fConfigJpsiPtMin{"cfgJpsiPtMin", 0.0, "J/psi pt minimum"};
     Configurable<float> fConfigJpsiPtMax{"cfgJpsiPtMax", 100.0, "J/psi pt maximum"};
     Configurable<float> fConfigJpsiRapMax{"cfgJpsiRapMax", 0.9, "J/psi rapidity maximum"};
+    Configurable<float> fConfigJpsiTauxyMin{"cfgJpsiTauxyMin", -10000, "J/psi tauxy minimum"};
+    Configurable<float> fConfigJpsiTauxyMax{"cfgJpsiTauxyMax", 10000.0, "J/psi tauxy maximum"};
     Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> recSignals{"cfgMCRecSignals", "eeFromJpsi", "Comma separated list of MC signals (reconstructed)"};
     Configurable<std::string> recSignalsJSON{"cfgMCRecSignalsJSON", "", "Comma separated list of MC signals (reconstructed) via JSON"};
@@ -153,8 +155,8 @@ struct AnalysisEnergyCorrelator {
   MixingHandler* fMixHandler = nullptr;
 
   AnalysisCompositeCut* fEventCut = nullptr;
-  std::vector<AnalysisCompositeCut*> fTrackCuts;  // Electron cuts
-  std::vector<AnalysisCompositeCut*> fHadronCuts; // Hadron cuts
+  std::vector<AnalysisCut*> fTrackCuts;  // Electron cuts
+  std::vector<AnalysisCut*> fHadronCuts; // Hadron cuts
 
   std::vector<TString> fTrackCutNames;
   std::vector<TString> fHadronCutNames;
@@ -180,12 +182,12 @@ struct AnalysisEnergyCorrelator {
   using MixingBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
   std::unique_ptr<MixingBinning> fMixingBinning;
 
-  TH2F* hAcceptance_rec;
-  TH2F* hAcceptance_gen;
-  TH2F* hEfficiency_dilepton;
-  TH2F* hEfficiency_hadron;
-  TH1F* hMasswindow;
-  TH2F* hReweighthadron;
+  TH2F* hAcceptance_rec = nullptr;
+  TH2F* hAcceptance_gen = nullptr;
+  TH2F* hEfficiency_dilepton = nullptr;
+  TH2F* hEfficiency_hadron = nullptr;
+  TH1F* hMasswindow = nullptr;
+  TH2F* hReweighthadron = nullptr;
 
   void init(o2::framework::InitContext& context)
   {
@@ -210,17 +212,17 @@ struct AnalysisEnergyCorrelator {
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigEventOptions.fConfigEventCuts.value;
     if (eventCutStr != "") {
-      AnalysisCut* cut = dqcuts::GetAnalysisCut(eventCutStr.Data());
+      AnalysisCut* cut = dqcuts::getAnalysisCut(eventCutStr.Data());
       if (cut != nullptr) {
-        fEventCut->AddCut(cut);
+        fEventCut->addCut(cut);
       }
     }
     // Additional cuts via JSON
     TString eventCutJSONStr = fConfigEventOptions.fConfigEventCutsJSON.value;
     if (eventCutJSONStr != "") {
-      std::vector<AnalysisCut*> jsonCuts = dqcuts::GetCutsFromJSON(eventCutJSONStr.Data());
+      std::vector<AnalysisCut*> jsonCuts = dqcuts::getCutsFromJSON(eventCutJSONStr.Data());
       for (auto& cutIt : jsonCuts) {
-        fEventCut->AddCut(cutIt);
+        fEventCut->addCut(cutIt);
       }
     }
 
@@ -229,16 +231,16 @@ struct AnalysisEnergyCorrelator {
     if (!trackCutStr.IsNull()) {
       std::unique_ptr<TObjArray> objArrayTrack(trackCutStr.Tokenize(","));
       for (int icut = 0; icut < objArrayTrack->GetEntries(); ++icut) {
-        fTrackCuts.push_back(dqcuts::GetCompositeCut(objArrayTrack->At(icut)->GetName()));
+        fTrackCuts.push_back(dqcuts::getCompositeCut(objArrayTrack->At(icut)->GetName()));
         fTrackCutNames.push_back(objArrayTrack->At(icut)->GetName());
       }
     }
 
     TString trackCutsJSON = fConfigTrackOptions.fConfigTrackCutsJSON.value;
     if (trackCutsJSON != "") {
-      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(trackCutsJSON.Data());
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::getCutsFromJSON(trackCutsJSON.Data());
       for (auto& t : addTrackCuts) {
-        fTrackCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(t);
         fTrackCutNames.push_back(t->GetName());
         trackCutStr += Form(",%s", t->GetName());
       }
@@ -303,15 +305,15 @@ struct AnalysisEnergyCorrelator {
       std::unique_ptr<TObjArray> objArrayHadron(hadronCutStr.Tokenize(","));
       for (int icut = 0; icut < objArrayHadron->GetEntries(); ++icut) {
         TString cutName = objArrayHadron->At(icut)->GetName();
-        fHadronCuts.push_back(dqcuts::GetCompositeCut(cutName.Data()));
+        fHadronCuts.push_back(dqcuts::getCompositeCut(cutName.Data()));
         fHadronCutNames.push_back(cutName);
       }
     }
     TString hadronCutsJSON = fConfigDileptonHadronOptions.fConfigHadronCutsJSON.value;
     if (hadronCutsJSON != "") {
-      std::vector<AnalysisCut*> addHadronCuts = dqcuts::GetCutsFromJSON(hadronCutsJSON.Data());
+      std::vector<AnalysisCut*> addHadronCuts = dqcuts::getCutsFromJSON(hadronCutsJSON.Data());
       for (auto& t : addHadronCuts) {
-        fHadronCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
+        fHadronCuts.push_back(t);
         fHadronCutNames.push_back(t->GetName());
         hadronCutStr += Form(",%s", t->GetName());
       }
@@ -501,12 +503,12 @@ struct AnalysisEnergyCorrelator {
     if (!listAccs) {
       LOG(fatal) << "Problem getting TList object with efficiencies!";
     }
-    hEfficiency_dilepton = static_cast<TH2F*>(listAccs->FindObject("hEfficiency_dilepton"));
-    hEfficiency_hadron = static_cast<TH2F*>(listAccs->FindObject("hEfficiency_hadron"));
-    hAcceptance_rec = static_cast<TH2F*>(listAccs->FindObject("hAcceptance_rec"));
-    hAcceptance_gen = static_cast<TH2F*>(listAccs->FindObject("hAcceptance_gen"));
-    hMasswindow = static_cast<TH1F*>(listAccs->FindObject("hMasswindow"));
-    hReweighthadron = static_cast<TH2F*>(listAccs->FindObject("hReweighthadron"));
+    hEfficiency_dilepton = dynamic_cast<TH2F*>(listAccs->FindObject("hEfficiency_dilepton"));
+    hEfficiency_hadron = dynamic_cast<TH2F*>(listAccs->FindObject("hEfficiency_hadron"));
+    hAcceptance_rec = dynamic_cast<TH2F*>(listAccs->FindObject("hAcceptance_rec"));
+    hAcceptance_gen = dynamic_cast<TH2F*>(listAccs->FindObject("hAcceptance_gen"));
+    hMasswindow = dynamic_cast<TH1F*>(listAccs->FindObject("hMasswindow"));
+    hReweighthadron = dynamic_cast<TH2F*>(listAccs->FindObject("hReweighthadron"));
     if (!hAcceptance_rec || !hAcceptance_gen || !hEfficiency_dilepton || !hEfficiency_hadron || !hMasswindow || !hReweighthadron) {
       LOG(fatal) << "Problem getting histograms from the TList object with efficiencies!";
     }
@@ -604,7 +606,7 @@ struct AnalysisEnergyCorrelator {
 
     int iHadronCut = 0;
     for (auto hCut = fHadronCuts.begin(); hCut != fHadronCuts.end(); hCut++, iHadronCut++) {
-      if (!(*hCut)->IsSelected(VarManager::fgValues)) {
+      if (!(*hCut)->isSelected(VarManager::fgValues)) {
         continue;
       }
       // Fill the corresponding histogram
@@ -627,8 +629,8 @@ struct AnalysisEnergyCorrelator {
   }
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
-  template <uint32_t TTrackFillMap, int TPairType, typename TTrack1, typename TTrack2>
-  void runSameEventPairing(TTrack1 const& t1, TTrack2 const& t2, int iEleCut, aod::McParticles const& /*mcParticles*/)
+  template <uint32_t TTrackFillMap, int TPairType, typename TTrack1, typename TTrack2, typename TEvent>
+  void runSameEventPairing(TTrack1 const& t1, TTrack2 const& t2, int iEleCut, TEvent const& event, aod::McParticles const& /*mcParticles*/)
   {
     std::map<int, std::vector<TString>> histNames = fTrackHistNames;
     std::map<int, std::vector<TString>> histNamesMC = fBarrelHistNamesMCmatched;
@@ -647,27 +649,28 @@ struct AnalysisEnergyCorrelator {
     } // end loop over MC signals
 
     VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
+    VarManager::FillPairVertexing<TPairType, gkEventFillMapWithMults, TTrackFillMap>(event, t1, t2, VarManager::fgValues);
 
-    if (sign1 * sign2 < 0) {                                                       // +- pairs
-      fHistMan->FillHistClass(histNames[iEleCut][0].Data(), VarManager::fgValues); // reconstructed, unmatched
-      for (size_t isig = 0; isig < fRecMCSignals.size(); isig++) {                 // loop over MC signals
-        if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
-          fHistMan->FillHistClass(histNamesMC[iEleCut * fRecMCSignals.size() + isig][0].Data(), VarManager::fgValues); // matched signal
+    if (sign1 * sign2 < 0) {                                                            // +- pairs
+      fHistMan->FillHistClass(histNames[iEleCut][0].Data(), VarManager::fgValues);      // reconstructed, unmatched
+      for (size_t mcRecSignal = 0; mcRecSignal < fRecMCSignals.size(); mcRecSignal++) { // loop over MC signals
+        if (mcDecision & (static_cast<uint32_t>(1) << mcRecSignal)) {
+          fHistMan->FillHistClass(histNamesMC[iEleCut * fRecMCSignals.size() + mcRecSignal][0].Data(), VarManager::fgValues); // matched signal
         }
       }
     } else {
       if (sign1 > 0) { // ++ pairs
         fHistMan->FillHistClass(histNames[iEleCut][1].Data(), VarManager::fgValues);
-        for (size_t isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
-          if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
-            fHistMan->FillHistClass(histNamesMC[iEleCut * fRecMCSignals.size() + isig][1].Data(), VarManager::fgValues);
+        for (size_t mcRecSignal = 0; mcRecSignal < fRecMCSignals.size(); mcRecSignal++) { // loop over MC signals
+          if (mcDecision & (static_cast<uint32_t>(1) << mcRecSignal)) {
+            fHistMan->FillHistClass(histNamesMC[iEleCut * fRecMCSignals.size() + mcRecSignal][1].Data(), VarManager::fgValues);
           }
         }
       } else { // -- pairs
         fHistMan->FillHistClass(histNames[iEleCut][2].Data(), VarManager::fgValues);
-        for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
-          if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
-            fHistMan->FillHistClass(histNamesMC[iEleCut * fRecMCSignals.size() + isig][2].Data(), VarManager::fgValues);
+        for (unsigned int mcRecSignal = 0; mcRecSignal < fRecMCSignals.size(); mcRecSignal++) { // loop over MC signals
+          if (mcDecision & (static_cast<uint32_t>(1) << mcRecSignal)) {
+            fHistMan->FillHistClass(histNamesMC[iEleCut * fRecMCSignals.size() + mcRecSignal][2].Data(), VarManager::fgValues);
           }
         }
       }
@@ -713,7 +716,7 @@ struct AnalysisEnergyCorrelator {
       }
 
       // Event selection
-      if (!fEventCut->IsSelected(VarManager::fgValues))
+      if (!fEventCut->isSelected(VarManager::fgValues))
         continue;
 
       if (fConfigEventOptions.fConfigEventQA) {
@@ -759,7 +762,7 @@ struct AnalysisEnergyCorrelator {
         // Apply electron cuts and fill histograms
         int iCut1 = 0;
         for (auto cut1 = fTrackCuts.begin(); cut1 != fTrackCuts.end(); cut1++, iCut1++) {
-          if ((*cut1)->IsSelected(VarManager::fgValues)) {
+          if ((*cut1)->isSelected(VarManager::fgValues)) {
             filter1 |= (static_cast<uint32_t>(1) << iCut1);
             if (fConfigTrackOptions.fConfigTrackQA) {
               fHistMan->FillHistClass(fHistNamesReco[iCut1], VarManager::fgValues);
@@ -788,7 +791,7 @@ struct AnalysisEnergyCorrelator {
           uint32_t filter2 = 0;
           int iCut2 = 0;
           for (auto cut2 = fTrackCuts.begin(); cut2 != fTrackCuts.end(); cut2++, iCut2++) {
-            if ((*cut2)->IsSelected(VarManager::fgValues)) {
+            if ((*cut2)->isSelected(VarManager::fgValues)) {
               filter2 |= (static_cast<uint32_t>(1) << iCut2);
             }
           }
@@ -802,18 +805,20 @@ struct AnalysisEnergyCorrelator {
           // Fill pair histograms for all cuts that both tracks pass
           for (size_t iCut = 0; iCut < fTrackCuts.size(); iCut++) {
             if (twoTrackFilter & (static_cast<uint32_t>(1) << iCut)) {
-              runSameEventPairing<gkTrackFillMapWithCov, VarManager::kDecayToEE>(t1, t2, iCut, mcParticles);
+              runSameEventPairing<gkTrackFillMapWithCov, VarManager::kDecayToEE>(t1, t2, iCut, event, mcParticles);
             }
           }
 
           float mass = VarManager::fgValues[VarManager::kMass];
           float pt = VarManager::fgValues[VarManager::kPt];
           float rap = VarManager::fgValues[VarManager::kRap];
+          float tauxy = VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass];
 
           // Apply J/psi cuts
           if (mass < fConfigPairOptions.fConfigJpsiMassMin.value || mass > fConfigPairOptions.fConfigJpsiMassMax.value ||
               pt < fConfigPairOptions.fConfigJpsiPtMin.value || pt > fConfigPairOptions.fConfigJpsiPtMax.value ||
-              std::abs(rap) > fConfigPairOptions.fConfigJpsiRapMax.value) {
+              std::abs(rap) > fConfigPairOptions.fConfigJpsiRapMax.value ||
+              tauxy < fConfigPairOptions.fConfigJpsiTauxyMin.value || tauxy > fConfigPairOptions.fConfigJpsiTauxyMax.value) {
             continue;
           }
 
@@ -858,7 +863,7 @@ struct AnalysisEnergyCorrelator {
         VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(event.mcCollision());
       }
       bool decision = false;
-      if (fEventCut->IsSelected(VarManager::fgValues)) {
+      if (fEventCut->isSelected(VarManager::fgValues)) {
         decision = true;
       }
       fSelMap[event.globalIndex()] = decision;
@@ -895,7 +900,7 @@ struct AnalysisEnergyCorrelator {
         // Apply electron cuts and fill histograms
         int iCut1 = 0;
         for (auto cut1 = fTrackCuts.begin(); cut1 != fTrackCuts.end(); cut1++, iCut1++) {
-          if ((*cut1)->IsSelected(VarManager::fgValues)) {
+          if ((*cut1)->isSelected(VarManager::fgValues)) {
             filter1 |= (static_cast<uint32_t>(1) << iCut1);
           }
         }
@@ -916,7 +921,7 @@ struct AnalysisEnergyCorrelator {
           uint32_t filter2 = 0;
           int iCut2 = 0;
           for (auto cut2 = fTrackCuts.begin(); cut2 != fTrackCuts.end(); cut2++, iCut2++) {
-            if ((*cut2)->IsSelected(VarManager::fgValues)) {
+            if ((*cut2)->isSelected(VarManager::fgValues)) {
               filter2 |= (static_cast<uint32_t>(1) << iCut2);
             }
           }
@@ -928,13 +933,17 @@ struct AnalysisEnergyCorrelator {
           }
           // Fill pair variables for cut
           VarManager::FillPair<VarManager::kDecayToEE, gkTrackFillMapWithCov>(t1, t2, VarManager::fgValues);
+          VarManager::FillPairVertexing<VarManager::kDecayToEE, gkEventFillMapWithMults, gkTrackFillMapWithCov>(event1, t1, t2, VarManager::fgValues);
           float mass = VarManager::fgValues[VarManager::kMass];
           float pt = VarManager::fgValues[VarManager::kPt];
           float rap = VarManager::fgValues[VarManager::kRap];
+          float tauxy = VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass];
+
           // Apply J/psi cuts
           if (mass < fConfigPairOptions.fConfigJpsiMassMin.value || mass > fConfigPairOptions.fConfigJpsiMassMax.value ||
               pt < fConfigPairOptions.fConfigJpsiPtMin.value || pt > fConfigPairOptions.fConfigJpsiPtMax.value ||
-              std::abs(rap) > fConfigPairOptions.fConfigJpsiRapMax.value) {
+              std::abs(rap) > fConfigPairOptions.fConfigJpsiRapMax.value ||
+              tauxy < fConfigPairOptions.fConfigJpsiTauxyMin.value || tauxy > fConfigPairOptions.fConfigJpsiTauxyMax.value) {
             continue;
           }
           if (t1.sign() * t2.sign() >= 0) {
@@ -1051,7 +1060,7 @@ struct AnalysisEnergyCorrelator {
       // Fill event variables first
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<gkEventFillMapWithMults>(event);
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->isSelected(VarManager::fgValues)) {
         continue;
       }
       if (!event.has_mcCollision()) {
@@ -1081,11 +1090,11 @@ struct AnalysisEnergyCorrelator {
     for (auto& [event1, event2] : selfCombinations(*fMixingBinning, fConfigEventOptions.fConfigMixingDepth.value, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<gkEventFillMapWithMults>(event1);
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->isSelected(VarManager::fgValues)) {
         continue;
       }
       VarManager::FillEvent<gkEventFillMapWithMults>(event2);
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->isSelected(VarManager::fgValues)) {
         continue;
       }
       if (!event1.has_mcCollision() || !event2.has_mcCollision()) {
@@ -1115,7 +1124,7 @@ struct AnalysisEnergyCorrelator {
       // Fill event variables first
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<gkEventFillMapWithMults>(event);
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->isSelected(VarManager::fgValues)) {
         continue;
       }
       if (!event.has_mcCollision()) {
@@ -1145,11 +1154,11 @@ struct AnalysisEnergyCorrelator {
     for (auto& [event1, event2] : selfCombinations(*fMixingBinning, fConfigEventOptions.fConfigMixingDepth.value, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<gkEventFillMapWithMults>(event1);
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->isSelected(VarManager::fgValues)) {
         continue;
       }
       VarManager::FillEvent<gkEventFillMapWithMults>(event2);
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->isSelected(VarManager::fgValues)) {
         continue;
       }
       if (!event1.has_mcCollision() || !event2.has_mcCollision()) {

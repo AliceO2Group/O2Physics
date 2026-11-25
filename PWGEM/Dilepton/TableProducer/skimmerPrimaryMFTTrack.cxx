@@ -147,7 +147,7 @@ struct skimmerPrimaryMFTTrack {
     }
     o2::mch::TrackExtrap::setField();
     const double centerMFT[3] = {0, 0, -61.4};
-    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    o2::field::MagneticField* field = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     mBz = field->getBz(centerMFT); // Get field at centre of MFT
     LOGF(info, "Bz at center of MFT = %f kZG", mBz);
 
