@@ -126,16 +126,16 @@ struct NetchargeFluctuations {
 
   // Centrality binning configuration
   ConfigurableAxis centBining{"centBining", {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "Centrality/Multiplicity percentile bining"};
-  Configurable<bool> cPileupReject{"cPileupReject", false, "Pileup rejection"};                          // pileup
-  Configurable<bool> cfgUseGoodItsLayerAllCut{"cfgUseGoodItsLayerAllCut", false, "Good ITS Layers All"}; // pileup
+  Configurable<bool> cPileupReject{"cPileupReject", true, "Pileup rejection"};                          // pileup
+  Configurable<bool> cfgUseGoodItsLayerAllCut{"cfgUseGoodItsLayerAllCut", true, "Good ITS Layers All"}; // pileup
   Configurable<bool> cTFBorder{"cTFBorder", false, "Timeframe Border Selection"};                        // pileup
   Configurable<bool> cNoItsROBorder{"cNoItsROBorder", false, "No ITSRO Border Cut"};                     // pileup
   Configurable<bool> cItsTpcVtx{"cItsTpcVtx", false, "ITS+TPC Vertex Selection"};                        // pileup
   Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", false, "z-vtx time diff selection"};                 // pileup
-  Configurable<bool> cPVcont{"cPVcont", false, "primary vertex contributor"};
+  Configurable<bool> cPVcont{"cPVcont", true, "primary vertex contributor"};
 
   // Configurable to enable multiplicity correlation cuts
-  Configurable<bool> cfgEvSelMultCorrelation{"cfgEvSelMultCorrelation", false, "Multiplicity correlation cut"};
+  Configurable<bool> cfgEvSelMultCorrelation{"cfgEvSelMultCorrelation", true, "Multiplicity correlation cut"};
 
   // Struct grouping multiplicity vs centrality/vertex cuts and related parameters
   struct : ConfigurableGroup {
@@ -149,17 +149,17 @@ struct NetchargeFluctuations {
 
     // Parameter values for PV multiplicity vs FT0C centrality cut (polynomial coefficients, etc.)
     Configurable<std::vector<double>> cfgMultPVT0CCutPars{"cfgMultPVT0CCutPars",
-                                                          std::vector<double>{30.434, -0.917137, 0.0185032, -0.000198425, 7.94381e-07, 13.7406, -0.282656, 0.00556147, -6.32766e-05, 2.51648e-07},
+                                                          std::vector<double>{33.0701, -0.693961, 0.00849006, -7.34182e-05, 2.94586e-07, 12.612, -0.187536, 0.00312137, -4.095e-05, 1.86588e-07},
                                                           "PV multiplicity vs T0C centrality cut parameter values"};
 
     // Parameter values for globalTracks vs FT0C multiplicity cut
     Configurable<std::vector<double>> cfgMultGlobalFT0CCutPars{"cfgMultGlobalFT0CCutPars",
-                                                               std::vector<double>{18.9628, -0.576466, 0.0117324, -0.000126086, 5.05365e-07, 8.99921, -0.188022, 0.0037089, -4.20275e-05, 1.68234e-07},
+                                                               std::vector<double>{22.3547, -0.473276, 0.00577918, -4.9075e-05, 1.94191e-07, 9.01568, -0.129639, 0.00200946, -2.61436e-05, 1.21314e-07},
                                                                "globalTracks vs FT0C cut parameter values"};
 
     // Parameter values for globalTracks vs PV multiplicity cut
     Configurable<std::vector<double>> cfgMultGlobalPVCutPars{"cfgMultGlobalPVCutPars",
-                                                             std::vector<double>{0.148031, 0.616699, 0.603083, 0.112751, -0.0013846, 8.38211e-06},
+                                                             std::vector<double>{0.00843995, 0.675629, 0.71639, 0.0977879, -0.00124996, 8.00627e-06},
                                                              "globalTracks vs PV cut parameter values"};
 
     // Local vectors to store the above parameters
@@ -235,6 +235,8 @@ struct NetchargeFluctuations {
     AxisSpec subsampleAxis = {noSubsample, 0.0, maxSubsample, "subsample no."};
 
     // Add QA histograms
+    //
+    histogramRegistry.add("MCResponse/hNrecVsNgen", "Reconstructed vs generated multiplicity;" "N_{ch}^{gen};N_{ch}^{rec}", kTH2F, {AxisSpec{1000, 0, 1000}, AxisSpec{1000, 0, 1000}});
     histogramRegistry.add("QA/hVtxZ_before", "", kTH1F, {vtxzAxis});
     histogramRegistry.add("QA/hDcaXY_before", "", kTH1F, {dcaAxis});
     histogramRegistry.add("QA/hphi", "", kTH1F, {phiAxis});
@@ -936,6 +938,8 @@ struct NetchargeFluctuations {
     termPGen = posGen * (posGen - 1);
     termNGen = negGen * (negGen - 1);
     posNegGen = posGen * negGen;
+
+    histogramRegistry.fill( HIST("MCResponse/hNrecVsNgen"), nchGen, nch);
     histogramRegistry.fill(HIST("gen/cent_pos"), cent, posGen);
     histogramRegistry.fill(HIST("gen/cent_neg"), cent, negGen);
     histogramRegistry.fill(HIST("gen/cent_termp"), cent, termPGen);
