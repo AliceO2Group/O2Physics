@@ -246,7 +246,7 @@ struct FemtoProducerSigma0FromLf {
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-  void processDataframe(T1 const& cols, T2 const& bcs, T3 const& tracks, T4 const& lfSigma0s, T5 const& v0Indices, T6 const& v0Cores, T7 const& straCols)
+  void processDataframe(T1 const& cols, T2 const& /*bcs*/, T3 const& tracks, T4 const& lfSigma0s, T5 const& v0Indices, T6 const& v0Cores, T7 const& straCols)
   {
     if (straCols.size() != cols.size()) {
       LOG(fatal) << "StraCollisions (" << straCols.size() << ") are not 1:1 with the AO2D collisions (" << cols.size() << "); "
