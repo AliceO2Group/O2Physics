@@ -25,7 +25,7 @@
 class VWGPdf : public RooAbsPdf
 {
  public:
-  VWGPdf(){};
+  VWGPdf() {}
   VWGPdf(const char* name, const char* title,
          RooAbsReal& _x,
          RooAbsReal& _A,

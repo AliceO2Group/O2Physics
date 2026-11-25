@@ -107,8 +107,8 @@ struct JetDebugTask {
 
   void init(o2::framework::InitContext&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelection = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
   }
 
   void processCollisionSelection(aod::JetCollisions const& collisions, soa::Join<aod::Collisions, aod::EvSels> const& originalCollisions)
@@ -147,7 +147,7 @@ struct JetDebugTask {
     if (jetderiveddatautilities::selectCollision(collision, eventSelection, false, false)) {
       registry.fill(HIST("h_collisions"), 2.0);
     }
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       registry.fill(HIST("h_track_pt"), track.pt());
       registry.fill(HIST("h_track_phi"), track.phi());
       registry.fill(HIST("h_track_eta"), track.eta());
@@ -218,7 +218,7 @@ struct JetDebugTask {
     if (jetderiveddatautilities::selectCollision(collision, eventSelection, false, false)) {
       registry.fill(HIST("h_collisions"), 2.0);
     }
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       registry.fill(HIST("h_track_pt"), track.pt());
       registry.fill(HIST("h_track_phi"), track.phi());
       registry.fill(HIST("h_track_eta"), track.eta());
@@ -299,7 +299,7 @@ struct JetDebugTask {
 
   void processMCPCharged(aod::JMcCollision const&, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents> const& jets, aod::JMcParticles const& tracks)
   {
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       registry.fill(HIST("h_particle_pt"), track.pt());
       registry.fill(HIST("h_particle_phi"), track.phi());
       registry.fill(HIST("h_particle_eta"), track.eta());

@@ -92,7 +92,8 @@ struct HfCandidateSelectorXicToXiPiPi {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  o2::analysis::HfMlResponseXicToXiPiPi<float> hfMlResponse;
+  o2::analysis::HfMlResponseXicToXiPiPi<float, aod::hf_cand::VertexerType::DCAFitter> hfMlResponseDca;
+  o2::analysis::HfMlResponseXicToXiPiPi<float, aod::hf_cand::VertexerType::KfParticle> hfMlResponseKf;
   std::vector<float> outputMlXicToXiPiPi;
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
@@ -121,9 +122,13 @@ struct HfCandidateSelectorXicToXiPiPi {
 
   void init(InitContext&)
   {
-    if ((doprocessData + doprocessMc) != 1) {
+    if ((doprocessDataWithDCAFitter + doprocessDataWithKFParticle + doprocessMcWithDCAFitter + doprocessMcWithKFParticle) != 1) {
       LOGP(fatal, "Enable exactly one process function at a time.");
     }
+    const bool doprocessData = doprocessDataWithDCAFitter || doprocessDataWithKFParticle;
+    const bool doprocessMc = doprocessMcWithDCAFitter || doprocessMcWithKFParticle;
+    const bool doprocessDCAFitter = doprocessDataWithDCAFitter || doprocessMcWithDCAFitter;
+    [[maybe_unused]] const bool doprocessKFParticle = doprocessDataWithKFParticle || doprocessMcWithKFParticle;
 
     if (usePid) {
       // pion
@@ -245,19 +250,28 @@ struct HfCandidateSelectorXicToXiPiPi {
         registry.add("hNCrossedRowsTpcBachelorPionRecBkg", "Reconstructed background;#it{N}_{rows}^{TPC} (#pi #leftarrow #Xi);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
         registry.add("hNCrossedRowsTpcV0PosDauRecBkg", "Reconstructed background;#it{N}_{rows}^{TPC} (V0 pos. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
         registry.add("hNCrossedRowsTpcV0NegDauRecBkg", "Reconstructed background;#it{N}_{rows}^{TPC} (V0 neg. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        /// reconstructed MC
+        registry.add("hMassPtRecSig", "Reconstructed truth matching MC;inv.mass(#Xi#pi#pi) [GeV/c^{2}];p_{T} [GeV/c]", {HistType::kTH2F, {{40, 2.3, 2.7}, {200, 0, 20}}});
       }
     }
 
     if (applyMl) {
-      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
-      if (loadModelsFromCCDB) {
-        ccdbApi.init(ccdbUrl);
-        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      auto initMlResponse = [&](auto& hfMlResponseGeneric) {
+        hfMlResponseGeneric.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        if (loadModelsFromCCDB) {
+          ccdbApi.init(ccdbUrl);
+          hfMlResponseGeneric.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        } else {
+          hfMlResponseGeneric.setModelPathsLocal(onnxFileNames);
+        }
+        hfMlResponseGeneric.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseGeneric.init();
+      };
+      if (doprocessDCAFitter) {
+        initMlResponse(hfMlResponseDca);
       } else {
-        hfMlResponse.setModelPathsLocal(onnxFileNames);
+        initMlResponse(hfMlResponseKf);
       }
-      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
-      hfMlResponse.init();
     }
   }
 
@@ -274,9 +288,9 @@ struct HfCandidateSelectorXicToXiPiPi {
                      TrackSelectorPID::Status const statusPidPiXi,
                      TrackSelectorPID::Status const statusPidPrLam,
                      TrackSelectorPID::Status const statusPidPiLam,
-                     bool const useTpcPidOnly)
+                     bool const useOnlyTpcPid)
   {
-    if (useTpcPidOnly) {
+    if (useOnlyTpcPid) {
       return (statusPidPi0 == TrackSelectorPID::Accepted || statusPidPi0 == TrackSelectorPID::NotApplicable) && (statusPidPi1 == TrackSelectorPID::Accepted || statusPidPi1 == TrackSelectorPID::NotApplicable) && (statusPidPiXi == TrackSelectorPID::Accepted || statusPidPiXi == TrackSelectorPID::NotApplicable) && (statusPidPrLam == TrackSelectorPID::Accepted || statusPidPrLam == TrackSelectorPID::NotApplicable) && (statusPidPiLam == TrackSelectorPID::Accepted || statusPidPiLam == TrackSelectorPID::NotApplicable);
     }
     if (statusPidPi0 == TrackSelectorPID::Rejected || statusPidPi1 == TrackSelectorPID::Rejected || statusPidPiXi == TrackSelectorPID::Rejected || statusPidPrLam == TrackSelectorPID::Rejected || statusPidPiLam == TrackSelectorPID::Rejected) {
@@ -567,7 +581,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
       // ITS track quality selection on pions from charm baryon
       if ((!isSelectedTrackItsQuality(trackPi0, nClustersItsMin, itsChi2PerClusterMax) || trackPi0.itsNClsInnerBarrel() < nClustersItsInnBarrMin) ||
-          (!isSelectedTrackItsQuality(trackPi0, nClustersItsMin, itsChi2PerClusterMax) || trackPi1.itsNClsInnerBarrel() < nClustersItsInnBarrMin)) {
+          (!isSelectedTrackItsQuality(trackPi1, nClustersItsMin, itsChi2PerClusterMax) || trackPi1.itsNClsInnerBarrel() < nClustersItsInnBarrMin)) {
         return false;
       }
       if constexpr (IsMc) {
@@ -641,6 +655,8 @@ struct HfCandidateSelectorXicToXiPiPi {
       if constexpr (IsMc) {
         if (isMatchedSignal) {
           registry.fill(HIST("hSelCandidatesRecSig"), PidSelected);
+          if (fillQAHistograms)
+            registry.fill(HIST("hMassPtRecSig"), hfCandXic.invMassXicPlus(), hfCandXic.pt());
         } else {
           registry.fill(HIST("hSelCandidatesRecBkg"), PidSelected);
         }
@@ -666,7 +682,7 @@ struct HfCandidateSelectorXicToXiPiPi {
   /// \param hfCandXic         Xic candidate
   /// \param statusXicToXiPiPi Flag to store selection status as defined in hf_sel_candidate_xic::XicToXiPiPiSelectionStep
   /// \param isMatchedSignal   Flag to indicate if the candidate is matched to a genereated XiCplus MC particle
-  template <bool IsMc, typename XicCandidate>
+  template <bool IsMc, aod::hf_cand::VertexerType ReconstructionType, typename XicCandidate>
   void isBdtSelected(XicCandidate const& hfCandXic,
                      int& statusXicToXiPiPi,
                      bool const isMatchedSignal = false)
@@ -674,8 +690,13 @@ struct HfCandidateSelectorXicToXiPiPi {
     bool isSelectedMlXicToXiPiPi = false;
     float const ptCandXic = hfCandXic.pt();
 
-    std::vector<float> inputFeaturesXicToXiPiPi = hfMlResponse.getInputFeatures(hfCandXic);
-    isSelectedMlXicToXiPiPi = hfMlResponse.isSelectedMl(inputFeaturesXicToXiPiPi, ptCandXic, outputMlXicToXiPiPi);
+    if constexpr (ReconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
+      std::vector<float> inputFeaturesXicToXiPiPi = hfMlResponseDca.getInputFeatures(hfCandXic);
+      isSelectedMlXicToXiPiPi = hfMlResponseDca.isSelectedMl(inputFeaturesXicToXiPiPi, ptCandXic, outputMlXicToXiPiPi);
+    } else {
+      std::vector<float> inputFeaturesXicToXiPiPi = hfMlResponseKf.getInputFeatures(hfCandXic);
+      isSelectedMlXicToXiPiPi = hfMlResponseKf.isSelectedMl(inputFeaturesXicToXiPiPi, ptCandXic, outputMlXicToXiPiPi);
+    }
 
     hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
 
@@ -696,8 +717,8 @@ struct HfCandidateSelectorXicToXiPiPi {
     }
   }
 
-  void processData(aod::HfCandXic const& hfCandsXic,
-                   TracksExtraWPid const& tracks)
+  template <aod::hf_cand::VertexerType ReconstructionType, typename CandType>
+  void runData(CandType const& hfCandsXic, TracksExtraWPid const& tracks)
   {
     for (const auto& hfCandXic : hfCandsXic) {
       int statusXicToXiPiPi = 0;
@@ -716,7 +737,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
       // ML selection
       if (applyMl) {
-        isBdtSelected<false>(hfCandXic, statusXicToXiPiPi);
+        isBdtSelected<false, ReconstructionType>(hfCandXic, statusXicToXiPiPi);
       } else {
         registry.fill(HIST("hSelCandidates"), BdtSelected);
       }
@@ -724,10 +745,9 @@ struct HfCandidateSelectorXicToXiPiPi {
       hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
     }
   }
-  PROCESS_SWITCH(HfCandidateSelectorXicToXiPiPi, processData, "Select candidates without MC matching information", true);
 
-  void processMc(soa::Join<aod::HfCandXic, aod::HfCandXicMcRec> const& hfCandsXic,
-                 TracksExtraWPid const& tracks)
+  template <aod::hf_cand::VertexerType ReconstructionType, typename CandType>
+  void runMc(CandType const& hfCandsXic, TracksExtraWPid const& tracks)
   {
     for (const auto& hfCandXic : hfCandsXic) {
       int statusXicToXiPiPi = 0;
@@ -736,7 +756,7 @@ struct HfCandidateSelectorXicToXiPiPi {
       }
 
       bool isMatchedCandidate = false;
-      if (hfCandXic.flagMcMatchRec() != int8_t(0)) {
+      if (hfCandXic.flagMcMatchRec() != static_cast<int8_t>(0)) {
         isMatchedCandidate = true;
       }
 
@@ -751,7 +771,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
       // ML selection
       if (applyMl) {
-        isBdtSelected<true>(hfCandXic, statusXicToXiPiPi, isMatchedCandidate);
+        isBdtSelected<true, ReconstructionType>(hfCandXic, statusXicToXiPiPi, isMatchedCandidate);
       } else if (isMatchedCandidate) {
         registry.fill(HIST("hSelCandidatesRecSig"), BdtSelected);
       } else {
@@ -761,7 +781,34 @@ struct HfCandidateSelectorXicToXiPiPi {
       hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
     }
   }
-  PROCESS_SWITCH(HfCandidateSelectorXicToXiPiPi, processMc, "Select candidates with MC matching information", false);
+
+  void processDataWithDCAFitter(aod::HfCandXic const& hfCandsXic,
+                                TracksExtraWPid const& tracks)
+  {
+    runData<aod::hf_cand::VertexerType::DCAFitter>(hfCandsXic, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorXicToXiPiPi, processDataWithDCAFitter, "Select candidates without MC matching information using DCAFitter", true);
+
+  void processDataWithKFParticle(soa::Join<aod::HfCandXic, aod::HfCandXicKF> const& hfCandsXic,
+                                 TracksExtraWPid const& tracks)
+  {
+    runData<aod::hf_cand::VertexerType::KfParticle>(hfCandsXic, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorXicToXiPiPi, processDataWithKFParticle, "Select candidates without MC matching information using KFParticle", false);
+
+  void processMcWithDCAFitter(soa::Join<aod::HfCandXic, aod::HfCandXicMcRec> const& hfCandsXic,
+                              TracksExtraWPid const& tracks)
+  {
+    runMc<aod::hf_cand::VertexerType::DCAFitter>(hfCandsXic, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorXicToXiPiPi, processMcWithDCAFitter, "Select candidates with MC matching information using DCAFitter", false);
+
+  void processMcWithKFParticle(soa::Join<aod::HfCandXic, aod::HfCandXicMcRec, aod::HfCandXicKF> const& hfCandsXic,
+                               TracksExtraWPid const& tracks)
+  {
+    runMc<aod::hf_cand::VertexerType::KfParticle>(hfCandsXic, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorXicToXiPiPi, processMcWithKFParticle, "Select candidates with MC matching information using KFParticle", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

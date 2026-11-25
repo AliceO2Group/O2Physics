@@ -58,7 +58,6 @@
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
-#include <TH2.h>
 #include <TString.h>
 
 #include <sys/types.h>
@@ -81,12 +80,15 @@
 using MyCollisions = o2::soa::Join<o2::aod::EMEvents, o2::aod::EMEventsMult, o2::aod::EMEventsCent, o2::aod::EMEventsQvec2>;
 using MyCollision = MyCollisions::iterator;
 
+using MyCollisionsSWT = o2::soa::Join<o2::aod::EMEvents, o2::aod::EMEventsMult, o2::aod::EMEventsCent, o2::aod::EMEventsQvec2, o2::aod::EMEventsQvec3, o2::aod::EMSWTriggerBits>;
+using MyCollisionSWT = MyCollisionsSWT::iterator;
+
 using MyElectrons = o2::soa::Join<o2::aod::EMPrimaryElectrons, o2::aod::EMPrimaryElectronEMEventIds, o2::aod::EMAmbiguousElectronSelfIds, o2::aod::EMPrimaryElectronsPrefilterBit, o2::aod::EMPrimaryElectronsPrefilterBitDerived>;
 using MyElectron = MyElectrons::iterator;
 using FilteredMyElectrons = o2::soa::Filtered<MyElectrons>;
 using FilteredMyElectron = FilteredMyElectrons::iterator;
 
-using MyMuons = o2::soa::Join<o2::aod::EMPrimaryMuons, o2::aod::EMPrimaryMuonEMEventIds, o2::aod::EMAmbiguousMuonSelfIds, o2::aod::EMGlobalMuonSelfIds, o2::aod::EMPrimaryMuonsPrefilterBitDerived>;
+using MyMuons = o2::soa::Join<o2::aod::EMPrimaryMuons, o2::aod::EMPrimaryMuonEMEventIds, o2::aod::EMAmbiguousMuonSelfIds, o2::aod::EMGlobalMuonSelfIds>;
 using MyMuon = MyMuons::iterator;
 using FilteredMyMuons = o2::soa::Filtered<MyMuons>;
 using FilteredMyMuon = FilteredMyMuons::iterator;
@@ -429,12 +431,12 @@ struct DileptonHadronMPC {
 
     if (doprocessTriggerAnalysis) {
       LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", zorroGroup.cfg_swt_name.value);
-      fRegistry.add("NormTrigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", o2::framework::HistType::kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      fRegistry.add("NormTrigger/hScalers", "trigger counter before DS;run number;counter", o2::framework::HistType::kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      fRegistry.add("NormTrigger/hSelections", "trigger counter after DS;run number;counter", o2::framework::HistType::kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      auto hTriggerCounter = fRegistry.add<TH2>("NormTrigger/hTriggerCounter", Form("trigger counter of %s;run number;", zorroGroup.cfg_swt_name.value.data()), o2::framework::HistType::kTH2D, {{80000, 520000.5, 600000.5}, {2, -0.5, 1.5}}, false);
-      hTriggerCounter->GetYaxis()->SetBinLabel(1, "Analyzed Trigger");
-      hTriggerCounter->GetYaxis()->SetBinLabel(2, "Analyzed TOI");
+      // fRegistry.add("NormTrigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", o2::framework::HistType::kTProfile, {{80000, 520000.5, 600000.5}}, true);
+      // fRegistry.add("NormTrigger/hScalers", "trigger counter before DS;run number;counter", o2::framework::HistType::kTProfile, {{80000, 520000.5, 600000.5}}, true);
+      // fRegistry.add("NormTrigger/hSelections", "trigger counter after DS;run number;counter", o2::framework::HistType::kTProfile, {{80000, 520000.5, 600000.5}}, true);
+      // auto hTriggerCounter = fRegistry.add<TH2>("NormTrigger/hTriggerCounter", Form("trigger counter of %s;run number;", zorroGroup.cfg_swt_name.value.data()), o2::framework::HistType::kTH2D, {{80000, 520000.5, 600000.5}, {2, -0.5, 1.5}}, false);
+      // hTriggerCounter->GetYaxis()->SetBinLabel(1, "Analyzed Trigger");
+      // hTriggerCounter->GetYaxis()->SetBinLabel(2, "Analyzed TOI");
     }
   }
 
@@ -824,9 +826,9 @@ struct DileptonHadronMPC {
           used_trackIds_per_col.emplace_back(t1.globalIndex());
           if (cfgDoMix) {
             if (t1.sign() > 0) {
-              emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXX(), t1.cXY(), t1.cYY()));
+              emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXXatDCA(), t1.cXYatDCA(), t1.cYYatDCA()));
             } else {
-              emh_neg->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXX(), t1.cXY(), t1.cYY()));
+              emh_neg->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXXatDCA(), t1.cXYatDCA(), t1.cYYatDCA()));
             }
           }
         }
@@ -834,9 +836,9 @@ struct DileptonHadronMPC {
           used_trackIds_per_col.emplace_back(t2.globalIndex());
           if (cfgDoMix) {
             if (t2.sign() > 0) {
-              emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXX(), t2.cXY(), t2.cYY()));
+              emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXXatDCA(), t2.cXYatDCA(), t2.cYYatDCA()));
             } else {
-              emh_neg->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXX(), t2.cXY(), t2.cYY()));
+              emh_neg->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXXatDCA(), t2.cXYatDCA(), t2.cYYatDCA()));
             }
           }
         }
@@ -976,42 +978,39 @@ struct DileptonHadronMPC {
   o2::framework::expressions::Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   o2::framework::expressions::Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = o2::soa::Filtered<MyCollisions>;
+  using FilteredMyCollisionsSWT = o2::soa::Filtered<MyCollisionsSWT>;
 
   o2::framework::SliceCache cache;
   o2::framework::Preslice<MyElectrons> perCollision_electron = o2::aod::emprimaryelectron::emeventId;
   o2::framework::expressions::Filter trackFilter_electron = dielectroncuts.cfg_min_pt_track < o2::aod::track::pt && dielectroncuts.cfg_min_eta_track < o2::aod::track::eta && o2::aod::track::eta < dielectroncuts.cfg_max_eta_track && nabs(o2::aod::track::dcaXY) < dielectroncuts.cfg_max_dcaxy && nabs(o2::aod::track::dcaZ) < dielectroncuts.cfg_max_dcaz;
   o2::framework::expressions::Filter ttcaFilter_electron = ifnode(dielectroncuts.enableTTCA.node(), o2::aod::emprimaryelectron::isAssociatedToMPC == true || o2::aod::emprimaryelectron::isAssociatedToMPC == false, o2::aod::emprimaryelectron::isAssociatedToMPC == true);
   o2::framework::expressions::Filter prefilter_derived_electron = ifnode(dielectroncuts.cfg_apply_cuts_from_prefilter_derived.node() && dielectroncuts.cfg_prefilter_bits_derived.node() >= static_cast<uint16_t>(1),
-                                                                         ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kMee))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kMee))) <= static_cast<uint16_t>(0), true) &&
-                                                                           ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kPhiV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kPhiV))) <= static_cast<uint16_t>(0), true) &&
-                                                                           ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS))) <= static_cast<uint16_t>(0), true) &&
-                                                                           ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS))) <= static_cast<uint16_t>(0), true),
+                                                                         ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kMee))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kMee))) <= static_cast<uint16_t>(0), true) &&
+                                                                           ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kPhiV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kPhiV))) <= static_cast<uint16_t>(0), true) &&
+                                                                           ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS))) <= static_cast<uint16_t>(0), true) &&
+                                                                           ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS))) <= static_cast<uint16_t>(0), true),
                                                                          o2::aod::emprimaryelectron::pfbderived >= static_cast<uint16_t>(0));
 
   o2::framework::expressions::Filter prefilter_electron = ifnode(dielectroncuts.cfg_apply_cuts_from_prefilter.node() && dielectroncuts.cfg_prefilter_bits.node() >= static_cast<uint8_t>(1),
-                                                                 ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC))) > static_cast<uint8_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC))) <= static_cast<uint8_t>(0), true) &&
-                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV))) > static_cast<uint8_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV))) <= static_cast<uint8_t>(0), true) &&
-                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_40MeV))) > static_cast<uint8_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_40MeV))) <= static_cast<uint8_t>(0), true) &&
-                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_60MeV))) > static_cast<uint8_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_60MeV))) <= static_cast<uint8_t>(0), true) &&
-                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_80MeV))) > static_cast<uint8_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_80MeV))) <= static_cast<uint8_t>(0), true) &&
-                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_100MeV))) > static_cast<uint8_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_100MeV))) <= static_cast<uint8_t>(0), true) &&
-                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_120MeV))) > static_cast<uint8_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_120MeV))) <= static_cast<uint8_t>(0), true) &&
-                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_140MeV))) > static_cast<uint8_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_140MeV))) <= static_cast<uint8_t>(0), true),
+                                                                 ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC))) > static_cast<uint8_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC))) <= static_cast<uint8_t>(0), true) &&
+                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV))) > static_cast<uint8_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV))) <= static_cast<uint8_t>(0), true) &&
+                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_40MeV))) > static_cast<uint8_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_40MeV))) <= static_cast<uint8_t>(0), true) &&
+                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_60MeV))) > static_cast<uint8_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_60MeV))) <= static_cast<uint8_t>(0), true) &&
+                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_80MeV))) > static_cast<uint8_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_80MeV))) <= static_cast<uint8_t>(0), true) &&
+                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_100MeV))) > static_cast<uint8_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_100MeV))) <= static_cast<uint8_t>(0), true) &&
+                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_120MeV))) > static_cast<uint8_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_120MeV))) <= static_cast<uint8_t>(0), true) &&
+                                                                   ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_140MeV))) > static_cast<uint8_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_140MeV))) <= static_cast<uint8_t>(0), true),
                                                                  o2::aod::emprimaryelectron::pfb >= static_cast<uint8_t>(0));
 
-  o2::framework::Partition<FilteredMyElectrons> positive_electrons = o2::aod::emprimaryelectron::sign > int8_t(0);
-  o2::framework::Partition<FilteredMyElectrons> negative_electrons = o2::aod::emprimaryelectron::sign < int8_t(0);
+  o2::framework::Partition<FilteredMyElectrons> positive_electrons = o2::aod::emprimaryelectron::sign > static_cast<int8_t>(0);
+  o2::framework::Partition<FilteredMyElectrons> negative_electrons = o2::aod::emprimaryelectron::sign < static_cast<int8_t>(0);
 
   o2::framework::Preslice<MyMuons> perCollision_muon = o2::aod::emprimarymuon::emeventId;
   o2::framework::expressions::Filter trackFilter_muon = o2::aod::fwdtrack::trackType == dimuoncuts.cfg_track_type && dimuoncuts.cfg_min_pt_track < o2::aod::fwdtrack::pt && o2::aod::fwdtrack::pt < dimuoncuts.cfg_max_pt_track && dimuoncuts.cfg_min_eta_track < o2::aod::fwdtrack::eta && o2::aod::fwdtrack::eta < dimuoncuts.cfg_max_eta_track && dimuoncuts.cfg_min_phi_track < o2::aod::fwdtrack::phi && o2::aod::fwdtrack::phi < dimuoncuts.cfg_max_phi_track;
   o2::framework::expressions::Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), true, o2::aod::emprimarymuon::isAssociatedToMPC == true);
-  o2::framework::expressions::Filter prefilter_derived_muon = ifnode(dimuoncuts.cfg_apply_cuts_from_prefilter_derived.node() && dimuoncuts.cfg_prefilter_bits_derived.node() >= static_cast<uint16_t>(1),
-                                                                     ifnode((dimuoncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS))) > static_cast<uint16_t>(0), (o2::aod::emprimarymuon::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS))) <= static_cast<uint16_t>(0), true) &&
-                                                                       ifnode((dimuoncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS))) > static_cast<uint16_t>(0), (o2::aod::emprimarymuon::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS))) <= static_cast<uint16_t>(0), true),
-                                                                     o2::aod::emprimarymuon::pfbderived >= static_cast<uint16_t>(0));
 
-  o2::framework::Partition<FilteredMyMuons> positive_muons = o2::aod::emprimarymuon::sign > int8_t(0);
-  o2::framework::Partition<FilteredMyMuons> negative_muons = o2::aod::emprimarymuon::sign < int8_t(0);
+  o2::framework::Partition<FilteredMyMuons> positive_muons = o2::aod::emprimarymuon::sign > static_cast<int8_t>(0);
+  o2::framework::Partition<FilteredMyMuons> negative_muons = o2::aod::emprimarymuon::sign < static_cast<int8_t>(0);
 
   using RefTracks = o2::soa::Join<o2::aod::EMPrimaryTracks, o2::aod::EMPrimaryTrackEMEventIds>;
   using RefTrack = RefTracks::iterator;
@@ -1054,7 +1053,11 @@ struct DileptonHadronMPC {
       }
 
       if constexpr (isTriggerAnalysis) {
-        if (!zorro.isSelected(collision.globalBC(), zorroGroup.bcMarginForSoftwareTrigger)) { // triggered event
+        // if (!zorro.isSelected(collision.globalBC(), zorroGroup.bcMarginForSoftwareTrigger)) { // triggered event
+        //   continue;
+        // }
+        int emswtId = o2::aod::pwgem::dilepton::swt::aliasLabels.at(zorroGroup.cfg_swt_name.value);
+        if (!collision.triggerMask_bit(emswtId)) {
           continue;
         }
       }
@@ -1175,10 +1178,10 @@ struct DileptonHadronMPC {
       std::tuple<int, int, int, int> key_bin = std::make_tuple(zbin, centbin, epbin, occbin);
 
       // make a vector of selected electrons in this collision.
-      auto selected_posTracks_in_this_event = emh_pos->GetTracksPerCollision(key_df_collision);
-      auto selected_negTracks_in_this_event = emh_neg->GetTracksPerCollision(key_df_collision);
+      const auto& selected_posTracks_in_this_event = emh_pos->GetTracksPerCollision(key_df_collision);
+      const auto& selected_negTracks_in_this_event = emh_neg->GetTracksPerCollision(key_df_collision);
 
-      auto collisionIds_in_mixing_pool = emh_pos->GetCollisionIdsFromEventPool(key_bin); // pos/neg does not matter.
+      const auto& collisionIds_in_mixing_pool = emh_pos->GetCollisionIdsFromEventPool(key_bin); // pos/neg does not matter.
 
       // LOGF(info, "selected_posTracks_in_this_event.size() = %d, selected_negTracks_in_this_event.size() = %d, collisionIds_in_mixing_pool.size() = %d", selected_posTracks_in_this_event.size(), selected_negTracks_in_this_event.size(), collisionIds_in_mixing_pool.size());
 
@@ -1198,8 +1201,8 @@ struct DileptonHadronMPC {
           continue;
         }
 
-        auto posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
-        auto negTracks_from_event_pool = emh_neg->GetTracksPerCollision(mix_dfId_collisionId);
+        const auto& posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
+        const auto& negTracks_from_event_pool = emh_neg->GetTracksPerCollision(mix_dfId_collisionId);
         // LOGF(info, "posTracks_from_event_pool.size() = %d, negTracks_from_event_pool.size() = %d", posTracks_from_event_pool.size(), negTracks_from_event_pool.size());
 
         for (const auto& pos : selected_posTracks_in_this_event) { // ULS mix
@@ -1230,8 +1233,8 @@ struct DileptonHadronMPC {
       } // end of loop over mixed event pool for lepton-lepton
 
       if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonHadronAnalysisType::kAzimuthalCorrelation)) {
-        auto selected_refTracks_in_this_event = emh_ref->GetTracksPerCollision(key_df_collision);
-        auto collisionIds_in_mixing_pool_hadron = emh_ref->GetCollisionIdsFromEventPool(key_bin);
+        const auto& selected_refTracks_in_this_event = emh_ref->GetTracksPerCollision(key_df_collision);
+        const auto& collisionIds_in_mixing_pool_hadron = emh_ref->GetCollisionIdsFromEventPool(key_bin);
 
         // for ULS and hadron mix
         for (const auto& pos : selected_posTracks_in_this_event) {
@@ -1250,7 +1253,7 @@ struct DileptonHadronMPC {
                 continue;
               }
 
-              auto refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
+              const auto& refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
               for (const auto& ref : refTracks_from_event_pool) {
                 fillDileptonHadron<1>(pos, neg, cut, ref);
               }
@@ -1280,7 +1283,7 @@ struct DileptonHadronMPC {
                   continue;
                 }
 
-                auto refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
+                const auto& refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
                 for (const auto& ref : refTracks_from_event_pool) {
                   fillDileptonHadron<1>(pos1, pos2, cut, ref);
                 }
@@ -1308,7 +1311,7 @@ struct DileptonHadronMPC {
                   continue;
                 }
 
-                auto refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
+                const auto& refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
                 for (const auto& ref : refTracks_from_event_pool) {
                   fillDileptonHadron<1>(neg1, neg2, cut, ref);
                 }
@@ -1332,7 +1335,7 @@ struct DileptonHadronMPC {
             continue;
           }
 
-          auto refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
+          const auto& refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "selected_refTracks_in_this_event.size() = %d, collisionIds_in_mixing_pool_hadron.size() = %d, refTracks_from_event_pool.size() = %d", selected_refTracks_in_this_event.size(), collisionIds_in_mixing_pool_hadron.size(), refTracks_from_event_pool.size());
           for (const auto& ref1 : selected_refTracks_in_this_event) { // ref-ref mix
             for (const auto& ref2 : refTracks_from_event_pool) {
@@ -1496,10 +1499,11 @@ struct DileptonHadronMPC {
     map_weight.clear();
     map_best_match_globalmuon.clear();
     ndf++;
+    // correlation analyses does not require normalization by the number of events.
   }
   PROCESS_SWITCH(DileptonHadronMPC, processAnalysis, "run dilepton analysis", true);
 
-  void processTriggerAnalysis(FilteredMyCollisions const& collisions, FilteredRefTracks const& refTracks, Types const&... args)
+  void processTriggerAnalysis(FilteredMyCollisionsSWT const& collisions, FilteredRefTracks const& refTracks, Types const&... args)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       auto electrons = std::get<0>(std::tie(args...));

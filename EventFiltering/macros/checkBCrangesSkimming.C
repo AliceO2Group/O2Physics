@@ -46,8 +46,8 @@ struct bcTuple {
 };
 
 struct selectedFrames : public IRFrame {
-  selectedFrames(ULong64_t bcAO2D, ULong64_t bcEvSel, const IRFrame& frame) : IRFrame(frame), bcAO2D(bcAO2D), bcEvSel(bcEvSel), triMask{0, 0}, selMask{0, 0} {}
-  selectedFrames(ULong64_t bcAO2D, ULong64_t bcEvSel, ULong64_t triMask[2], ULong64_t selMask[2], const IRFrame& frame) : IRFrame(frame), bcAO2D(bcAO2D), bcEvSel(bcEvSel), triMask{triMask[0], triMask[1]}, selMask{selMask[0], selMask[1]} {}
+  selectedFrames(ULong64_t bcAO2D, ULong64_t bcEvSel, const IRFrame& frame) : IRFrame(frame), triMask{0, 0}, selMask{0, 0}, bcAO2D(bcAO2D), bcEvSel(bcEvSel) {}
+  selectedFrames(ULong64_t bcAO2D, ULong64_t bcEvSel, ULong64_t triMask[2], ULong64_t selMask[2], const IRFrame& frame) : IRFrame(frame), triMask{triMask[0], triMask[1]}, selMask{selMask[0], selMask[1]}, bcAO2D(bcAO2D), bcEvSel(bcEvSel) {}
   ULong64_t triMask[2]{0ull}, selMask[2]{0ull}, bcAO2D, bcEvSel;
   int numSameTriggerInNearbyBCs = 0; // related to bcDiffTolerance
   bool isSingle() { return numSameTriggerInNearbyBCs == 0; }
@@ -181,7 +181,7 @@ void checkNearbyBCs(std::vector<selectedFrames>& frames, ULong64_t bcDiffToleran
 }
 
 // Get RunNumber
-std::string getRunNumber(std::string fileName)
+std::string getRunNumber(const std::string& fileName)
 {
   std::string runNumber = "";
   std::regex re("/5[0-9]*");
@@ -447,7 +447,7 @@ void checkBCrangesSkimming(std::string AnaFileName = "AnalysisResults.root", std
     }
 
     // Check BC differences
-    int npair{0}, npairedBCAO2D{0}, npairedBCEvSel{0}, ncloseskimmed{0}, maxdeltaBCAO2D{0}, maxdeltaBCEvSel{0};
+    int npair{0}, npairedBCAO2D{0}, npairedBCEvSel{0}, ncloseskimmed{0}; //, maxdeltaBCAO2D{0}, maxdeltaBCEvSel{0}; // FIXME: unused
     int firstTrg = 0;
     for (int i = 0; i < originalFrames.size(); i++) {
       auto& frame = originalFrames[i];
@@ -620,28 +620,28 @@ void checkBCrangesSkimming(std::string AnaFileName = "AnalysisResults.root", std
   TH1D *hOriginalSinglesRatio, *hOriginalDoublesRatio, *hOriginalMultiplesRatio;
   TH1D *hSkimmedSinglesRatio, *hSkimmedDoublesRatio, *hSkimmedMultiplesRatio;
 
-  hTriggerEff = reinterpret_cast<TH1D*>(hSkimmedTotal.Clone("hTriggerEff"));
+  hTriggerEff = dynamic_cast<TH1D*>(hSkimmedTotal.Clone("hTriggerEff"));
   hTriggerEff->SetTitle((runNumber + " skimmed efficiency;; Skimmed / Original").data());
   hTriggerEff->Divide(&hOriginalTotal);
   hTriggerMatchesRatio.Divide(&hOriginalSingles);
   hTriggerSingleMatchesRatio.Divide(&hOriginalSingles);
-  hOriginalSinglesRatio = reinterpret_cast<TH1D*>(hOriginalSingles.Clone("hOriginalSinglesRatio"));
+  hOriginalSinglesRatio = dynamic_cast<TH1D*>(hOriginalSingles.Clone("hOriginalSinglesRatio"));
   hOriginalSinglesRatio->SetTitle((runNumber + " Original;;Singles / Total").data());
   hOriginalSinglesRatio->Divide(&hOriginalTotal);
-  hOriginalDoublesRatio = reinterpret_cast<TH1D*>(hOriginalDoubles.Clone("hOriginalDoublesRatio"));
+  hOriginalDoublesRatio = dynamic_cast<TH1D*>(hOriginalDoubles.Clone("hOriginalDoublesRatio"));
   hOriginalDoublesRatio->SetTitle((runNumber + " Original;;Doubles / Total").data());
   hOriginalDoublesRatio->Divide(&hOriginalTotal);
-  hOriginalMultiplesRatio = reinterpret_cast<TH1D*>(hOriginalMultiples.Clone("hOriginalMultiplesRatio"));
+  hOriginalMultiplesRatio = dynamic_cast<TH1D*>(hOriginalMultiples.Clone("hOriginalMultiplesRatio"));
   hOriginalMultiplesRatio->SetTitle((runNumber + " Original;;Multiples / Total").data());
   hOriginalMultiplesRatio->Divide(&hOriginalTotal);
 
-  hSkimmedSinglesRatio = reinterpret_cast<TH1D*>(hSkimmedSingles.Clone("hSkimmedSinglesRatio"));
+  hSkimmedSinglesRatio = dynamic_cast<TH1D*>(hSkimmedSingles.Clone("hSkimmedSinglesRatio"));
   hSkimmedSinglesRatio->SetTitle((runNumber + " Skimmed;;Singles / Total").data());
   hSkimmedSinglesRatio->Divide(&hSkimmedTotal);
-  hSkimmedDoublesRatio = reinterpret_cast<TH1D*>(hSkimmedDoubles.Clone("hSkimmedDoublesRatio"));
+  hSkimmedDoublesRatio = dynamic_cast<TH1D*>(hSkimmedDoubles.Clone("hSkimmedDoublesRatio"));
   hSkimmedDoublesRatio->SetTitle((runNumber + " Skimmed;;Doubles / Total").data());
   hSkimmedDoublesRatio->Divide(&hSkimmedTotal);
-  hSkimmedMultiplesRatio = reinterpret_cast<TH1D*>(hSkimmedMultiples.Clone("hSkimmedMultiplesRatio"));
+  hSkimmedMultiplesRatio = dynamic_cast<TH1D*>(hSkimmedMultiples.Clone("hSkimmedMultiplesRatio"));
   hSkimmedMultiplesRatio->SetTitle((runNumber + " Skimmed;;Multiples / Total").data());
   hSkimmedMultiplesRatio->Divide(&hSkimmedTotal);
 

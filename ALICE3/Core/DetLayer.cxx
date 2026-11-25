@@ -52,7 +52,7 @@ DetLayer::DetLayer(const TString& name,
 }
 
 DetLayer::DetLayer(const DetLayer& other)
-  : mName(other.mName), mR(other.mR), mZ(other.mZ), mX0(other.mX0), mXrho(other.mXrho), mResRPhi(other.mResRPhi), mResZ(other.mResZ), mEff(other.mEff), mType(other.mType)
+  : mName(other.mName), mR(other.mR), mZ(other.mZ), mX0(other.mX0), mXrho(other.mXrho), mResRPhi(other.mResRPhi), mResZ(other.mResZ), mEff(other.mEff), mType(other.mType), mDiskROuter(other.mDiskROuter)
 {
 }
 
@@ -140,6 +140,9 @@ std::string DetLayer::toString() const
       break;
     case kLayerSilicon:
       out.append("Silicon");
+      break;
+    case kLayerSiliconDisk:
+      out.append("SiliconDisk");
       break;
     case kLayerGas:
       out.append("Gas/TPC");

@@ -22,14 +22,11 @@
 
 #include <Framework/Logger.h>
 
-#include <onnxruntime_c_api.h>
 #include <onnxruntime_cxx_api.h>
 
 #include <algorithm>
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <iterator>
 #include <memory>
 #include <string>
 #include <vector>
@@ -40,23 +37,121 @@ namespace o2
 namespace ml
 {
 
+/// \brief Thin wrapper around an ONNX Runtime session (CPU only)
+///
+/// Inference entry points:
+///  - evalModelRaw(): runs the session and returns the owning output tensors (one Ort::Value per model output).
+///    This is the zero-copy path: the caller owns the tensors and may read them via GetTensorData<T>()
+///    for as long as the returned vector is alive.
+///  - evalModel(input): convenience wrapper returning a copy of the *last* model output as std::vector<T>.
+///  - evalModel(input, output): same as above but writes into a caller-provided vector. The vector is
+///    resized as needed and its capacity is reused across calls, which avoids repeated allocations of the result buffer.
+///    Only the last model output is requested from ONNX Runtime.
+///
+/// Inputs given as std::vector<T> are wrapped in an Ort::Value without copying. The input vector must therefore
+/// stay alive until the call returns (which is always the case for the synchronous calls provided here).
 class OnnxModel
 {
 
  public:
   OnnxModel() = default;
   ~OnnxModel() = default;
+  // The ONNX session options are not copyable, so the model is move-only
+  OnnxModel(const OnnxModel&) = delete;
+  OnnxModel& operator=(const OnnxModel&) = delete;
+  OnnxModel(OnnxModel&&) = default;
+  OnnxModel& operator=(OnnxModel&&) = default;
 
   // Inferencing
   void initModel(const std::string&, const bool = false, const int = 0, const uint64_t = 0, const uint64_t = 0);
 
-  // template methods -- best to define them in header
-  template <typename T>
-  T* evalModel(std::vector<Ort::Value>& input)
-  {
-    LOG(debug) << "Input tensor shape: " << printShape(input[0].GetTensorTypeAndShapeInfo().GetShape());
-    // assert(input[0].GetTensorTypeAndShapeInfo().GetShape() == getNumInputNodes()); --> Fails build in debug mode, TODO: assertion should be checked somehow
+  /// Run the model on already prepared input tensors
+  /// \param input one Ort::Value per model input
+  /// \return the output tensors of the model (owning). Access to the data via output[i].GetTensorData<T>()
+  std::vector<Ort::Value> evalModelRaw(std::vector<Ort::Value>& input);
 
+  /// Run the model and copy the last output tensor into a vector
+  /// \param input one Ort::Value per model input
+  /// \return flattened content of the last output tensor
+  template <typename T>
+  std::vector<T> evalModel(std::vector<Ort::Value>& input)
+  {
+    std::vector<T> output;
+    evalModel<T>(input, output);
+    return output;
+  }
+
+  /// Run the model and copy the last output tensor into the provided vector (allocation is reused between calls)
+  /// \param input one Ort::Value per model input
+  /// \param output vector which is filled with the flattened content of the last output tensor
+  template <typename T>
+  void evalModel(std::vector<Ort::Value>& input, std::vector<T>& output)
+  {
+    const Ort::Value tensor = evalModelLast(input);
+    copyOutput<T>(tensor, output);
+  }
+
+  /// Run a single-input model on a flat vector of features (batches are inferred from the model input shape)
+  /// \param input flattened input features, size must be a multiple of the number of input nodes
+  /// \return flattened content of the last output tensor
+  template <typename T>
+  std::vector<T> evalModel(std::vector<T>& input)
+  {
+    std::vector<T> output;
+    evalModel<T>(input, output);
+    return output;
+  }
+
+  /// Run a single-input model on a flat vector of features (batches are inferred from the model input shape)
+  /// \param input flattened input features, size must be a multiple of the number of input nodes
+  /// \param output vector which is filled with the flattened content of the last output tensor
+  template <typename T>
+  void evalModel(std::vector<T>& input, std::vector<T>& output)
+  {
+    if (mInputShapes.size() != 1) {
+      LOG(fatal) << "Model has " << mInputShapes.size() << " inputs but a single input vector was provided. Use the std::vector<std::vector<T>> or std::vector<Ort::Value> overload.";
+    }
+    std::vector<Ort::Value> inputTensors;
+    inputTensors.reserve(1);
+    addInputTensor<T>(inputTensors, input, 0);
+    evalModel<T>(inputTensors, output);
+  }
+
+  /// Run a multi-input model: one flat vector of features per model input
+  /// \param input one flattened vector per model input
+  /// \return flattened content of the last output tensor
+  template <typename T>
+  std::vector<T> evalModel(std::vector<std::vector<T>>& input)
+  {
+    std::vector<T> output;
+    evalModel<T>(input, output);
+    return output;
+  }
+
+  /// Run a multi-input model: one flat vector of features per model input
+  /// \param input one flattened vector per model input
+  /// \param output vector which is filled with the flattened content of the last output tensor
+  template <typename T>
+  void evalModel(std::vector<std::vector<T>>& input, std::vector<T>& output)
+  {
+    if (input.size() != mInputShapes.size()) {
+      LOG(fatal) << "Model has " << mInputShapes.size() << " inputs but " << input.size() << " input vectors were provided.";
+    }
+    std::vector<Ort::Value> inputTensors;
+    inputTensors.reserve(input.size());
+    for (std::size_t iinput = 0; iinput < input.size(); iinput++) {
+      addInputTensor<T>(inputTensors, input[iinput], iinput);
+    }
+    evalModel<T>(inputTensors, output);
+  }
+
+  // Evaluate model and retrieve the FULL set of output tensors (e.g. multi-head models such as GNNs).
+  // Unlike evalModel(), which returns only the last output tensor as a raw pointer, this
+  // copies every output tensor's data into an owned vector, sized from that tensor's own shape.
+  template <typename T>
+  std::vector<std::vector<T>> evalModelFull(std::vector<Ort::Value>& input)
+  {
+    std::vector<std::vector<T>> results;
     try {
       const Ort::RunOptions runOptions;
       std::vector<const char*> inputNamesChar(mInputNames.size(), nullptr);
@@ -66,45 +161,42 @@ class OnnxModel
       std::vector<const char*> outputNamesChar(mOutputNames.size(), nullptr);
       std::transform(std::begin(mOutputNames), std::end(mOutputNames), std::begin(outputNamesChar),
                      [&](const std::string& str) { return str.c_str(); });
+
       auto outputTensors = mSession->Run(runOptions, inputNamesChar.data(), input.data(), input.size(), outputNamesChar.data(), outputNamesChar.size());
-      LOG(debug) << "Number of output tensors: " << outputTensors.size();
       if (outputTensors.size() != mOutputNames.size()) {
         LOG(fatal) << "Number of output tensors: " << outputTensors.size() << " does not agree with the model specified size: " << mOutputNames.size();
       }
-      for (std::size_t i = 0; i < outputTensors.size(); i++) {
-        LOG(debug) << "Output tensor shape: " << printShape(outputTensors[i].GetTensorTypeAndShapeInfo().GetShape());
-        if ((outputTensors[i].GetTensorTypeAndShapeInfo().GetShape() != mOutputShapes[i]) && (mOutputShapes[i][0] != -1)) {
-          LOG(fatal) << "Shape of tensor " << i << " does not agree with model specification! Output: " << printShape(outputTensors[i].GetTensorTypeAndShapeInfo().GetShape()) << " model: " << printShape(mOutputShapes[i]);
-        }
+
+      results.reserve(outputTensors.size());
+      for (auto& tensor : outputTensors) {
+        const std::size_t nElements = tensor.GetTensorTypeAndShapeInfo().GetElementCount();
+        const T* data = tensor.GetTensorData<T>();
+        results.emplace_back(data, data + nElements);
       }
-      T* outputValues = outputTensors.back().GetTensorMutableData<T>();
-      return outputValues;
     } catch (const Ort::Exception& exception) {
       LOG(error) << "Error running model inference: " << exception.what();
     }
-    return nullptr;
+    return results;
   }
 
+  // Flat-vector input overload, mirrors evalModel(std::vector<T>&)
   template <typename T>
-  T* evalModel(std::vector<T>& input)
+  std::vector<std::vector<T>> evalModelFull(std::vector<T>& input)
   {
     const int64_t size = input.size();
     assert(size % mInputShapes[0][1] == 0);
     std::vector<int64_t> inputShape{size / mInputShapes[0][1], mInputShapes[0][1]};
     std::vector<Ort::Value> inputTensors;
-    Ort::MemoryInfo memInfo =
-      Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
+    Ort::MemoryInfo memInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
     inputTensors.emplace_back(Ort::Value::CreateTensor<T>(memInfo, input.data(), size, inputShape.data(), inputShape.size()));
-    LOG(debug) << "Input shape calculated from vector: " << printShape(inputShape);
-    return evalModel<T>(inputTensors);
+    return evalModelFull<T>(inputTensors);
   }
 
-  // For 2D inputs
+  // 2D-vector input overload, mirrors evalModel(std::vector<std::vector<T>>&)
   template <typename T>
-  T* evalModel(std::vector<std::vector<T>>& input)
+  std::vector<std::vector<T>> evalModelFull(std::vector<std::vector<T>>& input)
   {
     std::vector<Ort::Value> inputTensors;
-
     Ort::MemoryInfo memInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
 
     for (std::size_t iinput = 0; iinput < input.size(); iinput++) {
@@ -123,7 +215,7 @@ class OnnxModel
       inputTensors.emplace_back(Ort::Value::CreateTensor<T>(memInfo, input[iinput].data(), size, inputShape.data(), inputShape.size()));
     }
 
-    return evalModel<T>(inputTensors);
+    return evalModelFull<T>(inputTensors);
   }
 
   // Reset session
@@ -139,8 +231,9 @@ class OnnxModel
     return mSession;
   }
   int getNumInputNodes() const { return mInputShapes[0][1]; }
-  std::vector<std::vector<int64_t>> getInputShapes() const { return mInputShapes; }
+  const std::vector<std::vector<int64_t>>& getInputShapes() const { return mInputShapes; }
   int getNumOutputNodes() const { return mOutputShapes[0][1]; }
+  const std::vector<std::vector<int64_t>>& getOutputShapes() const { return mOutputShapes; }
   uint64_t getValidityFrom() const { return validFrom; }
   uint64_t getValidityUntil() const { return validUntil; }
   void setActiveThreads(const int);
@@ -150,6 +243,7 @@ class OnnxModel
   std::shared_ptr<Ort::Env> mEnv = nullptr;
   std::shared_ptr<Ort::Session> mSession = nullptr;
   Ort::SessionOptions sessionOptions;
+  Ort::MemoryInfo mMemInfo{nullptr}; // CPU memory info, created once in initModel
 
   // Input & Output specifications of the loaded network
   std::vector<std::string> mInputNames;
@@ -157,14 +251,54 @@ class OnnxModel
   std::vector<std::string> mOutputNames;
   std::vector<std::vector<int64_t>> mOutputShapes;
 
+  // Pointers into the name vectors above, populated only after all names are loaded.
+  // Moving the model transfers the backing vectors without invalidating these pointers.
+  std::vector<const char*> mInputNamesChar;
+  std::vector<const char*> mOutputNamesChar;
+
   // Environment settings
   std::string modelPath;
   int activeThreads = 0;
   uint64_t validFrom = 0;
   uint64_t validUntil = 0;
 
+  /// Derive the tensor shape for input number iinput from the number of provided values
+  /// The first dimension is treated as batch dimension; all other dimensions are taken from the model
+  std::vector<int64_t> inferInputShape(const std::size_t iinput, const int64_t size) const;
+
+  /// Wrap a flat data vector (no copy) into an Ort::Value and append it to tensors
+  template <typename T>
+  void addInputTensor(std::vector<Ort::Value>& tensors, std::vector<T>& data, const std::size_t iinput) const
+  {
+    const std::vector<int64_t> inputShape = inferInputShape(iinput, static_cast<int64_t>(data.size()));
+    LOG(debug) << "Input shape calculated from vector: " << printShape(inputShape);
+    tensors.emplace_back(Ort::Value::CreateTensor<T>(mMemInfo, data.data(), data.size(), inputShape.data(), inputShape.size()));
+  }
+
+  /// Request only the last output, keeping its tensor alive until the caller has copied it
+  Ort::Value evalModelLast(std::vector<Ort::Value>& input);
+  void checkInput(const std::vector<Ort::Value>& input) const;
+  void checkOutput(const Ort::Value& tensor, std::size_t index) const;
+
+  /// Copy the content of an output tensor into output (reusing its allocation)
+  template <typename T>
+  void copyOutput(const Ort::Value& tensor, std::vector<T>& output) const
+  {
+    const auto info = tensor.GetTensorTypeAndShapeInfo();
+    if (info.GetElementType() != Ort::TypeToTensorType<T>::type) {
+      LOG(fatal) << "Requested output type (ONNX type id " << static_cast<int>(Ort::TypeToTensorType<T>::type) << ") does not match the model output tensor type (ONNX type id " << static_cast<int>(info.GetElementType()) << ")";
+    }
+    const T* data = tensor.GetTensorData<T>();
+    const auto size = info.GetElementCount();
+    if (size == 0) {
+      output.clear();
+    } else {
+      output.assign(data, data + size);
+    }
+  }
+
   // Internal function for printing the shape of tensors
-  std::string printShape(const std::vector<int64_t>&);
+  static std::string printShape(const std::vector<int64_t>&);
   bool checkHyperloop(const bool = true);
 };
 

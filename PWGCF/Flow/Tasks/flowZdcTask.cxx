@@ -52,23 +52,24 @@ using namespace o2::aod::mult;
 using namespace o2::constants::math;
 using namespace o2::aod::evsel;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
-
 struct FlowZdcTask {
   SliceCache cache;
-
-  O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
-  Configurable<int> eventSelection{"eventSelection", 1, "event selection"};
+  Configurable<bool> useFT0M{"useFT0M", true, "FT0M for centrality"};
+  Configurable<bool> useFT0C{"useFT0C", false, "FT0C for centrality"};
+  Configurable<bool> useGlbTracks{"useGlbTracks", false, "GlbTracks for centrality"};
+  Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0, "Accepted z-vertex range"};
   Configurable<float> maxZem{"maxZem", 3099.5, "Max ZEM signal"};
   // for ZDC info and analysis
   Configurable<float> maxZn{"maxZn", 125.5, "Max ZN signal"};
   Configurable<float> maxZp{"maxZp", 125.5, "Max ZP signal"};
   // configs for process QA
-  Configurable<int> nBinsNch{"nBinsNch", 2501, "N bins Nch (|eta|<0.8)"};
+  Configurable<int> nBinsNch{"nBinsNch", 3501, "N bins Nch (|eta|<0.8)"};
   Configurable<int> nBinsAmpFT0{"nBinsAmpFT0", 100, "N bins FT0 amp"};
   Configurable<float> maxAmpFT0{"maxAmpFT0", 2500, "Max FT0 amp"};
   Configurable<float> maxAmpFT0M{"maxAmpFT0M", 2500, "Max FT0M amp"};
   Configurable<int> nBinsAmpFT0M{"nBinsAmpFT0M", 100, "N bins FT0M amp"};
+  Configurable<int> nBinsAmpFT0C{"nBinsAmpFT0C", 100, "N bins FT0C amp"};
+  Configurable<int> nBinsGlbTracks{"nBinsGlbTracks", 100, "N bins global tracks"};
   Configurable<int> nBinsZDC{"nBinsZDC", 400, "nBinsZDC"};
   Configurable<int> nBinsZP{"nBinsZP", 50, "nBinsZP"};
   Configurable<int> nBinsZN{"nBinsZN", 50, "nBinsZN"};
@@ -76,13 +77,10 @@ struct FlowZdcTask {
   Configurable<float> maxNch{"maxNch", 2500, "Max Nch (|eta|<0.8)"};
   Configurable<int> nBinsTDC{"nBinsTDC", 150, "nbinsTDC"};
   Configurable<int> nBinsCent{"nBinsCent", 10, "nBinsCent"};
-  Configurable<float> minTdcZn{"minTdcZn", 4.0, "minimum TDC for ZN"};
-  Configurable<float> maxTdcZn{"maxTdcZn", 4.0, "maximum TDC for ZN"};
-  Configurable<float> minTdcZp{"minTdcZp", -4.0, "minimum TDC for ZP"};
-  Configurable<float> maxTdcZp{"maxTdcZp", -4.0, "maximum TDC for ZP"};
-  Configurable<bool> applyZdcCorrection{"applyZdcCorrection", false, "Apply ZP correction?"};
-  Configurable<float> zpaCoeff{"zpaCoeff", 0.021f, "Coefficient a in zpa correction"};
-  Configurable<float> zpcCoeff{"zpcCoeff", 0.021f, "Coefficient b in zpc correction"};
+  Configurable<float> minTdcZn{"minTdcZn", -2.0, "minimum TDC for ZN"};
+  Configurable<float> maxTdcZn{"maxTdcZn", 2.0, "maximum TDC for ZN"};
+  Configurable<float> minTdcZp{"minTdcZp", -2.0, "minimum TDC for ZP"};
+  Configurable<float> maxTdcZp{"maxTdcZp", 2.0, "maximum TDC for ZP"};
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
   Configurable<float> posYcut{"posYcut", +10.0, "y-vertex position cut"};
   Configurable<float> posXcut{"posXcut", +10.0, "x-vertex position cut"};
@@ -94,6 +92,7 @@ struct FlowZdcTask {
   // event selection
   Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", true, "isNoCollInTimeRangeStrict?"};
   Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "isNoCollInTimeRangeStandard?"};
+  Configurable<bool> isNoSameBunchPileup{"isNoSameBunchPileup", true, "isNoSameBunchPileup?"};
   Configurable<bool> isNoCollInRofStrict{"isNoCollInRofStrict", true, "isNoCollInRofStrict?"};
   Configurable<bool> isNoCollInRofStandard{"isNoCollInRofStandard", false, "isNoCollInRofStandard?"};
   Configurable<bool> isNoHighMultCollInPrevRof{"isNoHighMultCollInPrevRof", true, "isNoHighMultCollInPrevRof?"};
@@ -123,7 +122,7 @@ struct FlowZdcTask {
   using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, o2::aod::CentFT0Cs, aod::TPCMults, o2::aod::BarrelMults, aod::FT0MultZeqs>;
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
-  Partition<AodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Partition<AodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > static_cast<uint8_t>(0));
   using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using TracksSel = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCovIU, aod::TrackSelection, aod::TracksDCA>;
   using CollisionDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms>;
@@ -160,7 +159,7 @@ struct FlowZdcTask {
   // Begin Histogram Registry
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<ccdb::BasicCCDBManager> ccdb{};
 
   void init(InitContext const&)
   {
@@ -205,12 +204,22 @@ struct FlowZdcTask {
     xAxis->SetBinLabel(16, "Within TDC cut?");
 
     if (doprocessQA) {
+      if (useFT0M) {
+        histos.add("ZPAZNAVsFT0M", ";T0A+T0C (#times 1/100);ZPA Amplitude;ZNA Amplitude;", kTH3F, {{{nBinsAmpFT0M, 0., maxAmpFT0M}, {nBinsZP, -0.5, maxZp}, {nBinsZN, -0.5, maxZn}}});
+        histos.add("ZPCZNCVsFT0M", ";T0A+T0C (#times 1/100);ZPC Amplitude;ZNC Amplitude;", kTH3F, {{{nBinsAmpFT0M, 0., maxAmpFT0M}, {nBinsZP, -0.5, maxZp}, {nBinsZN, -0.5, maxZn}}});
+      }
+      if (useFT0C) {
+        histos.add("ZPAZNAVsFT0C", ";T0C (#times 1/100);ZPA Amplitude;ZNA Amplitude;", kTH3F, {{{nBinsAmpFT0C, 0., maxAmpFT0}, {nBinsZP, -0.5, maxZp}, {nBinsZN, -0.5, maxZn}}});
+        histos.add("ZPCZNCVsFT0C", ";T0C (#times 1/100);ZPC Amplitude;ZNC Amplitude;", kTH3F, {{{nBinsAmpFT0C, 0., maxAmpFT0}, {nBinsZP, -0.5, maxZp}, {nBinsZN, -0.5, maxZn}}});
+      }
+      if (useGlbTracks) {
+        histos.add("ZPAZNAVsGlbTracks", ";N_{global tracks} (|#eta|<0.8);ZPA Amplitude;ZNA Amplitude;", kTH3F, {{{nBinsGlbTracks, minNch, maxNch}, {nBinsZP, -0.5, maxZp}, {nBinsZN, -0.5, maxZn}}});
+        histos.add("ZPCZNCVsGlbTracks", ";N_{global tracks} (|#eta|<0.8);ZPC Amplitude;ZNC Amplitude;", kTH3F, {{{nBinsGlbTracks, minNch, maxNch}, {nBinsZP, -0.5, maxZp}, {nBinsZN, -0.5, maxZn}}});
+      }
       histos.add("ZNAVsFT0C", ";T0C (#times 1/100);ZNA Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZNAVsFT0M", ";T0A+T0C (#times 1/100);ZNA Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZNCVsFT0C", ";T0C (#times 1/100);ZNC Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZNCVsFT0M", ";T0A+T0C (#times 1/100);ZNC Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZn}}});
-      histos.add("ZPAZNAVsFT0M", ";T0A+T0C (#times 1/100);ZPA Amplitude;ZNA Amplitude;", kTH3F, {{{nBinsAmpFT0M, 0., maxAmpFT0M}, {nBinsZP, -0.5, maxZp}, {nBinsZN, -0.5, maxZn}}});
-      histos.add("ZPCZNCVsFT0M", ";T0A+T0C (#times 1/100);ZPC Amplitude;ZNC Amplitude;", kTH3F, {{{nBinsAmpFT0M, 0., maxAmpFT0M}, {nBinsZP, -0.5, maxZp}, {nBinsZN, -0.5, maxZn}}});
       histos.add("ZPAVsFT0C", ";T0C (#times 1/100);ZPA Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("ZPAVsFT0M", ";T0A+T0C (#times 1/100);ZPA Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("ZPCVsFT0C", ";T0C (#times 1/100);ZPC Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZp}}});
@@ -302,10 +311,12 @@ struct FlowZdcTask {
     }
     histos.fill(HIST("hEventCounter"), EvCutLabel::SelEigth);
 
-    if (!col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-      return false;
+    if (isNoSameBunchPileup) {
+      if (!col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+        return false;
+      }
+      histos.fill(HIST("hEventCounter"), EvCutLabel::NoSameBunchPileup);
     }
-    histos.fill(HIST("hEventCounter"), EvCutLabel::NoSameBunchPileup);
 
     if (!col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
@@ -374,8 +385,9 @@ struct FlowZdcTask {
     }
     histos.fill(HIST("hEventCounter"), EvCutLabel::VtxZ);
     if (isApplyRadialCut) {
-      if (std::fabs(col.posX()) > posXcut && (std::fabs(col.posY()) > posYcut))
+      if (std::fabs(col.posX()) > posXcut || std::fabs(col.posY()) > posYcut) {
         return false;
+      }
     }
 
     return true;
@@ -496,14 +508,6 @@ struct FlowZdcTask {
     float commonSumZna = zdc.energyCommonZNA();
     float commonSumZpc = zdc.energyCommonZPC();
     float commonSumZpa = zdc.energyCommonZPA();
-    if (applyZdcCorrection) {
-      const float a = zpaCoeff;
-      const float b = zpcCoeff;
-      zpA = zpA - a * znA;
-      commonSumZpa = commonSumZpa - a * commonSumZna;
-      zpC = zpC - b * znC;
-      commonSumZpc = commonSumZpc - b * commonSumZnc;
-    }
     float aZEM1{zdc.amplitudeZEM1()};
     float aZEM2{zdc.amplitudeZEM2()};
     float sumZEMs{aZEM1 + aZEM2};
@@ -541,8 +545,9 @@ struct FlowZdcTask {
           histos.fill(HIST("ZPCVsFT0M"), (aT0A + aT0C) / 100., zpC);
           histos.fill(HIST("ZPCVsNch"), glbTracks, zpC);
         }
-        if (((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)) && ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)))
+        if (((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)) && ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn))) {
           histos.fill(HIST("ZNVsZEM"), sumZEMs, sumZNs);
+        }
         if (((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)) && ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn))) {
           histos.fill(HIST("ZNAVsZNC"), znC, znA);
           histos.fill(HIST("CommonZNAVsZNC"), commonSumZnc, commonSumZna);
@@ -555,12 +560,28 @@ struct FlowZdcTask {
         if (((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp))) {
           histos.fill(HIST("ZNAVsZPA"), zpA, znA);
           histos.fill(HIST("CommonZNAVsZPA"), commonSumZpa, commonSumZna);
-          histos.fill(HIST("ZPAZNAVsFT0M"), (aT0A + aT0C) / 100., zpA, znA);
+          if (useFT0M) {
+            histos.fill(HIST("ZPAZNAVsFT0M"), (aT0A + aT0C) / 100., zpA, znA);
+          }
+          if (useFT0C) {
+            histos.fill(HIST("ZPAZNAVsFT0C"), aT0C / 100., zpA, znA);
+          }
+          if (useGlbTracks) {
+            histos.fill(HIST("ZPAZNAVsGlbTracks"), glbTracks, zpA, znA);
+          }
         }
         if (((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)) && ((tZPC >= minTdcZp) && (tZPC <= maxTdcZp))) {
           histos.fill(HIST("ZNCVsZPC"), zpC, znC);
           histos.fill(HIST("CommonZNCVsZPC"), commonSumZpc, commonSumZnc);
-          histos.fill(HIST("ZPCZNCVsFT0M"), (aT0A + aT0C) / 100., zpC, znC);
+          if (useFT0M) {
+            histos.fill(HIST("ZPCZNCVsFT0M"), (aT0A + aT0C) / 100., zpC, znC);
+          }
+          if (useFT0C) {
+            histos.fill(HIST("ZPCZNCVsFT0C"), aT0C / 100., zpC, znC);
+          }
+          if (useGlbTracks) {
+            histos.fill(HIST("ZPCZNCVsGlbTracks"), glbTracks, zpC, znC);
+          }
         }
       } else {
         histos.fill(HIST("ZNA"), znA);
@@ -593,8 +614,18 @@ struct FlowZdcTask {
         histos.fill(HIST("ZPCVsNch"), glbTracks, zpC);
         histos.fill(HIST("ZNCVsNch"), glbTracks, znC);
         histos.fill(HIST("ZNAVsNch"), glbTracks, znA);
-        histos.fill(HIST("ZPAZNAVsFT0M"), (aT0A + aT0C) / 100., zpA, znA);
-        histos.fill(HIST("ZPCZNCVsFT0M"), (aT0A + aT0C) / 100., zpC, znC);
+        if (useFT0M) {
+          histos.fill(HIST("ZPAZNAVsFT0M"), (aT0A + aT0C) / 100., zpA, znA);
+          histos.fill(HIST("ZPCZNCVsFT0M"), (aT0A + aT0C) / 100., zpC, znC);
+        }
+        if (useFT0C) {
+          histos.fill(HIST("ZPAZNAVsFT0C"), aT0C / 100., zpA, znA);
+          histos.fill(HIST("ZPCZNCVsFT0C"), aT0C / 100., zpC, znC);
+        }
+        if (useGlbTracks) {
+          histos.fill(HIST("ZPAZNAVsGlbTracks"), glbTracks, zpA, znA);
+          histos.fill(HIST("ZPCZNCVsGlbTracks"), glbTracks, zpC, znC);
+        }
       }
       histos.fill(HIST("ZEM1"), aZEM1);
       histos.fill(HIST("ZEM2"), aZEM2);
@@ -649,16 +680,21 @@ struct FlowZdcTask {
             histos.fill(HIST("ampZpc"), zpC);
             histos.fill(HIST("commonZpc"), commonSumZpc);
           }
-          if (((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)) && ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)))
+          if (((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)) && ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn))) {
             histos.fill(HIST("ZnVsZem"), sumZEMs, znC + znA);
-          if (((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)) && ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)))
+          }
+          if (((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)) && ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn))) {
             histos.fill(HIST("ZnaVsZnc"), znA, znC);
-          if (((tZPC >= minTdcZp) && (tZPC <= maxTdcZp)) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp)))
+          }
+          if (((tZPC >= minTdcZp) && (tZPC <= maxTdcZp)) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp))) {
             histos.fill(HIST("ZpaVsZpc"), zpA, zpC);
-          if ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp)))
+          }
+          if ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp))) {
             histos.fill(HIST("ZnaVsZpa"), znA, zpA);
-          if ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp)))
+          }
+          if ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp))) {
             histos.fill(HIST("ZncVsZpc"), znC, zpC);
+          }
         } else {
           histos.fill(HIST("ampZna"), znA);
           histos.fill(HIST("ampZnc"), znC);

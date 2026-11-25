@@ -161,7 +161,7 @@ struct femtoDreamProducerReducedTask {
   }
 
   /// Function to retrieve the nominal magnetic field in kG (0.1T) and convert it directly to T
-  void getMagneticFieldTesla(aod::BCsWithTimestamps::iterator bc)
+  void getMagneticFieldTesla(const aod::BCsWithTimestamps::iterator& bc)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     // get magnetic field for run
@@ -297,9 +297,9 @@ struct femtoDreamProducerReducedTask {
 
       if (ConfIsDebug) {
         outputDebugParts(track.sign(),
-                         (uint8_t)track.tpcNClsFound(),
+                         static_cast<uint8_t>(track.tpcNClsFound()),
                          track.tpcNClsFindable(),
-                         (uint8_t)track.tpcNClsCrossedRows(),
+                         static_cast<uint8_t>(track.tpcNClsCrossedRows()),
                          track.tpcNClsShared(),
                          track.tpcInnerParam(),
                          track.itsNCls(),

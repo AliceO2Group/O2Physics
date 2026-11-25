@@ -9,7 +9,10 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
+# 3.27 for $<COMPILE_ONLY:>, which O2PhysicsAddWorkflow.cmake uses to give a
+# workflow the precompiled header carrier's compile usage requirements without
+# also putting it on the link line. Builds use CMake 4.1 (alidist cmake.sh).
+cmake_minimum_required(VERSION 3.27 FATAL_ERROR)
 
 project(O2Physics
         VERSION 0.0.1
@@ -21,8 +24,46 @@ cmake_policy(SET CMP0144 NEW)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set_property(GLOBAL PROPERTY REPORT_UNDEFINED_PROPERTIES)
 
+# How much memory this build may actually use, in MiB.
+#
+# cmake_host_system_information reads the HOST, which is wrong under a container
+# memory limit: there is no lxcfs in the CI images, so on a 251 GiB builder
+# capped at 50 GiB it reported 251 GiB and the pool below never bound. The
+# result was an OOM-killed build that looked like a compiler crash:
+#
+#   c++: fatal error: Killed signal terminated program cc1plus
+#
+# So prefer the cgroup limit when there is one. cgroup v2 first, then v1; both
+# report bytes, and both say "no limit" with a sentinel ("max", or a number so
+# large it is really 2^63 rounded down) rather than by being absent.
 cmake_host_system_information(RESULT _totalmem QUERY TOTAL_PHYSICAL_MEMORY)
-math(EXPR _total_analysis_jobs "(${_totalmem}-2048)/2048")
+foreach(_cg /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory/memory.limit_in_bytes)
+  if(EXISTS ${_cg})
+    file(READ ${_cg} _cglimit)
+    string(STRIP "${_cglimit}" _cglimit)
+    if(_cglimit MATCHES "^[0-9]+$")
+      math(EXPR _cgmib "${_cglimit}/1048576")
+      # Anything at or above the host's own memory is "unlimited" expressed as a
+      # number, not a smaller budget.
+      if(_cgmib GREATER 0 AND _cgmib LESS ${_totalmem})
+        set(_totalmem ${_cgmib})
+        message(STATUS "Memory limit from ${_cg}: ${_totalmem} MiB")
+        break()
+      endif()
+    endif()
+  endif()
+endforeach()
+
+# 8 GiB per job, not 2. Measured on the CI builders with GCC 14.2: the heaviest
+# analysis producers peak at 7.4-10.1 GiB each (derivedDataWriter 10.09,
+# femtoProducer 8.27, candidateCreatorXic0Omegac0 7.36), and -fmem-report shows
+# ~6.4 GB of that is frontend AST held live -- template instantiation over the
+# distinct soa::Join types each task subscribes to. At 2048 the pool permitted
+# four times what the memory allows, and ninja builds in declaration order, so
+# the heavy producers arrive as a cluster rather than spread out.
+set(ANALYSIS_COMPILE_MEMORY_MB 8192 CACHE STRING
+    "Assumed peak memory of one analysis compilation, in MiB")
+math(EXPR _total_analysis_jobs "(${_totalmem}-2048)/${ANALYSIS_COMPILE_MEMORY_MB}")
 if(_total_analysis_jobs LESS_EQUAL 0)
   set(_total_analysis_jobs 1)
 endif()

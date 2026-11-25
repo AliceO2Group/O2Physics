@@ -26,13 +26,12 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 
 #include <TH1.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TString.h>
-
-#include <GPUROOTCartesianFwd.h>
 
 #include <array>
 #include <cmath>

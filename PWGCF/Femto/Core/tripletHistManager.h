@@ -11,11 +11,12 @@
 
 /// \file tripletHistManager.h
 /// \brief histogram manager for triplet tasks
-/// \author anton.riedel@tum.de, TU München, anton.riedel@tum.de
+/// \author Anton Riedel, TU München, anton.riedel@tum.de
 
 #ifndef PWGCF_FEMTO_CORE_TRIPLETHISTMANAGER_H_
 #define PWGCF_FEMTO_CORE_TRIPLETHISTMANAGER_H_
 
+#include "PWGCF/Femto/Core/femtoMath.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/histManager.h"
 #include "PWGCF/Femto/Core/modes.h"
@@ -37,15 +38,16 @@
 #include <unordered_set>
 #include <vector>
 
-namespace o2::analysis::femto
-{
-namespace triplethistmanager
+namespace o2::analysis::femto::triplethistmanager
 {
 // enum for pair histograms
 enum TripletHist {
   // standard 1D
   kQ3,
-  kMt, // averate mt of all pairs in the triplet
+  kMt,      // average mt of all pairs in the triplet
+  kKstar12, // kstar between single particles, always computed
+  kKstar13,
+  kKstar23,
   // standard 2D
   kPt1VsQ3,
   kPt2VsQ3,
@@ -64,12 +66,25 @@ enum TripletHist {
   kQ3VsMtVsMultVsCent,
   kQ3VsMtVsPt1VsPt2VsPt3VsMult,
   kQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent,
+  kQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3,
   // higher dimensions with mass
   // mc
   kTrueQ3VsQ3,
   kTrueMtVsMt,
   kTrueMultVsMult,
   kTrueCentVsCent,
+  // mc truth (kMc without kReco), i.e. triplets of generated particles
+  kTrueQ3,
+  kTrueMt,
+  kTrueKstar12,
+  kTrueKstar13,
+  kTrueKstar23,
+  kTruePt1VsTrueQ3,
+  kTruePt2VsTrueQ3,
+  kTruePt3VsTrueQ3,
+  kTrueQ3VsTrueMt,
+  kTrueQ3VsTrueMult,
+  kTrueQ3VsTrueCent,
 
   // mixing qa
   kSeNpart1VsNpart2VsNpart3,                                     // unique particles 1,2,3 in each same event
@@ -96,6 +111,7 @@ struct ConfMixing : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis vtxBins{"vtxBins", {o2::framework::VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   o2::framework::Configurable<int> depth{"depth", 5, "Number of events for mixing"};
   o2::framework::Configurable<int> policy{"policy", 0, "Binning policy for mixing (alywas in combination with z-vertex) -> 0: multiplicity, -> 1: centrality, -> 2: both"};
+  o2::framework::Configurable<int> eventStride{"eventStride", 1, "Only use every Nth collision as a mixing anchor (1 = use every collision). Reduces mixed-event combinatorics roughly 1/eventStride."};
   o2::framework::Configurable<int> seed{"seed", -1, "Seed to randomize particle 1/2/3 (if they are identical). Set to negative value to deactivate. Set to 0 to generate unique seed in time."};
   o2::framework::Configurable<bool> particle123AreSameSpecies{"particle123AreSameSpecies", false, "Particle 1,2 and 3 are of the same species"};
   o2::framework::Configurable<bool> particle12AreSameSpecies{"particle12AreSameSpecies", false, "Particle 1 and 2 are of the same species"};
@@ -114,7 +130,9 @@ struct ConfTripletBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plotQ3VsMtVsMultVsCent{"plotQ3VsMtVsMultVsCent", false, "Enable 4D histogram (Q3 vs Mt vs Mult Vs Cent)"};
   o2::framework::Configurable<bool> plotQ3VsMtVsPt1VsPt2VsPt3VsMult{"plotQ3VsMtVsPt1VsPt2VsPt3VsMult", false, "Enable 6D histogram (Q3 vs Mt Vs Pt1 vs Pt2 vs Pt3 vs Mult)"};
   o2::framework::Configurable<bool> plotQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent{"plotQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent", false, "Enable 7D histogram (Q3 vs Mt Vs Pt1 vs Pt2 vs Pt3 vs Mult vs Cent)"};
+  o2::framework::Configurable<bool> plotQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3{"plotQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3", false, "Enable 7D histogram (Q3 vs kstar12 vs kstar13 vs kstar23 vs Pt1 vs Pt2 vs Pt3)"};
   o2::framework::ConfigurableAxis q3{"q3", {{600, 0, 6}}, "q3"};
+  o2::framework::ConfigurableAxis kstar{"kstar", {{600, 0, 6}}, "kstar (between pairs of particles)"};
   o2::framework::ConfigurableAxis mt{"mt", {{500, 0.8, 5.8}}, "mt"};
   o2::framework::ConfigurableAxis multiplicity{"multiplicity", {{50, 0, 200}}, "multiplicity"};
   o2::framework::ConfigurableAxis centrality{"centrality", {{10, 0, 100}}, "centrality (mult. percentile)"};
@@ -129,12 +147,20 @@ struct ConfTripletBinning : o2::framework::ConfigurableGroup {
 
 struct ConfTripletCuts : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("TripletCuts");
-  o2::framework::Configurable<float> q3Max{"q3Max", -1, "Maximal kstar (set to -1 to deactivate)"};
-  o2::framework::Configurable<float> q3Min{"q3Min", -1, "Minimal kstar (set to -1 to deactivate)"};
+  o2::framework::Configurable<float> q3Max{"q3Max", -1, "Maximal Q3 (set to -1 to deactivate)"};
+  o2::framework::Configurable<float> q3Min{"q3Min", -1, "Minimal Q3 (set to -1 to deactivate)"};
   o2::framework::Configurable<float> mtMax{"mtMax", -1, "Maximal mt (set to -1 to deactivate)"};
   o2::framework::Configurable<float> mtMin{"mtMin", -1, "Minimal mt (set to -1 to deactivate)"};
-  o2::framework::Configurable<bool> mixOnlyCommonAncestor{"mixOnlyCommonAncestor", false, "Require pair to have common anchestor (in the same event)"};
-  o2::framework::Configurable<bool> mixOnlyNonCommonAncestor{"mixOnlyNonCommonAncestor", false, "Require pair to have non-common anchestor (in the same event)"};
+  o2::framework::Configurable<float> kstar12Min{"kstar12Min", -1, "Minimal k* between particle 1 and particle 2 (set to -1 to deactivate)"};
+  o2::framework::Configurable<float> kstar12Max{"kstar12Max", -1, "Maximal k* between particle 1 and particle 2 (set to -1 to deactivate)"};
+  o2::framework::Configurable<float> kstar13Min{"kstar13Min", -1, "Minimal k* between particle 1 and particle 3 (set to -1 to deactivate)"};
+  o2::framework::Configurable<float> kstar13Max{"kstar13Max", -1, "Maximal k* between particle 1 and particle 3 (set to -1 to deactivate)"};
+  o2::framework::Configurable<float> kstar23Min{"kstar23Min", -1, "Minimal k* between particle 2 and particle 3 (set to -1 to deactivate)"};
+  o2::framework::Configurable<float> kstar23Max{"kstar23Max", -1, "Maximal k* between particle 2 and particle 3 (set to -1 to deactivate)"};
+  o2::framework::Configurable<bool> mixOnlyCommonAncestor{"mixOnlyCommonAncestor", false, "Require pair to have common ancestor (in the same event)"};
+  o2::framework::Configurable<bool> mixOnlyNonCommonAncestor{"mixOnlyNonCommonAncestor", false, "Require pair to have non-common ancestor (in the same event)"};
+  o2::framework::Configurable<bool> useMotherAsAncestor{"useMotherAsAncestor", false, "Use the first ancestor (i.e. the direct mother) instead of the partonic mother when requiring (non-)common ancestry"};
+  o2::framework::Configurable<int> kinematicVariable{"kinematicVariable", static_cast<int>(modes::KinematicVariable::kQ3), "Type of kinematic variable (2->mT, 3->Q3) reported by the triplet-cleaner kinematic plot"};
 };
 
 // the enum gives the correct index in the array
@@ -144,6 +170,9 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
       // 1D
       {kQ3, o2::framework::HistType::kTH1F, "hQ3", "Q_{3}; Q_{3} (GeV/#it{c}); Entries"},
       {kMt, o2::framework::HistType::kTH1F, "hMt", "transverse mass; m_{T} (GeV/#it{c}^{2}); Entries"},
+      {kKstar12, o2::framework::HistType::kTH1F, "hKstar12", "k* between particle 1 and particle 2; k* (GeV/#it{c}); Entries"},
+      {kKstar13, o2::framework::HistType::kTH1F, "hKstar13", "k* between particle 1 and particle 3; k* (GeV/#it{c}); Entries"},
+      {kKstar23, o2::framework::HistType::kTH1F, "hKstar23", "k* between particle 2 and particle 3; k* (GeV/#it{c}); Entries"},
       // 2D
       {kPt1VsQ3, o2::framework::HistType::kTH2F, "hPt1VsQ3", "p_{T,1} vs Q_{3}; p_{T,1} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
       {kPt2VsQ3, o2::framework::HistType::kTH2F, "hPt2VsQ3", "p_{T,2} vs Q_{3}; p_{T,2} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
@@ -154,15 +183,28 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
       // n-D
       {kPt1VsPt2VsPt3, o2::framework::HistType::kTHnSparseF, "hPt1VsPt2VsPt3", "p_{T,1} vs p_{T,2} vs p_{T,3}; p_{T,1} (GeV/#it{c});p_{T,2} (GeV/#it{c});p_{T,3} (GeV/#it{c});"},
       {kQ3VsPt1VsPt2VsPt3, o2::framework::HistType::kTHnSparseF, "hQ3VsPt1VsPt2VsPt3", "Q_{3} vs p_{T,1} vs p_{T,2} vs p_{T,3}; Q_{3} (GeV/#it{c}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c});"},
-      {kQ3VsMtVsMult, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsMult", "Q_{3} vs m_{T} vs multiplicity; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity"},
+      {kQ3VsMtVsMult, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsMult", "Q_{3} vs m_{T} vs multiplicity; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity;"},
       {kQ3VsMtVsMultVsCent, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsMultVsCent", "Q_{3} vs m_{T} vs multiplicity vs centrality; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity; Centrality (%);"},
       // n-D with mass
       {kQ3VsMtVsPt1VsPt2VsPt3VsMult, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsPt1VsPt2VsPt3VsMult", "Q_{3} vs m_{T} vs p_{T,1} vs p_{T,2} vs p_{T,3} vs multiplicity; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}) ; p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c}); Multiplicity;"},
       {kQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent", "Q_{3} vs m_{T} vs p_{T,1} vs p_{T,2} vs p_{T,3} vs multiplicity vs centrality; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}) ; p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c}); Multiplicity; Centrality (%);"},
+      {kQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3, o2::framework::HistType::kTHnSparseF, "hQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3", "Q_{3} vs k*_{12} vs k*_{13} vs k*_{23} vs p_{T,1} vs p_{T,2} vs p_{T,3}; Q_{3} (GeV/#it{c}); k*_{12} (GeV/#it{c}); k*_{13} (GeV/#it{c}); k*_{23} (GeV/#it{c}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c});"},
       {kTrueQ3VsQ3, o2::framework::HistType::kTH2F, "hTrueQ3VsQ3", "Q_{3,True} vs Q_{3}; Q_{3,true} (GeV/#it{c});  Q_{3} (GeV/#it{c})"},
       {kTrueMtVsMt, o2::framework::HistType::kTH2F, "hTrueMtVsMt", "m_{T,True} vs m_{T}; m_{T,True} (GeV/#it{c}^{2}); m_{T} (GeV/#it{c}^{2})"},
       {kTrueMultVsMult, o2::framework::HistType::kTH2F, "hTrueMultVsMult", "Multiplicity_{True} vs Multiplicity; Multiplicity_{True} ;  Multiplicity"},
       {kTrueCentVsCent, o2::framework::HistType::kTH2F, "hTrueCentVsCent", "Centrality_{True} vs Centrality; Centrality_{True} (%); Centrality (%)"},
+      // mc truth
+      {kTrueQ3, o2::framework::HistType::kTH1F, "hTrueQ3", "Q_{3,True}; Q_{3,True} (GeV/#it{c}); Entries"},
+      {kTrueMt, o2::framework::HistType::kTH1F, "hTrueMt", "true transverse mass; m_{T,True} (GeV/#it{c}^{2}); Entries"},
+      {kTrueKstar12, o2::framework::HistType::kTH1F, "hTrueKstar12", "true k* between particle 1 and particle 2; k*_{True} (GeV/#it{c}); Entries"},
+      {kTrueKstar13, o2::framework::HistType::kTH1F, "hTrueKstar13", "true k* between particle 1 and particle 3; k*_{True} (GeV/#it{c}); Entries"},
+      {kTrueKstar23, o2::framework::HistType::kTH1F, "hTrueKstar23", "true k* between particle 2 and particle 3; k*_{True} (GeV/#it{c}); Entries"},
+      {kTruePt1VsTrueQ3, o2::framework::HistType::kTH2F, "hTruePt1VsTrueQ3", "p_{T,1,True} vs Q_{3,True}; p_{T,1,True} (GeV/#it{c}); Q_{3,True} (GeV/#it{c})"},
+      {kTruePt2VsTrueQ3, o2::framework::HistType::kTH2F, "hTruePt2VsTrueQ3", "p_{T,2,True} vs Q_{3,True}; p_{T,2,True} (GeV/#it{c}); Q_{3,True} (GeV/#it{c})"},
+      {kTruePt3VsTrueQ3, o2::framework::HistType::kTH2F, "hTruePt3VsTrueQ3", "p_{T,3,True} vs Q_{3,True}; p_{T,3,True} (GeV/#it{c}); Q_{3,True} (GeV/#it{c})"},
+      {kTrueQ3VsTrueMt, o2::framework::HistType::kTH2F, "hTrueQ3VsTrueMt", "Q_{3,True} vs m_{T,True}; Q_{3,True} (GeV/#it{c}); m_{T,True} (GeV/#it{c}^{2})"},
+      {kTrueQ3VsTrueMult, o2::framework::HistType::kTH2F, "hTrueQ3VsTrueMult", "Q_{3,True} vs Multiplicity_{True}; Q_{3,True} (GeV/#it{c}); Multiplicity_{True}"},
+      {kTrueQ3VsTrueCent, o2::framework::HistType::kTH2F, "hTrueQ3VsTrueCent", "Q_{3,True} vs Centrality_{True}; Q_{3,True} (GeV/#it{c}); Centrality_{True} (%)"},
       // mixing qa
       {kSeNpart1VsNpart2VsNpart3, o2::framework::HistType::kTHnSparseF, "hSeNpart1VsNpart2VsNpart3", "# unique particle 1 vs # unique particle 2 vs # unique particle 3 in each same event; # particle 1; # particle 2; # particle 3;"},
       {kMeMixingWindowRaw, o2::framework::HistType::kTH1F, "hMeMixingWindowRaw", "Raw Mixing Window; Raw Mixing Window; Entries"},
@@ -171,38 +213,62 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
       {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2VsVtz3VsMult3VsCent3, o2::framework::HistType::kTHnSparseF, "hVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2VsVtz3VsMult3VsCent3", "Mixing bins; V_{z,1} (cm); mult_{1}; cent_{1} (%); V_{z,2} (cm); mult_{2}; cent_{2} (%); V_{z,3} (cm); mult_{3}; cent_{3} (%);"},
     }};
 
-#define TRIPLET_HIST_ANALYSIS_MAP(conf, confMixing)                                                                             \
-  {kQ3, {conf.q3}},                                                                                                             \
-    {kMt, {conf.mt}},                                                                                                           \
-    {kPt1VsQ3, {conf.pt1, conf.q3}},                                                                                            \
-    {kPt2VsQ3, {conf.pt2, conf.q3}},                                                                                            \
-    {kPt3VsQ3, {conf.pt3, conf.q3}},                                                                                            \
-    {kQ3VsMt, {conf.q3, conf.mt}},                                                                                              \
-    {kQ3VsMult, {conf.q3, conf.multiplicity}},                                                                                  \
-    {kQ3VsCent, {conf.q3, conf.centrality}},                                                                                    \
-    {kPt1VsPt2VsPt3, {conf.pt1, conf.pt2, conf.pt3}},                                                                           \
-    {kQ3VsPt1VsPt2VsPt3, {conf.q3, conf.pt1, conf.pt2, conf.pt3}},                                                              \
-    {kQ3VsMtVsMult, {conf.q3, conf.mt, conf.multiplicity}},                                                                     \
-    {kQ3VsMtVsMultVsCent, {conf.q3, conf.mt, conf.multiplicity, conf.centrality}},                                              \
-    {kQ3VsMtVsPt1VsPt2VsPt3VsMult, {conf.q3, conf.mt, conf.pt1, conf.pt2, conf.pt3, conf.multiplicity}},                        \
-    {kQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent, {conf.q3, conf.mt, conf.pt1, conf.pt2, conf.pt3, conf.multiplicity, conf.centrality}}, \
-    {kSeNpart1VsNpart2VsNpart3, {confMixing.particleBinning, confMixing.particleBinning, confMixing.particleBinning}},          \
-    {kMeMixingWindowRaw, {confMixing.particleBinning}},                                                                         \
-    {kMeMixingWindowEffective, {confMixing.particleBinning}},                                                                   \
-    {kMeNpart1VsNpart2VsNpart3, {confMixing.particleBinning, confMixing.particleBinning, confMixing.particleBinning}},          \
-    {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2VsVtz3VsMult3VsCent3, {confMixing.vtxBins, confMixing.multBins, confMixing.centBins, confMixing.vtxBins, confMixing.multBins, confMixing.centBins, confMixing.vtxBins, confMixing.multBins, confMixing.centBins}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define TRIPLET_HIST_ANALYSIS_MAP(conf, confMixing)                                                                                           \
+  {kQ3, {(conf).q3}},                                                                                                                         \
+    {kMt, {(conf).mt}},                                                                                                                       \
+    {kKstar12, {(conf).kstar}},                                                                                                               \
+    {kKstar13, {(conf).kstar}},                                                                                                               \
+    {kKstar23, {(conf).kstar}},                                                                                                               \
+    {kPt1VsQ3, {(conf).pt1, (conf).q3}},                                                                                                      \
+    {kPt2VsQ3, {(conf).pt2, (conf).q3}},                                                                                                      \
+    {kPt3VsQ3, {(conf).pt3, (conf).q3}},                                                                                                      \
+    {kQ3VsMt, {(conf).q3, (conf).mt}},                                                                                                        \
+    {kQ3VsMult, {(conf).q3, (conf).multiplicity}},                                                                                            \
+    {kQ3VsCent, {(conf).q3, (conf).centrality}},                                                                                              \
+    {kPt1VsPt2VsPt3, {(conf).pt1, (conf).pt2, (conf).pt3}},                                                                                   \
+    {kQ3VsPt1VsPt2VsPt3, {(conf).q3, (conf).pt1, (conf).pt2, (conf).pt3}},                                                                    \
+    {kQ3VsMtVsMult, {(conf).q3, (conf).mt, (conf).multiplicity}},                                                                             \
+    {kQ3VsMtVsMultVsCent, {(conf).q3, (conf).mt, (conf).multiplicity, (conf).centrality}},                                                    \
+    {kQ3VsMtVsPt1VsPt2VsPt3VsMult, {(conf).q3, (conf).mt, (conf).pt1, (conf).pt2, (conf).pt3, (conf).multiplicity}},                          \
+    {kQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent, {(conf).q3, (conf).mt, (conf).pt1, (conf).pt2, (conf).pt3, (conf).multiplicity, (conf).centrality}}, \
+    {kQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3, {(conf).q3, (conf).kstar, (conf).kstar, (conf).kstar, (conf).pt1, (conf).pt2, (conf).pt3}},
 
-#define TRIPLET_HIST_MC_MAP(conf)                              \
-  {kTrueQ3VsQ3, {conf.q3, conf.q3}},                           \
-    {kTrueMtVsMt, {conf.mt, conf.mt}},                         \
-    {kTrueMultVsMult, {conf.multiplicity, conf.multiplicity}}, \
-    {kTrueCentVsCent, {conf.centrality, conf.centrality}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define TRIPLET_HIST_MIXING_QA_MAP(confMixing)                                                                               \
+  {kSeNpart1VsNpart2VsNpart3, {(confMixing).particleBinning, (confMixing).particleBinning, (confMixing).particleBinning}},   \
+    {kMeMixingWindowRaw, {(confMixing).particleBinning}},                                                                    \
+    {kMeMixingWindowEffective, {(confMixing).particleBinning}},                                                              \
+    {kMeNpart1VsNpart2VsNpart3, {(confMixing).particleBinning, (confMixing).particleBinning, (confMixing).particleBinning}}, \
+    {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2VsVtz3VsMult3VsCent3, {(confMixing).vtxBins, (confMixing).multBins, (confMixing).centBins, (confMixing).vtxBins, (confMixing).multBins, (confMixing).centBins, (confMixing).vtxBins, (confMixing).multBins, (confMixing).centBins}},
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define TRIPLET_HIST_MC_TRUTH_MAP(conf)                    \
+  {kTrueQ3, {(conf).q3}},                                  \
+    {kTrueMt, {(conf).mt}},                                \
+    {kTrueKstar12, {(conf).kstar}},                        \
+    {kTrueKstar13, {(conf).kstar}},                        \
+    {kTrueKstar23, {(conf).kstar}},                        \
+    {kTruePt1VsTrueQ3, {(conf).pt1, (conf).q3}},           \
+    {kTruePt2VsTrueQ3, {(conf).pt2, (conf).q3}},           \
+    {kTruePt3VsTrueQ3, {(conf).pt3, (conf).q3}},           \
+    {kTrueQ3VsTrueMt, {(conf).q3, (conf).mt}},             \
+    {kTrueQ3VsTrueMult, {(conf).q3, (conf).multiplicity}}, \
+    {kTrueQ3VsTrueCent, {(conf).q3, (conf).centrality}},
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define TRIPLET_HIST_MC_MAP(conf)                                  \
+  {kTrueQ3VsQ3, {(conf).q3, (conf).q3}},                           \
+    {kTrueMtVsMt, {(conf).mt, (conf).mt}},                         \
+    {kTrueMultVsMult, {(conf).multiplicity, (conf).multiplicity}}, \
+    {kTrueCentVsCent, {(conf).centrality, (conf).centrality}},
 
 template <typename T1, typename T2>
 auto makeTripletHistSpecMap(T1 const& confPairBinning, T2 const& confMixing)
 {
   return std::map<TripletHist, std::vector<o2::framework::AxisSpec>>{
-    TRIPLET_HIST_ANALYSIS_MAP(confPairBinning, confMixing)};
+    TRIPLET_HIST_ANALYSIS_MAP(confPairBinning, confMixing)
+      TRIPLET_HIST_MIXING_QA_MAP(confMixing)};
 };
 
 template <typename T1, typename T2>
@@ -210,17 +276,32 @@ auto makeTripletMcHistSpecMap(T1 const& confPairBinning, T2 const& confMixing)
 {
   return std::map<TripletHist, std::vector<o2::framework::AxisSpec>>{
     TRIPLET_HIST_ANALYSIS_MAP(confPairBinning, confMixing)
-      TRIPLET_HIST_MC_MAP(confPairBinning)};
+      TRIPLET_HIST_MIXING_QA_MAP(confMixing)
+        TRIPLET_HIST_MC_MAP(confPairBinning)};
+};
+
+/// triplets of generated particles only (kMc without kReco)
+template <typename T1, typename T2>
+auto makeTripletMcTruthHistSpecMap(T1 const& confPairBinning, T2 const& confMixing)
+{
+  return std::map<TripletHist, std::vector<o2::framework::AxisSpec>>{
+    TRIPLET_HIST_MC_TRUTH_MAP(confPairBinning)
+      TRIPLET_HIST_MIXING_QA_MAP(confMixing)};
 };
 
 #undef TRIPLET_HIST_ANALYSIS_MAP
+#undef TRIPLET_HIST_MIXING_QA_MAP
 #undef TRIPLET_HIST_MC_MAP
+#undef TRIPLET_HIST_MC_TRUTH_MAP
 
 constexpr char PrefixTrackTrackTrackSe[] = "TrackTrackTrack/SE/";
 constexpr char PrefixTrackTrackTrackMe[] = "TrackTrackTrack/ME/";
 
 constexpr char PrefixTrackTrackLambdaSe[] = "TrackTrackLambda/SE/";
 constexpr char PrefixTrackTrackLambdaMe[] = "TrackTrackLambda/ME/";
+
+constexpr char PrefixMcParticleMcParticleMcParticleSe[] = "McParticleMcParticleMcParticle/SE/";
+constexpr char PrefixMcParticleMcParticleMcParticleMe[] = "McParticleMcParticleMcParticle/ME/";
 
 constexpr char PrefixTrackTrackCascadeSe[] = "TrackTrackCascade/SE/";
 constexpr char PrefixTrackTrackCascadeMe[] = "TrackTrackCascade/ME/";
@@ -229,7 +310,7 @@ constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
 constexpr std::string_view McDir = "MC/";
 
-template <const char* prefix,
+template <auto& prefix,
           modes::Particle particleType1,
           modes::Particle particleType2,
           modes::Particle particleType3>
@@ -260,6 +341,12 @@ class TripletHistManager
     mQ3Max = ConfTripletCuts.q3Max.value;
     mMtMin = ConfTripletCuts.mtMin.value;
     mMtMax = ConfTripletCuts.mtMax.value;
+    mKstar12Min = ConfTripletCuts.kstar12Min.value;
+    mKstar12Max = ConfTripletCuts.kstar12Max.value;
+    mKstar13Min = ConfTripletCuts.kstar13Min.value;
+    mKstar13Max = ConfTripletCuts.kstar13Max.value;
+    mKstar23Min = ConfTripletCuts.kstar23Min.value;
+    mKstar23Max = ConfTripletCuts.kstar23Max.value;
 
     mPlotPt1VsPt2VsPt3 = ConfTripletBinning.plotPt1VsPt2VsPt3.value;
     mPlotQ3VsPt1VsPt2VsPt3 = ConfTripletBinning.plotQ3VsPt1VsPt2VsPt3.value;
@@ -267,6 +354,7 @@ class TripletHistManager
     mPlotQ3VsMtVsMultVsCent = ConfTripletBinning.plotQ3VsMtVsMultVsCent.value;
     mPlotQ3VsMtVsPt1VsPt2VsPt3VsMult = ConfTripletBinning.plotQ3VsMtVsPt1VsPt2VsPt3VsMult.value;
     mPlotQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent = ConfTripletBinning.plotQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent.value;
+    mPlotQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3 = ConfTripletBinning.plotQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3.value;
 
     mPairCorrelationQa = ConfMixing.enablePairCorrelationQa.value;
     mEventMixingQa = ConfMixing.enableEventMixingQa.value;
@@ -275,8 +363,11 @@ class TripletHistManager
       initAnalysis(Specs);
     }
 
-    if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco) && isFlagSet(mode, modes::Mode::kMc)) {
       initMc(Specs);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kMc) && !isFlagSet(mode, modes::Mode::kReco)) {
+      initMcTruth(Specs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kSe)) {
       initSeMixingQa(Specs);
@@ -312,7 +403,11 @@ class TripletHistManager
     // set mT
     mMt = getMt(mParticle1, mParticle2, mParticle3);
     // set Q3
-    mQ3 = getQ3(mParticle1, mParticle2, mParticle3);
+    mQ3 = femtomath::getQ3(mParticle1, mParticle2, mParticle3);
+
+    mKstar12 = femtomath::getKstar(mParticle1, mParticle2);
+    mKstar13 = femtomath::getKstar(mParticle1, mParticle3);
+    mKstar23 = femtomath::getKstar(mParticle2, mParticle3);
 
     // if one of the particles has a mass getter, we cache the value for the filling later
     if constexpr (utils::HasMass<T1>) {
@@ -342,6 +437,51 @@ class TripletHistManager
     mCent = (col1.cent() + col2.cent() + col3.cent()) / 3.f; // if mixing with centrality, should be in the same mixing bin
   }
 
+  // pure mc-truth triplet: the particles ARE the truth, there is no reco counterpart.
+  // The mass is always the PDG mass here, and the pt needs no charge rescaling,
+  // since generated particles store the true pt.
+  template <typename T1, typename T2, typename T3>
+  void setTripletMcTruth(T1 const& particle1, T2 const& particle2, T3 const& particle3)
+  {
+    mTrueParticle1 = ROOT::Math::PtEtaPhiMVector(particle1.pt(), particle1.eta(), particle1.phi(), mPdgMass1);
+    mTrueParticle2 = ROOT::Math::PtEtaPhiMVector(particle2.pt(), particle2.eta(), particle2.phi(), mPdgMass2);
+    mTrueParticle3 = ROOT::Math::PtEtaPhiMVector(particle3.pt(), particle3.eta(), particle3.phi(), mPdgMass3);
+
+    mTrueMt = getMt(mTrueParticle1, mTrueParticle2, mTrueParticle3);
+    mTrueQ3 = femtomath::getQ3(mTrueParticle1, mTrueParticle2, mTrueParticle3);
+
+    // in the pure mc-truth path there is no reco counterpart, so the generated values are also
+    // stored in the reco members; they are used by getKinematic(), i.e. by the kinematic histograms
+    // of the triplet cleaner and of the close triplet rejection
+    mMt = mTrueMt;
+    mQ3 = mTrueQ3;
+
+    mTrueKstar12 = femtomath::getKstar(mTrueParticle1, mTrueParticle2);
+    mTrueKstar13 = femtomath::getKstar(mTrueParticle1, mTrueParticle3);
+    mTrueKstar23 = femtomath::getKstar(mTrueParticle2, mTrueParticle3);
+    mKstar12 = mTrueKstar12;
+    mKstar13 = mTrueKstar13;
+    mKstar23 = mTrueKstar23;
+  }
+
+  // same event: one (truth) collision for true mult/cent
+  template <typename T1, typename T2, typename T3, typename T4>
+  void setTripletMcTruth(T1 const& particle1, T2 const& particle2, T3 const& particle3, T4 const& col)
+  {
+    setTripletMcTruth(particle1, particle2, particle3);
+    mTrueMult = col.mult();
+    mTrueCent = col.cent();
+  }
+
+  // mixed event: three (truth) collisions, averaged mult/cent (same convention as setTriplet)
+  template <typename T1, typename T2, typename T3, typename T4>
+  void setTripletMcTruth(T1 const& particle1, T2 const& particle2, T3 const& particle3, T4 const& col1, T4 const& col2, T4 const& col3)
+  {
+    setTripletMcTruth(particle1, particle2, particle3);
+    mTrueMult = (col1.mult() + col2.mult() + col3.mult()) / 3.f;
+    mTrueCent = (col1.cent() + col2.cent() + col3.cent()) / 3.f;
+  }
+
   template <typename T1, typename T2, typename T3, typename T4>
   void setTripletMc(T1 const& particle1, T2 const& particle2, T3 const& particle3, const T4& /*mcParticles*/)
   {
@@ -355,14 +495,14 @@ class TripletHistManager
     auto mcParticle2 = particle2.template fMcParticle_as<T4>();
     auto mcParticle3 = particle3.template fMcParticle_as<T4>();
 
-    mTrueParticle1 = ROOT::Math::PtEtaPhiMVector(mAbsCharge1 * mcParticle1.pt(), mcParticle1.eta(), mcParticle1.phi(), mPdgMass1);
-    mTrueParticle2 = ROOT::Math::PtEtaPhiMVector(mAbsCharge2 * mcParticle2.pt(), mcParticle2.eta(), mcParticle2.phi(), mPdgMass2);
-    mTrueParticle3 = ROOT::Math::PtEtaPhiMVector(mAbsCharge3 * mcParticle3.pt(), mcParticle3.eta(), mcParticle3.phi(), mPdgMass3);
+    mTrueParticle1 = ROOT::Math::PtEtaPhiMVector(mcParticle1.pt(), mcParticle1.eta(), mcParticle1.phi(), mPdgMass1);
+    mTrueParticle2 = ROOT::Math::PtEtaPhiMVector(mcParticle2.pt(), mcParticle2.eta(), mcParticle2.phi(), mPdgMass2);
+    mTrueParticle3 = ROOT::Math::PtEtaPhiMVector(mcParticle3.pt(), mcParticle3.eta(), mcParticle3.phi(), mPdgMass3);
 
     // set true mT
     mTrueMt = getMt(mTrueParticle1, mTrueParticle2, mTrueParticle3);
     // set true Q3
-    mTrueQ3 = getQ3(mTrueParticle1, mTrueParticle2, mTrueParticle3);
+    mTrueQ3 = femtomath::getQ3(mTrueParticle1, mTrueParticle2, mTrueParticle3);
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
@@ -397,26 +537,80 @@ class TripletHistManager
     mTrueCent = (mcCol1.cent() + mcCol2.cent() + mcCol3.cent()) / 3.f;
   }
 
+  /// triplet cuts on the mc-truth values, for the pure mc-truth path (kMc without kReco),
+  /// where the reco values are never set
+  bool checkTripletCutsMcTruth() const
+  {
+    return (!(mQ3Min > 0.f) || mTrueQ3 > mQ3Min) &&
+           (!(mQ3Max > 0.f) || mTrueQ3 < mQ3Max) &&
+           (!(mMtMin > 0.f) || mTrueMt > mMtMin) &&
+           (!(mMtMax > 0.f) || mTrueMt < mMtMax) &&
+           (!(mKstar12Min > 0.f) || mTrueKstar12 > mKstar12Min) &&
+           (!(mKstar12Max > 0.f) || mTrueKstar12 < mKstar12Max) &&
+           (!(mKstar13Min > 0.f) || mTrueKstar13 > mKstar13Min) &&
+           (!(mKstar13Max > 0.f) || mTrueKstar13 < mKstar13Max) &&
+           (!(mKstar23Min > 0.f) || mTrueKstar23 > mKstar23Min) &&
+           (!(mKstar23Max > 0.f) || mTrueKstar23 < mKstar23Max);
+  }
+
   bool checkTripletCuts() const
   {
     return (!(mQ3Min > 0.f) || mQ3 > mQ3Min) &&
            (!(mQ3Max > 0.f) || mQ3 < mQ3Max) &&
            (!(mMtMin > 0.f) || mMt > mMtMin) &&
-           (!(mMtMax > 0.f) || mMt < mMtMax);
+           (!(mMtMax > 0.f) || mMt < mMtMax) &&
+           (!(mKstar12Min > 0.f) || mKstar12 > mKstar12Min) &&
+           (!(mKstar12Max > 0.f) || mKstar12 < mKstar12Max) &&
+           (!(mKstar13Min > 0.f) || mKstar13 > mKstar13Min) &&
+           (!(mKstar13Max > 0.f) || mKstar13 < mKstar13Max) &&
+           (!(mKstar23Min > 0.f) || mKstar23 > mKstar23Min) &&
+           (!(mKstar23Max > 0.f) || mKstar23 < mKstar23Max);
   }
 
   template <modes::Mode mode>
   void fill()
   {
+    // track the closest (minimum) Q3 among accepted triplets this event -- used by the dN/deta
+    // trigger (see dndetaBuilder.h) to tag its per-track entries with the triggering kinematic,
+    // independent of which mode (data/mc/mc-truth) accepted this particular triplet
+    if (mMinimumAcceptedQ3 < 0.f || mQ3 < mMinimumAcceptedQ3) {
+      mMinimumAcceptedQ3 = mQ3;
+    }
     if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       fillAnalysis();
     }
-    if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco) && isFlagSet(mode, modes::Mode::kMc)) {
       fillMc();
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kMc) && !isFlagSet(mode, modes::Mode::kReco)) {
+      fillMcTruth();
     }
   }
 
-  float getQ3() const { return mQ3; }
+  /// minimum Q3 among triplets accepted since the last resetTrackedParticlesPerEvent() call, or -1
+  /// if no triplet was accepted this event -- used by the dN/deta trigger (see dndetaBuilder.h)
+  [[nodiscard]] float getMinimumAcceptedQ3() const { return mMinimumAcceptedQ3; }
+
+  // kinematicVariable is supplied by the caller (CPR/triplet cleaner), each of which carries its
+  // own Configurable for it -- this manager has no opinion of its own on which variable to report.
+  // kstar has no single value for a triplet, so kKstar reports the average of the three pair kstars.
+  float getKinematic(modes::KinematicVariable kinematicVariable) const
+  {
+    switch (kinematicVariable) {
+      case modes::KinematicVariable::kKstar:
+        return (mKstar12 + mKstar13 + mKstar23) / 3.f;
+        break;
+      case modes::KinematicVariable::kMt:
+        return mMt;
+        break;
+      case modes::KinematicVariable::kQ3:
+        return mQ3;
+        break;
+      default:
+        LOG(fatal) << "Invalid kinematic Variable, breaking...";
+    }
+    return mQ3;
+  }
 
   template <typename T1, typename T2, typename T3>
   void trackParticlesPerEvent(T1 const& particle1, T2 const& particle2, T3 const& particle3)
@@ -448,6 +642,7 @@ class TripletHistManager
     mParticles2PerEvent.reserve(100);
     mParticles3PerEvent.clear();
     mParticles3PerEvent.reserve(100);
+    mMinimumAcceptedQ3 = -1.f;
   }
 
   void fillMixingQaSe()
@@ -473,34 +668,15 @@ class TripletHistManager
   }
 
  private:
-  ROOT::Math::PxPyPzEVector getqij(ROOT::Math::PxPyPzEVector const& vi, ROOT::Math::PxPyPzEVector const& vj)
-  {
-    auto trackSum = vi + vj;
-    auto trackDifference = vi - vj;
-    const double s = trackSum.M2();
-    const double scaling = (s != 0.0) ? (vi.M2() - vj.M2()) / s : 0.0;
-    return trackDifference - scaling * trackSum;
-  }
-
-  float getQ3(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2, ROOT::Math::PtEtaPhiMVector const& part3)
-  {
-    // upfront conversion to PxPyPzEVector
-    const ROOT::Math::PxPyPzEVector p1(part1);
-    const ROOT::Math::PxPyPzEVector p2(part2);
-    const ROOT::Math::PxPyPzEVector p3(part3);
-    auto q12 = getqij(p1, p2);
-    auto q23 = getqij(p2, p3);
-    auto q31 = getqij(p3, p1);
-    double q = q12.M2() + q23.M2() + q31.M2();
-    return static_cast<float>(std::sqrt(-q));
-  }
-
   void initAnalysis(std::map<TripletHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
     std::string analysisDir = std::string(prefix) + std::string(AnalysisDir);
     if (mPlot1d) {
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3, HistTable), getHistDesc(kQ3, HistTable), getHistType(kQ3, HistTable), {Specs.at(kQ3)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kMt, HistTable), getHistDesc(kMt, HistTable), getHistType(kMt, HistTable), {Specs.at(kMt)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar12, HistTable), getHistDesc(kKstar12, HistTable), getHistType(kKstar12, HistTable), {Specs.at(kKstar12)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar13, HistTable), getHistDesc(kKstar13, HistTable), getHistType(kKstar13, HistTable), {Specs.at(kKstar13)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar23, HistTable), getHistDesc(kKstar23, HistTable), getHistType(kKstar23, HistTable), {Specs.at(kKstar23)});
     }
     if (mPlot2d) {
       mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsQ3, HistTable), getHistDesc(kPt1VsQ3, HistTable), getHistType(kPt1VsQ3, HistTable), {Specs.at(kPt1VsQ3)});
@@ -529,6 +705,9 @@ class TripletHistManager
     }
     if (mPlotQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent) {
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent, HistTable), getHistDesc(kQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent, HistTable), getHistType(kQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent, HistTable), {Specs.at(kQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent)});
+    }
+    if (mPlotQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3, HistTable), getHistDesc(kQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3, HistTable), getHistType(kQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3, HistTable), {Specs.at(kQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3)});
     }
   }
 
@@ -562,11 +741,55 @@ class TripletHistManager
     }
   }
 
+  // pure mc-truth triplet (kMc without kReco) — reuses the mPlot1d/mPlot2d flags,
+  // since these are histogram-content flags, not mode flags
+  void initMcTruth(std::map<TripletHist, std::vector<o2::framework::AxisSpec>> const& Specs)
+  {
+    std::string mcDir = std::string(prefix) + std::string(McDir);
+    if (mPlot1d) {
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueQ3, HistTable), getHistDesc(kTrueQ3, HistTable), getHistType(kTrueQ3, HistTable), {Specs.at(kTrueQ3)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueMt, HistTable), getHistDesc(kTrueMt, HistTable), getHistType(kTrueMt, HistTable), {Specs.at(kTrueMt)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueKstar12, HistTable), getHistDesc(kTrueKstar12, HistTable), getHistType(kTrueKstar12, HistTable), {Specs.at(kTrueKstar12)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueKstar13, HistTable), getHistDesc(kTrueKstar13, HistTable), getHistType(kTrueKstar13, HistTable), {Specs.at(kTrueKstar13)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueKstar23, HistTable), getHistDesc(kTrueKstar23, HistTable), getHistType(kTrueKstar23, HistTable), {Specs.at(kTrueKstar23)});
+    }
+    if (mPlot2d) {
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTruePt1VsTrueQ3, HistTable), getHistDesc(kTruePt1VsTrueQ3, HistTable), getHistType(kTruePt1VsTrueQ3, HistTable), {Specs.at(kTruePt1VsTrueQ3)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTruePt2VsTrueQ3, HistTable), getHistDesc(kTruePt2VsTrueQ3, HistTable), getHistType(kTruePt2VsTrueQ3, HistTable), {Specs.at(kTruePt2VsTrueQ3)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTruePt3VsTrueQ3, HistTable), getHistDesc(kTruePt3VsTrueQ3, HistTable), getHistType(kTruePt3VsTrueQ3, HistTable), {Specs.at(kTruePt3VsTrueQ3)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueQ3VsTrueMt, HistTable), getHistDesc(kTrueQ3VsTrueMt, HistTable), getHistType(kTrueQ3VsTrueMt, HistTable), {Specs.at(kTrueQ3VsTrueMt)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueQ3VsTrueMult, HistTable), getHistDesc(kTrueQ3VsTrueMult, HistTable), getHistType(kTrueQ3VsTrueMult, HistTable), {Specs.at(kTrueQ3VsTrueMult)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueQ3VsTrueCent, HistTable), getHistDesc(kTrueQ3VsTrueCent, HistTable), getHistType(kTrueQ3VsTrueCent, HistTable), {Specs.at(kTrueQ3VsTrueCent)});
+    }
+  }
+
+  void fillMcTruth()
+  {
+    if (mPlot1d) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueQ3, HistTable)), mTrueQ3);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueMt, HistTable)), mTrueMt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueKstar12, HistTable)), mTrueKstar12);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueKstar13, HistTable)), mTrueKstar13);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueKstar23, HistTable)), mTrueKstar23);
+    }
+    if (mPlot2d) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTruePt1VsTrueQ3, HistTable)), mTrueParticle1.Pt(), mTrueQ3);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTruePt2VsTrueQ3, HistTable)), mTrueParticle2.Pt(), mTrueQ3);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTruePt3VsTrueQ3, HistTable)), mTrueParticle3.Pt(), mTrueQ3);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueQ3VsTrueMt, HistTable)), mTrueQ3, mTrueMt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueQ3VsTrueMult, HistTable)), mTrueQ3, mTrueMult);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueQ3VsTrueCent, HistTable)), mTrueQ3, mTrueCent);
+    }
+  }
+
   void fillAnalysis()
   {
     if (mPlot1d) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3, HistTable)), mQ3);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kMt, HistTable)), mMt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar12, HistTable)), mKstar12);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar13, HistTable)), mKstar13);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar23, HistTable)), mKstar23);
     }
     if (mPlot2d) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsQ3, HistTable)), mParticle1.Pt(), mQ3);
@@ -595,6 +818,9 @@ class TripletHistManager
     if (mPlotQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent, HistTable)), mQ3, mMt, mParticle1.Pt(), mParticle2.Pt(), mParticle3.Pt(), mMult, mCent);
     }
+    if (mPlotQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3, HistTable)), mQ3, mKstar12, mKstar13, mKstar23, mParticle1.Pt(), mParticle2.Pt(), mParticle3.Pt());
+    }
   }
 
   void fillMc()
@@ -609,33 +835,11 @@ class TripletHistManager
     }
   }
 
-  double getMt(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
-  {
-    auto sum = part1 + part2;
-    double mt = 0.;
-    double averageMass = 0.;
-    double reducedMass = 0.;
-    switch (mMtType) {
-      case modes::TransverseMassType::kAveragePdgMass:
-        averageMass = 0.5 * (part1.M() + part2.M());
-        mt = std::hypot(0.5 * sum.Pt(), averageMass);
-        break;
-      case modes::TransverseMassType::kReducedPdgMass:
-        reducedMass = 2. * (part1.M() * part2.M() / (part1.M() + part2.M()));
-        mt = std::hypot(0.5 * sum.Pt(), reducedMass);
-        break;
-      case modes::TransverseMassType::kMt4Vector:
-        mt = 0.5 * sum.Mt();
-        break;
-      default:
-        LOG(fatal) << "Invalid transverse mass type, breaking...";
-    }
-    return mt;
-  }
-
   float getMt(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2, ROOT::Math::PtEtaPhiMVector const& part3)
   {
-    return static_cast<float>((getMt(part1, part2) + getMt(part2, part3) + getMt(part1, part3)) / 3.);
+    // all three pairwise combinations are intentional, not a mixed-up argument order
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
+    return (femtomath::getMt(part1, part2, mMtType) + femtomath::getMt(part2, part3, mMtType) + femtomath::getMt(part1, part3, mMtType)) / 3.f;
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
@@ -648,23 +852,30 @@ class TripletHistManager
   int mAbsCharge1 = 1;
   int mAbsCharge2 = 1;
   int mAbsCharge3 = 1;
-  ROOT::Math::PtEtaPhiMVector mParticle1{};
-  ROOT::Math::PtEtaPhiMVector mParticle2{};
-  ROOT::Math::PtEtaPhiMVector mParticle3{};
+  ROOT::Math::PtEtaPhiMVector mParticle1;
+  ROOT::Math::PtEtaPhiMVector mParticle2;
+  ROOT::Math::PtEtaPhiMVector mParticle3;
   float mMass1 = 0.f;
   float mMass2 = 0.f;
   float mMass3 = 0.f;
   float mQ3 = 0.f;
+  float mMinimumAcceptedQ3 = -1.f; ///< minimum Q3 among triplets accepted this event, see getMinimumAcceptedQ3()
   float mMt = 0.f;
   float mMult = 0.f;
   float mCent = 0.f;
+  float mKstar12 = 0.f;
+  float mKstar13 = 0.f;
+  float mKstar23 = 0.f;
 
   // mc
-  ROOT::Math::PtEtaPhiMVector mTrueParticle1{};
-  ROOT::Math::PtEtaPhiMVector mTrueParticle2{};
-  ROOT::Math::PtEtaPhiMVector mTrueParticle3{};
+  ROOT::Math::PtEtaPhiMVector mTrueParticle1;
+  ROOT::Math::PtEtaPhiMVector mTrueParticle2;
+  ROOT::Math::PtEtaPhiMVector mTrueParticle3;
   float mTrueQ3 = 0.f;
   float mTrueMt = 0.f;
+  float mTrueKstar12 = 0.f;
+  float mTrueKstar13 = 0.f;
+  float mTrueKstar23 = 0.f;
   float mTrueMult = 0.f;
   float mTrueCent = 0.f;
 
@@ -675,6 +886,12 @@ class TripletHistManager
   float mQ3Max = -1.f;
   float mMtMin = -1.f;
   float mMtMax = -1.f;
+  float mKstar12Min = -1.f;
+  float mKstar12Max = -1.f;
+  float mKstar13Min = -1.f;
+  float mKstar13Max = -1.f;
+  float mKstar23Min = -1.f;
+  float mKstar23Max = -1.f;
 
   // flags
   bool mPlot1d = true;
@@ -686,16 +903,15 @@ class TripletHistManager
   bool mPlotQ3VsMtVsMultVsCent = false;
   bool mPlotQ3VsMtVsPt1VsPt2VsPt3VsMult = false;
   bool mPlotQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent = false;
+  bool mPlotQ3VsKstar12VsKstar13VsKstar23VsPt1VsPt2VsPt3 = false;
 
   // mixing qa
   bool mPairCorrelationQa = false;
   bool mEventMixingQa = false;
 
-  std::unordered_set<int64_t> mParticles1PerEvent = {};
-  std::unordered_set<int64_t> mParticles2PerEvent = {};
-  std::unordered_set<int64_t> mParticles3PerEvent = {};
+  std::unordered_set<int64_t> mParticles1PerEvent;
+  std::unordered_set<int64_t> mParticles2PerEvent;
+  std::unordered_set<int64_t> mParticles3PerEvent;
 };
-
-} // namespace triplethistmanager
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::triplethistmanager
 #endif // PWGCF_FEMTO_CORE_TRIPLETHISTMANAGER_H_

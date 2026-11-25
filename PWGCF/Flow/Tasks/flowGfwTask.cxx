@@ -646,8 +646,9 @@ struct FlowGfwTask {
 
   } // end of Initialization
 
-  template <char... chars>
-  void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
+  template <typename TName>
+    requires is_const_str<TName>::value
+  void fillProfile(const GFW::CorrConfig& corrconf, const TName& tarName, const double& cent)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -662,7 +663,7 @@ struct FlowGfwTask {
     return;
   }
 
-  void fillProfile(const GFW::CorrConfig& corrconf, std::shared_ptr<TProfile> tarName, const double& cent)
+  void fillProfile(const GFW::CorrConfig& corrconf, const std::shared_ptr<TProfile>& tarName, const double& cent)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -762,7 +763,7 @@ struct FlowGfwTask {
   }
 
   template <typename TCollision>
-  bool eventSelected(o2::aod::mult::MultNTracksPV, TCollision collision, const int multTrk, const float centrality)
+  bool eventSelected(o2::aod::mult::MultNTracksPV, const TCollision& collision, const int multTrk, const float centrality)
   {
     if (cfgNoTimeFrameBorder) {
       if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
@@ -867,7 +868,7 @@ struct FlowGfwTask {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track, const int field)
+  bool trackSelected(const TTrack& track, const int field)
   {
     double phimodn = track.phi();
     if (field < 0) // for negative polarity field
@@ -887,7 +888,7 @@ struct FlowGfwTask {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     if (cfgDCAzPt && (std::fabs(track.dcaZ()) > (0.004f + 0.013f / track.pt())))
       return false;

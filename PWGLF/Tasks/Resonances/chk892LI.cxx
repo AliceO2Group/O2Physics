@@ -16,7 +16,6 @@
 /// \author Su-Jeong Ji <su-jeong.ji@cern.ch>, Bong-Hwi Lim <Bong-Hwi.Lim@cern.ch>
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-// #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/collisionCuts.h"
 #include "PWGLF/Utils/inelGt.h"
 

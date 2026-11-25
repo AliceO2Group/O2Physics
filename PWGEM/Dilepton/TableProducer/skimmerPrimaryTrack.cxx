@@ -395,7 +395,7 @@ struct skimmerPrimaryTrack {
       if (!collision.isEoI()) { // events with at least 1 lepton for data reduction.
         continue;
       }
-      if (collision.swtaliastmp_raw() == 0) {
+      if (collision.triggerMask_raw() == 0) {
         continue;
       }
 

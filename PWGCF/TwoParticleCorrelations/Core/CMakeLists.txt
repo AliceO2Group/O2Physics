@@ -16,6 +16,7 @@ o2physics_add_library(TwoPartCorrCore
                                PIDSelectionFilterAndAnalysis.cxx
                                EventSelectionFilterAndAnalysis.cxx
                                FilterAndAnalysisFramework.cxx
+                               DihadronContainer.cxx
                       PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore)
 
 o2physics_target_root_dictionary(TwoPartCorrCore
@@ -25,4 +26,5 @@ o2physics_target_root_dictionary(TwoPartCorrCore
                                          PIDSelectionFilterAndAnalysis.h
                                          EventSelectionFilterAndAnalysis.h
                                          FilterAndAnalysisFramework.h
+                                         DihadronContainer.h
                                  LINKDEF TwoPartCorrLinkDef.h)

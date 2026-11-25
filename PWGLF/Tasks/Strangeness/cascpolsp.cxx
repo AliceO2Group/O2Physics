@@ -243,7 +243,7 @@ struct cascpolsp {
   }
 
   template <typename TCascade, typename collision_t>
-  bool IsCascAccepted(TCascade casc, collision_t collision)
+  bool IsCascAccepted(const TCascade& casc, const collision_t& collision)
   {
 
     if (casc.cascradius() < cfgcasc_radius)
@@ -423,7 +423,7 @@ struct cascpolsp {
       }
 
       int taga = LambdaTag;
-      int tagb = aLambdaTag;
+      int tagb{}; // = aLambdaTag; // FIXME: unused
 
       if (LambdaTag) {
         Lambda = Proton + AntiPion;

@@ -137,7 +137,7 @@ struct HfTaskDstarToD0Pi {
     if ((doprocessDataWoML && doprocessDataWML) || (doprocessMcWoMl && doprocessMcWML) || (doprocessDataWoML && doprocessMcWML) || (doprocessDataWML && doprocessMcWoMl)) {
       LOGP(fatal, "Only Without-ML or With-ML functions should be enabled at a time! Please check your configuration!");
     }
-    auto vecPtBins = (std::vector<double>)ptBins;
+    auto vecPtBins = std::vector<double>(ptBins);
 
     AxisSpec const axisImpactParam = {binningImpactParam, "impact parameter (cm)"};
     AxisSpec const axisDecayLength = {binningDecayLength, " decay length (cm)"};
@@ -334,10 +334,12 @@ struct HfTaskDstarToD0Pi {
       // inclusive D0ToPiKPi0 study
       if (doprocessMcWML && isCentStudy) {
         registry.add("D0ToPiKPi0/hDeltaInvMassVsPtVsCentVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs Cent Vs BDTScore for D0ToPiKPi0", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}, {axisD0Mass}}}, true);
+        registry.add("D0ToPiK/hDeltaInvMassVsPtVsCentVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs Cent Vs BDTScore for D0ToPiK", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}, {axisD0Mass}}}, true);
       } else if (doprocessMcWoMl && isCentStudy) {
         registry.add("D0ToPiKPi0/hDeltaInvMassDstar3D", "#Delta #it{M}_{inv} D* Candidate for D0ToPiKPi0; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); FT0M centrality", {HistType::kTH3F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}}}, true);
       } else if (doprocessMcWML && !isCentStudy) {
         registry.add("D0ToPiKPi0/hDeltaInvMassVsPtVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs BDTScore for D0ToPiKPi0", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}, {axisD0Mass}}}, true);
+        registry.add("D0ToPiK/hDeltaInvMassVsPtVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs BDTScore for D0ToPiK", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}, {axisD0Mass}}}, true);
       } else if (doprocessMcWoMl && !isCentStudy) {
         registry.add("D0ToPiKPi0/hDeltaInvMassDstar2D", "#Delta #it{M}_{inv} D* Candidate for D0ToPiKPi0; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
       }
@@ -418,7 +420,7 @@ struct HfTaskDstarToD0Pi {
   /// @param selectedCands selected candidates with selection flag
   /// @param preslice preslice to slice
   template <bool ApplyMl, typename T1, typename T2>
-  void runTaskDstar(CollisionsWCent const& cols, T1 selectedCands, T2 preslice)
+  void runTaskDstar(CollisionsWCent const& cols, const T1& selectedCands, const T2& preslice)
   {
     for (const auto& col : cols) {
       auto nPVContributors = col.numContrib();
@@ -590,10 +592,21 @@ struct HfTaskDstarToD0Pi {
             registry.fill(HIST("QA/hPtFullRecoDstarRecSig"), ptDstarRecSig);
           }
 
+          double deltaMDstar = -999.;
+          double invD0Mass = -999.;
+          if (candDstarMcRec.signSoftPi() < 0) {
+            deltaMDstar = candDstarMcRec.invMassAntiDstar() - candDstarMcRec.invMassD0Bar();
+            invD0Mass = candDstarMcRec.invMassD0Bar();
+          } else {
+            deltaMDstar = candDstarMcRec.invMassDstar() - candDstarMcRec.invMassD0();
+            invD0Mass = candDstarMcRec.invMassD0();
+          }
+
           if constexpr (ApplyMl) { // All efficiency histograms at reconstruction level w/ ml
             if (isCentStudy) {
               auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
               registry.fill(HIST("Efficiency/hPtVsCentVsBDTScoreVsPvContribRecSig"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2], nPVContributors, weightValue);
+              registry.fill(HIST("D0ToPiK/hDeltaInvMassVsPtVsCentVsBDTScore"), deltaMDstar, ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2], invD0Mass);
               if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt) {
                 registry.fill(HIST("Efficiency/hPtPromptVsCentVsBDTScorePvContribRecSig"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2], nPVContributors, ptShapeWeightValues[WeightType::Prompt]);
               } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
@@ -609,6 +622,7 @@ struct HfTaskDstarToD0Pi {
             } else {
               auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
               registry.fill(HIST("Efficiency/hPtVsBDTScoreRecSig"), ptDstarRecSig, bdtScore[0], bdtScore[1], bdtScore[2], weightValue);
+              registry.fill(HIST("D0ToPiK/hDeltaInvMassVsPtVsBDTScore"), deltaMDstar, ptDstarRecSig, bdtScore[0], bdtScore[1], bdtScore[2], invD0Mass);
               if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt) {
                 registry.fill(HIST("Efficiency/hPtPromptVsBDTScoreRecSig"), ptDstarRecSig, bdtScore[0], bdtScore[1], bdtScore[2], ptShapeWeightValues[WeightType::Prompt]);
               } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {

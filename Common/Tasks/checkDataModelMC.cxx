@@ -16,6 +16,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -56,7 +57,7 @@ void checkDaughters(const T& particlesMC,
     }
   }
   for (const auto& idxDau : particle.daughtersIds()) {
-    if (idxDau >= 0 && ((uint64_t)idxDau > offset + particlesMC.size() || (uint64_t)idxDau < offset)) {
+    if (idxDau >= 0 && (static_cast<uint64_t>(idxDau) > offset + particlesMC.size() || static_cast<uint64_t>(idxDau) < offset)) {
       if (debugMode) {
         debugHisto->Fill(1);
       } else {

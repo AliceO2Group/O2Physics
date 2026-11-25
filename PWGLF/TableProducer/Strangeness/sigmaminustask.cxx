@@ -35,13 +35,12 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <ReconstructionDataFormats/Track.h>
 
 #include <TH1.h>
 #include <TH2.h>
 #include <TPDGCode.h>
-
-#include <GPUROOTCartesianFwd.h>
 
 #include <array>
 #include <cmath>
@@ -49,6 +48,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <numeric>
+#include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -219,8 +219,8 @@ struct sigmaminustask {
     }
 
     // Cast configurables to std::vector
-    cast_mothPdgCodes = (std::vector<int>)mothPdgCodes;
-    cast_daugPdgCodes = (std::vector<int>)daugPdgCodes;
+    cast_mothPdgCodes = std::vector<int>(mothPdgCodes);
+    cast_daugPdgCodes = std::vector<int>(daugPdgCodes);
   }
 
   void initCCDB(aod::BCs::iterator const& bc)

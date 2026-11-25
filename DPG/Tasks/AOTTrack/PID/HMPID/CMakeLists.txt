@@ -20,7 +20,13 @@ o2physics_add_dpl_workflow(hmpid-table-producer
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::HMPIDBase
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hmpid-deuteron
-    SOURCES hmpidDeuteron.cxx
+o2physics_add_dpl_workflow(hmpid-abs-cross-section
+    SOURCES hmpidAbsCrossSection.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::ReconstructionDataFormats O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hmpid-cross-section-corrections
+    SOURCES hmpidCrossSectionCorrections.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::ReconstructionDataFormats O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+

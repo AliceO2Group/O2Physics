@@ -28,6 +28,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
@@ -73,12 +74,12 @@ struct HfTaskLcToK0sP {
 
   using TracksWPid = soa::Join<aod::TracksWExtra, aod::TracksPidPr>;
 
-  using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
-  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
-  using CollisionsMcWithFT0C = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>;
-  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
-  using CollisionsMcWithFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms>;
+  using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>;
+  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults>;
+  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs>;
+  using CollisionsMcWithFT0C = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::CentFT0Cs>;
+  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms>;
+  using CollisionsMcWithFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::CentFT0Ms>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToK0sP;
 

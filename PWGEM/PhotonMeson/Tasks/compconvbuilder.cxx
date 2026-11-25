@@ -38,6 +38,7 @@
 #include <THnSparse.h>
 #include <TPDGCode.h>
 
+#include <array>
 #include <cstdlib>
 #include <optional>
 #include <ranges>
@@ -83,11 +84,11 @@ struct Compconvbuilder {
     EMOnly = 2,
     LFOnly = 3,
     Common = 4,
-    NConversionBuilder
+    NConversionBuilder = 5
   };
 
-  static constexpr std::string_view kConversionBuilder[NConversionBuilder] = {"EMBuilder/", "LFBuilder/", "EMOnly/", "LFOnly/", "Common/"};
-  static constexpr std::string_view kEventTypes[2] = {"before/", "after/"};
+  static constexpr std::array<std::string_view, NConversionBuilder> kConversionBuilder = {"EMBuilder/", "LFBuilder/", "EMOnly/", "LFOnly/", "Common/"};
+  static constexpr std::array<std::string_view, 2> kEventTypes = {"before/", "after/"};
 
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -765,9 +766,7 @@ struct Compconvbuilder {
 
         registry.fill(HIST("truePhotons/Sparse_Converted"), d1.vx(), mc.y(), d1.vz(), r, mc.phi(), mc.eta(), mc.pt());
 
-        int id1 = mc2trk.count(d1.globalIndex()) ? mc2trk[d1.globalIndex()] : -1;
-        int id2 = mc2trk.count(d2.globalIndex()) ? mc2trk[d2.globalIndex()] : -1;
-        if (id1 < 0 || id2 < 0) {
+        if (!mc2trk.contains(d1.globalIndex()) || !mc2trk.contains(d2.globalIndex())) {
           continue;
         }
       }
@@ -795,8 +794,9 @@ struct Compconvbuilder {
     }
 
     for (const auto& collision : collisions) {
-      if (!fEMEventCut.IsSelected(collision))
+      if (!fEMEventCut.IsSelected(collision)) {
         continue;
+      }
 
       fillEventInfo<1, EMBuilder>(collision);
 
@@ -818,22 +818,25 @@ struct Compconvbuilder {
                        .emmcparticle_as<aod::EMMCParticles>();
         int pid = FindCommonMotherFrom2Prongs(posmc, negmc,
                                               kPositron, kElectron, kGamma, mcparticles);
-        if (pid >= 0)
+        if (pid >= 0) {
           table[pid].emIt = it;
+        }
       }
 
       for (LFIt it = lfSlice.begin(); it != lfSlice.end(); ++it) {
         int posTrackIndex = it.posTrackId();
         auto negTrackIndex = it.negTrackId();
 
-        if (!trackToMcLabel.count(posTrackIndex) || !trackToMcLabel.count(negTrackIndex))
+        if (!trackToMcLabel.contains(posTrackIndex) || !trackToMcLabel.contains(negTrackIndex)) {
           continue;
+        }
         auto posmc = mcparticles.iteratorAt(trackToMcLabel[posTrackIndex]);
         auto negmc = mcparticles.iteratorAt(trackToMcLabel[negTrackIndex]);
         int pid = FindCommonMotherFrom2Prongs(posmc, negmc,
                                               kPositron, kElectron, kGamma, mcparticles);
-        if (pid >= 0)
+        if (pid >= 0) {
           table[pid].lfIt = it;
+        }
       }
 
       for (auto const& [pid, entry] : table) {
@@ -872,7 +875,7 @@ struct Compconvbuilder {
   PROCESS_SWITCH(Compconvbuilder, processConvV0s, "Process generated converted V0s", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<Compconvbuilder>(cfg)};
+  return WorkflowSpec{adaptAnalysisTask<Compconvbuilder>(context)};
 }

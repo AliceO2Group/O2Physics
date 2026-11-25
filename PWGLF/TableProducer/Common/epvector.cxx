@@ -210,7 +210,7 @@ struct epvector {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const float& centrality)
+  bool eventSelected(const TCollision& collision, const float& centrality)
   {
     if (collision.alias_bit(kTVXinTRD)) {
       // TRD triggered                                                                                                                                                                                                                                                                                                               // return 0;

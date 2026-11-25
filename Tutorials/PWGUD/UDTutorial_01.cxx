@@ -109,7 +109,7 @@ struct UDTutorial01 {
       LOGF(info, "<UDTutorial01>   Number of tracks %d", dgtracks.size());
       LOGF(info, "<UDTutorial01>   Number of PV contributors %d", PVContributors.size());
     }
-    for (auto track : dgtracks) {
+    for (const auto& track : dgtracks) {
       registry.get<TH1>(HIST("tracks/QCAll"))->Fill(0., 1.);
       registry.get<TH1>(HIST("tracks/QCAll"))->Fill(1., track.hasITS() * 1.);
       registry.get<TH1>(HIST("tracks/QCAll"))->Fill(2., track.hasTPC() * 1.);

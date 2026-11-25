@@ -116,7 +116,7 @@ struct ExclusivePentaquark {
     int truegapSide = sgSelector.trueGap(collision, FV0_cut, FT0A_cut, FT0C_cut, ZDC_cut);
     registry.fill(HIST("GapSide"), gapSide);
     registry.fill(HIST("TrueGapSide"), truegapSide);
-    gapSide = truegapSide;
+    // gapSide = truegapSide;
     // if (gapSide != gap_Side) {
     //   return;
     // }
@@ -135,7 +135,7 @@ struct ExclusivePentaquark {
     std::vector<decltype(tracks.begin())> rawProtonTracks;
     std::vector<decltype(tracks.begin())> rawProtonTracksTOF;
 
-    for (auto trk : tracks) {
+    for (const auto& trk : tracks) {
       if (!trk.isPVContributor()) {
         continue;
       }

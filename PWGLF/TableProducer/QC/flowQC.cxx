@@ -40,6 +40,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 
 #include <TH2.h>
 #include <TMath.h>
@@ -47,8 +48,6 @@
 #include <TString.h>
 
 #include <fmt/format.h>
-
-#include <GPUROOTCartesianFwd.h>
 
 #include <array>
 #include <cmath>
@@ -179,7 +178,7 @@ struct flowQC {
     const AxisSpec centFT0mAxis{cfgCentralityBins, "FT0M percentile"};
     const AxisSpec centFV0aAxis{cfgCentralityBins, "FV0A percentile"};
 
-    const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", (std::string)centDetectorNames[cfgCentralityEstimator])};
+    const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", std::string(centDetectorNames[cfgCentralityEstimator]))};
 
     const char* qLabel = cfgQuadraticResponse ? "Q^{2}" : "Q";
 

@@ -29,13 +29,13 @@
 #include <vector>
 
 void o2::upgrade::convertTLorentzVectorToO2Track(const int charge,
-                                                 const TLorentzVector particle,
-                                                 const std::vector<double> productionVertex,
+                                                 const TLorentzVector& particle,
+                                                 const std::vector<double>& productionVertex,
                                                  o2::track::TrackParCov& o2track)
 {
-  std::array<float, 5> params;
+  std::array<float, 5> params = {0.};
   std::array<float, 15> covm = {0.};
-  float s, c, x;
+  float s{}, c{}, x{};
   o2::math_utils::sincos(static_cast<float>(particle.Phi()), s, c);
   o2::math_utils::rotateZInv(static_cast<float>(productionVertex[0]), static_cast<float>(productionVertex[1]), x, params[0], s, c);
   params[1] = static_cast<float>(productionVertex[2]);
@@ -48,20 +48,20 @@ void o2::upgrade::convertTLorentzVectorToO2Track(const int charge,
   new (&o2track)(o2::track::TrackParCov)(x, particle.Phi(), params, covm);
 }
 
-float o2::upgrade::computeParticleVelocity(float momentum, float mass)
+float o2::upgrade::computeParticleVelocity(const float momentum, const float mass)
 {
   const float a = momentum / mass;
   // uses light speed in cm/ps so output is in those units
   return o2::constants::physics::LightSpeedCm2PS * a / std::sqrt((1.f + a * a));
 }
 
-float o2::upgrade::computeTrackLength(o2::track::TrackParCov track, float radius, float magneticField)
+float o2::upgrade::computeTrackLength(const o2::track::TrackParCov& track, const float radius, const float magneticField)
 {
   // don't make use of the track parametrization
   float length = -100;
 
   o2::math_utils::CircleXYf_t trcCircle;
-  float sna, csa;
+  float sna{}, csa{};
   track.getCircleParams(magneticField, trcCircle, sna, csa);
 
   // distance between circle centers (one circle is at origin -> easy)
@@ -69,8 +69,6 @@ float o2::upgrade::computeTrackLength(o2::track::TrackParCov track, float radius
 
   // condition of circles touching - if not satisfied returned length will be -100
   if (centerDistance < trcCircle.rC + radius && centerDistance > std::fabs(trcCircle.rC - radius)) {
-    length = 0.0f;
-
     // base radical direction
     const float ux = trcCircle.xC / centerDistance;
     const float uy = trcCircle.yC / centerDistance;
@@ -87,17 +85,17 @@ float o2::upgrade::computeTrackLength(o2::track::TrackParCov track, float radius
                                                        (centerDistance + trcCircle.rC + radius));
 
     // possible intercept points of track and TOF layer in 2D plane
-    const float point1[2] = {radical * ux + displace * vx, radical * uy + displace * vy};
-    const float point2[2] = {radical * ux - displace * vx, radical * uy - displace * vy};
+    const std::array<float, 2> point1 = {radical * ux + displace * vx, radical * uy + displace * vy};
+    const std::array<float, 2> point2 = {radical * ux - displace * vx, radical * uy - displace * vy};
 
     // decide on correct intercept point
-    std::array<float, 3> mom;
+    std::array<float, 3> mom{};
     track.getPxPyPzGlo(mom);
     const float scalarProduct1 = point1[0] * mom[0] + point1[1] * mom[1];
     const float scalarProduct2 = point2[0] * mom[0] + point2[1] * mom[1];
 
     // get start point
-    std::array<float, 3> startPoint;
+    std::array<float, 3> startPoint{};
     track.getXYZGlo(startPoint);
 
     float cosAngle = -1000, modulus = -1000;

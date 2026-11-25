@@ -30,11 +30,10 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
-
-#include <GPUROOTCartesianFwd.h>
 
 #include <cstdlib>
 #include <string>

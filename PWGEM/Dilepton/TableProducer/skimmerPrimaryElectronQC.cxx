@@ -68,7 +68,7 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
 using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 
 using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
-                           aod::pidTPCFullEl, /*aod::pidTPCFullMu,*/ aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                            aod::pidTOFFullEl, /*aod::pidTOFFullMu,*/ aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 using MyTrack = MyTracks::iterator;
 using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels, aod::mcTPCTuneOnData>;
@@ -161,8 +161,8 @@ struct skimmerPrimaryElectronQC {
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   o2::analysis::MlResponseO2Track<float> mlResponseSingleTrack;
 
-  int mRunNumber;
-  float d_bz;
+  int mRunNumber{0};
+  float d_bz{0};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
@@ -288,9 +288,9 @@ struct skimmerPrimaryElectronQC {
         cutsMlArr[i][0] = 0.0;
         cutsMlArr[i][1] = cutsMl.value[i];
       }
-      o2::framework::LabeledArray<double> cutsMl = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
+      o2::framework::LabeledArray<double> cutsMltmp = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
 
-      mlResponseSingleTrack.configure(binsMl.value, cutsMl, cutDirMl, nClassesMl);
+      mlResponseSingleTrack.configure(binsMl.value, cutsMltmp, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdburl);
         mlResponseSingleTrack.setModelPathsCCDB(onnxFileNames.value, ccdbApi, onnxPathsCCDB.value, bc.timestamp());
@@ -536,7 +536,7 @@ struct skimmerPrimaryElectronQC {
                        dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
                        track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusPID(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
                        track.tpcChi2NCl(), track.tpcInnerParam(),
-                       track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                       track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                        track.beta(), track.tofNSigmaEl(), /*track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),*/
                        track.itsClusterSizes(),
                        track.itsChi2NCl(), track.tofChi2(), track.detectorMap(),
@@ -614,6 +614,7 @@ struct skimmerPrimaryElectronQC {
       fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/hTPCdEdxMC"), track.tpcInnerParam(), mcTunedTPCSignal);
       fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
+      fRegistry.fill(HIST("Track/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
       fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
       fRegistry.fill(HIST("Track/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
       fRegistry.fill(HIST("Track/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
@@ -724,7 +725,7 @@ struct skimmerPrimaryElectronQC {
         continue;
       }
 
-      if (collision.swtaliastmp_raw() == 0) {
+      if (collision.triggerMask_raw() == 0) {
         continue;
       }
 

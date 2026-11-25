@@ -13,6 +13,7 @@
 /// \brief Task for analysing D0 triggered jet events.
 /// \author Matthew Ockleton matthew.ockleton@cern.ch, University of Liverpool
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
@@ -20,22 +21,30 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/Logger.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <string>
-#include <type_traits>
-#include <vector>
+#include <Rtypes.h>
 
-#include <math.h>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+namespace hf2Prong = o2::hf_decay::hf_cand_2prong;
 namespace o2::aod
 {
 
@@ -78,8 +87,7 @@ DECLARE_SOA_COLUMN(D0MD, d0MD, float);
 DECLARE_SOA_COLUMN(D0PtD, d0PtD, float);
 DECLARE_SOA_COLUMN(D0EtaD, d0EtaD, float);
 DECLARE_SOA_COLUMN(D0PhiD, d0PhiD, float);
-DECLARE_SOA_COLUMN(D0MatchedFrom, d0MatchedFrom, int);
-DECLARE_SOA_COLUMN(D0SelectedAs, d0SelectedAs, int);
+DECLARE_SOA_COLUMN(D0Category, d0Category, int);
 DECLARE_SOA_COLUMN(D0DecayChannel, d0DecayChannel, int8_t);
 } // namespace d0Info
 
@@ -106,9 +114,7 @@ DECLARE_SOA_TABLE(D0McDTables, "AOD", "D0MCDTABLE",
                   d0Info::D0Eta,
                   d0Info::D0Phi,
                   d0Info::D0Y,
-                  d0Info::D0MatchedFrom,
-                  d0Info::D0SelectedAs,
-                  d0Info::D0DecayChannel);
+                  d0Info::D0Category);
 
 DECLARE_SOA_TABLE(D0McPTables, "AOD", "D0MCPTABLE",
                   o2::soa::Index<>,
@@ -248,7 +254,7 @@ struct JetCorrelationD0 {
   }
   void init(InitContext const&)
   {
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
     // General Axes
     AxisSpec axisEta = {100, -1.0, 1.0, "#eta"};
     AxisSpec axisPhi = {100, 0.0, o2::constants::math::TwoPI, "#phi"};
@@ -285,6 +291,15 @@ struct JetCorrelationD0 {
     registry.add("hPhiResolution", "#phi resolution;#p_{T,part};Resolution", {HistType::kTH2F, {{400, 0, 400}, {1000, -7.0, 7.0}}});
     registry.add("hEtaResolution", "#eta resolution;#p_{T,part};Resolution", {HistType::kTH2F, {{400, 0, 400}, {1000, -1.0, 1.0}}});
   }
+  enum D0McCategory : int {
+    Undefined = -1,     // no truth match / unclassified
+    Signal = 0,         // correctly identified D0 and (bar), π+ K− + cc
+    Reflection = 1,     // true D0(bar) reconstructed with swapped mass hypothesis
+    CorrBkgPiKPi0 = 2,  // correlated background: π+ K− π0
+    CorrBkgPiPi = 3,    // correlated background: π+ π−
+    CorrBkgPiPiPi0 = 4, // correlated background: π+ π− π0
+    CorrBkgKK = 5       // correlated background: K+ K−
+  };
   void processData(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                    aod::CandidatesD0Data const& d0Candidates,
                    soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
@@ -349,16 +364,30 @@ struct JetCorrelationD0 {
 
       int matchedFrom = 0;
       int selectedAs = 0;
+      int category = D0McCategory::Undefined;
 
       if (d0DecayChannel > 0) { // matched to a D0 on truth level (any channel)
         matchedFrom = 1;
       } else if (d0DecayChannel < 0) { // matched to a D0bar on truth level (any channel)
         matchedFrom = -1;
       }
-      if (d0Candidate.candidateSelFlag() & BIT(0)) { // CandidateSelFlag == BIT(0) -> selected as D0
+      if ((d0Candidate.candidateSelFlag() & BIT(0)) != 0) { // CandidateSelFlag == BIT(0) -> selected as D0
         selectedAs = 1;
-      } else if (d0Candidate.candidateSelFlag() & BIT(1)) { // CandidateSelFlag == BIT(1) -> selected as D0bar
+      } else if ((d0Candidate.candidateSelFlag() & BIT(1)) != 0) { // CandidateSelFlag == BIT(1) -> selected as D0bar
         selectedAs = -1;
+      }
+      if ((std::abs(d0DecayChannel) == hf2Prong::DecayChannelMain::D0ToPiK) && (matchedFrom != 0) && (selectedAs == matchedFrom)) {
+        category = D0McCategory::Signal; // D0 or D0bar, π+ K−
+      } else if ((std::abs(d0DecayChannel) == hf2Prong::DecayChannelMain::D0ToPiK) && (matchedFrom != 0) && (selectedAs == -1 * matchedFrom)) {
+        category = D0McCategory::Reflection;
+      } else if (std::abs(d0DecayChannel) == hf2Prong::DecayChannelMain::D0ToPiKPi0) {
+        category = D0McCategory::CorrBkgPiKPi0;
+      } else if (std::abs(d0DecayChannel) == hf2Prong::DecayChannelMain::D0ToPiPi) {
+        category = D0McCategory::CorrBkgPiPi;
+      } else if (std::abs(d0DecayChannel) == hf2Prong::DecayChannelMain::D0ToPiPiPi0) {
+        category = D0McCategory::CorrBkgPiPiPi0;
+      } else if (std::abs(d0DecayChannel) == hf2Prong::DecayChannelMain::D0ToKK) {
+        category = D0McCategory::CorrBkgKK;
       }
 
       tableD0McDetector(tableCollision.lastIndex(), // might want to add some more detector level D0 quantities like prompt or non prompt info
@@ -370,9 +399,7 @@ struct JetCorrelationD0 {
                         d0Candidate.eta(),
                         d0Candidate.phi(),
                         d0Candidate.y(),
-                        matchedFrom,
-                        selectedAs,
-                        d0DecayChannel);
+                        category);
       for (const auto& jet : jets) {
         if (jet.pt() < jetPtCutMin) {
           continue;
@@ -448,11 +475,7 @@ struct JetCorrelationD0 {
       if (d0Candidate.pt() < d0PtCutMin) { // once settled on a mlcut, then add the lower bound of the systematics as a cut here
         continue;
       }
-      bool isMatched = false;
-      const auto& d0Particle = jethfutilities::matchedHFParticle(d0Candidate, tracks, particles, isMatched);
-      if (!isMatched) {
-        continue;
-      }
+      const auto& d0Particle = jethfutilities::matchedHFParticle(d0Candidate, tracks, particles);
       for (const auto& McDJet : McDJets) {
         if (McDJet.pt() < jetPtCutMin) {
           continue;

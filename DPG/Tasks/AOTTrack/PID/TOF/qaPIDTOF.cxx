@@ -379,7 +379,7 @@ struct tofPidQa {
     int evtimeflag = 0;
 
     if constexpr (fillHistograms) {
-      for (auto t : tracks) {
+      for (const auto& t : tracks) {
         if (!t.hasTOF()) { // Skipping tracks without TOF
           continue;
         }
@@ -529,7 +529,7 @@ struct tofPidQa {
                soa::Filtered<TrackCandidates> const& tracks)
   {
     isEventSelected<true>(collision, tracks);
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       isTrackSelected<true>(collision, t);
     }
   }
@@ -543,7 +543,7 @@ struct tofPidQa {
       return;
     }
 
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       if (!isTrackSelected<false>(collision, t)) {
         continue;
       }

@@ -103,9 +103,9 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   using FilteredFDCollision = FilteredFDCollisions::iterator;
 
   /// Partitioning for particle 1
-  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == trackconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < trackconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackconfigs.confLPtPart1);
-  Partition<FemtoFullParticles> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < trackconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackconfigs.confLPtPart1);
-  Partition<FemtoRecoParticles> partsOneMCReco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == trackconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < trackconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackconfigs.confLPtPart1);
+  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == trackconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < trackconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackconfigs.confLPtPart1);
+  Partition<FemtoFullParticles> partsOneMC = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < trackconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackconfigs.confLPtPart1);
+  Partition<FemtoRecoParticles> partsOneMCReco = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == trackconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < trackconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackconfigs.confLPtPart1);
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 3> trackHistoPartOnePos;
@@ -131,10 +131,10 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   } V0configs;
 
   /// Partitioning for particle 2
-  Partition<FemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
-  Partition<FemtoFullParticles> partsTwoMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
-  Partition<FemtoRecoParticles> partsTwoMCReco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
-  Partition<FemtoTruthParticles> partsTwoMCTruth = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
+  Partition<FemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
+  Partition<FemtoFullParticles> partsTwoMC = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
+  Partition<FemtoRecoParticles> partsTwoMCReco = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
+  Partition<FemtoTruthParticles> partsTwoMCTruth = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
 
   /// Histogramming for particle 2
   /// Track-V0
@@ -471,7 +471,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
   /// This function processes the same event for Track-V0
   template <bool confIsMC, typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
-  void doSameEvent(FilteredFDCollision const& col, PartType const& parts, PartitionType& groupPartsOne, PartitionType& groupPartsTwo, int helRange, [[maybe_unused]] MCParticles mcParts = nullptr)
+  void doSameEvent(FilteredFDCollision const& col, PartType const& parts, PartitionType& groupPartsOne, PartitionType& groupPartsTwo, int helRange, [[maybe_unused]] const MCParticles& mcParts = nullptr)
   {
     const auto& magFieldTesla = col.magField();
 
@@ -864,10 +864,10 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
   /// This function processes the mixed event for track - V0
   template <typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
-  void doMixedEvent(FilteredFDCollisions const& cols, PartType const& parts, PartitionType& partitionOne, PartitionType& partitionTwo, int helRange, [[maybe_unused]] MCParticles mcParts = nullptr)
+  void doMixedEvent(FilteredFDCollisions const& cols, PartType const& parts, PartitionType& partitionOne, PartitionType& partitionTwo, int helRange, [[maybe_unused]] const MCParticles& mcParts = nullptr)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
       const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();
@@ -1000,8 +1000,8 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   /// This function processes the mixed event for V0 - V0
   void processMixedEventV0(FilteredFDCollisions const& cols, FemtoFullParticles const& parts)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
       const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();
@@ -1068,8 +1068,8 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   /// This function processes MC mixed events for Track - V0
   void processMCMixedEvent(FilteredFDCollisions const& cols, FemtoFullParticles const& parts)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
       const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();
@@ -1116,8 +1116,8 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   /// This function processes MC mixed events for V0 - V0
   void processMCMixedEventV0(FilteredFDCollisions const& cols, FemtoFullParticles const& /*parts*/)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
       const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();
@@ -1159,7 +1159,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     eventHisto.fillQA(col);
     auto groupPartsTwo = partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     for (const auto& part : groupPartsTwo) {
-      if (part.partType() != uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack))
+      if (part.partType() != static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack))
         continue;
 
       int pdgCode = static_cast<int>(part.tempFitVar());

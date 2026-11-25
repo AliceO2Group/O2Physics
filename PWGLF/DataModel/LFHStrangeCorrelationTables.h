@@ -29,6 +29,8 @@
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
+#include <cstdint>
+
 // Simple checker
 #define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
@@ -43,8 +45,9 @@ DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);       // true ph
 DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Trigger"); //!
 DECLARE_SOA_COLUMN(MCOriginalPt, mcOriginalPt, float);                // true generated pt
 DECLARE_SOA_COLUMN(IsLeading, isLeading, bool);                       // is leading track in the event
+DECLARE_SOA_COLUMN(MCMask, mcMask, uint16_t);                         // MC mask of the MC particle
 } // namespace triggerTracks
-DECLARE_SOA_TABLE(TriggerTracks, "AOD", "TRIGGERTRACKS", o2::soa::Index<>, triggerTracks::CollisionId, triggerTracks::MCPhysicalPrimary, triggerTracks::TrackId, triggerTracks::MCOriginalPt, triggerTracks::IsLeading);
+DECLARE_SOA_TABLE(TriggerTracks, "AOD", "TRIGGERTRACKS", o2::soa::Index<>, triggerTracks::CollisionId, triggerTracks::MCPhysicalPrimary, triggerTracks::TrackId, triggerTracks::MCOriginalPt, triggerTracks::IsLeading, triggerTracks::MCMask);
 namespace triggerTrackExtras
 {
 DECLARE_SOA_COLUMN(Extra, extra, int); // true physical primary flag
@@ -59,8 +62,9 @@ DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);     // true phys
 DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Assoc"); //!
 DECLARE_SOA_COLUMN(MCOriginalPt, mcOriginalPt, float);              // true generated pt
 DECLARE_SOA_COLUMN(PDGCode, pdgCode, float);                        // pdg code of the MC particle
+DECLARE_SOA_COLUMN(MCMask, mcMask, uint16_t);                       // MC mask of the MC particle
 } // namespace assocHadrons
-DECLARE_SOA_TABLE(AssocHadrons, "AOD", "ASSOCHADRONS", o2::soa::Index<>, assocHadrons::CollisionId, assocHadrons::MCPhysicalPrimary, assocHadrons::TrackId, assocHadrons::MCOriginalPt, assocHadrons::PDGCode);
+DECLARE_SOA_TABLE(AssocHadrons, "AOD", "ASSOCHADRONS", o2::soa::Index<>, assocHadrons::CollisionId, assocHadrons::MCPhysicalPrimary, assocHadrons::TrackId, assocHadrons::MCOriginalPt, assocHadrons::PDGCode, assocHadrons::MCMask);
 /// _________________________________________
 /// Table for storing assoc track PID
 namespace assocPID

@@ -1,0 +1,4469 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+/// \file lambdaProtonBalanceFunction.cxx
+/// \brief Single- and two-particle density correlations (rho1, rho2) and R2 correlations for Lambda-proton, proton-proton and Lambda-Lambda pairs (plus antiparticle combinations) to measure the balance function.
+/// \author Anoop Poruthiyil <anoop.poruthiyil@cern.ch>
+
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/EndOfStreamContext.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TAxis.h>
+#include <TFile.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TList.h>
+#include <TMath.h>
+#include <TPDGCode.h>
+#include <TString.h>
+
+#include <algorithm>
+#include <array>
+#include <cinttypes>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <ios>
+#include <locale>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
+using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
+                           aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl,
+                           aod::pidTOFPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFEl,
+                           aod::pidTOFbeta, aod::TrackSelection, aod::TrackCompColls>;
+// MC-labelled versions used by processMCEfficiency and processMCRecBF.
+using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels>;
+using MyV0sMC = soa::Join<aod::V0Datas, aod::McV0Labels>;
+
+namespace
+{
+float displayDeltaPhi(float dPhi)
+{
+  return RecoDecay::constrainAngle(dPhi, -o2::constants::math::PI / 2.0f);
+}
+} // namespace
+
+// Per-centrality-bin histogram set. Defined at file scope (NOT inside the task struct),
+// otherwise O2's struct reflection in adaptAnalysisTask fails to compile.
+struct CentRho2Set {
+  // y space
+  std::shared_ptr<TH2> Lp_y, LAp_y, ALp_y, ALAp_y, pp_y, pAp_y, App_y, ApAp_y, LL_y, LAL_y, ALL_y, ALAL_y;
+  // rho1 y
+  std::shared_ptr<TH2> rho1_Proton_y, rho1_AntiProton_y, rho1_Lambda_y, rho1_AntiLambda_y;
+  // event counter
+  std::shared_ptr<TH1> hEvents;
+};
+
+struct LambdaProtonBalanceFunction {
+  HistogramRegistry registryLambda{"Lambda_invMass", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registryRho{"rho1ANDrho2_LP", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registryCent{"rho1ANDrho2_LP_CentralityBased", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registryOther{"Other_Hists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registryPid{"PID", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registryQaDetector{"QA_Detec", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registryProtonPidCheck{"ProtonCounts_byPID_Check", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registryCorrelationQA{"CorrelationQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  // ── Dedicated registry for V0-daughter veto importance QA ─────────────
+  // Folder: ProtonVetoQA/
+  // Contains per-event distributions of N_before, N_after, N_removed, fraction.
+  HistogramRegistry registryProtonVetoQA{"ProtonVetoQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  // MC efficiency maps (Gen*/Rec* TH3: x=cent, y=pT, z=y), filled only by processMCEfficiency. Folder: Efficiency/
+  HistogramRegistry registryEff{"Efficiency", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registryCorrInputs{"CombinedCorrectionInputs", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
+  // ════════════════════════════════════════════════════════════════════════
+  // TaskState — ordinary C++ runtime/implementation state.
+  // Grouped into ONE nested object so that the number of direct data members of
+  // this task struct stays well below the O2 StructToTuple / structured-binding
+  // reflection limit. Contains NO O2 Framework objects (no Configurable,
+  // ConfigurableAxis, Filter, HistogramRegistry): those must remain top-level.
+  // ════════════════════════════════════════════════════════════════════════
+  struct TaskState {
+    // pT bins 0.6 → 3.6 in steps of 0.2 (used for per-bin pT-spectra / mass histograms)
+    std::vector<float> ptEdges;
+
+    // ════════════════════════════════════════════════════════════════════════
+    // SECTION A — Invariant mass histograms
+    // ════════════════════════════════════════════════════════════════════════
+    std::shared_ptr<TH2> hMassLambdaVsPt;
+    std::shared_ptr<TH2> hMassAntiLambdaVsPt;
+    std::shared_ptr<TH1> hMassLambdaMerged;
+    std::shared_ptr<TH1> hMassAntiLambdaMerged;
+
+    // ════════════════════════════════════════════════════════════════════════
+    // SECTION C — rho2 rapidity-space histograms, filled with unrolledIndexY(y, phi).
+    //   Naming: hRho2_<channel>_y_AllPt.
+    // ════════════════════════════════════════════════════════════════════════
+    // Lambda–proton family (y)
+    std::shared_ptr<TH2> hRho2_Lp_y_AllPt;
+    std::shared_ptr<TH2> hRho2_LAp_y_AllPt;
+    std::shared_ptr<TH2> hRho2_ALp_y_AllPt;
+    std::shared_ptr<TH2> hRho2_ALAp_y_AllPt;
+    // Proton–proton family (y)
+    std::shared_ptr<TH2> hRho2_pp_y_AllPt;
+    std::shared_ptr<TH2> hRho2_pAp_y_AllPt;
+    std::shared_ptr<TH2> hRho2_App_y_AllPt;
+    std::shared_ptr<TH2> hRho2_ApAp_y_AllPt;
+    // Lambda–Lambda family (y)
+    std::shared_ptr<TH2> hRho2_LL_y_AllPt;
+    std::shared_ptr<TH2> hRho2_LAL_y_AllPt;
+    std::shared_ptr<TH2> hRho2_ALL_y_AllPt;
+    std::shared_ptr<TH2> hRho2_ALAL_y_AllPt;
+
+    // SECTION E — centrality-differential storage (struct CentRho2Set is defined above the task)
+    std::vector<CentRho2Set> centSets;
+    std::vector<float> centEdgesLocal;
+
+    // ════════════════════════════════════════════════════════════════════════
+    // SECTION D — pT-spectra and pair-count monitoring histograms
+    // ════════════════════════════════════════════════════════════════════════
+    std::shared_ptr<TH2> hPtPrimProtonVsLambdaPt;
+    std::shared_ptr<TH2> hPtPrimAntiProtonVsLambdaPt;
+    std::shared_ptr<TH2> hPtPrimProtonVsAntiLambdaPt;
+    std::shared_ptr<TH2> hPtPrimAntiProtonVsAntiLambdaPt;
+
+    std::shared_ptr<TH1> hPtSelectedPrimProton_AllPt;
+    std::shared_ptr<TH1> hPtSelectedPrimAntiProton_AllPt;
+    std::shared_ptr<TH1> hPtSelLambda_AllPt;
+    std::shared_ptr<TH1> hPtSelAntiLambda_AllPt;
+
+    // ── PID-check histograms (ProtonCounts_byPID_Check) ───────────────────
+    std::shared_ptr<TH1> h_TPC;
+    std::shared_ptr<TH1> h_TPCandTOF;
+    std::shared_ptr<TH1> h_TPCorTOF;
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── Run-level accumulators for proton-veto importance QA ─────────────
+    // These are summed over all processed events and printed in endOfStream().
+    // They quantify how much Lambda feed-down was removed from the proton
+    // sample before constructing future Balance Functions.
+    int64_t runTotalProtonBeforeVeto = 0;  ///< sum of N_before_veto over all events
+    int64_t runTotalProtonRemovedVeto = 0; ///< sum of N_removed_by_veto over all events
+    int64_t runTotalAntiPBeforeVeto = 0;   ///< antiproton: sum of N_before_veto
+    int64_t runTotalAntiPRemovedVeto = 0;  ///< antiproton: sum of N_removed_by_veto
+
+    // Runtime copies populated from Configurables in init().
+    // Not static, not constexpr — values are known only after O2 delivers the config.
+    int mRhoPhiBins = 0;
+    int mRhoYBins = 0;
+    int mRhoUnrolledBinsY = 0; // mRhoYBins * mRhoPhiBins
+    float mRhoYMin = 0.f;
+    float mRhoYMax = 0.f;
+    // Centrality range of the analysis = first and last edge of cCentBins (set in init()).
+    float mCentMin = 0.f;
+    float mCentMax = 0.f;
+
+    // Multiplicative weight maps (TH3: x=cent, y=pt, z=y); loaded once in init() when cApplyEffCorr is true
+    TH3* invEffL = nullptr;
+    TH3* invEffAL = nullptr;
+    TH3* invEffP = nullptr;
+    TH3* invEffAP = nullptr;
+
+    // Species order: Lambda, AntiLambda, Proton, AntiProton.
+    // Input order: Stage1, Stage2, Stage3, GenPrimary. Stage3 IS the numerator.
+    std::array<std::array<std::shared_ptr<TH3>, 4>, 4> correctionInputs;
+    std::shared_ptr<TH1> correctionMetadata;
+    bool correctionMetadataRecorded = false;
+    std::shared_ptr<TH2> correctionInputQA;
+  };
+
+  TaskState state;
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+
+  // ─────────────────────────────────────────────────────────────────────
+
+  // ── Configurables ─────────────────────────────────────────────────────
+
+  Configurable<float> cPPandV0ZVertexCut{"cPPandV0ZVertexCut", 10.0f, "Accepted z-vertex range (cm)"};
+  Configurable<bool> cRequireSel8{"cRequireSel8", true, "Require sel8 in data and matched MC events"};
+  Configurable<bool> cPileupReject{"cPileupReject", false, "Reject same-bunch pileup (kNoSameBunchPileup)"};
+  Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", false, "Require FT0 vs PV z-vertex agreement (kIsGoodZvtxFT0vsPV)"};
+  Configurable<bool> cIsGoodITSLayers{"cIsGoodITSLayers", true, "Require all ITS layers good (kIsGoodITSLayersAll)"};
+  Configurable<bool> cFillQinvQA{"cFillQinvQA", false, "Book and fill q_inv and associated close-pair QA histograms"};
+  Configurable<bool> cUseQinvCut{"cUseQinvCut", false, "Apply q_inv > cQinvCutValue pair cut (false = no q_inv rejection)"};
+  Configurable<float> cQinvCutValue{"cQinvCutValue", 0.1f, "q_inv cut value (GeV/c)"};
+  Configurable<int> cQinvQABins{"cQinvQABins", 100, "Number of bins for QA q_inv histograms"};
+  Configurable<float> cQinvQAMax{"cQinvQAMax", 2.0f, "Max q_inv for QA histograms (GeV/c)"};
+  Configurable<bool> cFillCentHists{"cFillCentHists", true, "Fill centrality-differential rho1/rho2 histograms in separate rho1ANDrho2_LP_CentralityBased folder"};
+  Configurable<bool> cUseFT0C{"cUseFT0C", false, "Use FT0C instead of FT0M as centrality estimator"};
+  ConfigurableAxis cCentBins{"cCentBins", {VARIABLE_WIDTH, 0.f, 20.f, 50.f, 80.f}, "Centrality bins (%)"};
+  Configurable<bool> cApplyEffCorr{"cApplyEffCorr", false, "Weight rho1/rho2 by 1/efficiency"};
+  Configurable<std::string> cEffFile{"cEffFile", "", "ROOT file with hInvEff_Lambda, hInvEff_AntiLambda, hInvEff_Proton, hInvEff_AntiProton (TH3: x=cent, y=pt, z=y). Used only if cEffCcdbPath is empty"};
+  Configurable<std::string> cEffCcdbPath{"cEffCcdbPath", "", "Single CCDB TList of hInvEff_* multiplicative weights (inverse efficiency or precomputed combined weights); takes precedence over cEffFile"};
+  Configurable<std::string> cCcdbUrl{"cCcdbUrl", "http://alice-ccdb.cern.ch", "CCDB URL"};
+  Configurable<int64_t> cEffCcdbTimestamp{"cEffCcdbTimestamp", 1700000000000, "CCDB timestamp (ms) used to fetch the efficiency maps (must lie inside the object validity)"};
+
+  // Track quality cuts
+  Configurable<int> pProtonTPCMinRows{"pProtonTPCMinRows", 70, "Minimum TPC crossed rows"};
+  Configurable<float> pProtonTPCMinRowsOverFindable{"pProtonTPCMinRowsOverFindable", 0.8f, "Min TPC crossed rows / findable clusters"};
+  Configurable<float> pProtonTPCMaxChi2PerCluster{"pProtonTPCMaxChi2PerCluster", 4.0f, "Max TPC chi2 / Ncls"};
+  Configurable<int> pProtonITSMinClusters{"pProtonITSMinClusters", 5, "Minimum ITS clusters"};
+  Configurable<float> pProtonITSMaxChi2PerCluster{"pProtonITSMaxChi2PerCluster", 36.0f, "Max ITS chi2 / Ncls"};
+  Configurable<float> cPPMinTpcSignal{"cPPMinTpcSignal", 10.0f, "Min raw TPC signal (sanity cut)"};
+  // DCA cuts
+  Configurable<float> pProtonMaxDCAxy{"pProtonMaxDCAxy", 0.02f, "Max |DCAxy| (cm)"}; // tight cut for cleanest primary-proton sample
+  Configurable<float> pProtonMaxDCAz{"pProtonMaxDCAz", 0.1f, "Max |DCAz| (cm)"};
+
+  Configurable<float> pProtonTPCTOFSwitchPt{"pProtonTPCTOFSwitchPt", 0.7f, "pT threshold (GeV/c) above which TOF is used if available"};
+  // Configurable<float> cPPMinTofBeta{"cPPMinTofBeta", 0.4f, "Min TOF beta for proton selection (TOF branch only)"}; //BETACUTCommented
+  // Configurable<float> cPPMaxTofBeta{"cPPMaxTofBeta", 0.96f, "Max TOF beta for proton selection (TOF branch only)"}; //BETACUTCommented
+
+  // V0 topology cuts + V0 DCA Cuts
+  Configurable<float> cV0MaxDcaDaughters{"cV0MaxDcaDaughters", 1.0f, "DCA V0 daughters < (cm)"};
+  Configurable<float> lambdaV0DaughterProtonMinDCAToPV{"lambdaV0DaughterProtonMinDCAToPV", 0.05f, "DCA proton daughter to PV > (cm)"};
+  Configurable<float> lambdaV0DaughterPionMinDCAToPV{"lambdaV0DaughterPionMinDCAToPV", 0.06f, "DCA pion daughter to PV > (cm)"};
+  Configurable<double> lambdaV0MinCosPA{"lambdaV0MinCosPA", 0.995, "V0 CosPA >"};
+  Configurable<float> lambdaV0MinDecayRadius{"lambdaV0MinDecayRadius", 0.5f, "V0 radius > (cm)"};
+  Configurable<float> cV0MaxDcaToPV{"cV0MaxDcaToPV", 0.1f, "DCA V0 to PV < (cm)"};
+
+  // PID cuts
+  Configurable<float> lambdaV0DaughterPionTPCNsigma{"lambdaV0DaughterPionTPCNsigma", 2.0f, "lambdaV0DaughterPionTPCNsigma"};
+  Configurable<float> pProtonTPCNsigma{"pProtonTPCNsigma", 2.0f, "pProtonTPCNsigma"};
+  Configurable<float> lambdaV0DaughterProtonTPCNsigma{"lambdaV0DaughterProtonTPCNsigma", 2.0f, "lambdaV0DaughterProtonTPCNsigma"};
+  Configurable<float> pProtonTOFNsigma{"pProtonTOFNsigma", 2.0f, "pProtonTOFNsigma"};
+
+  // Contaminant veto for primary (anti)protons: reject track if compatible with pi/K/e
+  Configurable<bool> cUseContaminantVeto{"cUseContaminantVeto", true, "Reject primary (anti)protons compatible with pi/K/e hypotheses"};
+  Configurable<bool> cVetoUseTOF{"cVetoUseTOF", true, "Also apply TOF veto whenever the track has TOF"};
+  Configurable<float> pProtonVetoPionNsigma{"pProtonVetoPionNsigma", 2.0f, "Reject if |nSigma_pi| < this"};
+  Configurable<float> pProtonVetoKaonNsigma{"pProtonVetoKaonNsigma", 2.0f, "Reject if |nSigma_K| < this"};
+  Configurable<float> pProtonVetoElectronNsigma{"pProtonVetoElectronNsigma", 2.0f, "Reject if |nSigma_e| < this"};
+
+  // // V0 daughter beta cuts (particle-dependent) //BETACUTCommented
+  // Configurable<float> cV0protonDauMinBeta{"cV0protonDauMinBeta", 0.4f, "Min TOF beta for (anti)proton V0 daughter"}; //BETACUTCommented
+  // Configurable<float> cV0protonDauMaxBeta{"cV0protonDauMaxBeta", 0.98f, "Max TOF beta for (anti)proton V0 daughter"}; //BETACUTCommented
+  // Configurable<float> cV0pionDauMinBeta{"cV0pionDauMinBeta", 0.91f, "Min TOF beta for (anti)pion V0 daughter"}; //BETACUTCommented
+  // ─────────────────────────────────────────────────────────────────────
+
+  // Proton Kinematic Cuts (from strange9)
+  Configurable<float> pProtonMinPt{"pProtonMinPt", 0.5f, "Min pT for primary protons (GeV/c)"};
+  Configurable<float> pProtonMaxPt{"pProtonMaxPt", 3.6f, "Max pT for primary protons (GeV/c)"};
+
+  Configurable<float> pProtonMaxY{"pProtonMaxY", 0.49f, "Max |y| for primary protons"};
+
+  // Lambda Kinematic Cuts (from strange9)
+  Configurable<float> lambdaV0MinPt{"lambdaV0MinPt", 0.60f, "Min pT for Lambdas"};
+  Configurable<float> lambdaV0MaxPt{"lambdaV0MaxPt", 3.60f, "Max pT for Lambdas"};
+  Configurable<float> lambdaV0MaxY{"lambdaV0MaxY", 0.5f, "Max |y| for Lambdas"};
+
+  // V0 Mass and Topology Cuts (from strange9)
+  Configurable<float> lambdaV0MaxCTau{"lambdaV0MaxCTau", 30.0f, "Max V0 ctau (cm)"};
+  Configurable<float> lambdaV0KShortRejectMassWindow{"lambdaV0KShortRejectMassWindow", 0.01f, "K0s rejection window"};
+  Configurable<float> lambdaV0MassWindow{"lambdaV0MassWindow", 0.007f, "Lambda mass window (|m - mPDG| < this)"};
+
+  // V0 Type and Daughter Quality Cuts (from strange9)
+  Configurable<int> cV0TypeSelection{"cV0TypeSelection", 1, "V0 Type Selection"};
+  Configurable<float> cV0DauMinPt{"cV0DauMinPt", 0.1f, "Daughter pT minimum"};
+  Configurable<float> cV0DauMaxEta{"cV0DauMaxEta", 0.8f, "Daughter |eta| cut"};
+  Configurable<int> cV0DauMinTpcCrossedRows{"cV0DauMinTpcCrossedRows", 70, "Daughter TPC min crossed rows"};
+  // New selection switches and the assignment slope use reference source defaults; set production values in Hyperloop.
+  // Set both existing daughter TPC-nsigma controls to the same value for a common PID threshold.
+  Configurable<float> lambdaV0ArmSlope{"lambdaV0ArmSlope", 0.2f, "Assign Lambda when alpha > 0 and qt < slope * abs(alpha); otherwise AntiLambda"};
+  Configurable<bool> lambdaV0RejectAmbiguousDaughters{"lambdaV0RejectAmbiguousDaughters", false, "Reject daughters with multiple or inconsistent compatible collisions"};
+  Configurable<bool> lambdaV0RequirePrimaryMC{"lambdaV0RequirePrimaryMC", false, "Require a physical-primary MC label before V0 shared-daughter cleaning"};
+  Configurable<bool> lambdaV0RequireLambdaMC{"lambdaV0RequireLambdaMC", false, "Require abs(MC PDG) == PDG_t::kLambda0 before V0 shared-daughter cleaning"};
+  Configurable<bool> lambdaV0KeepSharedCandidates{"lambdaV0KeepSharedCandidates", false, "Accept every selected V0, including shared daughters"};
+  Configurable<bool> lambdaV0RejectSharedCandidates{"lambdaV0RejectSharedCandidates", true, "Accept only non-sharing V0s unless lambdaV0KeepSharedCandidates is enabled"};
+  // Preserve the existing efficiency pT axis unless a matching runtime axis is supplied.
+  ConfigurableAxis lambdaEffPtAxis{"lambdaEffPtAxis", {60, 0.0, 6.0}, "Lambda/AntiLambda generated and reconstructed efficiency pT bins"};
+  // ── Rho1/Rho2 grid — configurable at runtime (Hyperloop-friendly) ────────
+  // These replace the former static constexpr k* constants.  Default values
+  // reproduce the original hardcoded grid (y: 10×72).
+  Configurable<int> cRhoPhiBins{"cRhoPhiBins", 36, "Number of phi bins for rho1/rho2"};
+  Configurable<int> cRhoYBins{"cRhoYBins", 24, "Number of y bins for rho1/rho2"};
+  Configurable<float> cRhoYMin{"cRhoYMin", -0.5f, "Min y for rho1/rho2"};
+  Configurable<float> cRhoYMax{"cRhoYMax", 0.5f, "Max y for rho1/rho2"};
+  // ─────────────────────────────────────────────────────────────────────────
+
+  void buildPtBins()
+  {
+    state.ptEdges.clear();
+    static constexpr int kNPtEdges = 16; // 0.6, 0.8, ..., 3.6 GeV/c (15 bins)
+    static constexpr float kPtEdgeMin = 0.6f;
+    static constexpr float kPtEdgeStep = 0.2f;
+    for (int i = 0; i < kNPtEdges; ++i) {
+      state.ptEdges.push_back(kPtEdgeMin + kPtEdgeStep * static_cast<float>(i));
+    }
+  }
+
+  int phiBinIndex(float phi) const
+  {
+    constexpr float phiMin = 0.0f;
+    constexpr float phiMax = o2::constants::math::TwoPI;
+    if (phi < phiMin || phi >= phiMax) {
+      return -1;
+    }
+    const float binWidth = (phiMax - phiMin) / state.mRhoPhiBins;
+    return static_cast<int>((phi - phiMin) / binWidth);
+  }
+
+  int yBinIndex(float y) const
+  {
+    if (y < state.mRhoYMin || y >= state.mRhoYMax) {
+      return -1;
+    }
+    const float binWidth = (state.mRhoYMax - state.mRhoYMin) / state.mRhoYBins;
+    return static_cast<int>((y - state.mRhoYMin) / binWidth);
+  }
+
+  int unrolledIndexY(float y, float phi) const
+  {
+    const int iY = yBinIndex(y);
+    const int iPhi = phiBinIndex(phi);
+    if (iY < 0 || iPhi < 0) {
+      return -1;
+    }
+    return iY * state.mRhoPhiBins + iPhi;
+  }
+
+  // Convenience wrappers with particle-specific masses
+  static constexpr float kMassProton = o2::constants::physics::MassProton;
+  static constexpr float kMassLambda = o2::constants::physics::MassLambda;
+
+  template <typename T>
+  float protonRapidity(T const& track) const
+  {
+    return RecoDecay::y(std::array<float, 3>{track.px(), track.py(), track.pz()}, kMassProton);
+  }
+
+  // k* = |p*| of one particle in the pair rest frame, from four-momenta.
+  float computeKstar(float px1, float py1, float pz1, float m1,
+                     float px2, float py2, float pz2, float m2) const
+  {
+    const float E1 = std::sqrt(px1 * px1 + py1 * py1 + pz1 * pz1 + m1 * m1);
+    const float E2 = std::sqrt(px2 * px2 + py2 * py2 + pz2 * pz2 + m2 * m2);
+    const float sx = px1 + px2;
+    const float sy = py1 + py2;
+    const float sz = pz1 + pz2;
+    const float sE = E1 + E2;
+    const float s = sE * sE - sx * sx - sy * sy - sz * sz;
+    if (s <= 0.f) {
+      return 0.f;
+    }
+    // k*^2 = [ (s - (m1+m2)^2)(s - (m1-m2)^2) ] / (4 s)
+    const float a = s - (m1 + m2) * (m1 + m2);
+    const float b = s - (m1 - m2) * (m1 - m2);
+    return std::sqrt(std::max(a * b, 0.f) / (4.f * s));
+  }
+
+  // ── Femtoscopic q_inv computation ────────────────────────────────────────
+  // Returns q_inv = sqrt( -(p1 - p2)^2 ) in natural units (GeV/c).
+  // E1 and E2 must be computed by the caller using the appropriate mass
+  // hypothesis for each track:
+  //   - primary proton:  E = sqrt(p^2 + kMassProton^2)
+  //   - V0 (Lambda leg): E = sqrt(p^2 + kMassLambda^2)
+  float computeQinv(float px1, float py1, float pz1, float E1,
+                    float px2, float py2, float pz2, float E2) const
+  {
+    const float dE = E1 - E2;
+    const float dpx = px1 - px2;
+    const float dpy = py1 - py2;
+    const float dpz = pz1 - pz2;
+    const float q2 = dE * dE - dpx * dpx - dpy * dpy - dpz * dpz;
+    // q2 should be <= 0 for physical pairs; protect sqrt from numerical noise
+    return std::sqrt(std::max(-q2, 0.0f));
+  }
+
+  // true => pair is rejected by the q_inv cut (never true when the cut is switched off)
+  bool failsQinvCut(float qinv) const
+  {
+    return cUseQinvCut.value && (qinv <= cQinvCutValue.value);
+  }
+
+  // QA-only: true => pair would survive the q_inv cut, regardless of the cUseQinvCut master switch.
+  // Used for ALL "After_qinvCut" QA histograms (PP, pAp, App, ApAp, LP-family, LL-family) so they always show the mathematical effect of the cut.
+  // Physics logic must keep using failsQinvCut().
+  bool passesQinvQA(float qinv) const { return qinv > cQinvCutValue.value; }
+
+  // Returns the active centrality estimator's percentile for this collision,
+  // selected at runtime via cUseFT0C (false = FT0M, true = FT0C).
+  template <typename TCollision>
+  float getCentrality(TCollision const& col) const
+  {
+    return cUseFT0C.value ? col.centFT0C() : col.centFT0M();
+  }
+
+  // Extra event selection switches (all default false = no extra cut).
+  // sel8 and |posZ| are NOT handled here: they stay as the Filters of processData and as the explicit check in processMCEfficiency.
+  template <typename TCollision>
+  bool passesExtraEventSelection(TCollision const& col) const
+  {
+    if (cPileupReject.value && !col.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+    if (cZVtxTimeDiff.value && !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+    if (cIsGoodITSLayers.value && !col.selection_bit(aod::evsel::kIsGoodITSLayersAll)) {
+      return false;
+    }
+    return true;
+  }
+
+  // Returns index of centrality bin for cent, or -1 if outside all bins.
+  int centBinIndex(float cent) const
+  {
+    for (size_t i = 0; i + 1 < state.centEdgesLocal.size(); ++i) {
+      if (cent >= state.centEdgesLocal[i] && cent < state.centEdgesLocal[i + 1]) {
+        return static_cast<int>(i);
+      }
+    }
+    return -1;
+  }
+
+  // Fill helper: fills h (if valid) at (a,b) only when both indices are in range.
+  static void fillIdx(std::shared_ptr<TH2> const& h, int a, int b, float w = 1.f)
+  {
+    if (h && a >= 0 && b >= 0) {
+      h->Fill(a + 0.5f, b + 0.5f, w);
+    }
+  }
+
+  // The caller retains the original half-open pT-bin selection and bin >= 0
+  // guard. Fill the selected Y-bin center to preserve that decision exactly.
+  // ProjectionX(name, bin + 1, bin + 1) recovers its old 1D spectrum, including
+  // X flow bins. Y moments describe bin centers, not individual V0 momenta.
+  // ROOT recomputes projection entries/moments; these need not match old TH1 metadata.
+  static void fillPtSlice(std::shared_ptr<TH2> const& h, int bin, double x)
+  {
+    h->Fill(x, h->GetYaxis()->GetBinCenter(bin + 1));
+  }
+
+  // Use the TH3 bin content directly as weight (x=cent, y=pt, z=y). 1 when correction is off.
+  // (TH3* non-const: TH1::FindBin is a non-const method.)
+  float getEffWeight(TH3* h, float cent, float pt, float y) const
+  {
+    if (!cApplyEffCorr.value || !h) {
+      return 1.f;
+    }
+    const float v = h->GetBinContent(h->FindBin(cent, pt, y));
+    return v > 0.f ? v : 0.f; // 0 means: particle is dropped (no efficiency info)
+  }
+  // ─────────────────────────────────────────────────────────────────────
+
+  static constexpr std::array<const char*, 4> kCorrectionSpecies = {"Lambda", "AntiLambda", "Proton", "AntiProton"};
+  static constexpr std::array<const char*, 4> kCorrectionInputs = {"hStage1_", "hStage2_", "hStage3_", "hGenPrimary_"};
+  static constexpr size_t LambdaSpeciesCount = 2;
+  static constexpr int MetadataBitsPerByte = 8;
+
+  // Exact serialized contract, including every configurable affecting the new
+  // selection. MC-only V0 filters are deliberately absent: data ignores them.
+  // Bump the version if the selector, target, association or PID logic changes.
+  std::string correctionContract() const
+  {
+    std::ostringstream out;
+    out.imbue(std::locale::classic());
+    out << std::hexfloat
+        << "CombinedCorr-v2|PDG=3122,-3122,2212,-2212|dataV0-noTruth-beforeCleaning"
+        << "|assignedArmHypothesis|unionSharedCleaning|precleanDaughterVeto"
+        << "|oneMatchedRecoCollision|sel8-recoZ-extraFlags|noINEL-contributor-centCut"
+        << "|N2=usableLabel-sameCollision-signedPDG|N3=N2-physicalPrimary"
+        << "|G=physicalPrimary-LambdaHasDaughters-noDecayChannel-noProtonVeto"
+        << "|N=recoPt-speciesY|G=truthPt-LambdaStoredY-protonMassY"
+        << "|weights=PfOverEff|pairFactorization|flowInvalid";
+    const auto add = [&](const char* name, auto value) { out << '|' << name << '=' << value; };
+    add("cPPandV0ZVertexCut", cPPandV0ZVertexCut.value);
+    add("cRequireSel8", cRequireSel8.value);
+    add("cPileupReject", cPileupReject.value);
+    add("cZVtxTimeDiff", cZVtxTimeDiff.value);
+    add("cIsGoodITSLayers", cIsGoodITSLayers.value);
+    add("cUseFT0C", cUseFT0C.value);
+    add("pProtonTPCMinRows", pProtonTPCMinRows.value);
+    add("pProtonTPCMinRowsOverFindable", pProtonTPCMinRowsOverFindable.value);
+    add("pProtonTPCMaxChi2PerCluster", pProtonTPCMaxChi2PerCluster.value);
+    add("pProtonITSMinClusters", pProtonITSMinClusters.value);
+    add("pProtonITSMaxChi2PerCluster", pProtonITSMaxChi2PerCluster.value);
+    add("cPPMinTpcSignal", cPPMinTpcSignal.value);
+    add("pProtonMaxDCAxy", pProtonMaxDCAxy.value);
+    add("pProtonMaxDCAz", pProtonMaxDCAz.value);
+    add("pProtonTPCTOFSwitchPt", pProtonTPCTOFSwitchPt.value);
+    add("pProtonTPCNsigma", pProtonTPCNsigma.value);
+    add("pProtonTOFNsigma", pProtonTOFNsigma.value);
+    add("cUseContaminantVeto", cUseContaminantVeto.value);
+    add("cVetoUseTOF", cVetoUseTOF.value);
+    add("pProtonVetoPionNsigma", pProtonVetoPionNsigma.value);
+    add("pProtonVetoKaonNsigma", pProtonVetoKaonNsigma.value);
+    add("pProtonVetoElectronNsigma", pProtonVetoElectronNsigma.value);
+    add("pProtonMinPt", pProtonMinPt.value);
+    add("pProtonMaxPt", pProtonMaxPt.value);
+    add("pProtonMaxY", pProtonMaxY.value);
+    add("cV0MaxDcaDaughters", cV0MaxDcaDaughters.value);
+    add("lambdaV0DaughterProtonMinDCAToPV", lambdaV0DaughterProtonMinDCAToPV.value);
+    add("lambdaV0DaughterPionMinDCAToPV", lambdaV0DaughterPionMinDCAToPV.value);
+    add("lambdaV0MinCosPA", lambdaV0MinCosPA.value);
+    add("lambdaV0MinDecayRadius", lambdaV0MinDecayRadius.value);
+    add("cV0MaxDcaToPV", cV0MaxDcaToPV.value);
+    add("lambdaV0DaughterPionTPCNsigma", lambdaV0DaughterPionTPCNsigma.value);
+    add("lambdaV0DaughterProtonTPCNsigma", lambdaV0DaughterProtonTPCNsigma.value);
+    add("lambdaV0MinPt", lambdaV0MinPt.value);
+    add("lambdaV0MaxPt", lambdaV0MaxPt.value);
+    add("lambdaV0MaxY", lambdaV0MaxY.value);
+    add("lambdaV0MaxCTau", lambdaV0MaxCTau.value);
+    add("lambdaV0KShortRejectMassWindow", lambdaV0KShortRejectMassWindow.value);
+    add("lambdaV0MassWindow", lambdaV0MassWindow.value);
+    add("cV0TypeSelection", cV0TypeSelection.value);
+    add("cV0DauMinPt", cV0DauMinPt.value);
+    add("cV0DauMaxEta", cV0DauMaxEta.value);
+    add("cV0DauMinTpcCrossedRows", cV0DauMinTpcCrossedRows.value);
+    add("lambdaV0ArmSlope", lambdaV0ArmSlope.value);
+    add("lambdaV0RejectAmbiguousDaughters", lambdaV0RejectAmbiguousDaughters.value);
+    add("lambdaV0KeepSharedCandidates", lambdaV0KeepSharedCandidates.value);
+    add("lambdaV0RejectSharedCandidates", lambdaV0RejectSharedCandidates.value);
+    add("cUseQinvCut", cUseQinvCut.value);
+    add("cQinvCutValue", cQinvCutValue.value);
+    add("cRhoPhiBins", cRhoPhiBins.value);
+    for (size_t species = 0; species < kCorrectionSpecies.size(); ++species) {
+      out << '|' << kCorrectionSpecies[species];
+      const auto& h = state.correctionInputs[species][0];
+      for (auto const& axis : {h->GetXaxis(), h->GetYaxis(), h->GetZaxis()}) {
+        out << '|';
+        if (axis->GetXbins()->GetSize() == 0) {
+          // Serialize the uniform-axis definition: calculated edges can differ
+          // by floating-point rounding between worker platforms.
+          out << "U," << axis->GetNbins() << ','
+              << axis->GetXmin() << ',' << axis->GetXmax() << ',';
+        } else {
+          // Variable axes have explicit stored edges; preserve them exactly.
+          out << "V," << axis->GetNbins() << ',';
+          for (int i = 0; i < axis->GetXbins()->GetSize(); ++i) {
+            out << axis->GetXbins()->At(i) << ',';
+          }
+        }
+      }
+    }
+    return out.str();
+  }
+
+  static bool correctionCoordinatesInRange(TH3 const& h, double cent, double pt, double y)
+  {
+    return std::isfinite(cent) && std::isfinite(pt) && std::isfinite(y) &&
+           cent >= h.GetXaxis()->GetXmin() && cent < h.GetXaxis()->GetXmax() &&
+           pt >= h.GetYaxis()->GetXmin() && pt < h.GetYaxis()->GetXmax() &&
+           y >= h.GetZaxis()->GetXmin() && y < h.GetZaxis()->GetXmax();
+  }
+
+  // Produce mergeable raw counts and metadata for the external correction macro.
+  // Apply its precomputed weights through cApplyEffCorr using hInvEff_* maps.
+  void initCorrectionInputs()
+  {
+    if (!doprocessMCEfficiency.value) {
+      return;
+    }
+    auto& inputs = registryCorrInputs;
+    const AxisSpec axCent(cCentBins, "centrality (%)");
+    const AxisSpec axLambdaPt(lambdaEffPtAxis, "pT (GeV/c)");
+    const AxisSpec axProtonPt{60, 0., 6., "pT (GeV/c)"};
+    const AxisSpec axY{cRhoYBins.value, cRhoYMin.value, cRhoYMax.value, "y"};
+    for (size_t species = 0; species < kCorrectionSpecies.size(); ++species) {
+      for (size_t stage = 0; stage < kCorrectionInputs.size(); ++stage) {
+        const std::string name = std::string(kCorrectionInputs[stage]) + kCorrectionSpecies[species];
+        auto h = inputs.add<TH3>(name.c_str(), name.c_str(),
+                                 {HistType::kTH3D, {axCent, species < LambdaSpeciesCount ? axLambdaPt : axProtonPt, axY}});
+        h->Sumw2();
+        state.correctionInputs[species][stage] = h;
+      }
+      const auto& h = state.correctionInputs[species][0];
+      const double minPt = species < LambdaSpeciesCount ? lambdaV0MinPt.value : pProtonMinPt.value;
+      const double maxPt = species < LambdaSpeciesCount ? lambdaV0MaxPt.value : pProtonMaxPt.value;
+      const double maxY = species < LambdaSpeciesCount ? lambdaV0MaxY.value : pProtonMaxY.value;
+      // Keep rejecting NaN bounds when simplifying the ordered comparisons.
+      if (std::isnan(minPt) || std::isnan(maxPt) || std::isnan(maxY) ||
+          minPt >= maxPt || maxY <= 0. || h->GetYaxis()->GetXmin() > minPt ||
+          h->GetYaxis()->GetXmax() < maxPt || h->GetZaxis()->GetXmin() > -maxY ||
+          h->GetZaxis()->GetXmax() < maxY ||
+          (species >= LambdaSpeciesCount && (h->GetYaxis()->GetXmax() <= maxPt || h->GetZaxis()->GetXmax() <= maxY))) {
+        LOGF(warn, "Combined input axes do not fully cover %s acceptance; legacy efficiency retained", kCorrectionSpecies[species]);
+      }
+    }
+    const auto contract = correctionContract();
+    for (const auto& species : state.correctionInputs) {
+      for (const auto& h : species) {
+        std::string title = h->GetName();
+        title += '|';
+        title += contract;
+        h->SetTitle(title.c_str());
+      }
+    }
+    // A count plus the individual bits of the exact contract, not a hash or an
+    // averaged configuration. Merging differently configured workers changes at
+    // least one bit occupancy away from 0 or the total count and is rejected.
+    const int metadataBins = 1 + MetadataBitsPerByte * static_cast<int>(contract.size());
+    state.correctionMetadata = inputs.add<TH1>("hCorrectionMetadata", contract.c_str(),
+                                               {HistType::kTH1D, {{metadataBins, 0.5, metadataBins + 0.5}}});
+    state.correctionInputQA = inputs.add<TH2>("hCorrectionInputQA", "Input validation;Species;Reason",
+                                              {HistType::kTH2D, {{4, -0.5, 3.5}, {6, 0.5, 6.5}}});
+    const std::array<const char*, 6> reasons = {"reco outside map", "generated outside map", "nonfinite reco", "nonfinite generated", "Stage3 Lambda without daughters", "Stage3 truth outside acceptance"};
+    for (size_t species = 0; species < kCorrectionSpecies.size(); ++species) {
+      state.correctionInputQA->GetXaxis()->SetBinLabel(species + 1, kCorrectionSpecies[species]);
+    }
+    for (size_t reason = 0; reason < reasons.size(); ++reason) {
+      state.correctionInputQA->GetYaxis()->SetBinLabel(reason + 1, reasons[reason]);
+    }
+  }
+
+  // ── Two-region PID selection for (anti)protons ────────────────────────
+  template <typename TTrack>
+  bool passesPrimProtonPid(TTrack const& trk) const
+  {
+    const float pt = trk.pt();
+    const float nsPr = trk.tpcNSigmaPr();
+
+    if (std::abs(nsPr) >= pProtonTPCNsigma.value) {
+      return false;
+    }
+    if (pt < pProtonTPCTOFSwitchPt.value) {
+      return true;
+    }
+    if (!trk.hasTOF()) {
+      return false;
+    }
+    return std::abs(trk.tofNSigmaPr()) < pProtonTOFNsigma.value;
+  }
+
+  // Bitmask of contaminant hypotheses that REJECT the track (bit0 = pi, bit1 = K, bit2 = e).
+  // A hypothesis rejects only if the track is inside its veto window AND closer to it than to the proton.
+  // Detector: TOF at/above the TPC/TOF switch pT when TOF is available, TPC otherwise.
+  template <typename TTrack>
+  int contaminantVetoMask(TTrack const& trk, bool& usedTOF) const
+  {
+    usedTOF = cVetoUseTOF.value && trk.hasTOF() && trk.pt() >= pProtonTPCTOFSwitchPt.value;
+    const float nsP = std::abs(usedTOF ? trk.tofNSigmaPr() : trk.tpcNSigmaPr());
+    const float nsPi = std::abs(usedTOF ? trk.tofNSigmaPi() : trk.tpcNSigmaPi());
+    const float nsK = std::abs(usedTOF ? trk.tofNSigmaKa() : trk.tpcNSigmaKa());
+    const float nsE = std::abs(usedTOF ? trk.tofNSigmaEl() : trk.tpcNSigmaEl());
+    int mask = 0;
+    if (nsPi < pProtonVetoPionNsigma.value && nsPi < nsP) {
+      mask |= 1;
+    }
+    if (nsK < pProtonVetoKaonNsigma.value && nsK < nsP) {
+      mask |= 2;
+    }
+    if (nsE < pProtonVetoElectronNsigma.value && nsE < nsP) {
+      mask |= 4;
+    }
+    return mask;
+  }
+
+  // true => track survives the pi/K/e contaminant veto
+  template <typename TTrack>
+  bool passesContaminantVeto(TTrack const& trk) const
+  {
+    if (!cUseContaminantVeto.value) {
+      return true;
+    }
+    bool usedTOF = false;
+    return contaminantVetoMask(trk, usedTOF) == 0;
+  }
+
+  // 2D cutflow vs pT only (used directly for the veto-reason bins 16-21)
+  template <typename TTrack>
+  void fillCutFlow2D(float stage, TTrack const& trk)
+  {
+    if (trk.sign() > 0) {
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/h2f_CutFlow_vs_pt_Proton"), trk.pt(), stage);
+    } else {
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/h2f_CutFlow_vs_pt_AntiProton"), trk.pt(), stage);
+    }
+  }
+
+  // 1D hCutFlow + 2D cutflow (sequential stages 1-15)
+  template <typename TTrack>
+  void fillCutFlow(float stage, TTrack const& trk)
+  {
+    registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), stage);
+    fillCutFlow2D(stage, trk);
+  }
+  // ─────────────────────────────────────────────────────────────────────
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // STAGED QA INFRASTRUCTURE — registryQaDetector ("QA_Detec")
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Canonical analysis stages for (anti)proton QA fills.
+  enum class ProtonQAStage : int {
+    RawAfterTrackSel = 0, ///< after track-quality selection (TrackSelection table), before DCA cuts and PID
+    TpcPid = 1,           ///< after DCA + TPC PID cut passes (all momenta)
+    TpcTofPid = 2,        ///< after DCA + full PID: TPC everywhere, plus TOF required only above pProtonTPCTOFSwitchPt
+    FinalSelected = 3     ///< entered selectedPrimProtons / selectedPrimAntiProtons
+  };
+
+  // HIST prefixes and suffixes concatenate at compile time through O2 ConstStr.
+  // Keep the existing species folders and four distinct selection stages.
+  template <bool IsProton, typename TGroup, typename TFill>
+  void fillProtonQAStage(ProtonQAStage stage, TGroup group, TFill fill)
+  {
+    const auto fillStage = [&](auto prefix) {
+      if (stage == ProtonQAStage::RawAfterTrackSel) {
+        fill(prefix + HIST("01_RAW_AfterTrackSel/"));
+      } else if (stage == ProtonQAStage::TpcPid) {
+        fill(prefix + HIST("02_TPC_PID/"));
+      } else if (stage == ProtonQAStage::TpcTofPid) {
+        fill(prefix + HIST("03_TPC_TOF_PID/"));
+      } else {
+        // FinalSelected
+        fill(prefix + HIST("04_Final_SelectedProton/"));
+      }
+    };
+    if constexpr (IsProton) {
+      fillStage(HIST("Proton/") + group);
+    } else {
+      fillStage(HIST("AntiProton/") + group);
+    }
+  }
+
+  // ── Staged fill helper: Kinematics ───────────────────────────────────────
+  // IsProton=true → Proton subfolder ; IsProton=false → AntiProton subfolder
+  template <bool IsProton, typename TTrack>
+  void fillProtonKinematics(ProtonQAStage stage, TTrack const& trk)
+  {
+    const float p = trk.p();
+    const float pt = trk.pt();
+    const float eta = trk.eta();
+    const float phi = trk.phi();
+    const float y = protonRapidity(trk);
+    fillProtonQAStage<IsProton>(stage, HIST("01_Kinematics/"), [&](auto prefix) {
+      registryQaDetector.fill(prefix + HIST("h1f_p"), p);
+      registryQaDetector.fill(prefix + HIST("h1f_pt"), pt);
+      registryQaDetector.fill(prefix + HIST("h1f_eta"), eta);
+      registryQaDetector.fill(prefix + HIST("h1f_phi"), phi);
+      registryQaDetector.fill(prefix + HIST("h1f_rapidity"), y);
+    });
+  }
+
+  // ── Staged fill helper: DetectorQuality ──────────────────────────────────
+  template <bool IsProton, typename TTrack>
+  void fillProtonDetectorQuality(ProtonQAStage stage, TTrack const& trk)
+  {
+    const float pt = trk.pt();
+    const auto tpcCR = static_cast<float>(trk.tpcNClsCrossedRows());
+    const float tpcCRoF = trk.tpcCrossedRowsOverFindableCls();
+    const float tpcChi2 = trk.tpcChi2NCl();
+    const auto itsN = static_cast<float>(trk.itsNCls());
+    const float itsChi2 = trk.itsChi2NCl();
+    const float dcaXY = trk.dcaXY();
+    const float dcaZ = trk.dcaZ();
+    fillProtonQAStage<IsProton>(stage, HIST("02_DetectorQuality/"), [&](auto prefix) {
+      registryQaDetector.fill(prefix + HIST("h1f_tpcCrossedRows"), tpcCR);
+      registryQaDetector.fill(prefix + HIST("h1f_tpcCrossedRowsOverFindable"), tpcCRoF);
+      registryQaDetector.fill(prefix + HIST("h1f_tpcChi2NCl"), tpcChi2);
+      registryQaDetector.fill(prefix + HIST("h1f_itsNCls"), itsN);
+      registryQaDetector.fill(prefix + HIST("h1f_itsChi2NCl"), itsChi2);
+      registryQaDetector.fill(prefix + HIST("h2f_dcaXY_vs_pt"), pt, dcaXY);
+      registryQaDetector.fill(prefix + HIST("h2f_dcaZ_vs_pt"), pt, dcaZ);
+    });
+  }
+
+  // ── Staged fill helper: TPC_QA ───────────────────────────────────────────
+  template <bool IsProton, typename TTrack>
+  void fillProtonTpcQA(ProtonQAStage stage, TTrack const& trk)
+  {
+    const float p = trk.p();                // total momentum (kept for vs_p plots)
+    const float pTPC = trk.tpcInnerParam(); // TPC inner param = proton PID selection variable
+    const float pt = trk.pt();
+    const float dEdx = trk.tpcSignal();
+    const float nsPr = trk.tpcNSigmaPr();
+    const float nsPi = trk.tpcNSigmaPi();
+    fillProtonQAStage<IsProton>(stage, HIST("03_TPC_QA/"), [&](auto prefix) {
+      registryQaDetector.fill(prefix + HIST("h2f_dEdx_vs_p"), p, dEdx);
+      registryQaDetector.fill(prefix + HIST("h2f_dEdx_vs_pTPC"), pTPC, dEdx);
+      registryQaDetector.fill(prefix + HIST("h2f_dEdx_vs_pt"), pt, dEdx);
+      registryQaDetector.fill(prefix + HIST("h2f_nsigmaPr_vs_p"), p, nsPr);
+      registryQaDetector.fill(prefix + HIST("h2f_nsigmaPr_vs_pTPC"), pTPC, nsPr);
+      registryQaDetector.fill(prefix + HIST("h2f_nsigmaPr_vs_pt"), pt, nsPr);
+      registryQaDetector.fill(prefix + HIST("h2f_nsigmaPi_vs_pt"), pt, nsPi);
+    });
+  }
+
+  // ── Staged fill helper: TOF_QA (call only when trk.hasTOF() == true) ─────
+  template <bool IsProton, typename TTrack>
+  void fillProtonTofQA(ProtonQAStage stage, TTrack const& trk)
+  {
+    const float p = trk.p();                // total momentum (kept for vs_p plots)
+    const float pTPC = trk.tpcInnerParam(); // TPC inner param = proton PID selection variable
+    const float pTOF = trk.tofExpMom();     // momentum at the TOF radius (TracksExtra::TOFExpMom)
+    const float pt = trk.pt();
+    const float beta = trk.beta();
+    const float nsTOF = trk.tofNSigmaPr();
+    const float nsTPC = trk.tpcNSigmaPr();
+    const float radius = std::sqrt(nsTPC * nsTPC + nsTOF * nsTOF);
+    fillProtonQAStage<IsProton>(stage, HIST("04_TOF_QA/"), [&](auto prefix) {
+      registryQaDetector.fill(prefix + HIST("h2f_beta_vs_p"), p, beta);
+      registryQaDetector.fill(prefix + HIST("h2f_beta_vs_pTPC"), pTPC, beta);
+      registryQaDetector.fill(prefix + HIST("h2f_beta_vs_pt"), pt, beta);
+      registryQaDetector.fill(prefix + HIST("h2f_beta_vs_pTOF"), pTOF, beta);
+      registryQaDetector.fill(prefix + HIST("h2f_nsigmaPr_vs_p"), p, nsTOF);
+      registryQaDetector.fill(prefix + HIST("h2f_nsigmaPr_vs_pTPC"), pTPC, nsTOF);
+      registryQaDetector.fill(prefix + HIST("h2f_nsigmaPr_vs_pt"), pt, nsTOF);
+      registryQaDetector.fill(prefix + HIST("h2f_nsigmaPr_vs_pTOF"), pTOF, nsTOF);
+      registryQaDetector.fill(prefix + HIST("h2f_nsigmaTPC_vs_nsigmaTOF"), nsTPC, nsTOF);
+      registryQaDetector.fill(prefix + HIST("h1f_circular_radius"), radius);
+    });
+  }
+
+  // Common post-quality sequence; keep each stage's distinct TOF gate at its call site.
+  // Raw QA remains explicit because its TPC fill additionally requires hasTPC().
+  template <bool IsProton, typename TTrack>
+  void fillProtonTrackingQA(ProtonQAStage stage, TTrack const& trk)
+  {
+    fillProtonKinematics<IsProton>(stage, trk);
+    fillProtonDetectorQuality<IsProton>(stage, trk);
+    fillProtonTpcQA<IsProton>(stage, trk);
+  }
+
+  enum class LambdaQAStage { RawCandidate,
+                             Final };
+  enum class DaughterParent { Lambda,
+                              AntiLambda };
+  enum class DaughterType { Proton,
+                            Pion,
+                            AntiProton,
+                            AntiPion };
+  enum class DaughterQAStage { Raw,
+                               Final };
+
+  // ── Staged fill helper: Lambda QA ──────────────────────────────────────────
+  template <bool IsLambda, typename TV0>
+  void fillLambdaQA(LambdaQAStage stage, TV0 const& v0, float ctau, float bgctau)
+  {
+    const float pt = v0.pt();
+    const float eta = v0.eta();
+    const float phi = v0.phi();
+    const float rap = IsLambda ? v0.rapidity(1) : v0.rapidity(2);
+    const float cosPA = v0.v0cosPA();
+    const float dcaToPV = v0.dcav0topv();
+    const float dcaDau = v0.dcaV0daughters();
+
+    // Need collision position for accurate decay coordinates, but we use the provided bgctau
+    // and radius for topology, and we can pull alpha and qtarm.
+    // VS Code: commented out unused variable.
+    // constexpr float mLambdaPDG = 1.115683f;
+    // const float ctau   = v0.distovertotmom(0, 0, 0) * mLambdaPDG; // simplified for this block, actual filled in process
+    const float alpha = v0.alpha();
+    const float qtarm = v0.qtarm();
+    const float r = v0.v0radius();
+
+    const auto fill = [&](auto species, auto selectionStage) {
+      const auto kinematics = species + HIST("01_Kinematics/") + selectionStage;
+      const auto topology = species + HIST("02_Topology/") + selectionStage;
+      registryQaDetector.fill(kinematics + HIST("h1f_pt"), pt);
+      registryQaDetector.fill(kinematics + HIST("h1f_eta"), eta);
+      registryQaDetector.fill(kinematics + HIST("h1f_phi"), phi);
+      registryQaDetector.fill(topology + HIST("h1f_cospa"), cosPA);
+      registryQaDetector.fill(topology + HIST("h1f_cospa_zoom"), cosPA);
+      registryQaDetector.fill(topology + HIST("h1f_dcaV0toPV"), dcaToPV);
+      registryQaDetector.fill(topology + HIST("h2f_armpod"), alpha, qtarm);
+      registryQaDetector.fill(topology + HIST("h1f_radius"), r);
+      registryQaDetector.fill(topology + HIST("h1f_dcaDaughters"), dcaDau);
+      registryQaDetector.fill(topology + HIST("h1f_ctau"), ctau);
+      if (stage != LambdaQAStage::RawCandidate) {
+        registryQaDetector.fill(kinematics + HIST("h1f_rapidity"), rap);
+      }
+      registryQaDetector.fill(topology + HIST("h1f_bgctau"), bgctau);
+    };
+    const auto fillStage = [&](auto species) {
+      if (stage == LambdaQAStage::RawCandidate) {
+        fill(species, HIST("01_RawCandidate/"));
+        return;
+      }
+      fill(species, HIST("02_Final/"));
+    };
+    if constexpr (IsLambda) {
+      fillStage(HIST("Lambda/"));
+      return;
+    }
+    fillStage(HIST("AntiLambda/"));
+  }
+
+  // ── Staged fill helper: Daughter QA ──────────────────────────────────────
+  template <DaughterParent Parent, DaughterType DauType, typename TTrack>
+  void fillDaughterQA(DaughterQAStage stage, TTrack const& trk)
+  {
+    const float p = trk.p();
+    const float pt = trk.pt();
+    const float dedx = trk.tpcSignal();
+    const float dcaXY = trk.dcaXY();
+    const float dcaZ = trk.dcaZ();
+
+    // Determine nsigmaTPC based on compile-time DaughterType
+    float nsigmaTPC = 0.0f;
+    if constexpr (DauType == DaughterType::Proton || DauType == DaughterType::AntiProton) {
+      nsigmaTPC = trk.tpcNSigmaPr();
+    } else {
+      nsigmaTPC = trk.tpcNSigmaPi();
+    }
+
+    const auto fill = [&](auto prefix) {
+      registryQaDetector.fill(prefix + HIST("h2f_dEdx_vs_p"), p, dedx);
+      registryQaDetector.fill(prefix + HIST("h2f_dEdx_vs_pt"), pt, dedx);
+      registryQaDetector.fill(prefix + HIST("h2f_nsigmaTPC_vs_p"), p, nsigmaTPC);
+      registryQaDetector.fill(prefix + HIST("h2f_nsigmaTPC_vs_pt"), pt, nsigmaTPC);
+      registryQaDetector.fill(prefix + HIST("h2f_dcaXY_vs_pt"), pt, dcaXY);
+      registryQaDetector.fill(prefix + HIST("h2f_dcaZ_vs_pt"), pt, dcaZ);
+      if (trk.hasTOF()) {
+        const float beta = trk.beta();
+        const float pTOF = trk.tofExpMom();
+        registryQaDetector.fill(prefix + HIST("h2f_beta_vs_p"), p, beta);
+        registryQaDetector.fill(prefix + HIST("h2f_beta_vs_pt"), pt, beta);
+        registryQaDetector.fill(prefix + HIST("h2f_beta_vs_pTOF"), pTOF, beta);
+        if constexpr (DauType == DaughterType::Proton || DauType == DaughterType::AntiProton) {
+          const float nsigmaTOF = trk.tofNSigmaPr();
+          registryQaDetector.fill(prefix + HIST("h2f_nsigmaTOF_vs_p"), p, nsigmaTOF);
+          registryQaDetector.fill(prefix + HIST("h2f_nsigmaTOF_vs_pt"), pt, nsigmaTOF);
+          registryQaDetector.fill(prefix + HIST("h2f_nsigmaTOF_vs_pTOF"), pTOF, nsigmaTOF);
+        }
+      }
+      registryQaDetector.fill(prefix + HIST("h1f_tpcCrossedRows"), static_cast<float>(trk.tpcNClsCrossedRows()));
+      registryQaDetector.fill(prefix + HIST("h1f_tpcCrossedRowsOverFindable"), trk.tpcCrossedRowsOverFindableCls());
+      registryQaDetector.fill(prefix + HIST("h1f_tpcChi2NCl"), trk.tpcChi2NCl());
+      registryQaDetector.fill(prefix + HIST("h1f_itsNCls"), static_cast<float>(trk.itsNCls()));
+      registryQaDetector.fill(prefix + HIST("h1f_itsChi2NCl"), trk.itsChi2NCl());
+      registryQaDetector.fill(prefix + HIST("h2f_TOFMatchedFractionVsEtaPhi"),
+                              trk.eta(), trk.phi(), trk.hasTOF() ? 1.0f : 0.0f);
+    };
+    const auto fillStage = [&](auto prefix) {
+      if (stage == DaughterQAStage::Raw) {
+        fill(prefix + HIST("01_Raw/"));
+      } else {
+        fill(prefix + HIST("02_Final/"));
+      }
+    };
+    if constexpr (Parent == DaughterParent::Lambda && DauType == DaughterType::Proton) {
+      fillStage(HIST("LambdaDaughters_PID/01_Lambda/01_Proton/"));
+    } else if constexpr (Parent == DaughterParent::Lambda && DauType == DaughterType::Pion) {
+      fillStage(HIST("LambdaDaughters_PID/01_Lambda/02_Pion/"));
+    } else if constexpr (Parent == DaughterParent::AntiLambda && DauType == DaughterType::AntiProton) {
+      fillStage(HIST("LambdaDaughters_PID/02_AntiLambda/01_AntiProton/"));
+    } else if constexpr (Parent == DaughterParent::AntiLambda && DauType == DaughterType::AntiPion) {
+      fillStage(HIST("LambdaDaughters_PID/02_AntiLambda/02_AntiPion/"));
+    }
+  }
+
+  // Per-particle cache used by the pair loops (avoids recomputing per pair).
+  struct PartInfo {
+    int64_t gid = 0;
+    float px = 0.f, py = 0.f, pz = 0.f, E = 0.f;
+    float phi = 0.f, y = 0.f, pt = 0.f;
+    int idxY = -1;
+  };
+
+  template <typename TTrack>
+  PartInfo makeProtonInfo(TTrack const& t) const
+  {
+    PartInfo p;
+    p.gid = t.globalIndex();
+    p.px = t.px();
+    p.py = t.py();
+    p.pz = t.pz();
+    p.E = std::sqrt(p.px * p.px + p.py * p.py + p.pz * p.pz + kMassProton * kMassProton);
+    p.phi = t.phi();
+    p.pt = t.pt();
+    p.y = protonRapidity(t);
+    p.idxY = unrolledIndexY(p.y, p.phi);
+    return p;
+  }
+
+  template <typename TMc>
+  PartInfo makeMcInfo(TMc const& mc, float mass) const
+  {
+    PartInfo p;
+    p.gid = mc.globalIndex();
+    p.px = mc.px();
+    p.py = mc.py();
+    p.pz = mc.pz();
+    p.E = std::sqrt(p.px * p.px + p.py * p.py + p.pz * p.pz + mass * mass);
+    p.pt = mc.pt();
+    p.y = RecoDecay::y(std::array<float, 3>{p.px, p.py, p.pz}, mass);
+    p.phi = mc.phi();
+    // Keep the reco [0, 2pi) convention even if an input truth phi needs wrapping.
+    if (p.phi < 0.f || p.phi >= o2::constants::math::TwoPI) {
+      p.phi = RecoDecay::constrainAngle(p.phi, 0.f);
+    }
+    p.idxY = unrolledIndexY(p.y, p.phi);
+    return p;
+  }
+
+  // One ordered-pair traversal for all twelve generated channels. The returned
+  // count follows reco: after qinv selection, before the rho-grid validity check.
+  int64_t fillGeneratedPairs(std::vector<PartInfo> const& listA,
+                             std::vector<PartInfo> const& listB, bool sameSpecies,
+                             std::shared_ptr<TH2> const& integrated,
+                             std::shared_ptr<TH2> const& centrality) const
+  {
+    int64_t count = 0;
+    for (auto const& a : listA) {
+      for (auto const& b : listB) {
+        if (sameSpecies && a.gid == b.gid) {
+          continue;
+        }
+        if (failsQinvCut(computeQinv(a.px, a.py, a.pz, a.E, b.px, b.py, b.pz, b.E))) {
+          continue;
+        }
+        ++count;
+        // Generated particles always have unit weight, with no efficiency lookup.
+        fillIdx(integrated, a.idxY, b.idxY, 1.f);
+        fillIdx(centrality, a.idxY, b.idxY, 1.f);
+      }
+    }
+    return count;
+  }
+
+  void init(InitContext const&)
+  {
+    if (static_cast<int>(doprocessData.value) + static_cast<int>(doprocessMCRecBF.value) +
+          static_cast<int>(doprocessMCGenBF.value) >
+        1) {
+      LOGF(fatal, "BF modes share histograms: enable only one of processData, processMCRecBF, processMCGenBF. processData defaults to true; explicitly set processData=false for matched-event BF runs.");
+    }
+    if (doprocessMCGenBF.value && cApplyEffCorr.value) {
+      LOGF(fatal, "processMCGenBF requires cApplyEffCorr=false: generated weights must be exactly one.");
+    }
+    // ── Populate rho1/rho2 grid members from Configurables ──────────────────
+    state.mRhoPhiBins = cRhoPhiBins.value;
+    state.mRhoYBins = cRhoYBins.value;
+    state.mRhoYMin = cRhoYMin.value;
+    state.mRhoYMax = cRhoYMax.value;
+    state.mRhoUnrolledBinsY = state.mRhoYBins * state.mRhoPhiBins;
+    // ────────────────────────────────────────────────────────────────────────
+
+    buildPtBins();
+
+    // ── Common axis definitions ──────────────────────────────────────────
+    AxisSpec lambdaMassAxis = {200, 1.08f, 1.15f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
+    AxisSpec vertexZAxis = {100, -15.f, 15.f, "vrtx_{Z} [cm]"};
+    AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec axisP = {200, 0.0f, 6.0f, "p (GeV/c)"};
+    // axisPTPC: TPC inner momentum — the variable that drives the proton PID selection logic.
+    // Used alongside axisP so both total-p and pTPC views are available for every diagnostic plot.
+    AxisSpec axisPTPC = {200, 0.0f, 6.0f, "p_{TPC} (GeV/c)"};
+    // p_TOF = trk.tofExpMom() (TracksExtra::TOFExpMom): momentum evaluated at the TOF radius,
+    // i.e. the momentum actually used to build the TOF nsigma/beta response. Only valid when hasTOF()==true.
+    AxisSpec axisPTOF = {200, 0.0f, 6.0f, "p_{TOF} (GeV/c)"};
+    AxisSpec axisTPCdEdx = {200, 0.0f, 200.0f, "TPC dE/dx"};
+    AxisSpec qaEtaAxis = {40, -0.8f, 0.8f, "#eta"}; // These should be -0.8 to 0.8 only prev it was -1 to 1
+    AxisSpec qaPhiAxis = {72, 0.0f, o2::constants::math::TwoPI, "#varphi"};
+    AxisSpec nsigmaAxis = {100, -10.0f, 10.0f, "n#sigma"};
+    AxisSpec dcaAxis = {100, -1.0f, 1.0f, "DCAxy (cm)"};
+    AxisSpec dcaZAxis = {100, -1.0f, 1.0f, "DCAz (cm)"};
+    AxisSpec dcaAxisWide = {200, 0.0f, 5.0f, "DCA (cm)"};
+    const std::string centLabel = cUseFT0C.value ? "FT0C" : "FT0M";
+    const std::string centAxisTitle = centLabel + " Percentile (%)";
+    AxisSpec multAxis = {100, 0.0f, 100.0f, centAxisTitle};
+    AxisSpec phiAxis = {state.mRhoPhiBins, 0.0f, o2::constants::math::TwoPI, "#varphi"};
+    AxisSpec unrolledAxisY = {state.mRhoUnrolledBinsY, 0.0f, static_cast<float>(state.mRhoUnrolledBinsY), "index(y,#varphi)"};
+    AxisSpec rapidityAxis = {state.mRhoYBins, state.mRhoYMin, state.mRhoYMax, "y"};
+    AxisSpec yAxis = {state.mRhoYBins, state.mRhoYMin, state.mRhoYMax, "y"};
+
+    // pT axis for ProtonCounts_byPID_Check: 0.15 → 6.0, 118 bins of 0.05 width
+    AxisSpec pidCheckPtAxis = {118, 0.15f, 6.05f, "#it{p}_{T} (GeV/#it{c})"};
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── Other / event-level histograms ───────────────────────────────────
+    registryOther.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
+    registryOther.add("hFT0MPercentile", ("Centrality percentile (" + centLabel + ")").c_str(), {HistType::kTH1F, {multAxis}});
+    // ── MC efficiency maps (processMCEfficiency): x = centrality (cCentBins), y = pT, z = y (same range/bins as rho1) ──
+    {
+      const AxisSpec axCent(cCentBins, "centrality (%)");
+      const AxisSpec axPt{60, 0.0, 6.0, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec axY{cRhoYBins.value, cRhoYMin.value, cRhoYMax.value, "y"};
+      const AxisSpec axLambdaPt(lambdaEffPtAxis, "#it{p}_{T} (GeV/#it{c})");
+      for (const auto& name : {"GenLambda", "GenAntiLambda", "RecLambda", "RecAntiLambda"}) {
+        registryEff.add(name, name, {HistType::kTH3F, {axCent, axLambdaPt, axY}});
+      }
+      for (const auto& name : {"GenProton", "GenAntiProton", "RecProton", "RecAntiProton"}) {
+        registryEff.add(name, name, {HistType::kTH3F, {axCent, axPt, axY}});
+      }
+    }
+    registryOther.add("hEffWeightProton", "Efficiency weight 1/#epsilon, protons", {HistType::kTH1F, {{200, 0.0f, 20.0f}}});
+    registryOther.add("hEffWeightLambda", "Efficiency weight 1/#epsilon, #Lambda", {HistType::kTH1F, {{200, 0.0f, 20.0f}}});
+    registryOther.add("hEffWeightZeroCount", "Particles with efficiency weight 0 (1=p, 2=#bar{p}, 3=#Lambda, 4=#bar{#Lambda})", {HistType::kTH1F, {{4, 0.5f, 4.5f}}});
+    registryOther.add("hNSelectedPrimProtons", "Number of selected primary protons per event", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hNSelectedPrimAntiProtons", "Number of selected primary antiprotons per event", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hNSelLambda", "Number of selected Lambda candidates per event", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hNSelAntiLambda", "Number of selected AntiLambda candidates per event", {HistType::kTH1F, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_Lambda_reco1", "Stage 1: selected reconstructed Lambda per event (unweighted);N;Events", {HistType::kTH1D, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_AntiLambda_reco1", "Stage 1: selected reconstructed AntiLambda per event (unweighted);N;Events", {HistType::kTH1D, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_Proton_reco1", "Stage 1: selected reconstructed Proton per event (unweighted);N;Events", {HistType::kTH1D, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_AntiProton_reco1", "Stage 1: selected reconstructed AntiProton per event (unweighted);N;Events", {HistType::kTH1D, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_Lambda_PrimSec_reco", "Stage 2: primary and secondary truth-matched Lambda per event (unweighted);N;Events", {HistType::kTH1D, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_AntiLambda_PrimSec_reco", "Stage 2: primary and secondary truth-matched AntiLambda per event (unweighted);N;Events", {HistType::kTH1D, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_Proton_PrimSec_reco", "Stage 2: primary and secondary truth-matched Proton per event (unweighted);N;Events", {HistType::kTH1D, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_AntiProton_PrimSec_reco", "Stage 2: primary and secondary truth-matched AntiProton per event (unweighted);N;Events", {HistType::kTH1D, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_Lambda_prim_reco", "Stage 3: physical-primary truth-matched Lambda per event (unweighted);N;Events", {HistType::kTH1D, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_AntiLambda_prim_reco", "Stage 3: physical-primary truth-matched AntiLambda per event (unweighted);N;Events", {HistType::kTH1D, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_Proton_prim_reco", "Stage 3: physical-primary truth-matched Proton per event (unweighted);N;Events", {HistType::kTH1D, {{100, 0.0f, 100.0f}}});
+    registryOther.add("hN_AntiProton_prim_reco", "Stage 3: physical-primary truth-matched AntiProton per event (unweighted);N;Events", {HistType::kTH1D, {{100, 0.0f, 100.0f}}});
+    // ── V0-daughter veto QA counters ─────────────────────────────────────
+    // Proton veto counters
+    registryOther.add("hNPrimProtonBeforeVeto", "Proton candidates before V0-daughter veto;N;Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+    registryOther.add("hNPrimProtonRemovedByVeto", "Proton candidates removed by V0-daughter veto;N;Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+    registryOther.add("hNPrimProtonAfterVeto", "Proton candidates after V0-daughter veto;N;Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+    // AntiProton veto counters
+    registryOther.add("hNPrimAntiProtonBeforeVeto", "AntiProton candidates before V0-daughter veto;N;Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+    registryOther.add("hNPrimAntiProtonRemovedByVeto", "AntiProton candidates removed by V0-daughter veto;N;Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+    registryOther.add("hNPrimAntiProtonAfterVeto", "AntiProton candidates after V0-daughter veto;N;Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+    // ─────────────────────────────────────────────────────────────────────
+    registryOther.add("hPtSelLambda", "Selected #Lambda p_{T} spectrum (raw counts);#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1F, {ptAxis}});
+    registryOther.add("hPtSelAntiLambda", "Selected #bar{#Lambda} p_{T} spectrum (raw counts);#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1F, {ptAxis}});
+    registryOther.add("hPtSelectedPrimProton", "Selected primary proton p_{T} spectrum (raw counts, after V0-daughter veto);#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1F, {ptAxis}});
+    registryOther.add("hPtSelectedPrimAntiProton", "Selected primary antiproton p_{T} spectrum (raw counts, after V0-daughter veto);#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1F, {ptAxis}});
+    registryOther.add("hNPairs_Lambda_PrimProton", "#Lambda-p pairs per event (after q_{inv} cut);N_{pairs};Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+    registryOther.add("hNPairs_Lambda_PrimAntiProton", "#Lambda-#bar{p} pairs per event (after q_{inv} cut);N_{pairs};Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+    registryOther.add("hNPairs_AntiLambda_PrimProton", "#bar{#Lambda}-p pairs per event (after q_{inv} cut);N_{pairs};Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+    registryOther.add("hNPairs_AntiLambda_PrimAntiProton", "#bar{#Lambda}-#bar{p} pairs per event (after q_{inv} cut);N_{pairs};Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+
+    // ── Shared-daughter (union) cleaning diagnostics for Lambda / AntiLambda ──
+    registryOther.add("h1f_nLambda_beforeClean", "N_{#Lambda} per event before shared-daughter cleaning;N;Events", {HistType::kTH1F, {{100, -0.5f, 99.5f}}});
+    registryOther.add("h1f_nLambda_rejectedClean", "N_{#Lambda} rejected by shared-daughter cleaning per event;N;Events", {HistType::kTH1F, {{100, -0.5f, 99.5f}}});
+    registryOther.add("h1f_nLambda_afterClean", "N_{#Lambda} per event after shared-daughter cleaning;N;Events", {HistType::kTH1F, {{100, -0.5f, 99.5f}}});
+    registryOther.add("h1f_nAntiLambda_beforeClean", "N_{#bar{#Lambda}} per event before shared-daughter cleaning;N;Events", {HistType::kTH1F, {{100, -0.5f, 99.5f}}});
+    registryOther.add("h1f_nAntiLambda_rejectedClean", "N_{#bar{#Lambda}} rejected by shared-daughter cleaning per event;N;Events", {HistType::kTH1F, {{100, -0.5f, 99.5f}}});
+    registryOther.add("h1f_nAntiLambda_afterClean", "N_{#bar{#Lambda}} per event after shared-daughter cleaning;N;Events", {HistType::kTH1F, {{100, -0.5f, 99.5f}}});
+    registryOther.add("hSharedDauCleaningSums", "Shared-daughter cleaning: sums over events;Quantity;Sum", {HistType::kTH1D, {{9, 0.5f, 9.5f}}});
+    {
+      auto hSD = registryOther.get<TH1>(HIST("hSharedDauCleaningSums"));
+      hSD->GetXaxis()->SetBinLabel(1, "Sum N_L raw");
+      hSD->GetXaxis()->SetBinLabel(2, "Sum N_L rej");
+      hSD->GetXaxis()->SetBinLabel(3, "Sum N_L clean");
+      hSD->GetXaxis()->SetBinLabel(4, "Sum N_AL raw");
+      hSD->GetXaxis()->SetBinLabel(5, "Sum N_AL rej");
+      hSD->GetXaxis()->SetBinLabel(6, "Sum N_AL clean");
+      hSD->GetXaxis()->SetBinLabel(7, "Sum N_L*(N_L-1)");
+      hSD->GetXaxis()->SetBinLabel(8, "Sum N_AL*(N_AL-1)");
+      hSD->GetXaxis()->SetBinLabel(9, "Sum N_L*N_AL");
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // NEW STAGED QA_Detec REGISTRATION
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // Axes used for the new hierarchy
+    AxisSpec axisBeta = {110, 0.0f, 1.1f, "TOF #beta"};
+    AxisSpec axisPtProton = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec axisCosPA_zoom = {200, 0.99f, 1.0f, "Cos(PA)"};
+    AxisSpec axisDecayR = {100, 0.0f, 50.0f, "cm"};
+    AxisSpec axisCtau = {100, 0.0f, 50.0f, "ctau (cm)"};
+    AxisSpec axisCutFlow = {15, 0.5f, 15.5f, "Cut stage"};
+
+    auto addProtonQAForStage = [&](const char* species, const char* stage) {
+      // Kinematics
+      registryQaDetector.add(Form("%s/01_Kinematics/%s/h1f_p", species, stage), "p;p (GeV/c);Counts", {HistType::kTH1F, {axisP}});
+      registryQaDetector.add(Form("%s/01_Kinematics/%s/h1f_pt", species, stage), "p_{T};p_{T} (GeV/c);Counts", {HistType::kTH1F, {axisPtProton}});
+      registryQaDetector.add(Form("%s/01_Kinematics/%s/h1f_eta", species, stage), "#eta;#eta;Counts", {HistType::kTH1F, {qaEtaAxis}});
+      registryQaDetector.add(Form("%s/01_Kinematics/%s/h1f_phi", species, stage), "#phi;#phi;Counts", {HistType::kTH1F, {qaPhiAxis}});
+      registryQaDetector.add(Form("%s/01_Kinematics/%s/h1f_rapidity", species, stage), "y;y;Counts", {HistType::kTH1F, {rapidityAxis}});
+
+      // DetectorQuality
+      registryQaDetector.add(Form("%s/02_DetectorQuality/%s/h1f_tpcCrossedRows", species, stage), "TPC Crossed Rows;N_{cr};Counts", {HistType::kTH1F, {{160, 0.0f, 160.0f, "TPC crossed rows"}}});
+      registryQaDetector.add(Form("%s/02_DetectorQuality/%s/h1f_tpcCrossedRowsOverFindable", species, stage), "TPC Crossed Rows / Findable;Ratio;Counts", {HistType::kTH1F, {{100, 0.0f, 1.5f, "N_{cr}/N_{findable}"}}});
+      registryQaDetector.add(Form("%s/02_DetectorQuality/%s/h1f_tpcChi2NCl", species, stage), "TPC #chi^{2}/NCl;#chi^{2}/NCl;Counts", {HistType::kTH1F, {{100, 0.0f, 10.0f, "TPC #chi^{2}/NCl"}}});
+      registryQaDetector.add(Form("%s/02_DetectorQuality/%s/h1f_itsNCls", species, stage), "ITS NCls;N_{cls};Counts", {HistType::kTH1F, {{10, 0.0f, 10.0f, "ITS N_{cls}"}}});
+      registryQaDetector.add(Form("%s/02_DetectorQuality/%s/h1f_itsChi2NCl", species, stage), "ITS #chi^{2}/NCl;#chi^{2}/NCl;Counts", {HistType::kTH1F, {{100, 0.0f, 40.0f, "ITS #chi^{2}/NCl"}}});
+      registryQaDetector.add(Form("%s/02_DetectorQuality/%s/h2f_dcaXY_vs_pt", species, stage), "DCA_{xy} vs p_{T};p_{T};DCA_{xy}", {HistType::kTH2F, {axisPtProton, dcaAxis}});
+      registryQaDetector.add(Form("%s/02_DetectorQuality/%s/h2f_dcaZ_vs_pt", species, stage), "DCA_{z} vs p_{T};p_{T};DCA_{z}", {HistType::kTH2F, {axisPtProton, dcaZAxis}});
+
+      // TPC_QA — vs_p (total momentum) kept; vs_pTPC (TPC inner param = PID variable) added alongside
+      registryQaDetector.add(Form("%s/03_TPC_QA/%s/h2f_dEdx_vs_p", species, stage), "TPC dE/dx vs p;p (GeV/c);dE/dx", {HistType::kTH2F, {axisP, axisTPCdEdx}});
+      registryQaDetector.add(Form("%s/03_TPC_QA/%s/h2f_dEdx_vs_pTPC", species, stage), "TPC dE/dx vs p_{TPC};p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {axisPTPC, axisTPCdEdx}});
+      registryQaDetector.add(Form("%s/03_TPC_QA/%s/h2f_dEdx_vs_pt", species, stage), "TPC dE/dx vs p_{T};p_{T} (GeV/c);dE/dx", {HistType::kTH2F, {axisPtProton, axisTPCdEdx}});
+      registryQaDetector.add(Form("%s/03_TPC_QA/%s/h2f_nsigmaPr_vs_p", species, stage), "TPC n#sigma_{p} vs p;p (GeV/c);n#sigma", {HistType::kTH2F, {axisP, nsigmaAxis}});
+      registryQaDetector.add(Form("%s/03_TPC_QA/%s/h2f_nsigmaPr_vs_pTPC", species, stage), "TPC n#sigma_{p} vs p_{TPC};p_{TPC} (GeV/c);n#sigma", {HistType::kTH2F, {axisPTPC, nsigmaAxis}});
+      registryQaDetector.add(Form("%s/03_TPC_QA/%s/h2f_nsigmaPr_vs_pt", species, stage), "TPC n#sigma_{p} vs p_{T};p_{T} (GeV/c);n#sigma", {HistType::kTH2F, {axisPtProton, nsigmaAxis}});
+      registryQaDetector.add(Form("%s/03_TPC_QA/%s/h2f_nsigmaPi_vs_pt", species, stage), "TPC n#sigma_{#pi} vs p_{T};p_{T} (GeV/c);n#sigma", {HistType::kTH2F, {axisPtProton, nsigmaAxis}});
+
+      // TOF_QA — vs_p (total momentum) kept; vs_pTPC (TPC inner param = PID variable) added alongside
+      registryQaDetector.add(Form("%s/04_TOF_QA/%s/h2f_beta_vs_p", species, stage), "TOF #beta vs p;p (GeV/c);#beta", {HistType::kTH2F, {axisP, axisBeta}});
+      registryQaDetector.add(Form("%s/04_TOF_QA/%s/h2f_beta_vs_pTPC", species, stage), "TOF #beta vs p_{TPC};p_{TPC} (GeV/c);#beta", {HistType::kTH2F, {axisPTPC, axisBeta}});
+      registryQaDetector.add(Form("%s/04_TOF_QA/%s/h2f_beta_vs_pt", species, stage), "TOF #beta vs p_{T};p_{T} (GeV/c);#beta", {HistType::kTH2F, {axisPtProton, axisBeta}});
+      registryQaDetector.add(Form("%s/04_TOF_QA/%s/h2f_beta_vs_pTOF", species, stage), "TOF #beta vs p_{TOF};p_{TOF} (GeV/c);#beta", {HistType::kTH2F, {axisPTOF, axisBeta}});
+      registryQaDetector.add(Form("%s/04_TOF_QA/%s/h2f_nsigmaPr_vs_p", species, stage), "TOF n#sigma_{p} vs p;p (GeV/c);n#sigma", {HistType::kTH2F, {axisP, nsigmaAxis}});
+      registryQaDetector.add(Form("%s/04_TOF_QA/%s/h2f_nsigmaPr_vs_pTPC", species, stage), "TOF n#sigma_{p} vs p_{TPC};p_{TPC} (GeV/c);n#sigma", {HistType::kTH2F, {axisPTPC, nsigmaAxis}});
+      registryQaDetector.add(Form("%s/04_TOF_QA/%s/h2f_nsigmaPr_vs_pt", species, stage), "TOF n#sigma_{p} vs p_{T};p_{T} (GeV/c);n#sigma", {HistType::kTH2F, {axisPtProton, nsigmaAxis}});
+      registryQaDetector.add(Form("%s/04_TOF_QA/%s/h2f_nsigmaPr_vs_pTOF", species, stage), "TOF n#sigma_{p} vs p_{TOF};p_{TOF} (GeV/c);n#sigma", {HistType::kTH2F, {axisPTOF, nsigmaAxis}});
+
+      // --- 2D TPC vs TOF n-sigma and 1D circular radius (competitive-veto vs circle comparison) ---
+      registryQaDetector.add(Form("%s/04_TOF_QA/%s/h2f_nsigmaTPC_vs_nsigmaTOF", species, stage),
+                             "TPC vs TOF n#sigma_{p};n#sigma^{TPC}_{p};n#sigma^{TOF}_{p}",
+                             {HistType::kTH2F, {nsigmaAxis, nsigmaAxis}});
+      registryQaDetector.add(Form("%s/04_TOF_QA/%s/h1f_circular_radius", species, stage),
+                             "Circular PID Radius;R = #sqrt{(n#sigma^{TPC}_{p})^{2} + (n#sigma^{TOF}_{p})^{2}};Counts",
+                             {HistType::kTH1F, {{100, 0.0f, 10.0f, "R"}}});
+    };
+
+    static constexpr std::array<const char*, 4> localProtonStages = {
+      "01_RAW_AfterTrackSel", "02_TPC_PID", "03_TPC_TOF_PID", "04_Final_SelectedProton"};
+    for (const auto& species : {"Proton", "AntiProton"}) {
+      for (const auto& stage : localProtonStages) {
+        addProtonQAForStage(species, stage);
+      }
+    }
+
+    auto addLambdaQAForStage = [&](const char* species, const char* stage) {
+      // Kinematics
+      registryQaDetector.add(Form("%s/01_Kinematics/%s/h1f_pt", species, stage), "V0 p_{T} (RawCandidate: after required labels; Final: selected before cleaning);p_{T} (GeV/c);Counts", {HistType::kTH1F, {axisPtProton}});
+      registryQaDetector.add(Form("%s/01_Kinematics/%s/h1f_eta", species, stage), "V0 #eta (RawCandidate: after required labels; Final: selected before cleaning);#eta;Counts", {HistType::kTH1F, {qaEtaAxis}});
+      registryQaDetector.add(Form("%s/01_Kinematics/%s/h1f_phi", species, stage), "V0 #varphi (RawCandidate: after required labels; Final: selected before cleaning);#varphi;Counts", {HistType::kTH1F, {qaPhiAxis}});
+      if (std::string(stage) == "02_Final") {
+        registryQaDetector.add(Form("%s/01_Kinematics/%s/h1f_rapidity", species, stage), "y;y;Counts", {HistType::kTH1F, {rapidityAxis}});
+      }
+
+      // Topology
+      registryQaDetector.add(Form("%s/02_Topology/%s/h1f_cospa", species, stage), "V0 cos(PA), full range;cos(PA);Counts", {HistType::kTH1F, {{100, 0.9f, 1.0f, "cos(PA)"}}});
+      registryQaDetector.add(Form("%s/02_Topology/%s/h1f_cospa_zoom", species, stage), "V0 cos(PA), zoom 0.99-1.0;cos(PA);Counts", {HistType::kTH1F, {axisCosPA_zoom}});
+      registryQaDetector.add(Form("%s/02_Topology/%s/h1f_dcaV0toPV", species, stage), "DCA V0 to PV;DCA (cm);Counts", {HistType::kTH1F, {dcaAxisWide}});
+      registryQaDetector.add(Form("%s/02_Topology/%s/h1f_ctau", species, stage), "ctau;ctau (cm);Counts", {HistType::kTH1F, {axisCtau}});
+      if (std::string(stage) == "01_RawCandidate" || std::string(stage) == "02_Final") {
+        registryQaDetector.add(Form("%s/02_Topology/%s/h1f_bgctau", species, stage), "bgctau;bgctau (cm);Counts", {HistType::kTH1F, {{100, 0.0f, 200.0f, "bgctau (cm)"}}});
+      }
+      registryQaDetector.add(Form("%s/02_Topology/%s/h2f_armpod", species, stage), "Armenteros-Podolanski;#alpha;q_{T}", {HistType::kTH2F, {{80, -1.0f, 1.0f, "#alpha"}, {40, 0.0f, 0.4f, "q_{T}"}}});
+      registryQaDetector.add(Form("%s/02_Topology/%s/h1f_radius", species, stage), "Decay Radius;R (cm);Counts", {HistType::kTH1F, {axisDecayR}});
+      registryQaDetector.add(Form("%s/02_Topology/%s/h1f_dcaDaughters", species, stage), "DCA Daughters;DCA (cm);Counts", {HistType::kTH1F, {dcaAxisWide}});
+    };
+
+    for (const auto& species : {"Lambda", "AntiLambda"}) {
+      registryQaDetector.add(Form("%s/InvariantMass/NoMassCut/h2f_mass_vs_pt", species), "Mass vs p_{T};p_{T};Mass", {HistType::kTH2F, {axisPtProton, lambdaMassAxis}});
+      registryQaDetector.add(Form("%s/InvariantMass/MassCut/h2f_mass_vs_pt", species), "Mass vs p_{T};p_{T};Mass", {HistType::kTH2F, {axisPtProton, lambdaMassAxis}});
+      // ── Item 2: K0S competing-mass hypothesis QA ───────────────────────
+      registryQaDetector.add(Form("%s/InvariantMass/h1f_mK0Short_beforeCut", species),
+                             "m_{K0S} before K0S rejection cut;m_{K0S} (GeV/c^{2});Counts",
+                             {HistType::kTH1F, {{200, 0.40f, 0.60f, "m_{K0S} (GeV/c^{2})"}}});
+      registryQaDetector.add(Form("%s/InvariantMass/h1f_mK0Short_afterLambdaSel", species),
+                             "m_{K0S} for V0s passing Lambda/AntiLambda selection;m_{K0S} (GeV/c^{2});Counts",
+                             {HistType::kTH1F, {{200, 0.40f, 0.60f, "m_{K0S} (GeV/c^{2})"}}});
+      registryQaDetector.add(Form("%s/InvariantMass/h2f_mLambda_vs_mK0Short", species),
+                             "m_{#Lambda} vs m_{K0S};m_{K0S} (GeV/c^{2});m_{#Lambda} (GeV/c^{2})",
+                             {HistType::kTH2F, {{200, 0.40f, 0.60f, "m_{K0S}"}, lambdaMassAxis}});
+      // ── Item 2: mass vs acceptance uniformity ──────────────────────────
+      registryQaDetector.add(Form("%s/InvariantMass/h2f_mass_vs_eta", species),
+                             "Mass vs #eta;#eta;m (GeV/c^{2})",
+                             {HistType::kTH2F, {qaEtaAxis, lambdaMassAxis}});
+      registryQaDetector.add(Form("%s/InvariantMass/h2f_mass_vs_phi", species),
+                             "Mass vs #varphi;#varphi;m (GeV/c^{2})",
+                             {HistType::kTH2F, {qaPhiAxis, lambdaMassAxis}});
+      // ──────────────────────────────────────────────────────────────────
+      for (const auto& stage : {"01_RawCandidate", "02_Final"}) {
+        addLambdaQAForStage(species, stage);
+      }
+    }
+
+    auto addDaughterQA = [&](const char* parent, const char* dauType, const char* stage) {
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h2f_dEdx_vs_p", parent, dauType, stage), "TPC dE/dx vs p;p;dE/dx", {HistType::kTH2F, {axisP, axisTPCdEdx}});
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h2f_dEdx_vs_pt", parent, dauType, stage), "TPC dE/dx vs p_{T};p_{T};dE/dx", {HistType::kTH2F, {axisPtProton, axisTPCdEdx}});
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h2f_nsigmaTPC_vs_p", parent, dauType, stage), "TPC n#sigma vs p;p;n#sigma", {HistType::kTH2F, {axisP, nsigmaAxis}});
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h2f_nsigmaTPC_vs_pt", parent, dauType, stage), "TPC n#sigma vs p_{T};p_{T};n#sigma", {HistType::kTH2F, {axisPtProton, nsigmaAxis}});
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h2f_dcaXY_vs_pt", parent, dauType, stage), "DCA_{xy} vs p_{T};p_{T};DCA_{xy} (cm)", {HistType::kTH2F, {axisPtProton, dcaAxis}});
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h2f_dcaZ_vs_pt", parent, dauType, stage), "DCA_{z} vs p_{T};p_{T};DCA_{z} (cm)", {HistType::kTH2F, {axisPtProton, dcaZAxis}});
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h2f_beta_vs_p", parent, dauType, stage), "TOF #beta vs p;p;#beta", {HistType::kTH2F, {axisP, axisBeta}});
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h2f_beta_vs_pt", parent, dauType, stage), "TOF #beta vs p_{T};p_{T};#beta", {HistType::kTH2F, {axisPtProton, axisBeta}});
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h2f_beta_vs_pTOF", parent, dauType, stage), "TOF #beta vs p_{TOF};p_{TOF};#beta", {HistType::kTH2F, {axisPTOF, axisBeta}});
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h2f_nsigmaTOF_vs_p", parent, dauType, stage), "TOF n#sigma vs p;p;n#sigma", {HistType::kTH2F, {axisP, nsigmaAxis}});
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h2f_nsigmaTOF_vs_pt", parent, dauType, stage), "TOF n#sigma vs p_{T};p_{T};n#sigma", {HistType::kTH2F, {axisPtProton, nsigmaAxis}});
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h2f_nsigmaTOF_vs_pTOF", parent, dauType, stage), "TOF n#sigma vs p_{TOF};p_{TOF};n#sigma", {HistType::kTH2F, {axisPTOF, nsigmaAxis}});
+      // ── Item 3: Daughter tracking quality ────────────────────────────────
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h1f_tpcCrossedRows", parent, dauType, stage),
+                             "TPC Crossed Rows;N_{cr};Counts", {HistType::kTH1F, {{160, 0.0f, 160.0f, "TPC crossed rows"}}});
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h1f_tpcCrossedRowsOverFindable", parent, dauType, stage),
+                             "TPC Crossed Rows / Findable;Ratio;Counts", {HistType::kTH1F, {{100, 0.0f, 1.5f, "N_{cr}/N_{findable}"}}});
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h1f_tpcChi2NCl", parent, dauType, stage),
+                             "TPC #chi^{2}/NCl;#chi^{2}/NCl;Counts", {HistType::kTH1F, {{100, 0.0f, 10.0f, "TPC #chi^{2}/NCl"}}});
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h1f_itsNCls", parent, dauType, stage),
+                             "ITS NCls;N_{cls};Counts", {HistType::kTH1F, {{10, 0.0f, 10.0f, "ITS N_{cls}"}}});
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h1f_itsChi2NCl", parent, dauType, stage),
+                             "ITS #chi^{2}/NCl;#chi^{2}/NCl;Counts", {HistType::kTH1F, {{100, 0.0f, 40.0f, "ITS #chi^{2}/NCl"}}});
+      // ── Item 4: 2D TOF-matching efficiency maps (eta × phi) ──────────────
+      registryQaDetector.add(Form("LambdaDaughters_PID/%s/%s/%s/h2f_TOFMatchedFractionVsEtaPhi", parent, dauType, stage),
+                             "TOF matched fraction vs (#eta, #varphi);#eta;#varphi;Fraction", {HistType::kTProfile2D, {qaEtaAxis, qaPhiAxis}});
+      // ─────────────────────────────────────────────────────────────────────
+    };
+
+    for (const auto& stage : {"01_Raw", "02_Final"}) {
+      addDaughterQA("01_Lambda", "01_Proton", stage);
+      addDaughterQA("01_Lambda", "02_Pion", stage);
+      addDaughterQA("02_AntiLambda", "01_AntiProton", stage);
+      addDaughterQA("02_AntiLambda", "02_AntiPion", stage);
+    }
+
+    registryQaDetector.add("Selection/TOF_Matching/hTOFMatchedFractionVsPt", "TOF-matched fraction of selected (anti)protons (before V0-daughter veto) vs p_{T};p_{T} (GeV/c);TOF-matched fraction", {HistType::kTProfile, {axisPtProton}});
+    // ── Item 4: 2D TOF-matching efficiency maps (eta × phi) ──────────────────
+    registryQaDetector.add("Selection/TOF_Matching/h2f_TOFMatchedFractionVsEtaPhi",
+                           "TOF-matched fraction of selected (anti)protons (before V0-daughter veto) vs (#eta, #varphi);#eta;#varphi;TOF-matched fraction",
+                           {HistType::kTProfile2D, {qaEtaAxis, qaPhiAxis}});
+    // ─────────────────────────────────────────────────────────────────────────
+    registryQaDetector.add("Selection/TOF_Matching/hCutFlow", "(Anti)proton track cutflow (both charges);Stage;Counts", {HistType::kTH1F, {axisCutFlow}});
+    {
+      auto hCF = registryQaDetector.get<TH1>(HIST("Selection/TOF_Matching/hCutFlow"));
+      hCF->GetXaxis()->SetBinLabel(1, "All tracks");
+      hCF->GetXaxis()->SetBinLabel(2, "hasTPC");
+      hCF->GetXaxis()->SetBinLabel(3, "TPC crossed rows");
+      hCF->GetXaxis()->SetBinLabel(4, "TPC rows/findable");
+      hCF->GetXaxis()->SetBinLabel(5, "TPC chi2");
+      hCF->GetXaxis()->SetBinLabel(6, "ITS Ncls");
+      hCF->GetXaxis()->SetBinLabel(7, "ITS chi2");
+      hCF->GetXaxis()->SetBinLabel(8, "TPC signal");
+      hCF->GetXaxis()->SetBinLabel(9, "p_TPC & pT window");
+      hCF->GetXaxis()->SetBinLabel(10, "|y| window");
+      hCF->GetXaxis()->SetBinLabel(11, "DCA xy,z");
+      hCF->GetXaxis()->SetBinLabel(12, "PID (TPC/TOF)");
+      hCF->GetXaxis()->SetBinLabel(13, "pi/K/e veto");
+      hCF->GetXaxis()->SetBinLabel(14, "V0-daughter veto");
+      hCF->GetXaxis()->SetBinLabel(15, "Selected");
+    }
+
+    // ── V0 (Lambda / AntiLambda) cutflow histograms ─────────────────────────
+    // Bins 1-5 are filled under both hypotheses; bins 6-10 use the assigned species.
+    // Bin 10 = survivors of shared-daughter cleaning (the sample entering rho1 / rho2). Bin 11 is spare.
+    registryQaDetector.add("Lambda/hCutFlow", "#Lambda candidate cutflow;Stage;Counts", {HistType::kTH1F, {{11, 0.5f, 11.5f}}});
+    registryQaDetector.add("AntiLambda/hCutFlow", "#bar{#Lambda} candidate cutflow;Stage;Counts", {HistType::kTH1F, {{11, 0.5f, 11.5f}}});
+    {
+      const std::array<const char*, 10> v0CfLabels = {"All V0s", "Required MC Labels", "Parent pT & Rapidity", "Topology, Type & cTau", "K0s Rejection",
+                                                      "Assigned Daughter Cuts", "Daughter Collision Check", "Mass Window", "MC Selection / Pre-Clean", "Shared-Dau Cleaned"};
+      auto hCFL = registryQaDetector.get<TH1>(HIST("Lambda/hCutFlow"));
+      auto hCFAL = registryQaDetector.get<TH1>(HIST("AntiLambda/hCutFlow"));
+      for (int ib = 0; ib < static_cast<int>(v0CfLabels.size()); ++ib) {
+        hCFL->GetXaxis()->SetBinLabel(ib + 1, v0CfLabels[ib]);
+        hCFAL->GetXaxis()->SetBinLabel(ib + 1, v0CfLabels[ib]);
+      }
+    }
+
+    // 2D cutflow vs pT, separate for protons and antiprotons.
+    // y bins 1-15 = sequential stages (same as hCutFlow); 16-21 = veto REASONS (not sequential, a track can fill several)
+    registryQaDetector.add("Selection/TOF_Matching/h2f_CutFlow_vs_pt_Proton", "Proton cutflow vs p_{T};p_{T} (GeV/c);Stage", {HistType::kTH2F, {axisPtProton, {21, 0.5f, 21.5f}}});
+    registryQaDetector.add("Selection/TOF_Matching/h2f_CutFlow_vs_pt_AntiProton", "AntiProton cutflow vs p_{T};p_{T} (GeV/c);Stage", {HistType::kTH2F, {axisPtProton, {21, 0.5f, 21.5f}}});
+    {
+      const std::array<const char*, 21> cfLabels2D = {"All tracks", "hasTPC", "TPC crossed rows", "TPC rows/findable", "TPC chi2", "ITS Ncls", "ITS chi2",
+                                                      "TPC signal", "p_TPC & pT window", "|y| window", "DCA xy,z", "PID (TPC/TOF)", "pi/K/e veto",
+                                                      "V0-daughter veto", "Selected", "veto: TPC pi", "veto: TPC K", "veto: TPC e",
+                                                      "veto: TOF pi", "veto: TOF K", "veto: TOF e"};
+      auto hCFp = registryQaDetector.get<TH2>(HIST("Selection/TOF_Matching/h2f_CutFlow_vs_pt_Proton"));
+      auto hCFa = registryQaDetector.get<TH2>(HIST("Selection/TOF_Matching/h2f_CutFlow_vs_pt_AntiProton"));
+      for (int ib = 0; ib < static_cast<int>(cfLabels2D.size()); ++ib) {
+        hCFp->GetYaxis()->SetBinLabel(ib + 1, cfLabels2D[ib]);
+        hCFa->GetYaxis()->SetBinLabel(ib + 1, cfLabels2D[ib]);
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // EXISTING QA_Detec REGISTRATION (Preserved for backward compatibility)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // -- Event cutflow --
+    registryOther.add("hEventCutflow", "Event Cutflow;Step;Counts",
+                      {HistType::kTH1F, {{5, 0.5f, 5.5f}}});
+    {
+      auto hEC = registryOther.get<TH1>(HIST("hEventCutflow"));
+      hEC->GetXaxis()->SetBinLabel(1, "configured sel8 + |z|<cut");
+      hEC->GetXaxis()->SetBinLabel(2, "contributors recorded (no cut)");
+      hEC->GetXaxis()->SetBinLabel(4, "INEL tracks counted (no cut)");
+      hEC->GetXaxis()->SetBinLabel(5, "extra event selection (pileup/zvtx/ITS flags)");
+    }
+
+    // ── ProtonVetoQA histograms ───────────────────────────────────────────
+    // Purpose: quantify the importance of the V0-daughter veto for the
+    //          primary-proton sample used in rho1(p), rho2(pp), rho2(p pbar).
+    // Definitions (protons only, sign > 0):
+    //   h1f_nBeforeVeto    : N passing all quality+PID+DCA cuts, before veto.
+    //   h1f_nRemovedByVeto : N rejected because globalIndex ∈ v0DaughterTrackIds.
+    //   h1f_nAfterVeto     : N entering selectedPrimProtons (= before - removed).
+    //   h1f_fractionRemoved: N_removed / N_before per event (0 when N_before = 0).
+    //
+    // All four histograms are filled ONCE PER EVENT.
+    // Corresponding run-level totals are printed in endOfStream().
+    registryProtonVetoQA.add(
+      "h1f_nBeforeVeto",
+      "Proton V0-daughter veto QA: N_{before veto} per event;N_{before veto};Events",
+      {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+    registryProtonVetoQA.add(
+      "h1f_nRemovedByVeto",
+      "Proton V0-daughter veto QA: N_{removed by veto} per event;N_{removed};Events",
+      {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+    registryProtonVetoQA.add(
+      "h1f_nAfterVeto",
+      "Proton V0-daughter veto QA: N_{after veto} per event;N_{after veto};Events",
+      {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+    registryProtonVetoQA.add(
+      "h1f_fractionRemoved",
+      "Proton V0-daughter veto QA: fraction_{removed} = N_{removed}/N_{before} per event;fraction_{removed};Events",
+      {HistType::kTH1F, {{110, 0.0f, 1.1f}}});
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── Item 5: Event-level pileup rejection QA ───────────────────────────
+    // hPileupFlags: each bin corresponds to a different event-selection bit.
+    // Bin 1 = kNoSameBunchPileup, Bin 2 = kIsGoodZvtxFT0vsPV,
+    // Bin 3 = kIsVertexITSTPC, Bin 4 = kIsVertexTOFmatched,
+    // Bin 5 = kIsVertexTRDmatched, Bin 6 = kNoSameBunchPileup && kIsGoodZvtxFT0vsPV && kIsVertexITSTPC all set.
+    registryOther.add("hPileupFlags",
+                      "Event-level pile-up rejection flags;Flag;Events passing",
+                      {HistType::kTH1F, {{6, 0.5f, 6.5f, "Pileup flag"}}});
+    {
+      auto hPU = registryOther.get<TH1>(HIST("hPileupFlags"));
+      hPU->GetXaxis()->SetBinLabel(1, "NoSameBunchPileup");
+      hPU->GetXaxis()->SetBinLabel(2, "GoodZvtxFT0vsPV");
+      hPU->GetXaxis()->SetBinLabel(3, "VertexITSTPC");
+      hPU->GetXaxis()->SetBinLabel(4, "VertexTOFmatched");
+      hPU->GetXaxis()->SetBinLabel(5, "VertexTRDmatched");
+      hPU->GetXaxis()->SetBinLabel(6, "NoSBPU&&GoodZvtx&&ITSTPC");
+    }
+    registryOther.add("h2f_NTracks_vs_Cent",
+                      ("N_{tracks}(|#eta|<0.8, all TracksIU, no quality cut) vs " + centLabel + ";" + centLabel + " (%);N_{tracks}(|#eta|<0.8)").c_str(),
+                      {HistType::kTH2F, {multAxis, {200, 0.0f, 200.0f, "N_{tracks}"}}});
+    registryOther.add("h2f_NumContrib_vs_Cent",
+                      ("N_{contribs} vs " + centLabel + " percentile;" + centLabel + " (%);N_{contribs}").c_str(),
+                      {HistType::kTH2F, {multAxis, {200, 0.0f, 200.0f, "N_{contribs}"}}});
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── PID histograms ───────────────────────────────────────────────────
+    // registryPid: vs total-p (kept unchanged — intentional total-momentum monitoring)
+    registryPid.add("Proton/hTPCdEdxVsP_selected", "", {HistType::kTH2F, {axisP, axisTPCdEdx}});
+    registryPid.add("Proton/hTPCdEdxVsP_TPConly", "", {HistType::kTH2F, {axisP, axisTPCdEdx}});
+    registryPid.add("Proton/hTPCdEdxVsP_TPCTOF", "", {HistType::kTH2F, {axisP, axisTPCdEdx}});
+    registryPid.add("AntiProton/hTPCdEdxVsP_selected", "", {HistType::kTH2F, {axisP, axisTPCdEdx}});
+    registryPid.add("AntiProton/hTPCdEdxVsP_TPConly", "", {HistType::kTH2F, {axisP, axisTPCdEdx}});
+    registryPid.add("AntiProton/hTPCdEdxVsP_TPCTOF", "", {HistType::kTH2F, {axisP, axisTPCdEdx}});
+    // registryPid: vs pTPC (TPC inner param = PID selection variable) — added alongside for QA comparison
+    registryPid.add("Proton/hTPCdEdxVsPTPC_selected", "", {HistType::kTH2F, {axisPTPC, axisTPCdEdx}});
+    registryPid.add("Proton/hTPCdEdxVsPTPC_TPConly", "", {HistType::kTH2F, {axisPTPC, axisTPCdEdx}});
+    registryPid.add("Proton/hTPCdEdxVsPTPC_TPCTOF", "", {HistType::kTH2F, {axisPTPC, axisTPCdEdx}});
+    registryPid.add("AntiProton/hTPCdEdxVsPTPC_selected", "", {HistType::kTH2F, {axisPTPC, axisTPCdEdx}});
+    registryPid.add("AntiProton/hTPCdEdxVsPTPC_TPConly", "", {HistType::kTH2F, {axisPTPC, axisTPCdEdx}});
+    registryPid.add("AntiProton/hTPCdEdxVsPTPC_TPCTOF", "", {HistType::kTH2F, {axisPTPC, axisTPCdEdx}});
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── Rho histograms ───────────────────────────────────────────────────
+    registryRho.add("hEventCounter", "Events", {HistType::kTH1F, {{1, 0.0, 1.0}}});
+    // rapidity-based rho1
+    registryRho.add("h2_rho1_Proton_y", "#rho_{1}(p) in (y,#varphi) (after V0-daughter veto)", {HistType::kTH2F, {yAxis, phiAxis}});
+    registryRho.add("h2_rho1_AntiProton_y", "#rho_{1}(#bar{p}) in (y,#varphi) (after V0-daughter veto)", {HistType::kTH2F, {yAxis, phiAxis}});
+    registryRho.add("h2_rho1_Lambda_y", "#rho_{1}(#Lambda) in (y,#varphi)", {HistType::kTH2F, {yAxis, phiAxis}});
+    registryRho.add("h2_rho1_AntiLambda_y", "#rho_{1}(#bar{#Lambda}) in (y,#varphi)", {HistType::kTH2F, {yAxis, phiAxis}});
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── Autocorrelation / feed-down diagnostic histograms ────────────────
+    // Purpose: check whether Lambda daughter protons enter the primary-proton
+    //          sample, causing autocorrelation bias in the Lambda-p rho2.
+    // Folder:  CorrelationQA/PrimaryProton_vs_LambdaDaughter/
+    //
+    // h2f_dEta_dPhi         : Δη vs Δφ for every (selected Lambda, selected
+    //                         primary proton) pair. The primary-proton list is
+    //                         ALREADY cleaned by the V0-daughter veto, so the same
+    //                         track cannot appear; this checks for residual
+    //                         proximity correlation (e.g. undetected feed-down).
+    // h2f_dEta_dPhi_nonSameTrack : same, restricted to pairs where the primary
+    //                         proton track is NOT the Lambda positive daughter.
+    AxisSpec axisCorDEta = {64, -1.6f, 1.6f, "#Delta#eta"};
+    AxisSpec axisCorDPhi = {72, -o2::constants::math::PI, o2::constants::math::PI, "#Delta#varphi"};
+    AxisSpec axisCorDPhiDisplay = {72, -o2::constants::math::PI / 2.0f, 3.0f * o2::constants::math::PI / 2.0f, "#Delta#varphi"};
+    registryCorrelationQA.add(
+      "PrimaryProton_vs_LambdaDaughter/h2f_dEta_dPhi",
+      "Primary Proton (after V0-daughter veto) vs #Lambda Daughter Proton;#Delta#eta = #eta_{prim} - #eta_{dau};#Delta#varphi = #varphi_{prim} - #varphi_{dau}",
+      {HistType::kTH2F, {axisCorDEta, axisCorDPhi}});
+    registryCorrelationQA.add(
+      "PrimaryProton_vs_LambdaDaughter/h2f_dEta_dPhi_display",
+      "Primary Proton (after V0-daughter veto) vs #Lambda Daughter Proton (display shifted #Delta#varphi);#Delta#eta = #eta_{prim} - #eta_{dau};#Delta#varphi = #varphi_{prim} - #varphi_{dau}",
+      {HistType::kTH2F, {axisCorDEta, axisCorDPhiDisplay}});
+    registryCorrelationQA.add(
+      "PrimaryProton_vs_LambdaDaughter/h2f_dEta_dPhi_nonSameTrack",
+      "Primary Proton (after V0-daughter veto) vs #Lambda Daughter (non-same-track pairs only);#Delta#eta;#Delta#varphi",
+      {HistType::kTH2F, {axisCorDEta, axisCorDPhi}});
+    registryCorrelationQA.add(
+      "PrimaryProton_vs_LambdaDaughter/h2f_dEta_dPhi_nonSameTrack_display",
+      "Primary Proton (after V0-daughter veto) vs #Lambda Daughter (non-same-track pairs only, display shifted #Delta#varphi);#Delta#eta;#Delta#varphi",
+      {HistType::kTH2F, {axisCorDEta, axisCorDPhiDisplay}});
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── Combo 2: Lambda daughter proton ↔ primary antiproton ─────────────
+    // Purpose: check whether the Lambda pos-daughter proton (charge +1) could
+    //          be confused with a primary antiproton (charge −1).
+    // Same-track matching is impossible here (opposite charges).
+    registryCorrelationQA.add(
+      "PrimaryAntiProton_vs_LambdaDaughter/h2f_dEta_dPhi",
+      "Primary AntiProton (after V0-daughter veto) vs #Lambda Daughter Proton;#Delta#eta = #eta_{prim} - #eta_{dau};#Delta#varphi = #varphi_{prim} - #varphi_{dau}",
+      {HistType::kTH2F, {axisCorDEta, axisCorDPhi}});
+    registryCorrelationQA.add(
+      "PrimaryAntiProton_vs_LambdaDaughter/h2f_dEta_dPhi_display",
+      "Primary AntiProton (after V0-daughter veto) vs #Lambda Daughter Proton (display shifted #Delta#varphi);#Delta#eta;#Delta#varphi",
+      {HistType::kTH2F, {axisCorDEta, axisCorDPhiDisplay}});
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── Combo 3: AntiLambda daughter antiproton ↔ primary proton ─────────
+    // Purpose: check whether the AntiLambda neg-daughter antiproton (charge −1)
+    //          could leak into the primary proton sample (charge +1).
+    // Same-track matching is impossible here (opposite charges).
+    registryCorrelationQA.add(
+      "PrimaryProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi",
+      "Primary Proton (after V0-daughter veto) vs #bar{#Lambda} Daughter AntiProton;#Delta#eta = #eta_{prim} - #eta_{dau};#Delta#varphi = #varphi_{prim} - #varphi_{dau}",
+      {HistType::kTH2F, {axisCorDEta, axisCorDPhi}});
+    registryCorrelationQA.add(
+      "PrimaryProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi_display",
+      "Primary Proton (after V0-daughter veto) vs #bar{#Lambda} Daughter AntiProton (display shifted #Delta#varphi);#Delta#eta;#Delta#varphi",
+      {HistType::kTH2F, {axisCorDEta, axisCorDPhiDisplay}});
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── Combo 4: AntiLambda daughter antiproton ↔ primary antiproton ─────
+    // Purpose: check whether the AntiLambda neg-daughter antiproton (charge −1)
+    //          enters the primary antiproton sample, causing autocorrelation
+    //          bias in the AntiLambda–pbar rho2. Analogous to Combo 1.
+    // h2f_dEta_dPhi_nonSameTrack : pairs where the primary antiproton is NOT
+    //          the AntiLambda neg-daughter (i.e. genuine different-track pairs).
+    registryCorrelationQA.add(
+      "PrimaryAntiProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi",
+      "Primary AntiProton (after V0-daughter veto) vs #bar{#Lambda} Daughter AntiProton;#Delta#eta = #eta_{prim} - #eta_{dau};#Delta#varphi = #varphi_{prim} - #varphi_{dau}",
+      {HistType::kTH2F, {axisCorDEta, axisCorDPhi}});
+    registryCorrelationQA.add(
+      "PrimaryAntiProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi_display",
+      "Primary AntiProton (after V0-daughter veto) vs #bar{#Lambda} Daughter AntiProton (display shifted #Delta#varphi);#Delta#eta;#Delta#varphi",
+      {HistType::kTH2F, {axisCorDEta, axisCorDPhiDisplay}});
+    registryCorrelationQA.add(
+      "PrimaryAntiProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi_nonSameTrack",
+      "Primary AntiProton (after V0-daughter veto) vs #bar{#Lambda} Daughter (non-same-track pairs only);#Delta#eta;#Delta#varphi",
+      {HistType::kTH2F, {axisCorDEta, axisCorDPhi}});
+    registryCorrelationQA.add(
+      "PrimaryAntiProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi_nonSameTrack_display",
+      "Primary AntiProton (after V0-daughter veto) vs #bar{#Lambda} Daughter (non-same-track pairs only, display shifted #Delta#varphi);#Delta#eta;#Delta#varphi",
+      {HistType::kTH2F, {axisCorDEta, axisCorDPhiDisplay}});
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── QA3: RawPairDensity — Δη vs Δφ for same-sign pairs ───────────────
+    // Axes: Δη (400 bins, ±2.0) × Δφ (640 bins, [−π/2, 3π/2])
+    AxisSpec axisQA3DEta = {400, -2.0f, 2.0f, "#Delta#eta"};
+    AxisSpec axisQA3DPhi = {640, -o2::constants::math::PI / 2.0f, 3.0f * o2::constants::math::PI / 2.0f, "#Delta#varphi"};
+    registryCorrelationQA.add(
+      "QA3/RawPairDensity/h2f_dEta_dPhi_PP",
+      "Raw pair density p-p;#Delta#eta;#Delta#varphi",
+      {HistType::kTH2F, {axisQA3DEta, axisQA3DPhi}});
+    registryCorrelationQA.add(
+      "QA3/RawPairDensity/h2f_dEta_dPhi_LP",
+      "Raw pair density #Lambda-p (all charge combos);#Delta#eta;#Delta#varphi",
+      {HistType::kTH2F, {axisQA3DEta, axisQA3DPhi}});
+    registryCorrelationQA.add(
+      "QA3/RawPairDensity/h2f_dEta_dPhi_LL",
+      "Raw pair density #Lambda-#Lambda (all charge combos);#Delta#eta;#Delta#varphi",
+      {HistType::kTH2F, {axisQA3DEta, axisQA3DPhi}});
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── QA3: PairCleaning — proton-proton only ────────────────────────────
+    registryCorrelationQA.add(
+      "QA3/PairCleaning/h1f_pairCleaning",
+      "p-p pair cleaning;Step;Counts",
+      {HistType::kTH1F, {{4, 0.5f, 4.5f}}});
+    // Bin labels are set after histogram registration
+    {
+      auto h = registryCorrelationQA.get<TH1>(HIST("QA3/PairCleaning/h1f_pairCleaning"));
+      h->GetXaxis()->SetBinLabel(1, "All Candidate Pairs");
+      h->GetXaxis()->SetBinLabel(2, "Rejected Same Track");
+      h->GetXaxis()->SetBinLabel(3, "Rejected q_inv");
+      h->GetXaxis()->SetBinLabel(4, "Accepted");
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── QA3: SplitTrackQA — proton-proton close pairs ─────────────────────
+    registryCorrelationQA.add(
+      "QA3/SplitTrackQA/h2f_dEta_dPhi_ClosePairs",
+      "Split-track QA: close p-p pairs;#Delta#eta;#Delta#varphi",
+      {HistType::kTH2F, {{80, -0.02f, 0.02f, "#Delta#eta"}, {80, -0.05f, 0.05f, "#Delta#varphi"}}});
+    registryCorrelationQA.add(
+      "QA3/SplitTrackQA/h1f_openingAngle_ClosePairs",
+      "Split-track QA: opening angle of close p-p pairs;#theta (rad);Counts",
+      {HistType::kTH1F, {{100, 0.0f, 0.2f}}});
+    registryCorrelationQA.add(
+      "QA3/SplitTrackQA/h1f_deltaPt_ClosePairs",
+      "Split-track QA: |#Deltap_{T}| of close p-p pairs;|#Deltap_{T}| (GeV/#it{c});Counts",
+      {HistType::kTH1F, {{100, 0.0f, 1.0f}}});
+    // ─────────────────────────────────────────────────────────────────────
+
+    if (cFillQinvQA.value) {
+      // ── QA3: SplitTrackQA — q_inv and shared-cluster fraction ─────────────
+      float qinvMax = cQinvQAMax.value;
+      int qinvBins = cQinvQABins.value;
+      constexpr float MinQinvQABinWidth = 0.001f;
+      if (qinvMax / qinvBins < MinQinvQABinWidth) {
+        qinvBins = static_cast<int>(qinvMax / MinQinvQABinWidth);
+      }
+
+      // "Before_qinvCut": filled for every accepted pair, prior to the q_inv
+      // cut (kQinvCut), so they show the complete original q_inv distributions.
+      registryCorrelationQA.add(
+        "QA3/SplitTrackQA/h1f_qinv_PP_Before_qinvCut",
+        "Split-track QA: q_{inv} for p-p pairs, before q_{inv} cut;q_{inv} (GeV/c);Counts",
+        {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
+      registryCorrelationQA.add(
+        "QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut",
+        "Split-track QA: q_{inv} for #Lambda/#bar{#Lambda}-p/#bar{p} pairs (all four LP combos), before q_{inv} cut;q_{inv} (GeV/c);Counts",
+        {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
+      registryCorrelationQA.add(
+        "QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut",
+        "Split-track QA: q_{inv} for #Lambda/#bar{#Lambda}-#Lambda/#bar{#Lambda} pairs (all four LL combos), before q_{inv} cut;q_{inv} (GeV/c);Counts",
+        {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
+      // "After_qinvCut": filled only for pairs surviving the q_inv cut
+      // (q_inv > kQinvCut), applied uniformly to all pair types (PP, pAp, App, ApAp, LP-family, LL-family).
+      registryCorrelationQA.add(
+        "QA3/SplitTrackQA/h1f_qinv_PP_After_qinvCut",
+        "Split-track QA: q_{inv} for p-p pairs, after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
+        {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
+      registryCorrelationQA.add(
+        "QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut",
+        "Split-track QA: q_{inv} for #Lambda/#bar{#Lambda}-p/#bar{p} pairs (all four LP combos), after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
+        {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
+      registryCorrelationQA.add(
+        "QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut",
+        "Split-track QA: q_{inv} for #Lambda/#bar{#Lambda}-#Lambda/#bar{#Lambda} pairs (all four LL combos), after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
+        {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
+      // q_inv Before/After QA for p-pbar, pbar-p and pbar-pbar pairs
+      registryCorrelationQA.add(
+        "QA3/SplitTrackQA/h1f_qinv_pAp_Before_qinvCut",
+        "Split-track QA: q_{inv} for p-#bar{p} pairs, before q_{inv} cut;q_{inv} (GeV/c);Counts",
+        {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
+      registryCorrelationQA.add(
+        "QA3/SplitTrackQA/h1f_qinv_pAp_After_qinvCut",
+        "Split-track QA: q_{inv} for p-#bar{p} pairs, after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
+        {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
+      registryCorrelationQA.add(
+        "QA3/SplitTrackQA/h1f_qinv_App_Before_qinvCut",
+        "Split-track QA: q_{inv} for #bar{p}-p pairs, before q_{inv} cut;q_{inv} (GeV/c);Counts",
+        {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
+      registryCorrelationQA.add(
+        "QA3/SplitTrackQA/h1f_qinv_App_After_qinvCut",
+        "Split-track QA: q_{inv} for #bar{p}-p pairs, after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
+        {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
+      registryCorrelationQA.add(
+        "QA3/SplitTrackQA/h1f_qinv_ApAp_Before_qinvCut",
+        "Split-track QA: q_{inv} for #bar{p}-#bar{p} pairs, before q_{inv} cut;q_{inv} (GeV/c);Counts",
+        {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
+      registryCorrelationQA.add(
+        "QA3/SplitTrackQA/h1f_qinv_ApAp_After_qinvCut",
+        "Split-track QA: q_{inv} for #bar{p}-#bar{p} pairs, after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
+        {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
+      registryCorrelationQA.add("QA3/Kstar/h1f_kstar_Lp_BeforeQinvCut", "k* of #Lambda-p pairs before q_{inv} cut;k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
+      registryCorrelationQA.add("QA3/Kstar/h1f_kstar_Lp", "k* of #Lambda-p pairs after q_{inv} cut;k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
+      registryCorrelationQA.add("QA3/Kstar/h1f_kstar_LAp_BeforeQinvCut", "k* of #Lambda-#bar{p} pairs before q_{inv} cut;k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
+      registryCorrelationQA.add("QA3/Kstar/h1f_kstar_LAp", "k* of #Lambda-#bar{p} pairs after q_{inv} cut;k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
+      registryCorrelationQA.add("QA3/Kstar/h1f_kstar_ALp_BeforeQinvCut", "k* of #bar{#Lambda}-p pairs before q_{inv} cut;k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
+      registryCorrelationQA.add("QA3/Kstar/h1f_kstar_ALp", "k* of #bar{#Lambda}-p pairs after q_{inv} cut;k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
+      registryCorrelationQA.add("QA3/Kstar/h1f_kstar_ALAp_BeforeQinvCut", "k* of #bar{#Lambda}-#bar{p} pairs before q_{inv} cut;k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
+      registryCorrelationQA.add("QA3/Kstar/h1f_kstar_ALAp", "k* of #bar{#Lambda}-#bar{p} pairs after q_{inv} cut;k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
+
+      // ── QA3: 3D q_inv vs ΔΦ vs Δη and q_inv vs ΔΦ vs ΔY ─────────────────
+      // Filled BEFORE the q_inv cut so the full distribution is visible.
+      // Nomenclature: "Lp"  = Lambda(V0)  vs primary proton
+      //               "Lp_dau" = Lambda daughter proton vs primary proton
+      //               "LAp"/"LAp_dau" = Lambda (V0/dau) vs primary antiproton
+      //               "ALp"/"ALp_dau" = AntiLambda (V0/dau) vs primary proton
+      //               "ALAp"/"ALAp_dau" = AntiLambda (V0/dau) vs primary antiproton
+      {
+        AxisSpec axisQinv3D = {100, 0.0f, 2.0f, "q_{inv} (GeV/c)"};
+        AxisSpec axisDPhi3D = {64, -o2::constants::math::PI / 2.0f, 3.0f * o2::constants::math::PI / 2.0f, "#Delta#varphi"};
+        AxisSpec axisDEta3D = {40, -2.0f, 2.0f, "#Delta#eta"};
+        AxisSpec axisDY3D = {40, -2.0f, 2.0f, "#Deltay"};
+        // ── eta space ─────────────────────────────────────────────────────
+        registryCorrelationQA.add("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_Lp",
+                                  "q_{inv} vs #Delta#varphi vs #Delta#eta: #Lambda (V0) - p;q_{inv} (GeV/c);#Delta#varphi;#Delta#eta",
+                                  {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDEta3D}});
+        registryCorrelationQA.add("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_Lp_dau",
+                                  "q_{inv} vs #Delta#varphi vs #Delta#eta: #Lambda dau p - p;q_{inv} (GeV/c);#Delta#varphi;#Delta#eta",
+                                  {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDEta3D}});
+        registryCorrelationQA.add("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_LAp",
+                                  "q_{inv} vs #Delta#varphi vs #Delta#eta: #Lambda (V0) - #bar{p};q_{inv} (GeV/c);#Delta#varphi;#Delta#eta",
+                                  {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDEta3D}});
+        registryCorrelationQA.add("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_LAp_dau",
+                                  "q_{inv} vs #Delta#varphi vs #Delta#eta: #Lambda dau p - #bar{p};q_{inv} (GeV/c);#Delta#varphi;#Delta#eta",
+                                  {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDEta3D}});
+        registryCorrelationQA.add("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALp",
+                                  "q_{inv} vs #Delta#varphi vs #Delta#eta: #bar{#Lambda} (V0) - p;q_{inv} (GeV/c);#Delta#varphi;#Delta#eta",
+                                  {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDEta3D}});
+        registryCorrelationQA.add("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALp_dau",
+                                  "q_{inv} vs #Delta#varphi vs #Delta#eta: #bar{#Lambda} dau #bar{p} - p;q_{inv} (GeV/c);#Delta#varphi;#Delta#eta",
+                                  {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDEta3D}});
+        registryCorrelationQA.add("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALAp",
+                                  "q_{inv} vs #Delta#varphi vs #Delta#eta: #bar{#Lambda} (V0) - #bar{p};q_{inv} (GeV/c);#Delta#varphi;#Delta#eta",
+                                  {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDEta3D}});
+        registryCorrelationQA.add("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALAp_dau",
+                                  "q_{inv} vs #Delta#varphi vs #Delta#eta: #bar{#Lambda} dau #bar{p} - #bar{p};q_{inv} (GeV/c);#Delta#varphi;#Delta#eta",
+                                  {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDEta3D}});
+        // ── y space ───────────────────────────────────────────────────────
+        registryCorrelationQA.add("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_Lp",
+                                  "q_{inv} vs #Delta#varphi vs #Deltay: #Lambda (V0) - p;q_{inv} (GeV/c);#Delta#varphi;#Deltay",
+                                  {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDY3D}});
+        registryCorrelationQA.add("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_Lp_dau",
+                                  "q_{inv} vs #Delta#varphi vs #Deltay: #Lambda dau p - p;q_{inv} (GeV/c);#Delta#varphi;#Deltay",
+                                  {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDY3D}});
+        registryCorrelationQA.add("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_LAp",
+                                  "q_{inv} vs #Delta#varphi vs #Deltay: #Lambda (V0) - #bar{p};q_{inv} (GeV/c);#Delta#varphi;#Deltay",
+                                  {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDY3D}});
+        registryCorrelationQA.add("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_LAp_dau",
+                                  "q_{inv} vs #Delta#varphi vs #Deltay: #Lambda dau p - #bar{p};q_{inv} (GeV/c);#Delta#varphi;#Deltay",
+                                  {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDY3D}});
+        registryCorrelationQA.add("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALp",
+                                  "q_{inv} vs #Delta#varphi vs #Deltay: #bar{#Lambda} (V0) - p;q_{inv} (GeV/c);#Delta#varphi;#Deltay",
+                                  {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDY3D}});
+        registryCorrelationQA.add("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALp_dau",
+                                  "q_{inv} vs #Delta#varphi vs #Deltay: #bar{#Lambda} dau #bar{p} - p;q_{inv} (GeV/c);#Delta#varphi;#Deltay",
+                                  {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDY3D}});
+        registryCorrelationQA.add("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALAp",
+                                  "q_{inv} vs #Delta#varphi vs #Deltay: #bar{#Lambda} (V0) - #bar{p};q_{inv} (GeV/c);#Delta#varphi;#Deltay",
+                                  {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDY3D}});
+        registryCorrelationQA.add("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALAp_dau",
+                                  "q_{inv} vs #Delta#varphi vs #Deltay: #bar{#Lambda} dau #bar{p} - #bar{p};q_{inv} (GeV/c);#Delta#varphi;#Deltay",
+                                  {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDY3D}});
+      }
+      // ─────────────────────────────────────────────────────────────────────
+    }
+    registryCorrelationQA.add(
+      "QA3/SplitTrackQA/h1f_sharedClsFraction_t1",
+      "Split-track QA: TPC shared-cluster fraction, track 1 (p-p: first proton; #Lambda-p: V0 daughter) in close pairs;Fraction;Counts",
+      {HistType::kTH1F, {{50, 0.0f, 1.0f}}});
+    registryCorrelationQA.add(
+      "QA3/SplitTrackQA/h1f_sharedClsFraction_t2",
+      "Split-track QA: TPC shared-cluster fraction, track 2 (p-p: second proton; #Lambda-p: primary (anti)proton) in close pairs;Fraction;Counts",
+      {HistType::kTH1F, {{50, 0.0f, 1.0f}}});
+    if (cFillQinvQA.value) {
+      registryCorrelationQA.add(
+        "h2_qinv_dPhi_Lp",
+        "Lambda-Proton pairs;#Delta#varphi;q_{inv} (GeV/c)",
+        {HistType::kTH2F, {{72, -static_cast<float>(TMath::Pi()), static_cast<float>(TMath::Pi())}, {100, 0.0f, 0.10f}}});
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── ProtonCounts_byPID_Check histograms (protons only, sign-guarded in process) ──
+    state.h_TPC =
+      registryProtonPidCheck.add<TH1>("h_TPC",
+                                      "Proton candidates: TPC PID only (no TOF condition);#it{p}_{T} (GeV/#it{c});Counts",
+                                      {HistType::kTH1F, {pidCheckPtAxis}});
+    state.h_TPCandTOF =
+      registryProtonPidCheck.add<TH1>("h_TPCandTOF",
+                                      "Proton candidates: TPC AND TOF both required;#it{p}_{T} (GeV/#it{c});Counts",
+                                      {HistType::kTH1F, {pidCheckPtAxis}});
+    state.h_TPCorTOF =
+      registryProtonPidCheck.add<TH1>("h_TPCorTOF",
+                                      "Proton candidates: TPC required; if TOF present at any p, TOF n#sigma also required (differs from final selection, which requires TOF only above p_{TPC} switch);#it{p}_{T} (GeV/#it{c});Counts",
+                                      {HistType::kTH1F, {pidCheckPtAxis}});
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── Merged / AllPt histograms ───────────────────────────────────
+    // ── Rapidity merged rho2 histograms ─────────────────────────────────────
+    // NOTE: these must use unrolledAxisY (mRhoYBins*mRhoPhiBins bins),
+    // GetUnrolledIndexY() below produces indices in [0, mRhoUnrolledBinsY),
+    // so the booked axis must match that range or downstream R2/BF code that
+    // expects y-space-sized histograms will see a dimension mismatch.
+    state.hRho2_Lp_y_AllPt =
+      registryRho.add<TH2>("h2_rho2_Lp_y_AllPt", "#rho_{2}(#Lambda, p) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #Lambda (trigger);index(y,#varphi) of p (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+    state.hRho2_LAp_y_AllPt =
+      registryRho.add<TH2>("h2_rho2_LAp_y_AllPt", "#rho_{2}(#Lambda, #bar{p}) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #Lambda (trigger);index(y,#varphi) of #bar{p} (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+    state.hRho2_ALp_y_AllPt =
+      registryRho.add<TH2>("h2_rho2_ALp_y_AllPt", "#rho_{2}(#bar{#Lambda}, p) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #bar{#Lambda} (trigger);index(y,#varphi) of p (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+    state.hRho2_ALAp_y_AllPt =
+      registryRho.add<TH2>("h2_rho2_ALAp_y_AllPt", "#rho_{2}(#bar{#Lambda}, #bar{p}) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #bar{#Lambda} (trigger);index(y,#varphi) of #bar{p} (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+    state.hRho2_pp_y_AllPt =
+      registryRho.add<TH2>("h2_rho2_pp_y_AllPt", "#rho_{2}(p, p) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of p (trigger);index(y,#varphi) of p (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+    state.hRho2_pAp_y_AllPt =
+      registryRho.add<TH2>("h2_rho2_pAp_y_AllPt", "#rho_{2}(p, #bar{p}) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of p (trigger);index(y,#varphi) of #bar{p} (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+    state.hRho2_App_y_AllPt =
+      registryRho.add<TH2>("h2_rho2_App_y_AllPt", "#rho_{2}(#bar{p}, p) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #bar{p} (trigger);index(y,#varphi) of p (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+    state.hRho2_ApAp_y_AllPt =
+      registryRho.add<TH2>("h2_rho2_ApAp_y_AllPt", "#rho_{2}(#bar{p}, #bar{p}) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #bar{p} (trigger);index(y,#varphi) of #bar{p} (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+    state.hRho2_LL_y_AllPt =
+      registryRho.add<TH2>("h2_rho2_LL_y_AllPt", "#rho_{2}(#Lambda, #Lambda) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #Lambda (trigger);index(y,#varphi) of #Lambda (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+    state.hRho2_LAL_y_AllPt =
+      registryRho.add<TH2>("h2_rho2_LAL_y_AllPt", "#rho_{2}(#Lambda, #bar{#Lambda}) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #Lambda (trigger);index(y,#varphi) of #bar{#Lambda} (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+    state.hRho2_ALL_y_AllPt =
+      registryRho.add<TH2>("h2_rho2_ALL_y_AllPt", "#rho_{2}(#bar{#Lambda}, #Lambda) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #bar{#Lambda} (trigger);index(y,#varphi) of #Lambda (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+    state.hRho2_ALAL_y_AllPt =
+      registryRho.add<TH2>("h2_rho2_ALAL_y_AllPt", "#rho_{2}(#bar{#Lambda}, #bar{#Lambda}) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #bar{#Lambda} (trigger);index(y,#varphi) of #bar{#Lambda} (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+    // ─────────────────────────────────────────────────────────────────────
+
+    state.hPtSelectedPrimProton_AllPt =
+      registryOther.add<TH1>("hPtSelectedPrimProton_AllPt",
+                             "Selected primary proton p_{T} spectrum (integrated, 0.5-3.6 GeV/#it{c});#it{p}_{T} (GeV/#it{c});Counts",
+                             {HistType::kTH1F, {ptAxis}});
+    state.hPtSelectedPrimAntiProton_AllPt =
+      registryOther.add<TH1>("hPtSelectedPrimAntiProton_AllPt",
+                             "Selected primary antiproton p_{T} spectrum (integrated, 0.5-3.6 GeV/#it{c});#it{p}_{T} (GeV/#it{c});Counts",
+                             {HistType::kTH1F, {ptAxis}});
+    state.hPtSelLambda_AllPt =
+      registryOther.add<TH1>("hPtSelLambda_AllPt",
+                             "Selected #Lambda p_{T} spectrum (integrated, 0.6-3.6 GeV/#it{c});#it{p}_{T} (GeV/#it{c});Counts",
+                             {HistType::kTH1F, {ptAxis}});
+    state.hPtSelAntiLambda_AllPt =
+      registryOther.add<TH1>("hPtSelAntiLambda_AllPt",
+                             "Selected #bar{#Lambda} p_{T} spectrum (integrated, 0.6-3.6 GeV/#it{c});#it{p}_{T} (GeV/#it{c});Counts",
+                             {HistType::kTH1F, {ptAxis}});
+
+    state.hMassLambdaMerged =
+      registryLambda.add<TH1>("hMassLambdaNoMassCut_AllPt",
+                              "#Lambda mass (all selections except #Lambda mass window), integrated #it{p}_{T} 0.6-3.6 GeV/#it{c};#it{M}_{inv} [GeV/#it{c}^{2}];Counts",
+                              {HistType::kTH1F, {lambdaMassAxis}});
+    state.hMassAntiLambdaMerged =
+      registryLambda.add<TH1>("hMassAntiLambdaNoMassCut_AllPt",
+                              "#bar{#Lambda} mass (all selections except #Lambda mass window), integrated #it{p}_{T} 0.6-3.6 GeV/#it{c};#it{M}_{inv} [GeV/#it{c}^{2}];Counts",
+                              {HistType::kTH1F, {lambdaMassAxis}});
+    // ─────────────────────────────────────────────────────────────────────
+
+    // Six TH2F objects replace 90 per-pT TH1F objects. Promote the stored
+    // float edges exactly; a nominal uniform axis can assign boundaries differently.
+    const AxisSpec lambdaPtSliceAxis{std::vector<double>(state.ptEdges.begin(), state.ptEdges.end())};
+    state.hMassLambdaVsPt =
+      registryLambda.add<TH2>("hMassLambdaNoMassCut_vsPt",
+                              "#Lambda mass (all selections except #Lambda mass window);#it{M}_{inv} [GeV/#it{c}^{2}];#it{p}_{T}^{#Lambda} (GeV/#it{c})",
+                              {HistType::kTH2F, {lambdaMassAxis, lambdaPtSliceAxis}});
+    state.hMassAntiLambdaVsPt =
+      registryLambda.add<TH2>("hMassAntiLambdaNoMassCut_vsPt",
+                              "#bar{#Lambda} mass (all selections except #Lambda mass window);#it{M}_{inv} [GeV/#it{c}^{2}];#it{p}_{T}^{#bar{#Lambda}} (GeV/#it{c})",
+                              {HistType::kTH2F, {lambdaMassAxis, lambdaPtSliceAxis}});
+    state.hPtPrimProtonVsLambdaPt =
+      registryOther.add<TH2>("hPtPrimProton_vsLambdaPt",
+                             "Proton #it{p}_{T} in #Lambda-p pairs;#it{p}_{T}^{p} (GeV/#it{c});#it{p}_{T}^{#Lambda} (GeV/#it{c})",
+                             {HistType::kTH2F, {ptAxis, lambdaPtSliceAxis}});
+    state.hPtPrimAntiProtonVsLambdaPt =
+      registryOther.add<TH2>("hPtPrimAntiProton_vsLambdaPt",
+                             "Antiproton #it{p}_{T} in #Lambda-#bar{p} pairs;#it{p}_{T}^{#bar{p}} (GeV/#it{c});#it{p}_{T}^{#Lambda} (GeV/#it{c})",
+                             {HistType::kTH2F, {ptAxis, lambdaPtSliceAxis}});
+    state.hPtPrimProtonVsAntiLambdaPt =
+      registryOther.add<TH2>("hPtPrimProton_vsAntiLambdaPt",
+                             "Proton #it{p}_{T} in #bar{#Lambda}-p pairs;#it{p}_{T}^{p} (GeV/#it{c});#it{p}_{T}^{#bar{#Lambda}} (GeV/#it{c})",
+                             {HistType::kTH2F, {ptAxis, lambdaPtSliceAxis}});
+    state.hPtPrimAntiProtonVsAntiLambdaPt =
+      registryOther.add<TH2>("hPtPrimAntiProton_vsAntiLambdaPt",
+                             "Antiproton #it{p}_{T} in #bar{#Lambda}-#bar{p} pairs;#it{p}_{T}^{#bar{p}} (GeV/#it{c});#it{p}_{T}^{#bar{#Lambda}} (GeV/#it{c})",
+                             {HistType::kTH2F, {ptAxis, lambdaPtSliceAxis}});
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Centrality-differential histograms → top-level folder "rho1ANDrho2_LP_CentralityBased"
+    // ══════════════════════════════════════════════════════════════════════
+    state.centSets.clear();
+    // Single source of truth: centrality class edges come from the cCentBins ConfigurableAxis.
+    // Edges are read back from a temporary ROOT histogram built from the AxisSpec.
+    {
+      const AxisSpec centCfgAxis(cCentBins, "centrality");
+      HistogramRegistry tmpReg{"tmpCentEdges", {}, OutputObjHandlingPolicy::AnalysisObject};
+      auto hTmp = tmpReg.add<TH1>("hTmp", "", {HistType::kTH1F, {centCfgAxis}});
+      state.centEdgesLocal.clear();
+      const TAxis* ax = hTmp->GetXaxis();
+      for (int i = 1; i <= ax->GetNbins(); ++i) {
+        state.centEdgesLocal.push_back(static_cast<float>(ax->GetBinLowEdge(i)));
+      }
+      state.centEdgesLocal.push_back(static_cast<float>(ax->GetBinUpEdge(ax->GetNbins())));
+    }
+    constexpr size_t MinCentralityEdges = 2;
+    if (state.centEdgesLocal.size() < MinCentralityEdges) {
+      LOGF(fatal, "cCentBins needs at least 2 edges");
+    }
+    state.mCentMin = state.centEdgesLocal.front();
+    state.mCentMax = state.centEdgesLocal.back();
+    registryOther.get<TH1>(HIST("hEventCutflow"))->GetXaxis()->SetBinLabel(3, Form("%s recorded (no range cut)", cUseFT0C.value ? "centFT0C" : "centFT0M"));
+    for (const float& e : state.centEdgesLocal) {
+      if (e != std::floor(e)) {
+        LOGF(fatal, "cCentBins edges must be integers (folder names use integer edges)");
+      }
+    }
+    if (cFillCentHists.value) {
+      const size_t nCent = state.centEdgesLocal.size() - 1;
+      state.centSets.resize(nCent);
+
+      for (size_t ic = 0; ic < nCent; ++ic) {
+        const float cLo = state.centEdgesLocal[ic];
+        const float cHi = state.centEdgesLocal[ic + 1];
+        const std::string dir = Form("Cent%02d_%02d", static_cast<int>(cLo), static_cast<int>(cHi));
+        const std::string ctag = Form("%s %.0f-%.0f%%", cUseFT0C.value ? "FT0C" : "FT0M", cLo, cHi);
+        auto& S = state.centSets[ic];
+
+        S.hEvents = registryCent.add<TH1>((dir + "/hEventCounter").c_str(),
+                                          ("Events, " + ctag).c_str(),
+                                          {HistType::kTH1F, {{1, 0.0, 1.0}}});
+
+        // ── rho1, y space (always) ──
+        S.rho1_Proton_y = registryCent.add<TH2>((dir + "/h2_rho1_Proton_y").c_str(), ("#rho_{1}(p) in (y,#varphi), " + ctag).c_str(), {HistType::kTH2F, {yAxis, phiAxis}});
+        S.rho1_AntiProton_y = registryCent.add<TH2>((dir + "/h2_rho1_AntiProton_y").c_str(), ("#rho_{1}(#bar{p}) in (y,#varphi), " + ctag).c_str(), {HistType::kTH2F, {yAxis, phiAxis}});
+        S.rho1_Lambda_y = registryCent.add<TH2>((dir + "/h2_rho1_Lambda_y").c_str(), ("#rho_{1}(#Lambda) in (y,#varphi), " + ctag).c_str(), {HistType::kTH2F, {yAxis, phiAxis}});
+        S.rho1_AntiLambda_y = registryCent.add<TH2>((dir + "/h2_rho1_AntiLambda_y").c_str(), ("#rho_{1}(#bar{#Lambda}) in (y,#varphi), " + ctag).c_str(), {HistType::kTH2F, {yAxis, phiAxis}});
+
+        // ── rho2, y space (always) ──
+        auto addY = [&](std::shared_ptr<TH2>& h, const char* name, const char* title) {
+          h = registryCent.add<TH2>((dir + "/" + name).c_str(), (std::string(title) + ", " + ctag).c_str(), {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+        };
+        addY(S.Lp_y, "h2_rho2_Lp_y_AllPt", "#rho_{2}(#Lambda,p) (y,#varphi)");
+        addY(S.LAp_y, "h2_rho2_LAp_y_AllPt", "#rho_{2}(#Lambda,#bar{p}) (y,#varphi)");
+        addY(S.ALp_y, "h2_rho2_ALp_y_AllPt", "#rho_{2}(#bar{#Lambda},p) (y,#varphi)");
+        addY(S.ALAp_y, "h2_rho2_ALAp_y_AllPt", "#rho_{2}(#bar{#Lambda},#bar{p}) (y,#varphi)");
+        addY(S.pp_y, "h2_rho2_pp_y_AllPt", "#rho_{2}(p,p) (y,#varphi)");
+        addY(S.pAp_y, "h2_rho2_pAp_y_AllPt", "#rho_{2}(p,#bar{p}) (y,#varphi)");
+        addY(S.App_y, "h2_rho2_App_y_AllPt", "#rho_{2}(#bar{p},p) (y,#varphi)");
+        addY(S.ApAp_y, "h2_rho2_ApAp_y_AllPt", "#rho_{2}(#bar{p},#bar{p}) (y,#varphi)");
+        addY(S.LL_y, "h2_rho2_LL_y_AllPt", "#rho_{2}(#Lambda,#Lambda) (y,#varphi)");
+        addY(S.LAL_y, "h2_rho2_LAL_y_AllPt", "#rho_{2}(#Lambda,#bar{#Lambda}) (y,#varphi)");
+        addY(S.ALL_y, "h2_rho2_ALL_y_AllPt", "#rho_{2}(#bar{#Lambda},#Lambda) (y,#varphi)");
+        addY(S.ALAL_y, "h2_rho2_ALAL_y_AllPt", "#rho_{2}(#bar{#Lambda},#bar{#Lambda}) (y,#varphi)");
+      }
+    }
+
+    // Matched-event guards and generated-population diagnostic (no extra task members).
+    auto hMatched = registryOther.add<TH1>("hMatchedEventQA", "Matched-event BF guards;Stage;Counts",
+                                           {HistType::kTH1F, {{7, 0.5f, 7.5f}}});
+    const std::array<const char*, 7> matchedLabels = {"MC collisions seen", "reco-collision count != 1", "MC-label mismatch",
+                                                      "failed configured sel8/|z|", "failed extra event selection",
+                                                      "accepted", "McParticle MC-collision mismatch (must be 0)"};
+    for (int i = 0; i < static_cast<int>(matchedLabels.size()); ++i) {
+      hMatched->GetXaxis()->SetBinLabel(i + 1, matchedLabels[i]);
+    }
+    auto hDaughters = registryOther.add<TH1>("hGenLambdaDaughters", "Primary generated Lambdas in accepted events, before acceptance;Population;Particles",
+                                             {HistType::kTH1F, {{4, 0.5f, 4.5f}}});
+    const std::array<const char*, 4> daughterLabels = {"primary Lambda with daughters", "primary Lambda without daughters",
+                                                       "primary AntiLambda with daughters", "primary AntiLambda without daughters"};
+    for (int i = 0; i < static_cast<int>(daughterLabels.size()); ++i) {
+      hDaughters->GetXaxis()->SetBinLabel(i + 1, daughterLabels[i]);
+    }
+    const std::string mode = doprocessData.value ? "processData" : doprocessMCRecBF.value ? "processMCRecBF"
+                                                                 : doprocessMCGenBF.value ? "processMCGenBF"
+                                                                                          : "none";
+    std::vector<std::string> configLabels = {
+      "activeBFMode=" + mode,
+      "cRequireSel8=" + std::to_string(static_cast<int>(cRequireSel8.value)),
+      "lambdaV0ArmSlope=" + std::to_string(lambdaV0ArmSlope.value),
+      "lambdaV0RejectAmbiguousDaughters=" + std::to_string(static_cast<int>(lambdaV0RejectAmbiguousDaughters.value)),
+      "lambdaV0RequirePrimaryMC=" + std::to_string(static_cast<int>(lambdaV0RequirePrimaryMC.value)),
+      "lambdaV0RequireLambdaMC=" + std::to_string(static_cast<int>(lambdaV0RequireLambdaMC.value)),
+      "lambdaV0KeepSharedCandidates=" + std::to_string(static_cast<int>(lambdaV0KeepSharedCandidates.value)),
+      "lambdaV0RejectSharedCandidates=" + std::to_string(static_cast<int>(lambdaV0RejectSharedCandidates.value)),
+      "cUseFT0C=" + std::to_string(static_cast<int>(cUseFT0C.value)),
+      "cApplyEffCorr=" + std::to_string(static_cast<int>(cApplyEffCorr.value)),
+      "cUseQinvCut=" + std::to_string(static_cast<int>(cUseQinvCut.value)),
+      "cQinvCutValue=" + std::to_string(cQinvCutValue.value),
+      "cPileupReject=" + std::to_string(static_cast<int>(cPileupReject.value)),
+      "cZVtxTimeDiff=" + std::to_string(static_cast<int>(cZVtxTimeDiff.value)),
+      "cIsGoodITSLayers=" + std::to_string(static_cast<int>(cIsGoodITSLayers.value)),
+      "cPPandV0ZVertexCut=" + std::to_string(cPPandV0ZVertexCut.value),
+      "cRhoYBins=" + std::to_string(cRhoYBins.value),
+      "cRhoPhiBins=" + std::to_string(cRhoPhiBins.value),
+      "cRhoYMin=" + std::to_string(cRhoYMin.value),
+      "cRhoYMax=" + std::to_string(cRhoYMax.value),
+      "mCentMin=" + std::to_string(state.mCentMin),
+      "mCentMax=" + std::to_string(state.mCentMax),
+      "cFillCentHists=" + std::to_string(static_cast<int>(cFillCentHists.value))};
+    std::string centBinsLabel = "cCentBins=";
+    for (const float& edge : state.centEdgesLocal) {
+      if (centBinsLabel != "cCentBins=") {
+        centBinsLabel += ",";
+      }
+      centBinsLabel += std::to_string(edge);
+    }
+    configLabels.push_back(centBinsLabel);
+    const int nConfig = static_cast<int>(configLabels.size());
+    auto hConfig = registryOther.add<TH1>("hRunConfig", "BF configuration;Setting;Accepted events",
+                                          {HistType::kTH1F, {{nConfig, 0.5f, nConfig + 0.5f}}});
+    for (int i = 0; i < nConfig; ++i) {
+      hConfig->GetXaxis()->SetBinLabel(i + 1, configLabels[i].c_str());
+    }
+
+    initCorrectionInputs();
+
+    // Load hInvEff_* bin contents as multiplicative weights without recomputation.
+    if (cApplyEffCorr.value) {
+      if (!cEffCcdbPath.value.empty()) {
+        // ── load from CCDB (TList of TH3) ──
+        ccdb->setURL(cCcdbUrl.value);
+        ccdb->setCaching(true);
+        ccdb->setLocalObjectValidityChecking();
+        ccdb->setFatalWhenNull(false);
+        auto* effList = ccdb->getForTimeStamp<TList>(cEffCcdbPath.value, cEffCcdbTimestamp.value);
+        if (!effList) {
+          LOGF(fatal, "Cannot get efficiency TList from CCDB path %s (timestamp %" PRId64 ")", cEffCcdbPath.value.c_str(), static_cast<int64_t>(cEffCcdbTimestamp.value));
+        }
+        auto loadMap = [&](const char* name) -> TH3* {
+          auto* obj = effList->FindObject(name);
+          if (!obj) {
+            LOGF(fatal, "Missing efficiency map %s in CCDB object", name);
+          }
+          TH3* h = dynamic_cast<TH3*>(obj->Clone());
+          if (!h) {
+            LOGF(fatal, "Object %s in CCDB could not be cast to TH3*", name);
+          }
+          h->SetDirectory(nullptr);
+          return h;
+        };
+        state.invEffL = loadMap("hInvEff_Lambda");
+        state.invEffAL = loadMap("hInvEff_AntiLambda");
+        state.invEffP = loadMap("hInvEff_Proton");
+        state.invEffAP = loadMap("hInvEff_AntiProton");
+      } else {
+        // ── load from a ROOT file (fallback / local tests) ──
+        TFile* fEff = TFile::Open(cEffFile.value.c_str(), "READ");
+        if (!fEff || fEff->IsZombie()) {
+          LOGF(fatal, "Cannot open efficiency file %s", cEffFile.value.c_str());
+        }
+        auto loadMap = [&](const char* name) -> TH3* {
+          TH3* h = dynamic_cast<TH3*>(fEff->Get(name));
+          if (!h) {
+            LOGF(fatal, "Missing efficiency map %s", name);
+          }
+          h->SetDirectory(nullptr);
+          return h;
+        };
+        state.invEffL = loadMap("hInvEff_Lambda");
+        state.invEffAL = loadMap("hInvEff_AntiLambda");
+        state.invEffP = loadMap("hInvEff_Proton");
+        state.invEffAP = loadMap("hInvEff_AntiProton");
+        fEff->Close();
+      }
+
+      // Sumw2 for all weighted fills (rho1, and every rho2 channel: Lp family, pp family, LL family)
+      registryRho.get<TH2>(HIST("h2_rho1_Proton_y"))->Sumw2();
+      registryRho.get<TH2>(HIST("h2_rho1_AntiProton_y"))->Sumw2();
+      registryRho.get<TH2>(HIST("h2_rho1_Lambda_y"))->Sumw2();
+      registryRho.get<TH2>(HIST("h2_rho1_AntiLambda_y"))->Sumw2();
+      state.hRho2_Lp_y_AllPt->Sumw2();
+      state.hRho2_LAp_y_AllPt->Sumw2();
+      state.hRho2_ALp_y_AllPt->Sumw2();
+      state.hRho2_ALAp_y_AllPt->Sumw2();
+      state.hRho2_pp_y_AllPt->Sumw2();
+      state.hRho2_pAp_y_AllPt->Sumw2();
+      state.hRho2_App_y_AllPt->Sumw2();
+      state.hRho2_ApAp_y_AllPt->Sumw2();
+      state.hRho2_LL_y_AllPt->Sumw2();
+      state.hRho2_LAL_y_AllPt->Sumw2();
+      state.hRho2_ALL_y_AllPt->Sumw2();
+      state.hRho2_ALAL_y_AllPt->Sumw2();
+      for (const auto& S : state.centSets) {
+        S.rho1_Proton_y->Sumw2();
+        S.rho1_AntiProton_y->Sumw2();
+        S.rho1_Lambda_y->Sumw2();
+        S.rho1_AntiLambda_y->Sumw2();
+        S.Lp_y->Sumw2();
+        S.LAp_y->Sumw2();
+        S.ALp_y->Sumw2();
+        S.ALAp_y->Sumw2();
+        S.pp_y->Sumw2();
+        S.pAp_y->Sumw2();
+        S.App_y->Sumw2();
+        S.ApAp_y->Sumw2();
+        S.LL_y->Sumw2();
+        S.LAL_y->Sumw2();
+        S.ALL_y->Sumw2();
+        S.ALAL_y->Sumw2();
+      }
+    }
+  }
+
+  Filter eventFilter = (cRequireSel8.node() == false) || (o2::aod::evsel::sel8 == true);
+  Filter posZFilter = (nabs(o2::aod::collision::posZ) < cPPandV0ZVertexCut);
+
+  // ── V0 topology cuts ──────────────────────────────────────────────────
+  template <typename TV0>
+  bool passTopoCuts(TV0 const& v0) const
+  {
+    if (v0.dcaV0daughters() >= cV0MaxDcaDaughters.value) {
+      return false;
+    }
+    if (v0.v0cosPA() <= lambdaV0MinCosPA.value) {
+      return false;
+    }
+    if (v0.v0radius() <= lambdaV0MinDecayRadius.value) {
+      return false;
+    }
+    if (v0.dcav0topv() >= cV0MaxDcaToPV.value) {
+      return false;
+    }
+    return true;
+  }
+  // ─────────────────────────────────────────────────────────────────────
+
+  template <typename TTrack>
+  bool hasInconsistentV0Daughter(TTrack const& daughter) const
+  {
+    const auto compatibleIds = daughter.compatibleCollIds();
+    return compatibleIds.size() > 1 ||
+           (compatibleIds.size() == 1 && compatibleIds[0] != daughter.collisionId());
+  }
+
+  // Shared BF event stages. Entry follows configured sel8 and vertex selection.
+  template <typename TCollision, typename TTracks>
+  bool selectBFEvent(TCollision const& collision, TTracks const& tracks, float& cent, int& nTracksINEL)
+  {
+    // Centrality and INEL multiplicity are recorded without extra event rejection.
+    registryOther.fill(HIST("hEventCutflow"), 1.0f);
+
+    registryOther.fill(HIST("hEventCutflow"), 2.0f);
+
+    cent = getCentrality(collision);
+    registryOther.fill(HIST("hEventCutflow"), 3.0f);
+
+    // INEL track multiplicity remains available for QA.
+    static constexpr float kMaxInelEta = 0.8f;
+    nTracksINEL = 0;
+    for (auto const& trk : tracks) {
+      if (std::abs(trk.eta()) < kMaxInelEta) {
+        ++nTracksINEL;
+      }
+    }
+    registryOther.fill(HIST("hEventCutflow"), 4.0f);
+
+    if (!passesExtraEventSelection(collision)) {
+      return false;
+    }
+    // ── Event cutflow bin 5 — after extra event selection (pileup / zvtx / ITS flags) ──
+    registryOther.fill(HIST("hEventCutflow"), 5.0f);
+
+    return true;
+  }
+
+  void fillRunConfig()
+  {
+    auto hConfig = registryOther.get<TH1>(HIST("hRunConfig"));
+    for (int bin = 1; bin <= hConfig->GetNbinsX(); ++bin) {
+      hConfig->Fill(static_cast<float>(bin));
+    }
+  }
+
+  template <typename TCollision>
+  CentRho2Set* bookBFEvent(TCollision const& collision, float cent, int nTracksINEL)
+  {
+    registryRho.fill(HIST("hEventCounter"), 0.5);
+
+    // ── Centrality bin for the centrality-differential histograms ─────────
+    CentRho2Set* cs = nullptr;
+    if (cFillCentHists.value) {
+      const int iCent = centBinIndex(cent);
+      if (iCent >= 0 && iCent < static_cast<int>(state.centSets.size())) {
+        cs = &state.centSets[iCent];
+        cs->hEvents->Fill(0.5);
+      }
+    }
+
+    registryOther.fill(HIST("hVertexZRec"), collision.posZ());
+    registryOther.fill(HIST("hFT0MPercentile"), cent);
+
+    // ── Item 5: Event-level pileup rejection metrics ──────────────────────
+    // Fill hPileupFlags: one bin per evsel bit, filled if the bit is set.
+    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      registryOther.fill(HIST("hPileupFlags"), 1.0f);
+    }
+    if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      registryOther.fill(HIST("hPileupFlags"), 2.0f);
+    }
+    if (collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      registryOther.fill(HIST("hPileupFlags"), 3.0f);
+    }
+    if (collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+      registryOther.fill(HIST("hPileupFlags"), 4.0f);
+    }
+    if (collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+      registryOther.fill(HIST("hPileupFlags"), 5.0f);
+    }
+    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) &&
+        collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) &&
+        collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      registryOther.fill(HIST("hPileupFlags"), 6.0f);
+    }
+    // N_{tracks} and N_{contribs} vs centrality — filled once per event
+    registryOther.fill(HIST("h2f_NTracks_vs_Cent"), cent, static_cast<float>(nTracksINEL));
+    registryOther.fill(HIST("h2f_NumContrib_vs_Cent"), cent, static_cast<float>(collision.numContrib()));
+    // ─────────────────────────────────────────────────────────────────────
+
+    fillRunConfig();
+    return cs;
+  }
+
+  // Common reconstructed cuts for data, matched MC BF and efficiency inputs.
+  // MC labels and optional truth filters precede shared-daughter cleaning.
+  template <bool fillQA, bool useMCV0Labels, typename TTracks, typename TCollision, typename TV0s>
+  void selectRecoV0s(TCollision const& collision, TV0s const& V0s,
+                     std::vector<typename TV0s::iterator>& selectedLambdas,
+                     std::vector<typename TV0s::iterator>& selectedAntiLambdas,
+                     std::unordered_set<int64_t>& v0DaughterTrackIds)
+  {
+    constexpr float mLambdaPDG = o2::constants::physics::MassLambda;
+    constexpr float mK0PDG = o2::constants::physics::MassK0Short;
+    const auto recordV0Stage = [&](float stage, bool fillLambda, bool fillAntiLambda) {
+      if constexpr (fillQA) {
+        if (fillLambda) {
+          registryQaDetector.fill(HIST("Lambda/hCutFlow"), stage);
+        }
+        if (fillAntiLambda) {
+          registryQaDetector.fill(HIST("AntiLambda/hCutFlow"), stage);
+        }
+      }
+    };
+
+    for (const auto& v0 : V0s) {
+      const auto& v0PosDauCached = v0.template posTrack_as<TTracks>();
+      const auto& v0NegDauCached = v0.template negTrack_as<TTracks>();
+      recordV0Stage(1.f, true, true);
+      if constexpr (useMCV0Labels) {
+        if (!v0.has_mcParticle() || !v0PosDauCached.has_mcParticle() || !v0NegDauCached.has_mcParticle()) {
+          continue;
+        }
+        const auto* truthTable = static_cast<aod::mcv0label::McParticleId const&>(v0).getCurrent();
+        if (!usableMCIndex(truthTable, v0.mcParticleId())) {
+          continue;
+        }
+      }
+      recordV0Stage(2.f, true, true);
+
+      // ── RAW AFTER REQUIRED MC LABELS QA Fills — before any V0 selection cut ─────────────
+      // Placed here at the very top of the loop: before v0Type, daughter
+      // kinematics, TPC PID, rapidity, pT, topology, DCA, CTau, K0S, or
+      // mass-window cuts. Every V0 surviving the MC-label requirement is filled.
+      // We double-fill under both the Lambda hypothesis (pos=proton, neg=pion)
+      // and the AntiLambda hypothesis (pos=pion, neg=proton) before assigning a species.
+      if constexpr (fillQA) {
+        const auto& rawPosDau = v0PosDauCached;
+        const auto& rawNegDau = v0NegDauCached;
+        const float rawCtau = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * mLambdaPDG;
+        const float rawBgctau = rawCtau * v0.p() / mLambdaPDG;
+        // Lambda hypothesis (positive daughter assumed proton)
+        fillLambdaQA<true>(LambdaQAStage::RawCandidate, v0, rawCtau, rawBgctau);
+        fillDaughterQA<DaughterParent::Lambda, DaughterType::Proton>(DaughterQAStage::Raw, rawPosDau);
+        fillDaughterQA<DaughterParent::Lambda, DaughterType::Pion>(DaughterQAStage::Raw, rawNegDau);
+        // AntiLambda hypothesis (negative daughter assumed antiproton)
+        fillLambdaQA<false>(LambdaQAStage::RawCandidate, v0, rawCtau, rawBgctau);
+        fillDaughterQA<DaughterParent::AntiLambda, DaughterType::AntiProton>(DaughterQAStage::Raw, rawNegDau);
+        fillDaughterQA<DaughterParent::AntiLambda, DaughterType::AntiPion>(DaughterQAStage::Raw, rawPosDau);
+        // ── Item 2: K0S competing-mass hypothesis QA — RAW AFTER REQUIRED MC LABELS (before any cut) ──
+        registryQaDetector.fill(HIST("Lambda/InvariantMass/h1f_mK0Short_beforeCut"), v0.mK0Short());
+        registryQaDetector.fill(HIST("Lambda/InvariantMass/h2f_mLambda_vs_mK0Short"), v0.mK0Short(), v0.mLambda());
+        registryQaDetector.fill(HIST("AntiLambda/InvariantMass/h1f_mK0Short_beforeCut"), v0.mK0Short());
+        registryQaDetector.fill(HIST("AntiLambda/InvariantMass/h2f_mLambda_vs_mK0Short"), v0.mK0Short(), v0.mAntiLambda());
+        // ─────────────────────────────────────────────────────────────────
+      }
+      // ─────────────────────────────────────────────────────────────────
+
+      // Parent acceptance is independent of the assigned daughter hypothesis.
+      if (v0.pt() <= lambdaV0MinPt.value || v0.pt() >= lambdaV0MaxPt.value ||
+          std::abs(v0.yLambda()) >= lambdaV0MaxY.value) {
+        continue;
+      }
+      recordV0Stage(3.f, true, true);
+
+      const float ctau = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * mLambdaPDG;
+      if (!passTopoCuts(v0) || v0.v0Type() != cV0TypeSelection.value || ctau >= lambdaV0MaxCTau.value) {
+        continue;
+      }
+      recordV0Stage(4.f, true, true);
+
+      if (std::abs(v0.mK0Short() - mK0PDG) <= lambdaV0KShortRejectMassWindow.value) {
+        continue;
+      }
+      recordV0Stage(5.f, true, true);
+
+      // Every failure of the Lambda branch is assigned to AntiLambda.
+      // Test only the assigned hypothesis; there is no PID-overlap veto or retry.
+      const bool lambdaHypothesis =
+        v0.qtarm() < lambdaV0ArmSlope.value * std::abs(v0.alpha()) && v0.alpha() > 0.f;
+      const bool antiLambdaHypothesis = !lambdaHypothesis;
+      const auto& v0PosDau = v0PosDauCached;
+      const auto& v0NegDau = v0NegDauCached;
+
+      if (v0PosDau.pt() <= cV0DauMinPt.value || v0NegDau.pt() <= cV0DauMinPt.value ||
+          std::abs(v0PosDau.eta()) >= cV0DauMaxEta.value || std::abs(v0NegDau.eta()) >= cV0DauMaxEta.value ||
+          v0PosDau.tpcNClsCrossedRows() <= cV0DauMinTpcCrossedRows.value ||
+          v0NegDau.tpcNClsCrossedRows() <= cV0DauMinTpcCrossedRows.value) {
+        continue;
+      }
+      const float dcaProton = lambdaHypothesis ? std::abs(v0.dcapostopv()) : std::abs(v0.dcanegtopv());
+      const float dcaPion = lambdaHypothesis ? std::abs(v0.dcanegtopv()) : std::abs(v0.dcapostopv());
+      if (dcaProton <= lambdaV0DaughterProtonMinDCAToPV.value ||
+          dcaPion <= lambdaV0DaughterPionMinDCAToPV.value) {
+        continue;
+      }
+      const float protonNSigma = lambdaHypothesis ? v0PosDau.tpcNSigmaPr() : v0NegDau.tpcNSigmaPr();
+      const float pionNSigma = lambdaHypothesis ? v0NegDau.tpcNSigmaPi() : v0PosDau.tpcNSigmaPi();
+      if (std::abs(protonNSigma) >= lambdaV0DaughterProtonTPCNsigma.value ||
+          std::abs(pionNSigma) >= lambdaV0DaughterPionTPCNsigma.value) {
+        continue;
+      }
+      recordV0Stage(6.f, lambdaHypothesis, antiLambdaHypothesis);
+
+      if (lambdaV0RejectAmbiguousDaughters.value &&
+          (hasInconsistentV0Daughter(v0PosDau) || hasInconsistentV0Daughter(v0NegDau))) {
+        continue;
+      }
+      recordV0Stage(7.f, lambdaHypothesis, antiLambdaHypothesis);
+
+      // ── Mass window selection: |m - mPDG| < lambdaV0MassWindow ─────────
+      const float selectedMass = lambdaHypothesis ? v0.mLambda() : v0.mAntiLambda();
+      const bool passesMassWindow = !(std::abs(selectedMass - mLambdaPDG) >= lambdaV0MassWindow.value);
+      const bool selLambda = lambdaHypothesis && passesMassWindow;
+      const bool selAntiLambda = antiLambdaHypothesis && passesMassWindow;
+      // ── Item 2: K0S mass fill after K0S rejection + after Lambda/AntiLambda selection ──
+      if (selLambda) {
+        if constexpr (fillQA) {
+          registryQaDetector.fill(HIST("Lambda/InvariantMass/h1f_mK0Short_afterLambdaSel"), v0.mK0Short());
+        }
+      }
+      if (selAntiLambda) {
+        if constexpr (fillQA) {
+          registryQaDetector.fill(HIST("AntiLambda/InvariantMass/h1f_mK0Short_afterLambdaSel"), v0.mK0Short());
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────
+
+      if constexpr (fillQA) {
+        // ── pT bin index for per-bin histograms ──────────────────────────
+        const float pt = v0.pt();
+        // VS Code: commented out unused variable.
+        // const float eta = v0.eta();
+        // VS Code: commented out unused variable.
+        // const float pz  = pt * std::sinh(eta);
+        int bin = -1;
+        for (size_t i = 0; i < state.ptEdges.size() - 1; ++i) {
+          if (pt >= state.ptEdges[i] && pt < state.ptEdges[i + 1]) {
+            bin = static_cast<int>(i);
+            break;
+          }
+        }
+        // ─────────────────────────────────────────────────────────────────
+
+        // ── NoMassCut QA fills (PID + topo only) ─────────────────────────
+        // Note: fillLambdaQA/fillDaughterQA for 01_Raw were moved earlier in the
+        // loop (before the daughter DCA-to-PV cut) to give a true pre-cut view.
+        if (lambdaHypothesis) {
+          if (bin >= 0) {
+            fillPtSlice(state.hMassLambdaVsPt, bin, v0.mLambda());
+          }
+          state.hMassLambdaMerged->Fill(v0.mLambda());
+          registryQaDetector.fill(HIST("Lambda/InvariantMass/NoMassCut/h2f_mass_vs_pt"), pt, v0.mLambda());
+          // ── Item 2: mass vs eta/phi acceptance uniformity ──
+          registryQaDetector.fill(HIST("Lambda/InvariantMass/h2f_mass_vs_eta"), v0.eta(), v0.mLambda());
+          registryQaDetector.fill(HIST("Lambda/InvariantMass/h2f_mass_vs_phi"), v0.phi(), v0.mLambda());
+          // ──────────────────────────────────────────────────
+          if (selLambda) {
+            registryQaDetector.fill(HIST("Lambda/InvariantMass/MassCut/h2f_mass_vs_pt"), pt, v0.mLambda());
+          }
+        }
+        if (antiLambdaHypothesis) {
+          if (bin >= 0) {
+            fillPtSlice(state.hMassAntiLambdaVsPt, bin, v0.mAntiLambda());
+          }
+          state.hMassAntiLambdaMerged->Fill(v0.mAntiLambda());
+          registryQaDetector.fill(HIST("AntiLambda/InvariantMass/NoMassCut/h2f_mass_vs_pt"), pt, v0.mAntiLambda());
+          // ── Item 2: mass vs eta/phi acceptance uniformity ──
+          registryQaDetector.fill(HIST("AntiLambda/InvariantMass/h2f_mass_vs_eta"), v0.eta(), v0.mAntiLambda());
+          registryQaDetector.fill(HIST("AntiLambda/InvariantMass/h2f_mass_vs_phi"), v0.phi(), v0.mAntiLambda());
+          // ──────────────────────────────────────────────────
+          if (selAntiLambda) {
+            registryQaDetector.fill(HIST("AntiLambda/InvariantMass/MassCut/h2f_mass_vs_pt"), pt, v0.mAntiLambda());
+          }
+        }
+        // ─────────────────────────────────────────────────────────────────
+      }
+      if (!passesMassWindow) {
+        continue;
+      }
+      recordV0Stage(8.f, lambdaHypothesis, antiLambdaHypothesis);
+
+      if constexpr (useMCV0Labels) {
+        const auto mc = v0.mcParticle();
+        if (lambdaV0RequirePrimaryMC.value && !mc.isPhysicalPrimary()) {
+          continue;
+        }
+        if (lambdaV0RequireLambdaMC.value && std::abs(mc.pdgCode()) != PDG_t::kLambda0) {
+          continue;
+        }
+      }
+      recordV0Stage(9.f, lambdaHypothesis, antiLambdaHypothesis);
+
+      // Selected-candidate QA includes truth selection in MC and precedes cleaning.
+      // The existing Final histogram paths describe this pre-clean selection stage.
+      if constexpr (fillQA) {
+        const float bgctau = ctau * v0.p() / mLambdaPDG;
+        if (lambdaHypothesis) {
+          fillLambdaQA<true>(LambdaQAStage::Final, v0, ctau, bgctau);
+          fillDaughterQA<DaughterParent::Lambda, DaughterType::Proton>(DaughterQAStage::Final, v0PosDau);
+          fillDaughterQA<DaughterParent::Lambda, DaughterType::Pion>(DaughterQAStage::Final, v0NegDau);
+        } else {
+          fillLambdaQA<false>(LambdaQAStage::Final, v0, ctau, bgctau);
+          fillDaughterQA<DaughterParent::AntiLambda, DaughterType::AntiProton>(DaughterQAStage::Final, v0NegDau);
+          fillDaughterQA<DaughterParent::AntiLambda, DaughterType::AntiPion>(DaughterQAStage::Final, v0PosDau);
+        }
+      }
+      if (lambdaHypothesis) {
+        selectedLambdas.push_back(v0);
+      } else {
+        selectedAntiLambdas.push_back(v0);
+      }
+      v0DaughterTrackIds.insert(v0.posTrackId());
+      v0DaughterTrackIds.insert(v0.negTrackId());
+    }
+
+    // ====== Shared-daughter cleaning (symmetric, over the Lambda ∪ AntiLambda union) ======
+    // When rejection is enabled, both candidates sharing a daughter are rejected.
+    // Keep-all overrides rejection; with both switches off, no candidate is accepted.
+    // v0DaughterTrackIds is intentionally left untouched (conservative primary veto).
+    [[maybe_unused]] const int nRawLambda = static_cast<int>(selectedLambdas.size());
+    [[maybe_unused]] const int nRawAntiLambda = static_cast<int>(selectedAntiLambdas.size());
+
+    std::unordered_map<int64_t, int> posIdCount;
+    std::unordered_map<int64_t, int> negIdCount;
+    for (const auto& v : selectedLambdas) {
+      ++posIdCount[v.posTrackId()];
+      ++negIdCount[v.negTrackId()];
+    }
+    for (const auto& v : selectedAntiLambdas) {
+      ++posIdCount[v.posTrackId()];
+      ++negIdCount[v.negTrackId()];
+    }
+
+    std::vector<typename TV0s::iterator> cleanLambdas;
+    std::vector<typename TV0s::iterator> cleanAntiLambdas;
+    for (const auto& v : selectedLambdas) {
+      const bool uniqueDaughters = posIdCount[v.posTrackId()] == 1 && negIdCount[v.negTrackId()] == 1;
+      if (lambdaV0KeepSharedCandidates.value || (lambdaV0RejectSharedCandidates.value && uniqueDaughters)) {
+        cleanLambdas.push_back(v);
+      }
+    }
+    for (const auto& v : selectedAntiLambdas) {
+      const bool uniqueDaughters = posIdCount[v.posTrackId()] == 1 && negIdCount[v.negTrackId()] == 1;
+      if (lambdaV0KeepSharedCandidates.value || (lambdaV0RejectSharedCandidates.value && uniqueDaughters)) {
+        cleanAntiLambdas.push_back(v);
+      }
+    }
+    selectedLambdas = std::move(cleanLambdas);
+    selectedAntiLambdas = std::move(cleanAntiLambdas);
+
+    // V0 cutflow bin 10: survivors of shared-daughter cleaning
+    for ([[maybe_unused]] const auto& v : selectedLambdas) {
+      if constexpr (fillQA) {
+        registryQaDetector.fill(HIST("Lambda/hCutFlow"), 10.0f);
+      }
+    }
+    for ([[maybe_unused]] const auto& v : selectedAntiLambdas) {
+      if constexpr (fillQA) {
+        registryQaDetector.fill(HIST("AntiLambda/hCutFlow"), 10.0f);
+      }
+    }
+
+    [[maybe_unused]] const int nSelLambda = static_cast<int>(selectedLambdas.size());
+    [[maybe_unused]] const int nSelAntiLambda = static_cast<int>(selectedAntiLambdas.size());
+
+    // Cleaning diagnostics
+    if constexpr (fillQA) {
+      registryOther.fill(HIST("h1f_nLambda_beforeClean"), static_cast<float>(nRawLambda));
+      registryOther.fill(HIST("h1f_nLambda_rejectedClean"), static_cast<float>(nRawLambda - nSelLambda));
+      registryOther.fill(HIST("h1f_nLambda_afterClean"), static_cast<float>(nSelLambda));
+      registryOther.fill(HIST("h1f_nAntiLambda_beforeClean"), static_cast<float>(nRawAntiLambda));
+      registryOther.fill(HIST("h1f_nAntiLambda_rejectedClean"), static_cast<float>(nRawAntiLambda - nSelAntiLambda));
+      registryOther.fill(HIST("h1f_nAntiLambda_afterClean"), static_cast<float>(nSelAntiLambda));
+      registryOther.fill(HIST("hSharedDauCleaningSums"), 1.0f, static_cast<double>(nRawLambda));
+      registryOther.fill(HIST("hSharedDauCleaningSums"), 2.0f, static_cast<double>(nRawLambda - nSelLambda));
+      registryOther.fill(HIST("hSharedDauCleaningSums"), 3.0f, static_cast<double>(nSelLambda));
+      registryOther.fill(HIST("hSharedDauCleaningSums"), 4.0f, static_cast<double>(nRawAntiLambda));
+      registryOther.fill(HIST("hSharedDauCleaningSums"), 5.0f, static_cast<double>(nRawAntiLambda - nSelAntiLambda));
+      registryOther.fill(HIST("hSharedDauCleaningSums"), 6.0f, static_cast<double>(nSelAntiLambda));
+      registryOther.fill(HIST("hSharedDauCleaningSums"), 7.0f, static_cast<double>(nSelLambda) * static_cast<double>(nSelLambda - 1));
+      registryOther.fill(HIST("hSharedDauCleaningSums"), 8.0f, static_cast<double>(nSelAntiLambda) * static_cast<double>(nSelAntiLambda - 1));
+      registryOther.fill(HIST("hSharedDauCleaningSums"), 9.0f, static_cast<double>(nSelLambda) * static_cast<double>(nSelAntiLambda));
+    }
+  }
+
+  template <bool fillQA, typename TTracks>
+  void selectRecoProtons(TTracks const& tracks,
+                         std::unordered_set<int64_t> const& v0DaughterTrackIds,
+                         std::vector<typename TTracks::iterator>& selectedPrimProtons,
+                         std::vector<typename TTracks::iterator>& selectedPrimAntiProtons)
+  {
+    // Local veto counters retain the BF counting convention.
+    int nProtonBeforeVeto = 0;
+    int nProtonRemovedVeto = 0;
+    int nAntiPBeforeVeto = 0;
+    int nAntiPRemovedVeto = 0;
+
+    for (auto const& trk : tracks) {
+
+      if constexpr (fillQA) {
+        // ── RAW Stage QA Fills (truly before any selection — kinematics, detector quality,
+        //    TPC, and TOF all filled here before any cut fires) ───────────────────────────
+        if (trk.sign() > 0) {
+          fillProtonKinematics<true>(ProtonQAStage::RawAfterTrackSel, trk);
+          fillProtonDetectorQuality<true>(ProtonQAStage::RawAfterTrackSel, trk);
+          if (trk.hasTPC()) {
+            fillProtonTpcQA<true>(ProtonQAStage::RawAfterTrackSel, trk);
+          }
+          if (trk.hasTOF()) {
+            fillProtonTofQA<true>(ProtonQAStage::RawAfterTrackSel, trk);
+          }
+        } else {
+          fillProtonKinematics<false>(ProtonQAStage::RawAfterTrackSel, trk);
+          fillProtonDetectorQuality<false>(ProtonQAStage::RawAfterTrackSel, trk);
+          if (trk.hasTPC()) {
+            fillProtonTpcQA<false>(ProtonQAStage::RawAfterTrackSel, trk);
+          }
+          if (trk.hasTOF()) {
+            fillProtonTofQA<false>(ProtonQAStage::RawAfterTrackSel, trk);
+          }
+        }
+        // ─────────────────────────────────────────────────────────────────
+      }
+      // ── Track quality cuts ────────────────────────────────────────────
+      if constexpr (fillQA) {
+        fillCutFlow(1.0f, trk);
+      }
+      if (!trk.hasTPC()) {
+        continue;
+      }
+      if constexpr (fillQA) {
+        fillCutFlow(2.0f, trk);
+      }
+      if (trk.tpcNClsCrossedRows() < pProtonTPCMinRows.value) {
+        continue;
+      }
+      if constexpr (fillQA) {
+        fillCutFlow(3.0f, trk);
+      }
+      if (trk.tpcCrossedRowsOverFindableCls() < pProtonTPCMinRowsOverFindable.value) {
+        continue;
+      }
+      if constexpr (fillQA) {
+        fillCutFlow(4.0f, trk);
+      }
+      if (trk.tpcChi2NCl() > pProtonTPCMaxChi2PerCluster.value) {
+        continue;
+      }
+      if constexpr (fillQA) {
+        fillCutFlow(5.0f, trk);
+      }
+      if (trk.itsNCls() < pProtonITSMinClusters.value) {
+        continue;
+      }
+      if constexpr (fillQA) {
+        fillCutFlow(6.0f, trk);
+      }
+      if (trk.itsChi2NCl() > pProtonITSMaxChi2PerCluster.value) {
+        continue;
+      }
+      if constexpr (fillQA) {
+        fillCutFlow(7.0f, trk);
+      }
+      if (trk.tpcSignal() < cPPMinTpcSignal.value) {
+        continue;
+      }
+      if constexpr (fillQA) {
+        fillCutFlow(8.0f, trk);
+      }
+      // ─────────────────────────────────────────────────────────────────
+
+      // ── pT acceptance cut ─────────────────────────────────────────────
+      if (trk.pt() < pProtonMinPt.value || trk.pt() > pProtonMaxPt.value) {
+        continue;
+      }
+      if constexpr (fillQA) {
+        fillCutFlow(9.0f, trk);
+      }
+      // ─────────────────────────────────────────────────────────────────
+
+      // ── Proton kinematic acceptance ───────────────────────────────────
+      // ETACUT-DISABLED (temporary): eta cut commented out, keeping rapidity cut only.
+      // if (std::abs(trk.eta()) > pProtonMaxEta.value) { continue; }
+      const float y = protonRapidity(trk);
+      if (std::abs(y) > pProtonMaxY.value) {
+        continue;
+      }
+      if constexpr (fillQA) {
+        fillCutFlow(10.0f, trk);
+      }
+      // ─────────────────────────────────────────────────────────────────
+      // ── DCA cuts ─────────────────────────────────────────────────────
+      const bool passDCA = (std::abs(trk.dcaXY()) < pProtonMaxDCAxy.value) &&
+                           (std::abs(trk.dcaZ()) < pProtonMaxDCAz.value);
+      if (!passDCA) {
+        continue;
+      }
+      if constexpr (fillQA) {
+        fillCutFlow(11.0f, trk);
+      }
+      // ─────────────────────────────────────────────────────────────────
+
+      if constexpr (fillQA) {
+        // FIX-4: ProtonCounts_byPID_Check — protons only (sign > 0 guard added)
+        if (trk.sign() > 0) {
+          const float pt = trk.pt();
+          const float nsTPC = std::abs(trk.tpcNSigmaPr());
+
+          if (nsTPC < pProtonTPCNsigma.value) {
+            state.h_TPC->Fill(pt);
+          }
+          if (trk.hasTOF() && nsTPC < pProtonTPCNsigma.value &&
+              std::abs(trk.tofNSigmaPr()) < pProtonTOFNsigma.value) {
+            state.h_TPCandTOF->Fill(pt);
+          }
+          if (nsTPC < pProtonTPCNsigma.value) {
+            if (!trk.hasTOF() || std::abs(trk.tofNSigmaPr()) < pProtonTOFNsigma.value) {
+              state.h_TPCorTOF->Fill(pt);
+            }
+          }
+        }
+        // ─────────────────────────────────────────────────────────────────
+
+        // TPC PID pass QA fill (intermediate stage, before full selection)
+        if (std::abs(trk.tpcNSigmaPr()) < pProtonTPCNsigma.value) {
+          if (trk.sign() > 0) {
+            fillProtonTrackingQA<true>(ProtonQAStage::TpcPid, trk);
+            if (trk.hasTOF()) {
+              fillProtonTofQA<true>(ProtonQAStage::TpcPid, trk);
+            }
+          } else {
+            fillProtonTrackingQA<false>(ProtonQAStage::TpcPid, trk);
+            if (trk.hasTOF()) {
+              fillProtonTofQA<false>(ProtonQAStage::TpcPid, trk);
+            }
+          }
+        }
+
+        // TPC+TOF PID pass QA fill (intermediate stage, before full selection)
+        if (std::abs(trk.tpcNSigmaPr()) < pProtonTPCNsigma.value && trk.hasTOF() && std::abs(trk.tofNSigmaPr()) < pProtonTOFNsigma.value) {
+          if (trk.sign() > 0) {
+            fillProtonTrackingQA<true>(ProtonQAStage::TpcTofPid, trk);
+            fillProtonTofQA<true>(ProtonQAStage::TpcTofPid, trk);
+          } else {
+            fillProtonTrackingQA<false>(ProtonQAStage::TpcTofPid, trk);
+            fillProtonTofQA<false>(ProtonQAStage::TpcTofPid, trk);
+          }
+        }
+      }
+      // ── Main PID selection ────────────────────────────────────────────
+      if (!passesPrimProtonPid(trk)) {
+        continue;
+      }
+      if constexpr (fillQA) {
+        fillCutFlow(12.0f, trk);
+      }
+
+      // pi/K/e contaminant veto
+      if (!passesContaminantVeto(trk)) {
+        bool vetoUsedTOF = false;
+        const int vetoMask = contaminantVetoMask(trk, vetoUsedTOF);
+        constexpr int NumContaminantSpecies = 3;
+        for (int ib = 0; ib < NumContaminantSpecies; ++ib) {
+          if (vetoMask & (1 << ib)) {
+            if constexpr (fillQA) {
+              fillCutFlow2D((vetoUsedTOF ? 19.0f : 16.0f) + ib, trk);
+            }
+          }
+        }
+        continue;
+      }
+      if constexpr (fillQA) {
+        fillCutFlow(13.0f, trk);
+      }
+
+      if constexpr (fillQA) {
+        // TOF Matching Fraction check on selected protons
+        registryQaDetector.fill(HIST("Selection/TOF_Matching/hTOFMatchedFractionVsPt"), trk.pt(), trk.hasTOF() ? 1.0f : 0.0f);
+        // ── Item 4: 2D TOF-matching efficiency map for primary protons ──────
+        registryQaDetector.fill(HIST("Selection/TOF_Matching/h2f_TOFMatchedFractionVsEtaPhi"),
+                                trk.eta(), trk.phi(), trk.hasTOF() ? 1.0f : 0.0f);
+        // ─────────────────────────────────────────────────────────────────
+
+        // ── PID dEdx monitoring ───────────────────────────────────────────
+        // vs total-p: unchanged — intentional total-momentum view
+        // vs pTPC (tpcInnerParam): added alongside for proton-selection QA comparison
+        if (trk.sign() > 0) {
+          registryPid.fill(HIST("Proton/hTPCdEdxVsP_selected"), trk.p(), trk.tpcSignal());
+          registryPid.fill(HIST("Proton/hTPCdEdxVsPTPC_selected"), trk.tpcInnerParam(), trk.tpcSignal());
+          if (trk.hasTOF()) {
+            registryPid.fill(HIST("Proton/hTPCdEdxVsP_TPCTOF"), trk.p(), trk.tpcSignal());
+            registryPid.fill(HIST("Proton/hTPCdEdxVsPTPC_TPCTOF"), trk.tpcInnerParam(), trk.tpcSignal());
+          } else {
+            registryPid.fill(HIST("Proton/hTPCdEdxVsP_TPConly"), trk.p(), trk.tpcSignal());
+            registryPid.fill(HIST("Proton/hTPCdEdxVsPTPC_TPConly"), trk.tpcInnerParam(), trk.tpcSignal());
+          }
+        } else {
+          registryPid.fill(HIST("AntiProton/hTPCdEdxVsP_selected"), trk.p(), trk.tpcSignal());
+          registryPid.fill(HIST("AntiProton/hTPCdEdxVsPTPC_selected"), trk.tpcInnerParam(), trk.tpcSignal());
+          if (trk.hasTOF()) {
+            registryPid.fill(HIST("AntiProton/hTPCdEdxVsP_TPCTOF"), trk.p(), trk.tpcSignal());
+            registryPid.fill(HIST("AntiProton/hTPCdEdxVsPTPC_TPCTOF"), trk.tpcInnerParam(), trk.tpcSignal());
+          } else {
+            registryPid.fill(HIST("AntiProton/hTPCdEdxVsP_TPConly"), trk.p(), trk.tpcSignal());
+            registryPid.fill(HIST("AntiProton/hTPCdEdxVsPTPC_TPConly"), trk.tpcInnerParam(), trk.tpcSignal());
+          }
+        }
+        // ─────────────────────────────────────────────────────────────────
+      }
+      // ── V0-daughter veto: reject tracks shared with any V0 daughter ───
+      // Count before veto, check veto set, then classify or skip.
+      // This MUST appear before push_back so that every pp histogram
+      // (which iterates selectedPrimProtons / selectedPrimAntiProtons)
+      // automatically uses the cleaned collection.
+      const bool isV0Daughter = v0DaughterTrackIds.contains(trk.globalIndex());
+      if (trk.sign() > 0) {
+        ++nProtonBeforeVeto;
+      } else {
+        ++nAntiPBeforeVeto;
+      }
+      if (isV0Daughter) {
+        // Track is a reconstructed V0 daughter — skip it.
+        if (trk.sign() > 0) {
+          ++nProtonRemovedVeto;
+        } else {
+          ++nAntiPRemovedVeto;
+        }
+        continue;
+      }
+      if constexpr (fillQA) {
+        fillCutFlow(14.0f, trk);
+      }
+      // ─────────────────────────────────────────────────────────────────
+
+      // ── Classify into proton / antiproton lists ───────────────────────
+      if constexpr (fillQA) {
+        fillCutFlow(15.0f, trk);
+      }
+      // VS Code: commented out unused variables.
+      // const float pz = trk.pt() * std::sinh(trk.eta());
+      // const float eta = trk.eta();
+      if (trk.sign() > 0) {
+        selectedPrimProtons.push_back(trk);
+        if constexpr (fillQA) {
+          fillProtonTrackingQA<true>(ProtonQAStage::FinalSelected, trk);
+          // TOF QA only when track was accepted through the TPC+TOF branch:
+          // pt > pProtonTPCTOFSwitchPt guarantees hasTOF() and nSigmaTOF passed (beta window cut removed). //BETACUTCommented
+          if (trk.pt() >= pProtonTPCTOFSwitchPt.value) {
+            fillProtonTofQA<true>(ProtonQAStage::FinalSelected, trk);
+          }
+
+          registryOther.fill(HIST("hPtSelectedPrimProton"), trk.pt());
+          state.hPtSelectedPrimProton_AllPt->Fill(trk.pt());
+        }
+      } else {
+        selectedPrimAntiProtons.push_back(trk);
+        if constexpr (fillQA) {
+          fillProtonTrackingQA<false>(ProtonQAStage::FinalSelected, trk);
+          // TOF QA only when track was accepted through the TPC+TOF branch:
+          // pt > pProtonTPCTOFSwitchPt guarantees hasTOF() and nSigmaTOF passed (beta window cut removed). //BETACUTCommented
+          if (trk.pt() >= pProtonTPCTOFSwitchPt.value) {
+            fillProtonTofQA<false>(ProtonQAStage::FinalSelected, trk);
+          }
+
+          registryOther.fill(HIST("hPtSelectedPrimAntiProton"), trk.pt());
+          state.hPtSelectedPrimAntiProton_AllPt->Fill(trk.pt());
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────
+    }
+
+    // ── Fill veto QA histograms (once per event, after the track loop) ──
+    if constexpr (fillQA) {
+      registryOther.fill(HIST("hNPrimProtonBeforeVeto"), static_cast<float>(nProtonBeforeVeto));
+      registryOther.fill(HIST("hNPrimProtonRemovedByVeto"), static_cast<float>(nProtonRemovedVeto));
+      registryOther.fill(HIST("hNPrimProtonAfterVeto"), static_cast<float>(nProtonBeforeVeto - nProtonRemovedVeto));
+      registryOther.fill(HIST("hNPrimAntiProtonBeforeVeto"), static_cast<float>(nAntiPBeforeVeto));
+      registryOther.fill(HIST("hNPrimAntiProtonRemovedByVeto"), static_cast<float>(nAntiPRemovedVeto));
+      registryOther.fill(HIST("hNPrimAntiProtonAfterVeto"), static_cast<float>(nAntiPBeforeVeto - nAntiPRemovedVeto));
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── ProtonVetoQA: fill four dedicated per-event histograms ───────────
+    // These are filled using PROTON (sign > 0) counters only.
+    // N_before_veto  = nProtonBeforeVeto  (tracks passing quality+PID+DCA, before veto)
+    // N_removed      = nProtonRemovedVeto (tracks rejected by the V0-daughter veto)
+    // N_after_veto   = nProtonBeforeVeto - nProtonRemovedVeto
+    //                = size of selectedPrimProtons, used by rho1(p), rho2(pp), rho2(p pbar)
+    // fraction       = N_removed / N_before  (0 when N_before = 0, avoids divide-by-zero)
+    if constexpr (fillQA) {
+      const int nBefore = nProtonBeforeVeto;
+      const int nRemoved = nProtonRemovedVeto;
+      const int nAfter = nBefore - nRemoved;
+      const float fraction = (nBefore > 0)
+                               ? static_cast<float>(nRemoved) / static_cast<float>(nBefore)
+                               : 0.0f;
+      registryProtonVetoQA.fill(HIST("h1f_nBeforeVeto"), static_cast<float>(nBefore));
+      registryProtonVetoQA.fill(HIST("h1f_nRemovedByVeto"), static_cast<float>(nRemoved));
+      registryProtonVetoQA.fill(HIST("h1f_nAfterVeto"), static_cast<float>(nAfter));
+      registryProtonVetoQA.fill(HIST("h1f_fractionRemoved"), fraction);
+      // Accumulate run-level totals for endOfStream() summary.
+      state.runTotalProtonBeforeVeto += nBefore;
+      state.runTotalProtonRemovedVeto += nRemoved;
+      state.runTotalAntiPBeforeVeto += nAntiPBeforeVeto;
+      state.runTotalAntiPRemovedVeto += nAntiPRemovedVeto;
+    }
+    // ─────────────────────────────────────────────────────────────────────
+  }
+
+  struct CorrectionCandidates {
+    std::vector<MyV0sMC::iterator> lambdas, antiLambdas;
+    std::vector<MyTracksMC::iterator> protons, antiProtons;
+  };
+
+  template <typename TCollision>
+  CorrectionCandidates selectCorrectionCandidates(TCollision const& collision, MyV0sMC const& v0s, MyTracksMC const& tracks)
+  {
+    CorrectionCandidates selected;
+    std::unordered_set<int64_t> daughters;
+    // Verified against data's <true,false,MyTracks> specialization: fillQA
+    // gates histogram/counter side effects only. useMCV0Labels gates BOTH the
+    // parent/daughter label precondition and optional truth filters. The MC join
+    // only adds columns; no label is read here or by the proton selector.
+    // This same call builds the conservative PRE-cleaning veto in both runs.
+    selectRecoV0s<false, false, MyTracksMC>(collision, v0s, selected.lambdas, selected.antiLambdas, daughters);
+    selectRecoProtons<false>(tracks, daughters, selected.protons, selected.antiProtons);
+    return selected;
+  }
+
+  void recordCorrectionMetadata()
+  {
+    if (state.correctionMetadataRecorded) {
+      return;
+    }
+    state.correctionMetadataRecorded = true;
+    const std::string contract = state.correctionMetadata->GetTitle();
+    state.correctionMetadata->Fill(1.);
+    for (size_t character = 0; character < contract.size(); ++character) {
+      for (int bit = 0; bit < MetadataBitsPerByte; ++bit) {
+        if (((static_cast<unsigned char>(contract[character]) >> bit) & 1U) != 0U) {
+          state.correctionMetadata->Fill(2 + MetadataBitsPerByte * character + bit);
+        }
+      }
+    }
+  }
+
+  void fillCorrectionGenerated(size_t species, float cent, float pt, float y)
+  {
+    if (!std::isfinite(cent) || !std::isfinite(pt) || !std::isfinite(y)) {
+      state.correctionInputQA->Fill(species, 4.);
+      return;
+    }
+    auto& h = state.correctionInputs[species][3];
+    if (!correctionCoordinatesInRange(*h, cent, pt, y)) {
+      state.correctionInputQA->Fill(species, 2.);
+    }
+    h->Fill(cent, pt, y); // Unit weight, including explicitly invalid flow bins.
+  }
+
+  template <bool isV0, typename TCandidate>
+  void fillCorrectionCandidate(TCandidate const& candidate, size_t species, int64_t mcCollisionId, float cent)
+  {
+    float y = 0.f;
+    if constexpr (isV0) {
+      y = candidate.rapidity(species == 0 ? 1 : 2);
+    } else {
+      y = protonRapidity(candidate);
+    }
+    const float pt = candidate.pt();
+    if (!std::isfinite(cent) || !std::isfinite(pt) || !std::isfinite(y)) {
+      state.correctionInputQA->Fill(species, 3.);
+      return;
+    }
+    auto& hist = state.correctionInputs[species];
+    if (!correctionCoordinatesInRange(*hist[0], cent, pt, y)) {
+      state.correctionInputQA->Fill(species, 1.);
+    }
+    hist[0]->Fill(cent, pt, y); // Stage1 precedes ANY MC label access.
+    if (!candidate.has_mcParticle()) {
+      return;
+    }
+    aod::McParticles const* truth = nullptr;
+    if constexpr (isV0) {
+      truth = static_cast<aod::mcv0label::McParticleId const&>(candidate).getCurrent();
+    } else {
+      truth = static_cast<aod::mctracklabel::McParticleId const&>(candidate).getCurrent();
+    }
+    const int64_t id = candidate.mcParticleId();
+    if (!usableMCIndex(truth, id)) {
+      return;
+    }
+    const auto mc = truth->rawIteratorAt(id - truth->offset());
+    static constexpr std::array<int, 4> signedPDG = {PDG_t::kLambda0, PDG_t::kLambda0Bar, PDG_t::kProton, PDG_t::kProtonBar};
+    if (mc.mcCollisionId() != mcCollisionId || mc.pdgCode() != signedPDG[species]) {
+      return;
+    }
+    hist[1]->Fill(cent, pt, y);
+    if (!mc.isPhysicalPrimary()) {
+      return;
+    }
+    hist[2]->Fill(cent, pt, y); // Exactly Stage3, at the SAME reconstructed bin.
+    if constexpr (isV0) {
+      if (!mc.has_daughters()) {
+        // Do not redefine Stage3 to hide incompatibility with the legacy target.
+        state.correctionInputQA->Fill(species, 5.);
+      }
+      if (!inLambdaAcc(mc.pt(), mc.y())) {
+        state.correctionInputQA->Fill(species, 6.);
+      }
+    } else {
+      if (!inProtonAcc(mc.pt(), mcRapidity(mc, kMassProton))) {
+        state.correctionInputQA->Fill(species, 6.);
+      }
+    }
+  }
+
+  template <typename TCollision>
+  void fillCorrectionInputs(TCollision const& collision, MyV0sMC const& v0s, MyTracksMC const& tracks, int64_t mcCollisionId, float cent)
+  {
+    const auto selected = selectCorrectionCandidates(collision, v0s, tracks);
+    for (const auto& v0 : selected.lambdas) {
+      fillCorrectionCandidate<true>(v0, 0, mcCollisionId, cent);
+    }
+    for (const auto& v0 : selected.antiLambdas) {
+      fillCorrectionCandidate<true>(v0, 1, mcCollisionId, cent);
+    }
+    for (const auto& track : selected.protons) {
+      fillCorrectionCandidate<false>(track, 2, mcCollisionId, cent);
+    }
+    for (const auto& track : selected.antiProtons) {
+      fillCorrectionCandidate<false>(track, 3, mcCollisionId, cent);
+    }
+  }
+
+  void fillStage23Counts(int64_t /*mcCollisionId*/,
+                         std::vector<aod::V0Datas::iterator> const& /*selectedLambdas*/,
+                         std::vector<aod::V0Datas::iterator> const& /*selectedAntiLambdas*/,
+                         std::vector<MyTracks::iterator> const& /*selectedPrimProtons*/,
+                         std::vector<MyTracks::iterator> const& /*selectedPrimAntiProtons*/)
+  {
+  }
+
+  template <bool fillEfficiency = false>
+  void fillStage23Counts(int64_t mcCollisionId,
+                         std::vector<MyV0sMC::iterator> const& selectedLambdas,
+                         std::vector<MyV0sMC::iterator> const& selectedAntiLambdas,
+                         std::vector<MyTracksMC::iterator> const& selectedPrimProtons,
+                         std::vector<MyTracksMC::iterator> const& selectedPrimAntiProtons,
+                         [[maybe_unused]] float cent = 0.f)
+  {
+    // Stage 2 and Stage 3 counting; the selected reconstructed containers remain unchanged.
+    // Efficiency mode fills only proton Rec* at the Stage 3 acceptance point.
+    // Lambda Rec* are filled directly from the cleaned selection in processMCEfficiency.
+    int nLambdaPrimSec = 0;
+    int nAntiLambdaPrimSec = 0;
+    int nProtonPrimSec = 0;
+    int nAntiProtonPrimSec = 0;
+    int nLambdaPrim = 0;
+    int nAntiLambdaPrim = 0;
+    int nProtonPrim = 0;
+    int nAntiProtonPrim = 0;
+
+    // Lambda truth composition is diagnostic; efficiency uses the selected pool directly.
+    if constexpr (!fillEfficiency) {
+      for (const auto& candidate : selectedLambdas) {
+        if (!candidate.has_mcParticle()) {
+          continue;
+        }
+        const auto* truth = static_cast<aod::mcv0label::McParticleId const&>(candidate).getCurrent();
+        const int64_t id = candidate.mcParticleId();
+        if (!usableMCIndex(truth, id)) {
+          continue;
+        }
+        const auto mc = truth->rawIteratorAt(id - truth->offset());
+        if (mc.mcCollisionId() != mcCollisionId) {
+          continue;
+        }
+        if (mc.pdgCode() != PDG_t::kLambda0) {
+          continue;
+        }
+        ++nLambdaPrimSec;
+        if (mc.isPhysicalPrimary()) {
+          ++nLambdaPrim;
+        }
+      }
+
+      for (const auto& candidate : selectedAntiLambdas) {
+        if (!candidate.has_mcParticle()) {
+          continue;
+        }
+        const auto* truth = static_cast<aod::mcv0label::McParticleId const&>(candidate).getCurrent();
+        const int64_t id = candidate.mcParticleId();
+        if (!usableMCIndex(truth, id)) {
+          continue;
+        }
+        const auto mc = truth->rawIteratorAt(id - truth->offset());
+        if (mc.mcCollisionId() != mcCollisionId) {
+          continue;
+        }
+        if (mc.pdgCode() != PDG_t::kLambda0Bar) {
+          continue;
+        }
+        ++nAntiLambdaPrimSec;
+        if (mc.isPhysicalPrimary()) {
+          ++nAntiLambdaPrim;
+        }
+      }
+    }
+
+    for (const auto& candidate : selectedPrimProtons) {
+      if (!candidate.has_mcParticle()) {
+        continue;
+      }
+      const auto* truth = static_cast<aod::mctracklabel::McParticleId const&>(candidate).getCurrent();
+      const int64_t id = candidate.mcParticleId();
+      if (!usableMCIndex(truth, id)) {
+        continue;
+      }
+      const auto mc = truth->rawIteratorAt(id - truth->offset());
+      if (mc.mcCollisionId() != mcCollisionId) {
+        continue;
+      }
+      if (mc.pdgCode() != PDG_t::kProton) {
+        continue;
+      }
+      ++nProtonPrimSec;
+      if (mc.isPhysicalPrimary()) {
+        ++nProtonPrim;
+        if constexpr (fillEfficiency) {
+          registryEff.fill(HIST("RecProton"), cent, candidate.pt(), protonRapidity(candidate));
+        }
+      }
+    }
+
+    for (const auto& candidate : selectedPrimAntiProtons) {
+      if (!candidate.has_mcParticle()) {
+        continue;
+      }
+      const auto* truth = static_cast<aod::mctracklabel::McParticleId const&>(candidate).getCurrent();
+      const int64_t id = candidate.mcParticleId();
+      if (!usableMCIndex(truth, id)) {
+        continue;
+      }
+      const auto mc = truth->rawIteratorAt(id - truth->offset());
+      if (mc.mcCollisionId() != mcCollisionId) {
+        continue;
+      }
+      if (mc.pdgCode() != PDG_t::kProtonBar) {
+        continue;
+      }
+      ++nAntiProtonPrimSec;
+      if (mc.isPhysicalPrimary()) {
+        ++nAntiProtonPrim;
+        if constexpr (fillEfficiency) {
+          registryEff.fill(HIST("RecAntiProton"), cent, candidate.pt(), protonRapidity(candidate));
+        }
+      }
+    }
+
+    if constexpr (!fillEfficiency) {
+      registryOther.fill(HIST("hN_Lambda_PrimSec_reco"), static_cast<float>(nLambdaPrimSec));
+      registryOther.fill(HIST("hN_AntiLambda_PrimSec_reco"), static_cast<float>(nAntiLambdaPrimSec));
+      registryOther.fill(HIST("hN_Proton_PrimSec_reco"), static_cast<float>(nProtonPrimSec));
+      registryOther.fill(HIST("hN_AntiProton_PrimSec_reco"), static_cast<float>(nAntiProtonPrimSec));
+      registryOther.fill(HIST("hN_Lambda_prim_reco"), static_cast<float>(nLambdaPrim));
+      registryOther.fill(HIST("hN_AntiLambda_prim_reco"), static_cast<float>(nAntiLambdaPrim));
+      registryOther.fill(HIST("hN_Proton_prim_reco"), static_cast<float>(nProtonPrim));
+      registryOther.fill(HIST("hN_AntiProton_prim_reco"), static_cast<float>(nAntiProtonPrim));
+    }
+  }
+
+  // Reconstructed candidates are compared with generated primary particles;
+  // residual background and feed-down can prevent full closure.
+  template <bool useMCV0Labels = false, typename TCollision, typename TV0s, typename TTracks>
+  void runRecoAnalysis(TCollision const& collision, TV0s const& V0s,
+                       TTracks const& tracks, float cent, CentRho2Set* cs, [[maybe_unused]] int64_t mcCollisionId = -1)
+  {
+    // ====== Step 1: Initialise containers ======================================
+    std::unordered_set<int64_t> v0DaughterTrackIds;
+    v0DaughterTrackIds.reserve(64);
+    std::vector<typename TTracks::iterator> selectedPrimProtons;
+    std::vector<typename TTracks::iterator> selectedPrimAntiProtons;
+    std::vector<typename TV0s::iterator> selectedLambdas;
+    std::vector<typename TV0s::iterator> selectedAntiLambdas;
+
+    int nSelLambda = 0;
+    int nSelAntiLambda = 0;
+    int nPairs_Lambda_PrimProton = 0;
+    int nPairs_Lambda_PrimAntiProton = 0;
+    int nPairs_AntiLambda_PrimProton = 0;
+    int nPairs_AntiLambda_PrimAntiProton = 0;
+
+    selectRecoV0s<true, useMCV0Labels, TTracks>(collision, V0s, selectedLambdas, selectedAntiLambdas, v0DaughterTrackIds);
+    nSelLambda = static_cast<int>(selectedLambdas.size());
+    nSelAntiLambda = static_cast<int>(selectedAntiLambdas.size());
+    // rho1 and pT spectra from the cleaned sample (same sample as rho2)
+    for (const auto& v0 : selectedLambdas) {
+      const float wL = getEffWeight(state.invEffL, cent, v0.pt(), v0.rapidity(1));
+      registryRho.fill(HIST("h2_rho1_Lambda_y"), v0.rapidity(1), v0.phi(), wL);
+      if (cs) {
+        cs->rho1_Lambda_y->Fill(v0.rapidity(1), v0.phi(), wL);
+      }
+      registryOther.fill(HIST("hEffWeightLambda"), wL);
+      if (wL == 0.f) {
+        registryOther.fill(HIST("hEffWeightZeroCount"), 3.f);
+      }
+      registryOther.fill(HIST("hPtSelLambda"), v0.pt());
+      state.hPtSelLambda_AllPt->Fill(v0.pt());
+    }
+    for (const auto& v0 : selectedAntiLambdas) {
+      const float wAL = getEffWeight(state.invEffAL, cent, v0.pt(), v0.rapidity(2));
+      registryRho.fill(HIST("h2_rho1_AntiLambda_y"), v0.rapidity(2), v0.phi(), wAL);
+      if (cs) {
+        cs->rho1_AntiLambda_y->Fill(v0.rapidity(2), v0.phi(), wAL);
+      }
+      if (wAL == 0.f) {
+        registryOther.fill(HIST("hEffWeightZeroCount"), 4.f);
+      }
+      registryOther.fill(HIST("hPtSelAntiLambda"), v0.pt());
+      state.hPtSelAntiLambda_AllPt->Fill(v0.pt());
+    }
+    // ====== End of shared-daughter cleaning ===============================
+
+    selectRecoProtons<true>(tracks, v0DaughterTrackIds, selectedPrimProtons, selectedPrimAntiProtons);
+
+    // ── Single-particle density for protons (y) ──────────────────
+    for (auto const& primProton : selectedPrimProtons) {
+      const float yp = protonRapidity(primProton);
+      const float wP = getEffWeight(state.invEffP, cent, primProton.pt(), yp);
+      registryRho.fill(HIST("h2_rho1_Proton_y"), yp, primProton.phi(), wP);
+      if (cs) {
+        cs->rho1_Proton_y->Fill(yp, primProton.phi(), wP);
+      }
+      registryOther.fill(HIST("hEffWeightProton"), wP);
+      if (wP == 0.f) {
+        registryOther.fill(HIST("hEffWeightZeroCount"), 1.f);
+      }
+    }
+    for (auto const& primAntiProton : selectedPrimAntiProtons) {
+      const float yap = protonRapidity(primAntiProton);
+      const float wAP = getEffWeight(state.invEffAP, cent, primAntiProton.pt(), yap);
+      registryRho.fill(HIST("h2_rho1_AntiProton_y"), yap, primAntiProton.phi(), wAP);
+      if (cs) {
+        cs->rho1_AntiProton_y->Fill(yap, primAntiProton.phi(), wAP);
+      }
+      if (wAP == 0.f) {
+        registryOther.fill(HIST("hEffWeightZeroCount"), 2.f);
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
+    registryOther.fill(HIST("hNSelectedPrimProtons"), static_cast<float>(selectedPrimProtons.size()));
+    registryOther.fill(HIST("hNSelectedPrimAntiProtons"), static_cast<float>(selectedPrimAntiProtons.size()));
+
+    // ── Per-particle caches for the pair loops ───────────────────────────
+    std::vector<PartInfo> protonInfo;
+    std::vector<PartInfo> antiProtonInfo;
+    protonInfo.reserve(selectedPrimProtons.size());
+    antiProtonInfo.reserve(selectedPrimAntiProtons.size());
+    for (auto const& t : selectedPrimProtons) {
+      protonInfo.push_back(makeProtonInfo(t));
+    }
+    for (auto const& t : selectedPrimAntiProtons) {
+      antiProtonInfo.push_back(makeProtonInfo(t));
+    }
+
+    // ── pp rho2 fills (y) ───────────────────────────────────────────────────
+    for (auto const& p1 : selectedPrimProtons) {
+      const float y1_pp = protonRapidity(p1);
+      for (auto const& p2 : selectedPrimProtons) {
+        // QA3/PairCleaning: count all candidate pairs
+        registryCorrelationQA.fill(HIST("QA3/PairCleaning/h1f_pairCleaning"), 1);
+        if (p1.index() == p2.index()) {
+          // QA3/PairCleaning: rejected as same track
+          registryCorrelationQA.fill(HIST("QA3/PairCleaning/h1f_pairCleaning"), 2);
+          continue;
+        } // CHANGED from globalIndex()
+        // QA3/PairCleaning: bins 3 (Rejected q_inv) and 4 (Accepted) are filled at the q_inv cut below
+
+        // QA3/RawPairDensity: fill Δη vs Δφ for every accepted p-p pair
+        {
+          constexpr float PIHalf = o2::constants::math::PI / 2.0f;
+          const float deta = p1.eta() - p2.eta();
+          const float dphi = RecoDecay::constrainAngle((p1.phi() - p2.phi()), -PIHalf);
+          registryCorrelationQA.fill(HIST("QA3/RawPairDensity/h2f_dEta_dPhi_PP"), deta, dphi);
+
+          // QA3/SplitTrackQA: q_inv for every accepted p-p pair
+          if (cFillQinvQA.value) {
+            const float p1mag = std::sqrt(p1.px() * p1.px() + p1.py() * p1.py() + p1.pz() * p1.pz());
+            const float p2mag = std::sqrt(p2.px() * p2.px() + p2.py() * p2.py() + p2.pz() * p2.pz());
+            const float E1 = std::sqrt(p1mag * p1mag + kMassProton * kMassProton);
+            const float E2 = std::sqrt(p2mag * p2mag + kMassProton * kMassProton);
+            const float qinvPP = computeQinv(p1.px(), p1.py(), p1.pz(), E1, p2.px(), p2.py(), p2.pz(), E2);
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_PP_Before_qinvCut"), qinvPP);
+            if (passesQinvQA(qinvPP)) {
+              registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_PP_After_qinvCut"), qinvPP);
+            }
+          }
+
+          // QA3/SplitTrackQA: flag close pairs for split-track diagnosis
+          constexpr float cCloseDEta = 0.003f;
+          constexpr float cCloseDPhi = 0.005f;
+          if (std::abs(deta) < cCloseDEta && std::abs(dphi) < cCloseDPhi) {
+            const float dotProd = p1.px() * p2.px() + p1.py() * p2.py() + p1.pz() * p2.pz();
+            const float mag1 = std::sqrt(p1.px() * p1.px() + p1.py() * p1.py() + p1.pz() * p1.pz());
+            const float mag2 = std::sqrt(p2.px() * p2.px() + p2.py() * p2.py() + p2.pz() * p2.pz());
+            const float openingAngle = std::acos(std::clamp(dotProd / (mag1 * mag2), -1.f, 1.f));
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h2f_dEta_dPhi_ClosePairs"), deta, dphi);
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_openingAngle_ClosePairs"), openingAngle);
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_deltaPt_ClosePairs"), std::abs(p1.pt() - p2.pt()));
+            // Shared-cluster fraction (only for close pairs)
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_sharedClsFraction_t1"), p1.tpcFractionSharedCls());
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_sharedClsFraction_t2"), p2.tpcFractionSharedCls());
+          }
+        }
+
+        // q_inv cut (pp)
+        {
+          const float qE1 = std::sqrt(p1.px() * p1.px() + p1.py() * p1.py() + p1.pz() * p1.pz() + kMassProton * kMassProton);
+          const float qE2 = std::sqrt(p2.px() * p2.px() + p2.py() * p2.py() + p2.pz() * p2.pz() + kMassProton * kMassProton);
+          if (failsQinvCut(computeQinv(p1.px(), p1.py(), p1.pz(), qE1, p2.px(), p2.py(), p2.pz(), qE2))) {
+            registryCorrelationQA.fill(HIST("QA3/PairCleaning/h1f_pairCleaning"), 3);
+            continue;
+          }
+          registryCorrelationQA.fill(HIST("QA3/PairCleaning/h1f_pairCleaning"), 4);
+        }
+        const float y2_pp = protonRapidity(p2);
+        const int idxY1 = unrolledIndexY(y1_pp, p1.phi());
+        const int idxY2 = unrolledIndexY(y2_pp, p2.phi());
+        // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
+        const float wPair = getEffWeight(state.invEffP, cent, p1.pt(), y1_pp) * getEffWeight(state.invEffP, cent, p2.pt(), y2_pp);
+        if (idxY1 >= 0 && idxY2 >= 0) {
+          state.hRho2_pp_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f, wPair);
+        }
+        if (cs) {
+          fillIdx(cs->pp_y, idxY1, idxY2, wPair);
+        }
+      }
+    }
+    for (auto const& a : protonInfo) {
+      for (auto const& b : antiProtonInfo) {
+        const float qinvPAp = (cUseQinvCut.value || cFillQinvQA.value)
+                                ? computeQinv(a.px, a.py, a.pz, a.E, b.px, b.py, b.pz, b.E)
+                                : 0.f;
+        if (cFillQinvQA.value) {
+          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_pAp_Before_qinvCut"), qinvPAp);
+          if (passesQinvQA(qinvPAp)) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_pAp_After_qinvCut"), qinvPAp);
+          }
+        }
+        if (failsQinvCut(qinvPAp)) {
+          continue;
+        }
+        const float wPair = getEffWeight(state.invEffP, cent, a.pt, a.y) * getEffWeight(state.invEffAP, cent, b.pt, b.y);
+        if (a.idxY >= 0 && b.idxY >= 0) {
+          state.hRho2_pAp_y_AllPt->Fill(a.idxY + 0.5f, b.idxY + 0.5f, wPair);
+        }
+        if (cs) {
+          fillIdx(cs->pAp_y, a.idxY, b.idxY, wPair);
+        }
+      }
+    }
+    for (auto const& a : antiProtonInfo) {
+      for (auto const& b : protonInfo) {
+        const float qinvApp = (cUseQinvCut.value || cFillQinvQA.value)
+                                ? computeQinv(a.px, a.py, a.pz, a.E, b.px, b.py, b.pz, b.E)
+                                : 0.f;
+        if (cFillQinvQA.value) {
+          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_App_Before_qinvCut"), qinvApp);
+          if (passesQinvQA(qinvApp)) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_App_After_qinvCut"), qinvApp);
+          }
+        }
+        if (failsQinvCut(qinvApp)) {
+          continue;
+        }
+        const float wPair = getEffWeight(state.invEffAP, cent, a.pt, a.y) * getEffWeight(state.invEffP, cent, b.pt, b.y);
+        if (a.idxY >= 0 && b.idxY >= 0) {
+          state.hRho2_App_y_AllPt->Fill(a.idxY + 0.5f, b.idxY + 0.5f, wPair);
+        }
+        if (cs) {
+          fillIdx(cs->App_y, a.idxY, b.idxY, wPair);
+        }
+      }
+    }
+    for (auto const& a : antiProtonInfo) {
+      for (auto const& b : antiProtonInfo) {
+        if (a.gid == b.gid) {
+          continue;
+        }
+        const float qinvApAp = (cUseQinvCut.value || cFillQinvQA.value)
+                                 ? computeQinv(a.px, a.py, a.pz, a.E, b.px, b.py, b.pz, b.E)
+                                 : 0.f;
+        if (cFillQinvQA.value) {
+          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_ApAp_Before_qinvCut"), qinvApAp);
+          if (passesQinvQA(qinvApAp)) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_ApAp_After_qinvCut"), qinvApAp);
+          }
+        }
+        if (failsQinvCut(qinvApAp)) {
+          continue;
+        }
+        const float wPair = getEffWeight(state.invEffAP, cent, a.pt, a.y) * getEffWeight(state.invEffAP, cent, b.pt, b.y);
+        if (a.idxY >= 0 && b.idxY >= 0) {
+          state.hRho2_ApAp_y_AllPt->Fill(a.idxY + 0.5f, b.idxY + 0.5f, wPair);
+        }
+        if (cs) {
+          fillIdx(cs->ApAp_y, a.idxY, b.idxY, wPair);
+        }
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ====== Step 5: Lambda-proton and AntiLambda-proton pairing ============
+    // Both selectedLambdas/AntiLambdas and selectedPrimProtons/AntiProtons are
+    // now fully populated. Veto set was built from validated daughters only.
+
+    for (const auto& v0 : selectedLambdas) {
+      const auto& v0PosDau = v0.template posTrack_as<TTracks>();
+      const float pt = v0.pt();
+      int bin = -1;
+      for (size_t i = 0; i < state.ptEdges.size() - 1; ++i) {
+        if (pt >= state.ptEdges[i] && pt < state.ptEdges[i + 1]) {
+          bin = static_cast<int>(i);
+          break;
+        }
+      }
+
+      for (auto const& primProton : selectedPrimProtons) {
+        if (primProton.globalIndex() == v0.posTrackId() || primProton.globalIndex() == v0.negTrackId()) {
+          continue;
+        }
+        // QA3/SplitTrackQA: q_inv for every accepted Lambda-proton pair
+        float qinvLP = 0.0f;
+        if (cUseQinvCut.value || cFillQinvQA.value) {
+          const float v0pmag = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+          const float pprmag = std::sqrt(primProton.px() * primProton.px() + primProton.py() * primProton.py() + primProton.pz() * primProton.pz());
+          const float Ev0 = std::sqrt(v0pmag * v0pmag + kMassLambda * kMassLambda);
+          const float Eppr = std::sqrt(pprmag * pprmag + kMassProton * kMassProton);
+          qinvLP = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0, primProton.px(), primProton.py(), primProton.pz(), Eppr);
+        }
+        // QA3/SplitTrackQA: q_inv Before and After cut
+        if (cFillQinvQA.value) {
+          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvLP);
+          if (passesQinvQA(qinvLP)) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut"), qinvLP);
+          }
+        }
+        // QA3/QinvVsAngles: 3D fills for Lambda(V0)-primProton and Lambda dau proton-primProton
+        if (cFillQinvQA.value) {
+          constexpr float PIHalf3D = o2::constants::math::PI / 2.0f;
+          // Angular variables w.r.t. Lambda (V0)
+          const float dPhi_V0_p = RecoDecay::constrainAngle((v0.phi() - primProton.phi()), -PIHalf3D);
+          const float dEta_V0_p = v0.eta() - primProton.eta();
+          const float yLambda = v0.rapidity(1);
+          const float yPrimP = protonRapidity(primProton);
+          const float dY_V0_p = yLambda - yPrimP;
+          // q_inv using Lambda (V0) four-momentum (kMassLambda hypothesis)
+          const float v0pmag_3d = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+          const float Ev0_3d = std::sqrt(v0pmag_3d * v0pmag_3d + kMassLambda * kMassLambda);
+          const float pprmag_3d = std::sqrt(primProton.px() * primProton.px() + primProton.py() * primProton.py() + primProton.pz() * primProton.pz());
+          const float Eppr_3d = std::sqrt(pprmag_3d * pprmag_3d + kMassProton * kMassProton);
+          const float qinvLP_V0 = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0_3d, primProton.px(), primProton.py(), primProton.pz(), Eppr_3d);
+          // q_inv using Lambda daughter proton (kMassProton hypothesis), only for *_dau histograms
+          const float dauPmag_3d = std::sqrt(v0PosDau.px() * v0PosDau.px() + v0PosDau.py() * v0PosDau.py() + v0PosDau.pz() * v0PosDau.pz());
+          const float Edau_3d = std::sqrt(dauPmag_3d * dauPmag_3d + kMassProton * kMassProton);
+          const float qinvLP_dau = computeQinv(v0PosDau.px(), v0PosDau.py(), v0PosDau.pz(), Edau_3d, primProton.px(), primProton.py(), primProton.pz(), Eppr_3d);
+          // Angular variables w.r.t. Lambda daughter proton
+          const float dPhi_dau_p = RecoDecay::constrainAngle((v0PosDau.phi() - primProton.phi()), -PIHalf3D);
+          const float dEta_dau_p = v0PosDau.eta() - primProton.eta();
+          const float yDauP = protonRapidity(v0PosDau);
+          const float dY_dau_p = yDauP - yPrimP;
+          // eta space
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_Lp"), qinvLP_V0, dPhi_V0_p, dEta_V0_p);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_Lp_dau"), qinvLP_dau, dPhi_dau_p, dEta_dau_p);
+          // y space
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_Lp"), qinvLP_V0, dPhi_V0_p, dY_V0_p);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_Lp_dau"), qinvLP_dau, dPhi_dau_p, dY_dau_p);
+        }
+        // QA3/SplitTrackQA: close-pair block for daughter-overlap diagnosed split tracks
+        {
+          constexpr float PIHalf = o2::constants::math::PI / 2.0f;
+          const float deta_lp = v0.eta() - primProton.eta();
+          const float dphi_lp = RecoDecay::constrainAngle((v0.phi() - primProton.phi()), -PIHalf);
+          registryCorrelationQA.fill(
+            HIST("QA3/RawPairDensity/h2f_dEta_dPhi_LP"),
+            deta_lp, dphi_lp);
+          constexpr float cCloseDEta = 0.003f;
+          constexpr float cCloseDPhi = 0.005f;
+          if (std::abs(deta_lp) < cCloseDEta && std::abs(dphi_lp) < cCloseDPhi) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_sharedClsFraction_t1"), v0PosDau.tpcFractionSharedCls());
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_sharedClsFraction_t2"), primProton.tpcFractionSharedCls());
+          }
+        }
+        const float yL = v0.rapidity(1);
+        const float yP = protonRapidity(primProton);
+        const int idxYL = unrolledIndexY(yL, v0.phi());
+        const int idxYP = unrolledIndexY(yP, primProton.phi());
+        if (cFillQinvQA.value) {
+          registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_Lp_BeforeQinvCut"),
+                                     computeKstar(v0.px(), v0.py(), v0.pz(), kMassLambda,
+                                                  primProton.px(), primProton.py(), primProton.pz(), kMassProton));
+          // q_inv vs DeltaPhi diagnostic (filled BEFORE applying q_inv rejection)
+          const float dPhi_Lp = RecoDecay::constrainAngle(primProton.phi() - v0.phi(), -o2::constants::math::PI);
+          registryCorrelationQA.fill(HIST("h2_qinv_dPhi_Lp"), dPhi_Lp, qinvLP);
+        }
+        // Physics pair correlations (rho2 / pT / pair-count): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
+        if (failsQinvCut(qinvLP)) {
+          continue;
+        }
+        if (cFillQinvQA.value) {
+          registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_Lp"),
+                                     computeKstar(v0.px(), v0.py(), v0.pz(), kMassLambda,
+                                                  primProton.px(), primProton.py(), primProton.pz(), kMassProton));
+        }
+        if (idxYL >= 0 && idxYP >= 0 && bin >= 0) {
+          fillPtSlice(state.hPtPrimProtonVsLambdaPt, bin, primProton.pt());
+        }
+        const float wPair = getEffWeight(state.invEffL, cent, v0.pt(), yL) * getEffWeight(state.invEffP, cent, primProton.pt(), yP);
+        if (idxYL >= 0 && idxYP >= 0) {
+          state.hRho2_Lp_y_AllPt->Fill(idxYL + 0.5f, idxYP + 0.5f, wPair);
+        }
+        if (cs) {
+          fillIdx(cs->Lp_y, idxYL, idxYP, wPair);
+        }
+        ++nPairs_Lambda_PrimProton;
+      }
+      for (auto const& primAntiProton : selectedPrimAntiProtons) {
+        if (primAntiProton.globalIndex() == v0.posTrackId() || primAntiProton.globalIndex() == v0.negTrackId()) {
+          continue;
+        }
+        // QA3/SplitTrackQA: q_inv for every accepted Lambda-antiproton pair
+        float qinvLAp = 0.0f;
+        if (cUseQinvCut.value || cFillQinvQA.value) {
+          const float v0pmag = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+          const float paprmag = std::sqrt(primAntiProton.px() * primAntiProton.px() + primAntiProton.py() * primAntiProton.py() + primAntiProton.pz() * primAntiProton.pz());
+          const float Ev0 = std::sqrt(v0pmag * v0pmag + kMassLambda * kMassLambda);
+          const float Epapr = std::sqrt(paprmag * paprmag + kMassProton * kMassProton);
+          qinvLAp = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr);
+        }
+        // QA3/SplitTrackQA: q_inv Before and After cut
+        if (cFillQinvQA.value) {
+          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvLAp);
+          if (passesQinvQA(qinvLAp)) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut"), qinvLAp);
+          }
+        }
+        // QA3/QinvVsAngles: 3D fills for Lambda(V0)-primAntiProton and Lambda dau proton-primAntiProton
+        if (cFillQinvQA.value) {
+          constexpr float PIHalf3D = o2::constants::math::PI / 2.0f;
+          // Angular variables w.r.t. Lambda (V0)
+          const float dPhi_V0_ap = RecoDecay::constrainAngle((v0.phi() - primAntiProton.phi()), -PIHalf3D);
+          const float dEta_V0_ap = v0.eta() - primAntiProton.eta();
+          const float yLambdaL = v0.rapidity(1);
+          const float yPrimAp = protonRapidity(primAntiProton);
+          const float dY_V0_ap = yLambdaL - yPrimAp;
+          // q_inv using Lambda (V0) four-momentum (kMassLambda hypothesis)
+          const float v0pmag_3dL = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+          const float Ev0_3dL = std::sqrt(v0pmag_3dL * v0pmag_3dL + kMassLambda * kMassLambda);
+          const float paprmag_3dL = std::sqrt(primAntiProton.px() * primAntiProton.px() + primAntiProton.py() * primAntiProton.py() + primAntiProton.pz() * primAntiProton.pz());
+          const float Epapr_3dL = std::sqrt(paprmag_3dL * paprmag_3dL + kMassProton * kMassProton);
+          const float qinvLAp_V0 = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0_3dL, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr_3dL);
+          // q_inv using Lambda daughter proton (kMassProton hypothesis), only for *_dau histograms
+          const float dauPmag_3dL = std::sqrt(v0PosDau.px() * v0PosDau.px() + v0PosDau.py() * v0PosDau.py() + v0PosDau.pz() * v0PosDau.pz());
+          const float Edau_3dL = std::sqrt(dauPmag_3dL * dauPmag_3dL + kMassProton * kMassProton);
+          const float qinvLAp_dau = computeQinv(v0PosDau.px(), v0PosDau.py(), v0PosDau.pz(), Edau_3dL, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr_3dL);
+          // Angular variables w.r.t. Lambda daughter proton
+          const float dPhi_dau_ap = RecoDecay::constrainAngle((v0PosDau.phi() - primAntiProton.phi()), -PIHalf3D);
+          const float dEta_dau_ap = v0PosDau.eta() - primAntiProton.eta();
+          const float yDauPL = protonRapidity(v0PosDau);
+          const float dY_dau_ap = yDauPL - yPrimAp;
+          // eta space
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_LAp"), qinvLAp_V0, dPhi_V0_ap, dEta_V0_ap);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_LAp_dau"), qinvLAp_dau, dPhi_dau_ap, dEta_dau_ap);
+          // y space
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_LAp"), qinvLAp_V0, dPhi_V0_ap, dY_V0_ap);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_LAp_dau"), qinvLAp_dau, dPhi_dau_ap, dY_dau_ap);
+        }
+        // QA3/RawPairDensity: Lambda-antiproton → same LP histogram
+        {
+          constexpr float PIHalf = o2::constants::math::PI / 2.0f;
+          registryCorrelationQA.fill(
+            HIST("QA3/RawPairDensity/h2f_dEta_dPhi_LP"),
+            v0.eta() - primAntiProton.eta(),
+            RecoDecay::constrainAngle((v0.phi() - primAntiProton.phi()), -PIHalf));
+        }
+        const float yL2 = v0.rapidity(1);
+        const float yAp = protonRapidity(primAntiProton);
+        const int idxYL2 = unrolledIndexY(yL2, v0.phi());
+        const int idxYAp = unrolledIndexY(yAp, primAntiProton.phi());
+        if (cFillQinvQA.value) {
+          registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_LAp_BeforeQinvCut"),
+                                     computeKstar(v0.px(), v0.py(), v0.pz(), kMassLambda,
+                                                  primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), kMassProton));
+        }
+        // Physics pair correlations (rho2 / pT / pair-count): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
+        if (failsQinvCut(qinvLAp)) {
+          continue;
+        }
+        if (cFillQinvQA.value) {
+          registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_LAp"),
+                                     computeKstar(v0.px(), v0.py(), v0.pz(), kMassLambda,
+                                                  primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), kMassProton));
+        }
+        if (idxYL2 >= 0 && idxYAp >= 0 && bin >= 0) {
+          fillPtSlice(state.hPtPrimAntiProtonVsLambdaPt, bin, primAntiProton.pt());
+        }
+        const float wPair = getEffWeight(state.invEffL, cent, v0.pt(), yL2) * getEffWeight(state.invEffAP, cent, primAntiProton.pt(), yAp);
+        if (idxYL2 >= 0 && idxYAp >= 0) {
+          state.hRho2_LAp_y_AllPt->Fill(idxYL2 + 0.5f, idxYAp + 0.5f, wPair);
+        }
+        if (cs) {
+          fillIdx(cs->LAp_y, idxYL2, idxYAp, wPair);
+        }
+        ++nPairs_Lambda_PrimAntiProton;
+      }
+
+      // ── Autocorrelation diagnostic: primary proton vs Lambda daughter proton──
+      // Lambda proton daughter = v0PosDau (positive track, identified as proton
+      // by |tpcNSigmaPr| < PProtonTPCNsigma, already in scope above).
+      // Loop over ALL selected primary protons. NOTE: selectedPrimProtons is already
+      // cleaned by the V0-daughter veto, so the same-track case cannot occur here;
+      // this only checks for residual proximity correlations (e.g. undetected feed-down).
+      // Fills inclusive h2f_dEta_dPhi for all pairs and
+      // h2f_dEta_dPhi_nonSameTrack for every pair in this cleaned sample.
+      {
+        const float etaDau = v0PosDau.eta();
+        const float phiDau = v0PosDau.phi();
+        for (auto const& primProton : selectedPrimProtons) {
+          const float dEta = primProton.eta() - etaDau;
+          float dPhi = primProton.phi() - phiDau;
+          // Wrap Δφ into [-π, +π]
+          dPhi = RecoDecay::constrainAngle(dPhi, -o2::constants::math::PI);
+
+          // Always fill the inclusive histogram.
+          registryCorrelationQA.fill(
+            HIST("PrimaryProton_vs_LambdaDaughter/h2f_dEta_dPhi"),
+            dEta, dPhi);
+          registryCorrelationQA.fill(
+            HIST("PrimaryProton_vs_LambdaDaughter/h2f_dEta_dPhi_display"),
+            dEta, displayDeltaPhi(dPhi));
+
+          // Fill non-same-track histogram when primary proton ≠ Lambda pos-daughter.
+          if (primProton.globalIndex() != v0.posTrackId()) {
+            registryCorrelationQA.fill(
+              HIST("PrimaryProton_vs_LambdaDaughter/h2f_dEta_dPhi_nonSameTrack"),
+              dEta, dPhi);
+            registryCorrelationQA.fill(
+              HIST("PrimaryProton_vs_LambdaDaughter/h2f_dEta_dPhi_nonSameTrack_display"),
+              dEta, displayDeltaPhi(dPhi));
+          }
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────
+
+      // ── Combo 2: Lambda daughter proton ↔ primary antiproton ─────────
+      // The Lambda pos-daughter (charge +1) CANNOT appear in the primary
+      // antiproton list (charge −1), so same-track matching is impossible.
+      // We fill only the inclusive Δη vs Δφ histogram.
+      {
+        const float etaDauL = v0PosDau.eta();
+        const float phiDauL = v0PosDau.phi();
+        for (auto const& primAntiProton : selectedPrimAntiProtons) {
+          const float dEta2 = primAntiProton.eta() - etaDauL;
+          float dPhi2 = primAntiProton.phi() - phiDauL;
+          dPhi2 = RecoDecay::constrainAngle(dPhi2, -o2::constants::math::PI);
+          registryCorrelationQA.fill(
+            HIST("PrimaryAntiProton_vs_LambdaDaughter/h2f_dEta_dPhi"),
+            dEta2, dPhi2);
+          registryCorrelationQA.fill(
+            HIST("PrimaryAntiProton_vs_LambdaDaughter/h2f_dEta_dPhi_display"),
+            dEta2, displayDeltaPhi(dPhi2));
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────
+    }
+
+    for (const auto& v0 : selectedAntiLambdas) {
+      const auto& v0NegDau = v0.template negTrack_as<TTracks>();
+      const float pt = v0.pt();
+      int bin = -1;
+      for (size_t i = 0; i < state.ptEdges.size() - 1; ++i) {
+        if (pt >= state.ptEdges[i] && pt < state.ptEdges[i + 1]) {
+          bin = static_cast<int>(i);
+          break;
+        }
+      }
+
+      for (auto const& primProton : selectedPrimProtons) {
+        if (primProton.globalIndex() == v0.posTrackId() || primProton.globalIndex() == v0.negTrackId()) {
+          continue;
+        }
+        // QA3/SplitTrackQA: q_inv for every accepted AntiLambda-proton pair
+        float qinvALp = 0.0f;
+        if (cUseQinvCut.value || cFillQinvQA.value) {
+          const float v0pmag = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+          const float pprmag3 = std::sqrt(primProton.px() * primProton.px() + primProton.py() * primProton.py() + primProton.pz() * primProton.pz());
+          const float Ev0 = std::sqrt(v0pmag * v0pmag + kMassLambda * kMassLambda);
+          const float Eppr3 = std::sqrt(pprmag3 * pprmag3 + kMassProton * kMassProton);
+          qinvALp = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0, primProton.px(), primProton.py(), primProton.pz(), Eppr3);
+        }
+        // QA3/SplitTrackQA: q_inv Before and After cut
+        if (cFillQinvQA.value) {
+          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvALp);
+          if (passesQinvQA(qinvALp)) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut"), qinvALp);
+          }
+        }
+        // QA3/QinvVsAngles: 3D fills for AntiLambda(V0)-primProton and AntiLambda dau antiproton-primProton
+        if (cFillQinvQA.value) {
+          constexpr float PIHalf3D = o2::constants::math::PI / 2.0f;
+          // Angular variables w.r.t. AntiLambda (V0)
+          const float dPhi_AL_p = RecoDecay::constrainAngle((v0.phi() - primProton.phi()), -PIHalf3D);
+          const float dEta_AL_p = v0.eta() - primProton.eta();
+          const float yAL = v0.rapidity(2);
+          const float yPrimP3 = protonRapidity(primProton);
+          const float dY_AL_p = yAL - yPrimP3;
+          // q_inv using AntiLambda (V0) four-momentum (kMassLambda hypothesis)
+          const float almag_3d = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+          const float EalL_3d = std::sqrt(almag_3d * almag_3d + kMassLambda * kMassLambda);
+          const float pprmag3_3d = std::sqrt(primProton.px() * primProton.px() + primProton.py() * primProton.py() + primProton.pz() * primProton.pz());
+          const float Eppr3_3d = std::sqrt(pprmag3_3d * pprmag3_3d + kMassProton * kMassProton);
+          const float qinvALp_V0 = computeQinv(v0.px(), v0.py(), v0.pz(), EalL_3d, primProton.px(), primProton.py(), primProton.pz(), Eppr3_3d);
+          // q_inv using AntiLambda daughter antiproton (kMassProton hypothesis), only for *_dau histograms
+          const float dauPmagAL_3d = std::sqrt(v0NegDau.px() * v0NegDau.px() + v0NegDau.py() * v0NegDau.py() + v0NegDau.pz() * v0NegDau.pz());
+          const float EdauAL_3d = std::sqrt(dauPmagAL_3d * dauPmagAL_3d + kMassProton * kMassProton);
+          const float qinvALp_dau = computeQinv(v0NegDau.px(), v0NegDau.py(), v0NegDau.pz(), EdauAL_3d, primProton.px(), primProton.py(), primProton.pz(), Eppr3_3d);
+          // Angular variables w.r.t. AntiLambda daughter antiproton
+          const float dPhi_dauAL_p = RecoDecay::constrainAngle((v0NegDau.phi() - primProton.phi()), -PIHalf3D);
+          const float dEta_dauAL_p = v0NegDau.eta() - primProton.eta();
+          const float yDauAL = protonRapidity(v0NegDau);
+          const float dY_dauAL_p = yDauAL - yPrimP3;
+          // eta space
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALp"), qinvALp_V0, dPhi_AL_p, dEta_AL_p);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALp_dau"), qinvALp_dau, dPhi_dauAL_p, dEta_dauAL_p);
+          // y space
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALp"), qinvALp_V0, dPhi_AL_p, dY_AL_p);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALp_dau"), qinvALp_dau, dPhi_dauAL_p, dY_dauAL_p);
+        }
+        // QA3/RawPairDensity: AntiLambda-proton → same LP histogram
+        {
+          constexpr float PIHalf = o2::constants::math::PI / 2.0f;
+          registryCorrelationQA.fill(
+            HIST("QA3/RawPairDensity/h2f_dEta_dPhi_LP"),
+            v0.eta() - primProton.eta(),
+            RecoDecay::constrainAngle((v0.phi() - primProton.phi()), -PIHalf));
+        }
+        const float yAL = v0.rapidity(2);
+        const float yP2 = protonRapidity(primProton);
+        const int idxYAL = unrolledIndexY(yAL, v0.phi());
+        const int idxYP2 = unrolledIndexY(yP2, primProton.phi());
+        if (cFillQinvQA.value) {
+          registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_ALp_BeforeQinvCut"),
+                                     computeKstar(v0.px(), v0.py(), v0.pz(), kMassLambda,
+                                                  primProton.px(), primProton.py(), primProton.pz(), kMassProton));
+        }
+        // Physics pair correlations (rho2 / pT / pair-count): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
+        if (failsQinvCut(qinvALp)) {
+          continue;
+        }
+        if (cFillQinvQA.value) {
+          registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_ALp"),
+                                     computeKstar(v0.px(), v0.py(), v0.pz(), kMassLambda,
+                                                  primProton.px(), primProton.py(), primProton.pz(), kMassProton));
+        }
+        if (idxYAL >= 0 && idxYP2 >= 0 && bin >= 0) {
+          fillPtSlice(state.hPtPrimProtonVsAntiLambdaPt, bin, primProton.pt());
+        }
+        const float wPair = getEffWeight(state.invEffAL, cent, v0.pt(), yAL) * getEffWeight(state.invEffP, cent, primProton.pt(), yP2);
+        if (idxYAL >= 0 && idxYP2 >= 0) {
+          state.hRho2_ALp_y_AllPt->Fill(idxYAL + 0.5f, idxYP2 + 0.5f, wPair);
+        }
+        if (cs) {
+          fillIdx(cs->ALp_y, idxYAL, idxYP2, wPair);
+        }
+        ++nPairs_AntiLambda_PrimProton;
+      }
+      for (auto const& primAntiProton : selectedPrimAntiProtons) {
+        if (primAntiProton.globalIndex() == v0.posTrackId() || primAntiProton.globalIndex() == v0.negTrackId()) {
+          continue;
+        }
+        // QA3/SplitTrackQA: q_inv for every accepted AntiLambda-antiproton pair
+        float qinvALAp = 0.0f;
+        if (cUseQinvCut.value || cFillQinvQA.value) {
+          const float v0pmag = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+          const float paprmag2 = std::sqrt(primAntiProton.px() * primAntiProton.px() + primAntiProton.py() * primAntiProton.py() + primAntiProton.pz() * primAntiProton.pz());
+          const float Ev0 = std::sqrt(v0pmag * v0pmag + kMassLambda * kMassLambda);
+          const float Epapr2 = std::sqrt(paprmag2 * paprmag2 + kMassProton * kMassProton);
+          qinvALAp = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr2);
+        }
+        // QA3/SplitTrackQA: q_inv Before and After cut
+        if (cFillQinvQA.value) {
+          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvALAp);
+          if (passesQinvQA(qinvALAp)) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut"), qinvALAp);
+          }
+        }
+        // QA3/QinvVsAngles: 3D fills for AntiLambda(V0)-primAntiProton and AntiLambda dau antiproton-primAntiProton
+        if (cFillQinvQA.value) {
+          constexpr float PIHalf3D = o2::constants::math::PI / 2.0f;
+          // Angular variables w.r.t. AntiLambda (V0)
+          const float dPhi_AL_ap = RecoDecay::constrainAngle((v0.phi() - primAntiProton.phi()), -PIHalf3D);
+          const float dEta_AL_ap = v0.eta() - primAntiProton.eta();
+          const float yAL2 = v0.rapidity(2);
+          const float yPrimAp2 = protonRapidity(primAntiProton);
+          const float dY_AL_ap = yAL2 - yPrimAp2;
+          // q_inv using AntiLambda (V0) four-momentum (kMassLambda hypothesis)
+          const float almag2_3d = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+          const float EalL2_3d = std::sqrt(almag2_3d * almag2_3d + kMassLambda * kMassLambda);
+          const float paprmag2_3d = std::sqrt(primAntiProton.px() * primAntiProton.px() + primAntiProton.py() * primAntiProton.py() + primAntiProton.pz() * primAntiProton.pz());
+          const float Epapr2_3d = std::sqrt(paprmag2_3d * paprmag2_3d + kMassProton * kMassProton);
+          const float qinvALAp_V0 = computeQinv(v0.px(), v0.py(), v0.pz(), EalL2_3d, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr2_3d);
+          // q_inv using AntiLambda daughter antiproton (kMassProton hypothesis), only for *_dau histograms
+          const float dauPmagAL2_3d = std::sqrt(v0NegDau.px() * v0NegDau.px() + v0NegDau.py() * v0NegDau.py() + v0NegDau.pz() * v0NegDau.pz());
+          const float EdauAL2_3d = std::sqrt(dauPmagAL2_3d * dauPmagAL2_3d + kMassProton * kMassProton);
+          const float qinvALAp_dau = computeQinv(v0NegDau.px(), v0NegDau.py(), v0NegDau.pz(), EdauAL2_3d, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr2_3d);
+          // Angular variables w.r.t. AntiLambda daughter antiproton
+          const float dPhi_dauAL_ap = RecoDecay::constrainAngle((v0NegDau.phi() - primAntiProton.phi()), -PIHalf3D);
+          const float dEta_dauAL_ap = v0NegDau.eta() - primAntiProton.eta();
+          const float yDauAL2 = protonRapidity(v0NegDau);
+          const float dY_dauAL_ap = yDauAL2 - yPrimAp2;
+          // eta space
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALAp"), qinvALAp_V0, dPhi_AL_ap, dEta_AL_ap);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALAp_dau"), qinvALAp_dau, dPhi_dauAL_ap, dEta_dauAL_ap);
+          // y space
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALAp"), qinvALAp_V0, dPhi_AL_ap, dY_AL_ap);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALAp_dau"), qinvALAp_dau, dPhi_dauAL_ap, dY_dauAL_ap);
+        }
+        // QA3/SplitTrackQA: close-pair block for daughter-overlap diagnosed split tracks
+        {
+          constexpr float PIHalf = o2::constants::math::PI / 2.0f;
+          const float deta_alap = v0.eta() - primAntiProton.eta();
+          const float dphi_alap = RecoDecay::constrainAngle((v0.phi() - primAntiProton.phi()), -PIHalf);
+          registryCorrelationQA.fill(
+            HIST("QA3/RawPairDensity/h2f_dEta_dPhi_LP"),
+            deta_alap, dphi_alap);
+          constexpr float cCloseDEta = 0.003f;
+          constexpr float cCloseDPhi = 0.005f;
+          if (std::abs(deta_alap) < cCloseDEta && std::abs(dphi_alap) < cCloseDPhi) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_sharedClsFraction_t1"), v0NegDau.tpcFractionSharedCls());
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_sharedClsFraction_t2"), primAntiProton.tpcFractionSharedCls());
+          }
+        }
+        const float yAL2 = v0.rapidity(2);
+        const float yAp2 = protonRapidity(primAntiProton);
+        const int idxYAL2 = unrolledIndexY(yAL2, v0.phi());
+        const int idxYAp2 = unrolledIndexY(yAp2, primAntiProton.phi());
+        if (cFillQinvQA.value) {
+          registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_ALAp_BeforeQinvCut"),
+                                     computeKstar(v0.px(), v0.py(), v0.pz(), kMassLambda,
+                                                  primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), kMassProton));
+        }
+        // Physics pair correlations (rho2 / pT / pair-count): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
+        if (failsQinvCut(qinvALAp)) {
+          continue;
+        }
+        if (cFillQinvQA.value) {
+          registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_ALAp"),
+                                     computeKstar(v0.px(), v0.py(), v0.pz(), kMassLambda,
+                                                  primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), kMassProton));
+        }
+        if (idxYAL2 >= 0 && idxYAp2 >= 0 && bin >= 0) {
+          fillPtSlice(state.hPtPrimAntiProtonVsAntiLambdaPt, bin, primAntiProton.pt());
+        }
+        const float wPair = getEffWeight(state.invEffAL, cent, v0.pt(), yAL2) * getEffWeight(state.invEffAP, cent, primAntiProton.pt(), yAp2);
+        if (idxYAL2 >= 0 && idxYAp2 >= 0) {
+          state.hRho2_ALAp_y_AllPt->Fill(idxYAL2 + 0.5f, idxYAp2 + 0.5f, wPair);
+        }
+        if (cs) {
+          fillIdx(cs->ALAp_y, idxYAL2, idxYAp2, wPair);
+        }
+        ++nPairs_AntiLambda_PrimAntiProton;
+      }
+
+      // ── Combo 3: AntiLambda daughter antiproton ↔ primary proton ─────
+      // The AntiLambda neg-daughter (charge −1) CANNOT appear in the primary
+      // proton list (charge +1), so same-track matching is impossible.
+      // We fill only the inclusive Δη vs Δφ histogram.
+      {
+        const float etaDauAL = v0NegDau.eta();
+        const float phiDauAL = v0NegDau.phi();
+        for (auto const& primProton : selectedPrimProtons) {
+          const float dEta3 = primProton.eta() - etaDauAL;
+          float dPhi3 = primProton.phi() - phiDauAL;
+          dPhi3 = RecoDecay::constrainAngle(dPhi3, -o2::constants::math::PI);
+          registryCorrelationQA.fill(
+            HIST("PrimaryProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi"),
+            dEta3, dPhi3);
+          registryCorrelationQA.fill(
+            HIST("PrimaryProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi_display"),
+            dEta3, displayDeltaPhi(dPhi3));
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────
+
+      // ── Combo 4: AntiLambda daughter antiproton ↔ primary antiproton ─
+      // AntiLambda neg-daughter = v0NegDau (charge −1, identified as
+      // antiproton). Primary antiproton = selectedPrimAntiProtons (charge −1).
+      // Fills inclusive h2f_dEta_dPhi for all pairs and h2f_dEta_dPhi_nonSameTrack
+      // for every pair in this cleaned sample (selectedPrimAntiProtons is already
+      // veto-cleaned, so the primary antiproton can never be the AntiLambda
+      // negative daughter; the nonSameTrack histogram will equal the inclusive one).
+      {
+        const float etaDauAL4 = v0NegDau.eta();
+        const float phiDauAL4 = v0NegDau.phi();
+        for (auto const& primAntiProton : selectedPrimAntiProtons) {
+          const float dEta4 = primAntiProton.eta() - etaDauAL4;
+          float dPhi4 = primAntiProton.phi() - phiDauAL4;
+          dPhi4 = RecoDecay::constrainAngle(dPhi4, -o2::constants::math::PI);
+
+          // Always fill the inclusive histogram.
+          registryCorrelationQA.fill(
+            HIST("PrimaryAntiProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi"),
+            dEta4, dPhi4);
+          registryCorrelationQA.fill(
+            HIST("PrimaryAntiProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi_display"),
+            dEta4, displayDeltaPhi(dPhi4));
+
+          // Fill non-same-track histogram when primary antiproton ≠ AntiLambda neg-daughter.
+          if (primAntiProton.globalIndex() != v0.negTrackId()) {
+            registryCorrelationQA.fill(
+              HIST("PrimaryAntiProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi_nonSameTrack"),
+              dEta4, dPhi4);
+            registryCorrelationQA.fill(
+              HIST("PrimaryAntiProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi_nonSameTrack_display"),
+              dEta4, displayDeltaPhi(dPhi4));
+          }
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────
+    }
+    // ====== End of Step 5 pairing loops ===================================
+
+    // ── Lambda-Lambda rho2 fills ───────────────────────────────────────
+    // LL
+    for (auto const& v1 : selectedLambdas) {
+      const float yv1L = v1.rapidity(1);
+      for (auto const& v2 : selectedLambdas) {
+        if (v1.index() == v2.index()) {
+          continue;
+        }
+        if (v1.posTrackId() == v2.posTrackId()) {
+          continue;
+        }
+        if (v1.posTrackId() == v2.negTrackId()) {
+          continue;
+        }
+        if (v1.negTrackId() == v2.posTrackId()) {
+          continue;
+        }
+        if (v1.negTrackId() == v2.negTrackId()) {
+          continue;
+        }
+        // QA3/RawPairDensity: Lambda-Lambda → h2f_dEta_dPhi_LL
+        {
+          constexpr float PIHalf = o2::constants::math::PI / 2.0f;
+          registryCorrelationQA.fill(
+            HIST("QA3/RawPairDensity/h2f_dEta_dPhi_LL"),
+            v1.eta() - v2.eta(),
+            RecoDecay::constrainAngle((v1.phi() - v2.phi()), -PIHalf));
+        }
+        // QA3/SplitTrackQA: q_inv for every accepted Lambda-Lambda pair
+        if (cUseQinvCut.value || cFillQinvQA.value) {
+          const float v1pmag = std::sqrt(v1.px() * v1.px() + v1.py() * v1.py() + v1.pz() * v1.pz());
+          const float v2pmag = std::sqrt(v2.px() * v2.px() + v2.py() * v2.py() + v2.pz() * v2.pz());
+          const float Ev1 = std::sqrt(v1pmag * v1pmag + kMassLambda * kMassLambda);
+          const float Ev2 = std::sqrt(v2pmag * v2pmag + kMassLambda * kMassLambda);
+          const float qinvLL = computeQinv(v1.px(), v1.py(), v1.pz(), Ev1, v2.px(), v2.py(), v2.pz(), Ev2);
+          if (cFillQinvQA.value) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut"), qinvLL);
+            if (passesQinvQA(qinvLL)) {
+              registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvLL);
+            }
+          }
+          if (failsQinvCut(qinvLL)) {
+            continue;
+          }
+        }
+        const int idxY1 = unrolledIndexY(yv1L, v1.phi());
+        const int idxY2 = unrolledIndexY(v2.rapidity(1), v2.phi());
+        // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
+        const float wPair = getEffWeight(state.invEffL, cent, v1.pt(), yv1L) * getEffWeight(state.invEffL, cent, v2.pt(), v2.rapidity(1));
+        if (idxY1 >= 0 && idxY2 >= 0) {
+          state.hRho2_LL_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f, wPair);
+        }
+        if (cs) {
+          fillIdx(cs->LL_y, idxY1, idxY2, wPair);
+        }
+      }
+    }
+    // LAL
+    for (auto const& v1 : selectedLambdas) {
+      const float yv1LAL = v1.rapidity(1);
+      for (auto const& v2 : selectedAntiLambdas) {
+        if (v1.posTrackId() == v2.posTrackId()) {
+          continue;
+        }
+        if (v1.posTrackId() == v2.negTrackId()) {
+          continue;
+        }
+        if (v1.negTrackId() == v2.posTrackId()) {
+          continue;
+        }
+        if (v1.negTrackId() == v2.negTrackId()) {
+          continue;
+        }
+        // QA3/RawPairDensity: Lambda-AntiLambda → same h2f_dEta_dPhi_LL
+        {
+          constexpr float PIHalf = o2::constants::math::PI / 2.0f;
+          registryCorrelationQA.fill(
+            HIST("QA3/RawPairDensity/h2f_dEta_dPhi_LL"),
+            v1.eta() - v2.eta(),
+            RecoDecay::constrainAngle((v1.phi() - v2.phi()), -PIHalf));
+        }
+        // QA3/SplitTrackQA: q_inv for every accepted Lambda-AntiLambda pair
+        if (cUseQinvCut.value || cFillQinvQA.value) {
+          const float v1pmagL = std::sqrt(v1.px() * v1.px() + v1.py() * v1.py() + v1.pz() * v1.pz());
+          const float v2pmagL = std::sqrt(v2.px() * v2.px() + v2.py() * v2.py() + v2.pz() * v2.pz());
+          const float Ev1L = std::sqrt(v1pmagL * v1pmagL + kMassLambda * kMassLambda);
+          const float Ev2L = std::sqrt(v2pmagL * v2pmagL + kMassLambda * kMassLambda);
+          const float qinvLAL = computeQinv(v1.px(), v1.py(), v1.pz(), Ev1L, v2.px(), v2.py(), v2.pz(), Ev2L);
+          if (cFillQinvQA.value) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut"), qinvLAL);
+            if (passesQinvQA(qinvLAL)) {
+              registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvLAL);
+            }
+          }
+          if (failsQinvCut(qinvLAL)) {
+            continue;
+          }
+        }
+        const int idxY1 = unrolledIndexY(yv1LAL, v1.phi());
+        const int idxY2 = unrolledIndexY(v2.rapidity(2), v2.phi());
+        // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
+        const float wPair = getEffWeight(state.invEffL, cent, v1.pt(), yv1LAL) * getEffWeight(state.invEffAL, cent, v2.pt(), v2.rapidity(2));
+        if (idxY1 >= 0 && idxY2 >= 0) {
+          state.hRho2_LAL_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f, wPair);
+        }
+        if (cs) {
+          fillIdx(cs->LAL_y, idxY1, idxY2, wPair);
+        }
+      }
+    }
+    // ALL
+    for (auto const& v1 : selectedAntiLambdas) {
+      const float yv1ALL = v1.rapidity(2);
+      for (auto const& v2 : selectedLambdas) {
+        if (v1.posTrackId() == v2.posTrackId()) {
+          continue;
+        }
+        if (v1.posTrackId() == v2.negTrackId()) {
+          continue;
+        }
+        if (v1.negTrackId() == v2.posTrackId()) {
+          continue;
+        }
+        if (v1.negTrackId() == v2.negTrackId()) {
+          continue;
+        }
+        // QA3/RawPairDensity: AntiLambda-Lambda → same h2f_dEta_dPhi_LL
+        {
+          constexpr float PIHalf = o2::constants::math::PI / 2.0f;
+          registryCorrelationQA.fill(
+            HIST("QA3/RawPairDensity/h2f_dEta_dPhi_LL"),
+            v1.eta() - v2.eta(),
+            RecoDecay::constrainAngle((v1.phi() - v2.phi()), -PIHalf));
+        }
+        // QA3/SplitTrackQA: q_inv for every accepted AntiLambda-Lambda pair
+        if (cUseQinvCut.value || cFillQinvQA.value) {
+          const float v1pmagAL = std::sqrt(v1.px() * v1.px() + v1.py() * v1.py() + v1.pz() * v1.pz());
+          const float v2pmagAL = std::sqrt(v2.px() * v2.px() + v2.py() * v2.py() + v2.pz() * v2.pz());
+          const float Ev1AL = std::sqrt(v1pmagAL * v1pmagAL + kMassLambda * kMassLambda);
+          const float Ev2AL = std::sqrt(v2pmagAL * v2pmagAL + kMassLambda * kMassLambda);
+          const float qinvALL = computeQinv(v1.px(), v1.py(), v1.pz(), Ev1AL, v2.px(), v2.py(), v2.pz(), Ev2AL);
+          if (cFillQinvQA.value) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut"), qinvALL);
+            if (passesQinvQA(qinvALL)) {
+              registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvALL);
+            }
+          }
+          if (failsQinvCut(qinvALL)) {
+            continue;
+          }
+        }
+        const int idxY1 = unrolledIndexY(yv1ALL, v1.phi());
+        const int idxY2 = unrolledIndexY(v2.rapidity(1), v2.phi());
+        // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
+        const float wPair = getEffWeight(state.invEffAL, cent, v1.pt(), yv1ALL) * getEffWeight(state.invEffL, cent, v2.pt(), v2.rapidity(1));
+        if (idxY1 >= 0 && idxY2 >= 0) {
+          state.hRho2_ALL_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f, wPair);
+        }
+        if (cs) {
+          fillIdx(cs->ALL_y, idxY1, idxY2, wPair);
+        }
+      }
+    }
+    // ALAL
+    for (auto const& v1 : selectedAntiLambdas) {
+      const float yv1ALAL = v1.rapidity(2);
+      for (auto const& v2 : selectedAntiLambdas) {
+        if (v1.index() == v2.index()) {
+          continue;
+        }
+        if (v1.posTrackId() == v2.posTrackId()) {
+          continue;
+        }
+        if (v1.posTrackId() == v2.negTrackId()) {
+          continue;
+        }
+        if (v1.negTrackId() == v2.posTrackId()) {
+          continue;
+        }
+        if (v1.negTrackId() == v2.negTrackId()) {
+          continue;
+        }
+        // QA3/RawPairDensity: AntiLambda-AntiLambda → same h2f_dEta_dPhi_LL
+        {
+          constexpr float PIHalf = o2::constants::math::PI / 2.0f;
+          registryCorrelationQA.fill(
+            HIST("QA3/RawPairDensity/h2f_dEta_dPhi_LL"),
+            v1.eta() - v2.eta(),
+            RecoDecay::constrainAngle((v1.phi() - v2.phi()), -PIHalf));
+        }
+        // QA3/SplitTrackQA: q_inv for every accepted AntiLambda-AntiLambda pair
+        if (cUseQinvCut.value || cFillQinvQA.value) {
+          const float v1pmagAL2 = std::sqrt(v1.px() * v1.px() + v1.py() * v1.py() + v1.pz() * v1.pz());
+          const float v2pmagAL2 = std::sqrt(v2.px() * v2.px() + v2.py() * v2.py() + v2.pz() * v2.pz());
+          const float Ev1AL2 = std::sqrt(v1pmagAL2 * v1pmagAL2 + kMassLambda * kMassLambda);
+          const float Ev2AL2 = std::sqrt(v2pmagAL2 * v2pmagAL2 + kMassLambda * kMassLambda);
+          const float qinvALAL = computeQinv(v1.px(), v1.py(), v1.pz(), Ev1AL2, v2.px(), v2.py(), v2.pz(), Ev2AL2);
+          if (cFillQinvQA.value) {
+            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut"), qinvALAL);
+            if (passesQinvQA(qinvALAL)) {
+              registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvALAL);
+            }
+          }
+          if (failsQinvCut(qinvALAL)) {
+            continue;
+          }
+        }
+        const int idxY1 = unrolledIndexY(yv1ALAL, v1.phi());
+        const int idxY2 = unrolledIndexY(v2.rapidity(2), v2.phi());
+        // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCut are rejected above)
+        const float wPair = getEffWeight(state.invEffAL, cent, v1.pt(), yv1ALAL) * getEffWeight(state.invEffAL, cent, v2.pt(), v2.rapidity(2));
+        if (idxY1 >= 0 && idxY2 >= 0) {
+          state.hRho2_ALAL_y_AllPt->Fill(idxY1 + 0.5f, idxY2 + 0.5f, wPair);
+        }
+        if (cs) {
+          fillIdx(cs->ALAL_y, idxY1, idxY2, wPair);
+        }
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
+    registryOther.fill(HIST("hNSelLambda"), static_cast<float>(nSelLambda));
+    registryOther.fill(HIST("hNSelAntiLambda"), static_cast<float>(nSelAntiLambda));
+    registryOther.fill(HIST("hNPairs_Lambda_PrimProton"), static_cast<float>(nPairs_Lambda_PrimProton));
+    registryOther.fill(HIST("hNPairs_Lambda_PrimAntiProton"), static_cast<float>(nPairs_Lambda_PrimAntiProton));
+    registryOther.fill(HIST("hNPairs_AntiLambda_PrimProton"), static_cast<float>(nPairs_AntiLambda_PrimProton));
+    registryOther.fill(HIST("hNPairs_AntiLambda_PrimAntiProton"), static_cast<float>(nPairs_AntiLambda_PrimAntiProton));
+
+    // Stage 1 counting.
+    registryOther.fill(HIST("hN_Lambda_reco1"), static_cast<float>(selectedLambdas.size()));
+    registryOther.fill(HIST("hN_AntiLambda_reco1"), static_cast<float>(selectedAntiLambdas.size()));
+    registryOther.fill(HIST("hN_Proton_reco1"), static_cast<float>(selectedPrimProtons.size()));
+    registryOther.fill(HIST("hN_AntiProton_reco1"), static_cast<float>(selectedPrimAntiProtons.size()));
+    fillStage23Counts(mcCollisionId, selectedLambdas, selectedAntiLambdas, selectedPrimProtons, selectedPrimAntiProtons);
+  }
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::MultsExtra, aod::CentFT0Ms, aod::CentFT0Cs>>::iterator const& collision,
+                   aod::V0Datas const& V0s,
+                   MyTracks const& tracks)
+  {
+    // ── Ordered-pair convention ────────────────────────────────────────────
+    // pp   : trigger=proton1,   assoc=proton2   (self-pairs rejected)
+    // pAp  : trigger=proton,    assoc=antiproton
+    // App  : trigger=antiproton,assoc=proton
+    // ApAp : trigger=antiproton1,assoc=antiproton2 (self-pairs rejected)
+    // Lp   : trigger=Lambda,    assoc=proton    (daughter-track overlap rejected)
+    // LAp  : trigger=Lambda,    assoc=antiproton
+    // ALp  : trigger=AntiLambda,assoc=proton
+    // ALAp : trigger=AntiLambda,assoc=antiproton
+    // LL/LAL/ALL/ALAL: both V0s from respective selected lists (self-pairs rejected)
+    //
+    // Every channel fills y-space only (unrolledIndexY).
+    // ─────────────────────────────────────────────────────────────────────
+
+    float cent = 0.f;
+    int nTracksINEL = 0;
+    if (!selectBFEvent(collision, tracks, cent, nTracksINEL)) {
+      return;
+    }
+    auto* cs = bookBFEvent(collision, cent, nTracksINEL);
+    runRecoAnalysis(collision, V0s, tracks, cent, cs);
+  }
+  PROCESS_SWITCH(LambdaProtonBalanceFunction, processData, "Process for Data", true);
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // MC efficiency maps: Gen* from MC particles, Rec* from the reconstructed selection.
+  // Gen* use MC-truth pT and y (stored MC y for Lambda/AntiLambda, proton-mass y for p/pbar).
+  // Rec* use RECONSTRUCTED pT and y, i.e. the same variables getEffWeight() queries in processData().
+  // The loop is driven by MC collisions (exactly one reconstructed collision required) to avoid
+  // split-vertex double counting of generated particles.
+  // ══════════════════════════════════════════════════════════════════════════
+  Preslice<MyV0sMC> v0sPerCollision = aod::v0data::collisionId;
+  Preslice<MyTracksMC> tracksPerCollision = aod::track::collisionId;
+
+  template <typename TMc>
+  static float mcRapidity(TMc const& mc, float mass)
+  {
+    return RecoDecay::y(std::array<float, 3>{mc.px(), mc.py(), mc.pz()}, mass);
+  }
+  // Generator-level acceptance = same pT range and |y| cut as the reco selection of the species.
+  bool inLambdaAcc(float pt, float y) const
+  {
+    return pt > lambdaV0MinPt.value && pt < lambdaV0MaxPt.value && std::abs(y) < lambdaV0MaxY.value;
+  }
+  bool inProtonAcc(float pt, float y) const
+  {
+    return pt >= pProtonMinPt.value && pt <= pProtonMaxPt.value && std::abs(y) <= pProtonMaxY.value;
+  }
+
+  void processMCEfficiency(aod::McCollisions::iterator const& mcCollision,
+                           soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::MultsExtra,
+                                                      aod::CentFT0Ms, aod::CentFT0Cs, aod::McCollisionLabels>> const& collisions,
+                           MyV0sMC const& allV0s,
+                           MyTracksMC const& allTracks,
+                           aod::McParticles const& mcParticles)
+  {
+    recordCorrectionMetadata(); // Only this process writes correction inputs/metadata.
+    // ── 1) Event association + selection (soa::Filtered does not apply to SmallGroups) ──
+    // Exactly one reconstructed collision per MC collision: removes split-vertex double counting.
+    if (collisions.size() != 1) {
+      return;
+    }
+    auto collision = collisions.begin();
+    if (!collision.has_mcCollision() || collision.mcCollisionId() != mcCollision.globalIndex()) {
+      return;
+    }
+    // Same configured sel8 and |posZ| selection as the Filters of processData().
+    if ((cRequireSel8.value && !collision.sel8()) || !(std::abs(collision.posZ()) < cPPandV0ZVertexCut.value)) {
+      return;
+    }
+    // Slice V0s and tracks to this reconstructed collision
+    auto V0s = allV0s.sliceBy(v0sPerCollision, collision.globalIndex());
+    auto tracks = allTracks.sliceBy(tracksPerCollision, collision.globalIndex());
+
+    const float cent = getCentrality(collision);
+    // No contributor, centrality-range or INEL-track rejection.
+
+    // Same extra event selection as processData(). It MUST be identical, otherwise the efficiency does not match the data.
+    if (!passesExtraEventSelection(collision)) {
+      return;
+    }
+
+    // ── 2) GENERATED: physical primaries of this MC collision (mcParticles is auto-sliced to mcCollision;
+    //       Lambda/AntiLambda require daughter records; no decay-channel requirement or V0-daughter veto) ──
+    for (auto const& mc : mcParticles) {
+      if (mc.mcCollisionId() != mcCollision.globalIndex() || !mc.isPhysicalPrimary()) {
+        continue;
+      }
+      const int pdg = mc.pdgCode();
+      if (pdg == PDG_t::kLambda0 || pdg == PDG_t::kLambda0Bar) {
+        if (!mc.has_daughters()) {
+          continue;
+        }
+        const float pt = mc.pt();
+        const float y = mc.y();
+        if (!inLambdaAcc(pt, y)) {
+          continue;
+        }
+        if (pdg == PDG_t::kLambda0) {
+          registryEff.fill(HIST("GenLambda"), cent, pt, y);
+          fillCorrectionGenerated(0, cent, pt, y);
+        } else {
+          registryEff.fill(HIST("GenAntiLambda"), cent, pt, y);
+          fillCorrectionGenerated(1, cent, pt, y);
+        }
+      } else if (pdg == PDG_t::kProton || pdg == PDG_t::kProtonBar) {
+        const float pt = mc.pt();
+        const float y = mcRapidity(mc, kMassProton);
+        if (!inProtonAcc(pt, y)) {
+          continue;
+        }
+        if (pdg == PDG_t::kProton) {
+          registryEff.fill(HIST("GenProton"), cent, pt, y);
+          fillCorrectionGenerated(2, cent, pt, y);
+        } else {
+          registryEff.fill(HIST("GenAntiProton"), cent, pt, y);
+          fillCorrectionGenerated(3, cent, pt, y);
+        }
+      }
+    }
+
+    // Separate, truth-blind reconstructed pass; never reuse the legacy pool.
+    // Event cuts above equal withMatchedEvent/selectBFEvent: one matched reco
+    // collision, configured sel8/reco-z/extra flags, no cent/contributor/INEL cut.
+    fillCorrectionInputs(collision, V0s, tracks, mcCollision.globalIndex(), cent);
+
+    // Use the identical reconstructed selection and cleaning as processMCRecBF,
+    // including the conservative daughter veto built before shared-daughter cleaning.
+    std::unordered_set<int64_t> v0DaughterTrackIds;
+    std::vector<MyV0sMC::iterator> selectedLambdas;
+    std::vector<MyV0sMC::iterator> selectedAntiLambdas;
+    std::vector<MyTracksMC::iterator> selectedPrimProtons;
+    std::vector<MyTracksMC::iterator> selectedPrimAntiProtons;
+    selectRecoV0s<false, true, MyTracksMC>(collision, V0s, selectedLambdas, selectedAntiLambdas, v0DaughterTrackIds);
+    selectRecoProtons<false>(tracks, v0DaughterTrackIds, selectedPrimProtons, selectedPrimAntiProtons);
+
+    // Every surviving assigned Lambda/AntiLambda contributes once, at unit weight.
+    // MC label/truth requirements have already been applied before cleaning.
+    for (const auto& v0 : selectedLambdas) {
+      registryEff.fill(HIST("RecLambda"), cent, v0.pt(), v0.yLambda());
+    }
+    for (const auto& v0 : selectedAntiLambdas) {
+      registryEff.fill(HIST("RecAntiLambda"), cent, v0.pt(), v0.yLambda());
+    }
+    // Proton efficiency retains its signed-primary Stage 3 definition.
+    // Gen* use truth coordinates; the external Rec/Gen ratio includes migration.
+    fillStage23Counts<true>(mcCollision.globalIndex(), selectedLambdas, selectedAntiLambdas,
+                            selectedPrimProtons, selectedPrimAntiProtons, cent);
+  }
+  PROCESS_SWITCH(LambdaProtonBalanceFunction, processMCEfficiency, "Produce MC single-particle efficiency inputs", false);
+  // ─────────────────────────────────────────────────────────────────────
+
+  // ══ Matched-event BF selection (shared by reconstructed and generated modes) ══
+  using MatchedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::MultsExtra,
+                                      aod::CentFT0Ms, aod::CentFT0Cs, aod::McCollisionLabels>;
+  Preslice<aod::V0Datas> v0sPerCollisionData = aod::v0data::collisionId;
+  Preslice<MyTracks> tracksPerCollisionData = aod::track::collisionId;
+
+  // This reference is conditional on accepted reconstructed events and excludes
+  // MC collisions with missing or split reconstructed collisions.
+  // Select once for BF and composition; only BF books BF event histograms.
+  template <bool fillBF, typename TTracks, typename TPreslice, typename TAnalysis>
+  void withMatchedEvent(aod::McCollisions::iterator const& mcCollision,
+                        soa::SmallGroups<MatchedCollisions> const& collisions,
+                        TTracks const& allTracks, TPreslice const& trackPreslice, TAnalysis&& analyze)
+  {
+    registryOther.fill(HIST("hMatchedEventQA"), 1.f);
+    if (collisions.size() != 1) {
+      registryOther.fill(HIST("hMatchedEventQA"), 2.f);
+      return;
+    }
+    auto collision = collisions.begin();
+    if (!collision.has_mcCollision() || collision.mcCollisionId() != mcCollision.globalIndex()) {
+      registryOther.fill(HIST("hMatchedEventQA"), 3.f);
+      return;
+    }
+    // SmallGroups do not inherit processData's framework Filters.
+    if ((cRequireSel8.value && !collision.sel8()) || !(std::abs(collision.posZ()) < cPPandV0ZVertexCut.value)) {
+      registryOther.fill(HIST("hMatchedEventQA"), 4.f);
+      return;
+    }
+    auto tracks = allTracks.sliceBy(trackPreslice, collision.globalIndex());
+    float cent = 0.f;
+    int nTracksINEL = 0;
+    if (!selectBFEvent(collision, tracks, cent, nTracksINEL)) {
+      registryOther.fill(HIST("hMatchedEventQA"), 5.f);
+      return;
+    }
+    CentRho2Set* cs = nullptr;
+    if constexpr (fillBF) {
+      cs = bookBFEvent(collision, cent, nTracksINEL);
+    }
+    registryOther.fill(HIST("hMatchedEventQA"), 6.f);
+    std::forward<TAnalysis>(analyze)(collision, tracks, cent, cs);
+  }
+
+  template <typename TAnalysis>
+  void withMatchedBFEvent(aod::McCollisions::iterator const& mcCollision,
+                          soa::SmallGroups<MatchedCollisions> const& collisions,
+                          MyTracks const& allTracks, TAnalysis&& analyze)
+  {
+    withMatchedEvent<true>(mcCollision, collisions, allTracks, tracksPerCollisionData,
+                           std::forward<TAnalysis>(analyze));
+  }
+
+  // ══ Reconstructed BF in matched selected MC events ══
+  void processMCRecBF(aod::McCollisions::iterator const& mcCollision,
+                      soa::SmallGroups<MatchedCollisions> const& collisions,
+                      MyV0sMC const& allV0s,
+                      MyTracksMC const& allTracks,
+                      aod::McParticles const& /*mcParticles*/)
+  {
+    withMatchedEvent<true>(mcCollision, collisions, allTracks, tracksPerCollision,
+                           [&](auto const& collision, MyTracksMC const& tracks, float cent, CentRho2Set* cs) {
+                             auto V0s = allV0s.sliceBy(v0sPerCollision, collision.globalIndex());
+                             runRecoAnalysis<true, decltype(collision), MyV0sMC, MyTracksMC>(collision, V0s, tracks, cent, cs, mcCollision.globalIndex());
+                           });
+  }
+  PROCESS_SWITCH(LambdaProtonBalanceFunction, processMCRecBF,
+                 "Reconstructed correlations in matched selected MC events", false);
+
+  // ══ Generated BF in the identical matched selected MC events ══
+  void processMCGenBF(aod::McCollisions::iterator const& mcCollision,
+                      soa::SmallGroups<MatchedCollisions> const& collisions,
+                      MyTracks const& allTracks,
+                      aod::McParticles const& mcParticles)
+  {
+    withMatchedBFEvent(mcCollision, collisions, allTracks,
+                       [&](auto const&, MyTracks const&, float, CentRho2Set* cs) {
+                         // mcParticles is auto-sliced by the MC collision; lists live only for this event.
+                         std::vector<PartInfo> lambdas, antiLambdas, protons, antiProtons;
+                         for (auto const& mc : mcParticles) {
+                           if (mc.mcCollisionId() != mcCollision.globalIndex()) {
+                             registryOther.fill(HIST("hMatchedEventQA"), 7.f);
+                             continue;
+                           }
+                           if (!mc.isPhysicalPrimary()) {
+                             continue;
+                           }
+                           const int pdg = mc.pdgCode();
+                           const bool isLambda = pdg == PDG_t::kLambda0 || pdg == PDG_t::kLambda0Bar;
+                           const bool isProton = pdg == PDG_t::kProton || pdg == PDG_t::kProtonBar;
+                           if (!isLambda && !isProton) {
+                             continue;
+                           }
+                           if (isLambda) {
+                             // Count primary Lambdas before acceptance, in accepted events.
+                             registryOther.fill(HIST("hGenLambdaDaughters"),
+                                                (pdg == PDG_t::kLambda0 ? 1.f : 3.f) + (mc.has_daughters() ? 0.f : 1.f));
+                             if (!mc.has_daughters()) {
+                               continue;
+                             }
+                           }
+                           auto p = makeMcInfo(mc, isLambda ? kMassLambda : kMassProton);
+                           if (isLambda) {
+                             p.y = mc.y();
+                             p.idxY = unrolledIndexY(p.y, p.phi);
+                           }
+                           if ((isLambda && !inLambdaAcc(p.pt, p.y)) ||
+                               (isProton && !inProtonAcc(p.pt, p.y))) {
+                             continue;
+                           }
+                           // No decay-channel/daughter-acceptance requirement and no proton daughter veto.
+                           if (pdg == PDG_t::kLambda0) {
+                             lambdas.push_back(p);
+                           } else if (pdg == PDG_t::kLambda0Bar) {
+                             antiLambdas.push_back(p);
+                           } else if (pdg == PDG_t::kProton) {
+                             protons.push_back(p);
+                           } else {
+                             antiProtons.push_back(p);
+                           }
+                         }
+                         for (auto const& p : lambdas) {
+                           registryRho.fill(HIST("h2_rho1_Lambda_y"), p.y, p.phi, 1.f);
+                           if (cs) {
+                             cs->rho1_Lambda_y->Fill(p.y, p.phi, 1.f);
+                           }
+                           registryOther.fill(HIST("hPtSelLambda"), p.pt);
+                           state.hPtSelLambda_AllPt->Fill(p.pt);
+                         }
+                         registryOther.fill(HIST("hNSelLambda"), static_cast<float>(lambdas.size()));
+                         for (auto const& p : antiLambdas) {
+                           registryRho.fill(HIST("h2_rho1_AntiLambda_y"), p.y, p.phi, 1.f);
+                           if (cs) {
+                             cs->rho1_AntiLambda_y->Fill(p.y, p.phi, 1.f);
+                           }
+                           registryOther.fill(HIST("hPtSelAntiLambda"), p.pt);
+                           state.hPtSelAntiLambda_AllPt->Fill(p.pt);
+                         }
+                         registryOther.fill(HIST("hNSelAntiLambda"), static_cast<float>(antiLambdas.size()));
+                         for (auto const& p : protons) {
+                           registryRho.fill(HIST("h2_rho1_Proton_y"), p.y, p.phi, 1.f);
+                           if (cs) {
+                             cs->rho1_Proton_y->Fill(p.y, p.phi, 1.f);
+                           }
+                           registryOther.fill(HIST("hPtSelectedPrimProton"), p.pt);
+                           state.hPtSelectedPrimProton_AllPt->Fill(p.pt);
+                         }
+                         registryOther.fill(HIST("hNSelectedPrimProtons"), static_cast<float>(protons.size()));
+                         for (auto const& p : antiProtons) {
+                           registryRho.fill(HIST("h2_rho1_AntiProton_y"), p.y, p.phi, 1.f);
+                           if (cs) {
+                             cs->rho1_AntiProton_y->Fill(p.y, p.phi, 1.f);
+                           }
+                           registryOther.fill(HIST("hPtSelectedPrimAntiProton"), p.pt);
+                           state.hPtSelectedPrimAntiProton_AllPt->Fill(p.pt);
+                         }
+                         registryOther.fill(HIST("hNSelectedPrimAntiProtons"), static_cast<float>(antiProtons.size()));
+                         const auto nLp = fillGeneratedPairs(lambdas, protons, false,
+                                                             state.hRho2_Lp_y_AllPt, cs ? cs->Lp_y : nullptr);
+                         registryOther.fill(HIST("hNPairs_Lambda_PrimProton"), static_cast<float>(nLp));
+                         const auto nLAp = fillGeneratedPairs(lambdas, antiProtons, false,
+                                                              state.hRho2_LAp_y_AllPt, cs ? cs->LAp_y : nullptr);
+                         registryOther.fill(HIST("hNPairs_Lambda_PrimAntiProton"), static_cast<float>(nLAp));
+                         const auto nALp = fillGeneratedPairs(antiLambdas, protons, false,
+                                                              state.hRho2_ALp_y_AllPt, cs ? cs->ALp_y : nullptr);
+                         registryOther.fill(HIST("hNPairs_AntiLambda_PrimProton"), static_cast<float>(nALp));
+                         const auto nALAp = fillGeneratedPairs(antiLambdas, antiProtons, false,
+                                                               state.hRho2_ALAp_y_AllPt, cs ? cs->ALAp_y : nullptr);
+                         registryOther.fill(HIST("hNPairs_AntiLambda_PrimAntiProton"), static_cast<float>(nALAp));
+                         fillGeneratedPairs(protons, protons, true,
+                                            state.hRho2_pp_y_AllPt, cs ? cs->pp_y : nullptr);
+                         fillGeneratedPairs(protons, antiProtons, false,
+                                            state.hRho2_pAp_y_AllPt, cs ? cs->pAp_y : nullptr);
+                         fillGeneratedPairs(antiProtons, protons, false,
+                                            state.hRho2_App_y_AllPt, cs ? cs->App_y : nullptr);
+                         fillGeneratedPairs(antiProtons, antiProtons, true,
+                                            state.hRho2_ApAp_y_AllPt, cs ? cs->ApAp_y : nullptr);
+                         fillGeneratedPairs(lambdas, lambdas, true,
+                                            state.hRho2_LL_y_AllPt, cs ? cs->LL_y : nullptr);
+                         fillGeneratedPairs(lambdas, antiLambdas, false,
+                                            state.hRho2_LAL_y_AllPt, cs ? cs->LAL_y : nullptr);
+                         fillGeneratedPairs(antiLambdas, lambdas, false,
+                                            state.hRho2_ALL_y_AllPt, cs ? cs->ALL_y : nullptr);
+                         fillGeneratedPairs(antiLambdas, antiLambdas, true,
+                                            state.hRho2_ALAL_y_AllPt, cs ? cs->ALAL_y : nullptr);
+                       });
+  }
+  PROCESS_SWITCH(LambdaProtonBalanceFunction, processMCGenBF,
+                 "Generated correlations in matched selected MC events", false);
+
+  static bool usableMCIndex(aod::McParticles const* table, int64_t id)
+  {
+    // has_mcParticle() tests only id >= 0 in ASoA; also check the bound table range.
+    return table != nullptr && id >= 0 && id >= static_cast<int64_t>(table->offset()) &&
+           id - static_cast<int64_t>(table->offset()) < table->size();
+  }
+
+  // ── Run-level summary printed once at the end of the analysis job ─────
+  // Called automatically by the O2 framework after all events are processed.
+  // Prints totals accumulated in runTotalProtonBeforeVeto / runTotalProtonRemovedVeto.
+  void endOfStream(EndOfStreamContext const&)
+  {
+    const int64_t totalBefore = state.runTotalProtonBeforeVeto;
+    const int64_t totalRemoved = state.runTotalProtonRemovedVeto;
+    const int64_t totalAfter = totalBefore - totalRemoved;
+    const double fracRemoved = (totalBefore > 0)
+                                 ? static_cast<double>(totalRemoved) / static_cast<double>(totalBefore)
+                                 : 0.0;
+
+    LOG(info) << "";
+    LOG(info) << "================ Proton Veto QA ================";
+    LOG(info) << "Total proton candidates before veto : " << totalBefore;
+    LOG(info) << "Total proton candidates after veto  : " << totalAfter;
+    LOG(info) << "Total removed by veto               : " << totalRemoved;
+    LOG(info) << Form("Fraction removed                    : %.6f", fracRemoved);
+    const double fracRemovedAp = (state.runTotalAntiPBeforeVeto > 0)
+                                   ? static_cast<double>(state.runTotalAntiPRemovedVeto) / static_cast<double>(state.runTotalAntiPBeforeVeto)
+                                   : 0.0;
+    LOG(info) << "Total antiproton candidates before veto: " << state.runTotalAntiPBeforeVeto;
+    LOG(info) << "Total antiproton removed by veto       : " << state.runTotalAntiPRemovedVeto;
+    LOG(info) << Form("Antiproton fraction removed         : %.6f", fracRemovedAp);
+    LOG(info) << "===============================================";
+    LOG(info) << "";
+  }
+  // ─────────────────────────────────────────────────────────────────────
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
+{
+  return WorkflowSpec{adaptAnalysisTask<LambdaProtonBalanceFunction>(context)};
+}

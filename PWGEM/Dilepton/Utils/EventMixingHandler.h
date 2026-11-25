@@ -16,6 +16,8 @@
 #define PWGEM_DILEPTON_UTILS_EVENTMIXINGHANDLER_H_
 
 #include <map>
+#include <optional>
+#include <stdexcept>
 #include <vector>
 
 namespace o2::aod::pwgem::dilepton::utils
@@ -36,6 +38,9 @@ class EventMixingHandler
     fNdepth = ndepth;
     fMapMixBins.clear();
     fMap_Tracks_per_collision.clear();
+    if (fNdepth <= 0) {
+      throw std::invalid_argument("mixing depth must be positive");
+    }
   }
 
   ~EventMixingHandler()
@@ -44,7 +49,13 @@ class EventMixingHandler
     fMap_Tracks_per_collision.clear();
   }
 
-  void SetNdepth(int ndepth) { fNdepth = ndepth; }
+  void SetNdepth(int ndepth)
+  {
+    if (ndepth <= 0) {
+      throw std::invalid_argument("mixing depth must be positive");
+    }
+    fNdepth = ndepth;
+  }
 
   void ReserveNTracksPerCollision(U key_df_collision, int ntrack)
   {
@@ -56,20 +67,33 @@ class EventMixingHandler
     fMap_Tracks_per_collision[key_df_collision].emplace_back(obj);
   }
 
-  std::vector<U> GetCollisionIdsFromEventPool(T key_bin) { return fMapMixBins[key_bin]; }
-  std::vector<V> GetTracksPerCollision(T key_bin, int index) { return fMap_Tracks_per_collision[fMapMixBins[key_bin][index]]; }
-  std::vector<V> GetTracksPerCollision(U key_df_collision) { return fMap_Tracks_per_collision[key_df_collision]; }
+  const std::vector<U>& GetCollisionIdsFromEventPool(const T& key_bin) const
+  {
+    const auto it = fMapMixBins.find(key_bin);
+    static const std::vector<U> empty;
+    return it == fMapMixBins.end() ? empty : it->second;
+  }
+
+  const std::vector<V>& GetTracksPerCollision(const U& key) const
+  {
+    const auto it = fMap_Tracks_per_collision.find(key);
+    static const std::vector<V> empty;
+    return it == fMap_Tracks_per_collision.end() ? empty : it->second;
+  }
 
   // call this function at the end of collision loop
-  void AddCollisionIdAtLast(T key_bin, U key_df_collision)
+  std::optional<U> AddCollisionIdAtLast(T key_bin, U key_df_collision)
   {
     // LOGF(info, "fMapMixBins[key_bin].size() = %d", fMapMixBins[key_bin].size());
-    if (static_cast<int>(fMapMixBins[key_bin].size()) >= fNdepth) {
-      fMap_Tracks_per_collision[fMapMixBins[key_bin][0]].clear();
-      fMap_Tracks_per_collision[fMapMixBins[key_bin][0]].shrink_to_fit();
-      fMapMixBins[key_bin].erase(fMapMixBins[key_bin].begin());
+    auto& ids = fMapMixBins[key_bin];
+    std::optional<U> evicted;
+    if (static_cast<int>(ids.size()) >= fNdepth) {
+      evicted = ids.front();
+      fMap_Tracks_per_collision.erase(*evicted);
+      ids.erase(ids.begin());
     }
-    fMapMixBins[key_bin].emplace_back(key_df_collision);
+    ids.emplace_back(key_df_collision);
+    return evicted;
   }
 
  private:

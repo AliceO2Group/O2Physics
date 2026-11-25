@@ -154,7 +154,7 @@ struct qaEventTrackLite {
       ///
       return initBBok ? mMip * o2::common::BetheBlochAleph(x[0] / par[0], mBetheBlockAleph[0], mBetheBlockAleph[1], mBetheBlockAleph[2], mBetheBlockAleph[3], mBetheBlockAleph[4]) * std::pow(par[1], mChargeFactor) : 0.;
     }
-    void setUpBetheBlockAleph(std::string str_case)
+    void setUpBetheBlockAleph(const std::string& str_case)
     {
       if (str_case.find("LHC22c") != std::string::npos) {
         // From A. Kalteyer (2022 Jul 18)
@@ -336,8 +336,8 @@ struct qaEventTrackLite {
   Filter itsChi2 = (bTpcOnly.node() == true) || (chi2ItsMin < o2::aod::track::itsChi2NCl && o2::aod::track::itsChi2NCl < chi2ItsMax);
   // TPC
   Filter tpcChi2s = (bItsStandalone.node() == true) || (chi2TpcMin < o2::aod::track::tpcChi2NCl && o2::aod::track::tpcChi2NCl < chi2TpcMax);
-  Filter tpcNclusters = (bItsStandalone.node() == true) || (o2::aod::dpgtrack::tpcNClsFound > (int16_t)nClusterTpcMin);
-  Filter tpcNcrossedRows = (bItsStandalone.node() == true) || (o2::aod::dpgtrack::tpcNClsCrossedRows > (int16_t)nCrossedRowsTpcMin);
+  Filter tpcNclusters = (bItsStandalone.node() == true) || (o2::aod::dpgtrack::tpcNClsFound > static_cast<int16_t>(nClusterTpcMin));
+  Filter tpcNcrossedRows = (bItsStandalone.node() == true) || (o2::aod::dpgtrack::tpcNClsCrossedRows > static_cast<int16_t>(nCrossedRowsTpcMin));
   Filter tpcNcrossedRowsOverFindableClusters = (bItsStandalone.node() == true) || (o2::aod::dpgtrack::tpcCrossedRowsOverFindableCls > nCrossedRowsTpcOverFindableClustersTpcMin);
   // TOF
   Filter tofChi = o2::aod::track::tofChi2 > chi2TofMin;
@@ -418,7 +418,7 @@ struct qaEventTrackLite {
     histos.fill(HIST("Tracks/TPC/dEdxvsP"), p, track.tpcSignal());
     histos.fill(HIST("Tracks/TPC/dEdxvsPvsEta"), p, track.eta(), track.tpcSignal());
     if (betheBlock.initBBok) {
-      auto tpcdEdxRes = [&](TF1 func) { return track.tpcSignal() - func.Eval(p); };
+      auto tpcdEdxRes = [&](const TF1& func) { return track.tpcSignal() - func.Eval(p); };
       if (b_tpcResProton) {
         histos.fill(HIST("Tracks/TPC/dEdxvsPproton"), p, tpcdEdxRes(funcBBproton));
         histos.fill(HIST("Tracks/TPC/dEdxvsPprotonvsEta"), p, track.eta(), tpcdEdxRes(funcBBproton));

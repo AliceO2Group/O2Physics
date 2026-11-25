@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -39,6 +40,7 @@
 
 #include <RtypesCore.h>
 
+#include <cmath>
 #include <cstring>
 #include <string>
 #include <unordered_map>
@@ -117,10 +119,15 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   Configurable<bool> cfUseWeights{"cfUseWeights", true, "use weights"};
   Configurable<bool> cfToyModel{"cfToyModel", true, "phi-distribution from toy model"};
   Configurable<bool> cfNest{"cfNest", true, "nested loops"};
+  Configurable<bool> cfTechcuts{"cfTechcuts", true, "technical cuts"};
 
   Configurable<std::vector<float>> cfVertexZ{"cfVertexZ", {-10, 10.}, "vertex z position range: {min, max}[cm], with convention: min <= Vz < max"};
   Configurable<std::vector<float>> cfPt{"cfPt", {0.2, 5.0}, "transverse momentum range"};
   Configurable<std::vector<float>> cfEta{"cfEta", {-0.8, 0.8}, "eta range"};
+  Configurable<std::vector<float>> cfDCAxy{"cfDCAxy", {-0.5, 0.5}, "dca xy range"};
+  Configurable<std::vector<float>> cfDCAz{"cfDCAz", {-0.2, 0.2}, "dca z range"};
+  Configurable<float> cftpcNClsFoundmin{"cftpcNClsFoundmin", 70., "tpcNClsFoundmin"};
+  Configurable<float> cftpcChi2NClmax{"cftpcChi2NClmax", 4., "tpcChi2NClmax"};
 
   Configurable<std::vector<int>> cfRuns{"cfRuns", {544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124}, "List of run numbers to analyze"};
   Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/alice-ccdb.cern.ch/Users/p/pengchon/weightsfile06", "path to external ROOT file which holds all particle weights"};
@@ -223,7 +230,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     while ((objectIter = next())) // double round braces are to silence the warnings
     {
       if (TString(objectIter->ClassName()).EqualTo("TList")) {
-        objectFinal = GetObjectFromList(reinterpret_cast<TList*>(objectIter), objectName);
+        objectFinal = GetObjectFromList(dynamic_cast<TList*>(objectIter), objectName);
         if (objectFinal)
           return objectFinal;
       }
@@ -274,11 +281,11 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
 
       // Finally, from the top-level TList, get the desired nested TList => the technical problem here is that it can be nested at any level,
       // for thare there is a helper utility function GetObjectFromList(...) , see its implementation further below
-      listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
+      listWithRuns = dynamic_cast<TList*>(GetObjectFromList(baseList, runNumber));
       if (!listWithRuns) {
         TString runNumberWithLeadingZeroes = "000";
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+        listWithRuns = dynamic_cast<TList*>(GetObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
           LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
         }
@@ -288,16 +295,16 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       // File you want to access is in your home dir in CCDB:
       // Remember that here I do not access the file; instead, I directly access the object in that file.
       ccdb->setURL("http://alice-ccdb.cern.ch"); // to be able to use "ccdb" this object in your analysis task, see 4b/ below
-      baseList = reinterpret_cast<TList*>(ccdb->get<TList>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data()));
+      baseList = static_cast<TList*>(ccdb->get<TList>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data()));
       if (!baseList) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
 
-      listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
+      listWithRuns = dynamic_cast<TList*>(GetObjectFromList(baseList, runNumber));
       if (!listWithRuns) {
         TString runNumberWithLeadingZeroes = "000";
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+        listWithRuns = dynamic_cast<TList*>(GetObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
           LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
         }
@@ -325,11 +332,11 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
 
-      listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
+      listWithRuns = dynamic_cast<TList*>(GetObjectFromList(baseList, runNumber));
       if (!listWithRuns) {
         TString runNumberWithLeadingZeroes = "000";
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+        listWithRuns = dynamic_cast<TList*>(GetObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
           // baseList->ls();
           LOGF(fatal, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current run number = %s\033[0m", __FUNCTION__, __LINE__ /*, tc.fRunNumber.Data()*/);
@@ -341,14 +348,14 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     // Here comes the common code for all three cases, where from "listWithRuns" you fetch the desired histogram with efficiency corrections:
     listWithRuns->ls();
 
-    hist = reinterpret_cast<TH1F*>(listWithRuns->FindObject("histWithEfficiencyCorrections"));
+    hist = dynamic_cast<TH1F*>(listWithRuns->FindObject("histWithEfficiencyCorrections"));
     if (!hist) {
       LOGF(fatal, "no histweight");
     }
 
     // Once you have a valid pointer to "hist", add these technical lines:
-    hist->SetDirectory(0);                                    // remove ownerhip from an external file
-    TH1F* histClone = reinterpret_cast<TH1F*>(hist->Clone()); // yes, I have to clone here
+    hist->SetDirectory(0);                                // remove ownerhip from an external file
+    TH1F* histClone = dynamic_cast<TH1F*>(hist->Clone()); // yes, I have to clone here
 
     return histClone;
 
@@ -367,6 +374,10 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float NContrcut = 2.;
     if (posZ < vertexZmin || posZ > vertexZmax || (!collision.sel8()) || collision.numContrib() < NContrcut)
       return false;
+    if (cfTechcuts) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) || !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard) || !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC) || !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof))
+        return false;
+    }
     return true;
   }
 
@@ -381,7 +392,15 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float etacutmin = static_cast<float>(Eta[0]);
     float etacutmax = static_cast<float>(Eta[1]);
     float eta = track.eta();
-    if (pt < ptcutmin || pt > ptcutmax || eta < etacutmin || eta > etacutmax)
+    vector<float> dcaXY = cfDCAxy.value;
+    float dcaxycutmin = static_cast<float>(dcaXY[0]);
+    float dcaxycutmax = static_cast<float>(dcaXY[1]);
+    float dcaxy = track.dcaXY();
+    vector<float> dcaZ = cfDCAz.value;
+    float dcazcutmin = static_cast<float>(dcaZ[0]);
+    float dcazcutmax = static_cast<float>(dcaZ[1]);
+    float dcaz = track.dcaZ();
+    if (pt < ptcutmin || pt > ptcutmax || eta < etacutmin || eta > etacutmax || dcaxy < dcaxycutmin || dcaxy > dcaxycutmax || dcaz < dcazcutmin || dcaz > dcazcutmax || (!track.isPrimaryTrack()) || (!track.isPVContributor()) || track.tpcNClsFound() < cftpcNClsFoundmin.value || track.tpcChi2NCl() > cftpcChi2NClmax)
       return false;
     return true;
   }

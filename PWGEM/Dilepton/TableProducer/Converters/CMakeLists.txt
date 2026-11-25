@@ -55,6 +55,11 @@ o2physics_add_dpl_workflow(electron-converter6
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(electron-converter7
+                  SOURCES electronConverter7.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(track-converter1
                   SOURCES trackConverter1.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
@@ -72,6 +77,11 @@ o2physics_add_dpl_workflow(muon-converter2
 
 o2physics_add_dpl_workflow(muon-converter3
                   SOURCES muonConverter3.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(muon-converter4
+                  SOURCES muonConverter4.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
 
@@ -124,4 +134,3 @@ o2physics_add_dpl_workflow(bc-converter1
                   SOURCES bcConverter1.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
-

@@ -11,6 +11,7 @@
 
 #include "PWGUD/Core/SGCutParHolder.h"
 
+#include <utility>
 #include <vector>
 
 // setter
@@ -69,7 +70,7 @@ void SGCutParHolder::SetMaxFITtime(float maxFITtime)
 }
 void SGCutParHolder::SetFITAmpLimits(std::vector<float> FITAmpLimits)
 {
-  mFITAmpLimits = FITAmpLimits;
+  mFITAmpLimits = std::move(FITAmpLimits);
 }
 
 // getter

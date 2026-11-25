@@ -15,6 +15,7 @@
 /// \brief  Tasks of the TOF PID quantities for the event times
 ///
 
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/PIDResponseTOF.h"
@@ -33,7 +34,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <PID/PIDTOF.h>
 
 #include <TEfficiency.h>
 #include <THashList.h>
@@ -167,7 +167,7 @@ struct tofPidCollisionTimeQa {
       }
 
       listEfficiency.setObject(new THashList);
-      auto makeEfficiency = [&](TString effname, TString efftitle) {
+      auto makeEfficiency = [&](const TString& effname, const TString& efftitle) {
         listEfficiency->Add(new TEfficiency(effname, efftitle + ";TOF multiplicity;Efficiency", nBinsMultiplicity, 0, rangeMultiplicity));
       };
 
@@ -436,11 +436,11 @@ struct tofPidCollisionTimeQa {
           histos.fill(HIST("goodforevtime/tofSignalPerCollision"), ncolls % 6000, trk.tofSignal());
         }
       }
-      static_cast<TEfficiency*>(listEfficiency->FindObject("effTOFEvTime"))->Fill(t.isEvTimeTOF(), nTracksWithTOF);
-      static_cast<TEfficiency*>(listEfficiency->FindObject("effT0AEvTime"))->Fill(collision.has_foundFT0() && collision.t0ACorrectedValid(), nTracksWithTOF);
-      static_cast<TEfficiency*>(listEfficiency->FindObject("effT0CEvTime"))->Fill(collision.has_foundFT0() && collision.t0CCorrectedValid(), nTracksWithTOF);
-      static_cast<TEfficiency*>(listEfficiency->FindObject("effT0ACEvTime"))->Fill(collision.has_foundFT0() && collision.t0ACValid(), nTracksWithTOF);
-      static_cast<TEfficiency*>(listEfficiency->FindObject("effTOFT0ACEvTime"))->Fill(t.isEvTimeTOF() && collision.has_foundFT0() && collision.t0ACorrectedValid(), nTracksWithTOF);
+      dynamic_cast<TEfficiency*>(listEfficiency->FindObject("effTOFEvTime"))->Fill(t.isEvTimeTOF(), nTracksWithTOF);
+      dynamic_cast<TEfficiency*>(listEfficiency->FindObject("effT0AEvTime"))->Fill(collision.has_foundFT0() && collision.t0ACorrectedValid(), nTracksWithTOF);
+      dynamic_cast<TEfficiency*>(listEfficiency->FindObject("effT0CEvTime"))->Fill(collision.has_foundFT0() && collision.t0CCorrectedValid(), nTracksWithTOF);
+      dynamic_cast<TEfficiency*>(listEfficiency->FindObject("effT0ACEvTime"))->Fill(collision.has_foundFT0() && collision.t0ACValid(), nTracksWithTOF);
+      dynamic_cast<TEfficiency*>(listEfficiency->FindObject("effTOFT0ACEvTime"))->Fill(t.isEvTimeTOF() && collision.has_foundFT0() && collision.t0ACorrectedValid(), nTracksWithTOF);
     }
   }
   PROCESS_SWITCH(tofPidCollisionTimeQa, processData, "Process data", true);

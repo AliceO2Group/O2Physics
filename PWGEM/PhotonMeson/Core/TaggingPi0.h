@@ -23,7 +23,6 @@
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/EMPhoton.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 //
 #include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
@@ -37,11 +36,13 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -54,6 +55,7 @@
 #include <TString.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <map>
@@ -64,7 +66,7 @@
 #include <utility>
 #include <vector>
 
-using MyCollisions = o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMEventsQvec_001>;
+using MyCollisions = o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMEventsQvec_001, o2::aod::EmMagFields>;
 using MyCollision = MyCollisions::iterator;
 
 using MyCollisionsWithJJMC = o2::soa::Join<MyCollisions, o2::aod::EMEventsWeight>;
@@ -85,9 +87,6 @@ using MyEMCCluster = MyEMCClusters::iterator;
 template <o2::aod::pwgem::photonmeson::photonpair::PairType pairtype, typename... Types>
 struct TaggingPi0 {
   o2::framework::Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  o2::framework::Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   o2::framework::Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
   o2::framework::Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 594, "difference in global BC required in mixed events"};
 
@@ -213,8 +212,8 @@ struct TaggingPi0 {
   // } phoscuts;
 
   o2::framework::HistogramRegistry fRegistry{"output", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject, false, false};
-  static constexpr std::string_view event_types[2] = {"before/", "after/"};
-  static constexpr std::string_view event_pair_types[2] = {"same/", "mix/"};
+  static constexpr std::array<std::string_view, 2> event_types = {"before/", "after/"};
+  static constexpr std::array<std::string_view, 2> event_pair_types = {"same/", "mix/"};
 
   std::vector<float> zvtx_bin_edges;
   std::vector<float> cent_bin_edges;
@@ -222,9 +221,9 @@ struct TaggingPi0 {
   std::vector<float> occ_bin_edges;
 
   o2::ccdb::CcdbApi ccdbApi;
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int mRunNumber;
-  float d_bz;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  int mRunNumber = 0;
+  float d_bz = 0;
 
   void init(o2::framework::InitContext&)
   {
@@ -244,10 +243,10 @@ struct TaggingPi0 {
     emh1 = new MyEMH(ndepth);
     emh2 = new MyEMH(ndepth);
 
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
+    DefineEMEventCut();
+    fEMEventCut.addEventHistograms(&fRegistry);
 
     addHistogrms();
-    DefineEMEventCut();
     DefinePCMCut();
     DefineDileptonCut();
     DefineEMCCut();
@@ -262,51 +261,40 @@ struct TaggingPi0 {
     ccdb->setFatalWhenNull(false);
   }
 
-  template <typename TCollision>
+  template <o2::soa::is_iterator TCollision>
   void initCCDB(TCollision const& collision)
   {
     if (mRunNumber == collision.runNumber()) {
       return;
     }
 
+    if (mRunNumber == collision.runNumber()) {
+      return;
+    }
     // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) {
+    if (d_bz_input > -990) { // o2-linter: disable=magic-number (override value)
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (std::fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      if (std::fabs(d_bz) > 1e-5) {                   // o2-linter: disable=magic-number (override value)
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f)); // o2-linter: disable=magic-number (override value)
       }
+      o2::base::Propagator::initFieldFromGRP(&grpmag);
       mRunNumber = collision.runNumber();
       return;
     }
 
-    auto run3grp_timestamp = collision.timestamp();
-    o2::parameters::GRPObject* grpo = 0x0;
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    if (grpo) {
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    }
-    mRunNumber = collision.runNumber();
+    o2::base::Propagator::initFieldFromGRP(&collision.grpMagField());
+    // Fetch magnetic field from ccdb for current collision
+    d_bz = collision.grpMagField().getNominalL3Field();
+    LOG(info) << "Retrieved GRP for timestamp " << collision.timestamp() << " with magnetic field of " << d_bz << " kZG";
   }
 
   ~TaggingPi0()
   {
     delete emh1;
-    emh1 = 0x0;
+    emh1 = nullptr;
     delete emh2;
-    emh2 = 0x0;
+    emh2 = nullptr;
 
     used_photonIds_per_col.clear();
     used_photonIds_per_col.shrink_to_fit();
@@ -347,6 +335,8 @@ struct TaggingPi0 {
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
+    fEMEventCut.SetTrackOccupancyRange(eventcuts.cfgTrackOccupancyMin, eventcuts.cfgTrackOccupancyMax);
+    fEMEventCut.SetFT0COccupancyRange(eventcuts.cfgFT0COccupancyMin, eventcuts.cfgFT0COccupancyMax);
   }
 
   void DefinePCMCut()
@@ -440,8 +430,8 @@ struct TaggingPi0 {
   // o2::framework::Preslice<MyPHOSClusters> perCollision_phos = o2::aod::phoscluster::pmeventId;
 
   o2::framework::Preslice<MyPrimaryElectrons> perCollision_electron = o2::aod::emprimaryelectronda::pmeventId;
-  o2::framework::Partition<MyPrimaryElectrons> positrons = o2::aod::emprimaryelectron::sign > int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt&& nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaEl) < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaEl);
-  o2::framework::Partition<MyPrimaryElectrons> electrons = o2::aod::emprimaryelectron::sign < int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt && nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaEl) < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaEl);
+  o2::framework::Partition<MyPrimaryElectrons> positrons = o2::aod::emprimaryelectron::sign > static_cast<int8_t>(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt&& nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaEl) < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaEl);
+  o2::framework::Partition<MyPrimaryElectrons> electrons = o2::aod::emprimaryelectron::sign < static_cast<int8_t>(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt && nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaEl) < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaEl);
 
   MyEMH* emh1 = nullptr;
   MyEMH* emh2 = nullptr;
@@ -449,7 +439,7 @@ struct TaggingPi0 {
   std::vector<std::pair<int, int>> used_dileptonIds_per_col; // <ndf, trackId>
   std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
-  template <typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2>
+  template <o2::soa::is_table TCollisions, o2::soa::is_table TPhotons1, o2::soa::is_table TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2>
   void runPairing(TCollisions const& collisions,
                   TPhotons1 const& photons1, TPhotons2 const& photons2,
                   TSubInfos1 const&, TSubInfos2 const&,
@@ -469,18 +459,17 @@ struct TaggingPi0 {
         continue;
       }
 
-      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      const std::array<float, 3> centralities = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, weight);
+      fEMEventCut.fillEventInfo<0>(&fRegistry, collision, weight);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, weight);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0, weight); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0, weight);  // accepted
+      fEMEventCut.fillEventInfo<1>(&fRegistry, collision, weight);
+      fEMEventCut.fillAccepted(&fRegistry, weight);
 
       int zbin = lower_bound(zvtx_bin_edges.begin(), zvtx_bin_edges.end(), collision.posZ()) - zvtx_bin_edges.begin() - 1;
       if (zbin < 0) {
@@ -506,9 +495,7 @@ struct TaggingPi0 {
       }
 
       int occbin = -1;
-      if (cfgOccupancyEstimator == 0) {
-        occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.ft0cOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;
-      } else if (cfgOccupancyEstimator == 1) {
+      if (cfgOccupancyEstimator == 1) {
         occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.trackOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;
       } else {
         occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.ft0cOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;
@@ -612,11 +599,11 @@ struct TaggingPi0 {
       }
 
       // make a vector of selected photons in this collision.
-      auto selected_photons1_in_this_event = emh1->GetTracksPerCollision(key_df_collision);
-      // auto selected_photons2_in_this_event = emh2->GetTracksPerCollision(key_df_collision);
+      const auto& selected_photons1_in_this_event = emh1->GetTracksPerCollision(key_df_collision);
+      // const auto& selected_photons2_in_this_event = emh2->GetTracksPerCollision(key_df_collision);
 
-      // auto collisionIds1_in_mixing_pool = emh1->GetCollisionIdsFromEventPool(key_bin);
-      auto collisionIds2_in_mixing_pool = emh2->GetCollisionIdsFromEventPool(key_bin);
+      // const auto& collisionIds1_in_mixing_pool = emh1->GetCollisionIdsFromEventPool(key_bin);
+      const auto& collisionIds2_in_mixing_pool = emh2->GetCollisionIdsFromEventPool(key_bin);
 
       for (const auto& mix_dfId_collisionId : collisionIds2_in_mixing_pool) {
         int mix_dfId = mix_dfId_collisionId.first;
@@ -633,7 +620,7 @@ struct TaggingPi0 {
           continue;
         }
 
-        auto photons2_from_event_pool = emh2->GetTracksPerCollision(mix_dfId_collisionId);
+        const auto& photons2_from_event_pool = emh2->GetTracksPerCollision(mix_dfId_collisionId);
         // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), nll = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons2_from_event_pool.size());
 
         for (const auto& g1 : selected_photons1_in_this_event) { // [photon from event1, dilepton from event2]

@@ -99,8 +99,8 @@ struct qaTrackSplitting {
   using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA>;
   Filter trackFilterEta = nabs(aod::track::eta - cfgCustomTrackCuts.windowEta) < cfgCustomTrackCuts.windowEtaWidth;
   Filter trackFilterPhi = nabs(aod::track::phi - cfgCustomTrackCuts.windowPhi) < cfgCustomTrackCuts.windowPhiWidth;
-  Filter trackFilterITS = (aod::track::itsClusterSizes > (uint32_t)0);
-  Filter trackFilterTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Filter trackFilterITS = (aod::track::itsClusterSizes > static_cast<uint32_t>(0));
+  Filter trackFilterTPC = (aod::track::tpcNClsFindable > static_cast<uint8_t>(0));
   // Filter trackFilterType = (aod::track::TrackType == aod::track::Track);
   // Filter filterPt = nabs(aod::track::pt - cfgCustomTrackCuts.windowPt) < cfgCustomTrackCuts.windowPtWidth;
   void processData(CollisionCandidates const& collisions,
@@ -134,10 +134,11 @@ struct qaTrackSplitting {
     if (!collision.sel8()) {
       return;
     }
-    typedef std::shared_ptr<TrackCandidatesMC::iterator> trkType;
+    using TrackType = const TrackCandidatesMC::iterator;
+    using TrackTypePtr = std::shared_ptr<TrackType>;
 
-    std::map<int64_t, std::vector<trkType>> particleUsageCounter;
-    for (auto track : tracks) {
+    std::map<int64_t, std::vector<TrackTypePtr>> particleUsageCounter;
+    for (const auto& track : tracks) {
       histos.fill(HIST("tracks"), 0);
       if (!track.has_mcParticle()) {
         continue;
@@ -156,7 +157,7 @@ struct qaTrackSplitting {
         continue;
       }
       histos.fill(HIST("tracks"), 4);
-      particleUsageCounter[track.mcParticleId()].push_back(std::make_shared<decltype(track)>(track));
+      particleUsageCounter[track.mcParticleId()].push_back(std::make_shared<TrackType>(track));
     }
     for (const auto& [mcId, tracksMatched] : particleUsageCounter) {
       histos.fill(HIST("numberOfRecoed"), tracksMatched.size());

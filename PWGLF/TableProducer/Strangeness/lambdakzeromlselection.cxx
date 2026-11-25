@@ -170,8 +170,8 @@ struct lambdakzeromlselection {
     }
 
     /// Here the Configurables are passed to std::vectors
-    CastKine_SelMap = (std::vector<int>)Kine_SelMap;
-    CastTopo_SelMap = (std::vector<int>)Topo_SelMap;
+    CastKine_SelMap = std::vector<int>(Kine_SelMap);
+    CastTopo_SelMap = std::vector<int>(Topo_SelMap);
 
     // Concatenate the selection masks
     Feature_SelMask.reserve(CastKine_SelMap.size() + CastTopo_SelMap.size()); // Reserve space to avoid reallocations
@@ -210,19 +210,19 @@ struct lambdakzeromlselection {
 
     // calculate classifier output
     if (PredictLambda) {
-      float* LambdaProbability = lambda_bdt.evalModel(inputFeatures);
+      const std::vector<float> LambdaProbability = lambda_bdt.evalModel(inputFeatures);
       lambdaMLSelections(LambdaProbability[1]);
     }
     if (PredictGamma) {
-      float* GammaProbability = gamma_bdt.evalModel(inputFeatures);
+      const std::vector<float> GammaProbability = gamma_bdt.evalModel(inputFeatures);
       gammaMLSelections(GammaProbability[1]);
     }
     if (PredictAntiLambda) {
-      float* AntiLambdaProbability = antilambda_bdt.evalModel(inputFeatures);
+      const std::vector<float> AntiLambdaProbability = antilambda_bdt.evalModel(inputFeatures);
       antiLambdaMLSelections(AntiLambdaProbability[1]);
     }
     if (PredictKZeroShort) {
-      float* KZeroShortProbability = kzeroshort_bdt.evalModel(inputFeatures);
+      const std::vector<float> KZeroShortProbability = kzeroshort_bdt.evalModel(inputFeatures);
       kzeroShortMLSelections(KZeroShortProbability[1]);
     }
   }

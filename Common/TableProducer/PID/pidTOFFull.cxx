@@ -18,6 +18,7 @@
 
 #include "pidTOFBase.h"
 
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 
@@ -31,7 +32,6 @@
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 #include <Framework/Variant.h>
-#include <PID/PIDTOF.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TGraph.h>
@@ -286,7 +286,7 @@ struct tofPidFull {
   Preslice<Trks> perCollision = aod::track::collisionId;
   template <o2::track::PID::ID pid>
   using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
-  void processWSlice(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  void processWSlice(Trks const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
     constexpr auto responseMu = ResponseImplementation<PID::Muon>();
@@ -302,10 +302,10 @@ struct tofPidFull {
       reserveTable(pidId, tracks.size());
     }
 
-    int lastCollisionId = -1;          // Last collision ID analysed
-    float resolution = 1.f;            // Last resolution assigned
-    for (auto const& track : tracks) { // Loop on all tracks
-      if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
+    int lastCollisionId = -1;                                 // Last collision ID analysed
+    float resolution = 1.f;                                   // Last resolution assigned
+    for (auto const& track : tracks) {                        // Loop on all tracks
+      if (!track.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
         for (auto const& pidId : mEnabledParticles) {
           makeTableEmpty(pidId);
         }
@@ -392,7 +392,7 @@ struct tofPidFull {
   using TrksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
   template <o2::track::PID::ID pid>
   using ResponseImplementationIU = o2::pid::tof::ExpTimes<TrksIU::iterator, pid>;
-  void processWoSlice(TrksIU const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  void processWoSlice(TrksIU const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
   {
     constexpr auto responseEl = ResponseImplementationIU<PID::Electron>();
     constexpr auto responseMu = ResponseImplementationIU<PID::Muon>();
@@ -407,9 +407,9 @@ struct tofPidFull {
     for (auto const& pidId : mEnabledParticles) {
       reserveTable(pidId, tracks.size());
     }
-    float resolution = 1.f;            // Last resolution assigned
-    for (auto const& track : tracks) { // Loop on all tracks
-      if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
+    float resolution = 1.f;                                   // Last resolution assigned
+    for (auto const& track : tracks) {                        // Loop on all tracks
+      if (!track.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
         for (auto const& pidId : mEnabledParticles) {
           makeTableEmpty(pidId);
         }

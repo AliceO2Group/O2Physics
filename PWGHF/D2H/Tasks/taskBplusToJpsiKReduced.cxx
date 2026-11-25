@@ -24,6 +24,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsPid.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
 
 #include <CCDB/CcdbApi.h>
@@ -64,6 +65,8 @@ namespace o2::aod
 namespace hf_cand_bplustojpsik_lite
 {
 DECLARE_SOA_COLUMN(PtJpsi, ptJpsi, float);                                           //! Transverse momentum of Jpsi daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(PtJpsiDauPos, ptJpsiDauPos, float);                               //! Transverse momentum of Jpsi positive daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(PtJpsiDauNeg, ptJpsiDauNeg, float);                               //! Transverse momentum of Jpsi negative daughter candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtBach, ptBach, float);                                           //! Transverse momentum of bachelor kaon (GeV/c)
 DECLARE_SOA_COLUMN(ItsNClsJpsiDauPos, itsNClsJpsiDauPos, int);                       //! Number of clusters in ITS
 DECLARE_SOA_COLUMN(TpcNClsCrossedRowsJpsiDauPos, tpcNClsCrossedRowsJpsiDauPos, int); //! Number of TPC crossed rows
@@ -98,6 +101,12 @@ DECLARE_SOA_COLUMN(NSigTpcTofMuJpsiDauPos, nSigTpcTofMuJpsiDauPos, float);      
 DECLARE_SOA_COLUMN(NSigTpcMuJpsiDauNeg, nSigTpcMuJpsiDauNeg, float);                 //! TPC Nsigma separation for Jpsi DauNeg with muon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofMuJpsiDauNeg, nSigTofMuJpsiDauNeg, float);                 //! TOF Nsigma separation for Jpsi DauNeg with muon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcTofMuJpsiDauNeg, nSigTpcTofMuJpsiDauNeg, float);           //! Combined TPC and TOF Nsigma separation for Jpsi prong1 with muon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcElJpsiDauPos, nSigTpcElJpsiDauPos, float);                 //! TPC Nsigma separation for Jpsi DauPos with electron mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofElJpsiDauPos, nSigTofElJpsiDauPos, float);                 //! TOF Nsigma separation for Jpsi DauPos with electron mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofElJpsiDauPos, nSigTpcTofElJpsiDauPos, float);           //! Combined TPC and TOF Nsigma separation for Jpsi prong0 with electron mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcElJpsiDauNeg, nSigTpcElJpsiDauNeg, float);                 //! TPC Nsigma separation for Jpsi DauNeg with electron mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofElJpsiDauNeg, nSigTofElJpsiDauNeg, float);                 //! TOF Nsigma separation for Jpsi DauNeg with electron mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofElJpsiDauNeg, nSigTpcTofElJpsiDauNeg, float);           //! Combined TPC and TOF Nsigma separation for Jpsi prong1 with electron mass hypothesis
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                                 //! Decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                             //! Transverse decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);             //! Normalised decay length of candidate
@@ -108,6 +117,7 @@ DECLARE_SOA_COLUMN(ImpactParameterProductJpsi, impactParameterProductJpsi, float
 DECLARE_SOA_COLUMN(ImpactParameterJpsiDauPos, impactParameterJpsiDauPos, float);     //! Impact parameter of Jpsi daughter candidate
 DECLARE_SOA_COLUMN(ImpactParameterJpsiDauNeg, impactParameterJpsiDauNeg, float);     //! Impact parameter of Jpsi daughter candidate
 DECLARE_SOA_COLUMN(ImpactParameterLfTrack0, impactParameterLfTrack0, float);         //! Impact parameter of Phi daughter candidate
+DECLARE_SOA_COLUMN(AbsCos3MuKBpToMuMuK, absCos3MuKBpToMuMuK, float);                 //! Absolute value of the cosine of the angle between one of the muons and the kaon in the J/Psi rest frame
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                                                 //! Cosine pointing angle of candidate
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                             //! Cosine pointing angle of candidate in transverse plane
 DECLARE_SOA_COLUMN(CpaJpsi, cpaJpsi, float);                                         //! Cosine pointing angle of Jpsi daughter candidate
@@ -125,6 +135,7 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_bplustojpsik_lite::Y,
                   hf_cand_bplustojpsik_lite::Cpa,
                   hf_cand_bplustojpsik_lite::CpaXY,
+                  hf_cand_bplustojpsik_lite::CpaJpsi,
                   hf_cand::Chi2PCA,
                   hf_cand_bplustojpsik_lite::DecayLength,
                   hf_cand_bplustojpsik_lite::DecayLengthXY,
@@ -134,6 +145,7 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_bplustojpsik_lite::ImpactParameterProduct,
                   hf_cand_bplustojpsik_lite::ImpactParameterProductJpsi,
                   hf_cand_bplustojpsik_lite::MaxNormalisedDeltaIP,
+                  hf_cand_bplustojpsik_lite::AbsCos3MuKBpToMuMuK,
                   hf_cand_bplustojpsik_lite::MlScoreSig,
                   // hf_sel_candidate_bplus::IsSelBplusToJpsiPi,
                   //  Jpsi meson features
@@ -142,16 +154,30 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_bplustojpsik_lite::ImpactParameterJpsiDauPos,
                   hf_cand_bplustojpsik_lite::ImpactParameterJpsiDauNeg,
                   // Jpsi daughter features
+                  hf_cand_bplustojpsik_lite::PtJpsiDauPos,
                   hf_cand_bplustojpsik_lite::ItsNClsJpsiDauPos,
                   hf_cand_bplustojpsik_lite::TpcNClsCrossedRowsJpsiDauPos,
                   hf_cand_bplustojpsik_lite::ItsChi2NClJpsiDauPos,
                   hf_cand_bplustojpsik_lite::TpcChi2NClJpsiDauPos,
                   hf_cand_bplustojpsik_lite::AbsEtaJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::PtJpsiDauNeg,
                   hf_cand_bplustojpsik_lite::ItsNClsJpsiDauNeg,
                   hf_cand_bplustojpsik_lite::TpcNClsCrossedRowsJpsiDauNeg,
                   hf_cand_bplustojpsik_lite::ItsChi2NClJpsiDauNeg,
                   hf_cand_bplustojpsik_lite::TpcChi2NClJpsiDauNeg,
                   hf_cand_bplustojpsik_lite::AbsEtaJpsiDauNeg,
+                  hf_cand_bplustojpsik_lite::NSigTpcMuJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::NSigTofMuJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::NSigTpcTofMuJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::NSigTpcMuJpsiDauNeg,
+                  hf_cand_bplustojpsik_lite::NSigTofMuJpsiDauNeg,
+                  hf_cand_bplustojpsik_lite::NSigTpcTofMuJpsiDauNeg,
+                  hf_cand_bplustojpsik_lite::NSigTpcElJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::NSigTofElJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::NSigTpcTofElJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::NSigTpcElJpsiDauNeg,
+                  hf_cand_bplustojpsik_lite::NSigTofElJpsiDauNeg,
+                  hf_cand_bplustojpsik_lite::NSigTpcTofElJpsiDauNeg,
                   // kaon features
                   hf_cand_bplustojpsik_lite::PtBach,
                   hf_cand_bplustojpsik_lite::ImpactParameterLfTrack0,
@@ -168,7 +194,8 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_mc_flag::FlagMcDecayChanRec,
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_bplustojpsik_lite::FlagWrongCollision,
-                  hf_cand_bplustojpsik_lite::PtGen);
+                  hf_cand_bplustojpsik_lite::PtGen,
+                  hf_cand_mc_flag::IsHadronLeptonSwapped);
 
 // DECLARE_SOA_TABLE(HfRedBpMcCheck, "AOD", "HFREDBPMCCHECK", //! Table with MC decay type check
 //                   hf_cand_mc_flag::FlagMcMatchRec,
@@ -242,6 +269,7 @@ struct HfTaskBplusToJpsiKReduced {
   o2::ccdb::CcdbApi ccdbApi;
 
   using TracksKaon = soa::Join<HfRedTracks, HfRedTracksPid>;
+  using JPsis = soa::Join<HfRedJpsis, HfRedJpsiDauPid>;
   std::vector<float> outputMl;
 
   // Filter filterSelectCandidates = (aod::hf_sel_candidate_bplus::isSelBplusToJpsiPi >= selectionFlagBplus);
@@ -278,7 +306,7 @@ struct HfTaskBplusToJpsiKReduced {
     const AxisSpec axisImpactPar{200, -0.05, 0.05};
     const AxisSpec axisPtJpsi{100, 0., 50.};
     const AxisSpec axisRapidity{100, -2., 2.};
-    const AxisSpec axisPtB{(std::vector<double>)binsPt, "#it{p}_{T}^{B^{+}} (GeV/#it{c})"};
+    const AxisSpec axisPtB{500, 0., 50., "#it{p}_{T}^{B^{0}} (GeV/#it{c})"};
     const AxisSpec axisPtKa{100, 0.f, 10.f};
 
     registry.add("hMass", bPlusCandTitle + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMassBplus, axisPtB}});
@@ -289,7 +317,8 @@ struct HfTaskBplusToJpsiKReduced {
     if (doprocessMc || doprocessMcWithBplusMl) {
       registry.add("hPtJpsiGen", mcParticleMatched + "J/#Psi #it{p}_{T}^{gen} (GeV/#it{c}); B^{+} " + stringPt, {HistType::kTH2F, {axisPtProng, axisPtB}});
       registry.add("hPtKGen", mcParticleMatched + "Kaon #it{p}_{T}^{gen} (GeV/#it{c}); B^{+} " + stringPt, {HistType::kTH2F, {axisPtProng, axisPtB}});
-      registry.add("hYGenWithProngsInAcceptance", mcParticleMatched + "B^{+} #it{p}_{T}^{gen} (GeV/#it{c}); B^{+} #it{y}", {HistType::kTH2F, {axisPtProng, axisRapidity}});
+      registry.add("hPtYGenSig", mcParticleMatched + "B^{+} #it{p}_{T}^{gen} (GeV/#it{c}); B^{+} #it{y}", {HistType::kTH2F, {axisPtB, axisRapidity}});
+      registry.add("hPtYWithProngsInAccepanceGenSig", mcParticleMatched + "B^{+} #it{p}_{T}^{gen} (GeV/#it{c}); B^{+} #it{y}", {HistType::kTH2F, {axisPtB, axisRapidity}});
       registry.add("hMassRecSig", bPlusCandMatch + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2}); B^{+} " + stringPt, {HistType::kTH2F, {axisMassBplus, axisPtB}});
       registry.add("hMassJpsiRecSig", bPlusCandMatch + "inv. mass #mu^{+}#mu^{#minus} (GeV/#it{c}^{2}); J/#Psi " + stringPt, {HistType::kTH2F, {axisMassJpsi, axisPtJpsi}});
       registry.add("hd0KRecSig", bPlusCandMatch + "Kaon DCAxy to prim. vertex (cm); K^{+} " + stringPt, {HistType::kTH2F, {axisImpactPar, axisPtKa}});
@@ -336,30 +365,34 @@ struct HfTaskBplusToJpsiKReduced {
   /// \param candidatesJpsi is the table with Jpsi candidates
   template <bool DoMc, bool WithBplusMl, typename Cand>
   void fillCand(Cand const& candidate,
-                aod::HfRedJpsis const& /*candidatesJpsi*/,
+                JPsis const& /*candidatesJpsi*/,
                 aod::HfRedBach0Tracks const&)
   {
     auto ptCandBplus = candidate.pt();
     auto invMassBplus = HfHelper::invMassBplusToJpsiK(candidate, useJpsiPdgMass);
-    auto candJpsi = candidate.template jpsi_as<aod::HfRedJpsis>();
+    auto candJpsi = candidate.template jpsi_as<JPsis>();
     auto candKa = candidate.template bachKa_as<aod::HfRedBach0Tracks>();
     auto const pVecMu0 = candidate.pVectorProng0();
     auto const pVecMu1 = candidate.pVectorProng1();
     auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
+    auto ptMuPos = RecoDecay::pt(pVecMu0);
+    auto ptMuNeg = RecoDecay::pt(pVecMu1);
     auto invMassJpsi = RecoDecay::m(std::array{pVecMu0, pVecMu1}, std::array{o2::constants::physics::MassMuonPlus, o2::constants::physics::MassMuonMinus});
     uint8_t statusBplus = 0;
 
     int8_t flagMcMatchRec{0}, flagMcDecayChanRec{0}, flagWrongCollision{0};
+    bool swapped{false};
     bool isSignal = false;
     if constexpr (DoMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagMcDecayChanRec = candidate.flagMcDecayChanRec();
       flagWrongCollision = candidate.flagWrongCollision();
-      isSignal = std::abs(flagMcMatchRec) == o2::hf_decay::hf_cand_beauty::BplusToJpsiK;
+      swapped = candidate.isHadronLeptonSwapped();
+      isSignal = std::abs(flagMcMatchRec) == o2::hf_decay::hf_cand_beauty::BplusToJpsiKToMuMuK;
     }
 
     SETBIT(statusBplus, SelectionStep::RecoSkims);
-    if (HfHelper::selectionBplusToJpsiKTopol(candidate, cuts, binsPt, useJpsiPdgMass)) {
+    if (HfHelper::selectionBplusToJpsiKTopol<JPsis>(candidate, cuts, binsPt, useJpsiPdgMass)) {
       SETBIT(statusBplus, SelectionStep::RecoTopol);
     } else if (selectionFlagBplus >= BIT(SelectionStep::RecoTopol) * 2 - 1) {
       return;
@@ -424,6 +457,7 @@ struct HfTaskBplusToJpsiKReduced {
         HfHelper::yBplus(candidate),
         candidate.cpa(),
         candidate.cpaXY(),
+        candidate.cpaJpsi(),
         candidate.chi2PCA(),
         candidate.decayLength(),
         candidate.decayLengthXY(),
@@ -433,22 +467,37 @@ struct HfTaskBplusToJpsiKReduced {
         candidate.impactParameterProduct(),
         candidate.impactParameterProductJpsi(),
         candidate.maxNormalisedDeltaIP(),
+        HfHelper::absCos3MuKBpToMuMuK(candidate),
         candidateMlScoreSig,
         // J/Psi features
         invMassJpsi,
         ptJpsi,
         candidate.impactParameter0(),
         candidate.impactParameter1(),
+        ptMuPos,
         candJpsi.itsNClsDauPos(),
         candJpsi.tpcNClsCrossedRowsDauPos(),
         candJpsi.itsChi2NClDauPos(),
         candJpsi.tpcChi2NClDauPos(),
         absEta(candJpsi.tglDauPos()),
+        ptMuNeg,
         candJpsi.itsNClsDauNeg(),
         candJpsi.tpcNClsCrossedRowsDauNeg(),
         candJpsi.itsChi2NClDauNeg(),
         candJpsi.tpcChi2NClDauNeg(),
         absEta(candJpsi.tglDauNeg()),
+        candJpsi.tpcNSigmaMuPos(),
+        candJpsi.tofNSigmaMuPos(),
+        candJpsi.tpcTofNSigmaMuPos(),
+        candJpsi.tpcNSigmaMuNeg(),
+        candJpsi.tofNSigmaMuNeg(),
+        candJpsi.tpcTofNSigmaMuNeg(),
+        candJpsi.tpcNSigmaElPos(),
+        candJpsi.tofNSigmaElPos(),
+        candJpsi.tpcTofNSigmaElPos(),
+        candJpsi.tpcNSigmaElNeg(),
+        candJpsi.tofNSigmaElNeg(),
+        candJpsi.tpcTofNSigmaElNeg(),
         // kaon features
         candidate.ptProng2(),
         candidate.impactParameter2(),
@@ -465,7 +514,8 @@ struct HfTaskBplusToJpsiKReduced {
         flagMcDecayChanRec,
         isSignal,
         flagWrongCollision,
-        ptMother);
+        ptMother,
+        swapped);
     }
   }
 
@@ -484,15 +534,16 @@ struct HfTaskBplusToJpsiKReduced {
     registry.fill(HIST("hPtJpsiGen"), ptProngs[0], ptParticle);
     registry.fill(HIST("hPtKGen"), ptProngs[1], ptParticle);
 
+    registry.fill(HIST("hPtYGenSig"), ptParticle, yParticle);
     // generated B+ with daughters in geometrical acceptance
     if (prongsInAcc) {
-      registry.fill(HIST("hYGenWithProngsInAcceptance"), ptParticle, yParticle);
+      registry.fill(HIST("hPtYWithProngsInAccepanceGenSig"), ptParticle, yParticle);
     }
   }
 
   // Process functions
   void processData(aod::HfRedCandBplusToJpsiK const& candidates,
-                   aod::HfRedJpsis const& candidatesJpsi,
+                   JPsis const& candidatesJpsi,
                    aod::HfRedBach0Tracks const& kaonTracks)
   {
     for (const auto& candidate : candidates) {
@@ -505,7 +556,7 @@ struct HfTaskBplusToJpsiKReduced {
   PROCESS_SWITCH(HfTaskBplusToJpsiKReduced, processData, "Process data without ML for B+", true);
 
   void processDataWithBplusMl(aod::HfRedCandBplusToJpsiK const& candidates,
-                              aod::HfRedJpsis const& candidatesJpsi,
+                              JPsis const& candidatesJpsi,
                               aod::HfRedBach0Tracks const& kaonTracks)
   {
     for (const auto& candidate : candidates) {
@@ -517,9 +568,9 @@ struct HfTaskBplusToJpsiKReduced {
   } // processDataWithBplusMl
   PROCESS_SWITCH(HfTaskBplusToJpsiKReduced, processDataWithBplusMl, "Process data with ML for B+", false);
 
-  void processMc(soa::Join<aod::HfRedCandBplusToJpsiK, aod::HfMcRecRedBps> const& candidates,
+  void processMc(soa::Join<aod::HfRedCandBplusToJpsiK, aod::HfMcRecRedBps, aod::HfMcRecBJpSwaps> const& candidates,
                  aod::HfMcGenRedBps const& mcParticles,
-                 aod::HfRedJpsis const& candidatesJpsi,
+                 JPsis const& candidatesJpsi,
                  aod::HfRedBach0Tracks const& kaonTracks)
   {
     // MC rec
@@ -537,9 +588,9 @@ struct HfTaskBplusToJpsiKReduced {
   } // processMc
   PROCESS_SWITCH(HfTaskBplusToJpsiKReduced, processMc, "Process MC without ML for B+", false);
 
-  void processMcWithBplusMl(soa::Join<aod::HfRedCandBplusToJpsiK, aod::HfMcRecRedBps> const& candidates,
+  void processMcWithBplusMl(soa::Join<aod::HfRedCandBplusToJpsiK, aod::HfMcRecRedBps, aod::HfMcRecBJpSwaps> const& candidates,
                             aod::HfMcGenRedBps const& mcParticles,
-                            aod::HfRedJpsis const& candidatesJpsi,
+                            JPsis const& candidatesJpsi,
                             aod::HfRedBach0Tracks const& kaonTracks)
   {
     // MC rec

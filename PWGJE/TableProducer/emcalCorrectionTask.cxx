@@ -45,6 +45,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
@@ -53,10 +54,11 @@
 #include <Framework/Logger.h>
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 
 #include <TH1.h>
 
-#include <GPUROOTCartesianFwd.h>
+#include <sys/types.h>
 
 #include <cmath>
 #include <cstddef>
@@ -95,8 +97,10 @@ enum CellScaleMode {
 struct EmcalCorrectionTask {
   Produces<o2::aod::EMCALClusters> clusters;
   Produces<o2::aod::EMCALMCClusters> mcclusters;
+  Produces<o2::aod::Dispersions> dispersions;
   Produces<o2::aod::EMCALAmbiguousClusters> clustersAmbiguous;
   Produces<o2::aod::EMCALAmbiguousMCClusters> mcclustersAmbiguous;
+  Produces<o2::aod::AmbigousDispersions> ambigousDispersions;
   Produces<o2::aod::EMCALClusterCells> clustercells; // cells belonging to given cluster
   Produces<o2::aod::EMCALAmbiguousClusterCells> clustercellsambiguous;
   Produces<o2::aod::EMCALMatchedTracks> matchedTracks;
@@ -129,7 +133,6 @@ struct EmcalCorrectionTask {
   Configurable<bool> useWeightExotic{"useWeightExotic", false, "States if weights should be used for exotic cell cut"};
   Configurable<bool> isMC{"isMC", false, "States if run over MC"};
   Configurable<bool> applyCellTimeCorrection{"applyCellTimeCorrection", true, "apply a correction to the cell time for data and MC: Shift both average cell times to 0 and smear MC time distribution to fit data better. For MC requires isMC to be true"};
-  Configurable<float> trackMinPt{"trackMinPt", 0.3, "Minimum pT for tracks to perform track matching, to reduce computing time. Tracks below a certain pT will be loopers anyway."};
   Configurable<bool> fillQA{"fillQA", false, "Switch to turn on QA histograms."};
   Configurable<bool> useCCDBAlignment{"useCCDBAlignment", false, "EXPERTS ONLY! Switch to use the alignment object stored in CCDB instead of using the default alignment from the global geometry object."};
   Configurable<bool> applyTempCalib{"applyTempCalib", false, "Switch to turn on Temperature calibration."};
@@ -143,6 +146,12 @@ struct EmcalCorrectionTask {
   Configurable<bool> storePerDFInfo{"storePerDFInfo", false, "store addition information per DF."};
   ConfigurableAxis thConfigAxisClusters{"thConfigAxisClusters", {1000, 0.5f, 1000.5f}, ""};
   ConfigurableAxis thConfigAxisCells{"thConfigAxisCells", {1000, 0.5f, 1000.5f}, ""};
+  // Track matching config
+  struct : ConfigurableGroup {
+    std::string prefix = "trackmatching";
+    Configurable<float> trackMinPt{"trackMinPt", 0.3, "Minimum pT (GeV) for tracks to perform track matching, to reduce computing time. Tracks below a certain pT will be loopers anyway."};
+    Configurable<bool> useAllTracks{"useAllTracks", false, "Flag to use all tracks instead of just global tracks."};
+  } trackmatching;
   // cross talk emulation configs
   EmcCrossTalkConf emcCrossTalkConf;
 
@@ -153,7 +162,7 @@ struct EmcalCorrectionTask {
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
 
   // CDB service (for geometry)
-  Service<o2::ccdb::BasicCCDBManager> mCcdbManager;
+  Service<o2::ccdb::BasicCCDBManager> mCcdbManager{};
 
   // Zorro for optional software trigger selection
   // this allows to save computation time
@@ -179,24 +188,24 @@ struct EmcalCorrectionTask {
   o2::framework::HistogramRegistry mHistManager{"EMCALCorrectionTaskQAHistograms"};
 
   // Random number generator to draw cell time smearing for MC
-  std::random_device rd{};
+  std::random_device rd;
   std::mt19937_64 rdgen{rd()};
   std::normal_distribution<> normalgaus{0, 1}; // mean = 0, stddev = 1 (apply amplitude of smearing after drawing random for performance reasons)
 
   // EMCal geometry
-  o2::emcal::Geometry* geometry;
+  o2::emcal::Geometry* geometry = nullptr;
 
   // EMCal cell temperature calibrator
   std::unique_ptr<o2::emcal::EMCALTempCalibExtractor> mTempCalibExtractor;
   bool mIsTempCalibInitialized = false;
 
   // Gain calibration
-  std::array<float, 17664> mArrGainCalibDiff;
+  std::array<float, 17664> mArrGainCalibDiff{};
 
   std::vector<std::pair<int, int>> mExtraTimeShiftRunRanges;
 
   // Current run number
-  int runNumber{0};
+  int mRunNumber{0};
 
   static constexpr float TrackNotOnEMCal = -900.f;
   static constexpr int MaxMatchesPerCluster = 20; // Maximum number of tracks to match per cluster
@@ -249,7 +258,7 @@ struct EmcalCorrectionTask {
     }
 
     // read all the cluster definitions specified in the options
-    if (clusterDefinitions->length()) {
+    if (!clusterDefinitions->empty()) {
       std::stringstream parser(clusterDefinitions.value);
       std::string token;
       o2::aod::EMCALClusterDefinition clusDef;
@@ -280,7 +289,7 @@ struct EmcalCorrectionTask {
       clusterizer->setGeometry(geometry);
     }
 
-    if (mClusterizers.size() == 0) {
+    if (mClusterizers.empty()) {
       LOG(error) << "No cluster definitions specified!";
     }
 
@@ -296,6 +305,7 @@ struct EmcalCorrectionTask {
 
     // Define the cell energy binning
     std::vector<double> cellEnergyBins;
+    cellEnergyBins.reserve(166);
     for (int i = 0; i < 51; i++) {                      // o2-linter: disable=magic-number (just numbers for binning)
       cellEnergyBins.emplace_back(0.1 * (i - 0) + 0.0); // from 0 to 5 GeV/c, every 0.1 GeV
     }
@@ -381,7 +391,7 @@ struct EmcalCorrectionTask {
       emcCrossTalk.initObjects(emcCrossTalkConf);
       if (emcCrossTalkConf.createHistograms.value) {
         mHistManager.add<TH1>("hCellEnergyDistBefore", "Cell energy before cross-talk emulation", {o2::framework::HistType::kTH1D, {energyDenseAxis}});
-        mHistManager.add<TH1>("hCellEnergyDistAfter", "Cell energy after cross-talk emulation", {o2::framework::HistType::kTH1D, {energyDenseAxis}});
+        mHistManager.add<TH1>("hCellEnergyDistAfter", "Cell energy after cross-talk emulation and corrections", {o2::framework::HistType::kTH1D, {energyDenseAxis}});
       }
     }
 
@@ -402,7 +412,7 @@ struct EmcalCorrectionTask {
     }
   }
 
-  template <typename BCType>
+  template <o2::soa::is_iterator BCType>
   void initZorroCCDB(const BCType& bc)
   {
     if (applySoftwareTriggerSelection) {
@@ -420,7 +430,9 @@ struct EmcalCorrectionTask {
   {
     LOG(debug) << "Starting process full.";
     clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    dispersions.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
     clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    ambigousDispersions.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
     clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
     clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
 
@@ -438,10 +450,10 @@ struct EmcalCorrectionTask {
       initZorroCCDB(bc);
 
       // get run number
-      runNumber = bc.runNumber();
+      mRunNumber = bc.runNumber();
 
       if (applyTempCalib && !mIsTempCalibInitialized) { // needs to be called once
-        mTempCalibExtractor->InitializeFromCCDB(pathTempCalibCCDB, static_cast<uint64_t>(runNumber));
+        mTempCalibExtractor->InitializeFromCCDB(pathTempCalibCCDB, static_cast<uint64_t>(mRunNumber));
         mIsTempCalibInitialized = true;
       }
 
@@ -455,7 +467,7 @@ struct EmcalCorrectionTask {
       numberCollsInBC.insert(std::pair<uint64_t, int>(bc.globalIndex(), collisionsInFoundBC.size()));
       numberCellsInBC.insert(std::pair<uint64_t, int>(bc.globalIndex(), cellsInBC.size()));
 
-      if (!cellsInBC.size()) {
+      if (cellsInBC.size() == 0) {
         LOG(debug) << "No cells found for BC";
         countBC(collisionsInFoundBC.size(), false);
         continue;
@@ -477,7 +489,7 @@ struct EmcalCorrectionTask {
         if (static_cast<bool>(hasShaperCorrection) && emcal::intToChannelType(cell.cellType()) == emcal::ChannelType_t::LOW_GAIN) { // Apply shaper correction to LG cells
           amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
         }
-        if (applyCellAbsScale) {
+        if (applyCellAbsScale != ModeNone) {
           amplitude *= getAbsCellScale(cell.cellNumber());
         }
         if (applyGainCalibShift) {
@@ -490,7 +502,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), mRunNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -527,7 +539,7 @@ struct EmcalCorrectionTask {
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex);
+              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex, nullptr, nullptr);
             } else {
               mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
@@ -580,7 +592,9 @@ struct EmcalCorrectionTask {
     LOG(debug) << "Starting process full.";
 
     clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    dispersions.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
     clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    ambigousDispersions.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
     clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
     clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
 
@@ -599,10 +613,10 @@ struct EmcalCorrectionTask {
       initZorroCCDB(bc);
 
       // get run number
-      runNumber = bc.runNumber();
+      mRunNumber = bc.runNumber();
 
       if (applyTempCalib && !mIsTempCalibInitialized) { // needs to be called once
-        mTempCalibExtractor->InitializeFromCCDB(pathTempCalibCCDB, static_cast<uint64_t>(runNumber));
+        mTempCalibExtractor->InitializeFromCCDB(pathTempCalibCCDB, static_cast<uint64_t>(mRunNumber));
         mIsTempCalibInitialized = true;
       }
 
@@ -616,7 +630,7 @@ struct EmcalCorrectionTask {
       numberCollsInBC.insert(std::pair<uint64_t, int>(bc.globalIndex(), collisionsInFoundBC.size()));
       numberCellsInBC.insert(std::pair<uint64_t, int>(bc.globalIndex(), cellsInBC.size()));
 
-      if (!cellsInBC.size()) {
+      if (cellsInBC.size() == 0) {
         LOG(debug) << "No cells found for BC";
         countBC(collisionsInFoundBC.size(), false);
         continue;
@@ -638,7 +652,7 @@ struct EmcalCorrectionTask {
         if (static_cast<bool>(hasShaperCorrection) && emcal::intToChannelType(cell.cellType()) == emcal::ChannelType_t::LOW_GAIN) { // Apply shaper correction to LG cells
           amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
         }
-        if (applyCellAbsScale) {
+        if (applyCellAbsScale != ModeNone) {
           amplitude *= getAbsCellScale(cell.cellNumber());
         }
         if (applyGainCalibShift) {
@@ -651,7 +665,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), mRunNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -746,8 +760,10 @@ struct EmcalCorrectionTask {
 
     clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
     mcclusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    dispersions.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
     clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
     mcclustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    ambigousDispersions.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
     clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
     clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
 
@@ -769,7 +785,7 @@ struct EmcalCorrectionTask {
       initZorroCCDB(bc);
 
       // get run number
-      runNumber = bc.runNumber();
+      mRunNumber = bc.runNumber();
 
       // Get the collisions matched to the BC using foundBCId of the collision
       auto collisionsInFoundBC = collisions.sliceBy(collisionsPerFoundBC, bc.globalIndex());
@@ -778,7 +794,7 @@ struct EmcalCorrectionTask {
       numberCollsInBC.insert(std::pair<uint64_t, int>(bc.globalIndex(), collisionsInFoundBC.size()));
       numberCellsInBC.insert(std::pair<uint64_t, int>(bc.globalIndex(), cellsInBC.size()));
 
-      if (!cellsInBC.size()) {
+      if (cellsInBC.size() == 0) {
         LOG(debug) << "No cells found for BC";
         countBC(collisionsInFoundBC.size(), false);
         continue;
@@ -809,19 +825,9 @@ struct EmcalCorrectionTask {
           }
           mHistManager.fill(HIST("hMCParticleEnergy"), cellparticle.e());
         }
-        auto amplitude = cell.amplitude();
-        if (static_cast<bool>(hasShaperCorrection) && emcal::intToChannelType(cell.cellType()) == emcal::ChannelType_t::LOW_GAIN) { // Apply shaper correction to LG cells
-          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
-        }
-        if (mcCellEnergyShift != 1.) {
-          amplitude *= mcCellEnergyShift; // Fine tune the MC cell energy
-        }
-        if (mcCellEnergyResolutionBroadening != 0.) {
-          amplitude *= (1. + normalgaus(rdgen) * mcCellEnergyResolutionBroadening); // Fine tune the MC cell energy resolution
-        }
         cellsBC.emplace_back(cell.cellNumber(),
-                             amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
+                             cell.amplitude(),
+                             cell.time(),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
         cellLabels.emplace_back(std::vector<int>{cell.mcParticleIds().begin(), cell.mcParticleIds().end()}, std::vector<float>{cell.amplitudeA().begin(), cell.amplitudeA().end()});
@@ -853,9 +859,18 @@ struct EmcalCorrectionTask {
       } // if (isMC.value && emcCrossTalkConf.enableCrossTalk.value)
       // shaper correction has to come AFTER cross talk
       for (auto& cell : cellsBC) { // o2-linter: disable=const-ref-in-for-loop (we are changing a value here)
-        if (cell.getLowGain()) {
-          cell.setAmplitude(o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(cell.getAmplitude()));
+        auto amplitude = cell.getAmplitude();
+        if (static_cast<bool>(hasShaperCorrection) && cell.getLowGain()) { // Apply shaper correction to LG cells
+          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
         }
+        if (mcCellEnergyShift != 1.) {
+          amplitude *= mcCellEnergyShift; // Fine tune the MC cell energy
+        }
+        if (mcCellEnergyResolutionBroadening != 0.) {
+          amplitude *= (1. + normalgaus(rdgen) * mcCellEnergyResolutionBroadening); // Fine tune the MC cell energy resolution
+        }
+        cell.setAmplitude(amplitude);
+        cell.setTimeStamp(cell.getTimeStamp() + getCellTimeShift(cell.getTower(), amplitude, cell.getType(), mRunNumber));
       }
       LOG(detail) << "Number of cells for BC (CF): " << cellsBC.size();
       nCellsProcessed += cellsBC.size();
@@ -941,8 +956,10 @@ struct EmcalCorrectionTask {
 
     clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
     mcclusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    dispersions.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
     clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
     mcclustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    ambigousDispersions.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
     clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
     clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
 
@@ -963,7 +980,7 @@ struct EmcalCorrectionTask {
       initZorroCCDB(bc);
 
       // get run number
-      runNumber = bc.runNumber();
+      mRunNumber = bc.runNumber();
 
       // Get the collisions matched to the BC using foundBCId of the collision
       auto collisionsInFoundBC = collisions.sliceBy(collisionsPerFoundBC, bc.globalIndex());
@@ -972,7 +989,7 @@ struct EmcalCorrectionTask {
       numberCollsInBC.insert(std::pair<uint64_t, int>(bc.globalIndex(), collisionsInFoundBC.size()));
       numberCellsInBC.insert(std::pair<uint64_t, int>(bc.globalIndex(), cellsInBC.size()));
 
-      if (!cellsInBC.size()) {
+      if (cellsInBC.size() == 0) {
         LOG(debug) << "No cells found for BC";
         countBC(collisionsInFoundBC.size(), false);
         continue;
@@ -1002,19 +1019,9 @@ struct EmcalCorrectionTask {
           }
           mHistManager.fill(HIST("hMCParticleEnergy"), cellparticle.e());
         }
-        auto amplitude = cell.amplitude();
-        if (static_cast<bool>(hasShaperCorrection) && emcal::intToChannelType(cell.cellType()) == emcal::ChannelType_t::LOW_GAIN) { // Apply shaper correction to LG cells
-          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
-        }
-        if (mcCellEnergyShift != 1.) {
-          amplitude *= mcCellEnergyShift; // Fine tune the MC cell energy
-        }
-        if (mcCellEnergyResolutionBroadening != 0.) {
-          amplitude *= (1. + normalgaus(rdgen) * mcCellEnergyResolutionBroadening); // Fine tune the MC cell energy resolution
-        }
         cellsBC.emplace_back(cell.cellNumber(),
-                             amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
+                             cell.amplitude(),
+                             cell.time(),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
         cellLabels.emplace_back(std::vector<int>{cell.mcParticleIds().begin(), cell.mcParticleIds().end()}, std::vector<float>{cell.amplitudeA().begin(), cell.amplitudeA().end()});
@@ -1046,9 +1053,18 @@ struct EmcalCorrectionTask {
       } // if (isMC.value && emcCrossTalkConf.enableCrossTalk.value)
       // shaper correction has to come AFTER cross talk
       for (auto& cell : cellsBC) { // o2-linter: disable=const-ref-in-for-loop (we are changing a value here)
-        if (cell.getLowGain()) {
-          cell.setAmplitude(o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(cell.getAmplitude()));
+        auto amplitude = cell.getAmplitude();
+        if (static_cast<bool>(hasShaperCorrection) && cell.getLowGain()) { // Apply shaper correction to LG cells
+          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
         }
+        if (mcCellEnergyShift != 1.) {
+          amplitude *= mcCellEnergyShift; // Fine tune the MC cell energy
+        }
+        if (mcCellEnergyResolutionBroadening != 0.) {
+          amplitude *= (1. + normalgaus(rdgen) * mcCellEnergyResolutionBroadening); // Fine tune the MC cell energy resolution
+        }
+        cell.setAmplitude(amplitude);
+        cell.setTimeStamp(cell.getTimeStamp() + getCellTimeShift(cell.getTower(), amplitude, cell.getType(), mRunNumber));
       }
       LOG(detail) << "Number of cells for BC (CF): " << cellsBC.size();
       nCellsProcessed += cellsBC.size();
@@ -1137,7 +1153,9 @@ struct EmcalCorrectionTask {
     LOG(debug) << "Starting process standalone.";
 
     clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    dispersions.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
     clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    ambigousDispersions.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
     clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
     clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
 
@@ -1166,17 +1184,17 @@ struct EmcalCorrectionTask {
       }
 
       // get run number
-      runNumber = bc.runNumber();
+      mRunNumber = bc.runNumber();
 
       if (applyTempCalib && !mIsTempCalibInitialized) { // needs to be called once
-        mTempCalibExtractor->InitializeFromCCDB(pathTempCalibCCDB, static_cast<uint64_t>(runNumber));
+        mTempCalibExtractor->InitializeFromCCDB(pathTempCalibCCDB, static_cast<uint64_t>(mRunNumber));
         mIsTempCalibInitialized = true;
       }
 
       auto collisionsInBC = collisions.sliceBy(collisionsPerBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(cellsPerFoundBC, bc.globalIndex());
 
-      if (!cellsInBC.size()) {
+      if (cellsInBC.size() == 0) {
         LOG(debug) << "No cells found for BC";
         countBC(collisionsInBC.size(), false);
         continue;
@@ -1200,7 +1218,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), mRunNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -1301,12 +1319,11 @@ struct EmcalCorrectionTask {
     LOG(debug) << "Converted to analysis clusters.";
   }
 
-  template <typename Collision>
+  template <o2::soa::is_iterator Collision>
   void fillClusterTable(Collision const& col, math_utils::Point3D<float> const& vertexPos, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, MatchResult* indexMapPair = nullptr, const std::vector<int64_t>* trackGlobalIndex = nullptr, MatchResult* indexMapPairSecondaries = nullptr, const std::vector<int64_t>* secondariesGlobalIndex = nullptr)
   {
     // get the clusterType once
     const auto clusterType = static_cast<int>(mClusterDefinitions[iClusterizer]);
-
     int cellindex = -1;
     unsigned int iCluster = 0;
     float energy = 0.f;
@@ -1339,11 +1356,11 @@ struct EmcalCorrectionTask {
                cluster.getClusterTime(), cluster.getIsExotic(),
                cluster.getDistanceToBadChannel(), cluster.getNExMax(),
                clusterType);
+      dispersions(cluster.getDispersion());
       ++nCluster;
       if (!mClusterLabels.empty()) {
         mcclusters(mClusterLabels[iCluster].getLabels(), mClusterLabels[iCluster].getEnergyFractions());
       }
-      // loop over cells in cluster and save to table
       for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
         cellindex = cluster.getCellIndex(ncell);
         LOG(debug) << "trying to find cell index " << cellindex << " in map";
@@ -1364,7 +1381,7 @@ struct EmcalCorrectionTask {
         mHistManager.fill(HIST("hClusterFCrossSigmaShortE"), cluster.E(), cluster.getFCross(), cluster.getM20());
       }
       if (indexMapPair && trackGlobalIndex) {
-        if (iCluster < indexMapPair->matchIndexTrack.size() && indexMapPair->matchIndexTrack.size() > 0) {
+        if (iCluster < indexMapPair->matchIndexTrack.size() && !indexMapPair->matchIndexTrack.empty()) {
           for (unsigned int iTrack = 0; iTrack < indexMapPair->matchIndexTrack[iCluster].size(); iTrack++) {
             if (indexMapPair->matchIndexTrack[iCluster][iTrack] >= 0) {
               LOG(debug) << "Found track " << (*trackGlobalIndex)[indexMapPair->matchIndexTrack[iCluster][iTrack]] << " in cluster " << cluster.getID();
@@ -1375,7 +1392,7 @@ struct EmcalCorrectionTask {
         }
       }
       if (indexMapPairSecondaries && secondariesGlobalIndex) {
-        if (iCluster < indexMapPairSecondaries->matchIndexTrack.size() && indexMapPairSecondaries->matchIndexTrack.size() > 0) {
+        if (iCluster < indexMapPairSecondaries->matchIndexTrack.size() && !indexMapPairSecondaries->matchIndexTrack.empty()) {
           for (unsigned int iTrack = 0; iTrack < indexMapPairSecondaries->matchIndexTrack[iCluster].size(); iTrack++) {
             if (indexMapPairSecondaries->matchIndexTrack[iCluster][iTrack] >= 0) {
               LOG(debug) << "Found secondary track " << (*secondariesGlobalIndex)[indexMapPairSecondaries->matchIndexTrack[iCluster][iTrack]] << " in cluster " << cluster.getID();
@@ -1389,7 +1406,7 @@ struct EmcalCorrectionTask {
     } // end of cluster loop
   }
 
-  template <typename BC>
+  template <o2::soa::is_iterator BC>
   void fillAmbigousClusterTable(BC const& bc, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, bool hasCollision)
   {
     int cellindex = -1;
@@ -1424,8 +1441,9 @@ struct EmcalCorrectionTask {
         cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
         cluster.getIsExotic(), cluster.getDistanceToBadChannel(),
         cluster.getNExMax(), static_cast<int>(mClusterDefinitions.at(iClusterizer)));
+      ambigousDispersions(cluster.getDispersion());
       ++nClusterAmb;
-      if (mClusterLabels.size() > 0) {
+      if (!mClusterLabels.empty()) {
         mcclustersAmbiguous(mClusterLabels[iCluster].getLabels(), mClusterLabels[iCluster].getEnergyFractions());
       }
       for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
@@ -1437,7 +1455,7 @@ struct EmcalCorrectionTask {
     } // end of cluster loop
   }
 
-  template <typename Collision>
+  template <o2::soa::is_iterator Collision>
   void doTrackMatching(Collision const& col, MyGlobTracks const& tracks, MatchResult& indexMapPair, std::vector<int64_t>& trackGlobalIndex)
   {
     auto groupedTracks = tracks.sliceBy(perCollision, col.globalIndex());
@@ -1453,7 +1471,7 @@ struct EmcalCorrectionTask {
     indexMapPair = matchTracksToCluster(mClusterPhi, mClusterEta, trackPhi, trackEta, maxMatchingDistance, MaxMatchesPerCluster);
   }
 
-  template <typename Collision>
+  template <o2::soa::is_iterator Collision>
   void doSecondaryTrackMatching(Collision const& col, EMV0Legs const& v0legs, MatchResult& indexMapPair, std::vector<int64_t>& trackGlobalIndex, MyGlobTracks const& tracks)
   {
     auto groupedV0Legs = v0legs.sliceBy(perCollisionEMV0Legs, col.globalIndex());
@@ -1479,7 +1497,7 @@ struct EmcalCorrectionTask {
       if (trackEtaEmcal < TrackNotOnEMCal || trackPhiEmcal < TrackNotOnEMCal) {
         continue;
       }
-      if (trackMinPt > 0 && track.pt() < trackMinPt) {
+      if (trackmatching.trackMinPt > 0 && track.pt() < trackmatching.trackMinPt) {
         continue;
       }
       trackPhi.emplace_back(RecoDecay::constrainAngle(trackPhiEmcal));
@@ -1489,11 +1507,11 @@ struct EmcalCorrectionTask {
     indexMapPair = matchTracksToCluster(mClusterPhi, mClusterEta, trackPhi, trackEta, maxMatchingDistance, MaxMatchesPerCluster);
   }
 
-  template <typename Tracks>
+  template <o2::soa::is_table Tracks>
   void fillTrackInfo(Tracks const& tracks, std::vector<float>& trackPhi, std::vector<float>& trackEta, std::vector<int64_t>& trackGlobalIndex)
   {
     for (const auto& track : tracks) {
-      if (!track.isGlobalTrack()) { // only global tracks
+      if (!trackmatching.useAllTracks && !track.isGlobalTrack()) { // only global tracks depending on trackmatching.useAllTracks flag
         continue;
       }
       // Tracks that do not point to the EMCal/DCal/PHOS get default values of -999
@@ -1501,7 +1519,7 @@ struct EmcalCorrectionTask {
       if (track.trackEtaEmcal() < TrackNotOnEMCal || track.trackPhiEmcal() < TrackNotOnEMCal) {
         continue;
       }
-      if (trackMinPt > 0 && track.pt() < trackMinPt) {
+      if (trackmatching.trackMinPt > 0 && track.pt() < trackmatching.trackMinPt) {
         continue;
       }
       trackPhi.emplace_back(RecoDecay::constrainAngle(track.trackPhiEmcal()));
@@ -1538,10 +1556,11 @@ struct EmcalCorrectionTask {
     // For convenience, use the clusterizer stored geometry to get the eta-phi
     for (const auto& cell : cellsBC) {
       mHistManager.fill(HIST("hCellE"), cell.getEnergy());
-      if (cell.getLowGain())
+      if (cell.getLowGain()) {
         mHistManager.fill(HIST("hLGCellTimeEnergy"), cell.getTimeStamp(), cell.getEnergy());
-      else if (cell.getHighGain())
+      } else if (cell.getHighGain()) {
         mHistManager.fill(HIST("hHGCellTimeEnergy"), cell.getTimeStamp(), cell.getEnergy());
+      }
       mHistManager.fill(HIST("hCellTowerID"), cell.getTower());
       auto res = mClusterizers.at(0)->getGeometry()->EtaPhiFromIndex(cell.getTower());
       mHistManager.fill(HIST("hCellEtaPhi"), std::get<0>(res), RecoDecay::constrainAngle(std::get<1>(res)));
@@ -1560,12 +1579,12 @@ struct EmcalCorrectionTask {
       return cellAbsScaleFactors.value[mClusterizers.at(0)->getGeometry()->GetSMType(iSM)];
 
       // Apply cell scale based on columns to accoutn for material of TRD structures
-    } else if (applyCellAbsScale == CellScaleMode::ModeColumnWise) {
+    }
+    if (applyCellAbsScale == CellScaleMode::ModeColumnWise) {
       auto res = mClusterizers.at(0)->getGeometry()->GlobalRowColFromIndex(cellID);
       return cellAbsScaleFactors.value[std::get<1>(res)];
-    } else {
-      return 1.f;
     }
+    return 1.f;
   }
 
   // Apply shift of the cell time in data and MC
@@ -1589,26 +1608,28 @@ struct EmcalCorrectionTask {
       timeshift = -std::sqrt(215.f + timeCol * timeCol);            // 215 is 14.67ns^2 (time it takes to get the cell at eta = 0)
 
       // Also smear the time to account for the broader time resolution in data than in MC
-      if (cellEnergy < minLeaderEnergy)                                           // Cells with tless than 300 MeV cannot be the leading cell in the cluster, so their time does not require precise calibration
+      if (cellEnergy < minLeaderEnergy) {                                         // Cells with tless than 300 MeV cannot be the leading cell in the cluster, so their time does not require precise calibration
         timesmear = 0.;                                                           // They will therefore not be smeared and only get their shift
-      else if (cellType == emcal::ChannelType_t::HIGH_GAIN)                       // High gain cells -> Low energies
+      } else if (cellType == emcal::ChannelType_t::HIGH_GAIN) {                   // High gain cells -> Low energies
         timesmear = normalgaus(rdgen) * (1.6 + 9.5 * std::exp(-3. * cellEnergy)); // Parameters extracted from LHC24f3b & LHC22o (pp), but also usable for other periods
-      else if (cellType == emcal::ChannelType_t::LOW_GAIN)                        // Low gain cells -> High energies
+      } else if (cellType == emcal::ChannelType_t::LOW_GAIN) {                    // Low gain cells -> High energies
         timesmear = normalgaus(rdgen) * (5.0);                                    // Parameters extracted from LHC24g4 & LHC24aj (pp), but also usable for other periods
-
+      }
     } else {                                                    // ---> Data
       if (cellEnergy < minLeaderEnergy) {                       // Cells with tless than 300 MeV cannot be the leading cell in the cluster, so their time does not require precise calibration
         timeshift = 0.;                                         // In data they will not be shifted (they are close to 0 anyways)
       } else if (cellType == emcal::ChannelType_t::HIGH_GAIN) { // High gain cells -> Low energies
-        if (cellEnergy < lowEnergyRegime)                       // Low energy regime
+        if (cellEnergy < lowEnergyRegime) {                     // Low energy regime
           timeshift = 0.8 * std::log(2.7 * cellEnergy);         // Parameters extracted from LHC22o (pp), but also usable for other periods
-        else                                                    // Medium energy regime
+        } else {                                                // Medium energy regime
           timeshift = 1.5 * std::log(0.9 * cellEnergy);         // Parameters extracted from LHC22o (pp), but also usable for other periods
-      } else if (cellType == emcal::ChannelType_t::LOW_GAIN) {  // Low gain cells -> High energies
-        if (cellEnergy < highEnergyRegime)                      // High energy regime
-          timeshift = 1.9 * std::log(0.09 * cellEnergy);        // Parameters extracted from LHC24aj (pp), but also usable for other periods
-        else                                                    // Very high energy regime
-          timeshift = 1.9;                                      // Parameters extracted from LHC24aj (pp), but also usable for other periods
+        }
+      } else if (cellType == emcal::ChannelType_t::LOW_GAIN) { // Low gain cells -> High energies
+        if (cellEnergy < highEnergyRegime) {                   // High energy regime
+          timeshift = 1.9 * std::log(0.09 * cellEnergy);       // Parameters extracted from LHC24aj (pp), but also usable for other periods
+        } else {                                               // Very high energy regime
+          timeshift = 1.9;                                     // Parameters extracted from LHC24aj (pp), but also usable for other periods
+        }
       }
       // Temporary extra shift for bug in time calibraiton of apass4 Pb-Pb 2024, requires pos shift of 2*8.8 ns for low gain cells
       if (cellType == emcal::ChannelType_t::LOW_GAIN) {
@@ -1627,17 +1648,17 @@ struct EmcalCorrectionTask {
   {
     auto& ccdbMgr = o2::ccdb::BasicCCDBManager::instance();
     uint64_t tsOld = 1634853602000; // timestamp corresponding to LHC22o old gain calib object
-    o2::emcal::GainCalibrationFactors* paramsOld = ccdbMgr.getForTimeStamp<o2::emcal::GainCalibrationFactors>("EMC/Calib/GainCalibFactors", tsOld);
+    auto* paramsOld = ccdbMgr.getForTimeStamp<o2::emcal::GainCalibrationFactors>("EMC/Calib/GainCalibFactors", tsOld);
     uint64_t tsNew = 1734853602000; // timestamp corresponding to new gain calib object (new cell compression)
-    o2::emcal::GainCalibrationFactors* paramsNew = ccdbMgr.getForTimeStamp<o2::emcal::GainCalibrationFactors>("EMC/Calib/GainCalibFactors", tsNew);
-    for (uint16_t i = 0; i < mArrGainCalibDiff.size(); ++i) {
+    auto* paramsNew = ccdbMgr.getForTimeStamp<o2::emcal::GainCalibrationFactors>("EMC/Calib/GainCalibFactors", tsNew);
+    for (uint32_t i = 0; i < mArrGainCalibDiff.size(); ++i) {
       mArrGainCalibDiff[i] = paramsNew->getGainCalibFactors(i) == 0 ? 1. : paramsOld->getGainCalibFactors(i) / paramsNew->getGainCalibFactors(i);
     }
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<EmcalCorrectionTask>(cfgc)};
+    adaptAnalysisTask<EmcalCorrectionTask>(context)};
 }

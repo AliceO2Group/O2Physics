@@ -38,6 +38,7 @@
 #include <cmath>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -107,7 +108,7 @@ struct straCents {
     float mMCScalePars[6] = {0.0};
     TFormula* mMCScale = nullptr;
     explicit CalibrationInfo(std::string name)
-      : name(name),
+      : name(std::move(name)),
         mCalibrationStored(false),
         mhMultSelCalib(nullptr),
         mMCScalePars{0.0},
@@ -216,7 +217,7 @@ struct straCents {
   }
 
   template <typename TCollision>
-  void initCCDB(TCollision collision)
+  void initCCDB(const TCollision& collision)
   {
     if (mRunNumber == collision.runNumber()) {
       return;
@@ -271,11 +272,11 @@ struct straCents {
 
       if constexpr (requires { collision.sel7(); }) { // check if we are in Run 2
         auto getccdb = [lCalibObjects_Centrality](const char* ccdbhname) {
-          TH1* h = reinterpret_cast<TH1*>(lCalibObjects_Centrality->FindObject(ccdbhname));
+          TH1* h = dynamic_cast<TH1*>(lCalibObjects_Centrality->FindObject(ccdbhname));
           return h;
         };
         auto getformulaccdb = [lCalibObjects_Centrality](const char* ccdbhname) {
-          TFormula* f = reinterpret_cast<TFormula*>(lCalibObjects_Centrality->FindObject(ccdbhname));
+          TFormula* f = dynamic_cast<TFormula*>(lCalibObjects_Centrality->FindObject(ccdbhname));
           return f;
         };
 
@@ -348,9 +349,9 @@ struct straCents {
         }
       } else {
         // we are in Run 3
-        auto getccdb = [lCalibObjects_Centrality, collision](struct CalibrationInfo& estimator, const Configurable<std::string> generatorName, const Configurable<bool> notCrashOnNull) { // TODO: to consider the name inside the estimator structure
-          estimator.mhMultSelCalib = reinterpret_cast<TH1*>(lCalibObjects_Centrality->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
-          estimator.mMCScale = reinterpret_cast<TFormula*>(lCalibObjects_Centrality->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
+        auto getccdb = [lCalibObjects_Centrality, collision](struct CalibrationInfo& estimator, const Configurable<std::string>& generatorName, const Configurable<bool>& notCrashOnNull) { // TODO: to consider the name inside the estimator structure
+          estimator.mhMultSelCalib = dynamic_cast<TH1*>(lCalibObjects_Centrality->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
+          estimator.mMCScale = dynamic_cast<TFormula*>(lCalibObjects_Centrality->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
           if (estimator.mhMultSelCalib != nullptr) {
             if (generatorName->length() != 0) {
               LOGF(info, "Retrieving MC calibration for %d, generator name: %s", collision.runNumber(), generatorName->c_str());
@@ -389,12 +390,12 @@ struct straCents {
             listCalib->Add(lCalibObjects_Multiplicity->Clone(Form("Multiplicity_%i", collision.runNumber())));
           }
 
-          hVtxZFV0A = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFV0A"));
-          hVtxZFT0A = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFT0A"));
-          hVtxZFT0C = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFT0C"));
-          hVtxZFDDA = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFDDA"));
-          hVtxZFDDC = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFDDC"));
-          hVtxZNTracks = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZNTracksPV"));
+          hVtxZFV0A = dynamic_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFV0A"));
+          hVtxZFT0A = dynamic_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFT0A"));
+          hVtxZFT0C = dynamic_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFT0C"));
+          hVtxZFDDA = dynamic_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFDDA"));
+          hVtxZFDDC = dynamic_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFDDC"));
+          hVtxZNTracks = dynamic_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZNTracksPV"));
           lCalibLoaded = true;
           // Capture error
           if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {

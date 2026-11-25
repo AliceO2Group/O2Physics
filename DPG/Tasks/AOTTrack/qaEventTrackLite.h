@@ -106,7 +106,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float);                                              
 DECLARE_SOA_COLUMN(Eta, eta, float);                                                     //! Eta
 DECLARE_SOA_COLUMN(Phi, phi, float);                                                     //! Phi
 DECLARE_SOA_COLUMN(PtReso, ptReso, float);                                               //! Pt resolution
-DECLARE_SOA_COLUMN(Sign, sign, short);                                                   //! Sign
+DECLARE_SOA_COLUMN(Sign, sign, int16_t);                                                 //! Sign
 DECLARE_SOA_COLUMN(HasITS, hasITS, bool);                                                //! Track has the ITS
 DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);                                                //! Track has the TPC
 DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);                                                //! Track has the TRD

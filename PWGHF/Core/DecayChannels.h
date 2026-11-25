@@ -27,7 +27,6 @@ namespace o2::hf_decay
 
 // TODO
 // - HF cascades (Λc+ → p K0short)
-// - HF cascades to LF cascades (Ωc0/Ξc0 → Ξ+ π−, Ξc+ → Ξ+ π− π+)
 // - Σc
 
 using HfDecayChannel = int8_t;
@@ -205,17 +204,32 @@ enum DecayChannelResonant : HfDecayChannel {
 /// @brief beauty candidates: beauty to J/ψ decay channels
 enum DecayChannelToJpsiMain : HfDecayChannel {
   // B0
-  B0ToJpsiPiK = 1, // J/ψ π− K+
+  B0ToJpsiPiKToMuMuPiK = 1, // J/ψ(->μ+μ−) π− K+
+  B0ToJpsiPiKToEEPiK = 6,   // J/ψ(->e+e−) π− K+
+  B0ToJpsiXToMuMuX = 7,     // J/ψ(->μ+μ−) X (partly/mis reconstructed)
+  B0ToJpsiXToEEX = 8,       // J/ψ(->e+e−) X (partly/mis reconstructed)
   // Bs0
-  BsToJpsiKK = 2, // J/ψ K+ K−
+  BsToJpsiKKToMuMuKK = 2, // J/ψ(->μ+μ−) K+ K−
+  BsToJpsiKKToEEKK = 9,   // J/ψ(->e+e−) K+ K−
+  BsToJpsiXToMuMuX = 10,  // J/ψ(->μ+μ−) X (partly/mis reconstructed)
+  BsToJpsiXToEEX = 11,    // J/ψ(->e+e−) X (partly/mis reconstructed)
   // Λb0
-  LbToJpsiPK = 3, // J/ψ p K−
+  LbToJpsiPKToMuMuPK = 3, // J/ψ(->μ+μ−) p K−
+  LbToJpsiPKToEEPK = 12,  // J/ψ(->e+e−) p K−
+  LbToJpsiXToMuMuX = 13,  // J/ψ(->μ+μ−) X (partly/mis reconstructed)
+  LbToJpsiXToEEX = 14,    // J/ψ(->e+e−) X (partly/mis reconstructed)
   // B+
-  BplusToJpsiK = 4, // J/ψ K+
+  BplusToJpsiKToMuMuK = 4,  // J/ψ(->μ+μ−) K+
+  BplusToJpsiKToEEK = 15,   // J/ψ(->e+e−) K+
+  BplusToJpsiXToMuMuX = 16, // J/ψ(->μ+μ−) X (partly/mis reconstructed)
+  BplusToJpsiXToEEX = 17,   // J/ψ(->e+e−) X (partly/mis reconstructed)
   // Bc+
-  BcToJpsiPi = 5, // J/ψ π+
+  BcToJpsiPiToMuMuPi = 5, // J/ψ(->μ+μ−) π+
+  BcToJpsiPiToEEPi = 18,  // J/ψ(->e+e−) π+
+  BcToJpsiXToMuMuX = 19,  // J/ψ(->μ+μ−) X (partly/mis reconstructed)
+  BcToJpsiXToEEX = 20,    // J/ψ(->e+e−) X (partly/mis reconstructed)
   //
-  NChannelsToJpsiMain = BcToJpsiPi // last channel
+  NChannelsToJpsiMain = BcToJpsiXToEEX // last channel
 };
 /// @brief beauty candidates: beauty to J/ψ resonant decay channels
 enum DecayChannelToJpsiResonant : HfDecayChannel {
@@ -280,6 +294,21 @@ enum DecayChannelMain : HfDecayChannel {
   NChannelsMain = ScStarPlusPlusToPKPiPi // last channel
 };
 } // namespace hf_cand_sigmac
+
+// @brief XiC0 and OmegaC0 candidates: main channels
+namespace hf_cand_casc_bach_qa
+{
+enum DecayChannelMain : HfDecayChannel {
+  // XiC0
+  Xic0ToXiPi = 1,   // Xi- π+ → Λ π- π+ → p π- π- π+
+  Xic0ToOmegaK = 2, // Ω- K+ → Λ K- K+ → p π- K- K+
+  // OmegaC0
+  Omegac0ToOmegaPi = 3,         // Ω- π+ → Λ π- π+ → p π- π- π+
+  Omegac0ToOmegaK = 4,          // Ω- K+ → Λ K- K+ → p π- K- K+
+  Omegac0ToXiPi = 5,            // Xi- π+ → Λ π- π+ → p π- π- π+
+  NChannelsMain = Omegac0ToXiPi // last channel
+};
+} // namespace hf_cand_casc_bach_qa
 
 } // namespace o2::hf_decay
 

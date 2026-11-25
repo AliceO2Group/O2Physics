@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <utility>
 #include <vector>
 
 using std::cout;
@@ -52,28 +53,28 @@ MCSignal::MCSignal(int nProngs, const char* name /*= ""*/, const char* title /*=
 }
 
 //________________________________________________________________________________________________
-MCSignal::MCSignal(const char* name, const char* title, std::vector<MCProng> prongs, std::vector<int8_t> commonAncestors, bool excludeCommonAncestor) : TNamed(name, title),
-                                                                                                                                                        fProngs(prongs),
-                                                                                                                                                        fNProngs(prongs.size()),
-                                                                                                                                                        fCommonAncestorIdxs(commonAncestors),
-                                                                                                                                                        fExcludeCommonAncestor(excludeCommonAncestor),
-                                                                                                                                                        fDecayChannelIsExclusive(false),
-                                                                                                                                                        fDecayChannelIsNotExclusive(false),
-                                                                                                                                                        fNAncestorDirectProngs(0),
-                                                                                                                                                        fTempAncestorLabel(-1)
+MCSignal::MCSignal(const char* name, const char* title, const std::vector<MCProng>& prongs, std::vector<int8_t> commonAncestors, bool excludeCommonAncestor) : TNamed(name, title),
+                                                                                                                                                               fProngs(prongs),
+                                                                                                                                                               fNProngs(prongs.size()),
+                                                                                                                                                               fCommonAncestorIdxs(std::move(commonAncestors)),
+                                                                                                                                                               fExcludeCommonAncestor(excludeCommonAncestor),
+                                                                                                                                                               fDecayChannelIsExclusive(false),
+                                                                                                                                                               fDecayChannelIsNotExclusive(false),
+                                                                                                                                                               fNAncestorDirectProngs(0),
+                                                                                                                                                               fTempAncestorLabel(-1)
 {
 }
 
 //________________________________________________________________________________________________
 void MCSignal::SetProngs(std::vector<MCProng> prongs, std::vector<int8_t> commonAncestors)
 {
-  fProngs = prongs;
+  fProngs = std::move(prongs);
   fNProngs = fProngs.size();
-  fCommonAncestorIdxs = commonAncestors;
+  fCommonAncestorIdxs = std::move(commonAncestors);
 }
 
 //________________________________________________________________________________________________
-void MCSignal::AddProng(MCProng prong, int8_t commonAncestor)
+void MCSignal::AddProng(const MCProng& prong, int8_t commonAncestor)
 {
   if (fProngs.size() < fNProngs) {
     fProngs.push_back(prong);

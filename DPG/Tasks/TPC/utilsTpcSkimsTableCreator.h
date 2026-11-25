@@ -34,6 +34,7 @@
 #include <TRandom3.h>
 
 #include <cmath>
+#include <cstdint>
 #include <string>
 
 namespace o2::dpg_tpcskimstablecreator

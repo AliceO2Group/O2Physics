@@ -14,6 +14,7 @@
 /// \author M. Hemmer, marvin.hemmer@cern.ch
 
 #include "PWGEM/PhotonMeson/Core/Pi0EtaToGammaGamma.h"
+#include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
@@ -27,12 +28,12 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::pwgem::photonmeson::photonpair;
 
-using MyV0Photons = Filtered<Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds, o2::aod::V0PhotonsKFPrefilterBitDerived>>;
-using MyEMCClusters = soa::Join<aod::EmEmcClusters, aod::EMCEMEventIds>;
+using MyV0Photons = Filtered<Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds, o2::aod::V0PhotonsKFPrefilterBitDerived, o2::aod::V0PhotonOmegaMBWeights>>;
+using MyEMCClusters = soa::Join<aod::EMCEMEventIds, aod::MinClusters>;
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Pi0EtaToGammaGamma<PairType::kPCMEMC, MyV0Photons, MyEMCClusters, aod::V0Legs, EmEmcMTracks, EmEmcMSTracks>>(cfgc, TaskName{"pi0eta-to-gammagamma-pcmemc"}),
+    adaptAnalysisTask<Pi0EtaToGammaGamma<PairType::kPCMEMC, MyV0Photons, MyEMCClusters, aod::V0Legs, EmEmcMTracks, EmEmcMSTracks>>(context, TaskName{"pi0eta-to-gammagamma-pcmemc"}),
   };
 }

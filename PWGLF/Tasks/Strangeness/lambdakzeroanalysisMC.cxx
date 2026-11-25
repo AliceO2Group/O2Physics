@@ -256,7 +256,7 @@ struct lambdakzeroAnalysisMc {
                     }
                     if (particleMotherOfNeg.has_mothers()) {
                       auto particleGrandMothersOfNegTable = particleMotherOfNeg.mothers_as<aod::McParticles>();
-                      auto particleGrandMotherOfNeg = particleGrandMothersOfNegTable[0];
+                      const auto& particleGrandMotherOfNeg = particleGrandMothersOfNegTable[0];
                       if (particleGrandMotherOfNeg.pdgCode() == 3312 || particleGrandMotherOfNeg.pdgCode() == 3322) {
                         registry.fill(HIST("hLambdaFeedDownMatrix"), particleMotherOfNeg.pt(), particleGrandMotherOfNeg.pt());
                       }
@@ -289,7 +289,7 @@ struct lambdakzeroAnalysisMc {
                     }
                     if (particleMotherOfNeg.has_mothers()) {
                       auto particleGrandMothersOfNegTable = particleMotherOfNeg.mothers_as<aod::McParticles>();
-                      auto particleGrandMotherOfNeg = particleGrandMothersOfNegTable[0];
+                      const auto& particleGrandMotherOfNeg = particleGrandMothersOfNegTable[0];
                       if (particleGrandMotherOfNeg.pdgCode() == -3312 || particleGrandMotherOfNeg.pdgCode() == -3322) {
                         registry.fill(HIST("hAntiLambdaFeedDownMatrix"), particleMotherOfNeg.pt(), particleGrandMotherOfNeg.pt());
                       }

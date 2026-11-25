@@ -1565,7 +1565,7 @@ struct qaMatchEff {
       //
       // here n of clusters of TPC assigned to float for histos (and to hack it if needed) :)
       //
-      Float_t clustpc = (Float_t)track.tpcNClsFound();
+      Float_t clustpc = static_cast<Float_t>(track.tpcNClsFound());
       //      Float_t findcltpc = (Float_t)track.tpcNClsFindable();
       //      Float_t crowstpc = (Float_t)track.tpcNClsCrossedRows();
       //      Float_t finclusmincrotpc = (Float_t)track.tpcNClsFindableMinusCrossedRows();

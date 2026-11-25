@@ -16,18 +16,23 @@
 #ifndef PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 #define PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 
 #include <TPDGCode.h>
 
+#include <algorithm>
 #include <cmath>
 #include <concepts>
 #include <cstdint>
+#include <limits>
 #include <optional>
+#include <type_traits>
 #include <unordered_map>
 
 namespace o2::analysis::femto
@@ -43,6 +48,40 @@ inline std::optional<T2> getIndex(const T1& index, const std::unordered_map<T1, 
     return it->second;
   }
   return std::nullopt;
+}
+
+/// require a V0 (lambda/k0short) row with a CosPa column -- used to gate derived-to-derived
+/// re-writes of the fraction-extraction tables (FLambdaFrac/FK0shortFrac) to only the input
+/// variants that actually carry them (e.g. the WithFitVars task-level process functions)
+template <typename T>
+concept HasCosPa = requires(T t) { t.cosPa(); };
+
+/// require a cascade (xi/omega) row with a CascadeCosPa column -- same purpose as HasCosPa
+/// above, but for the FXiFrac/FOmegaFrac re-writes
+template <typename T>
+concept HasCascadeCosPa = requires(T t) { t.cascadeCosPa(); };
+
+/// require a track row with DCA (xy and z) columns -- i.e. joined with FTrackDcas
+template <typename T>
+concept HasDca = requires(T t) { t.dcaXY(); t.dcaZ(); };
+
+/// require a track row with ITS PID columns -- checking one species (pion) is enough
+/// since all seven (El/Pi/Ka/Pr/De/Tr/He) always come from the same upstream join
+template <typename T>
+concept HasItsNSigma = requires(T t) { t.itsNSigmaPi(); };
+
+/// Translate a global daughter index into a row of the current track table frame.
+/// Aborts if the index does not fall inside the frame, which would otherwise
+/// silently produce an out-of-range iterator.
+template <typename T>
+int64_t daughterRow(int64_t daughterId, T const& trackTable)
+{
+  const int64_t row = daughterId - trackTable.offset();
+  if (daughterId < 0 || row < 0 || row >= static_cast<int64_t>(trackTable.size())) {
+    LOG(fatal) << "Daughter index " << daughterId << " out of range for track table (offset "
+               << trackTable.offset() << ", size " << trackTable.size() << "). Breaking...";
+  }
+  return row;
 }
 
 template <typename T>
@@ -63,11 +102,31 @@ float itsSignal(T const& track)
   return static_cast<float>(signal);
 };
 
+// Delta(1232) baryons: no kXxx enum entry exists for these in TPDGCode.h (only the raw codes used
+// internally by TDatabasePDG's particle-table construction) and no mass constant exists in
+// PhysicsConstants.h either, so both the codes and the mass are hardcoded here, same as kRho770_0/
+// kRho770Plus below.
+constexpr int DeltaMinus1232 = 1114;
+constexpr int Delta01232 = 2114;
+constexpr int DeltaPlus1232 = 2214;
+constexpr int DeltaPlusPlus1232 = 2224;
+
+// Xi(1530) baryons: same situation as Delta(1232) above -- no enum entry and no mass constant
+// exists anywhere in O2, so both are hardcoded here.
+constexpr int Xi01530 = 3324;
+constexpr int XiMinus1530 = 3314;
+
+// Sigma(1385) baryons: same situation as Delta(1232)/Xi(1530) above -- no enum entry and no
+// mass constant exists anywhere in O2, so both are hardcoded here.
+constexpr int SigmaMinus1385 = 3114;
+constexpr int Sigma01385 = 3214;
+constexpr int SigmaPlus1385 = 3224;
+
 inline double getPdgMass(int pdgCode)
 {
   // use this function instead of TDatabasePDG to return masses defined in the PhysicsConstants.h header
   // this approach saves a lot of memory and important partilces like deuteron are missing in TDatabasePDG anyway
-  double mass = 0.f;
+  double mass = 0.;
   // add new particles if necessary here
   switch (std::abs(pdgCode)) {
     case kPiPlus:
@@ -75,6 +134,9 @@ inline double getPdgMass(int pdgCode)
       break;
     case kKPlus:
       mass = o2::constants::physics::MassKPlus;
+      break;
+    case kK0Short:
+      mass = o2::constants::physics::MassK0Short;
       break;
     case kProton:
       mass = o2::constants::physics::MassProton;
@@ -86,16 +148,25 @@ inline double getPdgMass(int pdgCode)
       mass = o2::constants::physics::MassPhi;
       break;
     case kRho770_0:
-      mass = 775.26; // not defined in O2?
+      mass = 0.77526; // not defined in O2?
       break;
     case kRho770Plus:
-      mass = 775.11; // not defined in O2?
+      mass = 0.77511; // not defined in O2?
       break;
     case o2::constants::physics::Pdg::kK0Star892:
       mass = o2::constants::physics::MassK0Star892;
       break;
+    case o2::constants::physics::Pdg::kKPlusStar892:
+      mass = o2::constants::physics::MassKPlusStar892;
+      break;
+    case o2::constants::physics::Pdg::kOmega:
+      mass = o2::constants::physics::MassOmega;
+      break;
     case o2::constants::physics::Pdg::kLambdaCPlus:
       mass = o2::constants::physics::MassLambdaCPlus;
+      break;
+    case o2::constants::physics::Pdg::kD0:
+      mass = o2::constants::physics::MassD0;
       break;
     case o2::constants::physics::Pdg::kDeuteron:
       mass = o2::constants::physics::MassDeuteron;
@@ -112,38 +183,124 @@ inline double getPdgMass(int pdgCode)
     case kSigmaPlus:
       mass = o2::constants::physics::MassSigmaPlus;
       break;
+    case kSigma0:
+      mass = o2::constants::physics::MassSigma0;
+      break;
     case kXiMinus:
       mass = o2::constants::physics::MassXiMinus;
+      break;
+    case o2::constants::physics::Pdg::kXi0:
+      mass = o2::constants::physics::MassXi0;
       break;
     case kOmegaMinus:
       mass = o2::constants::physics::MassOmegaMinus;
       break;
+    case kPi0:
+      mass = o2::constants::physics::MassPi0;
+      break;
+    case o2::constants::physics::kEta:
+      mass = o2::constants::physics::MassEta;
+      break;
+    case kNeutron:
+      mass = o2::constants::physics::MassNeutron;
+      break;
+    case kK0:
+      mass = o2::constants::physics::MassK0;
+      break;
+    case kLambda1520:
+      mass = o2::constants::physics::MassLambda1520;
+      break;
+    case kDown:
+      mass = o2::constants::physics::MassDown;
+      break;
+    case kUp:
+      mass = o2::constants::physics::MassUp;
+      break;
+    case kStrange:
+      mass = o2::constants::physics::MassStrange;
+      break;
+    case kCharm:
+      mass = o2::constants::physics::MassCharm;
+      break;
+    case kBottom:
+      mass = o2::constants::physics::MassBottom;
+      break;
+    case kTop:
+      mass = o2::constants::physics::MassTop;
+      break;
+    case kGluon:
+      mass = o2::constants::physics::MassGluon;
+      break;
+    case kElectron:
+      mass = o2::constants::physics::MassElectron;
+      break;
+    case DeltaMinus1232:
+    case Delta01232:
+    case DeltaPlus1232:
+    case DeltaPlusPlus1232:
+      mass = 1.232; // not defined in O2?
+      break;
+    case Xi01530:
+    case XiMinus1530:
+      mass = 1.532; // not defined in O2?
+      break;
+    case SigmaMinus1385:
+    case Sigma01385:
+    case SigmaPlus1385:
+      mass = 1.3837; // not defined in O2?
+      break;
     default:
-      LOG(warn) << "PDG code is not suppored. Return 0...";
+      LOG(warn) << "PDG code " << pdgCode << " is not suppored. Return 0... ";
   }
   return mass;
 }
 
 template <typename T>
-float qn(T const& col)
+concept HasQvectors = requires(T col) {
+  col.qvecFT0CReVec();
+  col.qvecFT0CImVec();
+  col.sumAmplFT0C();
+  col.qvecFT0AReVec();
+  col.qvecFT0AImVec();
+  col.sumAmplFT0A();
+};
+
+template <typename T>
+concept HasEventShapeRow = requires(T row) {
+  row.qvec();
+  row.eventPlaneAngle();
+};
+
+/// accepts either a row/iterator or a table (Filtered<Join<...>> etc.)
+template <typename T>
+concept HasEventShape = HasEventShapeRow<std::decay_t<T>> || (requires { typename std::decay_t<T>::iterator; } && HasEventShapeRow<typename std::decay_t<T>::iterator>);
+
+/// Azimuth of the momentum of a charged particle at the primary vertex, from its azimuth at the decay vertex.
+/// The decay vertex (xDecay, yDecay) has to be given relative to the primary vertex. In a solenoidal field the transverse
+/// trajectory is a circle through both points, and the tangents at the two ends of a chord make the same angle with it:
+/// phiPV = 2*phiChord - phiDecay (independent of polarity).
+inline float phiAtPrimaryVertex(float phiDecay, float xDecay, float yDecay)
 {
-  float qn = std::sqrt(col.qvecFT0CReVec()[0] * col.qvecFT0CReVec()[0] + col.qvecFT0CImVec()[0] * col.qvecFT0CImVec()[0]) * std::sqrt(col.sumAmplFT0C());
-  return qn;
+  if (std::abs(xDecay) < o2::constants::math::Epsilon && std::abs(yDecay) < o2::constants::math::Epsilon) {
+    return phiDecay;
+  }
+  return RecoDecay::constrainAngle(2.f * std::atan2(yDecay, xDecay) - phiDecay);
 }
 
-/// Recalculate pT for Kinks (Sigmas) using kinematic constraints
-inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter)
+/// Recalculate the pT of a kink mother from its direction and the charged daughter momentum
+inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter,
+                       float massMother, float massChargedDaughter, float massNeutralDaughter)
 {
   float almost0 = 1e-6f;
-  // Particle masses in GeV/c^2
-  auto massPion = o2::constants::physics::MassPionCharged;
-  auto massNeutron = o2::constants::physics::MassNeutron;
-  auto massSigmaMinus = o2::constants::physics::MassSigmaMinus;
+  const float massPion = massChargedDaughter;
+  const float massNeutron = massNeutralDaughter;
+  const float massSigmaMinus = massMother;
 
   // Calculate mother momentum and direction versor
   float pMother = std::sqrt(pxMother * pxMother + pyMother * pyMother + pzMother * pzMother);
-  if (pMother < almost0)
+  if (pMother < almost0) {
     return -999.f;
+  }
 
   float versorX = pxMother / pMother;
   float versorY = pyMother / pMother;
@@ -161,22 +318,26 @@ inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxD
   float b = -4.f * scalarProduct * k;
   float c = 4.f * ePi * ePi * massSigmaMinus * massSigmaMinus - k * k;
 
-  if (std::abs(a) < almost0)
+  if (std::abs(a) < almost0) {
     return -999.f;
+  }
 
   float d = b * b - 4.f * a * c;
-  if (d < 0.f)
+  if (d < 0.f) {
     return -999.f;
+  }
 
   float sqrtD = std::sqrt(d);
   float p1 = (-b + sqrtD) / (2.f * a);
   float p2 = (-b - sqrtD) / (2.f * a);
 
   // Pick physical solution: prefer P2 if positive, otherwise P1
-  if (p2 < 0.f && p1 < 0.f)
+  if (p2 < 0.f && p1 < 0.f) {
     return -999.f;
-  if (p2 < 0.f)
+  }
+  if (p2 < 0.f) {
     return p1;
+  }
 
   // Choose solution closest to original momentum
   float p1Diff = std::abs(p1 - pMother);
@@ -223,6 +384,146 @@ inline int signum(T x)
   return (T(0) < x) - (x < T(0));
 }
 
+template <typename T>
+T binLinear(float value, float lo, float hi, float step)
+{
+  float v = std::clamp(value, lo, hi);
+  auto idx = static_cast<int64_t>(std::round((v - lo) / step));
+  auto maxIdx = static_cast<int64_t>(std::numeric_limits<T>::max()) - static_cast<int64_t>(std::numeric_limits<T>::min());
+  idx = std::clamp(idx, static_cast<int64_t>(0), maxIdx);
+  return static_cast<T>(idx + std::numeric_limits<T>::min());
+}
+
+template <typename T>
+float unBinLinear(T binned, float lo, float step)
+{
+  auto idx = static_cast<int64_t>(binned) - static_cast<int64_t>(std::numeric_limits<T>::min());
+  return lo + static_cast<float>(idx) * step;
+}
+
+template <typename T>
+T binLogSigned(float signedValue, float magMin, float magMax)
+{
+  static_assert(std::is_unsigned_v<T>, "binLogSigned requires an unsigned storage type");
+  constexpr uint64_t TotalBits = sizeof(T) * 8;
+  constexpr uint64_t HalfLevels = uint64_t{1} << (TotalBits - 1);
+  const uint64_t sign = (signedValue < 0.f) ? uint64_t{1} : uint64_t{0};
+  const float mag = std::clamp(std::fabs(signedValue), magMin, magMax);
+  const float logLo = std::log(magMin);
+  const float logHi = std::log(magMax);
+  const float step = (logHi - logLo) / static_cast<float>(HalfLevels - 1);
+  auto idx = static_cast<int64_t>(std::round((std::log(mag) - logLo) / step));
+  idx = std::clamp(idx, int64_t{0}, static_cast<int64_t>(HalfLevels - 1));
+  return static_cast<T>((sign << (TotalBits - 1)) | static_cast<uint64_t>(idx));
+}
+
+template <typename T>
+float unBinLogSigned(T binned, float magMin, float magMax)
+{
+  static_assert(std::is_unsigned_v<T>, "unBinLogSigned requires an unsigned storage type");
+  constexpr uint64_t TotalBits = sizeof(T) * 8;
+  constexpr uint64_t HalfLevels = uint64_t{1} << (TotalBits - 1);
+  constexpr T SignMask = static_cast<T>(uint64_t{1} << (TotalBits - 1));
+  constexpr T MagMask = static_cast<T>(SignMask - 1);
+  const float sign = (binned & SignMask) ? -1.f : 1.f;
+  const auto idx = static_cast<uint64_t>(binned & MagMask);
+  const float logLo = std::log(magMin);
+  const float logHi = std::log(magMax);
+  const float step = (logHi - logLo) / static_cast<float>(HalfLevels - 1);
+  return sign * std::exp(logLo + static_cast<float>(idx) * step);
+}
+
+template <typename T>
+int unBinSign(T binned)
+{
+  static_assert(std::is_unsigned_v<T>, "unBinSign requires an unsigned storage type");
+  constexpr uint64_t TotalBits = sizeof(T) * 8;
+  constexpr T SignMask = static_cast<T>(uint64_t{1} << (TotalBits - 1));
+  return (binned & SignMask) ? -1 : 1;
+}
+
+template <typename T>
+T binLogUnsigned(float value, float magMin, float magMax)
+{
+  static_assert(std::is_unsigned_v<T>, "binLogUnsigned requires an unsigned storage type");
+  constexpr uint64_t TotalBits = sizeof(T) * 8;
+  constexpr uint64_t Levels = uint64_t{1} << TotalBits; // number of representable values, e.g. 65536 for uint16_t
+  float mag = std::clamp(value, magMin, magMax);
+  float logLo = std::log(magMin);
+  float logHi = std::log(magMax);
+  float step = (logHi - logLo) / static_cast<float>(Levels - 1);
+  auto idx = static_cast<uint64_t>(std::round((std::log(mag) - logLo) / step));
+  idx = std::clamp(idx, uint64_t{0}, Levels - 1);
+  return static_cast<T>(idx);
+}
+
+template <typename T>
+float unBinLogUnsigned(T binned, float magMin, float magMax)
+{
+  constexpr uint64_t TotalBits = sizeof(T) * 8;
+  constexpr uint64_t Levels = uint64_t{1} << TotalBits;
+  uint64_t idx = binned;
+  float logLo = std::log(magMin);
+  float logHi = std::log(magMax);
+  float step = (logHi - logLo) / static_cast<float>(Levels - 1);
+  float mag = std::exp(logLo + static_cast<float>(idx) * step);
+  return mag;
+}
+
+// ---------------------------------------------------------------------------
+// purity/fraction packing: up to 4 species' log-binned nSigma values (see
+// binLogSigned<uint16_t>) packed bitwise into a single int64_t column. Slot
+// assignment (which species occupies which of the 4 slots) is decided at
+// producer init time from which requirePidXxx flags are active, and exposed
+// via a self-documenting histogram -- these functions only do the fixed-slot
+// bit shifting, nothing species-specific.
+// ---------------------------------------------------------------------------
+
+constexpr int PurityNSlots = 4;
+
+/// pack 4 already-binned uint16_t codes (one per slot) into a single int64_t
+inline int64_t packPurity4(uint16_t slot0, uint16_t slot1, uint16_t slot2, uint16_t slot3)
+{
+  return (static_cast<int64_t>(slot0) << 48) |
+         (static_cast<int64_t>(slot1) << 32) |
+         (static_cast<int64_t>(slot2) << 16) |
+         static_cast<int64_t>(slot3);
+}
+
+/// extract the raw uint16_t code of one of the 4 slots (0..3) from a packed int64_t
+inline uint16_t unpackPurity4(int64_t packed, int slot)
+{
+  switch (slot) {
+    case 0:
+      return static_cast<uint16_t>((packed >> 48) & 0xFFFF);
+    case 1:
+      return static_cast<uint16_t>((packed >> 32) & 0xFFFF);
+    case 2:
+      return static_cast<uint16_t>((packed >> 16) & 0xFFFF);
+    case 3:
+      return static_cast<uint16_t>(packed & 0xFFFF);
+    default:
+      LOG(fatal) << "unpackPurity4: invalid slot " << slot << " (must be 0-3). Breaking...";
+      return 0;
+  }
+}
+
+/// pack 4 raw signed nSigma values (one per slot, unused slots pass 0) directly into a packed int64_t
+inline int64_t packPurityNSigma4(float nSigma0, float nSigma1, float nSigma2, float nSigma3, float magMin, float magMax)
+{
+  return packPurity4(binLogSigned<uint16_t>(nSigma0, magMin, magMax),
+                     binLogSigned<uint16_t>(nSigma1, magMin, magMax),
+                     binLogSigned<uint16_t>(nSigma2, magMin, magMax),
+                     binLogSigned<uint16_t>(nSigma3, magMin, magMax));
+}
+
+/// unpack the nSigma value of one of the 4 slots (0..3) from a packed int64_t
+inline float unpackPurityNSigma4(int64_t packed, int slot, float magMin, float magMax)
+{
+  return unBinLogSigned<uint16_t>(unpackPurity4(packed, slot), magMin, magMax);
+}
+
 }; // namespace utils
 }; // namespace o2::analysis::femto
+//
 #endif // PWGCF_FEMTO_CORE_FEMTOUTILS_H_
