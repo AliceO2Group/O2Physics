@@ -38,6 +38,8 @@
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <unordered_map>
@@ -245,6 +247,48 @@ DECLARE_SOA_TABLE(HfCandDsFullPs, "AOD", "HFCANDDSFULLP",
                   full::Y,
                   hf_cand_mc_flag::FlagMcMatchRec,
                   hf_cand_mc_flag::OriginMcGen);
+
+namespace hf_cand_ds_mini
+{
+DECLARE_SOA_COLUMN(Pt, pt, float);                                           //! Transverse momentum of D-meson candidate (GeV/c)
+DECLARE_SOA_COLUMN(M, m, float);                                             //! Invariant mass of D-meson candidates (GeV/c2)
+DECLARE_SOA_COLUMN(MassKaKa, massKaKa, float);                               //! Invariant mass of kaon pairs (GeV/c2)
+DECLARE_SOA_COLUMN(MassKaFirstPi, massKaFirstPi, float);                     //! Invariant mass of kaon(first) pion (GeV/c2)
+DECLARE_SOA_COLUMN(MassKaSecondPi, massKaSecondPi, float);                   //! Invariant mass of kaon(second) pion (GeV/c2)
+DECLARE_SOA_COLUMN(Centrality, centrality, float);                           //! Centrality of collision
+DECLARE_SOA_COLUMN(ImpactParameter, impactParameter, float);                 //! Impact parameter of D-meson candidate
+DECLARE_SOA_COLUMN(ImpactParameterMc, impactParameterMc, float);             //! Generated impact parameter of D-meson candidate
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                         //! Decay length of D-meson candidate
+DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                     //! Transverse decay length of D-meson candidate
+DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);     //! Normalised decay length of D-meson candidate
+DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float); //! Normalised transverse decay length of D-meson candidate
+DECLARE_SOA_COLUMN(FlagMc, flagMc, int);                                     //! MC flag (according to DataType enum)
+} // namespace hf_cand_ds_mini
+
+DECLARE_SOA_TABLE(HfCandDsMinis, "AOD", "HFDSMINI", //! Table with few Ds properties
+                  hf_cand_ds_mini::M,
+                  hf_cand_ds_mini::Pt,
+                  hf_cand_ds_mini::Centrality);
+
+DECLARE_SOA_TABLE(HfCandDsMassMinis, "AOD", "HFDSMASSMINI", //! Table with Ds 2-prong masses
+                  hf_cand_ds_mini::MassKaKa,
+                  hf_cand_ds_mini::MassKaFirstPi,
+                  hf_cand_ds_mini::MassKaSecondPi);
+
+DECLARE_SOA_TABLE(HfCandDsDlMinis, "AOD", "HFDSDLMINI", //! Table with decay length Ds properties
+                  hf_cand_ds_mini::DecayLength,
+                  hf_cand_ds_mini::DecayLengthXY,
+                  hf_cand_ds_mini::DecayLengthNormalised,
+                  hf_cand_ds_mini::DecayLengthXYNormalised);
+
+DECLARE_SOA_TABLE(HfCandDsD0Minis, "AOD", "HFDSD0MINI", //! Table with impact parameter (d0)
+                  hf_cand_ds_mini::ImpactParameter);
+
+DECLARE_SOA_TABLE(HfCandDsD0McMinis, "AOD", "HFDSD0MCMINI", //! Table with generated impact parameter (d0)
+                  hf_cand_ds_mini::ImpactParameterMc);
+
+DECLARE_SOA_TABLE(HfCandDsMcMinis, "AOD", "HFDSMCMINI", //! Table with MC decay type check
+                  hf_cand_ds_mini::FlagMc);
 } // namespace o2::aod
 
 enum Mother : int8_t {
@@ -256,6 +300,18 @@ enum ResonantChannel : int8_t {
   PhiPi = 1,
   Kstar0K = 2
 };
+
+enum FinalState { KKPi = 0,
+                  PiKK };
+
+enum DataType { Data = 0,
+                McDsPrompt,
+                McDsNonPrompt,
+                McDplusPrompt,
+                McDplusNonPrompt,
+                McDplusBkg,
+                McLcBkg,
+                McBkg };
 
 namespace
 {
@@ -269,6 +325,12 @@ struct HfTreeCreatorDsToKKPi {
   Produces<o2::aod::HfCandDsFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandDsFullPs> rowCandidateFullParticles;
   Produces<o2::aod::HfCandDsLites> rowCandidateLite;
+  Produces<o2::aod::HfCandDsMinis> rowCandidateMini;
+  Produces<o2::aod::HfCandDsMassMinis> rowCandidateMassMini;
+  Produces<o2::aod::HfCandDsDlMinis> rowCandidateDlMini;
+  Produces<o2::aod::HfCandDsD0Minis> rowCandidateD0Mini;
+  Produces<o2::aod::HfCandDsMcMinis> rowCandidateMcMini;
+  Produces<o2::aod::HfCandDsD0McMinis> rowCandidateD0McMini;
 
   Configurable<int> decayChannel{"decayChannel", 1, "Switch between resonant decay channels: 1 for Ds/Dplus->PhiPi->KKpi, 2 for Ds/Dplus->K0*K->KKPi"};
   Configurable<bool> fillDplusMc{"fillDplusMc", false, "Switch to fill Dplus MC information"};
@@ -279,18 +341,25 @@ struct HfTreeCreatorDsToKKPi {
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
+  // mini tables (alternative to the full/lite tables)
+  struct : ConfigurableGroup {
+    Configurable<bool> produceMiniTrees{"produceMiniTrees", false, "Flag to produce mini trees instead of the full/lite candidate tables"};
+    Configurable<bool> extendWithDecayLength{"extendWithDecayLength", false, "Flag to extend mini trees with decay length information"};
+    Configurable<bool> extendWithImpactParameter{"extendWithImpactParameter", false, "Flag to extend mini trees with impact parameter information"};
+  } miniTrees;
 
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDsToKKPi>>;
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
-  using CandDsMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
+  using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
+  using TracksWPidMc = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::McTrackLabels>;
 
   using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
   using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using CollisionsWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::CentNTPVs>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-  Filter filterMcGenMatching =
+  Partition<CandDsMcGen> selectedMcParticles =
     nabs(o2::aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) &&
     (aod::hf_cand_mc_flag::flagMcDecayChanGen == channelsResonant[Mother::Ds][decayChannel] ||
      (fillDplusMc && aod::hf_cand_mc_flag::flagMcDecayChanGen == channelsResonant[Mother::Dplus][decayChannel])); // Do not store Dplus MC if fillDplusMc is false
@@ -311,6 +380,132 @@ struct HfTreeCreatorDsToKKPi {
     }
   }
 
+  /// Classify a MC candidate according to the DataType enum
+  /// \param candidate is the candidate
+  /// \return MC category of the candidate
+  template <typename Cand>
+  DataType getDataType(const Cand& candidate)
+  {
+    const auto flag = std::abs(candidate.flagMcMatchRec());
+    const auto channel = candidate.flagMcDecayChanRec();
+    const auto origin = candidate.originMcRec();
+    if (flag == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && channel == channelsResonant[Mother::Ds][decayChannel]) {
+      if (origin == RecoDecay::OriginType::Prompt) {
+        return DataType::McDsPrompt;
+      }
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        return DataType::McDsNonPrompt;
+      }
+    }
+    if (flag == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK) && channel == channelsResonant[Mother::Dplus][decayChannel]) {
+      if (origin == RecoDecay::OriginType::Prompt) {
+        return DataType::McDplusPrompt;
+      }
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        return DataType::McDplusNonPrompt;
+      }
+    }
+    if (flag == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)) {
+      return DataType::McDplusBkg;
+    }
+    if (flag == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi)) {
+      return DataType::McLcBkg;
+    }
+    return DataType::McBkg;
+  }
+
+  /// Find the MC mother of a matched candidate
+  /// \param candidate is the candidate
+  /// \param dataType is the MC category of the candidate
+  /// \param mcParticles are the MC particles
+  /// \return index of the MC mother, -1 if not found
+  template <typename TTracks, typename Cand>
+  int getIndexMother(const Cand& candidate, DataType dataType, const CandDsMcGen& mcParticles)
+  {
+    if (dataType == DataType::McBkg) {
+      return -1;
+    }
+    auto prong0 = candidate.template prong0_as<TTracks>();
+    if (!prong0.has_mcParticle()) {
+      return -1;
+    }
+    int pdgMother = o2::constants::physics::Pdg::kDS;
+    if (dataType == DataType::McDplusPrompt || dataType == DataType::McDplusNonPrompt || dataType == DataType::McDplusBkg) {
+      pdgMother = o2::constants::physics::Pdg::kDPlus;
+    } else if (dataType == DataType::McLcBkg) {
+      pdgMother = o2::constants::physics::Pdg::kLambdaCPlus;
+    }
+    return RecoDecay::getMother(mcParticles, prong0.template mcParticle_as<CandDsMcGen>(), pdgMother, true);
+  }
+
+  template <typename Coll, typename Cand>
+  void fillMiniTables(const Cand& candidate, FinalState finalState)
+  {
+    float mass{-1.f}, massKaKa{-1.f}, massKaFirstPi{-1.f}, massKaSecondPi{-1.f};
+    if (finalState == FinalState::KKPi) {
+      mass = HfHelper::invMassDsToKKPi(candidate);
+      massKaKa = HfHelper::massKKPairDsToKKPi(candidate);
+      massKaFirstPi = HfHelper::massKFirstPiPairDsToKKPi(candidate);
+      massKaSecondPi = HfHelper::massKSecondPiPairDsToKKPi(candidate);
+    } else {
+      mass = HfHelper::invMassDsToPiKK(candidate);
+      massKaKa = HfHelper::massKKPairDsToPiKK(candidate);
+      massKaFirstPi = HfHelper::massKFirstPiPairDsToPiKK(candidate);
+      massKaSecondPi = HfHelper::massKSecondPiPairDsToPiKK(candidate);
+    }
+    auto pt = candidate.pt();
+
+    rowCandidateMini(mass, pt, o2::hf_centrality::getCentralityColl(candidate.template collision_as<Coll>()));
+    rowCandidateMassMini(massKaKa, massKaFirstPi, massKaSecondPi);
+    if (miniTrees.extendWithDecayLength) {
+      rowCandidateDlMini(candidate.decayLength(), candidate.decayLengthXY(), candidate.decayLengthNormalised(), candidate.decayLengthXYNormalised());
+    }
+    if (miniTrees.extendWithImpactParameter) {
+      rowCandidateD0Mini(candidate.impactParameterXY());
+    }
+  }
+
+  template <typename Coll, typename Cand>
+  void fillMiniTablesMc(const Cand& candidate, DataType dataType, FinalState finalState, const CandDsMcGen& mcParticles, int indexMother)
+  {
+    float mass{-1.f}, massKaKa{-1.f}, massKaFirstPi{-1.f}, massKaSecondPi{-1.f};
+    if (finalState == FinalState::KKPi) {
+      mass = HfHelper::invMassDsToKKPi(candidate);
+      massKaKa = HfHelper::massKKPairDsToKKPi(candidate);
+      massKaFirstPi = HfHelper::massKFirstPiPairDsToKKPi(candidate);
+      massKaSecondPi = HfHelper::massKSecondPiPairDsToKKPi(candidate);
+    } else {
+      mass = HfHelper::invMassDsToPiKK(candidate);
+      massKaKa = HfHelper::massKKPairDsToPiKK(candidate);
+      massKaFirstPi = HfHelper::massKFirstPiPairDsToPiKK(candidate);
+      massKaSecondPi = HfHelper::massKSecondPiPairDsToPiKK(candidate);
+    }
+    auto pt = candidate.pt();
+
+    rowCandidateMini(mass, pt, o2::hf_centrality::getCentralityColl(candidate.template collision_as<Coll>()));
+    rowCandidateMassMini(massKaKa, massKaFirstPi, massKaSecondPi);
+    if (miniTrees.extendWithDecayLength) {
+      rowCandidateDlMini(candidate.decayLength(), candidate.decayLengthXY(), candidate.decayLengthNormalised(), candidate.decayLengthXYNormalised());
+    }
+    if (miniTrees.extendWithImpactParameter) {
+      rowCandidateD0Mini(candidate.impactParameterXY());
+    }
+    rowCandidateMcMini(dataType);
+
+    if (miniTrees.extendWithImpactParameter) {
+      if (indexMother == -1) { // MC mother not found (e.g. combinatorial background), fill dummy value to keep tables aligned
+        rowCandidateD0McMini(-999.f);
+        return;
+      }
+      auto particleMc = mcParticles.rawIteratorAt(indexMother);
+      auto prong0 = mcParticles.rawIteratorAt(particleMc.daughtersIds()[0]);
+
+      std::array pv{particleMc.mcCollision().posX(), particleMc.mcCollision().posY(), particleMc.mcCollision().posZ()};
+      std::array sv{prong0.vx(), prong0.vy(), prong0.vz()};
+      auto genD0 = RecoDecay::impParXY(pv, sv, std::array{particleMc.px(), particleMc.py(), particleMc.pz()});
+      rowCandidateD0McMini(genD0);
+    }
+  }
   template <typename T>
   void fillEvent(const T& collision, int isEventReject, int runNumber)
   {
@@ -329,8 +524,9 @@ struct HfTreeCreatorDsToKKPi {
   /// \param doMc true to fill MC information
   /// \param massHypo mass hypothesis considered: 0 = KKPi, 1 = PiKK
   /// \param candidate is candidate
-  template <bool DoMc = false, int MassHypo = 0, typename Coll, typename T>
-  void fillCandidateTable(const T& candidate)
+  /// \param mcParticles are the MC particles (only used to fill the MC mini tables)
+  template <bool DoMc = false, int MassHypo = 0, typename Coll, typename TTracks, typename T, typename TMcParticles = std::nullptr_t>
+  void fillCandidateTable(const T& candidate, const TMcParticles& mcParticles = nullptr)
   {
     float invMassDs = 0;
     float deltaMassPhiKK = 0;
@@ -371,9 +567,24 @@ struct HfTreeCreatorDsToKKPi {
     auto const& collision = candidate.template collision_as<Coll>();
     float centrality = o2::hf_centrality::getCentralityColl(collision);
 
-    auto prong0 = candidate.template prong0_as<TracksWPid>();
-    auto prong1 = candidate.template prong1_as<TracksWPid>();
-    auto prong2 = candidate.template prong2_as<TracksWPid>();
+    if (miniTrees.produceMiniTrees) {
+      constexpr FinalState FinalStateCand = MassHypo == 0 ? FinalState::KKPi : FinalState::PiKK;
+      if constexpr (DoMc) {
+        const DataType dataType = getDataType(candidate);
+        int indexMother{-1};
+        if (miniTrees.extendWithImpactParameter) {
+          indexMother = getIndexMother<TTracks>(candidate, dataType, mcParticles);
+        }
+        fillMiniTablesMc<Coll>(candidate, dataType, FinalStateCand, mcParticles, indexMother);
+      } else {
+        fillMiniTables<Coll>(candidate, FinalStateCand);
+      }
+      return;
+    }
+
+    auto prong0 = candidate.template prong0_as<TTracks>();
+    auto prong1 = candidate.template prong1_as<TTracks>();
+    auto prong2 = candidate.template prong2_as<TTracks>();
 
     if (fillCandidateLiteTable) {
       rowCandidateLite(
@@ -528,7 +739,7 @@ struct HfTreeCreatorDsToKKPi {
           continue;
         }
       }
-      fillCandidateTable<false, 0, Coll>(candidate);
+      fillCandidateTable<false, 0, Coll, TracksWPid>(candidate);
     }
 
     for (const auto& candidate : selectedDsToPiKKCand) {
@@ -538,7 +749,7 @@ struct HfTreeCreatorDsToKKPi {
           continue;
         }
       }
-      fillCandidateTable<false, 1, Coll>(candidate);
+      fillCandidateTable<false, 1, Coll, TracksWPid>(candidate);
     }
   }
 
@@ -564,10 +775,10 @@ struct HfTreeCreatorDsToKKPi {
 
       for (const auto& candidate : reconstructedCandSig) {
         if (candidate.isCandidateSwapped() == 0) {
-          fillCandidateTable<true, 0, Coll>(candidate);
+          fillCandidateTable<true, 0, Coll, TracksWPidMc>(candidate, mcParticles);
         }
         if (candidate.isCandidateSwapped() == 1) {
-          fillCandidateTable<true, 1, Coll>(candidate);
+          fillCandidateTable<true, 1, Coll, TracksWPidMc>(candidate, mcParticles);
         }
       }
     } else if (fillOnlyBackground) {
@@ -586,10 +797,10 @@ struct HfTreeCreatorDsToKKPi {
         }
         // Bkg candidates are not matched to MC so rely on selections only
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          fillCandidateTable<true, 0, Coll>(candidate);
+          fillCandidateTable<true, 0, Coll, TracksWPidMc>(candidate, mcParticles);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          fillCandidateTable<true, 1, Coll>(candidate);
+          fillCandidateTable<true, 1, Coll, TracksWPidMc>(candidate, mcParticles);
         }
       }
     } else {
@@ -601,27 +812,27 @@ struct HfTreeCreatorDsToKKPi {
 
       for (const auto& candidate : reconstructedCandSig) {
         if (candidate.isCandidateSwapped() == 0) {
-          fillCandidateTable<true, 0, Coll>(candidate);
+          fillCandidateTable<true, 0, Coll, TracksWPidMc>(candidate, mcParticles);
         }
         if (candidate.isCandidateSwapped() == 1) {
-          fillCandidateTable<true, 1, Coll>(candidate);
+          fillCandidateTable<true, 1, Coll, TracksWPidMc>(candidate, mcParticles);
         }
       }
 
       for (const auto& candidate : reconstructedCandBkg) {
         // Bkg candidates are not matched to MC so rely on selections only
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          fillCandidateTable<true, 0, Coll>(candidate);
+          fillCandidateTable<true, 0, Coll, TracksWPidMc>(candidate, mcParticles);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          fillCandidateTable<true, 1, Coll>(candidate);
+          fillCandidateTable<true, 1, Coll, TracksWPidMc>(candidate, mcParticles);
         }
       }
     }
 
     // Filling particle properties
-    rowCandidateFullParticles.reserve(mcParticles.size());
-    for (const auto& particle : mcParticles) {
+    rowCandidateFullParticles.reserve(selectedMcParticles.size());
+    for (const auto& particle : selectedMcParticles) {
       rowCandidateFullParticles(
         particle.mcCollision().bcId(),
         particle.pt(),
@@ -669,7 +880,7 @@ struct HfTreeCreatorDsToKKPi {
                          aod::McCollisions const& mcCollisions,
                          CandDsMcReco const& mcRecoCands,
                          CandDsMcGen const& mcParticles,
-                         TracksWPid const&)
+                         TracksWPidMc const&)
   {
     runMc(collisions, mcCollisions, mcRecoCands, mcParticles);
   }
@@ -679,7 +890,7 @@ struct HfTreeCreatorDsToKKPi {
                          aod::McCollisions const& mcCollisions,
                          CandDsMcReco const& mcRecoCands,
                          CandDsMcGen const& mcParticles,
-                         TracksWPid const&)
+                         TracksWPidMc const&)
   {
     runMc(collisions, mcCollisions, mcRecoCands, mcParticles);
   }
@@ -689,7 +900,7 @@ struct HfTreeCreatorDsToKKPi {
                               aod::McCollisions const& mcCollisions,
                               CandDsMcReco const& mcRecoCands,
                               CandDsMcGen const& mcParticles,
-                              TracksWPid const&)
+                              TracksWPidMc const&)
   {
     runMc(collisions, mcCollisions, mcRecoCands, mcParticles);
   }
@@ -699,7 +910,7 @@ struct HfTreeCreatorDsToKKPi {
                  aod::McCollisions const& mcCollisions,
                  CandDsMcReco const& mcRecoCands,
                  CandDsMcGen const& mcParticles,
-                 TracksWPid const&)
+                 TracksWPidMc const&)
   {
     runMc(collisions, mcCollisions, mcRecoCands, mcParticles);
   }
