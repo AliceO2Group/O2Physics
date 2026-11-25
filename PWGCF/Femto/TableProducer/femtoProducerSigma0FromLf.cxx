@@ -105,6 +105,7 @@ struct FemtoProducerSigma0FromLf {
   sigma0builder::Sigma0BuilderProducts sigma0Products;
   sigma0builder::ConfSigma0Tables confSigma0Tables;
   sigma0builder::ConfSigma0Filters confSigma0Filters;
+  sigma0builder::ConfSigma0Qa confSigma0Qa;
 
   struct : o2::framework::ConfigurableGroup {
     std::string prefix = std::string("LfSigma0Conversion");
@@ -117,6 +118,7 @@ struct FemtoProducerSigma0FromLf {
   bool mProduceSigma0s = false;
   bool mProduceSigma0Masks = false;
   bool mProduceSigma0Extras = false;
+  bool mFillQa = false;
 
   // AO2D collision index -> rows of Sigma0Cores, rebuilt every dataframe
   std::unordered_map<int64_t, std::vector<int64_t>> mSigma0sPerCollision;
@@ -139,11 +141,11 @@ struct FemtoProducerSigma0FromLf {
         utils::enableTable("FSigma0Labels_001", confSigma0Tables.produceSigma0Labels.value, context)) {
       LOG(fatal) << "FLiteSigma0s and FSigma0Labels are not supported by the LF Sigma0 converter";
     }
-    if (static_cast<int>(doprocess) + static_cast<int>(doprocessWithExtras) != 1) {
-      LOG(fatal) << "Enable exactly one of process and processWithExtras";
+    if (static_cast<int>(doprocessData) + static_cast<int>(doprocessDataWithExtras) != 1) {
+      LOG(fatal) << "Enable exactly one of processData and processDataWithExtras";
     }
-    if (mProduceSigma0Extras && !doprocessWithExtras) {
-      LOG(fatal) << "FSigma0Extras requested, enable processWithExtras";
+    if (mProduceSigma0Extras && !doprocessDataWithExtras) {
+      LOG(fatal) << "FSigma0Extras requested, enable processDataWithExtras";
     }
 
     hRegistry.add("hLfSigma0s", "LF Sigma0 conversion;;Entries", o2::framework::HistType::kTH1D, {{6, 0.5, 6.5}});
@@ -154,6 +156,16 @@ struct FemtoProducerSigma0FromLf {
     hist->GetXaxis()->SetBinLabel(4, "AntiLambda hypotheses");
     hist->GetXaxis()->SetBinLabel(5, "Written (pass filters)");
     hist->GetXaxis()->SetBinLabel(6, "Lambda V0 in other collision");
+
+    // same QA histograms as the femto Sigma0 builder
+    mFillQa = confSigma0Qa.fillQa.value;
+    if (mFillQa) {
+      hRegistry.add(sigma0builder::QaSigma0Mass, "#Sigma^{0} invariant mass;#it{M}_{#Lambda#gamma} (GeV/#it{c}^{2});Entries", o2::framework::HistType::kTH1F, {confSigma0Qa.sigma0Mass});
+      hRegistry.add(sigma0builder::QaLambdaMass, "#Lambda daughter invariant mass;#it{M}_{#Lambda} (GeV/#it{c}^{2});Entries", o2::framework::HistType::kTH1F, {confSigma0Qa.lambdaMass});
+      hRegistry.add(sigma0builder::QaSigma0Pt, "#Sigma^{0} transverse momentum;#it{p}_{T} (GeV/#it{c});Entries", o2::framework::HistType::kTH1F, {confSigma0Qa.pt});
+      hRegistry.add(sigma0builder::QaLambdaPt, "#Lambda daughter transverse momentum;#it{p}_{T} (GeV/#it{c});Entries", o2::framework::HistType::kTH1F, {confSigma0Qa.pt});
+      hRegistry.add(sigma0builder::QaPhotonPt, "#gamma daughter transverse momentum;#it{p}_{T} (GeV/#it{c});Entries", o2::framework::HistType::kTH1F, {confSigma0Qa.pt});
+    }
   }
 
   template <typename T1, typename T2>
@@ -211,6 +223,14 @@ struct FemtoProducerSigma0FromLf {
         }
         hRegistry.fill(HIST("hLfSigma0s"), 3. + iHyp);
         const float sign = iHyp == 0 ? 1.f : -1.f;
+
+        if (mFillQa) {
+          hRegistry.fill(HIST(sigma0builder::QaSigma0Mass), mass);
+          hRegistry.fill(HIST(sigma0builder::QaLambdaMass), iHyp == 0 ? sigma0.lambdaMass() : sigma0.antilambdaMass());
+          hRegistry.fill(HIST(sigma0builder::QaSigma0Pt), pt);
+          hRegistry.fill(HIST(sigma0builder::QaLambdaPt), vecLambda.Pt());
+          hRegistry.fill(HIST(sigma0builder::QaPhotonPt), vecPhoton.Pt());
+        }
 
         // register the Lambda daughters in FTracks (writes the collision first if not done yet)
         collisionBuilder.template fillCollision<modes::System::kPP_Run3>(collisionBuilderProducts, col);
@@ -276,19 +296,19 @@ struct FemtoProducerSigma0FromLf {
     }
   }
 
-  void process(lfsigma0inputs::Run3PpCollisions const& cols, o2::aod::BCsWithTimestamps const& bcs, lfsigma0inputs::Run3FullPidTracks const& tracks,
+  void processData(lfsigma0inputs::Run3PpCollisions const& cols, o2::aod::BCsWithTimestamps const& bcs, lfsigma0inputs::Run3FullPidTracks const& tracks,
                lfsigma0inputs::LfSigma0s const& lfSigma0s, o2::aod::V0Indices const& v0Indices, o2::aod::V0Cores const& v0Cores, o2::aod::StraCollisions const& straCols)
   {
     processDataframe(cols, bcs, tracks, lfSigma0s, v0Indices, v0Cores, straCols);
   }
-  PROCESS_SWITCH(FemtoProducerSigma0FromLf, process, "Convert LF Sigma0s (pp, Run 3)", true);
+  PROCESS_SWITCH(FemtoProducerSigma0FromLf, processData, "Convert LF Sigma0s (pp, Run 3)", true);
 
-  void processWithExtras(lfsigma0inputs::Run3PpCollisions const& cols, o2::aod::BCsWithTimestamps const& bcs, lfsigma0inputs::Run3FullPidTracks const& tracks,
+  void processDataWithExtras(lfsigma0inputs::Run3PpCollisions const& cols, o2::aod::BCsWithTimestamps const& bcs, lfsigma0inputs::Run3FullPidTracks const& tracks,
                          lfsigma0inputs::LfSigma0sWithExtras const& lfSigma0s, o2::aod::V0Indices const& v0Indices, o2::aod::V0Cores const& v0Cores, o2::aod::StraCollisions const& straCols)
   {
     processDataframe(cols, bcs, tracks, lfSigma0s, v0Indices, v0Cores, straCols);
   }
-  PROCESS_SWITCH(FemtoProducerSigma0FromLf, processWithExtras, "Convert LF Sigma0s (pp, Run 3) and fill FSigma0Extras from the LF photon/lambda extras", false);
+  PROCESS_SWITCH(FemtoProducerSigma0FromLf, processDataWithExtras, "Convert LF Sigma0s (pp, Run 3) and fill FSigma0Extras from the LF photon/lambda extras", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
