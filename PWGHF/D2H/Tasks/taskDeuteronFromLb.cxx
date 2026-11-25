@@ -18,6 +18,7 @@
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseITS.h"
@@ -97,7 +98,7 @@ struct HfTaskDeuteronFromLb {
   using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
   using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullDe, o2::aod::pidTOFFullDe, o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr, o2::aod::pidTOFFullEl, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
   using MCTrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::McTrackLabels, o2::aod::pidTPCFullDe, o2::aod::pidTOFFullDe, o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr, o2::aod::pidTOFFullEl, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
-  using MCCollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::McCollisionLabels>;
+  using MCCollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::McCollisionLabels, o2::aod::CentFT0Ms>;
 
   Preslice<o2::aod::TrackAssoc> trackIndicesPerCollision = o2::aod::track_association::collisionId;
   Preslice<o2::aod::McParticles> mcParticlesPerCollision = o2::aod::mcparticle::mcCollisionId;
@@ -109,7 +110,7 @@ struct HfTaskDeuteronFromLb {
   ConfigurableAxis ctauHypertritonAxis{"ctauHypertritonAxis", {100, 0.f, 30.f}, "c#tau (cm)"};
   ConfigurableAxis etaAxis{"etaAxis", {20, -1.f, 1.f}, "#eta"};
   ConfigurableAxis rapidityAxis{"rapidityAxis", {20, -1.f, 1.f}, "y"};
-
+  ConfigurableAxis centFT0MAxis{"centFT0MAxis", {VARIABLE_WIDTH, 0., 1., 5., 10., 20., 30., 40., 50., 70., 100.}, "FT0M (%)"};
   HistogramRegistry qaHistos{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -246,6 +247,28 @@ struct HfTaskDeuteronFromLb {
     qaHistos.add("MCReco/rapidityAntiDeuteronGenFromAntiLambdaB", "y #bar{d} from #bar{#Lambda}_{b} gen in reco events;y;Counts", HistType::kTH1F, {rapidityAxis});
     qaHistos.add("MCReco/rapidityAntiDeuteronGenFromAntiHypertriton", "y #bar{d} from ^{3}_{#bar{#Lambda}}#bar{H} gen in reco events;y;Counts", HistType::kTH1F, {rapidityAxis});
     qaHistos.add("MCReco/rapidityAntiDeuteronGenPrimary", "y #bar{d} primary gen in reco events;y;Counts", HistType::kTH1F, {rapidityAxis});
+    // pT vs FT0M: all vs PV contributors (multiple association)
+    qaHistos.add("MCReco/hPtVsCentDeFromBminus", "#bar{d} from B^{-};p_{T} (GeV/c);FT0M (%)", HistType::kTH2F, {ptAxis, centFT0MAxis});
+    qaHistos.add("MCReco/hPtVsCentDeFromBminusPVContrib", "#bar{d} from B^{-}, PV contributor;p_{T} (GeV/c);FT0M (%)", HistType::kTH2F, {ptAxis, centFT0MAxis});
+    qaHistos.add("MCReco/hPtVsCentDeFromAntiLambdaB", "#bar{d} from #bar{#Lambda}_{b};p_{T} (GeV/c);FT0M (%)", HistType::kTH2F, {ptAxis, centFT0MAxis});
+    qaHistos.add("MCReco/hPtVsCentDeFromAntiLambdaBPVContrib", "#bar{d} from #bar{#Lambda}_{b}, PV contributor;p_{T} (GeV/c);FT0M (%)", HistType::kTH2F, {ptAxis, centFT0MAxis});
+    qaHistos.add("MCReco/hPtVsCentDeFromAntiHypertriton", "#bar{d} from ^{3}_{#bar{#Lambda}}#bar{H};p_{T} (GeV/c);FT0M (%)", HistType::kTH2F, {ptAxis, centFT0MAxis});
+    qaHistos.add("MCReco/hPtVsCentDeFromAntiHypertritonPVContrib", "#bar{d} from ^{3}_{#bar{#Lambda}}#bar{H}, PV contributor;p_{T} (GeV/c);FT0M (%)", HistType::kTH2F, {ptAxis, centFT0MAxis});
+    qaHistos.add("MCReco/hPtVsCentDePrimary", "#bar{d} primary;p_{T} (GeV/c);FT0M (%)", HistType::kTH2F, {ptAxis, centFT0MAxis});
+    qaHistos.add("MCReco/hPtVsCentDePrimaryPVContrib", "#bar{d} primary, PV contributor;p_{T} (GeV/c);FT0M (%)", HistType::kTH2F, {ptAxis, centFT0MAxis});
+
+    // pT vs FT0M: all vs PV contributors (same MC collision)
+    qaHistos.add("MCReco/hPtVsCentDeFromBminusSameMC", "#bar{d} from B^{-}, same MC coll.;p_{T} (GeV/c);FT0M (%)", HistType::kTH2F, {ptAxis, centFT0MAxis});
+    qaHistos.add("MCReco/hPtVsCentDeFromBminusPVContribSameMC", "#bar{d} from B^{-}, PV contributor, same MC coll.;p_{T} (GeV/c);FT0M (%)", HistType::kTH2F, {ptAxis, centFT0MAxis});
+    qaHistos.add("MCReco/hPtVsCentDeFromAntiLambdaBSameMC", "#bar{d} from #bar{#Lambda}_{b}, same MC coll.;p_{T} (GeV/c);FT0M (%)", HistType::kTH2F, {ptAxis, centFT0MAxis});
+    qaHistos.add("MCReco/hPtVsCentDeFromAntiLambdaBPVContribSameMC", "#bar{d} from #bar{#Lambda}_{b}, PV contributor, same MC coll.;p_{T} (GeV/c);FT0M (%)", HistType::kTH2F, {ptAxis, centFT0MAxis});
+    qaHistos.add("MCReco/hPtVsCentDeFromAntiHypertritonSameMC", "#bar{d} from ^{3}_{#bar{#Lambda}}#bar{H}, same MC coll.;p_{T} (GeV/c);FT0M (%)", HistType::kTH2F, {ptAxis, centFT0MAxis});
+    qaHistos.add("MCReco/hPtVsCentDeFromAntiHypertritonPVContribSameMC", "#bar{d} from ^{3}_{#bar{#Lambda}}#bar{H}, PV contributor, same MC coll.;p_{T} (GeV/c);FT0M (%)", HistType::kTH2F, {ptAxis, centFT0MAxis});
+    qaHistos.add("MCReco/hPtVsCentDePrimarySameMC", "#bar{d} primary, same MC coll.;p_{T} (GeV/c);FT0M (%)", HistType::kTH2F, {ptAxis, centFT0MAxis});
+    qaHistos.add("MCReco/hPtVsCentDePrimaryPVContribSameMC", "#bar{d} primary, PV contributor, same MC coll.;p_{T} (GeV/c);FT0M (%)", HistType::kTH2F, {ptAxis, centFT0MAxis});
+
+    // FT0M distribution, to check the MC calibration
+    qaHistos.add("MCReco/hCentFT0M", ";FT0M (%);Counts", HistType::kTH1F, {{110, 0., 110.}});
 
     hProcessedEvents->GetXaxis()->SetBinLabel(1, "Events processed");
     hProcessedEvents->GetXaxis()->SetBinLabel(2, "ZORRO");
@@ -465,6 +488,9 @@ struct HfTaskDeuteronFromLb {
       }
       qaHistos.fill(HIST("MCReco/hEvents"), 2.5);
 
+      const float centFT0M = collision.centFT0M();
+      qaHistos.fill(HIST("MCReco/hCentFT0M"), centFT0M);
+
       if (collision.has_mcCollision()) {
         const auto mcParticlesThisEvent = mcParticles.sliceBy(mcParticlesPerCollision, collision.mcCollisionId());
 
@@ -642,12 +668,20 @@ struct HfTaskDeuteronFromLb {
               qaHistos.fill(HIST("MCReco/ptAntiDeuteronFromBminus"), track.pt());
               qaHistos.fill(HIST("MCReco/etaAntiDeuteronFromBminus"), track.eta());
               qaHistos.fill(HIST("MCReco/rapidityAntiDeuteronFromBminus"), rapidity);
+              qaHistos.fill(HIST("MCReco/hPtVsCentDeFromBminus"), track.pt(), centFT0M);
+              if (track.isPVContributor()) {
+                qaHistos.fill(HIST("MCReco/hPtVsCentDeFromBminusPVContrib"), track.pt(), centFT0M);
+              }
               if (isSameMcCollision) {
                 qaHistos.fill(HIST("MCReco/hDCAxyVsPtDeFromBminusSameMC"), track.pt(), dca[0]);
                 qaHistos.fill(HIST("MCReco/hDCAzVsPtDeFromBminusSameMC"), track.pt(), dca[1]);
                 qaHistos.fill(HIST("MCReco/ptAntiDeuteronFromBminusSameMC"), track.pt());
                 qaHistos.fill(HIST("MCReco/etaAntiDeuteronFromBminusSameMC"), track.eta());
                 qaHistos.fill(HIST("MCReco/rapidityAntiDeuteronFromBminusSameMC"), rapidity);
+                qaHistos.fill(HIST("MCReco/hPtVsCentDeFromBminusSameMC"), track.pt(), centFT0M);
+                if (track.isPVContributor()) {
+                  qaHistos.fill(HIST("MCReco/hPtVsCentDeFromBminusPVContribSameMC"), track.pt(), centFT0M);
+                }
               }
             } else if (motherPdg == pdgCodeBeautyBaryon) {
               qaHistos.fill(HIST("MCReco/hDCAxyVsPtDeFromAntiLambdaB"), track.pt(), dca[0]);
@@ -655,12 +689,20 @@ struct HfTaskDeuteronFromLb {
               qaHistos.fill(HIST("MCReco/ptAntiDeuteronFromAntiLambdaB"), track.pt());
               qaHistos.fill(HIST("MCReco/etaAntiDeuteronFromAntiLambdaB"), track.eta());
               qaHistos.fill(HIST("MCReco/rapidityAntiDeuteronFromAntiLambdaB"), rapidity);
+              qaHistos.fill(HIST("MCReco/hPtVsCentDeFromAntiLambdaB"), track.pt(), centFT0M);
+              if (track.isPVContributor()) {
+                qaHistos.fill(HIST("MCReco/hPtVsCentDeFromAntiLambdaBPVContrib"), track.pt(), centFT0M);
+              }
               if (isSameMcCollision) {
                 qaHistos.fill(HIST("MCReco/hDCAxyVsPtDeFromAntiLambdaBSameMC"), track.pt(), dca[0]);
                 qaHistos.fill(HIST("MCReco/hDCAzVsPtDeFromAntiLambdaBSameMC"), track.pt(), dca[1]);
                 qaHistos.fill(HIST("MCReco/ptAntiDeuteronFromAntiLambdaBSameMC"), track.pt());
                 qaHistos.fill(HIST("MCReco/etaAntiDeuteronFromAntiLambdaBSameMC"), track.eta());
                 qaHistos.fill(HIST("MCReco/rapidityAntiDeuteronFromAntiLambdaBSameMC"), rapidity);
+                qaHistos.fill(HIST("MCReco/hPtVsCentDeFromAntiLambdaBSameMC"), track.pt(), centFT0M);
+                if (track.isPVContributor()) {
+                  qaHistos.fill(HIST("MCReco/hPtVsCentDeFromAntiLambdaBPVContribSameMC"), track.pt(), centFT0M);
+                }
               }
             } else if (motherPdg == pdgCodeHypertriton) {
               qaHistos.fill(HIST("MCReco/hDCAxyVsPtDeFromAntiHypertriton"), track.pt(), dca[0]);
@@ -668,12 +710,20 @@ struct HfTaskDeuteronFromLb {
               qaHistos.fill(HIST("MCReco/ptAntiDeuteronFromAntiHypertriton"), track.pt());
               qaHistos.fill(HIST("MCReco/etaAntiDeuteronFromAntiHypertriton"), track.eta());
               qaHistos.fill(HIST("MCReco/rapidityAntiDeuteronFromAntiHypertriton"), rapidity);
+              qaHistos.fill(HIST("MCReco/hPtVsCentDeFromAntiHypertriton"), track.pt(), centFT0M);
+              if (track.isPVContributor()) {
+                qaHistos.fill(HIST("MCReco/hPtVsCentDeFromAntiHypertritonPVContrib"), track.pt(), centFT0M);
+              }
               if (isSameMcCollision) {
                 qaHistos.fill(HIST("MCReco/hDCAxyVsPtDeFromAntiHypertritonSameMC"), track.pt(), dca[0]);
                 qaHistos.fill(HIST("MCReco/hDCAzVsPtDeFromAntiHypertritonSameMC"), track.pt(), dca[1]);
                 qaHistos.fill(HIST("MCReco/ptAntiDeuteronFromAntiHypertritonSameMC"), track.pt());
                 qaHistos.fill(HIST("MCReco/etaAntiDeuteronFromAntiHypertritonSameMC"), track.eta());
                 qaHistos.fill(HIST("MCReco/rapidityAntiDeuteronFromAntiHypertritonSameMC"), rapidity);
+                qaHistos.fill(HIST("MCReco/hPtVsCentDeFromAntiHypertritonSameMC"), track.pt(), centFT0M);
+                if (track.isPVContributor()) {
+                  qaHistos.fill(HIST("MCReco/hPtVsCentDeFromAntiHypertritonPVContribSameMC"), track.pt(), centFT0M);
+                }
               }
             } else if (mcParticle.isPhysicalPrimary()) {
               qaHistos.fill(HIST("MCReco/hDCAxyVsPtDePrimary"), track.pt(), dca[0]);
@@ -681,12 +731,20 @@ struct HfTaskDeuteronFromLb {
               qaHistos.fill(HIST("MCReco/ptAntiDeuteronPrimary"), track.pt());
               qaHistos.fill(HIST("MCReco/etaAntiDeuteronPrimary"), track.eta());
               qaHistos.fill(HIST("MCReco/rapidityAntiDeuteronPrimary"), rapidity);
+              qaHistos.fill(HIST("MCReco/hPtVsCentDePrimary"), track.pt(), centFT0M);
+              if (track.isPVContributor()) {
+                qaHistos.fill(HIST("MCReco/hPtVsCentDePrimaryPVContrib"), track.pt(), centFT0M);
+              }
               if (isSameMcCollision) {
                 qaHistos.fill(HIST("MCReco/hDCAxyVsPtDePrimarySameMC"), track.pt(), dca[0]);
                 qaHistos.fill(HIST("MCReco/hDCAzVsPtDePrimarySameMC"), track.pt(), dca[1]);
                 qaHistos.fill(HIST("MCReco/ptAntiDeuteronPrimarySameMC"), track.pt());
                 qaHistos.fill(HIST("MCReco/etaAntiDeuteronPrimarySameMC"), track.eta());
                 qaHistos.fill(HIST("MCReco/rapidityAntiDeuteronPrimarySameMC"), rapidity);
+                qaHistos.fill(HIST("MCReco/hPtVsCentDePrimarySameMC"), track.pt(), centFT0M);
+                if (track.isPVContributor()) {
+                  qaHistos.fill(HIST("MCReco/hPtVsCentDePrimaryPVContribSameMC"), track.pt(), centFT0M);
+                }
               }
             }
           }
