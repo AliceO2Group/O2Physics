@@ -33,7 +33,6 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/ASoA.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Concepts.h>
@@ -200,6 +199,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
   Configurable<float> intercept{"intercept", -0.0380, "intercept for m vs. phiv"};
   Configurable<bool> useTOFNSigmaDeltaBC{"useTOFNSigmaDeltaBC", false, "Flag to shift delta BC for TOF n sigma (only with TTCA)"};
+  Configurable<bool> usePropagatedTrackParameters{"usePropagatedTrackParameters", true, "Use track parameters propagated to the associated collision for pairs and output"};
   Configurable<bool> storeOnlyTrueElectronMC{"storeOnlyTrueElectronMC", false, "Flag to store only true electron in MC"};
   Configurable<bool> fillHistogramsBeforeSelection{"fillHistogramsBeforeSelection", false, "Flag to fill track histograms before track selections (only for fillingMode 1)"};
 
@@ -402,8 +402,19 @@ struct skimmerPrimaryElectronFromDalitzEE {
     }
   }
 
+  struct TrackParametersAtCollision {
+    float pt;
+    float eta;
+    float phi;
+    float dcaXY;
+    float dcaZ;
+    float sigmaY2;
+    float sigmaZY;
+    float sigmaZ2;
+  };
+
   template <bool isMC, o2::soa::is_iterator TCollision, o2::soa::is_iterator TTrack>
-  bool checkTrack(TCollision const& collision, TTrack const& track, int* rejectReason = nullptr)
+  bool checkTrack(TCollision const& collision, TTrack const& track, int* rejectReason = nullptr, TrackParametersAtCollision* propagatedParameters = nullptr)
   {
     // Lambda function: Sets the reject reason to the correct value and returns false.
     // Used for every return statement in the checkTrack function where false is returned
@@ -522,6 +533,11 @@ struct skimmerPrimaryElectronFromDalitzEE {
       return reject(kITSsaPt);
     }
 
+    if (propagatedParameters) {
+      *propagatedParameters = {trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dcaXY, dcaZ,
+                               trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2()};
+    }
+
     // if ((track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF()) && maxpt_itssa < track.pt()) {
     //   return false;
     // }
@@ -581,19 +597,38 @@ struct skimmerPrimaryElectronFromDalitzEE {
     return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && std::fabs(tofNSigmaEl) < maxTOFNsigmaEl;
   }
 
-  template <bool isMC, o2::soa::is_iterator TCollision, o2::soa::is_table TTracks>
+  template <bool isMC, o2::soa::is_iterator TCollision, typename TTracks>
   void fillTrackInfo(TCollision const& collision, TTracks const& tracks)
   {
-
     for (const auto& track : tracks) {
+      fillTrackTable<isMC>(collision, track);
+    }
+  }
 
+  template <o2::soa::is_iterator TTrack>
+  TrackParametersAtCollision getTrackParametersAtCollision(int collisionId, TTrack const& track)
+  {
+    auto parameters = mapTrackParametersAtCollision.find(std::make_pair(collisionId, track.globalIndex()));
+    if (usePropagatedTrackParameters && parameters != mapTrackParametersAtCollision.end()) {
+      return parameters->second;
+    }
+    return {track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ()};
+  }
+
+  template <bool isMC, o2::soa::is_iterator TCollision, typename TTracks, typename TSelectedTracks, typename TPositiveTracks, typename TNegativeTracks>
+  void selectElectronTracks(TCollision const& collision, TTracks const& tracks, TSelectedTracks& selectedTracks, TPositiveTracks& positiveTracks, TNegativeTracks& negativeTracks, bool fillTrackHistogramsForSelected)
+  {
+    for (const auto& track : tracks) {
       if (fillHistogramsBeforeSelection) {
         fillTrackHistograms<isMC, true>(track);
       }
 
       fRegistry.fill(HIST("Track/hTrackRejectReason"), kAllTracks, track.pt());
       int rejectReason = kPassed;
-      if (checkTrack<isMC>(collision, track, &rejectReason) && !isElectron(collision, track)) {
+      TrackParametersAtCollision propagatedParameters;
+      bool passesTrackSelection = checkTrack<isMC>(collision, track, &rejectReason, &propagatedParameters);
+      bool passesElectronSelection = passesTrackSelection && isElectron(collision, track);
+      if (passesTrackSelection && !passesElectronSelection) {
         rejectReason = kNotElectron;
       }
       fRegistry.fill(HIST("Track/hTrackRejectReason"), rejectReason, track.pt());
@@ -603,100 +638,96 @@ struct skimmerPrimaryElectronFromDalitzEE {
           fRegistry.fill(HIST("TrackTrueElec/hTrackRejectReason"), rejectReason, track.pt());
         }
       }
-      if (rejectReason != kPassed) {
-        continue;
-      }
 
-      fillTrackHistograms<isMC>(track);
-      fillTrackTable<isMC>(collision, track);
+      if (passesElectronSelection) {
+        selectedTracks.emplace_back(track);
+        if (usePropagatedTrackParameters) {
+          mapTrackParametersAtCollision[std::make_pair(collision.globalIndex(), track.globalIndex())] = propagatedParameters;
+        }
+        if (fillTrackHistogramsForSelected) {
+          fillTrackHistograms<isMC>(track);
+        }
+        if (track.sign() > 0) {
+          positiveTracks.emplace_back(track);
+        } else {
+          negativeTracks.emplace_back(track);
+        }
+      }
     }
   }
 
-  template <bool isMC, int pairtype, o2::soa::is_iterator TCollision, o2::soa::is_table TTracks1, o2::soa::is_table TTracks2>
-  void fillPairInfo(TCollision const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2)
+  template <bool isMC, int pairtype, typename TTracks1, typename TTracks2>
+  void fillPairInfo(int collisionId, TTracks1 const& tracks1, TTracks2 const& tracks2)
   {
-    if constexpr (pairtype == 0) {         // ULS
-      if (fillHistogramsBeforeSelection) { // we cannot fill the track histograms in the pair loop as they would get filled multiple times. Hence we loop over all tracks here
-        for (const auto& track : tracks1) {
-          fillTrackHistograms<isMC, true>(track);
-        }
-        for (const auto& track : tracks2) {
-          fillTrackHistograms<isMC, true>(track);
-        }
-      }
+    if constexpr (pairtype == 0) { // ULS
+      for (const auto& t1 : tracks1) {
+        auto parameters1 = getTrackParametersAtCollision(collisionId, t1);
+        for (const auto& t2 : tracks2) {
+          auto parameters2 = getTrackParametersAtCollision(collisionId, t2);
+          ROOT::Math::PtEtaPhiMVector v1(parameters1.pt, parameters1.eta, parameters1.phi, o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v2(parameters2.pt, parameters2.eta, parameters2.phi, o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(v1.Px(), v1.Py(), v1.Pz(), v2.Px(), v2.Py(), v2.Pz(), t1.sign(), t2.sign(), dBz);
 
-      for (const auto& [t1, t2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+          fRegistry.fill(HIST("Pair/") + HIST(DileptonSigns[pairtype]) + HIST("hMvsPt"), v12.M(), v12.Pt());
+          fRegistry.fill(HIST("Pair/") + HIST(DileptonSigns[pairtype]) + HIST("hMvsPhiV"), phiv, v12.M());
 
-        if (!checkTrack<isMC>(collision, t1) || !checkTrack<isMC>(collision, t2)) {
-          continue;
-        }
-
-        if (!isElectron(collision, t1) || !isElectron(collision, t2)) {
-          continue;
-        }
-
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
-        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-        float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), dBz);
-
-        fRegistry.fill(HIST("Pair/") + HIST(DileptonSigns[pairtype]) + HIST("hMvsPt"), v12.M(), v12.Pt());
-        fRegistry.fill(HIST("Pair/") + HIST(DileptonSigns[pairtype]) + HIST("hMvsPhiV"), phiv, v12.M());
-
-        // to do: test if minMee > Mpion show effect on S/B
-        if (v12.M() < minMee || v12.M() > maxMee) { // don't store   //|| v12.M() > maxMee
-          continue;
-        }
-
-        fRegistry.fill(HIST("Pair/") + HIST(DileptonSigns[pairtype]) + HIST("hMCutMvsPt"), v12.M(), v12.Pt());
-        fRegistry.fill(HIST("Pair/") + HIST(DileptonSigns[pairtype]) + HIST("hMCutMvsPhiV"), phiv, v12.M());
-
-        if (v12.M() < slope * phiv + intercept) {
-          continue;
-        }
-
-        fRegistry.fill(HIST("Pair/") + HIST(DileptonSigns[pairtype]) + HIST("hMPhiCutMvsPt"), v12.M(), v12.Pt());
-        fRegistry.fill(HIST("Pair/") + HIST(DileptonSigns[pairtype]) + HIST("hMPhiCutMvsPhiV"), phiv, v12.M());
-
-        if (t1.sign() > 0) { // for positron
-          if (std::find(acceptedPosTrackIds_per_collision.begin(), acceptedPosTrackIds_per_collision.end(), t1.globalIndex()) == acceptedPosTrackIds_per_collision.end()) {
-            fillTrackHistograms<isMC>(t1);
-            acceptedPosTrackIds_per_collision.emplace_back(t1.globalIndex());
+          // to do: test if minMee > Mpion show effect on S/B
+          if (v12.M() < minMee || v12.M() > maxMee) { // don't store   //|| v12.M() > maxMee
+            continue;
           }
-        } else { // for electron
-          if (std::find(acceptedNegTrackIds_per_collision.begin(), acceptedNegTrackIds_per_collision.end(), t1.globalIndex()) == acceptedNegTrackIds_per_collision.end()) {
-            fillTrackHistograms<isMC>(t1);
-            acceptedNegTrackIds_per_collision.emplace_back(t1.globalIndex());
-          }
-        }
 
-        if (t2.sign() > 0) { // for positron
-          if (std::find(acceptedPosTrackIds_per_collision.begin(), acceptedPosTrackIds_per_collision.end(), t2.globalIndex()) == acceptedPosTrackIds_per_collision.end()) {
-            fillTrackHistograms<isMC>(t2);
-            acceptedPosTrackIds_per_collision.emplace_back(t2.globalIndex());
+          fRegistry.fill(HIST("Pair/") + HIST(DileptonSigns[pairtype]) + HIST("hMCutMvsPt"), v12.M(), v12.Pt());
+          fRegistry.fill(HIST("Pair/") + HIST(DileptonSigns[pairtype]) + HIST("hMCutMvsPhiV"), phiv, v12.M());
+
+          if (v12.M() < slope * phiv + intercept) {
+            continue;
           }
-        } else { // for electron
-          if (std::find(acceptedNegTrackIds_per_collision.begin(), acceptedNegTrackIds_per_collision.end(), t2.globalIndex()) == acceptedNegTrackIds_per_collision.end()) {
-            fillTrackHistograms<isMC>(t2);
-            acceptedNegTrackIds_per_collision.emplace_back(t2.globalIndex());
+
+          fRegistry.fill(HIST("Pair/") + HIST(DileptonSigns[pairtype]) + HIST("hMPhiCutMvsPt"), v12.M(), v12.Pt());
+          fRegistry.fill(HIST("Pair/") + HIST(DileptonSigns[pairtype]) + HIST("hMPhiCutMvsPhiV"), phiv, v12.M());
+
+          if (t1.sign() > 0) { // for positron
+            if (std::find(acceptedPosTrackIds_per_collision.begin(), acceptedPosTrackIds_per_collision.end(), t1.globalIndex()) == acceptedPosTrackIds_per_collision.end()) {
+              fillTrackHistograms<isMC>(t1);
+              acceptedPosTrackIds_per_collision.emplace_back(t1.globalIndex());
+            }
+          } else { // for electron
+            if (std::find(acceptedNegTrackIds_per_collision.begin(), acceptedNegTrackIds_per_collision.end(), t1.globalIndex()) == acceptedNegTrackIds_per_collision.end()) {
+              fillTrackHistograms<isMC>(t1);
+              acceptedNegTrackIds_per_collision.emplace_back(t1.globalIndex());
+            }
+          }
+
+          if (t2.sign() > 0) { // for positron
+            if (std::find(acceptedPosTrackIds_per_collision.begin(), acceptedPosTrackIds_per_collision.end(), t2.globalIndex()) == acceptedPosTrackIds_per_collision.end()) {
+              fillTrackHistograms<isMC>(t2);
+              acceptedPosTrackIds_per_collision.emplace_back(t2.globalIndex());
+            }
+          } else { // for electron
+            if (std::find(acceptedNegTrackIds_per_collision.begin(), acceptedNegTrackIds_per_collision.end(), t2.globalIndex()) == acceptedNegTrackIds_per_collision.end()) {
+              fillTrackHistograms<isMC>(t2);
+              acceptedNegTrackIds_per_collision.emplace_back(t2.globalIndex());
+            }
           }
         }
       } // end of ULS pairing
     } else { // LS
-      for (auto& [t1, t2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
-        if (!checkTrack<isMC>(collision, t1) || !checkTrack<isMC>(collision, t2)) {
-          continue;
-        }
-        if (!isElectron(collision, t1) || !isElectron(collision, t2)) {
-          continue;
-        }
+      for (const auto& t1 : tracks1) {
+        auto parameters1 = getTrackParametersAtCollision(collisionId, t1);
+        for (const auto& t2 : tracks2) {
+          if (t1.globalIndex() >= t2.globalIndex()) {
+            continue;
+          }
 
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
-        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-        float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), dBz);
-        fRegistry.fill(HIST("Pair/") + HIST(DileptonSigns[pairtype]) + HIST("hMvsPt"), v12.M(), v12.Pt());
-        fRegistry.fill(HIST("Pair/") + HIST(DileptonSigns[pairtype]) + HIST("hMvsPhiV"), phiv, v12.M());
+          auto parameters2 = getTrackParametersAtCollision(collisionId, t2);
+          ROOT::Math::PtEtaPhiMVector v1(parameters1.pt, parameters1.eta, parameters1.phi, o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v2(parameters2.pt, parameters2.eta, parameters2.phi, o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(v1.Px(), v1.Py(), v1.Pz(), v2.Px(), v2.Py(), v2.Pz(), t1.sign(), t2.sign(), dBz);
+          fRegistry.fill(HIST("Pair/") + HIST(DileptonSigns[pairtype]) + HIST("hMvsPt"), v12.M(), v12.Pt());
+          fRegistry.fill(HIST("Pair/") + HIST(DileptonSigns[pairtype]) + HIST("hMvsPhiV"), phiv, v12.M());
+        }
       } // end of LS pairing
     }
   }
@@ -796,8 +827,9 @@ struct skimmerPrimaryElectronFromDalitzEE {
   template <bool isMC, o2::soa::is_iterator TCollision, o2::soa::is_iterator TTrack>
   void fillTrackTable(TCollision const& collision, TTrack const& track)
   {
+    auto parameters = getTrackParametersAtCollision(collision.globalIndex(), track);
     emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
-                       track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(),
+                       parameters.pt, parameters.eta, parameters.phi, parameters.dcaXY, parameters.dcaZ, parameters.sigmaY2, parameters.sigmaZY, parameters.sigmaZ2,
                        track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
                        track.tpcChi2NCl(), track.tpcInnerParam(),
                        track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(),
@@ -822,6 +854,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
 
   std::map<std::pair<int, int>, float> mapTOFNsigmaReassociated; // map pair(collisionId, trackId) -> tof n sigma
   std::map<std::pair<int, int>, float> mapTOFBetaReassociated;   // map pair(collisionId, trackId) -> tof beta
+  std::map<std::pair<int, int>, TrackParametersAtCollision> mapTrackParametersAtCollision;
 
   // ---------- for data ----------
   void processRec(MyCollisions const& collisions, MyBCs const& bcs, MyTracks const& tracks, TV0PhotonsKF const& v0photons, o2::aod::TrackAssoc const& trackIndices)
@@ -847,11 +880,24 @@ struct skimmerPrimaryElectronFromDalitzEE {
         continue;
       }
 
-      const auto& posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
-      const auto& negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
-      const auto& slicedTracks = tracks.sliceBy(perTracksCollision, collision.globalIndex());
-      acceptedPosTrackIds_per_collision.reserve(posTracks_per_coll.size());
-      acceptedNegTrackIds_per_collision.reserve(negTracks_per_coll.size());
+      auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+      mapTrackParametersAtCollision.clear();
+      std::vector<MyTrack> tracksPerCollision;
+      std::vector<MyTrack> selectedTracksPerCollision;
+      std::vector<MyTrack> posTracksPerCollision;
+      std::vector<MyTrack> negTracksPerCollision;
+      tracksPerCollision.reserve(trackIdsThisCollision.size());
+      selectedTracksPerCollision.reserve(trackIdsThisCollision.size());
+      posTracksPerCollision.reserve(trackIdsThisCollision.size());
+      negTracksPerCollision.reserve(trackIdsThisCollision.size());
+      acceptedPosTrackIds_per_collision.reserve(trackIdsThisCollision.size());
+      acceptedNegTrackIds_per_collision.reserve(trackIdsThisCollision.size());
+
+      for (const auto& trackId : trackIdsThisCollision) {
+        auto track = trackId.template track_as<MyTracks>();
+        tracksPerCollision.emplace_back(track);
+      }
+      selectElectronTracks<false>(collision, tracksPerCollision, selectedTracksPerCollision, posTracksPerCollision, negTracksPerCollision, varFillingMode == enumFillingMode::SingleTrack);
 
       auto iterEp = tracks.begin();
       auto iterEm = tracks.begin();
@@ -860,13 +906,13 @@ struct skimmerPrimaryElectronFromDalitzEE {
 
       switch (varFillingMode) {
         case enumFillingMode::SingleTrack:
-          fillTrackInfo<false>(collision, slicedTracks);
+          fillTrackInfo<false>(collision, selectedTracksPerCollision);
           break;
         case enumFillingMode::EpEmPairs:
-          fillPairInfo<false, 0>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
+          fillPairInfo<false, 0>(collision.globalIndex(), posTracksPerCollision, negTracksPerCollision); // ULS
           if (fillLS) {
-            fillPairInfo<false, 1>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
-            fillPairInfo<false, 2>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
+            fillPairInfo<false, 1>(collision.globalIndex(), posTracksPerCollision, posTracksPerCollision); // LS++
+            fillPairInfo<false, 2>(collision.globalIndex(), negTracksPerCollision, negTracksPerCollision); // LS--
           }
           if ((!acceptedPosTrackIds_per_collision.empty() && !acceptedNegTrackIds_per_collision.empty())) {
             for (const auto& posId : acceptedPosTrackIds_per_collision) {
@@ -882,10 +928,10 @@ struct skimmerPrimaryElectronFromDalitzEE {
         case enumFillingMode::EpEmPairsAndPhoton:
           std::set<int64_t> tracksToFill;
 
-          fillPairInfo<false, 0>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
+          fillPairInfo<false, 0>(collision.globalIndex(), posTracksPerCollision, negTracksPerCollision); // ULS
           if (fillLS) {
-            fillPairInfo<false, 1>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
-            fillPairInfo<false, 2>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
+            fillPairInfo<false, 1>(collision.globalIndex(), posTracksPerCollision, posTracksPerCollision); // LS++
+            fillPairInfo<false, 2>(collision.globalIndex(), negTracksPerCollision, negTracksPerCollision); // LS--
           }
           if (v0photons_per_coll.size() >= 1 && ((!acceptedPosTrackIds_per_collision.empty() && !acceptedNegTrackIds_per_collision.empty()))) {
             if (!fillWithEtaMassCut) {
@@ -1033,11 +1079,24 @@ struct skimmerPrimaryElectronFromDalitzEE {
         continue;
       }
 
-      const auto& posTracks_per_coll = posTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
-      const auto& negTracks_per_coll = negTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
-      const auto& slicedTracks = tracks.sliceBy(perTracksCollision, collision.globalIndex());
-      acceptedPosTrackIds_per_collision.reserve(posTracks_per_coll.size());
-      acceptedNegTrackIds_per_collision.reserve(negTracks_per_coll.size());
+      auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+      mapTrackParametersAtCollision.clear();
+      std::vector<MyTrackMC> tracksPerCollision;
+      std::vector<MyTrackMC> selectedTracksPerCollision;
+      std::vector<MyTrackMC> posTracksPerCollision;
+      std::vector<MyTrackMC> negTracksPerCollision;
+      tracksPerCollision.reserve(trackIdsThisCollision.size());
+      selectedTracksPerCollision.reserve(trackIdsThisCollision.size());
+      posTracksPerCollision.reserve(trackIdsThisCollision.size());
+      negTracksPerCollision.reserve(trackIdsThisCollision.size());
+      acceptedPosTrackIds_per_collision.reserve(trackIdsThisCollision.size());
+      acceptedNegTrackIds_per_collision.reserve(trackIdsThisCollision.size());
+
+      for (const auto& trackId : trackIdsThisCollision) {
+        auto track = trackId.template track_as<MyTracksMC>();
+        tracksPerCollision.emplace_back(track);
+      }
+      selectElectronTracks<true>(collision, tracksPerCollision, selectedTracksPerCollision, posTracksPerCollision, negTracksPerCollision, varFillingMode == enumFillingMode::SingleTrack);
 
       auto iterEp = tracks.begin();
       auto iterEm = tracks.begin();
@@ -1046,13 +1105,13 @@ struct skimmerPrimaryElectronFromDalitzEE {
 
       switch (varFillingMode) {
         case enumFillingMode::SingleTrack:
-          fillTrackInfo<true>(collision, slicedTracks);
+          fillTrackInfo<true>(collision, selectedTracksPerCollision);
           break;
         case enumFillingMode::EpEmPairs:
-          fillPairInfo<true, 0>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
+          fillPairInfo<true, 0>(collision.globalIndex(), posTracksPerCollision, negTracksPerCollision); // ULS
           if (fillLS) {
-            fillPairInfo<true, 1>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
-            fillPairInfo<true, 2>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
+            fillPairInfo<true, 1>(collision.globalIndex(), posTracksPerCollision, posTracksPerCollision); // LS++
+            fillPairInfo<true, 2>(collision.globalIndex(), negTracksPerCollision, negTracksPerCollision); // LS--
           }
           if ((!acceptedPosTrackIds_per_collision.empty() && !acceptedNegTrackIds_per_collision.empty())) {
             for (const auto& posId : acceptedPosTrackIds_per_collision) {
@@ -1068,10 +1127,10 @@ struct skimmerPrimaryElectronFromDalitzEE {
         case enumFillingMode::EpEmPairsAndPhoton:
           std::set<int64_t> tracksToFill;
 
-          fillPairInfo<true, 0>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
+          fillPairInfo<true, 0>(collision.globalIndex(), posTracksPerCollision, negTracksPerCollision); // ULS
           if (fillLS) {
-            fillPairInfo<true, 1>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
-            fillPairInfo<true, 2>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
+            fillPairInfo<true, 1>(collision.globalIndex(), posTracksPerCollision, posTracksPerCollision); // LS++
+            fillPairInfo<true, 2>(collision.globalIndex(), negTracksPerCollision, negTracksPerCollision); // LS--
           }
           if (v0photons_per_coll.size() >= 1 && ((!acceptedPosTrackIds_per_collision.empty() && !acceptedNegTrackIds_per_collision.empty()))) {
             if (!fillWithEtaMassCut) {
