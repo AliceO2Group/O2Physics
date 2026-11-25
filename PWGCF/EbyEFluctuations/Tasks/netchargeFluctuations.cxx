@@ -128,10 +128,10 @@ struct NetchargeFluctuations {
   ConfigurableAxis centBining{"centBining", {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "Centrality/Multiplicity percentile bining"};
   Configurable<bool> cPileupReject{"cPileupReject", true, "Pileup rejection"};                          // pileup
   Configurable<bool> cfgUseGoodItsLayerAllCut{"cfgUseGoodItsLayerAllCut", true, "Good ITS Layers All"}; // pileup
-  Configurable<bool> cTFBorder{"cTFBorder", false, "Timeframe Border Selection"};                        // pileup
-  Configurable<bool> cNoItsROBorder{"cNoItsROBorder", false, "No ITSRO Border Cut"};                     // pileup
-  Configurable<bool> cItsTpcVtx{"cItsTpcVtx", false, "ITS+TPC Vertex Selection"};                        // pileup
-  Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", false, "z-vtx time diff selection"};                 // pileup
+  Configurable<bool> cTFBorder{"cTFBorder", false, "Timeframe Border Selection"};                       // pileup
+  Configurable<bool> cNoItsROBorder{"cNoItsROBorder", false, "No ITSRO Border Cut"};                    // pileup
+  Configurable<bool> cItsTpcVtx{"cItsTpcVtx", false, "ITS+TPC Vertex Selection"};                       // pileup
+  Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", false, "z-vtx time diff selection"};                // pileup
   Configurable<bool> cPVcont{"cPVcont", true, "primary vertex contributor"};
 
   // Configurable to enable multiplicity correlation cuts
@@ -236,7 +236,10 @@ struct NetchargeFluctuations {
 
     // Add QA histograms
     //
-    histogramRegistry.add("MCResponse/hNrecVsNgen", "Reconstructed vs generated multiplicity;" "N_{ch}^{gen};N_{ch}^{rec}", kTH2F, {AxisSpec{1000, 0, 1000}, AxisSpec{1000, 0, 1000}});
+    histogramRegistry.add("MCResponse/hNrecVsNgen",
+                          "Reconstructed vs generated multiplicity;"
+                          "N_{ch}^{gen};N_{ch}^{rec}",
+                          kTH2F, {AxisSpec{1000, 0, 1000}, AxisSpec{1000, 0, 1000}});
     histogramRegistry.add("QA/hVtxZ_before", "", kTH1F, {vtxzAxis});
     histogramRegistry.add("QA/hDcaXY_before", "", kTH1F, {dcaAxis});
     histogramRegistry.add("QA/hphi", "", kTH1F, {phiAxis});
@@ -941,7 +944,7 @@ struct NetchargeFluctuations {
     termNGen = negGen * (negGen - 1);
     posNegGen = posGen * negGen;
 
-    histogramRegistry.fill( HIST("MCResponse/hNrecVsNgen"), nchGen, nch);
+    histogramRegistry.fill(HIST("MCResponse/hNrecVsNgen"), nchGen, nch);
     histogramRegistry.fill(HIST("gen/cent_pos"), cent, posGen);
     histogramRegistry.fill(HIST("gen/cent_neg"), cent, negGen);
     histogramRegistry.fill(HIST("gen/cent_termp"), cent, termPGen);
@@ -1350,7 +1353,7 @@ struct NetchargeFluctuations {
           std::abs(pid) != kProton) {
         continue;
       }
-      nchTotal ++;
+      nchTotal++;
 
       if (std::fabs(mcpart.eta()) >= etaCut) {
         continue;
@@ -1389,7 +1392,7 @@ struct NetchargeFluctuations {
     histogramRegistry.fill(HIST("gen/cent_nch"), cent, nchGen);
     histogramRegistry.fill(HIST("gen/nch"), nchGen);
     histogramRegistry.fill(HIST("gen/nchTotal"), nchTotal);
-    histogramRegistry.fill(HIST("gen/cent_nchTotal"),cent, nchTotal);
+    histogramRegistry.fill(HIST("gen/cent_nchTotal"), cent, nchTotal);
 
     float lRandom = fRndm->Rndm();
     int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
@@ -1559,4 +1562,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     {adaptAnalysisTask<NetchargeFluctuations>(cfgc)}};
 }
-
