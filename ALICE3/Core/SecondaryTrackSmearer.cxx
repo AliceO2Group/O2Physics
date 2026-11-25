@@ -191,7 +191,7 @@ bool SecondaryTrackSmearer::smearTrack(O2Track& track, const SecondaryLutEntry* 
     *wasSmeared = false;
   }
   if (!entry || !entry->valid) {
-    LOG(warn) << "Cannot smear a track with a missing or invalid secondary LUT entry";
+    LOG(debug) << "Cannot smear a track with a missing or invalid secondary LUT entry";
     return false;
   }
   const float selectedEfficiency = mInterpolateEfficiency ? interpolatedEff : efficiency(*entry);
