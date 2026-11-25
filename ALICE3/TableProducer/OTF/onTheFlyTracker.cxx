@@ -443,7 +443,6 @@ struct OnTheFlyTracker {
     }
     const auto& smearer = mSecondarySmearer[icfg];
     if (!smearer->hasTable(pdg)) {
-      LOG(fatal) << "No secondary LUT configured for PDG " << pdg << " in geometry " << icfg;
       return false;
     }
     const auto hits = fastTracker[icfg]->countSiliconLayerHits(productionTrack);
@@ -487,8 +486,15 @@ struct OnTheFlyTracker {
         smearer.setCcdbManager(ccdb.operator->());
         smearer.interpolateEfficiency(interpolateLutEfficiencyVsNch.value);
         smearer.skipUnreconstructed(!processUnreconstructedTracks.value);
-        const std::map<std::string, int> species = {
-          {"secondaryLutEl", kElectron}, {"secondaryLutMu", kMuonMinus}, {"secondaryLutPi", kPiPlus}, {"secondaryLutKa", kKPlus}, {"secondaryLutPr", kProton}, {"secondaryLutDe", o2::constants::physics::kDeuteron}, {"secondaryLutTr", o2::constants::physics::kTriton}, {"secondaryLutHe3", o2::constants::physics::kHelium3}, {"secondaryLutAl", o2::constants::physics::kAlpha}};
+        const std::map<std::string, int> species = {{"secondaryLutEl", kElectron},
+                                                    {"secondaryLutMu", kMuonMinus},
+                                                    {"secondaryLutPi", kPiPlus},
+                                                    {"secondaryLutKa", kKPlus},
+                                                    {"secondaryLutPr", kProton},
+                                                    {"secondaryLutDe", o2::constants::physics::kDeuteron},
+                                                    {"secondaryLutTr", o2::constants::physics::kTriton},
+                                                    {"secondaryLutHe3", o2::constants::physics::kHelium3},
+                                                    {"secondaryLutAl", o2::constants::physics::kAlpha}};
         int loaded = 0;
         for (const auto& entry : globalConfiguration) {
           if (!entry.first.starts_with("secondaryLut")) {

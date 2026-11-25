@@ -96,6 +96,7 @@ class SecondaryLut : public TNamed
   [[nodiscard]] int getPdg() const { return mPdg; }
   [[nodiscard]] float getMass() const { return mMass; }
   [[nodiscard]] float getField() const { return mField; }
+  void setField(float field) { mField = field; }
   [[nodiscard]] std::size_t size() const { return mEntries.size(); }
 
   [[nodiscard]] std::size_t index(int nch, int rad, int eta, int pt, int nHits) const
