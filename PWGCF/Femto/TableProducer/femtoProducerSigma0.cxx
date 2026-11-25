@@ -27,6 +27,7 @@
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
@@ -82,7 +83,7 @@ struct FemtoProducerSigma0 {
   // filter histograms of the input collisions, Lambdas and photons
   sigma0builder::Sigma0InputFilters sigma0InputFilters;
 
-  o2::framework::HistogramRegistry hRegistry{};
+  o2::framework::HistogramRegistry hRegistry;
 
   void init(o2::framework::InitContext& context)
   {

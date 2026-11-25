@@ -47,6 +47,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -96,10 +97,10 @@ struct ConfSigma0Qa : o2::framework::ConfigurableGroup {
 class FilterHistogram
 {
  public:
-  void init(o2::framework::HistogramRegistry* registry, std::string const& name, std::vector<std::pair<std::string, std::string>> const& filters)
+  void init(o2::framework::HistogramRegistry* registry, std::string_view name, std::vector<std::pair<std::string, std::string>> const& filters)
   {
     mNFilters = static_cast<int>(filters.size());
-    mHist = registry->add<TH1>(name, "; Filter; Entries", o2::framework::HistType::kTH1F, {{mNFilters + 2, -0.5, mNFilters + 1.5}});
+    mHist = registry->add<TH1>(std::string(name), "; Filter; Entries", o2::framework::HistType::kTH1F, {{mNFilters + 2, -0.5, mNFilters + 1.5}});
     auto* axis = mHist->GetXaxis();
     for (int i = 0; i < mNFilters; ++i) {
       std::ostringstream label;
@@ -200,10 +201,10 @@ enum Sigma0Filters {
   kSigma0FiltersMax
 };
 
-constexpr char CollisionFilterHistName[] = "hCollisionFilters";
-constexpr char LambdaFilterHistName[] = "hLambdaFilters";
-constexpr char PhotonFilterHistName[] = "hPhotonFilters";
-constexpr char Sigma0FilterHistName[] = "hSigma0Filters";
+constexpr std::string_view CollisionFilterHistName = "hCollisionFilters";
+constexpr std::string_view LambdaFilterHistName = "hLambdaFilters";
+constexpr std::string_view PhotonFilterHistName = "hPhotonFilters";
+constexpr std::string_view Sigma0FilterHistName = "hSigma0Filters";
 
 // minimal QA histograms of the producer
 constexpr char QaSigma0Mass[] = "Sigma0Qa/hSigma0Mass";
@@ -398,8 +399,8 @@ class Sigma0InputFilters
 // selection histograms of the output daughter masks
 constexpr char LambdaSelHistName[] = "hLambdaSelection";
 constexpr char PhotonSelHistName[] = "hPhotonSelection";
-constexpr char LambdaSelsName[] = "Sigma0 Lambda daughter selection object";
-constexpr char PhotonSelsName[] = "Sigma0 photon daughter selection object";
+constexpr std::string_view LambdaSelsName = "Sigma0 Lambda daughter selection object";
+constexpr std::string_view PhotonSelsName = "Sigma0 photon daughter selection object";
 
 /// \brief Builds an output daughter mask from the daughter mask of the femto producer.
 /// The selection values are bitmasks on the daughter mask: the first (loosest) one is the input mask used in the partition of the producer,
@@ -549,9 +550,9 @@ class Sigma0Builder
                            });
 
     mLambdaSelection.configure(registry, "Lambda daughter mask", confLambdaSelection.mask.value, confBits.lambdaMask.value);
-    mLambdaSelection.printSelections(LambdaSelsName);
+    mLambdaSelection.printSelections(LambdaSelsName.data());
     mPhotonSelection.configure(registry, "Photon daughter mask", confPhotonSelection.mask.value, confBits.photonMask.value);
-    mPhotonSelection.printSelections(PhotonSelsName);
+    mPhotonSelection.printSelections(PhotonSelsName.data());
 
     mFillQa = confQa.fillQa.value;
     if (mFillQa) {
