@@ -367,6 +367,7 @@ struct HfCorrelatorXicHadrons {
   Produces<aod::TrkRecInfoLc> entryTrackRecoInfo;
   Produces<aod::Lc> entryCand;
   Produces<aod::Hadron> entryHadron;
+  Produces<aod::HadronPdg> entryHadronPdg;
   Produces<aod::LcHadronTrkPID> entryTrkPID;
   Produces<aod::CandChargePair> entryPairCandCharge;
   Produces<aod::CandCharge> entryCandCharge;
@@ -651,6 +652,18 @@ struct HfCorrelatorXicHadrons {
     }
   }
 
+  /// Fill the PDG code of the MC particle matched to an associated track (0 if not matched, i.e. fake track).
+  /// To be called once per entryTrkPID entry, so that HadronPdg can be joined with LcHadronTrkPID
+  template <typename TrackType>
+  void fillHadronPdg(TrackType const& track)
+  {
+    int pdgCodeAssoc = 0;
+    if (track.has_mcParticle()) {
+      pdgCodeAssoc = track.template mcParticle_as<aod::McParticles>().pdgCode();
+    }
+    entryHadronPdg(pdgCodeAssoc);
+  }
+
   template <typename TCollision, typename V0>
   bool selectionV0(TCollision const& collision, V0 const& candidate)
   {
@@ -773,6 +786,9 @@ struct HfCorrelatorXicHadrons {
       if (passV0Sel && std::abs(o2::constants::physics::MassLambda - v0.mLambda()) < cfgV0.cfgHypMassWindow && v0.alpha() > 0) {
         entryHadron(v0.mLambda(), trackV0Pos.eta(), trackV0Pos.pt() * trackV0Pos.sign(), 0, 0, v0.pt());
         entryTrkPID(trackV0Pos.tpcNSigmaPr(), trackV0Pos.tpcNSigmaKa(), trackV0Pos.tpcNSigmaPi(), trackV0Pos.tofNSigmaPr(), trackV0Pos.tofNSigmaKa(), trackV0Pos.tofNSigmaPi());
+        if constexpr (IsMc) {
+          fillHadronPdg(trackV0Pos);
+        }
 
         if (isSelectedV0Daughter(trackV0Pos, v0, kProton) && isSelectedV0Daughter(trackV0Neg, v0, kPiMinus)) {
           registry.fill(HIST("hV0Lambda"), v0.mLambda(), v0.pt(), trackV0Pos.pt());
@@ -797,6 +813,9 @@ struct HfCorrelatorXicHadrons {
       if (passV0Sel && std::abs(o2::constants::physics::MassLambda - v0.mAntiLambda()) < cfgV0.cfgHypMassWindow && v0.alpha() < 0) {
         entryHadron(v0.mAntiLambda(), trackV0Neg.eta(), trackV0Neg.pt() * trackV0Neg.sign(), 0, 0, v0.pt());
         entryTrkPID(trackV0Neg.tpcNSigmaPr(), trackV0Neg.tpcNSigmaKa(), trackV0Neg.tpcNSigmaPi(), trackV0Neg.tofNSigmaPr(), trackV0Neg.tofNSigmaKa(), trackV0Neg.tofNSigmaPi());
+        if constexpr (IsMc) {
+          fillHadronPdg(trackV0Neg);
+        }
 
         if (isSelectedV0Daughter(trackV0Neg, v0, kProtonBar) && isSelectedV0Daughter(trackV0Pos, v0, kPiPlus)) {
           registry.fill(HIST("hV0Lambda"), v0.mAntiLambda(), v0.pt(), trackV0Neg.pt());
@@ -1432,6 +1451,9 @@ struct HfCorrelatorXicHadrons {
             entryHadron(track.phi(), track.eta(), track.pt() * track.sign(), poolBin, gCollisionId, timeStamp);
             if (cfgXicCand.fillTrkPID) {
               entryTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
+              if constexpr (IsMcRec) {
+                fillHadronPdg(track);
+              }
             }
             registry.fill(HIST("hTracksBin"), poolBin);
           }
