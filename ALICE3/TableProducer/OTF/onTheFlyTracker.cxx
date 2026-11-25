@@ -443,7 +443,6 @@ struct OnTheFlyTracker {
     }
     const auto& smearer = mSecondarySmearer[icfg];
     if (!smearer->hasTable(pdg)) {
-      LOG(fatal) << "No secondary LUT configured for PDG " << pdg << " in geometry " << icfg;
       return false;
     }
     const auto hits = fastTracker[icfg]->countSiliconLayerHits(productionTrack);
