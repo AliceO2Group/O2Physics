@@ -266,6 +266,7 @@ struct HfTaskLc {
       const AxisSpec thnAxisBdtScoreLcPrompt{thnConfigAxisBdtScorePrompt, "BDT prompt score (Lc)"};
       const AxisSpec thnAxisBdtScoreLcNonPrompt{thnConfigAxisBdtScoreNonPrompt, "BDT non-prompt score (Lc)"};
       const AxisSpec thnAxisCanType{thnConfigAxisCanType, "candidates type"};
+      const AxisSpec thnAxisChannel{4, -0.5, 3.5, "0: direct  1,2,3: resonant"};
       const AxisSpec thnAxisY{thnAxisRapidity, "rapidity"};
       const AxisSpec thnAxisPtB{thnConfigAxisGenPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
       const AxisSpec thnAxisTracklets{thnConfigAxisNumPvContr, "Number of PV contributors"};
@@ -284,16 +285,16 @@ struct HfTaskLc {
         axesStd = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets};
       }
       if (isMcStd) {
-        axesStd = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets, thnAxisPtB, thnAxisCanType};
+        axesStd = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets, thnAxisPtB, thnAxisCanType, thnAxisChannel};
       }
       if (isMcStd || isMcWithMl) {
-        axesGen = {thnAxisPt, thnAxisCentrality, thnAxisY, thnAxisTracklets, thnAxisPtB, thnAxisCanType};
+        axesGen = {thnAxisPt, thnAxisCentrality, thnAxisY, thnAxisTracklets, thnAxisPtB, thnAxisCanType, thnAxisChannel};
       }
       if (isDataWithMl) {
         axesWithBdt = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets};
       }
       if (isMcWithMl) {
-        axesWithBdt = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets, thnAxisPtB, thnAxisCanType};
+        axesWithBdt = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets, thnAxisPtB, thnAxisCanType, thnAxisChannel};
       }
 
       if (storeOccupancy) {
@@ -338,6 +339,22 @@ struct HfTaskLc {
   float evaluateCentralityColl(const Coll& collision)
   {
     return o2::hf_centrality::getCentralityColl<Coll>(collision);
+  }
+
+  /// Map the reconstructed/generated resonant decay channel to the THn channel bins.
+  int remapResoChannelLc(int channel)
+  {
+    switch (channel) {
+      case 0:
+        return 0;
+      case o2::hf_decay::hf_cand_3prong::DecayChannelResonant::LcToPKstar0:
+        return 1;
+      case o2::hf_decay::hf_cand_3prong::DecayChannelResonant::LcToDeltaplusplusK:
+        return 2;
+      case o2::hf_decay::hf_cand_3prong::DecayChannelResonant::LcToL1520Pi:
+        return 3;
+    }
+    return -1;
   }
 
   /// Evaluate decay time of generated particle
@@ -471,6 +488,7 @@ struct HfTaskLc {
 
           auto fillTHnRecSig = [&](bool isPKPi) {
             const auto massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
+            const int channel = remapResoChannelLc(candidate.flagMcDecayChanRec());
 
             std::vector<double> valuesToFill;
             if constexpr (FillMl) {
@@ -482,10 +500,10 @@ struct HfTaskLc {
               }
               /// Fill the ML outputScores and variables of candidate
               valuesToFill.reserve(registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->GetNdimensions());
-              valuesToFill.insert(valuesToFill.end(), {massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)});
+              valuesToFill.insert(valuesToFill.end(), {massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType), static_cast<double>(channel)});
             } else {
               valuesToFill.reserve(registry.get<THnSparse>(HIST("hnLcVars"))->GetNdimensions());
-              valuesToFill.insert(valuesToFill.end(), {massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)});
+              valuesToFill.insert(valuesToFill.end(), {massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType), static_cast<double>(channel)});
             }
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
               valuesToFill.push_back(occ);
@@ -555,6 +573,7 @@ struct HfTaskLc {
         const auto mcDaughter0 = particle.template daughters_as<McParticles3ProngMatched>().begin();
 
         const float properDecayTime = evaluateMcGenDecayTime(mcDaughter0, particle);
+        const int channel = remapResoChannelLc(particle.flagMcDecayChanGen());
 
         fillHistogramsGen<Signal>(particle);
 
@@ -562,7 +581,7 @@ struct HfTaskLc {
           ptGenB = isPrompt ? -1. : mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
 
           if (fillTHn) {
-            std::vector<double> valuesToFill{ptGen, cent, yGen, static_cast<double>(numPvContributors), ptGenB, static_cast<double>(originType)};
+            std::vector<double> valuesToFill{ptGen, cent, yGen, static_cast<double>(numPvContributors), ptGenB, static_cast<double>(originType), static_cast<double>(channel)};
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
               valuesToFill.push_back(occ);
             }
