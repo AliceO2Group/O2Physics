@@ -85,7 +85,7 @@ const std::array<std::string, NCharges> chargeTags{"P", "M"};
 /// Index of the per-charge histogram arrays (0 = K+, 1 = K-) from the charge sign (+1, -1)
 constexpr int chargeIndexOf(int sign) { return sign > 0 ? 0 : 1; }
 /// Charge sign (+1, -1) from the accepted id of the dpt-dpt filter (even = positive, odd = negative), as its Sign column
-constexpr int8_t signOf(int trackAcceptedId) { return trackAcceptedId % 2 == 0 ? 1 : -1; }
+constexpr int8_t signOf(int trackAcceptedId) { return trackAcceptedId % NCharges == 0 ? 1 : -1; }
 enum IdCheckBin {
   kIdCheckGood = 1,
   kIdCheckNotKaonId,
