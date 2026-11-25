@@ -428,6 +428,9 @@ struct PhiStrangeCorrelation {
       histos.add(fmt::format("zeroEfficiency/SE/h3{}", pName).c_str(), fmt::format("Phi-{} pairs dropped for zero {} efficiency, SE", pTitle, pTitle).c_str(), kTH3F, {binnedmultAxis, binnedpTAxes[i], yAxis});
       histos.add(fmt::format("zeroEfficiency/ME/h3{}", pName).c_str(), fmt::format("Phi-{} pairs dropped for zero {} efficiency, ME", pTitle, pTitle).c_str(), kTH3F, {binnedmultAxis, binnedpTAxes[i], yAxis});
 
+      // h4<X>MCReco is cut in the signal region (mass window, pion nSigma window) only if select<X>InSigRegion is on,
+      // as the pairs are (isAssocValid). With selectPionInSigRegion off, the pions' is the efficiency without the
+      // window, whose own efficiency is then taken from the producer's nSigma histograms (MC) or from the data fits
       histos.add(fmt::format("{}/h4{}MCReco", dir, pName).c_str(), fmt::format("{} in MC Reco", pTitle).c_str(), kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTAxes[i], yAxis});
       histos.add(fmt::format("{}/h3{}MCGen", dir, pName).c_str(), fmt::format("{} in MC Gen", pTitle).c_str(), kTH3F, {binnedmultAxis, binnedpTAxes[i], yAxis});
       histos.add(fmt::format("{}/h4{}MCGenAssocReco", dir, pName).c_str(), fmt::format("{} in MC Gen Assoc Reco", pTitle).c_str(), kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTAxes[i], yAxis});

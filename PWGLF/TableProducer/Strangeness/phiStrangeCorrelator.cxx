@@ -63,6 +63,25 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::rctsel;
 
+namespace phi_strange_utils
+{
+// The multiplicity percentile a collision is binned in: its own FT0M centrality, for a collision in data and for a
+// generated one, and for a reconstructed collision in MC (TMcCollisions set) that of the generated collision it comes
+// from (McCentFT0Ms), the one of the event selection and of the efficiencies. A reconstructed collision in MC has its
+// own centFT0M too, but binning the reconstructed side in it and the generated side in the generated one would put the
+// migration between multiplicity classes inside the efficiencies, to be unfolded to bring everything back to the
+// generated multiplicity; how large that migration is has still to be studied
+template <typename TMcCollisions = void, typename TCollision>
+float multPercentile(const TCollision& collision)
+{
+  if constexpr (std::is_void_v<TMcCollisions>) {
+    return collision.centFT0M();
+  } else {
+    return collision.template mcCollision_as<TMcCollisions>().centFT0M();
+  }
+}
+} // namespace phi_strange_utils
+
 struct PhiMesonCandProducer {
   // Produce the table with the phi candidates information
   Produces<aod::PhimesonCandidatesData> phimesonCandidatesData;
@@ -1075,6 +1094,7 @@ struct PionTrackProducer {
 
   using FilteredSelCollisions = soa::Filtered<SelCollisions>;
   using FilteredSimCollisions = soa::Filtered<SimCollisions>;
+  using MCCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
   // Defining the type of the tracks for data and MC
   using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -1290,8 +1310,11 @@ struct PionTrackProducer {
   PROCESS_SWITCH(PionTrackProducer, processData, "Process function to select pion tracks in Data or in McReco (w/o MC truth) analysis", true);
 
   // void processMCReco(SimCollisions::iterator const& collision, FullMCTracks const& fullTracks, aod::McParticles const& mcParticles)
-  void processMCReco(FilteredSimCollisions::iterator const& collision, FullMCTracks const& fullTracks, aod::McParticles const& mcParticles)
+  void processMCReco(FilteredSimCollisions::iterator const& collision, MCCollisions const&, FullMCTracks const& fullTracks, aod::McParticles const& mcParticles)
   {
+    // The generated multiplicity, as in the event selection: a collision passing it has an MC collision
+    const float multiplicity = phi_strange_utils::multPercentile<MCCollisions>(collision);
+
     for (const auto& track : fullTracks) {
       if (!selectionPion(track)) {
         continue;
@@ -1317,9 +1340,9 @@ struct PionTrackProducer {
       }
 
       if (track.hasTOF()) {
-        histos.fill(HIST("h4RecMCPionTPCTOFnSigma"), collision.centFT0M(), track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+        histos.fill(HIST("h4RecMCPionTPCTOFnSigma"), multiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
       } else {
-        histos.fill(HIST("h3RecMCPionTPCnSigmaNoTOF"), collision.centFT0M(), track.pt(), track.tpcNSigmaPi());
+        histos.fill(HIST("h3RecMCPionTPCnSigmaNoTOF"), multiplicity, track.pt(), track.tpcNSigmaPi());
       }
 
       pionTracksMcReco(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(MassPi), track.phi(), useTOFInPID(track));
@@ -1417,8 +1440,6 @@ struct EventSelectionProducer {
   template <bool isMC, typename MC_T = void, typename T>
   bool defaultEventSelection(const T& collision)
   {
-    float multPercentile{0.0f};
-
     if constexpr (!isMC) {                         // data event
       histos.fill(HIST("hEventSelectionData"), 0); // all collisions
       if (!collision.sel8()) {
@@ -1437,8 +1458,6 @@ struct EventSelectionProducer {
         return false;
       }
       histos.fill(HIST("hEventSelectionData"), 4); // RCTFlags cut
-
-      multPercentile = collision.centFT0M();
     } else { // MCreco event
       static_assert(!std::is_same_v<MC_T, void>, "Need to set MC_T to MCCollisions for isMC = true");
 
@@ -1471,14 +1490,13 @@ struct EventSelectionProducer {
         return false;
       }
       histos.fill(HIST("hEventSelectionMC"), 7); // RCTFlags cut
-
-      const auto& mcCollision = collision.template mcCollision_as<MC_T>();
-      multPercentile = mcCollision.centFT0M();
     }
 
+    const float multiplicity = phi_strange_utils::multPercentile<MC_T>(collision);
+
     histos.fill(HIST("hVertexZ"), collision.posZ());
-    histos.fill(HIST("hMultiplicityPercent"), multPercentile);
-    histos.fill(HIST("h2VertexZvsMult"), collision.posZ(), multPercentile);
+    histos.fill(HIST("hMultiplicityPercent"), multiplicity);
+    histos.fill(HIST("h2VertexZvsMult"), collision.posZ(), multiplicity);
 
     return true;
   }
@@ -1512,26 +1530,18 @@ struct EventSelectionProducer {
       }
     }
 
-    float multPercentile{0.0f};
-
     if constexpr (!isMC) {
       histos.fill(HIST("hEventSelectionData"), 5);
-
-      multPercentile = collision.centFT0M();
-    } else {
-      if constexpr (std::is_same_v<MC_T, void>) {
-        multPercentile = collision.centFT0M();
-      } else {
-        histos.fill(HIST("hEventSelectionMC"), 8);
-
-        const auto& mcCollision = collision.template mcCollision_as<MC_T>();
-        multPercentile = mcCollision.centFT0M();
-      }
+    } else if constexpr (!std::is_void_v<MC_T>) {
+      histos.fill(HIST("hEventSelectionMC"), 8);
     }
 
+    // MC_T void for a collision in data and for a generated one
+    const float multiplicity = phi_strange_utils::multPercentile<MC_T>(collision);
+
     histos.fill(HIST("hVertexZWPhi"), collision.posZ());
-    histos.fill(HIST("hMultiplicityPercentWPhi"), multPercentile);
-    histos.fill(HIST("h2VertexZvsMultWPhi"), collision.posZ(), multPercentile);
+    histos.fill(HIST("hMultiplicityPercentWPhi"), multiplicity);
+    histos.fill(HIST("h2VertexZvsMultWPhi"), collision.posZ(), multiplicity);
 
     return true;
   }
