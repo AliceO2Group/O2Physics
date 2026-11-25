@@ -297,14 +297,14 @@ struct FemtoProducerSigma0FromLf {
   }
 
   void processData(lfsigma0inputs::Run3PpCollisions const& cols, o2::aod::BCsWithTimestamps const& bcs, lfsigma0inputs::Run3FullPidTracks const& tracks,
-               lfsigma0inputs::LfSigma0s const& lfSigma0s, o2::aod::V0Indices const& v0Indices, o2::aod::V0Cores const& v0Cores, o2::aod::StraCollisions const& straCols)
+                   lfsigma0inputs::LfSigma0s const& lfSigma0s, o2::aod::V0Indices const& v0Indices, o2::aod::V0Cores const& v0Cores, o2::aod::StraCollisions const& straCols)
   {
     processDataframe(cols, bcs, tracks, lfSigma0s, v0Indices, v0Cores, straCols);
   }
   PROCESS_SWITCH(FemtoProducerSigma0FromLf, processData, "Convert LF Sigma0s (pp, Run 3)", true);
 
   void processDataWithExtras(lfsigma0inputs::Run3PpCollisions const& cols, o2::aod::BCsWithTimestamps const& bcs, lfsigma0inputs::Run3FullPidTracks const& tracks,
-                         lfsigma0inputs::LfSigma0sWithExtras const& lfSigma0s, o2::aod::V0Indices const& v0Indices, o2::aod::V0Cores const& v0Cores, o2::aod::StraCollisions const& straCols)
+                             lfsigma0inputs::LfSigma0sWithExtras const& lfSigma0s, o2::aod::V0Indices const& v0Indices, o2::aod::V0Cores const& v0Cores, o2::aod::StraCollisions const& straCols)
   {
     processDataframe(cols, bcs, tracks, lfSigma0s, v0Indices, v0Cores, straCols);
   }
