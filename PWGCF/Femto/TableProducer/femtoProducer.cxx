@@ -256,7 +256,7 @@ struct FemtoProducer {
     }
     if ((builders.lambdaBuilder.fillAnyTable() || builders.antilambdaBuilder.fillAnyTable() || builders.k0shortBuilder.fillAnyTable()) &&
         (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sCascadesRun3PbPb &&
-         !doprocessTracksV0sRun3pp && !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesKinksPhotonsRun3pp &&
+         !doprocessTracksV0sRun3pp && !doprocessTracksV0sPhotonsRun3pp && !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesKinksPhotonsRun3pp &&
          !doprocessTracksV0sCascadesRun3PbPbWithEventShape && !doprocessTracksV0sCascadesPhotonsRun3PbPbWithEventShape &&
          !doprocessTracksV0sRun3ppMc && !doprocessTracksV0sRun3PbPb && !doprocessTracksV0sRun3PbPbMc &&
          !doprocessTracksV0sCascadesRun3ppMc && !doprocessTracksV0sCascadesRun3PbPbMc &&
@@ -264,7 +264,7 @@ struct FemtoProducer {
       LOG(fatal) << "At least one v0 table is enabled, but wrong process function is enabled. Breaking...";
     }
     if (builders.photonBuilder.fillAnyTable() &&
-        (!doprocessTracksPhotonsRun3pp && !doprocessTracksPhotonsRun3PbPb &&
+        (!doprocessTracksPhotonsRun3pp && !doprocessTracksV0sPhotonsRun3pp && !doprocessTracksPhotonsRun3PbPb &&
          !doprocessTracksV0sCascadesKinksPhotonsRun3pp && !doprocessTracksV0sCascadesPhotonsRun3PbPbWithEventShape)) {
       LOG(fatal) << "At least one photon table is enabled, but wrong process function is enabled. Breaking...";
     }
@@ -371,6 +371,7 @@ struct FemtoProducer {
       static_cast<int>(doprocessTracksRun3PbPbWithEventShape) +
       static_cast<int>(doprocessTracksV0sRun3pp) +
       static_cast<int>(doprocessTracksPhotonsRun3pp) +
+      static_cast<int>(doprocessTracksV0sPhotonsRun3pp) +
       static_cast<int>(doprocessTracksPhotonsRun3PbPb) +
       static_cast<int>(doprocessTracksV0sRun3PbPb) +
       static_cast<int>(doprocessTracksV0sCascadesRun3pp) +
@@ -657,6 +658,30 @@ struct FemtoProducer {
     }
   }
   PROCESS_SWITCH(FemtoProducer, processTracksPhotonsRun3pp, "Provide tracks and PCM photons", false);
+
+  void processTracksV0sPhotonsRun3pp(rawinputs::Run3PpCollisions const& cols,
+                                     o2::aod::BCsWithTimestamps const& bcs,
+                                     rawinputs::Run3FullPidTracks const& tracks,
+                                     rawinputs::Run3Vzeros const& v0s,
+                                     o2::aod::V0PhotonsKF const& photons,
+                                     o2::aod::V0Legs const& v0legs)
+  {
+    builders.trackBuilder.reset(tracks);
+    for (auto const& col : cols) {
+      auto tracksThisCol = tracks.sliceBy(preslices.perColTracks, col.globalIndex());
+      if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracksThisCol)) {
+        continue;
+      }
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracksThisCol);
+      processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+      auto v0sThisCol = v0s.sliceBy(preslices.perColV0s, col.globalIndex());
+      processV0s<modes::System::kPP_Run3>(col, tracksThisCol, v0sThisCol);
+      auto photonsThisCol = photons.sliceBy(preslices.perColRecoPCMPhotons, col.globalIndex());
+      processPhotons<modes::System::kPP_Run3>(col, photonsThisCol, v0legs);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksV0sPhotonsRun3pp, "Provide tracks, v0s and PCM photons", false);
 
   void processTracksPhotonsRun3PbPb(rawinputs::Run3PbPbCollisions const& cols,
                                     o2::aod::BCsWithTimestamps const& bcs,
