@@ -140,6 +140,11 @@ class FlatLutData
   lutEntry_t* getEntry(int nch_bin, int rad_bin, int eta_bin, int pt_bin);
 
   /**
+   * @brief Set LUT entry
+   */
+  void setEntry(int rad_bin, const lutEntry_t& entry);
+
+  /**
    * @brief Get LUT header (view)
    */
   [[nodiscard]] const lutHeader_t& getHeaderRef() const;
@@ -200,12 +205,12 @@ class FlatLutData
    */
   void reset();
 
- private:
   /**
    * @brief Linear index calculation for entry access
    */
   [[nodiscard]] size_t getEntryOffset(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const;
 
+ private:
   /**
    * @brief Update dimensions from the current header
    */
