@@ -45,6 +45,7 @@
 #include <TPDGCode.h>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include <algorithm>
 #include <array>
@@ -254,7 +255,9 @@ struct PhiStrangeCorrelation {
   Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for Pions"};
   Configurable<std::vector<double>> binspTPiExt{"binspTPiExt", {0.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for Pions extended for MC Gen"};
 
-  Configurable<std::array<bool, kAssocPartSize>> activeCorrelationTypes{"activeCorrelationTypes", {true, false, false, true, true, true}, "Enable correlation types: 0 - K0S, 1 - Lambda, 2 - AntiLambda, 3 - Xi, 4 - Omega, 5 - Pion"};
+  // The species correlated with the phi, by name (those of AssocParticleLabels): a train configuration then says which
+  // species were on, which an array of switches, written as bare elements, does not
+  Configurable<std::vector<std::string>> activeCorrelationTypes{"activeCorrelationTypes", {"K0S", "Lambda", "AntiLambda", "Xi", "Omega", "Pi"}, "Species correlated with the phi, any of: K0S, Lambda, AntiLambda, Xi, Omega, Pi"};
 
   // Configurables for delta y selection
   struct : ConfigurableGroup {
@@ -329,6 +332,7 @@ struct PhiStrangeCorrelation {
 
   EffMapPtr effMapPhi;
   std::array<EffMapPtr, kAssocPartSize> effMapsAssoc{};
+  std::array<bool, kAssocPartSize> isCorrelationTypeActive{}; // from activeCorrelationTypes, in init
 
   // Binning policy and axes for mixed event
   ConfigurableAxis axisVertexMixing{"axisVertexMixing", {10, -10.0f, 10.0f}, "Z vertex axis binning for mixing"};
@@ -360,6 +364,15 @@ struct PhiStrangeCorrelation {
 
   void init(InitContext&)
   {
+    // From the names to the positions of AssocParticleLabels, which the loops below index
+    for (const auto& name : activeCorrelationTypes.value) {
+      const auto label = std::ranges::find(AssocParticleLabels, name);
+      if (label == AssocParticleLabels.end()) {
+        LOG(fatal) << "activeCorrelationTypes: unknown species '" << name << "', expected any of " << fmt::format("{}", fmt::join(AssocParticleLabels, ", "));
+      }
+      isCorrelationTypeActive[std::distance(AssocParticleLabels.begin(), label)] = true;
+    }
+
     AxisSpec vertexZAxis = {100, -cutZVertex, cutZVertex, "vrtx_{Z} [cm]"};
     AxisSpec yAxis = {yConfigs.nBinsY, -yConfigs.cfgYAcceptance, yConfigs.cfgYAcceptance, "#it{y}"};
     AxisSpec deltayAxis = {yConfigs.nBinsDeltaY, -1.0f, 1.0f, "#Delta#it{y}"};
@@ -502,7 +515,7 @@ struct PhiStrangeCorrelation {
 
     // Only load the associated maps that are explicitly enabled
     for (size_t i = 0; i < kAssocPartSize; ++i) {
-      if (activeCorrelationTypes->at(i)) {
+      if (isCorrelationTypeActive[i]) {
         fetchSingleEfficiencyMapFromCCDB(effMapsAssoc[i], AssocParticleLabels[i], runNumber);
       }
     }
@@ -748,7 +761,7 @@ struct PhiStrangeCorrelation {
   template <AssociatedParticleType PartType, typename TPhiCand, typename TAssocCands>
   void processOneAssocSpeciesSE(TPhiCand const& phiCand, TAssocCands const& assocCands, float multiplicity)
   {
-    if (!activeCorrelationTypes->at(PartType)) {
+    if (!isCorrelationTypeActive[PartType]) {
       return;
     }
 
@@ -939,7 +952,7 @@ struct PhiStrangeCorrelation {
           }
 
           auto fillRecoAssocSpecies = [&]<typename TAssocInputs>(TAssocInputs const& assocCands, auto histoKey) {
-            if (!activeCorrelationTypes->at(TAssocInputs::Type)) {
+            if (!isCorrelationTypeActive[TAssocInputs::Type]) {
               return;
             }
 
@@ -996,7 +1009,7 @@ struct PhiStrangeCorrelation {
         };
 
         auto fillGenAssocSpecies = [&]<AssociatedParticleType PartType>(auto h3Key, auto h4Key) {
-          if (!activeCorrelationTypes->at(PartType) || !isGenSpeciesValid<PartType>(mcParticle, false)) {
+          if (!isCorrelationTypeActive[PartType] || !isGenSpeciesValid<PartType>(mcParticle, false)) {
             return;
           }
 
@@ -1051,7 +1064,7 @@ struct PhiStrangeCorrelation {
       }
 
       auto fillPartCollection = [&]<AssociatedParticleType PartType>() {
-        if (activeCorrelationTypes->at(PartType) && isGenSpeciesValid<PartType>(mcParticle, minPtMcGenConfigs.bypassPtCut.value)) {
+        if (isCorrelationTypeActive[PartType] && isGenSpeciesValid<PartType>(mcParticle, minPtMcGenConfigs.bypassPtCut.value)) {
           assocParticles[PartType].emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
         }
       }; // NOLINT(readability/braces)
@@ -1108,7 +1121,7 @@ struct PhiStrangeCorrelation {
 
       static_for<0, AssocParticleLabels.size() - 1>([&](auto i_idx) {
         constexpr unsigned int Idx = i_idx.value;
-        if (!activeCorrelationTypes->at(Idx)) {
+        if (!isCorrelationTypeActive[Idx]) {
           return;
         }
 
@@ -1127,7 +1140,7 @@ struct PhiStrangeCorrelation {
       for (const auto& phiParticle : phiParticles) {
         static_for<0, AssocParticleLabels.size() - 1>([&](auto i_idx) {
           constexpr unsigned int Idx = i_idx.value;
-          if (!activeCorrelationTypes->at(Idx)) {
+          if (!isCorrelationTypeActive[Idx]) {
             return;
           }
 
