@@ -453,6 +453,12 @@ if(FastJet_FOUND)
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                         O2Physics::AnalysisCCDB
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(neutral-meson-in-full-jets
+                        SOURCES neutralMesonInFullJets.cxx
+                        REUSE_FROM JetSubstructureHFPCH
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                        O2Physics::AnalysisCCDB
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(bjet-tagging-ml
                         SOURCES bjetTaggingML.cxx
                         REUSE_FROM JetSubstructureHFPCH
