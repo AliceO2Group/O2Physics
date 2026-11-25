@@ -24,7 +24,6 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 #include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/HFC/DataModel/DerivedDataCorrelationTables.h"
 
 #include "Common/Core/RecoDecay.h"
 
@@ -96,6 +95,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   constexpr static int OriginRecPrompt = 1;
   constexpr static int OriginRecFD = 2;
   constexpr static int CutBitChargePositive = 2;
+  constexpr static uint32_t PidTrackPass = 1u;
   static constexpr int ChargeDoublyCharged = 2;
 
   struct : ProducesGroup {
@@ -105,8 +105,6 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     Produces<o2::aod::FDHfCharmDstar> rowFemtoResultCharmDstar;
     Produces<o2::aod::FDHfCharmSc> rowFemtoResultCharmSc;
     Produces<o2::aod::FDHfTrk> rowFemtoResultTrk;
-    Produces<o2::aod::HfFemtoPairPids> rowFemtoResultPairPid; // one row per FDHfCharmTrkPairs row
-    Produces<o2::aod::HfFemtoTrkPids> rowFemtoResultTrkPid;   // one row per FDHfTrk row
     Produces<o2::aod::FDHfColl> rowFemtoResultColl;
   } tables;
 
@@ -163,7 +161,6 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     Configurable<float> pidThresTrack1{"pidThresTrack1", 0.75, "Momentum threshold for PID selection for particle 1 (Track)"};
     Configurable<femtodreamparticle::cutContainerType> tpcBitTrack1{"tpcBitTrack1", 4, "PID TPC bit from cutCulator for particle 1 (Track)"};
     Configurable<femtodreamparticle::cutContainerType> tpcTofBitTrack1{"tpcTofBitTrack1", 2, "PID TPCTOF bit from cutCulator for particle 1 (Track)"};
-    Configurable<femtodreamparticle::cutContainerType> pidBitTrack1Ka{"pidBitTrack1Ka", 1, "Kaon PID bit from the producer for particle 1 (Track): 1 = nominal, 1 << i = i-th nSigma variation"};
     Configurable<float> etaTrack1Max{"etaTrack1Max", 10., "Maximum eta of partricle 1 (Track)"};
     Configurable<float> ptTrack1Max{"ptTrack1Max", 999., "Maximum pT of partricle 1 (Track)"};
     Configurable<float> etaTrack1Min{"etaTrack1Min", -10., "Minimum eta of partricle 1 (Track)"};
@@ -236,13 +233,13 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
   /// Partition for particle 1
   Partition<FilteredFDParticles> partitionTrk1 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && ifnode(aod::femtodreamparticle::pt * coshEta(aod::femtodreamparticle::eta) <= trackSel.pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcTofBitTrack1));
-  Partition<FilteredFDParticles> partitionTrk1Ka = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && ncheckbit(aod::femtodreamparticle::pidcut, trackSel.pidBitTrack1Ka);
+  Partition<FilteredFDParticles> partitionTrk1Ka = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && (aod::femtodreamparticle::pidcut == PidTrackPass);
 
   Partition<FilteredFDMcParts> partitionMcTrk1 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                  (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) &&
                                                  ifnode(aod::femtodreamparticle::pt * coshEta(aod::femtodreamparticle::eta) <= trackSel.pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcTofBitTrack1));
 
-  Partition<FilteredFDMcParts> partitionMcTrk1Ka = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && ncheckbit(aod::femtodreamparticle::pidcut, trackSel.pidBitTrack1Ka);
+  Partition<FilteredFDMcParts> partitionMcTrk1Ka = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && (aod::femtodreamparticle::pidcut == PidTrackPass);
 
   Partition<FilteredFDGenParts> partitionGenTrk1 = (aod::femtodreamparticle::partType == static_cast<uint8_t>(aod::femtodreamparticle::ParticleType::kTrack)) && (aod::femtodreamparticle::pidcut == static_cast<aod::femtodreamparticle::cutContainerType>(kProton));
 
@@ -724,7 +721,6 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         processType,
         charmHadMc,
         originType);
-      tables.rowFemtoResultPairPid(p1.pidcut());
 
       fillPairHistogram<IsMc, Channel>(sameEventCont, p1, p2, col);
     }
@@ -866,7 +862,6 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           processType,
           charmHadMc,
           originType);
-        tables.rowFemtoResultPairPid(p1.pidcut());
 
         fillPairHistogram<IsMc, Channel>(mixedEventCont, p1, p2, collision1);
       }
@@ -1046,7 +1041,6 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         part.tpcNClsCrossedRows(),
         tpcNSigma,
         tofNSigma);
-      tables.rowFemtoResultTrkPid(part.pidcut());
     }
 
     // ---- Fill Collision Table ----
@@ -1602,7 +1596,6 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           processType,
           p2.flagMc(),
           p2.originMcRec());
-        tables.rowFemtoResultPairPid(p1.pidcut());
         container.template setPair_base<aod::femtodreamMCparticle::MCType::kTruth>(kstar, FemtoDreamMath::getmT(p1, massOne, particle, massTwo), p1, particle, col.multNtr(), col.multV0M(), pairQASetting.use4D, pairQASetting.extendedPlots);
       }
     };
@@ -1676,7 +1669,6 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           nCls,
           nSigma,
           nSigma);
-        tables.rowFemtoResultTrkPid(part.pidcut());
       }
       if (sliceGenCharmHad.size() > 0 || sliceGenTrk1.size() > 0) {
         tables.rowFemtoResultColl(col.globalIndex(), timeStamp, col.posZ(), col.multNtr());

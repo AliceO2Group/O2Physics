@@ -18,8 +18,6 @@
 
 #include <Framework/ASoA.h>
 
-#include <cstdint>
-
 namespace o2::aod
 {
 namespace hf_collisions_reduced
@@ -276,18 +274,6 @@ DECLARE_SOA_TABLE(HfcRedCollInfos, "AOD", "HFCREDCOLLINFO", //! Table with colli
                   aod::hf_collisions_reduced::Multiplicity,
                   aod::hf_collisions_reduced::NumPvContrib,
                   aod::hf_collisions_reduced::Centrality);
-
-// PID information of the associated track of the HF-track femtoscopy task (taskCharmHadronsTrackFemtoDream)
-namespace hf_femto_track_pid
-{
-DECLARE_SOA_COLUMN(TrkPidCut, trkPidCut, uint32_t); //! PID bit mask (pidcut) of the associated track from the femto producer
-} // namespace hf_femto_track_pid
-
-DECLARE_SOA_TABLE(HfFemtoPairPids, "AOD", "HFFEMTOPAIRPID", //! PID bit mask of the associated track, one row per row of FDHfCharmTrkPairs
-                  aod::hf_femto_track_pid::TrkPidCut);
-
-DECLARE_SOA_TABLE(HfFemtoTrkPids, "AOD", "HFFEMTOTRKPID", //! PID bit mask of the track, one row per row of FDHfTrk
-                  aod::hf_femto_track_pid::TrkPidCut);
 } // namespace o2::aod
 
 #endif // PWGHF_HFC_DATAMODEL_DERIVEDDATACORRELATIONTABLES_H_
