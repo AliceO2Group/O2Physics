@@ -374,7 +374,7 @@ struct MatchRecoGen {
       if (!(label < 0)) {
         if (!(track.collisionId() < 0)) {
           typename CollisionsObject::iterator coll = collisions.iteratorAt(track.collisionId());
-          if (coll.collisionaccepted() == uint8_t(true)) {
+          if (coll.collisionaccepted() == static_cast<uint8_t>(true)) {
             /* TODO: AcceptTrack does not consider PID */
             if (!(track.trackacceptedid() < 0)) {
               /* the track has been accepted */

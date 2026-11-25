@@ -109,10 +109,10 @@ class MlResponse
   void setModelPathsCCDB(const std::vector<std::string>& onnxFiles, const o2::ccdb::CcdbApi& ccdbApi, const std::vector<std::string>& pathsCCDB, int64_t timestampCCDB)
   {
     if (onnxFiles.size() != mNModels) {
-      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
+      LOG(fatal) << "Number of expected models (" << static_cast<int>(mNModels) << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
     }
     if (pathsCCDB.size() != mNModels) {
-      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the number of CCDB paths (" << pathsCCDB.size() << ")! Please check your configurables.";
+      LOG(fatal) << "Number of expected models (" << static_cast<int>(mNModels) << ") different from the number of CCDB paths (" << pathsCCDB.size() << ")! Please check your configurables.";
     }
 
     // check that the path is unique for each BDT model (otherwise CCDB download does not work as expected)
@@ -140,7 +140,7 @@ class MlResponse
   void setModelPathsLocal(const std::vector<std::string>& onnxFiles)
   {
     if (onnxFiles.size() != mNModels) {
-      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
+      LOG(fatal) << "Number of expected models (" << static_cast<int>(mNModels) << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
     }
     mPaths = onnxFiles;
   }
@@ -163,7 +163,7 @@ class MlResponse
   {
     setAvailableInputFeatures();
     for (const auto& inputFeature : cfgInputFeatures) {
-      if (mAvailableInputFeatures.count(inputFeature)) {
+      if (mAvailableInputFeatures.contains(inputFeature)) {
         mCachedIndices.emplace_back(mAvailableInputFeatures[inputFeature]);
       } else {
         LOG(fatal) << "Input feature " << inputFeature << " not available! Please check your configurables.";
@@ -185,12 +185,81 @@ class MlResponse
     const int numInputNodes = mModels[nModel].getNumInputNodes();
     const int numInputFeatures = static_cast<int>(input.size());
 
-    if (numInputNodes != numInputFeatures) {
+    // Check that the number of input nodes in the model is equal to the number of input features, except for the case where the model input is dynamic (numInputNodes == -1)
+    if (numInputNodes != numInputFeatures && numInputNodes >= 0) {
       LOG(fatal) << "Number of input nodes in the model " << mPaths[nModel] << " is different from the number of input features to be tested (" << numInputNodes << " vs " << numInputFeatures << ")";
     }
 
-    TypeOutputScore* outputPtr = mModels[nModel].template evalModel<TypeOutputScore>(input);
-    return std::vector<TypeOutputScore>{outputPtr, outputPtr + mNClasses};
+    // evalModel returns an owning copy of the (last) output tensor of the model
+    std::vector<TypeOutputScore> output = mModels[nModel].template evalModel<TypeOutputScore>(input);
+    if (output.size() < mNClasses) {
+      LOG(fatal) << "Model " << mPaths[nModel] << " returned " << output.size() << " scores, but " << static_cast<int>(mNClasses) << " classes are expected. Please check your configurables.";
+    }
+    if (output.size() > mNClasses) {
+      // keep only the first mNClasses scores (e.g. single-candidate probabilities of a multi-output model)
+      output.resize(mNClasses);
+    }
+    return output;
+  }
+
+  /// Get vector with model predictions for a batch of candidates
+  /// \param input a flattened vector containing features for nRows candidates,
+  ///        row-major: [row0_feat0, row0_feat1, ..., row1_feat0, row1_feat1, ...]
+  /// \param nModel is the model index (same bin must apply to every row in the batch)
+  /// \param nRows is the number of candidates packed into input
+  /// \return flat vector of size nRows * mNClasses, row-major: [row][class]
+  template <typename T1, typename T2>
+  std::vector<TypeOutputScore> getModelOutputBatched(T1& input, const T2& nModel, std::size_t nRows)
+  {
+    if (nModel < 0 || static_cast<std::size_t>(nModel) >= mModels.size()) {
+      LOG(fatal) << "Model index " << nModel << " is out of range! The number of initialised models is " << mModels.size() << ". Please check your configurables.";
+    }
+    if (nRows == 0) {
+      return {};
+    }
+
+    const int numInputNodes = mModels[nModel].getNumInputNodes();
+    const std::size_t numInputFeatures = input.size();
+
+    if (numInputFeatures % nRows != 0) {
+      LOG(fatal) << "Flattened input size (" << numInputFeatures << ") is not divisible by nRows (" << nRows << ")";
+    }
+    const std::size_t featuresPerRow = numInputFeatures / nRows;
+    if (numInputNodes >= 0 && static_cast<int>(featuresPerRow) != numInputNodes) {
+      LOG(fatal) << "Number of input nodes in the model " << mPaths[nModel] << " differs from features per row (" << numInputNodes << " vs " << featuresPerRow << ")";
+    }
+
+    std::vector<TypeOutputScore> output = mModels[nModel].template evalModel<TypeOutputScore>(input);
+    const std::size_t expectedOutputSize = nRows * mNClasses;
+    if (output.size() < expectedOutputSize) {
+      LOG(fatal) << "Model " << mPaths[nModel] << " returned " << output.size() << " scores, but " << expectedOutputSize << " scores are expected for " << nRows << " rows and " << static_cast<int>(mNClasses) << " classes. Please check your configurables.";
+    }
+    if (output.size() > expectedOutputSize) {
+      // keep only the first scores (e.g. batched probabilities of a multi-output model)
+      output.resize(expectedOutputSize);
+    }
+    return output;
+  }
+
+  /// Get vector of vectors with predictions from every output head of a multi-output model (e.g. GNN)
+  /// \param input a vector containing the values of features used in the model
+  /// \param nModel is the model index
+  /// \return one vector per output head, in the order of the ONNX model's output nodes
+  template <typename T1, typename T2>
+  std::vector<std::vector<TypeOutputScore>> getModelOutputs(T1& input, const T2& nModel)
+  {
+    if (nModel < 0 || static_cast<std::size_t>(nModel) >= mModels.size()) {
+      LOG(fatal) << "Model index " << nModel << " is out of range! The number of initialised models is " << mModels.size() << ". Please check your configurables.";
+    }
+
+    const int numInputNodes = mModels[nModel].getNumInputNodes();
+    const int numInputFeatures = static_cast<int>(input.size());
+
+    if (numInputNodes != numInputFeatures && numInputNodes >= 0) {
+      LOG(fatal) << "Number of input nodes in the model " << mPaths[nModel] << " is different from the number of input features to be tested (" << numInputNodes << " vs " << numInputFeatures << ")";
+    }
+
+    return mModels[nModel].template evalModelFull<TypeOutputScore>(input);
   }
 
   /// ML selections
@@ -278,18 +347,18 @@ class MlResponse
   std::vector<o2::ml::OnnxModel> mModels;                 // OnnxModel objects, one for each bin
   uint8_t mNModels = 1;                                   // number of bins
   uint8_t mNClasses = 3;                                  // number of model classes
-  std::vector<double> mBinsLimits = {};                   // bin limits of the variable (e.g. pT) used to select which model to use
-  std::vector<double> mBinsLimitsVar2 = {};               // bin limits of a second variable (e.g. multiplicity) used to select which model to use (not used in this base class)
-  std::vector<std::string> mPaths = {""};                 // paths to the models, one for each bin
-  std::vector<int> mCutDir = {};                          // direction of the cuts on the model scores (no cut is also supported)
-  o2::framework::LabeledArray<double> mCuts = {};         // array of cut values to apply on the model scores
+  std::vector<double> mBinsLimits;                        // bin limits of the variable (e.g. pT) used to select which model to use
+  std::vector<double> mBinsLimitsVar2;                    // bin limits of a second variable (e.g. multiplicity) used to select which model to use (not used in this base class)
+  std::vector<std::string> mPaths;                        // paths to the models, one for each bin
+  std::vector<int> mCutDir;                               // direction of the cuts on the model scores (no cut is also supported)
+  o2::framework::LabeledArray<double> mCuts;              // array of cut values to apply on the model scores
   std::map<std::string, uint8_t> mAvailableInputFeatures; // map of available input features
   std::vector<uint8_t> mCachedIndices;                    // vector of index correspondance between configurables and available input features
   uint8_t mNVar1Bins = 1;                                 // number of bins of the first variable (e.g. pT) used to select which model to use
   uint8_t mNVar2Bins = 1;                                 // number of bins of the second variable (e.g. multiplicity) used to select which model to use
   bool mUse2DBinning = false;                             // switch to enable/disable 2D binning
 
-  virtual void setAvailableInputFeatures() { return; } // method to fill the map of available input features
+  virtual void setAvailableInputFeatures() {} // method to fill the map of available input features
 
  private:
   /// Finds matching bin in mBinsLimits

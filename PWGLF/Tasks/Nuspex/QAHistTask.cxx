@@ -314,7 +314,7 @@ struct QAHistTask {
     if (!isEventSelected(event))
       return;
 
-    for (auto track : tracks) { // start loop over all tracks
+    for (const auto& track : tracks) { // start loop over all tracks
 
       if (event_selection_sel8 && !event.sel8())
         continue;
@@ -564,7 +564,7 @@ struct QAHistTask {
     if (!isEventSelected(event))
       return;
 
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
 
       if (event_selection_sel8 && !event.sel8()) {
         continue;
@@ -737,7 +737,7 @@ struct QAHistTask {
           lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
           break;
         default:
-          pdgbin = -10;
+          // pdgbin = -10; // FIXME: unused
           continue;
           break;
       }

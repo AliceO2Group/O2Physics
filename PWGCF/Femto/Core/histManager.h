@@ -21,11 +21,8 @@
 #include <string>
 #include <string_view>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::histmanager
 {
-namespace histmanager
-{
-
 // plot level for secondaries during mc processing
 enum SecondaryPlotLevel {
   kSecondaryPlotLevel1 = 1,
@@ -35,8 +32,16 @@ enum SecondaryPlotLevel {
 
 template <typename Hist>
 struct HistInfo {
-  Hist hist;
-  o2::framework::HistType histtype;
+  constexpr HistInfo(Hist h,
+                     o2::framework::HistType t,
+                     std::string_view n,
+                     std::string_view d)
+    : hist(h), histtype(t), histname(n), histdesc(d)
+  {
+  }
+
+  Hist hist{};
+  o2::framework::HistType histtype{o2::framework::kUndefinedHist};
   std::string_view histname;
   std::string_view histdesc;
 };
@@ -80,6 +85,19 @@ constexpr const char* getHistDesc(EnumType variable, const ArrayType& array)
 
   return it != array.end() ? it->histdesc.data() : "";
 }
-} // namespace histmanager
-} // namespace o2::analysis::femto
+
+// Replace the x-axis segment of a "title; x axis; y axis[; z axis...]" histogram description
+// with newTitle. Used to patch a static HistTable description at runtime once the actual axis
+// quantity (e.g. which momentum type, which kinematic variable) is resolved from a Configurable.
+inline std::string replaceFirstAxisTitle(std::string_view desc, std::string_view newTitle)
+{
+  std::string result(desc);
+  const auto first = result.find(';');
+  const auto second = (first == std::string::npos) ? std::string::npos : result.find(';', first + 1);
+  if (second != std::string::npos) {
+    result.replace(first + 1, second - first - 1, " " + std::string(newTitle) + " ");
+  }
+  return result;
+}
+} // namespace o2::analysis::femto::histmanager
 #endif // PWGCF_FEMTO_CORE_HISTMANAGER_H_

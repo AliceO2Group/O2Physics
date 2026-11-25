@@ -55,13 +55,13 @@ void parseStringArray(const Value& jsonArray, std::vector<std::string>& output)
   }
 }
 
-void setInputCorrelNames(DhCorrelationExtraction* plotter, TString pathFileSE, TString pathFileME, TString dirSE, TString dirME, TString histoNameCorrSignal, TString histoNameCorrSideba, TString histoNameCorrSidebaLeft, TString histoNameCorrSidebaRight);
-void setInputHistoInvMassNames(DhCorrelationExtraction* plotter, TString pathFileMass, std::vector<std::string> inputMassNames);
-void setInputHistoFdSubtraction(DhCorrelationExtraction* plotter, TString pathFileFDTemplate, TString pathFileFDPromptFrac, TString histoNameFDTemplatePrompt, TString histoNameFDTemplateNonPrompt, TString histoNameRawFracPrompt);
-void setInputHistoSecPart(DhCorrelationExtraction* plotter, TString pathFileSecPart, TString dirSecPartName, TString histoNamePrimaryPart, TString histoNameAllPart);
-void setInputHistoBiasBtoD(DhCorrelationExtraction* plotter, TString pathfFilePromptMcRec, TString pathfFileNonPromptMcRec);
+void setInputCorrelNames(DhCorrelationExtraction* plotter, const TString& pathFileSE, const TString& pathFileME, const TString& dirSE, const TString& dirME, const TString& histoNameCorrSignal, const TString& histoNameCorrSideba, const TString& histoNameCorrSidebaLeft, const TString& histoNameCorrSidebaRight);
+void setInputHistoInvMassNames(DhCorrelationExtraction* plotter, const TString& pathFileMass, std::vector<std::string> inputMassNames);
+void setInputHistoFdSubtraction(DhCorrelationExtraction* plotter, const TString& pathFileFDTemplate, const TString& pathFileFDPromptFrac, const TString& histoNameFDTemplatePrompt, const TString& histoNameFDTemplateNonPrompt, const TString& histoNameRawFracPrompt);
+void setInputHistoSecPart(DhCorrelationExtraction* plotter, const TString& pathFileSecPart, const TString& dirSecPartName, const TString& histoNamePrimaryPart, const TString& histoNameAllPart);
+void setInputHistoBiasBtoD(DhCorrelationExtraction* plotter, const TString& pathfFilePromptMcRec, const TString& pathfFileNonPromptMcRec);
 
-void extractOutputCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
+void extractOutputCorrelDs(const TString& cfgFileName = "config_CorrAnalysis.json")
 {
   // gStyle -> SetOptStat(0);
   gStyle->SetPadLeftMargin(0.15);
@@ -274,7 +274,7 @@ void extractOutputCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json
   outFileReflectedBaselineSubtr->Close();
 }
 
-void setInputCorrelNames(DhCorrelationExtraction* plotter, TString pathFileSE, TString pathFileME, TString dirSE, TString dirME, TString histoNameCorrSignal, TString histoNameCorrSideba, TString histoNameCorrSidebaLeft, TString histoNameCorrSidebaRight)
+void setInputCorrelNames(DhCorrelationExtraction* plotter, const TString& pathFileSE, const TString& pathFileME, const TString& dirSE, const TString& dirME, const TString& histoNameCorrSignal, const TString& histoNameCorrSideba, const TString& histoNameCorrSidebaLeft, const TString& histoNameCorrSidebaRight)
 {
 
   // Ds paths
@@ -292,7 +292,7 @@ void setInputCorrelNames(DhCorrelationExtraction* plotter, TString pathFileSE, T
   plotter->setMeCorrelHistoSidebandRightName(histoNameCorrSidebaRight.Data());
 }
 
-void setInputHistoInvMassNames(DhCorrelationExtraction* plotter, TString pathFileMass, std::vector<std::string> inputMassNames)
+void setInputHistoInvMassNames(DhCorrelationExtraction* plotter, const TString& pathFileMass, std::vector<std::string> inputMassNames)
 { // to use if sgn and bkg extraction is done apart
 
   plotter->setInputFilenameMass(pathFileMass.Data());
@@ -301,7 +301,7 @@ void setInputHistoInvMassNames(DhCorrelationExtraction* plotter, TString pathFil
   plotter->setMassHistoNameSBs(inputMassNames[2].data());
 }
 
-void setInputHistoFdSubtraction(DhCorrelationExtraction* plotter, TString pathFileFDTemplate, TString pathFileFDPromptFrac, TString histoNameFDTemplatePrompt, TString histoNameFDTemplateNonPrompt, TString histoNameRawFracPrompt)
+void setInputHistoFdSubtraction(DhCorrelationExtraction* plotter, const TString& pathFileFDTemplate, const TString& pathFileFDPromptFrac, const TString& histoNameFDTemplatePrompt, const TString& histoNameFDTemplateNonPrompt, const TString& histoNameRawFracPrompt)
 {
 
   plotter->setInputFilenameFdTemplate(pathFileFDTemplate.Data());
@@ -311,7 +311,7 @@ void setInputHistoFdSubtraction(DhCorrelationExtraction* plotter, TString pathFi
   plotter->setInputHistoNameFdPromptFrac(histoNameRawFracPrompt.Data());
 }
 
-void setInputHistoSecPart(DhCorrelationExtraction* plotter, TString pathFileSecPart, TString dirSecPartName, TString histoNamePrimaryPart, TString histoNameAllPart)
+void setInputHistoSecPart(DhCorrelationExtraction* plotter, const TString& pathFileSecPart, const TString& dirSecPartName, const TString& histoNamePrimaryPart, const TString& histoNameAllPart)
 {
 
   plotter->setInputFilenameSecPart(pathFileSecPart.Data());
@@ -319,7 +319,7 @@ void setInputHistoSecPart(DhCorrelationExtraction* plotter, TString pathFileSecP
   plotter->setHistoSecPartName(histoNamePrimaryPart.Data(), histoNameAllPart.Data());
 }
 
-void setInputHistoBiasBtoD(DhCorrelationExtraction* plotter, TString pathfFilePromptMcRec, TString pathfFileNonPromptMcRec)
+void setInputHistoBiasBtoD(DhCorrelationExtraction* plotter, const TString& pathfFilePromptMcRec, const TString& pathfFileNonPromptMcRec)
 {
 
   plotter->setInputFilenameBiasBtoD(pathfFilePromptMcRec.Data(), pathfFileNonPromptMcRec.Data());

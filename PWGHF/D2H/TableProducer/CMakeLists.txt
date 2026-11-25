@@ -63,6 +63,13 @@ o2physics_add_dpl_workflow(candidate-selector-lb-to-lc-pi-reduced
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
+# Track selectors
+
+o2physics_add_dpl_workflow(ml-based-track-selector
+                    SOURCES mlBasedTrackSelector.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing O2::DCAFitter O2Physics::AnalysisCCDB O2Physics::MLCore O2Physics::SGCutParHolder O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
 # Data creators
 
 o2physics_add_dpl_workflow(data-creator-charm-had-pi-reduced
@@ -111,5 +118,6 @@ o2physics_add_dpl_workflow(converter-reduced-3-prongs-ml
 
 o2physics_add_dpl_workflow(tree-creator-dstar-spin-align-mixing
                     SOURCES treeCreatorDstarSpinAlignMixing.cxx
+                    REUSE_FROM HfCandidatesPCH
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

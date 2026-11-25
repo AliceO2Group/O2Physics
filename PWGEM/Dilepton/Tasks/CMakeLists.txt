@@ -95,16 +95,6 @@ o2physics_add_dpl_workflow(dielectron-mc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(dielectron-sv
-                    SOURCES dielectronSV.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::DCAFitter O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore O2Physics::EventFilteringUtils
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(dielectron-sv-mc
-                    SOURCES dielectronSVMC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::DCAFitter O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(dimuon
                     SOURCES dimuon.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore O2Physics::EventFilteringUtils
@@ -160,6 +150,11 @@ o2physics_add_dpl_workflow(study-dcafitter
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsVertexing O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(test-pv
+                    SOURCES testPV.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(evaluate-acceptance
                     SOURCES evaluateAcceptance.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
@@ -173,4 +168,9 @@ o2physics_add_dpl_workflow(check-mc-template
 o2physics_add_dpl_workflow(check-mc-pair-template
                     SOURCES checkMCPairTemplate.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(dielectron-mixing-test
+                    SOURCES dielectronMixingTest.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)

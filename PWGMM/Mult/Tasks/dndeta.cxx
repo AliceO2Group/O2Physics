@@ -42,6 +42,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -473,7 +474,7 @@ struct MultiplicityCounter {
   using ExCols = soa::Join<aod::Collisions, aod::EvSels>;
 
   // PV contributors for INEL>0 (PV) collision sample definition
-  Partition<FiTracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Partition<FiTracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
 
   template <typename C, bool fillHistos = true, typename T>
   int countTracks(T const& tracks, float z, float c, float o)
@@ -842,7 +843,10 @@ struct MultiplicityCounter {
   using LabeledTracksEx = soa::Join<LabeledTracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
   using FiLTracks = soa::Filtered<LabeledTracksEx>;
   using ParticlesI = soa::Filtered<soa::Join<aod::McParticles, aod::ParticlesToTracks>>;
-  expressions::Filter primaries = ncheckbit(aod::mcparticle::flags, (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
+  expressions::Filter primaries =
+    ifnode(nsqrt(aod::mcparticle::vx * aod::mcparticle::vx + aod::mcparticle::vy * aod::mcparticle::vy) > 5.f,
+           false,
+           ncheckbit(aod::mcparticle_v2::storedFlags, (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary));
 
   bool isChargedParticle(int code)
   {
@@ -974,13 +978,13 @@ struct MultiplicityCounter {
         if constexpr (has_reco_cent<C>) {
           for (auto const& track : relatedTracks) {
             for (auto layer = 0; layer < 7; ++layer) {
-              if (track.itsClusterMap() & (uint8_t(1) << layer)) {
+              if (track.itsClusterMap() & (static_cast<uint8_t>(1) << layer)) {
                 binnedRegistry.fill(HIST(ITSlayers), layer + 1, c_gen, o);
               }
             }
             auto hasbit = false;
             for (auto bit = 0; bit < 16; ++bit) {
-              if (track.mcMask() & (uint8_t(1) << bit)) {
+              if (track.mcMask() & (static_cast<uint8_t>(1) << bit)) {
                 binnedRegistry.fill(HIST(Mask), bit, c_gen, o);
                 hasbit = true;
               }
@@ -998,13 +1002,13 @@ struct MultiplicityCounter {
         } else {
           for (auto const& track : relatedTracks) {
             for (auto layer = 0; layer < 7; ++layer) {
-              if (track.itsClusterMap() & (uint8_t(1) << layer)) {
+              if (track.itsClusterMap() & (static_cast<uint8_t>(1) << layer)) {
                 inclusiveRegistry.fill(HIST(ITSlayers), layer + 1, o);
               }
             }
             auto hasbit = false;
             for (auto bit = 0; bit < 16; ++bit) {
-              if (track.mcMask() & (uint8_t(1) << bit)) {
+              if (track.mcMask() & (static_cast<uint8_t>(1) << bit)) {
                 inclusiveRegistry.fill(HIST(Mask), bit, o);
                 hasbit = true;
               }

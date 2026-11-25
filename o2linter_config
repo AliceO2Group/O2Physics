@@ -13,3 +13,25 @@ name/class
 name/struct
 name/file-cpp
 name/file-python
+# temporarily demoted
+const-ref-in-for-loop
+const-ref-in-process
+include-iostream
+logging
+magic-number
+name/configurable
+name/o2-column
+name/o2-table
+name/o2-task
+name/o2-workflow
+name/workflow-file
+o2-workflow-options
+pdg/database
+pdg/explicit-code
+pdg/explicit-mass
+pdg/known-mass
+pwghf/name/struct-class
+pwghf/struct-member-order
+root/lorentz-vector
+std-prefix
+two-pi-add-subtract

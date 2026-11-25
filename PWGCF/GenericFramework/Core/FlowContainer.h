@@ -40,7 +40,7 @@ class FlowContainer : public TNamed
   enum StatisticsType { kSingleSample,
                         kJackKnife,
                         kBootstrap };
-  void Initialize(TObjArray* inputList, const o2::framework::AxisSpec axis, int nRandomized = 0);
+  void Initialize(TObjArray* inputList, const o2::framework::AxisSpec& axis, int nRandomized = 0);
   void Initialize(TObjArray* inputList, int nMultiBins, double MultiMin, double MultiMax, int nRandomized = 0);
   bool CreateBinsFromAxis(TAxis* inax);
   void SetXAxis(TAxis* inax);
@@ -165,6 +165,12 @@ class FlowContainer : public TNamed
   double* fbinsPt;       //! Do not store; stored in fXAxis
   bool fPropagateErrors; //! do not store
   TProfile* GetRefFlowProfile(const char* order, double m1 = -1, double m2 = -1);
+
+ private:
+  static constexpr int kTwoParticleOrder = 2;
+  static constexpr int kFourParticleOrder = 4;
+  static constexpr int kSixParticleOrder = 6;
+  static constexpr int kEightParticleOrder = 8;
   ClassDef(FlowContainer, 2);
 };
 

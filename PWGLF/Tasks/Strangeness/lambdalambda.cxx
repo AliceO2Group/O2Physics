@@ -224,7 +224,7 @@ struct lambdalambda {
   ROOT::Math::PxPyPzMVector RecoV02Rot, RecoV0V0Rot;
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision)
+  bool eventSelected(const TCollision& collision)
   {
     if (!collision.sel8()) {
       return 0;
@@ -527,6 +527,9 @@ struct lambdalambda {
                 RanPhi += RecoV02.Phi();
                 RecoV02Rot = ROOT::Math::PxPyPzMVector(RecoV02.Pt() * std::cos(RanPhi), RecoV02.Pt() * std::sin(RanPhi), RecoV02.Pz(), RecoV02.M());
                 RecoV0V0Rot = RecoV01 + RecoV02Rot;
+                if (std::abs(RecoV0V0Rot.Rapidity()) > cfgV0V0RapMax)
+                  continue;
+
                 histos.fill(HIST("h_InvMass_rot"), RecoV0V0Rot.M(), RecoV0V0Rot.Pt(), centrality, V01Tag + V02Tag);
               }
             }
@@ -582,7 +585,7 @@ struct lambdalambda {
 
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-  BinningType colBinning{{vertexAxis, centAxis}, true};
+  BinningType colBinning{{vertexAxis, centAxis}};
 
   Preslice<aod::V0Datas> tracksPerCollisionV0 = aod::v0data::collisionId;
   void processDataMixed(EventCandidates const& collisions,

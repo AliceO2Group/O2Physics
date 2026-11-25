@@ -104,8 +104,8 @@ struct PhotonIsolationQA {
   int trackSelection = -1;
   void init(o2::framework::InitContext&)
   {
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
 
     mGeometry = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
     auto nCells = mGeometry->GetNCells();
@@ -269,7 +269,7 @@ struct PhotonIsolationQA {
     return Pt_Iso;
   }
 
-  void fillclusterhistos(const auto cluster, HistogramRegistry registry, double weight = 1.0)
+  void fillclusterhistos(const auto& cluster, HistogramRegistry registry, double weight = 1.0)
   {
     registry.fill(HIST("hClusterLocation"), cluster.eta(), cluster.phi());
     if (isMC == true) {
@@ -397,7 +397,7 @@ struct PhotonIsolationQA {
   // process monte carlo data
   void processMC(aod::BCs const& bcs, selectedMcCollisions const& Collisions, selectedMCClusters const& mcclusters, aod::McParticles const&, myGlobTracks const& tracks, o2::aod::EMCALMatchedTracks const& matchedtracks, aod::Calos const&, aod::EMCALClusterCells const& ClusterCells)
   {
-    for (auto bc : bcs) {
+    for (const auto& bc : bcs) {
       auto collisionsInBC = Collisions.sliceBy(McCollisionsPerBC, bc.globalIndex());
       MC_Info.fill(HIST("hCollperBC"), collisionsInBC.size());
       if (collisionsInBC.size() == 1) {
@@ -461,7 +461,7 @@ struct PhotonIsolationQA {
 
   void processData(aod::BCs const& bcs, selectedCollisions const& Collisions, selectedClusters const& clusters, o2::aod::EMCALMatchedTracks const& matchedtracks, myGlobTracks const& tracks, aod::Calos const&, aod::EMCALClusterCells const& ClusterCells)
   {
-    for (auto bc : bcs) {
+    for (const auto& bc : bcs) {
       auto collisionsInBC = Collisions.sliceBy(collisionsPerBC, bc.globalIndex());
       Data_Info.fill(HIST("hCollperBC"), collisionsInBC.size());
       if (collisionsInBC.size() == 1) {

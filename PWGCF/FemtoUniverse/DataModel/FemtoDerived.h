@@ -24,6 +24,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/Expressions.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <string_view>
@@ -75,8 +76,8 @@ enum ParticleType {
   kNParticleTypes   //! Number of particle types
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "MCTruthTracks", "V0", "V0Child", "Cascade", "CascadeV0Child", "CascadeBachelor", "Phi", "PhiChild", "D0", "D0Child"}; //! Naming of the different particle types
-static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hPDGvspT", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy", "/hInvMass", "/hDCAxy", "/hInvMass", "/hDCAxy"};
+static constexpr std::array<std::string_view, kNParticleTypes> ParticleTypeName = {"Tracks", "MCTruthTracks", "V0", "V0Child", "Cascade", "CascadeV0Child", "CascadeBachelor", "Phi", "PhiChild", "D0", "D0Child"}; //! Naming of the different particle types
+static constexpr std::array<std::string_view, kNParticleTypes> TempFitVarName = {"/hDCAxy", "/hPDGvspT", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy", "/hInvMass", "/hDCAxy", "/hInvMass", "/hDCAxy"};
 
 using CutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
@@ -88,7 +89,7 @@ enum TrackType {
   kNTrackTypes //! Number of child types
 };
 
-static constexpr std::string_view TrackTypeName[kNTrackTypes] = {"Trk", "Pos", "Neg", "Bach"}; //! Naming of the different particle types
+static constexpr std::array<std::string_view, kNTrackTypes> TrackTypeName = {"Trk", "Pos", "Neg", "Bach"}; //! Naming of the different particle types
 
 DECLARE_SOA_INDEX_COLUMN(FdCollision, fdCollision);
 DECLARE_SOA_COLUMN(Pt, pt, float);                       //! p_T (GeV/c)
@@ -123,13 +124,25 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Compute the overall momentum in GeV/c
                              return pt * std::cosh(eta);
                            });
 
-DECLARE_SOA_COLUMN(ITSNSigmaEl, itsNSigmaEl, float); //! Nsigma separation with the Its detector for electron
-DECLARE_SOA_COLUMN(ITSNSigmaPi, itsNSigmaPi, float); //! Nsigma separation with the Its detector for pion
-DECLARE_SOA_COLUMN(ITSNSigmaKa, itsNSigmaKa, float); //! Nsigma separation with the Its detector for kaon
-DECLARE_SOA_COLUMN(ITSNSigmaPr, itsNSigmaPr, float); //! Nsigma separation with the Its detector for proton
-DECLARE_SOA_COLUMN(ITSNSigmaDe, itsNSigmaDe, float); //! Nsigma separation with the Its detector for deuteron
-DECLARE_SOA_COLUMN(ITSNSigmaTr, itsNSigmaTr, float); //! Nsigma separation with the Its detector for triton
-DECLARE_SOA_COLUMN(ITSNSigmaHe, itsNSigmaHe, float); //! Nsigma separation with the Its detector for helium3
+DECLARE_SOA_COLUMN(TofFullNSigmaEl, tofFullNSigmaEl, float); //! Nsigma separation with the TOF detector for electron
+DECLARE_SOA_COLUMN(TofFullNSigmaPi, tofFullNSigmaPi, float); //! Nsigma separation with the TOF detector for pion
+DECLARE_SOA_COLUMN(TofFullNSigmaKa, tofFullNSigmaKa, float); //! Nsigma separation with the TOF detector for kaon
+DECLARE_SOA_COLUMN(TofFullNSigmaPr, tofFullNSigmaPr, float); //! Nsigma separation with the TOF detector for proton
+DECLARE_SOA_COLUMN(TofFullNSigmaDe, tofFullNSigmaDe, float); //! Nsigma separation with the TOF detector for deuteron
+
+DECLARE_SOA_COLUMN(TpcFullNSigmaEl, tpcFullNSigmaEl, float); //! Nsigma separation with the TPC detector for electron
+DECLARE_SOA_COLUMN(TpcFullNSigmaPi, tpcFullNSigmaPi, float); //! Nsigma separation with the TPC detector for pion
+DECLARE_SOA_COLUMN(TpcFullNSigmaKa, tpcFullNSigmaKa, float); //! Nsigma separation with the TPC detector for kaon
+DECLARE_SOA_COLUMN(TpcFullNSigmaPr, tpcFullNSigmaPr, float); //! Nsigma separation with the TPC detector for proton
+DECLARE_SOA_COLUMN(TpcFullNSigmaDe, tpcFullNSigmaDe, float); //! Nsigma separation with the TPC detector for deuteron
+
+DECLARE_SOA_COLUMN(ItsNSigmaEl, itsNSigmaEl, float); //! Nsigma separation with the Its detector for electron
+DECLARE_SOA_COLUMN(ItsNSigmaPi, itsNSigmaPi, float); //! Nsigma separation with the Its detector for pion
+DECLARE_SOA_COLUMN(ItsNSigmaKa, itsNSigmaKa, float); //! Nsigma separation with the Its detector for kaon
+DECLARE_SOA_COLUMN(ItsNSigmaPr, itsNSigmaPr, float); //! Nsigma separation with the Its detector for proton
+DECLARE_SOA_COLUMN(ItsNSigmaDe, itsNSigmaDe, float); //! Nsigma separation with the Its detector for deuteron
+DECLARE_SOA_COLUMN(ItsNSigmaTr, itsNSigmaTr, float); //! Nsigma separation with the Its detector for triton
+DECLARE_SOA_COLUMN(ItsNSigmaHe, itsNSigmaHe, float); //! Nsigma separation with the Its detector for helium3
 
 // debug variables
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                                  //! Sign of the track charge
@@ -174,7 +187,7 @@ using FDParticle = FDParticles::iterator;
 /// FemtoUniverseCascadeTrack
 namespace femtouniversecascparticle
 {
-DECLARE_SOA_INDEX_COLUMN(FDParticle, fdParticle);
+DECLARE_SOA_INDEX_COLUMN(FDParticle, fdParticle);              // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(DcaV0daughters, dcaV0daughters, float);     //! DCA between V0 daughters
 DECLARE_SOA_COLUMN(Cpav0, cpav0, float);                       //! V0 cos of pointing angle
 DECLARE_SOA_COLUMN(V0radius, v0radius, float);                 //! V0 transverse radius
@@ -230,12 +243,25 @@ DECLARE_SOA_TABLE(FDExtParticles, "AOD", "FDEXTPARTICLE",
                   pidtof_tiny::TOFNSigmaDe<pidtof_tiny::TOFNSigmaStoreDe>);
 using FDFullParticle = FDExtParticles::iterator;
 
+DECLARE_SOA_TABLE(FDSigmaParticles, "AOD", "FDSIGMAPARTICLE",
+                  femtouniverseparticle::TofFullNSigmaEl,
+                  femtouniverseparticle::TofFullNSigmaPi,
+                  femtouniverseparticle::TofFullNSigmaKa,
+                  femtouniverseparticle::TofFullNSigmaPr,
+                  femtouniverseparticle::TofFullNSigmaDe,
+                  femtouniverseparticle::TpcFullNSigmaEl,
+                  femtouniverseparticle::TpcFullNSigmaPi,
+                  femtouniverseparticle::TpcFullNSigmaKa,
+                  femtouniverseparticle::TpcFullNSigmaPr,
+                  femtouniverseparticle::TpcFullNSigmaDe);
+using FDSigmaParticle = FDSigmaParticles::iterator;
+
 DECLARE_SOA_TABLE(FDItsParticles, "AOD", "FDITSPARTICLE",
-                  femtouniverseparticle::ITSNSigmaEl,
-                  femtouniverseparticle::ITSNSigmaPi,
-                  femtouniverseparticle::ITSNSigmaKa,
-                  femtouniverseparticle::ITSNSigmaPr,
-                  femtouniverseparticle::ITSNSigmaDe);
+                  femtouniverseparticle::ItsNSigmaEl,
+                  femtouniverseparticle::ItsNSigmaPi,
+                  femtouniverseparticle::ItsNSigmaKa,
+                  femtouniverseparticle::ItsNSigmaPr,
+                  femtouniverseparticle::ItsNSigmaDe);
 using FDItsParticle = FDItsParticles::iterator;
 
 DECLARE_SOA_TABLE(FDCascParticles, "AOD", "FDCASCPARTICLE",
@@ -279,7 +305,7 @@ enum ParticleOriginMCTruth {
 };
 
 //! Naming of the different OriginMCTruth types
-static constexpr std::string_view ParticleOriginMCTruthName[kNOriginMCTruthTypes] = {
+static constexpr std::array<std::string_view, kNOriginMCTruthTypes> ParticleOriginMCTruthName = {
   "_Primary",
   "_Daughter",
   "_Material",
@@ -297,7 +323,7 @@ enum MCType {
   kNMCTypes
 };
 
-static constexpr std::string_view MCTypeName[kNMCTypes] = {"", "_MC"};
+static constexpr std::array<std::string_view, kNMCTypes> MCTypeName = {"", "_MC"};
 
 DECLARE_SOA_COLUMN(PartOriginMCTruth, partOriginMCTruth, uint8_t); //! Origin of the particle, according to femtouniverseparticle::ParticleOriginMCTruth
 DECLARE_SOA_COLUMN(PdgMCTruth, pdgMCTruth, int);                   //! Particle PDG

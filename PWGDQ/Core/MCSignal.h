@@ -68,12 +68,12 @@ class MCSignal : public TNamed
  public:
   MCSignal();
   MCSignal(int nProngs, const char* name = "", const char* title = ""); // NOLINT
-  MCSignal(const char* name, const char* title, std::vector<MCProng> prongs, std::vector<int8_t> commonAncestors, bool excludeCommonAncestor = false);
+  MCSignal(const char* name, const char* title, const std::vector<MCProng>& prongs, std::vector<int8_t> commonAncestors, bool excludeCommonAncestor = false);
   MCSignal(const MCSignal& c) = default;
   ~MCSignal() override = default;
 
   void SetProngs(std::vector<MCProng> prongs, std::vector<int8_t> commonAncestors);
-  void AddProng(MCProng prong, int8_t commonAncestor = -1);
+  void AddProng(const MCProng& prong, int8_t commonAncestor = -1);
   void SetDecayChannelIsExclusive(int nProngs, bool option = true)
   {
     fDecayChannelIsExclusive = option;
@@ -331,25 +331,26 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
             break;
           }
         }
-      } /*else { // check generation in time
-        if (!currentMCParticle.has_daughters()) {
-          return false;
-        }
-        const auto& daughtersSlice = currentMCParticle.template daughters_as<P>();
-        for (auto& d : daughtersSlice) {
-          if (!fProngs[i].fExcludePDGInHistory[k] && fProngs[i].ComparePDG(d.pdgCode(), fProngs[i].fPDGInHistory[k], true, fProngs[i].fExcludePDGInHistory[k])) {
-            pdgInHistory.emplace_back(d.pdgCode());
-            break;
-          }
-          if (fProngs[i].fExcludePDGInHistory[k] && !fProngs[i].ComparePDG(d.pdgCode(), fProngs[i].fPDGInHistory[k], true, fProngs[i].fExcludePDGInHistory[k])) {
-            return false;
-          }
-          ith++;
-          if (ith > 10) { // need error message. Given pdg code was not found within 10 generations of the particles decay chain.
-            break;
-          }
-        }
-      }*/
+      }
+      // else { // check generation in time
+      //   if (!currentMCParticle.has_daughters()) {
+      //     return false;
+      //   }
+      //   const auto& daughtersSlice = currentMCParticle.template daughters_as<P>();
+      //   for (auto& d : daughtersSlice) {
+      //     if (!fProngs[i].fExcludePDGInHistory[k] && fProngs[i].ComparePDG(d.pdgCode(), fProngs[i].fPDGInHistory[k], true, fProngs[i].fExcludePDGInHistory[k])) {
+      //       pdgInHistory.emplace_back(d.pdgCode());
+      //       break;
+      //     }
+      //     if (fProngs[i].fExcludePDGInHistory[k] && !fProngs[i].ComparePDG(d.pdgCode(), fProngs[i].fPDGInHistory[k], true, fProngs[i].fExcludePDGInHistory[k])) {
+      //       return false;
+      //     }
+      //     ith++;
+      //     if (ith > 10) { // need error message. Given pdg code was not found within 10 generations of the particles decay chain.
+      //       break;
+      //     }
+      //   }
+      // }
     }
     if (pdgInHistory.size() != nIncludedPDG) { // vector has as many entries as mothers (daughters) defined for prong
       return false;

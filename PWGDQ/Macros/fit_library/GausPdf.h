@@ -25,7 +25,7 @@
 class GausPdf : public RooAbsPdf
 {
  public:
-  GausPdf(){};
+  GausPdf() {}
   GausPdf(const char* name, const char* title,
           RooAbsReal& _x,
           RooAbsReal& _A,

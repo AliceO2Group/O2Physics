@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file ElectronModule.h
 /// \brief write relevant information about primary electrons.
 /// \author daiki.sekihata@cern.ch
 
@@ -20,40 +21,23 @@
 #include "PWGEM/Dilepton/Utils/MlResponseSCT.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 #include "PWGEM/Dilepton/Utils/SemiCharmTag.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/Core/PID/PIDTOFParamService.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TableHelper.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/ML/MlResponse.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
-#include <DataFormatsCalibration/MeanVertexObject.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
-#include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/OutputObjHeader.h>
-#include <Framework/runDataProcessing.h>
-#include <MathUtils/Utils.h>
-#include <PID/PIDTOFParamService.h>
+#include <Framework/Logger.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
 
@@ -103,6 +87,8 @@ struct electronCut : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.5, "min. TPC n sigma for electron inclusion"};
   o2::framework::Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.5, "max. TPC n sigma for electron inclusion"};
   o2::framework::Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 3.5, "max. TOF n sigma for electron inclusion"};
+  o2::framework::Configurable<float> minTPCNsigmaMu{"minTPCNsigmaMu", 0.0, "min. TPC n sigma for muon exclusion"};
+  o2::framework::Configurable<float> maxTPCNsigmaMu{"maxTPCNsigmaMu", 0.0, "max. TPC n sigma for muon exclusion"};
   o2::framework::Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 2.5, "max. TPC n sigma for pion exclusion"};
   o2::framework::Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", -1e+10, "min. TPC n sigma for pion exclusion"}; // set to -2 for lowB, -1e+10 for nominalB
   o2::framework::Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 2.5, "max. TPC n sigma for kaon exclusion"};
@@ -153,6 +139,8 @@ struct electronPFCut : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
   o2::framework::Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.0, "max. TPC n sigma for electron inclusion"};
   o2::framework::Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 3.0, "max. TOF n sigma for electron inclusion"};
+  o2::framework::Configurable<float> minTPCNsigmaMu{"minTPCNsigmaMu", 0.0, "min. TPC n sigma for muon exclusion"};
+  o2::framework::Configurable<float> maxTPCNsigmaMu{"maxTPCNsigmaMu", 0.0, "max. TPC n sigma for muon exclusion"};
   o2::framework::Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 0.0, "max. TPC n sigma for pion exclusion"};
   o2::framework::Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", 0.0, "min. TPC n sigma for pion exclusion"}; // set to -2 for lowB, -1e+10 for nominalB
   o2::framework::Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 0.0, "max. TPC n sigma for kaon exclusion"};
@@ -529,6 +517,7 @@ class ElectronModule
     registry.add("Track/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
     registry.add("Track/hTPCdEdxMC", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
     registry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    registry.add("Track/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     registry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     registry.add("Track/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     registry.add("Track/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", o2::framework::HistType::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -952,6 +941,9 @@ class ElectronModule
     if (track.tpcNSigmaEl() < eCut.minTPCNsigmaEl.value || eCut.maxTPCNsigmaEl.value < track.tpcNSigmaEl()) {
       return false;
     }
+    if (track.tpcNSigmaMu() < eCut.minTPCNsigmaMu.value || eCut.maxTPCNsigmaMu.value < track.tpcNSigmaMu()) {
+      return false;
+    }
     if (eCut.minTPCNsigmaPi.value < track.tpcNSigmaPi() && track.tpcNSigmaPi() < eCut.maxTPCNsigmaPi.value && track.tpcInnerParam() < eCut.max_pin_for_pion_rejection.value) {
       return false;
     }
@@ -1064,7 +1056,7 @@ class ElectronModule
                            dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
                            track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusPID(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
                            track.tpcChi2NCl(), track.tpcInnerParam(),
-                           track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                           track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                            beta, tofNSigmaEl,
                            track.itsClusterSizes(),
                            track.itsChi2NCl(), track.tofChi2(), track.detectorMap(),
@@ -1141,6 +1133,7 @@ class ElectronModule
     registry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
     registry.fill(HIST("Track/hTPCdEdxMC"), track.tpcInnerParam(), mcTunedTPCSignal);
     registry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
+    registry.fill(HIST("Track/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
     registry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
     registry.fill(HIST("Track/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
     registry.fill(HIST("Track/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
@@ -1353,8 +1346,7 @@ class ElectronModule
     if (bcs.size() == 0) {
       return;
     }
-    auto bc = bcs.begin();
-    initCCDB(bc);
+    initCCDB(bcs.begin());
 
     calculateTOFNSigmaWithReassociation<true>(collisions, bcs, tracks, trackIndices, cache, perColTrack, trackIndicesPerCollision);
 
@@ -1373,7 +1365,7 @@ class ElectronModule
       }
 
       if constexpr (isTriggerAnalysis) {
-        if (collision.swtaliastmp_raw() == 0) {
+        if (collision.triggerMask_raw() == 0) {
           continue;
         }
       }
@@ -1617,12 +1609,12 @@ class ElectronModule
           registry.fill(HIST("Prefilter/Pair/hMvsPhiV"), phiv, v12.M());
 
           if (v12.M() < fElectronPFCut.slope * phiv + fElectronPFCut.intercept) {
-            pfb |= (uint8_t(1) << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC));
+            pfb |= (static_cast<uint8_t>(1) << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC));
           }
 
           for (int i = 0; i < static_cast<int>(max_mee_vec.size()); i++) {
             if (v12.M() < max_mee_vec.at(i)) {
-              pfb |= (uint8_t(1) << (static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV) + i));
+              pfb |= (static_cast<uint8_t>(1) << (static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV) + i));
             }
           } // end of mee loop
 
@@ -2112,7 +2104,7 @@ class ElectronModule
     //   }
 
     //   if constexpr (isTriggerAnalysis) {
-    //     if (collision.swtaliastmp_raw() == 0) {
+    //     if (collision.triggerMask_raw() == 0) {
     //       continue;
     //     }
     //   }

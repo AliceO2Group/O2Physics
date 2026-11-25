@@ -172,7 +172,7 @@ struct TestTaskEmc {
   PROCESS_SWITCH(TestTaskEmc, processEMCalCalib, "Process EMCal calibration same event", true);
 }; // End struct TestTaskEmc
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<TestTaskEmc>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<TestTaskEmc>(context)};
 }

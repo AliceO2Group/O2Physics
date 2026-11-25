@@ -11,6 +11,7 @@
 
 # add_subdirectory(Core)
 # add_subdirectory(DataModel)
+# Utils first: it owns the LfStrangenessPCH carrier the workflows reuse.
+add_subdirectory(Utils)
 add_subdirectory(Tasks)
 add_subdirectory(TableProducer)
-add_subdirectory(Utils)

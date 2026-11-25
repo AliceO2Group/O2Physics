@@ -29,6 +29,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -46,6 +47,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/Boost.h>
+#include <Math/GenVector/RotationZ.h>
 #include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
 #include <Math/Vector3Dfwd.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
@@ -59,6 +61,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <numeric>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -160,6 +163,8 @@ struct HfTaskCharmPolarisation {
   Configurable<int> centralityMin{"centralityMin", 30, "Minimum centrality (0-100) to be considered in the analysis"};
   Configurable<int> centralityMax{"centralityMax", 50, "Maximum centrality (0-100) to be considered in the analysis"};
   Configurable<int> occEstimator{"occEstimator", 0, "If enabled, replace number of PV contributors with occupancy estimation (0: don't use, 1: ITS, 2: FT0C)"};
+  Configurable<bool> activateAxisRotation{"activateAxisRotation", false, "Activate the rotation of the quantisation axis for cos(Theta*) calculation for phi dependence studies"};
+  Configurable<float> axisRotationAngle{"axisRotationAngle", 0.f, "Rotation angle of the quantisation axis for cos(Theta*) calculation for phi dependence studies (in rad)"};
 
   /// activate rotational background
   Configurable<int> nBkgRotations{"nBkgRotations", 0, "Number of rotated copies (background) per each original candidate"};
@@ -226,9 +231,9 @@ struct HfTaskCharmPolarisation {
   HfEventSelection hfEvSel;  // event selection and monitoring
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
-  using CollisionsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>>;
-  using CollisionsWithMcLabelsAndCent = soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0Cs>>;
-  using CollsWithQVecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using CollisionsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>>;
+  using CollisionsWithMcLabelsAndCent = soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0Cs>>;
+  using CollsWithQVecs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFT0Ms, aod::CentFT0Cs>;
   using TracksWithMcLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
@@ -356,7 +361,9 @@ struct HfTaskCharmPolarisation {
     const AxisSpec thnAxisCosThetaStarProduction{configThnAxisCosThetaStarProduction, "cos(#vartheta_{production})"};
     const AxisSpec thnAxisCosThetaStarRandom{configThnAxisCosThetaStarRandom, "cos(#vartheta_{random})"};
     const AxisSpec thnAxisCosThetaStarBeam{configThnAxisCosThetaStarBeam, "cos(#vartheta_{beam})"};
-    const AxisSpec thnAxisCosThetaStarEP{configThnAxisCosThetaStarEP, "cos(#vartheta_{EP})"}; // reaction plane
+    std::string hAxisName = "Rotated cos(#vartheta_{EP}) with" + std::to_string(axisRotationAngle) + " rad";
+    const AxisSpec thnAxisCosThetaStarEP{configThnAxisCosThetaStarEP, activateAxisRotation ? hAxisName.c_str() : "cos(#vartheta_{EP})"}; // reaction plane
+    // const AxisSpec thnAxisCosThetaStarEP{configThnAxisCosThetaStarEP, "cos(#vartheta_{EP})"}; // reaction plane
     const AxisSpec thnAxisCosPhiStarEP{configThnAxisCosPhiStarEP, "cos(2#varphi_{EP})"};      // reaction plane
     const AxisSpec thnAxisCosSqThetaStarEP{configThnAxisCosSqThetaStarEP, "cos^{2}(#vartheta_{EP})"}; // reaction plane
     const AxisSpec thnAxisMlBkg{configThnAxisMlBkg, "ML bkg"};
@@ -2343,7 +2350,10 @@ struct HfTaskCharmPolarisation {
           // EP analysis for data
           float const xQvec = (*qVecs).at(0);
           float const yQvec = (*qVecs).at(1);
-          ROOT::Math::XYZVector const qVecNorm = ROOT::Math::XYZVector(yQvec, -xQvec, 0.f);
+          ROOT::Math::XYZVector qVecNorm = ROOT::Math::XYZVector(yQvec, -xQvec, 0.f);
+          if (activateAxisRotation) {
+            qVecNorm = ROOT::Math::RotationZ(axisRotationAngle)(qVecNorm);
+          }
           float const phiStarBeam = std::atan2(threeVecDauCM.Y(), threeVecDauCM.X());
           float const psiAngle = epHelper.GetEventPlane(xQvec, yQvec, 2);
           float const deltaPhiStarEP = RecoDecay::constrainAngle(phiStarBeam - psiAngle, 0., 2);
@@ -2355,6 +2365,9 @@ struct HfTaskCharmPolarisation {
           double const deltaPhi = sampleDeltaPhi(ptCharmHad);
           double psi = candidate.phi() - deltaPhi;
           ROOT::Math::XYZVector qVecNorm = ROOT::Math::XYZVector(-std::sin(psi), std::cos(psi), 0.f);
+          if (activateAxisRotation) {
+            qVecNorm = ROOT::Math::RotationZ(axisRotationAngle)(qVecNorm);
+          }
           float const cosThetaStarEP = qVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
           fillRecoHistos<Channel, WithMl, DoMc, charm_polarisation::CosThetaStarType::EP>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarEP, -99.f, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge, nMuons, partRecoDstar, centrality);
         }
@@ -2720,6 +2733,9 @@ struct HfTaskCharmPolarisation {
       double const deltaPhi = sampleDeltaPhi(ptCharmHad);
       double psi = mcParticle.phi() - deltaPhi;
       ROOT::Math::XYZVector qVecNorm = ROOT::Math::XYZVector(-std::sin(psi), std::cos(psi), 0.f);
+      if (activateAxisRotation) {
+        qVecNorm = ROOT::Math::RotationZ(axisRotationAngle)(qVecNorm);
+      }
       float const cosThetaStarEP = qVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
       if constexpr (WithCent) {
         fillGenHistos<charm_polarisation::CosThetaStarType::EP, Channel>(ptCharmHad, numPvContributors, rapidity, cosThetaStarEP, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar, *centrality);

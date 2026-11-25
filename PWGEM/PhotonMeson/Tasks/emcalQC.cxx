@@ -20,13 +20,14 @@
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/ClusterHistograms.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -99,7 +100,8 @@ struct EmcalQC {
 
   struct : ConfigurableGroup {
     std::string prefix = "axis_group";
-    ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0., 20.}, "pT axis for photon candidates"};
+    ConfigurableAxis thnConfigAxisE{"thnConfigAxisE", {100, 0., 20.}, "energy axis for photon candidates"};
+    ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0., 20.}, "pT axis for matched tracks"};
   } axisGroup;
 
   void defineEMEventCut()
@@ -115,6 +117,7 @@ struct EmcalQC {
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
+    fEMEventCut.SetTrackOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
   void defineEMCCut()
@@ -151,11 +154,12 @@ struct EmcalQC {
     defineEMCCut();
     defineEMEventCut();
 
+    const AxisSpec thnAxisE{axisGroup.thnConfigAxisE, "#it{E}} (GeV)"};
     const AxisSpec thnAxisPt{axisGroup.thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thAxisdEta{200, -0.06, 0.06, "#Delta#eta"};
     const AxisSpec thAxisdPhi{200, -0.06, 0.06, "#Delta#varphi (rad)"};
 
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
+    fEMEventCut.addEventHistograms(&fRegistry);
     auto hEMCCollisionCounter = fRegistry.add<TH1>("Event/hEMCCollisionCounter", "Number of collisions after event cuts", HistType::kTH1D, {{7, 0.5, 7.5}}, false);
     hEMCCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
     hEMCCollisionCounter->GetXaxis()->SetBinLabel(2, "+TVX");         // TVX
@@ -167,10 +171,15 @@ struct EmcalQC {
     o2::aod::pwgem::photonmeson::utils::clusterhistogram::addClusterHistograms(&fRegistry, cfgDo2DQA);
 
     if (doprocessQCTM) {
-      fRegistry.add("Cluster/hDeltaEtaPhiAllPrimTracks", "#Delta#eta #Delta#varphi distribution of all matched prim. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
-      fRegistry.add("Cluster/hDeltaEtaPhiClosestPrimTracks", "#Delta#eta #Delta#varphi distribution of the Closest matched prim. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
-      fRegistry.add("Cluster/hDeltaEtaPhiAllSecTracks", "#Delta#eta #Delta#varphi distribution of all matched sec. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
-      fRegistry.add("Cluster/hDeltaEtaPhiClosestSecTracks", "#Delta#eta #Delta#varphi distribution of the Closest matched sec. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiAllPrimTracks", "#Delta#eta #Delta#varphi distribution of all matched prim. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisE}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiClosestPrimTracks", "#Delta#eta #Delta#varphi distribution of the Closest matched prim. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisE}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiAllSecTracks", "#Delta#eta #Delta#varphi distribution of all matched sec. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisE}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiClosestSecTracks", "#Delta#eta #Delta#varphi distribution of the Closest matched sec. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisE}, false);
+
+      fRegistry.add("Cluster/hDeltaEtaPhiAllPrimTracksTrackPt", "#Delta#eta #Delta#varphi distribution of all matched prim. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiClosestPrimTracksTrackPt", "#Delta#eta #Delta#varphi distribution of the Closest matched prim. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiAllSecTracksTrackPt", "#Delta#eta #Delta#varphi distribution of all matched sec. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiClosestSecTracksTrackPt", "#Delta#eta #Delta#varphi distribution of the Closest matched sec. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
     }
   }
 
@@ -201,17 +210,13 @@ struct EmcalQC {
       }
     }
 
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, collision.weight());
+    fEMEventCut.fillEventInfo<0>(&fRegistry, collision, collision.weight());
     if (!fEMEventCut.IsSelected(collision)) {
       return false;
     }
-    if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange()) || !(collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
-      return false;
-    }
 
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, collision.weight());
-    fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0, collision.weight()); // accepted
-    fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0, collision.weight());  // accepted
+    fEMEventCut.fillEventInfo<1>(&fRegistry, collision, collision.weight());
+    fEMEventCut.fillAccepted(&fRegistry, collision.weight());
     return true;
   }
 
@@ -293,17 +298,21 @@ struct EmcalQC {
       }
       if (primTracksPerCluster.size() > 0) {
         const auto closestPrimTrack = primTracksPerCluster.begin();
-        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestPrimTracks"), closestPrimTrack.deltaEta(), closestPrimTrack.deltaPhi(), cluster.pt());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestPrimTracks"), closestPrimTrack.deltaEta(), closestPrimTrack.deltaPhi(), cluster.e());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestPrimTracksTrackPt"), closestPrimTrack.deltaEta(), closestPrimTrack.deltaPhi(), closestPrimTrack.trackPt());
       }
       for (const auto& matchedPrimTrack : primTracksPerCluster) {
-        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllPrimTracks"), matchedPrimTrack.deltaEta(), matchedPrimTrack.deltaPhi(), cluster.pt());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllPrimTracks"), matchedPrimTrack.deltaEta(), matchedPrimTrack.deltaPhi(), cluster.e());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllPrimTracksTrackPt"), matchedPrimTrack.deltaEta(), matchedPrimTrack.deltaPhi(), matchedPrimTrack.trackPt());
       }
       if (secTracksPerCluster.size() > 0) {
         const auto closestSecTrack = secTracksPerCluster.begin();
-        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestSecTracks"), closestSecTrack.deltaEta(), closestSecTrack.deltaPhi(), cluster.pt());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestSecTracks"), closestSecTrack.deltaEta(), closestSecTrack.deltaPhi(), cluster.e());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestSecTracksTrackPt"), closestSecTrack.deltaEta(), closestSecTrack.deltaPhi(), closestSecTrack.trackPt());
       }
       for (const auto& matchedSecTrack : secTracksPerCluster) {
-        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllSecTracks"), matchedSecTrack.deltaEta(), matchedSecTrack.deltaPhi(), cluster.pt());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllSecTracks"), matchedSecTrack.deltaEta(), matchedSecTrack.deltaPhi(), cluster.e());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllSecTracksTrackPt"), matchedSecTrack.deltaEta(), matchedSecTrack.deltaPhi(), matchedSecTrack.trackPt());
       }
 
       if (!fEMCCut.IsSelectedEMCal(EMCPhotonCut::EMCPhotonCuts::kTM, cluster, primTracksPerCluster)) { // Check whether cluster passes this cluster requirement, if not, fill why in the next row

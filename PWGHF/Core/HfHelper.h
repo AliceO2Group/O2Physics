@@ -39,6 +39,8 @@ concept IsB0ToDstarPiChannel = requires(T candidate) {
 };
 
 struct HfHelper {
+  HfHelper() = delete; // Prevent instances.
+
   // 2-prong
 
   // D0(bar) → π± K∓
@@ -272,6 +274,30 @@ struct HfHelper {
   }
 
   template <typename T>
+  static auto massKFirstPiPairDsToKKPi(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+  }
+
+  template <typename T>
+  static auto massKFirstPiPairDsToPiKK(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
+  static auto massKSecondPiPairDsToKKPi(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+  }
+
+  template <typename T>
+  static auto massKSecondPiPairDsToPiKK(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng1()}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
   static auto deltaMassPhiDsToKKPi(const T& candidate)
   {
     return std::abs(massKKPairDsToKKPi(candidate) - o2::constants::physics::MassPhi);
@@ -283,44 +309,42 @@ struct HfHelper {
     return std::abs(massKKPairDsToPiKK(candidate) - o2::constants::physics::MassPhi);
   }
 
-  /// Calculate the cosine of the angle between the pion and the opposite sign kaon in the phi rest frame
-  /// \param candidate Ds candidate from aod::HfCand3Prong table
-  /// \param option mass hypothesis considered: 0 = KKPi, 1 = PiKK
-  /// \return cosine of pion-kaon angle in the phi rest frame
+  /// Calculate the cosine of the angle between two particles in the rest frame of two particles
+  /// \param candidate Candidate with three prongs
+  /// \param massHypo mass array of the three prongs in the order of prong0, prong1, prong2
+  /// \param prong0ForRestFrame index of the first prong to define the rest frame (0, 1, or 2)
+  /// \param prong1ForRestFrame index of the second prong to define the rest frame (0, 1, or 2)
+  /// \return cosine of the angle between the two particles in the rest frame of two particles
   template <typename T>
-  static auto cosPiKPhiRestFrame(const T& candidate, int option)
+  static auto cosABInRestFrame(const T& candidate, std::array<double, 3> massHypo, int prong0ForRestFrame, int prong1ForRestFrame)
   {
     // Ported from AliAODRecoDecayHF3Prong::CosPiKPhiRFrame
-    std::array<float, 3> momPi{};
-    std::array<float, 3> momK1{};
-    std::array<float, 3> momK2{};
+    std::array<float, 3> momProng0{};
+    std::array<float, 3> momProng1{};
+    std::array<float, 3> momProng2{};
 
-    if (option == 0) { // KKPi
-      momPi = candidate.pVectorProng2();
-      momK1 = candidate.pVectorProng1();
-      momK2 = candidate.pVectorProng0();
-    } else { // PiKK
-      momPi = candidate.pVectorProng0();
-      momK1 = candidate.pVectorProng1();
-      momK2 = candidate.pVectorProng2();
-    }
+    momProng0 = candidate.pVectorProng0();
+    momProng1 = candidate.pVectorProng1();
+    momProng2 = candidate.pVectorProng2();
 
-    ROOT::Math::PxPyPzMVector const vecPi(momPi[0], momPi[1], momPi[2], o2::constants::physics::MassPiPlus);
-    ROOT::Math::PxPyPzMVector const vecK1(momK1[0], momK1[1], momK1[2], o2::constants::physics::MassKPlus);
-    ROOT::Math::PxPyPzMVector const vecK2(momK2[0], momK2[1], momK2[2], o2::constants::physics::MassKPlus);
-    ROOT::Math::PxPyPzMVector const vecPhi = vecK1 + vecK2;
+    auto prongForAngle = 3 - prong0ForRestFrame - prong1ForRestFrame;
+    ROOT::Math::PxPyPzMVector const vecProng0(momProng0[0], momProng0[1], momProng0[2], massHypo[0]);
+    ROOT::Math::PxPyPzMVector const vecProng1(momProng1[0], momProng1[1], momProng1[2], massHypo[1]);
+    ROOT::Math::PxPyPzMVector const vecProng2(momProng2[0], momProng2[1], momProng2[2], massHypo[2]);
+    std::array<ROOT::Math::PxPyPzMVector, 3> vecProngs{vecProng0, vecProng1, vecProng2};
+    ROOT::Math::PxPyPzMVector const vecRestFrame = vecProngs[prong0ForRestFrame] + vecProngs[prong1ForRestFrame];
 
-    ROOT::Math::Boost const boostToPhiRestFrame(vecPhi.BoostToCM());
-    auto momPiPhiRestFrame = boostToPhiRestFrame(vecPi).Vect();
-    auto momK1PhiRestFrame = boostToPhiRestFrame(vecK1).Vect();
+    ROOT::Math::Boost const boostToPhiRestFrame(vecRestFrame.BoostToCM());
+    auto momProng0ForAngle = boostToPhiRestFrame(vecProngs[prongForAngle]).Vect();
+    auto momProng1ForAngle = boostToPhiRestFrame(vecProngs[prong1ForRestFrame]).Vect();
 
-    return momPiPhiRestFrame.Dot(momK1PhiRestFrame) / std::sqrt(momPiPhiRestFrame.Mag2() * momK1PhiRestFrame.Mag2());
+    return momProng0ForAngle.Dot(momProng1ForAngle) / std::sqrt(momProng0ForAngle.Mag2() * momProng1ForAngle.Mag2());
   }
 
   template <typename T>
   static auto cos3PiKDsToKKPi(const T& candidate)
   {
-    auto cosPiK = cosPiKPhiRestFrame(candidate, 0);
+    auto cosPiK = cosABInRestFrame(candidate, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus}, 0, 1);
     return cosPiK * cosPiK * cosPiK;
   }
 
@@ -333,7 +357,7 @@ struct HfHelper {
   template <typename T>
   static auto cos3PiKDsToPiKK(const T& candidate)
   {
-    auto cosPiK = cosPiKPhiRestFrame(candidate, 1);
+    auto cosPiK = cosABInRestFrame(candidate, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus}, 1, 2);
     return cosPiK * cosPiK * cosPiK;
   }
 
@@ -341,6 +365,32 @@ struct HfHelper {
   static auto absCos3PiKDsToPiKK(const T& candidate)
   {
     return std::abs(cos3PiKDsToPiKK(candidate));
+  }
+
+  template <typename T>
+  static auto cos3MuKBpToMuMuK(const T& candidate)
+  {
+    auto cosMuK = cosABInRestFrame(candidate, std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus}, 0, 1);
+    return cosMuK * cosMuK * cosMuK;
+  }
+
+  template <typename T>
+  static auto absCos3MuKBpToMuMuK(const T& candidate)
+  {
+    return std::abs(cos3MuKBpToMuMuK(candidate));
+  }
+
+  template <typename T>
+  static auto cos3MuKBpToKMuMu(const T& candidate)
+  {
+    auto cosMuK = cosABInRestFrame(candidate, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassMuon, o2::constants::physics::MassMuon}, 1, 2);
+    return cosMuK * cosMuK * cosMuK;
+  }
+
+  template <typename T>
+  static auto absCos3MuKBpToKMuMu(const T& candidate)
+  {
+    return std::abs(cos3MuKBpToKMuMu(candidate));
   }
 
   // Λc± → p± K∓ π±
@@ -466,9 +516,81 @@ struct HfHelper {
   }
 
   template <typename T>
+  static auto invMassOmegaczeroToXiPi(const T& candidate)
+  {
+    return candidate.m(std::array{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus});
+  }
+
+  template <typename T>
   static auto invMassOmegaczeroToOmegaPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus});
+  }
+
+  template <typename T>
+  static auto invMassOmegaczeroToOmegaK(const T& candidate)
+  {
+    return candidate.m(std::array{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
+  static auto yXiczero(const T& candidate)
+  {
+    return candidate.y(o2::constants::physics::MassXiC0);
+  }
+
+  template <typename T>
+  static auto eXiczero(const T& candidate)
+  {
+    return candidate.e(o2::constants::physics::MassXiC0);
+  }
+
+  template <typename T>
+  static auto ctXiczero(const T& candidate)
+  {
+    return candidate.ct(o2::constants::physics::MassXiC0);
+  }
+
+  template <typename T>
+  static auto cosThetaStarXiczeroToXiPi(const T& candidate)
+  {
+    return candidate.cosThetaStar(std::array{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus}, o2::constants::physics::MassXiC0, 1);
+  }
+
+  template <typename T>
+  static auto yOmegaczero(const T& candidate)
+  {
+    return candidate.y(o2::constants::physics::MassOmegaC0);
+  }
+
+  template <typename T>
+  static auto eOmegaczero(const T& candidate)
+  {
+    return candidate.e(o2::constants::physics::MassOmegaC0);
+  }
+
+  template <typename T>
+  static auto ctOmegaczero(const T& candidate)
+  {
+    return candidate.ct(o2::constants::physics::MassOmegaC0);
+  }
+
+  template <typename T>
+  static auto cosThetaStarOmegaczeroToXiPi(const T& candidate)
+  {
+    return candidate.cosThetaStar(std::array{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus}, o2::constants::physics::MassOmegaC0, 1);
+  }
+
+  template <typename T>
+  static auto cosThetaStarOmegaczeroToOmegaPi(const T& candidate)
+  {
+    return candidate.cosThetaStar(std::array{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus}, o2::constants::physics::MassOmegaC0, 1);
+  }
+
+  template <typename T>
+  static auto cosThetaStarOmegaczeroToOmegaK(const T& candidate)
+  {
+    return candidate.cosThetaStar(std::array{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassKPlus}, o2::constants::physics::MassOmegaC0, 1);
   }
 
   // hf_cand_casc_lf_3prong
@@ -951,7 +1073,7 @@ struct HfHelper {
   /// \param useJpsiPdgMass Use PDG mass for J/psi when calculating B0 candidate mass
   /// \param useK0StarPdgMass Use PDG mass for K*0 when calculating B0 candidate mass
   /// \return true if candidate passes all selections
-  template <typename T1, typename T2, typename T3>
+  template <typename JPsis, typename T1, typename T2, typename T3>
   static bool selectionB0ToJpsiK0StarTopol(const T1& candB0, const T2& cuts, const T3& binsPt, const bool useJpsiPdgMass, const bool useK0StarPdgMass, const bool k0StarToKPi = true)
   {
     auto ptCandB0 = candB0.pt();
@@ -966,7 +1088,7 @@ struct HfHelper {
                          : RecoDecay::m(std::array{pVecLfDau0, pVecLfDau1}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
     auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
     auto ptK0Star = RecoDecay::pt(pVecLfDau0, pVecLfDau1);
-    auto candJpsi = candB0.jpsi();
+    auto candJpsi = candB0.template jpsi_as<JPsis>();
     float pseudoPropDecLen = candB0.decayLengthXY() * mCandB0 / ptCandB0;
 
     int binPt = o2::analysis::findBin(binsPt, ptCandB0);
@@ -1025,14 +1147,14 @@ struct HfHelper {
     }
 
     // d0 of K*0 daughters
-    if (std::abs(candB0.impactParameter2()) < cuts->get(binPt, "d0 K*0") ||
-        std::abs(candB0.impactParameter3()) < cuts->get(binPt, "d0 K*0")) {
+    if (std::abs(candB0.impactParameter2()) < cuts->get(binPt, "d0 K*0 daughters") ||
+        std::abs(candB0.impactParameter3()) < cuts->get(binPt, "d0 K*0 daughters")) {
       return false;
     }
 
     // d0 of J/Psi
-    if (std::abs(candB0.impactParameter0()) < cuts->get(binPt, "d0 J/Psi") ||
-        std::abs(candB0.impactParameter1()) < cuts->get(binPt, "d0 J/Psi")) {
+    if (std::abs(candB0.impactParameter0()) < cuts->get(binPt, "d0 J/Psi daughters") ||
+        std::abs(candB0.impactParameter1()) < cuts->get(binPt, "d0 J/Psi daughters")) {
       return false;
     }
 
@@ -1082,7 +1204,7 @@ struct HfHelper {
   /// \param binsPt pT bin limits
   /// \param useJpsiPdgMass Use PDG mass for J/psi when calculating B+ candidate mass
   /// \return true if candidate passes all selections
-  template <typename T1, typename T2, typename T3>
+  template <typename JPsis, typename T1, typename T2, typename T3>
   static bool selectionBplusToJpsiKTopol(const T1& candBp, const T2& cuts, const T3& binsPt, const bool useJpsiPdgMass)
   {
     auto ptCandBp = candBp.pt();
@@ -1092,7 +1214,7 @@ struct HfHelper {
     auto const pVecKa = candBp.pVectorProng2();
     auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
     auto ptKa = RecoDecay::pt(pVecKa);
-    auto candJpsi = candBp.jpsi();
+    auto candJpsi = candBp.template jpsi_as<JPsis>();
     float pseudoPropDecLen = candBp.decayLengthXY() * mCandBp / ptCandBp;
 
     int binPt = o2::analysis::findBin(binsPt, ptCandBp);
@@ -1273,7 +1395,7 @@ struct HfHelper {
   /// \param useJpsiPdgMass Use PDG mass for J/psi when calculating Bs candidate mass
   /// \param usePhiPdgMass Use PDG mass for phi when calculating Bs candidate mass
   /// \return true if candidate passes all selections
-  template <typename T1, typename T2, typename T3>
+  template <typename JPsis, typename T1, typename T2, typename T3>
   static bool selectionBsToJpsiPhiTopol(const T1& candBs, const T2& cuts, const T3& binsPt, const bool useJpsiPdgMass, const bool usePhiPdgMass)
   {
     auto ptCandBs = candBs.pt();
@@ -1285,7 +1407,7 @@ struct HfHelper {
     auto mCandPhi = RecoDecay::m(std::array{pVecKa0, pVecKa1}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
     auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
     auto ptPhi = RecoDecay::pt(pVecKa0, pVecKa1);
-    auto candJpsi = candBs.jpsi();
+    auto candJpsi = candBs.template jpsi_as<JPsis>();
     float pseudoPropDecLen = candBs.decayLengthXY() * mCandBs / ptCandBs;
 
     int binPt = o2::analysis::findBin(binsPt, ptCandBs);

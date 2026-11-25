@@ -19,10 +19,10 @@
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
-#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/Logger.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <limits>
@@ -46,7 +46,7 @@ enum Observable {
 };
 
 // Values in tables are stored in downscaled format to save disk space
-const float downscalingFactors[nObservables]{
+constexpr std::array<float, nObservables> downscalingFactors{
   1E0, // Cluster definition
   1E3, // Cluster energy
   1E4, // Cluster eta
@@ -120,11 +120,11 @@ DECLARE_SOA_INDEX_COLUMN(MinCluster, minCluster); //!
 } // namespace mintm
 
 DECLARE_SOA_TABLE(MinMTracks, "AOD", "MINMTRACK", //!
-                  mintm::MinClusterId, mincluster::StoredDeltaPhi, mincluster::StoredDeltaEta, mincluster::StoredP, mincluster::StoredPt,
+                  o2::soa::Index<>, mintm::MinClusterId, mincluster::StoredDeltaPhi, mincluster::StoredDeltaEta, mincluster::StoredP, mincluster::StoredPt,
                   mincluster::DeltaPhi<mincluster::StoredDeltaPhi>, mincluster::DeltaEta<mincluster::StoredDeltaEta>, mincluster::TrackP<mincluster::StoredP>, mincluster::TrackPt<mincluster::StoredPt>);
 
 DECLARE_SOA_TABLE(MinMSTracks, "AOD", "MINMSTRACK", //!
-                  mintm::MinClusterId, mincluster::StoredDeltaPhi, mincluster::StoredDeltaEta, mincluster::StoredP, mincluster::StoredPt,
+                  o2::soa::Index<>, mintm::MinClusterId, mincluster::StoredDeltaPhi, mincluster::StoredDeltaEta, mincluster::StoredP, mincluster::StoredPt,
                   mincluster::DeltaPhi<mincluster::StoredDeltaPhi>, mincluster::DeltaEta<mincluster::StoredDeltaEta>, mincluster::TrackP<mincluster::StoredP>, mincluster::TrackPt<mincluster::StoredPt>);
 
 } // namespace o2::aod

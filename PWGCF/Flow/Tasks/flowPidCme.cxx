@@ -230,14 +230,14 @@ struct FillPIDcolums {
   };
 
   template <typename TrackType>
-  bool selTrackPid(const TrackType track)
+  bool selTrackPid(const TrackType& track)
   {
     if ((track.pt() < cfgMinPtPID) || (track.pt() > cfgMaxPtPID))
       return false;
     if (std::abs(track.eta()) > cfgMaxEtaPID)
       return false;
     if (cfgRequireGlobalTrack) {
-      if (!(track.isGlobalTrackSDD() == (uint8_t) true))
+      if (!(track.isGlobalTrackSDD() == static_cast<uint8_t>(true)))
         return false;
     }
     if (cfgUseCostomTrackCuts) {
@@ -1568,7 +1568,7 @@ struct QAProcessCent {
   std::vector<std::shared_ptr<TH3>> vhistnSigmaTOFTPCPtNegKaAfterCen;
   std::vector<std::shared_ptr<TH3>> vhistnSigmaTOFTPCPtPosPrAfterCen;
   std::vector<std::shared_ptr<TH3>> vhistnSigmaTOFTPCPtNegPrAfterCen;
-  Filter trackPIDfilter = aod::cme_track_pid_columns::nPidFlag > (int8_t)0;
+  Filter trackPIDfilter = aod::cme_track_pid_columns::nPidFlag > static_cast<int8_t>(0);
   void init(InitContext const&)
   {
     AxisSpec axisPhicme = {100, 0, 2.1 * constants::math::PI, "#phi"};
@@ -2106,7 +2106,7 @@ struct FlowPidCme {
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgVtzCut) && (aod::cent::centFT0C > cfgCentMin) && (aod::cent::centFT0C < cfgCentMax);
   Filter ptfilter = aod::track::pt > cfgMinPt;
   Filter etafilter = aod::track::eta < cfgMaxEta;
-  Filter properPIDfilter = aod::cme_track_pid_columns::nPidFlag >= (int8_t)0;
+  Filter properPIDfilter = aod::cme_track_pid_columns::nPidFlag >= static_cast<int8_t>(0);
 
   Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags, aod::PidInfo>>> tracksSet1 = ((aod::cme_track_pid_columns::nPidFlag == pid_flags::kPion) || (aod::cme_track_pid_columns::nPidFlag == pid_flags::kPionKaon) || (aod::cme_track_pid_columns::nPidFlag == pid_flags::kPionProton) || (aod::cme_track_pid_columns::nPidFlag == pid_flags::kPionKaonProton));
   Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags, aod::PidInfo>>> tracksSet2 = ((aod::cme_track_pid_columns::nPidFlag == pid_flags::kKaon) || (aod::cme_track_pid_columns::nPidFlag == pid_flags::kPionKaon) || (aod::cme_track_pid_columns::nPidFlag == pid_flags::kKaonProton) || (aod::cme_track_pid_columns::nPidFlag == pid_flags::kPionKaonProton));
@@ -2624,7 +2624,7 @@ struct FlowPidCme {
   }
 
   template <typename TrackType>
-  bool selTrack(const TrackType track, float centrality)
+  bool selTrack(const TrackType& track, float centrality)
   {
     if (cfgkOpenDebugPIDCME) {
       LOGF(info, "====================Entering track selection=============================");

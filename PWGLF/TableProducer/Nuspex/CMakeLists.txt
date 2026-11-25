@@ -24,6 +24,16 @@ o2physics_add_dpl_workflow(hypertriton-reco-task
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(tracked-hypertriton-reco-task
+    SOURCES trackedHypertritonRecoTask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2::TOFBase O2::DetectorsVertexing O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(nuclei-three-body-builder
+    SOURCES nucleiThreeBodyBuilder.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(lnn-reco-task
     SOURCES lnnRecoTask.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
@@ -37,6 +47,11 @@ o2physics_add_dpl_workflow(nucleustreecreator
 o2physics_add_dpl_workflow(he3hadronfemto
     SOURCES he3HadronFemto.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(pi-hypertriton-femto
+    SOURCES piHypertritonFemto.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(nuclei-spectra
@@ -127,4 +142,20 @@ o2physics_add_dpl_workflow(photon-deuteron
 o2physics_add_dpl_workflow(coalescence-tree-producer
     SOURCES coalescenceTreeProducer.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(double-omega-tree-creator
+    SOURCES doubleOmegaTreeCreator.cxx
+    REUSE_FROM LfStrangenessPCH
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(double-omega-builder
+    SOURCES doubleOmegaBuilder.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(double-omega-track-index-skim-creator
+    SOURCES doubleOmegaTrackIndexSkimCreator.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2::DCAFitter
     COMPONENT_NAME Analysis)

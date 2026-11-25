@@ -11,7 +11,7 @@
 
 /// \file MultModule.h
 /// \brief combined multiplicity + centrality module with autodetect features
-/// \author ALICE
+/// \author ALICE Collaboration
 
 #ifndef COMMON_TOOLS_MULTIPLICITY_MULTMODULE_H_
 #define COMMON_TOOLS_MULTIPLICITY_MULTMODULE_H_
@@ -36,11 +36,13 @@
 #include <TProfile.h>
 #include <TString.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 //__________________________________________
@@ -58,7 +60,7 @@ static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{
   // multiplicity subcomponent
   "FV0Mults",
-  "FV0AOuterMults",
+  "FITExtraMults",
   "FT0Mults",
   "FDDMults",
   "ZDCMults",
@@ -97,12 +99,17 @@ static const std::vector<std::string> tableNames{
   "CentMFTs",
   "BCCentFT0Ms",
   "BCCentFT0As",
-  "BCCentFT0Cs"};
+  "BCCentFT0Cs",
+  "CentFT0MAnchorCols",
+  "CentFT0MAnchorBCs",
+  "CentFT0MOuterAs"};
 
-static constexpr int nTablesConst = 39;
-
+static constexpr int nTablesConst = 42;
 static const std::vector<std::string> parameterNames{"enable"};
 static const int defaultParameters[nTablesConst][nParameters]{
+  {-1},
+  {-1},
+  {-1},
   {-1},
   {-1},
   {-1},
@@ -166,25 +173,28 @@ enum tableIndex { kFV0Mults,       // standard
                   kMultsGlobal,    // requires track selection task
 
                   // centrality subcomponent
-                  kCentRun2V0Ms,      // Run 2
-                  kCentRun2V0As,      // Run 2
-                  kCentRun2SPDTrks,   // Run 2
-                  kCentRun2SPDClss,   // Run 2
-                  kCentRun2CL0s,      // Run 2
-                  kCentRun2CL1s,      // Run 2
-                  kCentFV0As,         // standard Run 3
-                  kCentFT0Ms,         // standard Run 3
-                  kCentFT0As,         // standard Run 3
-                  kCentFT0Cs,         // standard Run 3
-                  kCentFT0CVariant1s, // standard Run 3
-                  kCentFT0CVariant2s, // standard Run 3
-                  kCentFDDMs,         // standard Run 3
-                  kCentNTPVs,         // standard Run 3
-                  kCentNGlobals,      // requires track selection task
-                  kCentMFTs,          // requires MFT task
-                  kBCCentFT0Ms,       // bc centrality
-                  kBCCentFT0As,       // bc centrality
-                  kBCCentFT0Cs,       // bc centrality
+                  kCentRun2V0Ms,       // Run 2
+                  kCentRun2V0As,       // Run 2
+                  kCentRun2SPDTrks,    // Run 2
+                  kCentRun2SPDClss,    // Run 2
+                  kCentRun2CL0s,       // Run 2
+                  kCentRun2CL1s,       // Run 2
+                  kCentFV0As,          // standard Run 3
+                  kCentFT0Ms,          // standard Run 3
+                  kCentFT0As,          // standard Run 3
+                  kCentFT0Cs,          // standard Run 3
+                  kCentFT0CVariant1s,  // standard Run 3
+                  kCentFT0CVariant2s,  // standard Run 3
+                  kCentFDDMs,          // standard Run 3
+                  kCentNTPVs,          // standard Run 3
+                  kCentNGlobals,       // requires track selection task
+                  kCentMFTs,           // requires MFT task
+                  kBCCentFT0Ms,        // bc centrality
+                  kBCCentFT0As,        // bc centrality
+                  kBCCentFT0Cs,        // bc centrality
+                  kCentFT0MAnchorCols, // standard Run 3
+                  kCentFT0MAnchorBCs,  // standard Run 3
+                  kCentFT0MOuterAs,    // standard Run 3
                   kNTables };
 
 struct products : o2::framework::ProducesGroup {
@@ -222,6 +232,7 @@ struct products : o2::framework::ProducesGroup {
   o2::framework::Produces<aod::CentRun2CL1s> centRun2CL1;
   o2::framework::Produces<aod::CentFV0As> centFV0A;
   o2::framework::Produces<aod::CentFT0Ms> centFT0M;
+  o2::framework::Produces<aod::CentFT0MOuterAs> centFT0MOuterA;
   o2::framework::Produces<aod::CentFT0As> centFT0A;
   o2::framework::Produces<aod::CentFT0Cs> centFT0C;
   o2::framework::Produces<aod::CentFT0CVariant1s> centFT0CVariant1;
@@ -233,6 +244,8 @@ struct products : o2::framework::ProducesGroup {
   o2::framework::Produces<aod::BCCentFT0As> bcCentFT0A;
   o2::framework::Produces<aod::BCCentFT0Cs> bcCentFT0C;
   o2::framework::Produces<aod::BCCentFT0Ms> bcCentFT0M;
+  o2::framework::Produces<aod::CentFT0MAnchorCols> centFT0MAnchorCol;
+  o2::framework::Produces<aod::CentFT0MAnchorBCs> centFT0MAnchorBC;
 
   //__________________________________________________
   // centrality tables per BC
@@ -247,6 +260,7 @@ struct multEntry {
   float multFV0C = 0.0f;
   float multFV0AOuter = 0.0f;
   float multFT0A = 0.0f;
+  float multFT0AOuter = 0.0f;
   float multFT0C = 0.0f;
   float multFDDA = 0.0f;
   float multFDDC = 0.0f;
@@ -276,6 +290,7 @@ struct multEntry {
   float multFV0AZeq = -999.0f;
   float multFV0CZeq = -999.0f;
   float multFT0AZeq = -999.0f;
+  float multFT0AOuterZeq = -999.0f;
   float multFT0CZeq = -999.0f;
   float multFDDAZeq = -999.0f;
   float multFDDCZeq = -999.0f;
@@ -331,7 +346,7 @@ struct standardConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
 
   // centrality operation
-  o2::framework::Configurable<std::string> generatorName{"generatorName", "", {"Specify if and only if this is MC. Typical: PYTHIA"}};
+  o2::framework::Configurable<std::string> generatorName{"generatorName", "", {"MC generator name for centrality calibration (e.g. PYTHIA, EPOS). Empty: autodetect from metadata in Run 3, falling back to PYTHIA. Specify if and only if this is MC to override autodetect from metadata"}};
   o2::framework::Configurable<bool> embedINELgtZEROselection{"embedINELgtZEROselection", false, {"Option to do percentile 100.5 if not INELgtZERO"}};
 };
 
@@ -416,7 +431,7 @@ class MultModule
     float mMCScalePars[6] = {0.0};
     TFormula* mMCScale = nullptr;
     explicit CalibrationInfo(std::string name)
-      : name(name),
+      : name(std::move(name)),
         mCalibrationStored(false),
         mhMultSelCalib(nullptr),
         mMCScalePars{0.0},
@@ -443,6 +458,9 @@ class MultModule
 
   CalibrationInfo fv0aInfo = CalibrationInfo("FV0");
   CalibrationInfo ft0mInfo = CalibrationInfo("FT0");
+  CalibrationInfo ft0mColInfo = CalibrationInfo("FT0AnchorCol");
+  CalibrationInfo ft0mBcInfo = CalibrationInfo("FT0AnchorBc");
+  CalibrationInfo FT0MOuterAInfo = CalibrationInfo("FT0MOuterA");
   CalibrationInfo ft0aInfo = CalibrationInfo("FT0A");
   CalibrationInfo ft0cInfo = CalibrationInfo("FT0C");
   CalibrationInfo ft0cVariant1Info = CalibrationInfo("FT0Cvar1");
@@ -463,7 +481,7 @@ class MultModule
     LOGF(info, "Metadata information: isMC? %i", metadataInfo.isMC());
     const auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
 
-    TString listOfRequestors[nTablesConst];
+    std::array<TString, nTablesConst> listOfRequestors{};
     for (int i = 0; i < nTablesConst; i++) {
       int f = internalOpts.enabledTables->get(tableNames[i].c_str(), "enable");
       if (f == 1) {
@@ -644,11 +662,88 @@ class MultModule
   }
 
   //__________________________________________________
+  // loads the vertex-Z equalization profiles for the run of this bc (only if run changed)
+  // public so that it can also be used when re-generating centralities from derived data
+  template <typename TCCDB, typename TMetadataInfo, typename TBC>
+  void ConfigureVertexZRun3(TCCDB const& ccdb, TMetadataInfo const& metadataInfo, TBC const& bc)
+  {
+    if (internalOpts.doVertexZeq <= 0 || bc.runNumber() == mRunNumber) {
+      return;
+    }
+    mRunNumber = bc.runNumber(); // mark this run as at least tried
+    if (internalOpts.reconstructionPass.value == "") {
+      lCalibObjects = ccdb->template getForRun<TList>(internalOpts.ccdbPathVtxZ, mRunNumber);
+    } else if (internalOpts.reconstructionPass.value == "metadata") {
+      std::map<std::string, std::string> metadata;
+      metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+      LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
+      lCalibObjects = ccdb->template getSpecificForRun<TList>(internalOpts.ccdbPathVtxZ, mRunNumber, metadata);
+    } else {
+      std::map<std::string, std::string> metadata;
+      metadata["RecoPassName"] = internalOpts.reconstructionPass.value;
+      LOGF(info, "Loading CCDB for reconstruction pass (from provided argument): %s", internalOpts.reconstructionPass.value);
+      lCalibObjects = ccdb->template getSpecificForRun<TList>(internalOpts.ccdbPathVtxZ, mRunNumber, metadata);
+    }
+
+    if (lCalibObjects) {
+      hVtxZFV0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
+      hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
+      hVtxZFT0C = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
+      hVtxZFDDA = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDA"));
+      hVtxZFDDC = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDC"));
+      hVtxZNTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
+      hVtxZNMFTTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZMFT"));
+      hVtxZNGlobalTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNGlobals"));
+      lCalibLoaded = true;
+      // Capture error
+      if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
+        LOGF(error, "Problem loading CCDB objects! Please check");
+        lCalibLoaded = false;
+      }
+      if (!hVtxZNMFTTracks) {
+        LOGF(info, "MFT track counter: vertex-Z calibration not loaded, will run without.");
+      }
+      if (!hVtxZNGlobalTracks) {
+        LOGF(info, "Global track counter: vertex-Z calibration not loaded, will run without.");
+      }
+    } else {
+      LOGF(error, "Problem loading CCDB object! Please check");
+      lCalibLoaded = false;
+    }
+  }
+
+  //__________________________________________________
+  // vertex-Z equalization of a signal with one of the profiles above
+  // returns 0 if signal invalid, vertex out of range or calibration missing
+  float equalizeVertexZ(TProfile* hVtxZ, float multiplicity, float posZ) const
+  {
+    if (multiplicity > -1.0f && std::fabs(posZ) < 15.0f && lCalibLoaded) {
+      return hVtxZ->Interpolate(0.0) * multiplicity / hVtxZ->Interpolate(posZ);
+    }
+    return 0.0f;
+  }
+
+  //__________________________________________________
+  // vertex-Z equalization of the global track counter
+  // returns the non-equalized value if calibration missing or vertex out of range
+  float equalizeVertexZGlobalTracks(int multGlobalTracks, float posZ) const
+  {
+    if (!hVtxZNGlobalTracks || std::fabs(posZ) > 15.0f) {
+      return multGlobalTracks; // if no equalization available, don't do it
+    }
+    return hVtxZNGlobalTracks->Interpolate(0.0) * multGlobalTracks / hVtxZNGlobalTracks->Interpolate(posZ);
+  }
+
+  //__________________________________________________
   template <typename TCCDB, typename TMetadataInfo, typename TCollision, typename TTracks, typename TBC, typename TOutputGroup>
   o2::common::multiplicity::multEntry collisionProcessRun3(TCCDB const& ccdb, TMetadataInfo const& metadataInfo, TCollision const& collision, TTracks const& tracks, TBC const& bc, TOutputGroup& cursors)
   {
     // initialize properties
     o2::common::multiplicity::multEntry mults;
+
+    //_______________________________________________________________________
+    // preparatory steps
+    ConfigureVertexZRun3(ccdb, metadataInfo, bc);
 
     //_______________________________________________________________________
     // preparatory steps
@@ -670,14 +765,14 @@ class MultModule
         }
 
         if (lCalibObjects) {
-          hVtxZFV0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
-          hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
-          hVtxZFT0C = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
-          hVtxZFDDA = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDA"));
-          hVtxZFDDC = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDC"));
-          hVtxZNTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
-          hVtxZNMFTTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZMFT"));
-          hVtxZNGlobalTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNGlobals"));
+          hVtxZFV0A = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
+          hVtxZFT0A = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
+          hVtxZFT0C = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
+          hVtxZFDDA = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDA"));
+          hVtxZFDDC = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDC"));
+          hVtxZNTracks = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
+          hVtxZNMFTTracks = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZMFT"));
+          hVtxZNGlobalTracks = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNGlobals"));
           lCalibLoaded = true;
           // Capture error
           if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
@@ -705,7 +800,7 @@ class MultModule
         auto amplitude = fv0.amplitude()[ii];
         auto channel = fv0.channel()[ii];
         mults.multFV0A += amplitude;
-        if (channel > 7) {
+        if (channel > 7) { // Outer ring only
           mults.multFV0AOuter += amplitude;
         }
       }
@@ -716,8 +811,11 @@ class MultModule
     if (collision.has_foundFT0()) {
       const auto& ft0 = collision.foundFT0();
       mults.fitTriggerMask = ft0.triggerMask();
-      for (const auto& amplitude : ft0.amplitudeA()) {
-        mults.multFT0A += amplitude;
+      for (size_t ii = 0; ii < ft0.amplitudeA().size(); ii++) {
+        mults.multFT0A += ft0.amplitudeA()[ii];
+        if (ft0.channelA()[ii] > 31) { // Outer ring only
+          mults.multFT0AOuter += ft0.amplitudeA()[ii];
+        }
       }
       for (const auto& amplitude : ft0.amplitudeC()) {
         mults.multFT0C += amplitude;
@@ -725,6 +823,7 @@ class MultModule
     } else {
       mults.multFT0A = -999.f;
       mults.multFT0C = -999.f;
+      mults.multFT0AOuter = -999.f;
     }
     if (collision.has_foundFDD()) {
       const auto& fdd = collision.foundFDD();
@@ -762,7 +861,7 @@ class MultModule
       cursors.tableFV0(mults.multFV0A, mults.multFV0C);
     }
     if (internalOpts.mEnabledTables[kFITExtraMults]) {
-      cursors.tableFITExtraMults(mults.multFV0AOuter, mults.fitTriggerMask);
+      cursors.tableFITExtraMults(mults.multFV0AOuter, mults.multFT0AOuter, mults.fitTriggerMask);
       cursors.tableFV0AOuterMults(mults.multFV0AOuter); // Keep for backwards compatibility
     }
     if (internalOpts.mEnabledTables[kFT0Mults]) {
@@ -784,37 +883,18 @@ class MultModule
     //_______________________________________________________________________
     // vertex-Z equalized signals
     if (internalOpts.mEnabledTables[kFV0MultZeqs]) {
-      if (mults.multFV0A > -1.0f && std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
-        mults.multFV0AZeq = hVtxZFV0A->Interpolate(0.0) * mults.multFV0A / hVtxZFV0A->Interpolate(collision.posZ());
-      } else {
-        mults.multFV0AZeq = 0.0f;
-      }
+      mults.multFV0AZeq = equalizeVertexZ(hVtxZFV0A, mults.multFV0A, collision.posZ());
       cursors.tableFV0Zeqs(mults.multFV0AZeq);
     }
     if (internalOpts.mEnabledTables[kFT0MultZeqs]) {
-      if (mults.multFT0A > -1.0f && std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
-        mults.multFT0AZeq = hVtxZFT0A->Interpolate(0.0) * mults.multFT0A / hVtxZFT0A->Interpolate(collision.posZ());
-      } else {
-        mults.multFT0AZeq = 0.0f;
-      }
-      if (mults.multFT0C > -1.0f && std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
-        mults.multFT0CZeq = hVtxZFT0C->Interpolate(0.0) * mults.multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
-      } else {
-        mults.multFT0CZeq = 0.0f;
-      }
+      mults.multFT0AZeq = equalizeVertexZ(hVtxZFT0A, mults.multFT0A, collision.posZ());
+      mults.multFT0AOuterZeq = equalizeVertexZ(hVtxZFT0A, mults.multFT0AOuter, collision.posZ());
+      mults.multFT0CZeq = equalizeVertexZ(hVtxZFT0C, mults.multFT0C, collision.posZ());
       cursors.tableFT0Zeqs(mults.multFT0AZeq, mults.multFT0CZeq);
     }
     if (internalOpts.mEnabledTables[kFDDMultZeqs]) {
-      if (mults.multFDDA > -1.0f && std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
-        mults.multFDDAZeq = hVtxZFDDA->Interpolate(0.0) * mults.multFDDA / hVtxZFDDA->Interpolate(collision.posZ());
-      } else {
-        mults.multFDDAZeq = 0.0f;
-      }
-      if (mults.multFDDC > -1.0f && std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
-        mults.multFDDCZeq = hVtxZFDDC->Interpolate(0.0) * mults.multFDDC / hVtxZFDDC->Interpolate(collision.posZ());
-      } else {
-        mults.multFDDCZeq = 0.0f;
-      }
+      mults.multFDDAZeq = equalizeVertexZ(hVtxZFDDA, mults.multFDDA, collision.posZ());
+      mults.multFDDCZeq = equalizeVertexZ(hVtxZFDDC, mults.multFDDC, collision.posZ());
       cursors.tableFDDZeqs(mults.multFDDAZeq, mults.multFDDCZeq);
     }
 
@@ -889,11 +969,7 @@ class MultModule
 
       cursors.multsGlobal(mults.multGlobalTracks, mults.multNbrContribsEta08GlobalTrackWoDCA, mults.multNbrContribsEta10GlobalTrackWoDCA, mults.multNbrContribsEta05GlobalTrackWoDCA);
 
-      if (!hVtxZNGlobalTracks || std::fabs(collision.posZ()) > 15.0f) {
-        mults.multGlobalTracksZeq = mults.multGlobalTracks; // if no equalization available, don't do it
-      } else {
-        mults.multGlobalTracksZeq = hVtxZNGlobalTracks->Interpolate(0.0) * mults.multGlobalTracks / hVtxZNGlobalTracks->Interpolate(collision.posZ());
-      }
+      mults.multGlobalTracksZeq = equalizeVertexZGlobalTracks(mults.multGlobalTracks, collision.posZ());
 
       // provide vertex-Z equalized Nglobals (or non-equalized if missing or beyond range)
       if (internalOpts.mEnabledTables[kGlobalMultZeqs]) {
@@ -1071,11 +1147,11 @@ class MultModule
       Run2CL1Info.mCalibrationStored = false;
       if (callst != nullptr) {
         auto getccdb = [callst](const char* ccdbhname) {
-          TH1* h = reinterpret_cast<TH1*>(callst->FindObject(ccdbhname));
+          TH1* h = dynamic_cast<TH1*>(callst->FindObject(ccdbhname));
           return h;
         };
         auto getformulaccdb = [callst](const char* ccdbhname) {
-          TFormula* f = reinterpret_cast<TFormula*>(callst->FindObject(ccdbhname));
+          TFormula* f = dynamic_cast<TFormula*>(callst->FindObject(ccdbhname));
           return f;
         };
 
@@ -1172,16 +1248,10 @@ class MultModule
       mRunNumberCentrality = bc.runNumber(); // mark that this run has been attempted already regardless of outcome
       LOGF(info, "centrality loading procedure for timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
 
-      // capture the need for PYTHIA calibration in Pb-Pb runs
-      if (metadataInfo.isMC() && mRunNumber >= 544013 && mRunNumber <= 545367) {
-        LOGF(info, "This is MC for Pb-Pb. Setting generatorName automatically to PYTHIA");
-        internalOpts.generatorName.value = "PYTHIA";
-      }
-
-      // capture the need for PYTHIA calibration in light ion runs automatically
-      if (metadataInfo.isMC() && mRunNumber >= 564250 && mRunNumber <= 564472) {
-        LOGF(info, "This is MC for light ion runs. Setting generatorName automatically to PYTHIA");
-        internalOpts.generatorName.value = "PYTHIA";
+      // autodetect the generator from the metadata if not explicitly configured
+      if (metadataInfo.isMC() && internalOpts.generatorName.value.empty()) {
+        internalOpts.generatorName.value = metadataInfo.getGenerator();
+        LOGF(info, "Setting generatorName automatically from metadata to %s", internalOpts.generatorName.value);
       }
 
       LOGF(info, "centrality loading procedure for timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
@@ -1212,6 +1282,9 @@ class MultModule
 
       fv0aInfo.mCalibrationStored = false;
       ft0mInfo.mCalibrationStored = false;
+      ft0mColInfo.mCalibrationStored = false;
+      ft0mBcInfo.mCalibrationStored = false;
+      FT0MOuterAInfo.mCalibrationStored = false;
       ft0aInfo.mCalibrationStored = false;
       ft0cInfo.mCalibrationStored = false;
       ft0cVariant1Info.mCalibrationStored = false;
@@ -1222,9 +1295,9 @@ class MultModule
       mftInfo.mCalibrationStored = false;
       if (callst != nullptr) {
         LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
-        auto getccdb = [callst, bc](struct CalibrationInfo& estimator, const o2::framework::Configurable<std::string> generatorName) { // TODO: to consider the name inside the estimator structure
-          estimator.mhMultSelCalib = reinterpret_cast<TH1*>(callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
-          estimator.mMCScale = reinterpret_cast<TFormula*>(callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
+        auto getccdb = [callst, bc](struct CalibrationInfo& estimator, const o2::framework::Configurable<std::string>& generatorName) { // TODO: to consider the name inside the estimator structure
+          estimator.mhMultSelCalib = dynamic_cast<TH1*>(callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
+          estimator.mMCScale = dynamic_cast<TFormula*>(callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
           if (estimator.mhMultSelCalib != nullptr) {
             if (generatorName->length() != 0) {
               LOGF(info, "Retrieving MC calibration for %d, generator name: %s", bc.runNumber(), generatorName->c_str());
@@ -1249,6 +1322,12 @@ class MultModule
           getccdb(fv0aInfo, internalOpts.generatorName);
         if (internalOpts.mEnabledTables[kCentFT0Ms] || internalOpts.mEnabledTables[kBCCentFT0Ms])
           getccdb(ft0mInfo, internalOpts.generatorName);
+        if (internalOpts.mEnabledTables[kCentFT0MAnchorCols])
+          getccdb(ft0mColInfo, internalOpts.generatorName);
+        if (internalOpts.mEnabledTables[kCentFT0MAnchorBCs])
+          getccdb(ft0mBcInfo, internalOpts.generatorName);
+        if (internalOpts.mEnabledTables[kCentFT0MOuterAs])
+          getccdb(FT0MOuterAInfo, internalOpts.generatorName);
         if (internalOpts.mEnabledTables[kCentFT0As] || internalOpts.mEnabledTables[kBCCentFT0As])
           getccdb(ft0aInfo, internalOpts.generatorName);
         if (internalOpts.mEnabledTables[kCentFT0Cs] || internalOpts.mEnabledTables[kBCCentFT0Cs])
@@ -1272,6 +1351,40 @@ class MultModule
   }
 
   //__________________________________________________
+  // MC multiplicity scaling, common to Run 2 and Run 3
+  static float scaleMC(float x, const float pars[6])
+  {
+    float core = ((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4];
+    if (core < 0.0f) {
+      return 0.0f; // this should be marked as low multiplicity and not mapped, core^pars[5] would be NaN
+    }
+    return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
+  }
+
+  //__________________________________________________
+  // Run 3 percentile of one estimator from its (vertex-Z equalized) multiplicity
+  // requires ConfigureCentralityRun3 to have been called for this run
+  // public so that it can also be used when re-generating centralities from derived data
+  float getCentralityRun3(CalibrationInfo const& estimator, float multiplicity, bool isInelGt0) const
+  {
+    const bool assignOutOfRange = internalOpts.embedINELgtZEROselection.value && !isInelGt0;
+
+    float percentile = 105.0f;
+    float scaledMultiplicity = multiplicity;
+    if (estimator.mCalibrationStored) {
+      if (estimator.mMCScale != nullptr) {
+        scaledMultiplicity = scaleMC(multiplicity, estimator.mMCScalePars);
+        LOGF(debug, "Unscaled %s multiplicity: %f, scaled %s multiplicity: %f", estimator.name.c_str(), multiplicity, estimator.name.c_str(), scaledMultiplicity);
+      }
+      percentile = estimator.mhMultSelCalib->GetBinContent(estimator.mhMultSelCalib->FindFixBin(scaledMultiplicity));
+      if (assignOutOfRange)
+        percentile = 100.5f;
+    }
+    LOGF(debug, "%s centrality/multiplicity percentile = %.0f for a zvtx eq %s value %.0f", estimator.name.c_str(), percentile, estimator.name.c_str(), scaledMultiplicity);
+    return percentile;
+  }
+
+  //__________________________________________________
   template <typename TCCDB, typename TMetadata, typename TBCs, typename TMultBuffer, typename TOutputGroup>
   void generateCentralitiesRun3(TCCDB& ccdb, TMetadata const& metadataInfo, TBCs const& bcs, TMultBuffer const& mults, TOutputGroup& cursors)
   {
@@ -1286,7 +1399,8 @@ class MultModule
       internalOpts.mEnabledTables[kCentFDDMs] ||
       internalOpts.mEnabledTables[kCentNTPVs] || internalOpts.mEnabledTables[kCentNGlobals] ||
       internalOpts.mEnabledTables[kCentMFTs] || internalOpts.mEnabledTables[kBCCentFT0Ms] ||
-      internalOpts.mEnabledTables[kBCCentFT0As] || internalOpts.mEnabledTables[kBCCentFT0Cs]) {
+      internalOpts.mEnabledTables[kBCCentFT0As] || internalOpts.mEnabledTables[kBCCentFT0Cs] ||
+      internalOpts.mEnabledTables[kCentFT0MAnchorCols] || internalOpts.mEnabledTables[kCentFT0MAnchorBCs]) {
       // check and update centrality calibration objects for Run 3
       const auto& firstbc = bcs.begin();
       ConfigureCentralityRun3(ccdb, metadataInfo, firstbc);
@@ -1300,27 +1414,7 @@ class MultModule
        *************************************************************/
 
       auto populateTable = [&](auto& table, struct CalibrationInfo& estimator, float multiplicity, bool isInelGt0) {
-        const bool assignOutOfRange = internalOpts.embedINELgtZEROselection && !isInelGt0;
-        auto scaleMC = [](float x, const float pars[6]) {
-          float core = ((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4];
-          if (core < 0.0f) {
-            return 0.0f; // this should be marked as low multiplicity and not mapped, core^pars[5] would be NaN
-          }
-          return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
-        };
-
-        float percentile = 105.0f;
-        float scaledMultiplicity = multiplicity;
-        if (estimator.mCalibrationStored) {
-          if (estimator.mMCScale != nullptr) {
-            scaledMultiplicity = scaleMC(multiplicity, estimator.mMCScalePars);
-            LOGF(debug, "Unscaled %s multiplicity: %f, scaled %s multiplicity: %f", estimator.name.c_str(), multiplicity, estimator.name.c_str(), scaledMultiplicity);
-          }
-          percentile = estimator.mhMultSelCalib->GetBinContent(estimator.mhMultSelCalib->FindFixBin(scaledMultiplicity));
-          if (assignOutOfRange)
-            percentile = 100.5f;
-        }
-        LOGF(debug, "%s centrality/multiplicity percentile = %.0f for a zvtx eq %s value %.0f", estimator.name.c_str(), percentile, estimator.name.c_str(), scaledMultiplicity);
+        const float percentile = getCentralityRun3(estimator, multiplicity, isInelGt0);
         table(percentile);
         return percentile;
       };
@@ -1332,6 +1426,12 @@ class MultModule
           populateTable(cursors.centFV0A, fv0aInfo, mults[iEv].multFV0AZeq, isInelGt0);
         if (internalOpts.mEnabledTables[kCentFT0Ms])
           populateTable(cursors.centFT0M, ft0mInfo, mults[iEv].multFT0AZeq + mults[iEv].multFT0CZeq, isInelGt0);
+        if (internalOpts.mEnabledTables[kCentFT0Ms])
+          populateTable(cursors.centFT0MAnchorCol, ft0mColInfo, mults[iEv].multFT0AZeq + mults[iEv].multFT0CZeq, isInelGt0);
+        if (internalOpts.mEnabledTables[kCentFT0Ms])
+          populateTable(cursors.centFT0MAnchorBC, ft0mBcInfo, mults[iEv].multFT0AZeq + mults[iEv].multFT0CZeq, isInelGt0);
+        if (internalOpts.mEnabledTables[kCentFT0MOuterAs])
+          populateTable(cursors.centFT0MOuterA, FT0MOuterAInfo, mults[iEv].multFT0AOuterZeq + mults[iEv].multFT0CZeq, isInelGt0);
         if (internalOpts.mEnabledTables[kCentFT0As])
           populateTable(cursors.centFT0A, ft0aInfo, mults[iEv].multFT0AZeq, isInelGt0);
         if (internalOpts.mEnabledTables[kCentFT0Cs])
@@ -1379,6 +1479,79 @@ class MultModule
     }
   }
   //__________________________________________________
+  // Run 2 percentiles from the multiplicities of one collision
+  // require ConfigureCentralityRun2 to have been called for this run
+  // public so that they can also be used when re-generating centralities from derived data
+  float getCentralityRun2V0M(multEntry const& mults) const
+  {
+    float cV0M = 105.0f;
+    if (Run2V0MInfo.mCalibrationStored) {
+      float v0m;
+      if (Run2V0MInfo.mMCScale != nullptr) {
+        v0m = scaleMC(mults.multFV0A + mults.multFV0C, Run2V0MInfo.mMCScalePars);
+        LOGF(debug, "Unscaled v0m: %f, scaled v0m: %f", mults.multFV0A + mults.multFV0C, v0m);
+      } else {
+        v0m = mults.multFV0A * Run2V0MInfo.mhVtxAmpCorrV0A->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0A->FindFixBin(mults.posZ)) +
+              mults.multFV0C * Run2V0MInfo.mhVtxAmpCorrV0C->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0C->FindFixBin(mults.posZ));
+      }
+      cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+    }
+    LOGF(debug, "centRun2V0M=%.0f", cV0M);
+    return cV0M;
+  }
+  float getCentralityRun2V0A(multEntry const& mults) const
+  {
+    float cV0A = 105.0f;
+    if (Run2V0AInfo.mCalibrationStored) {
+      float v0a = mults.multFV0A * Run2V0AInfo.mhVtxAmpCorrV0A->GetBinContent(Run2V0AInfo.mhVtxAmpCorrV0A->FindFixBin(mults.posZ));
+      cV0A = Run2V0AInfo.mhMultSelCalib->GetBinContent(Run2V0AInfo.mhMultSelCalib->FindFixBin(v0a));
+    }
+    LOGF(debug, "centRun2V0A=%.0f", cV0A);
+    return cV0A;
+  }
+  float getCentralityRun2SPDTracklets(multEntry const& mults) const
+  {
+    float cSPD = 105.0f;
+    if (Run2SPDTksInfo.mCalibrationStored) {
+      float spdm = mults.multTracklets * Run2SPDTksInfo.mhVtxAmpCorr->GetBinContent(Run2SPDTksInfo.mhVtxAmpCorr->FindFixBin(mults.posZ));
+      cSPD = Run2SPDTksInfo.mhMultSelCalib->GetBinContent(Run2SPDTksInfo.mhMultSelCalib->FindFixBin(spdm));
+    }
+    LOGF(debug, "centSPDTracklets=%.0f", cSPD);
+    return cSPD;
+  }
+  float getCentralityRun2SPDClusters(multEntry const& mults) const
+  {
+    float cSPD = 105.0f;
+    if (Run2SPDClsInfo.mCalibrationStored) {
+      float spdm = mults.spdClustersL0 * Run2SPDClsInfo.mhVtxAmpCorrCL0->GetBinContent(Run2SPDClsInfo.mhVtxAmpCorrCL0->FindFixBin(mults.posZ)) +
+                   mults.spdClustersL1 * Run2SPDClsInfo.mhVtxAmpCorrCL1->GetBinContent(Run2SPDClsInfo.mhVtxAmpCorrCL1->FindFixBin(mults.posZ));
+      cSPD = Run2SPDClsInfo.mhMultSelCalib->GetBinContent(Run2SPDClsInfo.mhMultSelCalib->FindFixBin(spdm));
+    }
+    LOGF(debug, "centSPDClusters=%.0f", cSPD);
+    return cSPD;
+  }
+  float getCentralityRun2CL0(multEntry const& mults) const
+  {
+    float cCL0 = 105.0f;
+    if (Run2CL0Info.mCalibrationStored) {
+      float cl0m = mults.spdClustersL0 * Run2CL0Info.mhVtxAmpCorr->GetBinContent(Run2CL0Info.mhVtxAmpCorr->FindFixBin(mults.posZ));
+      cCL0 = Run2CL0Info.mhMultSelCalib->GetBinContent(Run2CL0Info.mhMultSelCalib->FindFixBin(cl0m));
+    }
+    LOGF(debug, "centCL0=%.0f", cCL0);
+    return cCL0;
+  }
+  float getCentralityRun2CL1(multEntry const& mults) const
+  {
+    float cCL1 = 105.0f;
+    if (Run2CL1Info.mCalibrationStored) {
+      float cl1m = mults.spdClustersL1 * Run2CL1Info.mhVtxAmpCorr->GetBinContent(Run2CL1Info.mhVtxAmpCorr->FindFixBin(mults.posZ));
+      cCL1 = Run2CL1Info.mhMultSelCalib->GetBinContent(Run2CL1Info.mhMultSelCalib->FindFixBin(cl1m));
+    }
+    LOGF(debug, "centCL1=%.0f", cCL1);
+    return cCL1;
+  }
+
+  //__________________________________________________
   template <typename TCCDB, typename TMetadata, typename TBCs, typename TMultBuffer, typename TOutputGroup>
   void generateCentralitiesRun2(TCCDB& ccdb, TMetadata const& metadataInfo, TBCs const& bcs, TMultBuffer const& mults, TOutputGroup& cursors)
   {
@@ -1392,80 +1565,20 @@ class MultModule
       const auto& firstbc = bcs.begin();
       ConfigureCentralityRun2(ccdb, metadataInfo, firstbc);
 
-      auto scaleMC = [](float x, const float pars[6]) {
-        float core = ((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4];
-        if (core < 0.0f) {
-          return 0.0f; // this should be marked as low multiplicity and not mapped, core^pars[5] would be NaN
-        }
-        return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
-      };
-
       // populate centralities per event
       for (size_t iEv = 0; iEv < mults.size(); iEv++) {
-        if (internalOpts.mEnabledTables[kCentRun2V0Ms]) {
-          float cV0M = 105.0f;
-          if (Run2V0MInfo.mCalibrationStored) {
-            float v0m;
-            if (Run2V0MInfo.mMCScale != nullptr) {
-              v0m = scaleMC(mults[iEv].multFV0A + mults[iEv].multFV0C, Run2V0MInfo.mMCScalePars);
-              LOGF(debug, "Unscaled v0m: %f, scaled v0m: %f", mults[iEv].multFV0A + mults[iEv].multFV0C, v0m);
-            } else {
-              v0m = mults[iEv].multFV0A * Run2V0MInfo.mhVtxAmpCorrV0A->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0A->FindFixBin(mults[iEv].posZ)) +
-                    mults[iEv].multFV0C * Run2V0MInfo.mhVtxAmpCorrV0C->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0C->FindFixBin(mults[iEv].posZ));
-            }
-            cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
-          }
-          LOGF(debug, "centRun2V0M=%.0f", cV0M);
-          // fill centrality columns
-          cursors.centRun2V0M(cV0M);
-        }
-        if (internalOpts.mEnabledTables[kCentRun2V0As]) {
-          float cV0A = 105.0f;
-          if (Run2V0AInfo.mCalibrationStored) {
-            float v0a = mults[iEv].multFV0A * Run2V0AInfo.mhVtxAmpCorrV0A->GetBinContent(Run2V0AInfo.mhVtxAmpCorrV0A->FindFixBin(mults[iEv].posZ));
-            cV0A = Run2V0AInfo.mhMultSelCalib->GetBinContent(Run2V0AInfo.mhMultSelCalib->FindFixBin(v0a));
-          }
-          LOGF(debug, "centRun2V0A=%.0f", cV0A);
-          // fill centrality columns
-          cursors.centRun2V0A(cV0A);
-        }
-        if (internalOpts.mEnabledTables[kCentRun2SPDTrks]) {
-          float cSPD = 105.0f;
-          if (Run2SPDTksInfo.mCalibrationStored) {
-            float spdm = mults[iEv].multTracklets * Run2SPDTksInfo.mhVtxAmpCorr->GetBinContent(Run2SPDTksInfo.mhVtxAmpCorr->FindFixBin(mults[iEv].posZ));
-            cSPD = Run2SPDTksInfo.mhMultSelCalib->GetBinContent(Run2SPDTksInfo.mhMultSelCalib->FindFixBin(spdm));
-          }
-          LOGF(debug, "centSPDTracklets=%.0f", cSPD);
-          cursors.centRun2SPDTracklets(cSPD);
-        }
-        if (internalOpts.mEnabledTables[kCentRun2SPDClss]) {
-          float cSPD = 105.0f;
-          if (Run2SPDClsInfo.mCalibrationStored) {
-            float spdm = mults[iEv].spdClustersL0 * Run2SPDClsInfo.mhVtxAmpCorrCL0->GetBinContent(Run2SPDClsInfo.mhVtxAmpCorrCL0->FindFixBin(mults[iEv].posZ)) +
-                         mults[iEv].spdClustersL1 * Run2SPDClsInfo.mhVtxAmpCorrCL1->GetBinContent(Run2SPDClsInfo.mhVtxAmpCorrCL1->FindFixBin(mults[iEv].posZ));
-            cSPD = Run2SPDClsInfo.mhMultSelCalib->GetBinContent(Run2SPDClsInfo.mhMultSelCalib->FindFixBin(spdm));
-          }
-          LOGF(debug, "centSPDClusters=%.0f", cSPD);
-          cursors.centRun2SPDClusters(cSPD);
-        }
-        if (internalOpts.mEnabledTables[kCentRun2CL0s]) {
-          float cCL0 = 105.0f;
-          if (Run2CL0Info.mCalibrationStored) {
-            float cl0m = mults[iEv].spdClustersL0 * Run2CL0Info.mhVtxAmpCorr->GetBinContent(Run2CL0Info.mhVtxAmpCorr->FindFixBin(mults[iEv].posZ));
-            cCL0 = Run2CL0Info.mhMultSelCalib->GetBinContent(Run2CL0Info.mhMultSelCalib->FindFixBin(cl0m));
-          }
-          LOGF(debug, "centCL0=%.0f", cCL0);
-          cursors.centRun2CL0(cCL0);
-        }
-        if (internalOpts.mEnabledTables[kCentRun2CL1s]) {
-          float cCL1 = 105.0f;
-          if (Run2CL1Info.mCalibrationStored) {
-            float cl1m = mults[iEv].spdClustersL1 * Run2CL1Info.mhVtxAmpCorr->GetBinContent(Run2CL1Info.mhVtxAmpCorr->FindFixBin(mults[iEv].posZ));
-            cCL1 = Run2CL1Info.mhMultSelCalib->GetBinContent(Run2CL1Info.mhMultSelCalib->FindFixBin(cl1m));
-          }
-          LOGF(debug, "centCL1=%.0f", cCL1);
-          cursors.centRun2CL1(cCL1);
-        }
+        if (internalOpts.mEnabledTables[kCentRun2V0Ms])
+          cursors.centRun2V0M(getCentralityRun2V0M(mults[iEv]));
+        if (internalOpts.mEnabledTables[kCentRun2V0As])
+          cursors.centRun2V0A(getCentralityRun2V0A(mults[iEv]));
+        if (internalOpts.mEnabledTables[kCentRun2SPDTrks])
+          cursors.centRun2SPDTracklets(getCentralityRun2SPDTracklets(mults[iEv]));
+        if (internalOpts.mEnabledTables[kCentRun2SPDClss])
+          cursors.centRun2SPDClusters(getCentralityRun2SPDClusters(mults[iEv]));
+        if (internalOpts.mEnabledTables[kCentRun2CL0s])
+          cursors.centRun2CL0(getCentralityRun2CL0(mults[iEv]));
+        if (internalOpts.mEnabledTables[kCentRun2CL1s])
+          cursors.centRun2CL1(getCentralityRun2CL1(mults[iEv]));
       }
     }
   }

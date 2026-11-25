@@ -42,7 +42,7 @@ using namespace o2::analysis::femto;
 struct FemtoV0Qa {
 
   // setup tables
-  using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks, o2::aod::FColPos, o2::aod::FColSphericities, o2::aod::FColMults>;
+  using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks, o2::aod::FColPos, o2::aod::FColSphericities, o2::aod::FColMults, o2::aod::FColCents>;
   using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
   using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
 
@@ -65,7 +65,7 @@ struct FemtoV0Qa {
   // setup for collisions
   collisionbuilder::ConfCollisionSelection collisionSelection;
   o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
-  colhistmanager::CollisionHistManager colHistManager;
+  colhistmanager::CollisionHistManager<colhistmanager::PrefixQa> colHistManager;
   colhistmanager::ConfCollisionBinning confCollisionBinning;
   colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 
@@ -112,17 +112,17 @@ struct FemtoV0Qa {
     k0shortHistManager;
 
   // setup for daughters
-  trackhistmanager::ConfV0PosDauBinning confV0PosDaughterBinning;
-  trackhistmanager::ConfV0PosDauQaBinning confV0PosDaughterQaBinning;
+  trackhistmanager::ConfV01PosDauBinning confV0PosDaughterBinning;
+  trackhistmanager::ConfV01PosDauQaBinning confV0PosDaughterQaBinning;
 
-  trackhistmanager::ConfV0NegDauBinning confV0NegDaughterBinning;
-  trackhistmanager::ConfV0NegDauQaBinning confV0NegDaughterQaBinning;
+  trackhistmanager::ConfV01NegDauBinning confV0NegDaughterBinning;
+  trackhistmanager::ConfV01NegDauQaBinning confV0NegDaughterQaBinning;
 
   o2::framework::HistogramRegistry hRegistry{"FemtoV0Qa", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
 
   void init(o2::framework::InitContext&)
   {
-    if ((doprocessLambda + doprocessLambdaMc + doprocessK0short + doprocessK0shortMc) != 1) {
+    if ((static_cast<int>(doprocessLambda) + static_cast<int>(doprocessLambdaMc) + static_cast<int>(doprocessK0short) + static_cast<int>(doprocessK0shortMc)) != 1) {
       LOG(fatal) << "Only one process can be activated";
     }
     bool processData = doprocessLambda || doprocessK0short;
@@ -143,11 +143,11 @@ struct FemtoV0Qa {
       negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confV0NegDaughterBinning, confV0NegDaughterQaBinning);
       if (doprocessLambda) {
         lambdaHistSpec = v0histmanager::makeV0QaHistSpecMap(confLambdaBinning, confLambdaQaBinning);
-        lambdaHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, lambdaHistSpec, confLambdaSelection, confLambdaQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
+        lambdaHistManager.init<modes::Mode::kReco_Qa_FitVars>(&hRegistry, lambdaHistSpec, confLambdaSelection, confLambdaQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
       }
       if (doprocessK0short) {
         k0shortHistSpec = v0histmanager::makeV0QaHistSpecMap(confK0shortBinning, confK0shortQaBinning);
-        k0shortHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, k0shortHistSpec, confK0shortSelection, confK0shortQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
+        k0shortHistManager.init<modes::Mode::kReco_Qa_FitVars>(&hRegistry, k0shortHistSpec, confK0shortSelection, confK0shortQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
       }
     } else {
       colHistSpec = colhistmanager::makeColMcQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
@@ -156,11 +156,11 @@ struct FemtoV0Qa {
       negDaughterHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confV0NegDaughterBinning, confV0NegDaughterQaBinning);
       if (doprocessLambdaMc) {
         lambdaHistSpec = v0histmanager::makeV0McQaHistSpecMap(confLambdaBinning, confLambdaQaBinning);
-        lambdaHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, lambdaHistSpec, confLambdaSelection, confLambdaQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
+        lambdaHistManager.init<modes::Mode::kReco_Qa_Mc_FitVars>(&hRegistry, lambdaHistSpec, confLambdaSelection, confLambdaQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
       }
       if (doprocessK0shortMc) {
         k0shortHistSpec = v0histmanager::makeV0McQaHistSpecMap(confK0shortBinning, confK0shortQaBinning);
-        k0shortHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, k0shortHistSpec, confK0shortSelection, confK0shortQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
+        k0shortHistManager.init<modes::Mode::kReco_Qa_Mc_FitVars>(&hRegistry, k0shortHistSpec, confK0shortSelection, confK0shortQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
       }
     }
     hRegistry.print();
@@ -174,7 +174,7 @@ struct FemtoV0Qa {
     }
     colHistManager.fill<modes::Mode::kReco_Qa>(col);
     for (auto const& k0short : k0shortSlice) {
-      k0shortHistManager.fill<modes::Mode::kReco_Qa>(k0short, tracks);
+      k0shortHistManager.fill<modes::Mode::kReco_Qa_FitVars>(k0short, tracks);
     }
   }
   PROCESS_SWITCH(FemtoV0Qa, processK0short, "Process k0shorts", false);
@@ -190,7 +190,7 @@ struct FemtoV0Qa {
       if (!k0shortCleaner.isClean(k0short, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      k0shortHistManager.fill<modes::Mode::kReco_Qa_Mc>(k0short, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      k0shortHistManager.fill<modes::Mode::kReco_Qa_Mc_FitVars>(k0short, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoV0Qa, processK0shortMc, "Process k0shorts with MC information", false);
@@ -203,7 +203,7 @@ struct FemtoV0Qa {
     }
     colHistManager.fill<modes::Mode::kReco_Qa>(col);
     for (auto const& lambda : lambdaSlice) {
-      lambdaHistManager.fill<modes::Mode::kReco_Qa>(lambda, tracks);
+      lambdaHistManager.fill<modes::Mode::kReco_Qa_FitVars>(lambda, tracks);
     }
   }
   PROCESS_SWITCH(FemtoV0Qa, processLambda, "Process lambdas", true);
@@ -219,16 +219,16 @@ struct FemtoV0Qa {
       if (!lambdaCleaner.isClean(lambda, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      lambdaHistManager.fill<modes::Mode::kReco_Qa_Mc>(lambda, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      lambdaHistManager.fill<modes::Mode::kReco_Qa_Mc_FitVars>(lambda, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoV0Qa, processLambdaMc, "Process lambdas with MC informaton", false);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoV0Qa>(cfgc),
+    adaptAnalysisTask<FemtoV0Qa>(context),
   };
   return workflow;
 }

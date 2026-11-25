@@ -19,6 +19,8 @@
 #ifndef ALICE3_CORE_DETLAYER_H_
 #define ALICE3_CORE_DETLAYER_H_
 
+#include <Framework/Logger.h>
+
 #include <TGraph.h>
 #include <TString.h>
 
@@ -48,6 +50,12 @@ struct DetLayer {
   void setResolutionZ(float resZ) { mResZ = resZ; }
   void setEfficiency(float eff) { mEff = eff; }
   void setType(int type) { mType = type; }
+  void setSiliconDiskAcceptance(float innerRadius, float outerRadius, float z)
+  {
+    mR = innerRadius;
+    mZ = z;
+    mDiskROuter = outerRadius;
+  }
 
   // Dead areas
 
@@ -71,6 +79,27 @@ struct DetLayer {
   int getType() const { return mType; }
   const TString& getName() const { return mName; }
   const TGraph* getDeadPhiRegions() const { return mDeadPhiRegions; }
+  float getDiskInnerRadius() const
+  {
+    if (mType != kLayerSiliconDisk) {
+      LOG(fatal) << "getDiskInnerRadius() called for layer " << mName << " which is not a silicon disk layer (type: " << mType << ")";
+    }
+    return mR;
+  }
+  float getDiskOuterRadius() const
+  {
+    if (mType != kLayerSiliconDisk) {
+      LOG(fatal) << "getDiskOuterRadius() called for layer " << mName << " which is not a silicon disk layer (type: " << mType << ")";
+    }
+    return mDiskROuter >= 0.f ? mDiskROuter : mR;
+  }
+  float getDiskZ() const
+  {
+    if (mType != kLayerSiliconDisk) {
+      LOG(fatal) << "getDiskZ() called for layer " << mName << " which is not a silicon disk layer (type: " << mType << ")";
+    }
+    return mZ;
+  }
 
   // Check layer mType
   bool isInert() const { return mType == kLayerInert; }
@@ -78,6 +107,7 @@ struct DetLayer {
   bool isGas() const { return mType == kLayerGas; }
   bool isTOF() const { return mType == kLayerTOF; }
   bool isVertex() const { return mType == kLayerVertex; }
+  bool isSiliconDisk() const { return mType == kLayerSiliconDisk; }
   bool isActive() const { return mType != kLayerInert; } // active layers are not inert
 
   // Utilities
@@ -97,36 +127,39 @@ struct DetLayer {
     return mDeadPhiRegions->Eval(phi) > 1.f;
   };
 
-  static constexpr int kLayerVertex = -1; // vertex layer type (not used in tracking)
-  static constexpr int kLayerInert = 0;   // inert/undefined layer
-  static constexpr int kLayerSilicon = 1; // silicon layer
-  static constexpr int kLayerGas = 2;     // gas/tpc layer
-  static constexpr int kLayerTOF = 3;     // TOF layer type (not used in tracking)
+  static constexpr int kLayerVertex = -1;     // vertex layer type (not used in tracking)
+  static constexpr int kLayerInert = 0;       // inert/undefined layer
+  static constexpr int kLayerSilicon = 1;     // silicon layer
+  static constexpr int kLayerGas = 2;         // gas/tpc layer
+  static constexpr int kLayerTOF = 3;         // TOF layer type (not used in tracking)
+  static constexpr int kLayerSiliconDisk = 4; // silicon disk
 
  private:
   // TString for holding name
   TString mName;
 
   // position variables
-  float mR; // radius in centimeters
-  float mZ; // mZ dimension in centimeters
+  float mR{}; // radius in centimeters
+  float mZ{}; // mZ dimension in centimeters
 
   // material variables
-  float mX0;   // radiation length
-  float mXrho; // density
+  float mX0{};   // radiation length
+  float mXrho{}; // density
 
   // resolution variables for active layers
-  float mResRPhi; // RPhi resolution in centimeters
-  float mResZ;    // Z resolution in centimeters
+  float mResRPhi{}; // RPhi resolution in centimeters
+  float mResZ{};    // Z resolution in centimeters
 
   // efficiency
-  float mEff; // detection efficiency
+  float mEff{1.f}; // detection efficiency
 
   // dead regions in phi (in radians)
   TGraph* mDeadPhiRegions = nullptr;
 
   // layer type
-  int mType; // 0: undefined/inert, 1: silicon, 2: gas/tpc
+  int mType{0}; // 0: undefined/inert, 1: silicon, 2: gas/tpc
+
+  float mDiskROuter{-1.f}; // outer radius for silicon disks, if applicable
 };
 
 } // namespace o2::fastsim

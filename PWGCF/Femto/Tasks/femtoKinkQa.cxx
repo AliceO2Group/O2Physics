@@ -43,7 +43,7 @@ using namespace o2::analysis::femto;
 struct FemtoKinkQa {
 
   // setup tables
-  using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks, o2::aod::FColPos, o2::aod::FColSphericities, o2::aod::FColMults>;
+  using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks, o2::aod::FColPos, o2::aod::FColSphericities, o2::aod::FColMults, o2::aod::FColCents>;
   using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
   using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
 
@@ -68,7 +68,7 @@ struct FemtoKinkQa {
   collisionbuilder::ConfCollisionSelection collisionSelection;
   o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
 
-  colhistmanager::CollisionHistManager colHistManager;
+  colhistmanager::CollisionHistManager<colhistmanager::PrefixQa> colHistManager;
   colhistmanager::ConfCollisionBinning confCollisionBinning;
   colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 
@@ -101,7 +101,7 @@ struct FemtoKinkQa {
   o2::framework::Partition<FemtoSigmaPlus> sigmaPlusPartition = MAKE_SIGMAPLUS_PARTITION(confSigmaPlusSelection);
   o2::framework::Preslice<FemtoSigmaPlus> perColSigmaPlus = o2::aod::femtobase::stored::fColId;
 
-  o2::framework::Partition<FemtoSigmaPlusWithLabel> sigmaPlusWithLabelPartition = MAKE_SIGMAPLUS_PARTITION(confSigmaSelection);
+  o2::framework::Partition<FemtoSigmaPlusWithLabel> sigmaPlusWithLabelPartition = MAKE_SIGMAPLUS_PARTITION(confSigmaPlusSelection);
   o2::framework::Preslice<FemtoSigmaPlusWithLabel> perColSigmaPlussWithLabel = o2::aod::femtobase::stored::fColId;
 
   kinkhistmanager::ConfSigmaPlusBinning1 confSigmaPlusBinning;
@@ -120,7 +120,7 @@ struct FemtoKinkQa {
 
   void init(o2::framework::InitContext&)
   {
-    if ((doprocessSigma + doprocessSigmaMc + doprocessSigmaPlus + doprocessSigmaPlusMc) > 1) {
+    if ((static_cast<int>(doprocessSigma) + static_cast<int>(doprocessSigmaMc) + static_cast<int>(doprocessSigmaPlus) + static_cast<int>(doprocessSigmaPlusMc)) > 1) {
       LOG(fatal) << "Only one process can be activated";
     }
 
@@ -186,7 +186,7 @@ struct FemtoKinkQa {
       if (!sigmaCleaner.isClean(sigma, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      sigmaHistManager.fill<modes::Mode::kReco_Qa_Mc>(sigma, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      sigmaHistManager.fill<modes::Mode::kReco_Qa_Mc>(sigma, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoKinkQa, processSigmaMc, "Process sigmas", false);
@@ -215,16 +215,16 @@ struct FemtoKinkQa {
       if (!sigmaPlusCleaner.isClean(sigmaPlus, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      sigmaPlusHistManager.fill<modes::Mode::kReco_Qa_Mc>(sigmaPlus, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      sigmaPlusHistManager.fill<modes::Mode::kReco_Qa_Mc>(sigmaPlus, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoKinkQa, processSigmaPlusMc, "Process sigmas", false);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoKinkQa>(cfgc),
+    adaptAnalysisTask<FemtoKinkQa>(context),
   };
   return workflow;
 }

@@ -272,8 +272,6 @@ struct Alice3HfTreeCreator3Prong {
   Configurable<float> downSampleFactor{"downSampleFactor", 1., "Fraction of cands to keep"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  HfHelperAlice3 hfHelper;
-
   using CandsLcRec = soa::Filtered<soa::Join<aod::Alice3Cand3Ps, aod::Alice3Sel3Ps, aod::Alice3PidLcs, aod::Alice3McRecFlags>>;
   using CandsLcRecWMl = soa::Filtered<soa::Join<aod::Alice3Cand3Ps, aod::Alice3Sel3Ps, aod::Alice3PidLcs, aod::Alice3Ml3Ps, aod::Alice3McRecFlags>>;
   using CandsMcGen = soa::Join<aod::McParticles, aod::Alice3McGenFlags>;
@@ -399,7 +397,7 @@ struct Alice3HfTreeCreator3Prong {
       rowCandKine3Ps(
         cand.ptProng0(), cand.ptProng1(), cand.ptProng2(),
         cand.pt(), RecoDecay::p(cand.px(), cand.py(), cand.pz()), cand.eta(), cand.phi(),
-        hfHelper.getCandMass<CharmHad, IsSwapMassHypo>(cand), hfHelper.getCandY<CharmHad>(cand), hfHelper.getCandEnergy<CharmHad>(cand));
+        HfHelperAlice3::getCandMass<CharmHad, IsSwapMassHypo>(cand), HfHelperAlice3::getCandY<CharmHad>(cand), HfHelperAlice3::getCandEnergy<CharmHad>(cand));
     }
     if (fillTables.fillDaugKineInfo) {
       rowDaugMoms(
@@ -442,7 +440,7 @@ struct Alice3HfTreeCreator3Prong {
   {
     for (const auto& part : parts) {
       if (fillTables.fillCandGenKineInfo) {
-        rowCand3PGen(part.pt(), part.eta(), part.phi(), hfHelper.getCandY<CharmHad>(part));
+        rowCand3PGen(part.pt(), part.eta(), part.phi(), HfHelperAlice3::getCandY<CharmHad>(part));
       }
       if (fillTables.fillMcMatchGenInfo) {
         rowCand3PMcMatchGen(part.flagMcGen(), part.originMcGen());

@@ -36,9 +36,7 @@
 #include <string_view>
 #include <vector>
 
-namespace o2::analysis::femto
-{
-namespace cascadehistmanager
+namespace o2::analysis::femto::cascadehistmanager
 {
 // enum for track histograms
 enum CascadeHist {
@@ -48,25 +46,35 @@ enum CascadeHist {
   kPhi,
   kMass,
   kSign,
-  kPtVsMass, // nice to have during analysis
+  kPtVsMass,    // nice to have during analysis
+  kFractionCpa, // fraction estimation: pt vs cosPa, binned independently of the QA cosPa axis
   // qa variables
   kMassXi,
   kMassOmega,
   kCosPa,
+  kPa,
   kDecayDauDca,
   kTransRadius,
+  kLambdaMass,
   kLambdaCosPa,
   kLambdaDauDca,
   kLambdaTransRadius,
   kLambdaDcaToPv,
+  kStrangeTofBachelor,
+  kStrangeTofPosDau,
+  kStrangeTofNegDau,
   // 2d qa
   kPtVsEta,
   kPtVsPhi,
   kPhiVsEta,
-  kPtVsCosPa,
+  kPtVsPa,
   kPtVsMassXi,
   kPtVsMassOmega,
+  kPtVsMassLambda,
   kMassXiVsMassOmega,
+  kStrangeTofVsTofBachelor,
+  kStrangeTofVsTofPosDau,
+  kStrangeTofVsTofNegDau,
   // mc
   kOrigin,
   kPdg,
@@ -75,7 +83,7 @@ enum CascadeHist {
   kTruePtVsPt,
   kTrueEtaVsEta,
   kTruePhiVsPhi,
-  // histograms for fraction estimation of v0s
+  // histograms for fraction estimation of cascades
   kNoMcParticle,
   kPrimary,
   kFromWrongCollision,
@@ -90,7 +98,7 @@ enum CascadeHist {
 
 constexpr std::size_t MaxSecondary = 3;
 
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfCascadeBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};
@@ -99,6 +107,7 @@ struct ConfCascadeBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis mass{"mass", {{1000, 1.f, 2.f}}, "Mass"};
   o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};
   o2::framework::ConfigurableAxis pdgCodes{"pdgCodes", {{8001, -4000.5, 4000.5}}, "MC ONLY: PDG codes of reconstructed cascades"};
+  o2::framework::ConfigurableAxis fractionCpa{"fractionCpa", {{100, 0.95, 1}}, "Cosine of pointing angle (fraction estimation)"};
 };
 
 constexpr const char PrefixXiBinning[] = "XiBinning";
@@ -106,21 +115,24 @@ using ConfXiBinning = ConfCascadeBinning<PrefixXiBinning>;
 constexpr const char PrefixOmegaBinning[] = "OmegaBinning";
 using ConfOmegaBinning = ConfCascadeBinning<PrefixOmegaBinning>;
 
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfCascadeQaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   o2::framework::Configurable<bool> plot2d{"plot2d", true, "Enable 2d Qa histograms"};
   o2::framework::Configurable<bool> plotOrigins{"plotOrigins", true, "MC ONLY: Plot pt vs cosPa for different particle origins"};
   o2::framework::Configurable<std::vector<int>> pdgCodesForMothersOfSecondary{"pdgCodesForMothersOfSecondary", {3312, 3334}, "MC ONLY: PDG codes of mothers of secondaries (Max 3 will be considered)"};
-  o2::framework::ConfigurableAxis cosPa{"cosPa", {{100, 0.9, 1}}, "Cosine of poiting angle"};
+  o2::framework::ConfigurableAxis cosPa{"cosPa", {{100, 0.95, 1}}, "Cosine of pointing angle"};
+  o2::framework::ConfigurableAxis pa{"pa", {{180, 0, 1.f * o2::constants::math::PI}}, "Pointing angle"};
   o2::framework::ConfigurableAxis dauDcaAtDecay{"dauDcaAtDecay", {{150, 0, 1.5}}, "Daughter DCA at decay vertex"};
   o2::framework::ConfigurableAxis transRadius{"transRadius", {{100, 0, 100}}, "Transverse radius"};
-  o2::framework::ConfigurableAxis massXi{"massXi", {{400, 1.2f, 1.6f}}, "mass for antiparticle hypothesis"};
-  o2::framework::ConfigurableAxis massOmega{"massOmega", {{400, 1.4f, 1.8f}}, "mass for antiparticle hypothesis"};
-  o2::framework::ConfigurableAxis lambdaCosPa{"lambdaCosPa", {{100, 0.9, 1}}, "Cosine of poiting angle of daughter lambda"};
+  o2::framework::ConfigurableAxis massXi{"massXi", {{400, 1.2f, 1.6f}}, "Mass under the Xi hypothesis"};
+  o2::framework::ConfigurableAxis massOmega{"massOmega", {{400, 1.4f, 1.8f}}, "Mass under the Omega hypothesis"};
+  o2::framework::ConfigurableAxis lambdaMass{"lambdaMass", {{200, 1., 1.2}}, "Mass of daughter lambda"};
+  o2::framework::ConfigurableAxis lambdaCosPa{"lambdaCosPa", {{100, 0.9, 1}}, "Cosine of pointing angle of daughter lambda"};
   o2::framework::ConfigurableAxis lambdaDauDca{"lambdaDauDca", {{150, 0, 1.0}}, "DCA of lambda daughters at lambda decay vertex"};
-  o2::framework::ConfigurableAxis lambdaTransRadius{"lambdaTransRadius", {{100, 0, 100}}, "DCA of lambda daughters at lambda decay vertex"};
+  o2::framework::ConfigurableAxis lambdaTransRadius{"lambdaTransRadius", {{100, 0, 100}}, "Transverse radius of daughter #Lambda decay vertex"};
   o2::framework::ConfigurableAxis lambdaDcaToPv{"lambdaDcaToPv", {{100, 0, 200}}, "DCA of lambda daughter from primary vertex"};
+  o2::framework::ConfigurableAxis strangeTof{"strangeTof", {{500, -5, 5}}, "Strangeness TOF vs TOF Nsigma for bachelor/daughters"};
 };
 
 constexpr const char PrefixXiQaBinning[] = "XiQaBinning";
@@ -136,28 +148,38 @@ constexpr std::array<histmanager::HistInfo<CascadeHist>, kCascadeHistLast> HistT
    {kEta, o2::framework::HistType::kTH1F, "hEta", "Pseudorapdity; #eta; Entries"},
    {kPhi, o2::framework::HistType::kTH1F, "hPhi", "Azimuthal angle; #varphi; Entries"},
    {kMass, o2::framework::HistType::kTH1F, "hMass", "Invariant Mass; m_{Inv} (GeV/#it{c}^{2}); Entries"},
-   {kSign, o2::framework::HistType::kTH1F, "hSign", "Sign (-1 -> antiparticle, 0 -> self conjugate, +1 -> particle); sign; Entries"},
+   {kSign, o2::framework::HistType::kTH1F, "hSign", "Sign (-1 -> particle, 0 -> self conjugate, +1 -> antiparticle); sign; Entries"},
    {kPtVsMass, o2::framework::HistType::kTH2F, "hPtVsMass", "Transverse momentum vs invariant mass; p_{T} (GeV/#it{c}); m_{Inv} (GeV/#it{c}^{2})"},
+   {kFractionCpa, o2::framework::HistType::kTH2F, "hFractionCpa", "p_{T} vs Cosine of pointing angle (fraction estimation); p_{T} (GeV/#it{c}); cos(#alpha)"},
    {kMassXi, o2::framework::HistType::kTH1F, "hMassXi", "Mass #Xi; m_{#Lambda#pi} (GeV/#it{c}^{2}); Entries"},
    {kMassOmega, o2::framework::HistType::kTH1F, "hMassOmega", "mass #Omega; m_{#LambdaK} (GeV/#it{c}^{2}); Entries"},
    {kCosPa, o2::framework::HistType::kTH1F, "hCosPa", "Cosine of pointing angle; cos(#alpha); Entries"},
+   {kPa, o2::framework::HistType::kTH1F, "hPa", "Pointing angle; #alpha; Entries"},
    {kDecayDauDca, o2::framework::HistType::kTH1F, "hDauDca", "Daughter DCA at decay vertex ; DCA_{Decay vertex} (cm); Entries"},
    {kTransRadius, o2::framework::HistType::kTH1F, "hTransRadius", "Transverse radius ; r_{xy} (cm); Entries"},
-   {kLambdaCosPa, o2::framework::HistType::kTH1F, "hLambdaCosPa", "Cosine of poiting angle of daughter lambda ; cos_{#Lambda}(#alpha); Entries"},
-   {kLambdaDauDca, o2::framework::HistType::kTH1F, "hLambdaDauDca", "Daughter DCA at #Lambda decay vertex ; DCA_{#Lambda decay vertex} (cm); Entries"},
-   {kLambdaTransRadius, o2::framework::HistType::kTH1F, "hLambdaTransRadius", "Transverse radius of daughter #Lambda ; r_{xy} (cm); Entries"},
-   {kLambdaDcaToPv, o2::framework::HistType::kTH1F, "hLambdaDcaToPv", "DCA to primary vertex of daughter #Lambda ; DCA (cm); Entries"},
+   {kLambdaMass, o2::framework::HistType::kTH1F, "hLambdaMass", "Invariant mass of daughter lambda ; m_{#Lambda dau} (GeV/#it{c}^{2}); Entries"},
+   {kLambdaCosPa, o2::framework::HistType::kTH1F, "hLambdaCosPa", "Cosine of pointing angle of daughter lambda ; cos_{#Lambda dau}(#alpha); Entries"},
+   {kLambdaDauDca, o2::framework::HistType::kTH1F, "hLambdaDauDca", "Daughter DCA at #Lambda decay vertex ; DCA_{#Lambda dau decay vertex} (cm); Entries"},
+   {kLambdaTransRadius, o2::framework::HistType::kTH1F, "hLambdaTransRadius", "Transverse radius of daughter #Lambda ; r_{xy,#Lambda dau} (cm); Entries"},
+   {kLambdaDcaToPv, o2::framework::HistType::kTH1F, "hLambdaDcaToPv", "DCA to primary vertex of daughter #Lambda ; DCA_{#Lambda} (cm); Entries"},
+   {kStrangeTofBachelor, o2::framework::HistType::kTH1F, "hStrangeTofBachelor", "Strange TOF of bachelor ; n#sigma_{TOF, strange}; Entries"},
+   {kStrangeTofPosDau, o2::framework::HistType::kTH1F, "hStrangeTofPosDau", "Strange TOF of positive Daughter ; n#sigma_{TOF, strange}; Entries"},
+   {kStrangeTofNegDau, o2::framework::HistType::kTH1F, "hStrangeTofNegDau", "Strange TOF of negative Daughter ; n#sigma_{TOF, strange}; Entries"},
    {kPtVsEta, o2::framework::HistType::kTH2F, "hPtVsEta", "p_{T} vs #eta; p_{T} (GeV/#it{c}) ; #eta"},
    {kPtVsPhi, o2::framework::HistType::kTH2F, "hPtVsPhi", "p_{T} vs #varphi; p_{T} (GeV/#it{c}) ; #varphi"},
    {kPhiVsEta, o2::framework::HistType::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi ; #eta"},
-   {kPtVsCosPa, o2::framework::HistType::kTH2F, "hPtVsCosPa", "Cosine of poiting angle vs p_{T}; cos(#alpha); p_{T} (GeV/#it{c})"},
+   {kPtVsPa, o2::framework::HistType::kTH2F, "hPtVsPa", "p_{T} vs Pointing angle; p_{T} (GeV/#it{c}); #alpha"},
    {kPtVsMassXi, o2::framework::HistType::kTH2F, "hPtVsMassXi", "p_{T} vs mass #Xi; p_{T} (GeV/#it{c}); m_{#Lambda#pi} (GeV/#it{c}^{2})"},
    {kPtVsMassOmega, o2::framework::HistType::kTH2F, "hPtVsMassOmega", "p_{T} vs mass #Omega; p_{T} (GeV/#it{c}); m_{#LambdaK} (GeV/#it{c}^{2})"},
+   {kPtVsMassLambda, o2::framework::HistType::kTH2F, "hPtVsMassLambda", "p_{T} vs mass daughter #Lambda; p_{T} (GeV/#it{c}); m_{#Lambda dau} (GeV/#it{c}^{2})"},
    {kMassXiVsMassOmega, o2::framework::HistType::kTH2F, "hMassXiVsMassOmega", "mass #Xi vs mass #Omega; m_{#Lambda#pi} (GeV/#it{c}^{2}); m_{#LambdaK} (GeV/#it{c}^{2})"},
+   {kStrangeTofVsTofBachelor, o2::framework::HistType::kTH2F, "hStrangeTofVsTofBachelor", "TOF_{Strange} vs TOF_{Tracking} of bachelor; n#sigma_{TOF, strange}; n#sigma_{TOF, tracking}"},
+   {kStrangeTofVsTofPosDau, o2::framework::HistType::kTH2F, "hStrangeTofVsTofPosDau", "TOF_{Strange} vs TOF_{Tracking} of positive Daughter; n#sigma_{TOF, strange}; n#sigma_{TOF, tracking}"},
+   {kStrangeTofVsTofNegDau, o2::framework::HistType::kTH2F, "hStrangeTofVsTofNegDau", "TOF_{Strange} vs TOF_{Tracking} of negative Daughter; n#sigma_{TOF, strange}; n#sigma_{TOF, tracking}"},
    {kOrigin, o2::framework::HistType::kTH1F, "hOrigin", "Status Codes (=Origin); Status Code; Entries"},
-   {kPdg, o2::framework::HistType::kTH1F, "hPdg", "PDG Codes of reconstructed v0; PDG Code; Entries"},
-   {kPdgMother, o2::framework::HistType::kTH1F, "hPdgMother", "PDG Codes of mother of reconstructed v0; PDG Code; Entries"},
-   {kPdgPartonicMother, o2::framework::HistType::kTH1F, "hPdgPartonicMother", "PDG Codes of partonic mother of reconstructed v0; PDG Code; Entries"},
+   {kPdg, o2::framework::HistType::kTH1F, "hPdg", "PDG Codes of reconstructed cascade; PDG Code; Entries"},
+   {kPdgMother, o2::framework::HistType::kTH1F, "hPdgMother", "PDG Codes of mother of reconstructed cascade; PDG Code; Entries"},
+   {kPdgPartonicMother, o2::framework::HistType::kTH1F, "hPdgPartonicMother", "PDG Codes of partonic mother of reconstructed cascade; PDG Code; Entries"},
    {kTruePtVsPt, o2::framework::HistType::kTH2F, "hTruePtVsPt", "True transverse momentum vs transverse momentum; p_{T,True} (GeV/#it{c}); p_{T,True} (GeV/#it{c})"},
    {kTrueEtaVsEta, o2::framework::HistType::kTH2F, "hTrueEtaVsEta", "True pseudorapdity vs pseudorapdity; #eta_{True}; #eta"},
    {kTruePhiVsPhi, o2::framework::HistType::kTH2F, "hTruePhiVsPhi", "True azimuthal angle vs azimuthal angle; #varphi_{True}; #varphi"},
@@ -172,50 +194,67 @@ constexpr std::array<histmanager::HistInfo<CascadeHist>, kCascadeHistLast> HistT
    {kSecondaryOther, o2::framework::HistType::kTH2F, "hFromSecondaryOther", "Particles from every other secondary decay; p_{T} (GeV/#it{c}); cos(#alpha)"}},
 };
 
-#define CASCADE_HIST_ANALYSIS_MAP(conf) \
-  {kPt, {conf.pt}},                     \
-    {kEta, {conf.eta}},                 \
-    {kPhi, {conf.phi}},                 \
-    {kMass, {conf.mass}},               \
-    {kSign, {conf.sign}},               \
-    {kPtVsMass, {conf.pt, conf.mass}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CASCADE_HIST_ANALYSIS_MAP(conf)    \
+  {kPt, {(conf).pt}},                      \
+    {kEta, {(conf).eta}},                  \
+    {kPhi, {(conf).phi}},                  \
+    {kMass, {(conf).mass}},                \
+    {kSign, {(conf).sign}},                \
+    {kPtVsMass, {(conf).pt, (conf).mass}}, \
+    {kFractionCpa, {(conf).pt, (conf).fractionCpa}},
 
-#define CASCADE_HIST_MC_MAP(conf)          \
-  {kTruePtVsPt, {conf.pt, conf.pt}},       \
-    {kTrueEtaVsEta, {conf.eta, conf.eta}}, \
-    {kTruePhiVsPhi, {conf.phi, conf.phi}}, \
-    {kPdg, {conf.pdgCodes}},               \
-    {kPdgMother, {conf.pdgCodes}},         \
-    {kPdgPartonicMother, {conf.pdgCodes}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CASCADE_HIST_MC_MAP(conf)              \
+  {kTruePtVsPt, {(conf).pt, (conf).pt}},       \
+    {kTrueEtaVsEta, {(conf).eta, (conf).eta}}, \
+    {kTruePhiVsPhi, {(conf).phi, (conf).phi}}, \
+    {kPdg, {(conf).pdgCodes}},                 \
+    {kPdgMother, {(conf).pdgCodes}},           \
+    {kPdgPartonicMother, {(conf).pdgCodes}},
 
-#define CASCADE_HIST_QA_MAP(confAnalysis, confQa)          \
-  {kCosPa, {confQa.cosPa}},                                \
-    {kDecayDauDca, {confQa.dauDcaAtDecay}},                \
-    {kTransRadius, {confQa.transRadius}},                  \
-    {kLambdaCosPa, {confQa.lambdaCosPa}},                  \
-    {kLambdaDauDca, {confQa.lambdaDauDca}},                \
-    {kLambdaTransRadius, {confQa.lambdaTransRadius}},      \
-    {kLambdaDcaToPv, {confQa.lambdaDcaToPv}},              \
-    {kPtVsEta, {confAnalysis.pt, confAnalysis.eta}},       \
-    {kPtVsPhi, {confAnalysis.pt, confAnalysis.phi}},       \
-    {kPhiVsEta, {confAnalysis.phi, confAnalysis.eta}},     \
-    {kPtVsCosPa, {confAnalysis.pt, confQa.cosPa}},         \
-    {kMassXi, {confQa.massXi}},                            \
-    {kMassOmega, {confQa.massOmega}},                      \
-    {kPtVsMassXi, {confAnalysis.pt, confQa.massXi}},       \
-    {kPtVsMassOmega, {confAnalysis.pt, confQa.massOmega}}, \
-    {kMassXiVsMassOmega, {confQa.massXi, confQa.massOmega}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CASCADE_HIST_QA_MAP(confAnalysis, confQa)                           \
+  {kCosPa, {(confQa).cosPa}},                                               \
+    {kPa, {(confQa).pa}},                                                   \
+    {kDecayDauDca, {(confQa).dauDcaAtDecay}},                               \
+    {kTransRadius, {(confQa).transRadius}},                                 \
+    {kLambdaMass, {(confQa).lambdaMass}},                                   \
+    {kLambdaCosPa, {(confQa).lambdaCosPa}},                                 \
+    {kLambdaDauDca, {(confQa).lambdaDauDca}},                               \
+    {kLambdaTransRadius, {(confQa).lambdaTransRadius}},                     \
+    {kLambdaDcaToPv, {(confQa).lambdaDcaToPv}},                             \
+    {kStrangeTofBachelor, {(confQa).strangeTof}},                           \
+    {kStrangeTofPosDau, {(confQa).strangeTof}},                             \
+    {kStrangeTofNegDau, {(confQa).strangeTof}},                             \
+    {kPtVsEta, {(confAnalysis).pt, (confAnalysis).eta}},                    \
+    {kPtVsPhi, {(confAnalysis).pt, (confAnalysis).phi}},                    \
+    {kPhiVsEta, {(confAnalysis).phi, (confAnalysis).eta}},                  \
+    {kPtVsPa, {(confAnalysis).pt, (confQa).pa}},                            \
+    {kMassXi, {(confQa).massXi}},                                           \
+    {kMassOmega, {(confQa).massOmega}},                                     \
+    {kPtVsMassXi, {(confAnalysis).pt, (confQa).massXi}},                    \
+    {kPtVsMassOmega, {(confAnalysis).pt, (confQa).massOmega}},              \
+    {kPtVsMassLambda, {(confAnalysis).pt, (confQa).lambdaMass}},            \
+    {kMassXiVsMassOmega, {(confQa).massXi, (confQa).massOmega}},            \
+    {kStrangeTofVsTofBachelor, {(confQa).strangeTof, (confQa).strangeTof}}, \
+    {kStrangeTofVsTofPosDau, {(confQa).strangeTof, (confQa).strangeTof}},   \
+    {kStrangeTofVsTofNegDau, {(confQa).strangeTof, (confQa).strangeTof}},
 
-#define CASCADE_HIST_MC_QA_MAP(confAnalysis, confQa)        \
-  {kNoMcParticle, {confAnalysis.pt, confQa.cosPa}},         \
-    {kPrimary, {confAnalysis.pt, confQa.cosPa}},            \
-    {kFromWrongCollision, {confAnalysis.pt, confQa.cosPa}}, \
-    {kFromMaterial, {confAnalysis.pt, confQa.cosPa}},       \
-    {kMissidentified, {confAnalysis.pt, confQa.cosPa}},     \
-    {kSecondary1, {confAnalysis.pt, confQa.cosPa}},         \
-    {kSecondary2, {confAnalysis.pt, confQa.cosPa}},         \
-    {kSecondary3, {confAnalysis.pt, confQa.cosPa}},         \
-    {kSecondaryOther, {confAnalysis.pt, confQa.cosPa}},
+// per-origin truth-split variants of the FitVars fraction-estimation CPA histogram; binned on
+// fractionCpa (not the QA-only cosPa) so they are available wherever FitVars is, including the
+// pair task where no QA binning config exists
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CASCADE_HIST_FITVARS_MC_MAP(conf)                   \
+  {kNoMcParticle, {(conf).pt, (conf).fractionCpa}},         \
+    {kPrimary, {(conf).pt, (conf).fractionCpa}},            \
+    {kFromWrongCollision, {(conf).pt, (conf).fractionCpa}}, \
+    {kFromMaterial, {(conf).pt, (conf).fractionCpa}},       \
+    {kMissidentified, {(conf).pt, (conf).fractionCpa}},     \
+    {kSecondary1, {(conf).pt, (conf).fractionCpa}},         \
+    {kSecondary2, {(conf).pt, (conf).fractionCpa}},         \
+    {kSecondary3, {(conf).pt, (conf).fractionCpa}},         \
+    {kSecondaryOther, {(conf).pt, (conf).fractionCpa}},
 
 template <typename T>
 auto makeCascadeHistSpecMap(const T& confBinningAnalysis)
@@ -229,7 +268,8 @@ auto makeCascadeMcHistSpecMap(const T& confBinningAnalysis)
 {
   return std::map<CascadeHist, std::vector<o2::framework::AxisSpec>>{
     CASCADE_HIST_ANALYSIS_MAP(confBinningAnalysis)
-      CASCADE_HIST_MC_MAP(confBinningAnalysis)};
+      CASCADE_HIST_MC_MAP(confBinningAnalysis)
+        CASCADE_HIST_FITVARS_MC_MAP(confBinningAnalysis)};
 }
 
 template <typename T1, typename T2>
@@ -247,32 +287,35 @@ std::map<CascadeHist, std::vector<o2::framework::AxisSpec>> makeCascadeMcQaHistS
     CASCADE_HIST_ANALYSIS_MAP(confBinningAnalysis)
       CASCADE_HIST_QA_MAP(confBinningAnalysis, confBinningQa)
         CASCADE_HIST_MC_MAP(confBinningAnalysis)
-          CASCADE_HIST_MC_QA_MAP(confBinningAnalysis, confBinningQa)};
+          CASCADE_HIST_FITVARS_MC_MAP(confBinningAnalysis)};
 }
 
 #undef CASCADE_HIST_ANALYSIS_MAP
 #undef CASCADE_HIST_MC_MAP
 #undef CASCADE_HIST_QA_MAP
-#undef CASCADE_HIST_MC_QA_MAP
+#undef CASCADE_HIST_FITVARS_MC_MAP
 
 constexpr char PrefixXiQa[] = "XiQA/";
-constexpr char PrefixXi[] = "Xi/";
+constexpr char PrefixXiSe[] = "Xi/SE/";
+constexpr char PrefixXiMe[] = "Xi/ME/";
 constexpr char PrefixOmegaQa[] = "OmegaQa/";
-constexpr char PrefixOmega[] = "Omega/";
+constexpr char PrefixOmegaSe[] = "Omega/SE/";
+constexpr char PrefixOmegaMe[] = "Omega/ME/";
 
 constexpr char PrefixLambdaCascade[] = "LambdaCascadeQa/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
 constexpr std::string_view McDir = "MC/";
+constexpr std::string_view FitVarsDir = "FitVars/";
 
 /// \class FemtoDreamEventHisto
 /// \brief Class for histogramming event properties
 // template <femtomodes::Mode mode>
-template <const char* cascadePrefix,
-          const char* bachelorPrefix,
-          const char* posDauPrefix,
-          const char* negDauPrefix,
+template <auto& cascadePrefix,
+          auto& bachelorPrefix,
+          auto& posDauPrefix,
+          auto& negDauPrefix,
           modes::Cascade cascade>
 class CascadeHistManager
 {
@@ -336,6 +379,9 @@ class CascadeHistManager
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
       this->initMc(cascadeSpecs);
+    }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kFitVars)) {
+      this->template initFitVars<mode>(cascadeSpecs);
     }
   }
 
@@ -406,6 +452,9 @@ class CascadeHistManager
     if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
       this->initMc(cascadeSpecs);
     }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kFitVars)) {
+      this->template initFitVars<mode>(cascadeSpecs);
+    }
   }
 
   template <modes::Mode mode, typename T1, typename T2>
@@ -422,28 +471,34 @@ class CascadeHistManager
       fillAnalysis(cascadeCandidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
-      fillQa(cascadeCandidate);
+      fillQa(cascadeCandidate, bachelor, posDaughter, negDaughter);
+    }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kFitVars)) {
+      this->fillFitVars(cascadeCandidate);
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fill(T1 const& cascadeCandidate, T2 const& tracks, T3 const& mcParticles, T4 const& mcMothers, T5 const& mcPartonicMothers)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fill(T1 const& cascadeCandidate, T2 const& tracks, T3 const& col, T4 const& mcParticles, T5 const& mcMothers, T6 const& mcPartonicMothers)
   {
     auto posDaughter = tracks.rawIteratorAt(cascadeCandidate.posDauId() - tracks.offset());
-    mPosDauManager.template fill<mode>(posDaughter, tracks, mcParticles, mcMothers, mcPartonicMothers);
+    mPosDauManager.template fill<mode>(posDaughter, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     auto negDaughter = tracks.rawIteratorAt(cascadeCandidate.negDauId() - tracks.offset());
-    mNegDauManager.template fill<mode>(negDaughter, tracks, mcParticles, mcMothers, mcPartonicMothers);
+    mNegDauManager.template fill<mode>(negDaughter, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     auto bachelor = tracks.rawIteratorAt(cascadeCandidate.bachelorId() - tracks.offset());
-    mBachelorManager.template fill<mode>(bachelor, tracks, mcParticles, mcMothers, mcPartonicMothers);
+    mBachelorManager.template fill<mode>(bachelor, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(cascadeCandidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
-      this->fillQa(cascadeCandidate);
+      this->fillQa(cascadeCandidate, bachelor, posDaughter, negDaughter);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
-      this->template fillMc<mode>(cascadeCandidate, mcParticles, mcMothers, mcPartonicMothers);
+      this->template fillMc<mode>(cascadeCandidate, col, mcParticles, mcMothers, mcPartonicMothers);
+    }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kFitVars)) {
+      this->fillFitVars(cascadeCandidate);
     }
   }
 
@@ -478,24 +533,33 @@ class CascadeHistManager
   {
     std::string qaDir = std::string(cascadePrefix) + std::string(QaDir);
     mHistogramRegistry->add(qaDir + getHistNameV2(kCosPa, HistTable), getHistDesc(kCosPa, HistTable), getHistType(kCosPa, HistTable), {cascadeSpecs.at(kCosPa)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kPa, HistTable), getHistDesc(kPa, HistTable), getHistType(kPa, HistTable), {cascadeSpecs.at(kPa)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kDecayDauDca, HistTable), getHistDesc(kDecayDauDca, HistTable), getHistType(kDecayDauDca, HistTable), {cascadeSpecs.at(kDecayDauDca)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kTransRadius, HistTable), getHistDesc(kTransRadius, HistTable), getHistType(kTransRadius, HistTable), {cascadeSpecs.at(kTransRadius)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kLambdaMass, HistTable), getHistDesc(kLambdaMass, HistTable), getHistType(kLambdaMass, HistTable), {cascadeSpecs.at(kLambdaMass)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kLambdaCosPa, HistTable), getHistDesc(kLambdaCosPa, HistTable), getHistType(kLambdaCosPa, HistTable), {cascadeSpecs.at(kLambdaCosPa)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kLambdaDauDca, HistTable), getHistDesc(kLambdaDauDca, HistTable), getHistType(kLambdaDauDca, HistTable), {cascadeSpecs.at(kLambdaDauDca)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kLambdaTransRadius, HistTable), getHistDesc(kLambdaTransRadius, HistTable), getHistType(kLambdaTransRadius, HistTable), {cascadeSpecs.at(kLambdaTransRadius)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kLambdaDcaToPv, HistTable), getHistDesc(kLambdaDcaToPv, HistTable), getHistType(kLambdaDcaToPv, HistTable), {cascadeSpecs.at(kLambdaDcaToPv)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kMassXi, HistTable), getHistDesc(kMassXi, HistTable), getHistType(kMassXi, HistTable), {cascadeSpecs.at(kMassXi)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kMassOmega, HistTable), getHistDesc(kMassOmega, HistTable), getHistType(kMassOmega, HistTable), {cascadeSpecs.at(kMassOmega)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kStrangeTofBachelor, HistTable), getHistDesc(kStrangeTofBachelor, HistTable), getHistType(kStrangeTofBachelor, HistTable), {cascadeSpecs.at(kStrangeTofBachelor)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kStrangeTofPosDau, HistTable), getHistDesc(kStrangeTofPosDau, HistTable), getHistType(kStrangeTofPosDau, HistTable), {cascadeSpecs.at(kStrangeTofPosDau)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kStrangeTofNegDau, HistTable), getHistDesc(kStrangeTofNegDau, HistTable), getHistType(kStrangeTofNegDau, HistTable), {cascadeSpecs.at(kStrangeTofNegDau)});
 
     if (mPlot2d) {
       mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsEta, HistTable), getHistDesc(kPtVsEta, HistTable), getHistType(kPtVsEta, HistTable), {cascadeSpecs.at(kPtVsEta)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsPhi, HistTable), getHistDesc(kPtVsPhi, HistTable), getHistType(kPtVsPhi, HistTable), {cascadeSpecs.at(kPtVsPhi)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kPhiVsEta, HistTable), getHistDesc(kPhiVsEta, HistTable), getHistType(kPhiVsEta, HistTable), {cascadeSpecs.at(kPhiVsEta)});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsCosPa, HistTable), getHistDesc(kPtVsCosPa, HistTable), getHistType(kPtVsCosPa, HistTable), {cascadeSpecs.at(kPtVsCosPa)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsPa, HistTable), getHistDesc(kPtVsPa, HistTable), getHistType(kPtVsPa, HistTable), {cascadeSpecs.at(kPtVsPa)});
 
       mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsMassXi, HistTable), getHistDesc(kPtVsMassXi, HistTable), getHistType(kPtVsMassXi, HistTable), {cascadeSpecs.at(kPtVsMassXi)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsMassOmega, HistTable), getHistDesc(kPtVsMassOmega, HistTable), getHistType(kPtVsMassOmega, HistTable), {cascadeSpecs.at(kPtVsMassOmega)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsMassLambda, HistTable), getHistDesc(kPtVsMassLambda, HistTable), getHistType(kPtVsMassLambda, HistTable), {cascadeSpecs.at(kPtVsMassLambda)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kMassXiVsMassOmega, HistTable), getHistDesc(kMassXiVsMassOmega, HistTable), getHistType(kMassXiVsMassOmega, HistTable), {cascadeSpecs.at(kMassXiVsMassOmega)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kStrangeTofVsTofBachelor, HistTable), getHistDesc(kStrangeTofVsTofBachelor, HistTable), getHistType(kStrangeTofVsTofBachelor, HistTable), {cascadeSpecs.at(kStrangeTofVsTofBachelor)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kStrangeTofVsTofPosDau, HistTable), getHistDesc(kStrangeTofVsTofPosDau, HistTable), getHistType(kStrangeTofVsTofPosDau, HistTable), {cascadeSpecs.at(kStrangeTofVsTofPosDau)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kStrangeTofVsTofNegDau, HistTable), getHistDesc(kStrangeTofVsTofNegDau, HistTable), getHistType(kStrangeTofVsTofNegDau, HistTable), {cascadeSpecs.at(kStrangeTofVsTofNegDau)});
     }
   }
 
@@ -519,24 +583,36 @@ class CascadeHistManager
     mHistogramRegistry->add(mcDir + getHistNameV2(kPdg, HistTable), getHistDesc(kPdg, HistTable), getHistType(kPdg, HistTable), {V0Specs.at(kPdg)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kPdgMother, HistTable), getHistDesc(kPdgMother, HistTable), getHistType(kPdgMother, HistTable), {V0Specs.at(kPdgMother)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kPdgPartonicMother, HistTable), getHistDesc(kPdgPartonicMother, HistTable), getHistType(kPdgPartonicMother, HistTable), {V0Specs.at(kPdgPartonicMother)});
+  }
 
-    if (mPlotOrigins) {
-      mHistogramRegistry->add(mcDir + getHistNameV2(kNoMcParticle, HistTable), getHistDesc(kNoMcParticle, HistTable), getHistType(kNoMcParticle, HistTable), {V0Specs.at(kNoMcParticle)});
-      mHistogramRegistry->add(mcDir + getHistNameV2(kPrimary, HistTable), getHistDesc(kPrimary, HistTable), getHistType(kPrimary, HistTable), {V0Specs.at(kPrimary)});
-      mHistogramRegistry->add(mcDir + getHistNameV2(kFromWrongCollision, HistTable), getHistDesc(kFromWrongCollision, HistTable), getHistType(kFromWrongCollision, HistTable), {V0Specs.at(kFromWrongCollision)});
-      mHistogramRegistry->add(mcDir + getHistNameV2(kFromMaterial, HistTable), getHistDesc(kFromMaterial, HistTable), getHistType(kFromMaterial, HistTable), {V0Specs.at(kFromMaterial)});
-      mHistogramRegistry->add(mcDir + getHistNameV2(kMissidentified, HistTable), getHistDesc(kMissidentified, HistTable), getHistType(kMissidentified, HistTable), {V0Specs.at(kMissidentified)});
+  // fraction estimation (CPA); only called when mode carries kFitVars
+  template <modes::Mode mode>
+  void initFitVars(std::map<CascadeHist, std::vector<o2::framework::AxisSpec>> const& cascadeSpecs)
+  {
+    std::string fitVarsDir = std::string(cascadePrefix) + std::string(FitVarsDir);
+    mHistogramRegistry->add(fitVarsDir + getHistNameV2(kFractionCpa, HistTable), getHistDesc(kFractionCpa, HistTable), getHistType(kFractionCpa, HistTable), {cascadeSpecs.at(kFractionCpa)});
 
-      if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1) {
-        mHistogramRegistry->add(mcDir + getHistNameV2(kSecondary1, HistTable), getHistDesc(kSecondary1, HistTable), getHistType(kSecondary1, HistTable), {V0Specs.at(kSecondary1)});
+    // per-origin truth-split fraction-CPA templates; need MC truth, so only booked when the mode
+    // also carries kMc
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
+      if (mPlotOrigins) {
+        mHistogramRegistry->add(fitVarsDir + getHistNameV2(kNoMcParticle, HistTable), getHistDesc(kNoMcParticle, HistTable), getHistType(kNoMcParticle, HistTable), {cascadeSpecs.at(kNoMcParticle)});
+        mHistogramRegistry->add(fitVarsDir + getHistNameV2(kPrimary, HistTable), getHistDesc(kPrimary, HistTable), getHistType(kPrimary, HistTable), {cascadeSpecs.at(kPrimary)});
+        mHistogramRegistry->add(fitVarsDir + getHistNameV2(kFromWrongCollision, HistTable), getHistDesc(kFromWrongCollision, HistTable), getHistType(kFromWrongCollision, HistTable), {cascadeSpecs.at(kFromWrongCollision)});
+        mHistogramRegistry->add(fitVarsDir + getHistNameV2(kFromMaterial, HistTable), getHistDesc(kFromMaterial, HistTable), getHistType(kFromMaterial, HistTable), {cascadeSpecs.at(kFromMaterial)});
+        mHistogramRegistry->add(fitVarsDir + getHistNameV2(kMissidentified, HistTable), getHistDesc(kMissidentified, HistTable), getHistType(kMissidentified, HistTable), {cascadeSpecs.at(kMissidentified)});
+
+        if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1) {
+          mHistogramRegistry->add(fitVarsDir + getHistNameV2(kSecondary1, HistTable), getHistDesc(kSecondary1, HistTable), getHistType(kSecondary1, HistTable), {cascadeSpecs.at(kSecondary1)});
+        }
+        if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel2) {
+          mHistogramRegistry->add(fitVarsDir + getHistNameV2(kSecondary2, HistTable), getHistDesc(kSecondary2, HistTable), getHistType(kSecondary2, HistTable), {cascadeSpecs.at(kSecondary2)});
+        }
+        if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel3) {
+          mHistogramRegistry->add(fitVarsDir + getHistNameV2(kSecondary3, HistTable), getHistDesc(kSecondary3, HistTable), getHistType(kSecondary3, HistTable), {cascadeSpecs.at(kSecondary3)});
+        }
+        mHistogramRegistry->add(fitVarsDir + getHistNameV2(kSecondaryOther, HistTable), getHistDesc(kSecondaryOther, HistTable), getHistType(kSecondaryOther, HistTable), {cascadeSpecs.at(kSecondaryOther)});
       }
-      if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel2) {
-        mHistogramRegistry->add(mcDir + getHistNameV2(kSecondary2, HistTable), getHistDesc(kSecondary2, HistTable), getHistType(kSecondary2, HistTable), {V0Specs.at(kSecondary2)});
-      }
-      if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel3) {
-        mHistogramRegistry->add(mcDir + getHistNameV2(kSecondary3, HistTable), getHistDesc(kSecondary3, HistTable), getHistType(kSecondary3, HistTable), {V0Specs.at(kSecondary3)});
-      }
-      mHistogramRegistry->add(mcDir + getHistNameV2(kSecondaryOther, HistTable), getHistDesc(kSecondaryOther, HistTable), getHistType(kSecondaryOther, HistTable), {V0Specs.at(kSecondaryOther)});
     }
   }
 
@@ -552,66 +628,99 @@ class CascadeHistManager
   }
 
   template <typename T>
-  void fillQa(T const& cascadeCandidate)
+  void fillFitVars(T const& cascadeCandidate)
+  {
+    mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(FitVarsDir) + HIST(getHistName(kFractionCpa, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  void fillQa(T1 const& cascadeCandidate, T2 const& bachelor, T3 const& posDau, T4 const& negDau)
   {
     float massXi = 0.f;
     float massOmega = 0.f;
+    float tofBachelor = 0.f;
+    float tofPosDau = 0.f;
+    float tofNegDau = 0.f;
     if constexpr (modes::isEqual(cascade, modes::Cascade::kXi)) {
       massXi = cascadeCandidate.mass();
       massOmega = cascadeCandidate.massOmega();
+      tofBachelor = bachelor.tofNSigmaPi();
     }
     if constexpr (modes::isEqual(cascade, modes::Cascade::kOmega)) {
       massXi = cascadeCandidate.massXi();
       massOmega = cascadeCandidate.mass();
+      tofBachelor = bachelor.tofNSigmaKa();
     }
+
+    if (cascadeCandidate.sign() > 0) {
+      tofPosDau = posDau.tofNSigmaPr();
+      tofNegDau = negDau.tofNSigmaPi();
+    } else {
+      tofPosDau = posDau.tofNSigmaPi();
+      tofNegDau = negDau.tofNSigmaPr();
+    }
+
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kCosPa, HistTable)), cascadeCandidate.cascadeCosPa());
+    mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kPa, HistTable)), cascadeCandidate.cascadePa());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kDecayDauDca, HistTable)), cascadeCandidate.cascadeDauDca());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kTransRadius, HistTable)), cascadeCandidate.cascadeTransRadius());
+    mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kLambdaMass, HistTable)), cascadeCandidate.lambdaMass());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kLambdaCosPa, HistTable)), cascadeCandidate.lambdaCosPa());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kLambdaDauDca, HistTable)), cascadeCandidate.lambdaDauDca());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kLambdaTransRadius, HistTable)), cascadeCandidate.lambdaTransRadius());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kLambdaDcaToPv, HistTable)), cascadeCandidate.lambdaDcaToPv());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kMassXi, HistTable)), massXi);
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kMassOmega, HistTable)), massOmega);
+    mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kStrangeTofBachelor, HistTable)), cascadeCandidate.strangeTofBachelor());
+    mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kStrangeTofPosDau, HistTable)), cascadeCandidate.strangeTofPosDau());
+    mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kStrangeTofNegDau, HistTable)), cascadeCandidate.strangeTofNegDau());
 
     if (mPlot2d) {
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kPtVsEta, HistTable)), cascadeCandidate.pt(), cascadeCandidate.eta());
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kPtVsPhi, HistTable)), cascadeCandidate.pt(), cascadeCandidate.phi());
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kPhiVsEta, HistTable)), cascadeCandidate.phi(), cascadeCandidate.eta());
-      mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kPtVsCosPa, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
+      mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kPtVsPa, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadePa());
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kPtVsMassXi, HistTable)), cascadeCandidate.pt(), massXi);
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kPtVsMassOmega, HistTable)), cascadeCandidate.pt(), massOmega);
+      mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kPtVsMassLambda, HistTable)), cascadeCandidate.pt(), cascadeCandidate.lambdaMass());
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kMassXiVsMassOmega, HistTable)), massXi, massOmega);
+      mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kStrangeTofVsTofBachelor, HistTable)), cascadeCandidate.strangeTofBachelor(), tofBachelor);
+      mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kStrangeTofVsTofPosDau, HistTable)), cascadeCandidate.strangeTofPosDau(), tofPosDau);
+      mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kStrangeTofVsTofNegDau, HistTable)), cascadeCandidate.strangeTofNegDau(), tofNegDau);
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4>
-  void fillMc(T1 const& cascadeCandidate, T2 const& /*mcParticles*/, T3 const& /*mcMothers*/, T4 const& /*mcPartonicMothers*/)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMc(T1 const& cascadeCandidate, T2 const& col, T3 const& /*mcParticles*/, T4 const& /*mcMothers*/, T5 const& /*mcPartonicMothers*/)
   {
     // No MC Particle
     if (!cascadeCandidate.has_fMcParticle()) {
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), 0);
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kNoMcParticle));
-      if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+      if constexpr (modes::isFlagSet(mode, modes::Mode::kFitVars)) {
         if (mPlotOrigins) {
-          mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kNoMcParticle, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
+          mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(FitVarsDir) + HIST(getHistName(kNoMcParticle, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
         }
       }
       return;
     }
 
     // Retrieve MC particle
-    auto mcParticle = cascadeCandidate.template fMcParticle_as<T2>();
+    auto mcParticle = cascadeCandidate.template fMcParticle_as<T3>();
 
-    // missidentifed particles are special case
+    // whether a particle is associated to a wrong collision or not cannot be known by the producer so we check it here
+    bool fromWrongCollision = mcParticle.fMcColId() != col.fMcColId();
+
     // whether a particle is missidentfied or not cannot be known by the producer so we check it here
     bool isMissidentified = mcParticle.pdgCode() != mPdgCode;
 
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kTruePtVsPt, HistTable)), mcParticle.pt(), cascadeCandidate.pt());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kTrueEtaVsEta, HistTable)), mcParticle.eta(), cascadeCandidate.eta());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kTruePhiVsPhi, HistTable)), mcParticle.phi(), cascadeCandidate.phi());
-    if (isMissidentified) {
-      mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<int>(modes::McOrigin::kMissidentified));
+    if (fromWrongCollision) {
+      mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kFromWrongCollision));
+    } else if (isMissidentified) {
+      mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kMissidentified));
     } else {
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), mcParticle.origin());
     }
@@ -619,7 +728,7 @@ class CascadeHistManager
 
     // get mother
     if (mcParticle.has_fMcMother()) {
-      auto mother = mcParticle.template fMcMother_as<T3>();
+      auto mother = mcParticle.template fMcMother_as<T4>();
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
@@ -627,48 +736,46 @@ class CascadeHistManager
 
     // get partonic mother
     if (mcParticle.has_fMcPartMoth()) {
-      auto partonicMother = mcParticle.template fMcPartMoth_as<T4>();
+      auto partonicMother = mcParticle.template fMcPartMoth_as<T5>();
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), partonicMother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), 0);
     }
 
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kFitVars)) {
       if (mPlotOrigins) {
-        // check first if particle is missidentified
-        if (isMissidentified) {
+        if (fromWrongCollision) {
+          mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(FitVarsDir) + HIST(getHistName(kFromWrongCollision, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
+        } else if (isMissidentified) {
           // if it is, we fill it as such
-          mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kMissidentified, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
+          mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(FitVarsDir) + HIST(getHistName(kMissidentified, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
         } else {
           // if not, we fill it acccoridng to its origin
           switch (static_cast<modes::McOrigin>(mcParticle.origin())) {
             case modes::McOrigin::kPhysicalPrimary:
-              mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
-              break;
-            case modes::McOrigin::kFromWrongCollision:
-              mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
+              mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(FitVarsDir) + HIST(getHistName(kPrimary, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
               break;
             case modes::McOrigin::kFromMaterial:
-              mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
+              mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(FitVarsDir) + HIST(getHistName(kFromMaterial, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
               break;
             case modes::McOrigin::kFromSecondaryDecay:
               if (mcParticle.has_fMcMother()) {
-                auto mother = mcParticle.template fMcMother_as<T3>();
+                auto mother = mcParticle.template fMcMother_as<T4>();
                 int motherPdgCode = std::abs(mother.pdgCode());
                 // Switch on PDG of the mother
                 if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {
-                  mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kSecondary1, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
+                  mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(FitVarsDir) + HIST(getHistName(kSecondary1, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
                 } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel2 && motherPdgCode == mPdgCodesSecondaryMother[1]) {
-                  mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kSecondary2, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
+                  mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(FitVarsDir) + HIST(getHistName(kSecondary2, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
                 } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel3 && motherPdgCode == mPdgCodesSecondaryMother[2]) {
-                  mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kSecondary3, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
+                  mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(FitVarsDir) + HIST(getHistName(kSecondary3, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
                 } else {
-                  mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kSecondaryOther, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
+                  mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(FitVarsDir) + HIST(getHistName(kSecondaryOther, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
                 }
               }
               break;
             default:
-              LOG(warn) << "Encounted partilce with unknown origin!";
+              LOG(warn) << "Encountered particle with unknown origin!";
               break;
           }
         }
@@ -678,7 +785,10 @@ class CascadeHistManager
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   int mPdgCode = 0;
-  bool mPlotOrigins = false;
+  // true by default so the per-origin FitVars templates are booked/filled even where
+  // enableOptionalHistograms() is never called (e.g. the pair task, which has no QA-binning
+  // config); the QA task can still opt out via its plotOrigins Configurable
+  bool mPlotOrigins = true;
   int mPlotNSecondaries = 0;
   std::array<int, MaxSecondary> mPdgCodesSecondaryMother = {0};
   bool mPlot2d = false;
@@ -687,6 +797,5 @@ class CascadeHistManager
   trackhistmanager::TrackHistManager<posDauPrefix> mPosDauManager;
   trackhistmanager::TrackHistManager<negDauPrefix> mNegDauManager;
 };
-}; // namespace cascadehistmanager
-}; // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::cascadehistmanager
 #endif // PWGCF_FEMTO_CORE_CASCADEHISTMANAGER_H_

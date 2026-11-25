@@ -53,6 +53,7 @@
 
 #include <Rtypes.h>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <map>
@@ -98,7 +99,10 @@ namespace o2::aod
 namespace hf_cand_ds_mini
 {
 DECLARE_SOA_COLUMN(Pt, pt, float);                                           //! Transverse momentum of D-meson candidate (GeV/c)
-DECLARE_SOA_COLUMN(M, m, float);                                             //! Invariant mass of D-meson candidates (GeV/c)
+DECLARE_SOA_COLUMN(M, m, float);                                             //! Invariant mass of D-meson candidates (GeV/c2)
+DECLARE_SOA_COLUMN(MassKaKa, massKaKa, float);                               //! Invariant mass of kaon pairs (GeV/c2)
+DECLARE_SOA_COLUMN(MassKaFirstPi, massKaFirstPi, float);                     //! Invariant mass of kaon(first) pion (GeV/c2)
+DECLARE_SOA_COLUMN(MassKaSecondPi, massKaSecondPi, float);                   //! Invariant mass of kaon(second) pion (GeV/c2)
 DECLARE_SOA_COLUMN(Centrality, centrality, float);                           //! Centrality of collision
 DECLARE_SOA_COLUMN(ImpactParameter, impactParameter, float);                 //! Impact parameter of D-meson candidate
 DECLARE_SOA_COLUMN(ImpactParameterMc, impactParameterMc, float);             //! Generated impact parameter of D-meson candidate
@@ -113,6 +117,11 @@ DECLARE_SOA_TABLE(HfCandDsMinis, "AOD", "HFDSMINI", //! Table with few Ds proper
                   hf_cand_ds_mini::M,
                   hf_cand_ds_mini::Pt,
                   hf_cand_ds_mini::Centrality);
+
+DECLARE_SOA_TABLE(HfCandDsMassMinis, "AOD", "HFDSMASSMINI", //! Table with Ds 2-prong masses
+                  hf_cand_ds_mini::MassKaKa,
+                  hf_cand_ds_mini::MassKaFirstPi,
+                  hf_cand_ds_mini::MassKaSecondPi);
 
 DECLARE_SOA_TABLE(HfCandDsDlMinis, "AOD", "HFDSDLMINI", //! Table with decay length Ds properties
                   hf_cand_ds_mini::DecayLength,
@@ -142,6 +151,7 @@ concept HasDsMlInfo = requires(T candidate) {
 /// Ds± analysis task
 struct HfTaskDs {
   Produces<aod::HfCandDsMinis> hfCandDsMinis;
+  Produces<aod::HfCandDsMassMinis> hfCandDsMassMinis;
   Produces<aod::HfCandDsDlMinis> hfCandDsDlMinis;
   Produces<aod::HfCandDsD0Minis> hfCandDsD0Minis;
   Produces<aod::HfCandDsMcMinis> hfCandDsMcMinis;
@@ -161,6 +171,13 @@ struct HfTaskDs {
   Configurable<bool> storeOccupancy{"storeOccupancy", false, "Flag to store occupancy information"};
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
   Configurable<bool> fillMcBkgHistos{"fillMcBkgHistos", false, "Flag to fill and store histograms for MC background"};
+
+  // Track selection
+  Configurable<bool> applyTrackSel{"applyTrackSel", false, "Flag to apply track selections"};
+  Configurable<int> minItsClusters{"minItsClusters", 4, "Minimum number of ITS clusters for prong selection"};
+  Configurable<int> minTpcCrossedRows{"minTpcCrossedRows", 70, "Minimum number of TPC crossed rows for prong selection"};
+  Configurable<double> maxChi2PerCluster{"maxChi2PerCluster", 4., "Maximum chi2 per cluster for prong selection"};
+
   struct : ConfigurableGroup {
     Configurable<bool> produceMiniTrees{"produceMiniTrees", false, "Flag to produce mini trees"};
     Configurable<bool> extendWithDecayLength{"extendWithDecayLength", false, "Flag to extend trees with decay length information"};
@@ -183,13 +200,13 @@ struct HfTaskDs {
   template <typename CandDs>
   using MemberFunctionPointer = bool (HfTaskDs::*)(const CandDs&);
 
-  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs>;
-  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentFT0Ms>;
+  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::FT0Mults, aod::CentFT0Cs>;
+  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::FT0Mults, aod::CentFT0Ms>;
   using CollisionsWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentNTPVs>;
 
-  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
-  using CollisionsMcWithFT0C = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs>;
-  using CollisionsMcWithFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::CentFT0Ms>;
+  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults>;
+  using CollisionsMcWithFT0C = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::FT0Mults, aod::CentFT0Cs>;
+  using CollisionsMcWithFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::FT0Mults, aod::CentFT0Ms>;
   using CollisionsMcWithNTracksPV = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::CentNTPVs>;
 
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
@@ -197,6 +214,8 @@ struct HfTaskDs {
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
   using CandDsMcRecoWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec, aod::HfMlDsToKKPi>>;
   using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+
+  using TracksWExtraMc = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
 
   Filter filterDsFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0);
 
@@ -411,6 +430,38 @@ struct HfTaskDs {
     return true;
   }
 
+  /// Apply prong track selections for systematic studies
+  /// \param candidate is the candidate
+  /// \return true if all the prongs pass the track selections (or if they are not applied), false otherwise
+  template <typename TTracks, typename CandDs>
+  bool areProngsSelected(const CandDs& candidate)
+  {
+    if (!applyTrackSel) {
+      return true;
+    }
+
+    auto prong0 = candidate.template prong0_as<TTracks>();
+    auto prong1 = candidate.template prong1_as<TTracks>();
+    auto prong2 = candidate.template prong2_as<TTracks>();
+
+    int const minProngItsCls = std::min({prong0.itsNCls(), prong1.itsNCls(), prong2.itsNCls()});
+    if (minProngItsCls < minItsClusters) {
+      return false;
+    }
+
+    int const minProngTpcCrossedRows = std::min({prong0.tpcNClsCrossedRows(), prong1.tpcNClsCrossedRows(), prong2.tpcNClsCrossedRows()});
+    if (minProngTpcCrossedRows < minTpcCrossedRows) {
+      return false;
+    }
+
+    double const maxProngChi2PerCls = std::max({prong0.tpcChi2NCl(), prong1.tpcChi2NCl(), prong2.tpcChi2NCl()});
+    if (maxProngChi2PerCls > maxChi2PerCluster) {
+      return false;
+    }
+
+    return true;
+  }
+
   /// Evaluate centrality/multiplicity percentile using FT0M estimator
   /// \param candidate is candidate
   /// \return centrality/multiplicity percentile of the collision
@@ -592,10 +643,22 @@ struct HfTaskDs {
   template <typename Coll, typename Cand>
   void fillMiniTrees(const Cand& candidate, FinalState finalState)
   {
-    auto mass = finalState == FinalState::KKPi ? HfHelper::invMassDsToKKPi(candidate) : HfHelper::invMassDsToPiKK(candidate);
+    float mass{-1.f}, massKaKa{-1.f}, massKaFirstPi{-1.f}, massKaSecondPi{-1.f};
+    if (finalState == FinalState::KKPi) {
+      mass = HfHelper::invMassDsToKKPi(candidate);
+      massKaKa = HfHelper::massKKPairDsToKKPi(candidate);
+      massKaFirstPi = HfHelper::massKFirstPiPairDsToKKPi(candidate);
+      massKaSecondPi = HfHelper::massKSecondPiPairDsToKKPi(candidate);
+    } else {
+      mass = HfHelper::invMassDsToPiKK(candidate);
+      massKaKa = HfHelper::massKKPairDsToPiKK(candidate);
+      massKaFirstPi = HfHelper::massKFirstPiPairDsToPiKK(candidate);
+      massKaSecondPi = HfHelper::massKSecondPiPairDsToPiKK(candidate);
+    }
     auto pt = candidate.pt();
 
     hfCandDsMinis(mass, pt, evaluateCentralityCand<Coll>(candidate));
+    hfCandDsMassMinis(massKaKa, massKaFirstPi, massKaSecondPi);
     if (miniTrees.extendWithDecayLength) {
       hfCandDsDlMinis(candidate.decayLength(), candidate.decayLengthXY(), candidate.decayLengthNormalised(), candidate.decayLengthXYNormalised());
     }
@@ -607,10 +670,22 @@ struct HfTaskDs {
   template <typename Coll, typename Cand>
   void fillMiniTreesMc(const Cand& candidate, DataType dataType, FinalState finalState, const CandDsMcGen& mcParticles, int indexMother)
   {
-    auto mass = finalState == FinalState::KKPi ? HfHelper::invMassDsToKKPi(candidate) : HfHelper::invMassDsToPiKK(candidate);
+    float mass{-1.f}, massKaKa{-1.f}, massKaFirstPi{-1.f}, massKaSecondPi{-1.f};
+    if (finalState == FinalState::KKPi) {
+      mass = HfHelper::invMassDsToKKPi(candidate);
+      massKaKa = HfHelper::massKKPairDsToKKPi(candidate);
+      massKaFirstPi = HfHelper::massKFirstPiPairDsToKKPi(candidate);
+      massKaSecondPi = HfHelper::massKSecondPiPairDsToKKPi(candidate);
+    } else {
+      mass = HfHelper::invMassDsToPiKK(candidate);
+      massKaKa = HfHelper::massKKPairDsToPiKK(candidate);
+      massKaFirstPi = HfHelper::massKFirstPiPairDsToPiKK(candidate);
+      massKaSecondPi = HfHelper::massKSecondPiPairDsToPiKK(candidate);
+    }
     auto pt = candidate.pt();
 
     hfCandDsMinis(mass, pt, evaluateCentralityCand<Coll>(candidate));
+    hfCandDsMassMinis(massKaKa, massKaFirstPi, massKaSecondPi);
     if (miniTrees.extendWithDecayLength) {
       hfCandDsDlMinis(candidate.decayLength(), candidate.decayLengthXY(), candidate.decayLengthNormalised(), candidate.decayLengthXYNormalised());
     }
@@ -677,7 +752,7 @@ struct HfTaskDs {
     }
 
     auto indexMother = RecoDecay::getMother(mcParticles,
-                                            candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>(),
+                                            candidate.template prong0_as<TracksWExtraMc>().template mcParticle_as<CandDsMcGen>(),
                                             id, true);
 
     if (indexMother != -1) {
@@ -953,6 +1028,9 @@ struct HfTaskDs {
         if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
           continue;
         }
+        if (!areProngsSelected<aod::TracksWExtra>(candidate)) {
+          continue;
+        }
         runDataAnalysisPerCandidate<Coll>(candidate);
 
         ++nCandsPerType[DataType::Data];
@@ -1018,6 +1096,9 @@ struct HfTaskDs {
         if (candidate.isSelDsToKKPi() < selectionFlagDs && candidate.isSelDsToPiKK() < selectionFlagDs) {
           continue;
         }
+        if (!areProngsSelected<TracksWExtraMc>(candidate)) {
+          continue;
+        }
         runDataAnalysisPerCandidate<Coll>(candidate);
         runMcAnalysisPerCandidate<Coll>(candidate, mcParticles);
 
@@ -1065,7 +1146,7 @@ struct HfTaskDs {
   void processDataWithCentFT0C(CollisionsWithFT0C const& collisions,
                                CandDsData const& candsDs,
                                aod::BCs const&,
-                               aod::Tracks const&)
+                               aod::TracksWExtra const&)
   {
     runDataAnalysisPerCollision(collisions, candsDs);
   }
@@ -1074,7 +1155,7 @@ struct HfTaskDs {
   void processDataWithCentFT0M(CollisionsWithFT0M const& collisions,
                                CandDsData const& candsDs,
                                aod::BCs const&,
-                               aod::Tracks const&)
+                               aod::TracksWExtra const&)
   {
     runDataAnalysisPerCollision(collisions, candsDs);
   }
@@ -1083,16 +1164,16 @@ struct HfTaskDs {
   void processDataWithCentNTracksPV(CollisionsWithNTracksPV const& collisions,
                                     CandDsData const& candsDs,
                                     aod::BCs const&,
-                                    aod::Tracks const&)
+                                    aod::TracksWExtra const&)
   {
     runDataAnalysisPerCollision(collisions, candsDs);
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithCentNTracksPV, "Process data w/o ML information on Ds, with information on centrality from NTracksPV", false);
 
-  void processData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                    CandDsData const& candsDs,
                    aod::BCs const&,
-                   aod::Tracks const&)
+                   aod::TracksWExtra const&)
   {
     runDataAnalysisPerCollision(collisions, candsDs);
   }
@@ -1101,7 +1182,7 @@ struct HfTaskDs {
   void processDataWithMlAndCentFT0C(CollisionsWithFT0C const& collisions,
                                     CandDsDataWithMl const& candsDs,
                                     aod::BCs const&,
-                                    aod::Tracks const&)
+                                    aod::TracksWExtra const&)
   {
     runDataAnalysisPerCollision(collisions, candsDs);
   }
@@ -1110,7 +1191,7 @@ struct HfTaskDs {
   void processDataWithMlAndCentFT0M(CollisionsWithFT0M const& collisions,
                                     CandDsDataWithMl const& candsDs,
                                     aod::BCs const&,
-                                    aod::Tracks const&)
+                                    aod::TracksWExtra const&)
   {
     runDataAnalysisPerCollision(collisions, candsDs);
   }
@@ -1119,16 +1200,16 @@ struct HfTaskDs {
   void processDataWithMlAndCentNTracksPV(CollisionsWithNTracksPV const& collisions,
                                          CandDsDataWithMl const& candsDs,
                                          aod::BCs const&,
-                                         aod::Tracks const&)
+                                         aod::TracksWExtra const&)
   {
     runDataAnalysisPerCollision(collisions, candsDs);
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCentNTracksPV, "Process data with ML information on Ds, with information on centrality", false);
 
-  void processDataWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processDataWithMl(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                          CandDsDataWithMl const& candsDs,
                          aod::BCs const&,
-                         aod::Tracks const&)
+                         aod::TracksWExtra const&)
   {
     runDataAnalysisPerCollision(collisions, candsDs);
   }
@@ -1139,7 +1220,7 @@ struct HfTaskDs {
                              CandDsMcGen const& mcParticles,
                              aod::BCs const&,
                              aod::McCollisions const&,
-                             aod::TracksWMc const&)
+                             TracksWExtraMc const&)
   {
     runMcAnalysisPerCollision<CollisionsMcWithFT0C>(collisions, candsDs, mcParticles);
   }
@@ -1150,7 +1231,7 @@ struct HfTaskDs {
                              CandDsMcGen const& mcParticles,
                              aod::BCs const&,
                              aod::McCollisions const&,
-                             aod::TracksWMc const&)
+                             TracksWExtraMc const&)
   {
     runMcAnalysisPerCollision<CollisionsMcWithFT0M>(collisions, candsDs, mcParticles);
   }
@@ -1161,7 +1242,7 @@ struct HfTaskDs {
                                   CandDsMcGen const& mcParticles,
                                   aod::BCs const&,
                                   aod::McCollisions const&,
-                                  aod::TracksWMc const&)
+                                  TracksWExtraMc const&)
   {
     runMcAnalysisPerCollision<CollisionsMcWithNTracksPV>(collisions, candsDs, mcParticles);
   }
@@ -1172,7 +1253,7 @@ struct HfTaskDs {
                  CandDsMcGen const& mcParticles,
                  aod::BCs const&,
                  aod::McCollisions const&,
-                 aod::TracksWMc const&)
+                 TracksWExtraMc const&)
   {
     runMcAnalysisPerCollision<CollisionsMc>(collisions, candsDs, mcParticles);
   }
@@ -1183,7 +1264,7 @@ struct HfTaskDs {
                                   CandDsMcGen const& mcParticles,
                                   aod::BCs const&,
                                   aod::McCollisions const&,
-                                  aod::TracksWMc const&)
+                                  TracksWExtraMc const&)
   {
     runMcAnalysisPerCollision<CollisionsMcWithFT0C>(collisions, candsDs, mcParticles);
   }
@@ -1194,7 +1275,7 @@ struct HfTaskDs {
                                   CandDsMcGen const& mcParticles,
                                   aod::BCs const&,
                                   aod::McCollisions const&,
-                                  aod::TracksWMc const&)
+                                  TracksWExtraMc const&)
   {
     runMcAnalysisPerCollision<CollisionsMcWithFT0M>(collisions, candsDs, mcParticles);
   }
@@ -1205,7 +1286,7 @@ struct HfTaskDs {
                                        CandDsMcGen const& mcParticles,
                                        aod::BCs const&,
                                        aod::McCollisions const&,
-                                       aod::TracksWMc const&)
+                                       TracksWExtraMc const&)
   {
     runMcAnalysisPerCollision<CollisionsMcWithNTracksPV>(collisions, candsDs, mcParticles);
   }
@@ -1216,7 +1297,7 @@ struct HfTaskDs {
                        CandDsMcGen const& mcParticles,
                        aod::BCs const&,
                        aod::McCollisions const&,
-                       aod::TracksWMc const&)
+                       TracksWExtraMc const&)
   {
     runMcAnalysisPerCollision<CollisionsMc>(collisions, candsDs, mcParticles);
   }

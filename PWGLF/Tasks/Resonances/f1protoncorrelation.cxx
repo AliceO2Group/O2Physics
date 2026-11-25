@@ -196,21 +196,21 @@ struct f1protoncorrelation {
     auto packCode = [&](const std::array<int, 14>& idx) -> uint32_t {
       uint32_t code = 0u;
       for (int k = 0; k < 14; ++k) {
-        code |= (uint32_t(idx[k] & 0x3) << (2 * k));
+        code |= (static_cast<uint32_t>(idx[k] & 0x3) << (2 * k));
       }
       return code;
     };
 
     sysCuts.clear();
-    sysCuts.reserve(1 + (size_t)nSysRand);
+    sysCuts.reserve(1 + static_cast<size_t>(nSysRand));
     sysCuts.push_back(def); // sysId=0
 
     std::unordered_set<uint32_t> used;
-    used.reserve((size_t)nSysRand * 2);
+    used.reserve(static_cast<size_t>(nSysRand) * 2);
     used.insert(0u); // all-default code
 
-    const int nPick = std::max(0, (int)nSysRand);
-    while ((int)sysCuts.size() < 1 + nPick) {
+    const int nPick = std::max(0, nSysRand.value);
+    while (static_cast<int>(sysCuts.size()) < 1 + nPick) {
 
       std::array<int, 14> idx{};
       for (int k = 0; k < 14; ++k)
@@ -230,7 +230,7 @@ struct f1protoncorrelation {
         idx[11], idx[12], idx[13]));
     }
 
-    nSysTotal = (int)sysCuts.size();
+    nSysTotal = static_cast<int>(sysCuts.size());
   }
 
   // -------------------------
@@ -242,9 +242,9 @@ struct f1protoncorrelation {
       return false;
     if (std::abs(dcaz) > c.maxDcaz)
       return false;
-    if ((int)ncrs < c.minTPCCrossedRows)
+    if (static_cast<int>(ncrs) < c.minTPCCrossedRows)
       return false;
-    if ((int)ncls < c.minTPCClusters)
+    if (static_cast<int>(ncls) < c.minTPCClusters)
       return false;
     return true;
   }
@@ -390,9 +390,9 @@ struct f1protoncorrelation {
   {
     buildSystematicCuts();
 
-    nSysTotal = (int)sysCuts.size(); // or whatever vector you fill
+    nSysTotal = static_cast<int>(sysCuts.size()); // or whatever vector you fill
     LOGF(info, "sysCuts.size()=%zu  nSysTotal=%d", sysCuts.size(), nSysTotal);
-    const AxisSpec thnAxisSys{nSysTotal, -0.5f, float(nSysTotal) - 0.5f, "sysId"};
+    const AxisSpec thnAxisSys{nSysTotal, -0.5f, static_cast<float>(nSysTotal) - 0.5f, "sysId"};
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisMt{configThnAxisMt, "#it{M}_{T} (GeV/#it{c})"};
@@ -464,7 +464,7 @@ struct f1protoncorrelation {
 
   /// Magnetic field to be provided in Tesla
   static constexpr float tmpRadiiTPC[9] = {85., 105., 125., 145., 165., 185., 205., 225., 245.};
-  float PhiAtSpecificRadiiTPC(const TLorentzVector part1, const TLorentzVector part2, float charge1 = 0, int charge2 = 0, float magfield1 = 0.0, float magfield2 = 0.0)
+  float PhiAtSpecificRadiiTPC(const TLorentzVector& part1, const TLorentzVector& part2, float charge1 = 0, int charge2 = 0, float magfield1 = 0.0, float magfield2 = 0.0)
   {
     float pt1 = part1.Pt();
     float phi1 = part1.Phi();
@@ -496,8 +496,8 @@ struct f1protoncorrelation {
 
   // get kstar
   TLorentzVector trackSum, PartOneCMS, PartTwoCMS, trackRelK;
-  float getkstar(const TLorentzVector part1,
-                 const TLorentzVector part2)
+  float getkstar(const TLorentzVector& part1,
+                 const TLorentzVector& part2)
   {
     // const TLorentzVector trackSum = part1 + part2;
     trackSum = part1 + part2;
@@ -517,7 +517,7 @@ struct f1protoncorrelation {
     return 0.5 * trackRelK.P();
   }
 
-  float getmT(const TLorentzVector part1, const TLorentzVector part2)
+  float getmT(const TLorentzVector& part1, const TLorentzVector& part2)
   {
     trackSum = part1 + part2;
     float kT = 0.5 * trackSum.Pt();
@@ -543,7 +543,7 @@ struct f1protoncorrelation {
     }
     lastRunNumber = currentRunNumber;
 
-    for (auto f1track : f1tracks) {
+    for (const auto& f1track : f1tracks) {
       if (f1track.f1MassKaonKshort() > maxKKS0Mass) {
         continue;
       }
@@ -593,7 +593,7 @@ struct f1protoncorrelation {
       if (typeofCombined == 1) {
         combinedTPC = (f1track.f1d1TPC() - f1track.f1d2TPC()) / (f1track.f1d1TPC() + f1track.f1d2TPC());
       }
-      for (auto protontrack : protontracks) {
+      for (const auto& protontrack : protontracks) {
         Proton.SetXYZM(protontrack.protonPx(), protontrack.protonPy(), protontrack.protonPz(), 0.938);
         if (Proton.Pt() > momentumProtonMax || Proton.Pt() < momentumProtonMin) {
           continue;
@@ -668,7 +668,7 @@ struct f1protoncorrelation {
   // Processing Event Mixing
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
-  BinningType colBinning{{CfgVtxBins, CfgMultBins}, true};
+  BinningType colBinning{{CfgVtxBins, CfgMultBins}};
   Preslice<aod::F1Tracks> tracksPerCollisionPresliceF1 = aod::f1protondaughter::redF1PEventId;
   Preslice<aod::ProtonTracks> tracksPerCollisionPresliceP = aod::f1protondaughter::redF1PEventId;
   void processME(aod::RedF1PEvents& collisions,
@@ -975,7 +975,7 @@ struct f1protoncorrelation {
     lastRunNumber = currentRunNumber;
     auto countf1 = 0;
 
-    for (auto f1track : f1tracks) {
+    for (const auto& f1track : f1tracks) {
 
       if (f1track.f1MassKaonKshort() > maxKKS0Mass)
         continue;
@@ -988,7 +988,7 @@ struct f1protoncorrelation {
       if (F1.Pt() < lowPtF1 || F1.Pt() > 50.0)
         continue;
       std::vector<int> activeSys;
-      activeSys.reserve((size_t)nSysTotal);
+      activeSys.reserve(static_cast<size_t>(nSysTotal));
 
       for (int sysId = 0; sysId < nSysTotal; ++sysId) {
         const auto& sc = sysCuts[sysId];
@@ -1021,7 +1021,7 @@ struct f1protoncorrelation {
         continue;
 
       // Proton loop
-      for (auto protontrack : protontracks) {
+      for (const auto& protontrack : protontracks) {
         Proton.SetXYZM(protontrack.protonPx(), protontrack.protonPy(), protontrack.protonPz(), 0.938);
 
         if ((f1track.f1PionIndex() == protontrack.f1ProtonIndex()) ||
@@ -1134,7 +1134,7 @@ struct f1protoncorrelation {
         auto mT = getmT(F1, Proton);
         // sys list for this (F1, p) pair
         std::vector<int> activePair;
-        activePair.reserve((size_t)nSysTotal);
+        activePair.reserve(static_cast<size_t>(nSysTotal));
 
         for (int sysId = 0; sysId < nSysTotal; ++sysId) {
           const auto& sc = sysCuts[sysId];

@@ -337,7 +337,7 @@ struct UpcSemiFwdJpsiRl {
   }
 
   // azimuth anisotropy phi
-  void computePhiAnis(LorentzVec p1, LorentzVec p2, int sign1, float& phiAverage, float& phiCharge)
+  void computePhiAnis(const LorentzVec& p1, const LorentzVec& p2, int sign1, float& phiAverage, float& phiCharge)
   {
     auto tSum = p1 + p2;
     float halfUnity = 0.5;

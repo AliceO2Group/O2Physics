@@ -362,7 +362,7 @@ struct phispectrapbpbqa {
 
     int Npostrack = 0;
     histos.fill(HIST("hOccupancy"), occupancy, centrality);
-    for (auto track1 : posThisColl) {
+    for (const auto& track1 : posThisColl) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -409,7 +409,7 @@ struct phispectrapbpbqa {
       // 1) φ at a chosen radius (e.g., outer pad rows ~247 cm)
       histos.fill(HIST("hPhiMommentum"), track1.phi(), track1.p(), occupancy);
 
-      for (auto track2 : negThisColl) {
+      for (const auto& track2 : negThisColl) {
         if (track1.sign() * track2.sign() > 0.0) {
           continue;
         }
@@ -494,7 +494,7 @@ struct phispectrapbpbqa {
   void processMixedEventOpti(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, cnfgaxis.configThnAxisCentrality, axisOccupancy}, true};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, cnfgaxis.configThnAxisCentrality, axisOccupancy}};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
       if (!collision1.sel8() || !collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
@@ -643,7 +643,7 @@ struct phispectrapbpbqa {
       auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
       // loop over reconstructed particle
       int ntrack1 = 0;
-      for (auto track1 : Rectrackspart) {
+      for (const auto& track1 : Rectrackspart) {
         if (!selectionTrack(track1)) {
           continue;
         }
@@ -677,7 +677,7 @@ struct phispectrapbpbqa {
           histos.fill(HIST("hNsigmaTOFAfterCut"), nSigmaTOF, track1.p(), occupancy);
         }
         ntrack1 = ntrack1 + 1;
-        for (auto track2 : Rectrackspart) {
+        for (const auto& track2 : Rectrackspart) {
           auto track2ID = track2.index();
           if (track2ID <= track1ID) {
             continue;
@@ -785,7 +785,7 @@ struct phispectrapbpbqa {
         }
         auto daughtp = false;
         auto daughtm = false;
-        for (auto kCurrentDaughter : kDaughters) {
+        for (const auto& kCurrentDaughter : kDaughters) {
           if (!kCurrentDaughter.isPhysicalPrimary()) {
             continue;
           }

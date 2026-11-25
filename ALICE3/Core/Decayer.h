@@ -19,10 +19,13 @@
 #ifndef ALICE3_CORE_DECAYER_H_
 #define ALICE3_CORE_DECAYER_H_
 
+#include "ALICE3/Core/ConfigurationParser.h"
 #include "ALICE3/Core/OTFParticle.h"
 #include "ALICE3/Core/TrackUtilities.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Logger.h>
 #include <MathUtils/Primitive2D.h>
 #include <ReconstructionDataFormats/Track.h>
 
@@ -31,13 +34,16 @@
 #include <TLorentzVector.h>
 #include <TRandom3.h>
 
+#include <array>
 #include <cmath>
 #include <cstddef>
+#include <map>
+#include <sstream>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
-namespace o2
-{
-namespace upgrade
+namespace o2::upgrade
 {
 
 class Decayer
@@ -46,62 +52,93 @@ class Decayer
   // Default constructor
   Decayer() = default;
 
+  static constexpr double BranchingRatioTolerance = 0.01;
+
+  struct DecayChannel {
+    double branchingRatio{};
+    std::vector<int> daughters;
+  };
+
   template <typename TDatabase>
-  std::vector<o2::upgrade::OTFParticle> decayParticle(const TDatabase& pdgDB, const OTFParticle& particle)
+  void loadDecayTable(const std::string& path, const TDatabase& pdgDB, o2::ccdb::BasicCCDBManager* ccdb = nullptr)
   {
-    const auto& particleInfo = pdgDB->GetParticle(particle.pdgCode());
+    std::string fileName = o2::fastsim::ConfigurationParser::accessFile(path, "./.ALICE3/Configuration/", ccdb);
+    std::vector<std::string> mothers;
+    const std::map<std::string, std::map<std::string, std::string>> config = o2::fastsim::ConfigurationParser::parseTEnvConfiguration(fileName, mothers);
+
+    mDecayTable.clear();
+    for (const auto& [motherName, channels] : config) {
+      const int motherPdg = std::stoi(motherName);
+      if (!pdgDB->GetParticle(motherPdg)) {
+        LOG(fatal) << "Decay table: unknown mother PDG code " << motherPdg;
+      }
+      for (const auto& [channelName, value] : channels) {
+        DecayChannel channel;
+        std::istringstream stream(value);
+        stream >> channel.branchingRatio;
+        int daughterPdg{};
+        while (stream >> daughterPdg) {
+          if (!pdgDB->GetParticle(daughterPdg)) {
+            LOG(fatal) << "Decay table: unknown daughter PDG code " << daughterPdg << " in " << motherName << "." << channelName;
+          }
+          channel.daughters.push_back(daughterPdg);
+        }
+        if (!stream.eof() || channel.branchingRatio <= 0. || channel.daughters.size() < 2) {
+          LOG(fatal) << "Decay table: invalid channel " << motherName << "." << channelName << ": \"" << value << "\"";
+        }
+        mDecayTable[motherPdg].push_back(channel);
+      }
+      double brTotal = 0.;
+      for (const auto& channel : mDecayTable[motherPdg]) {
+        brTotal += channel.branchingRatio;
+      }
+      if (std::abs(brTotal - 1.) > BranchingRatioTolerance) {
+        LOG(fatal) << "Decay table: branching ratios of PDG " << motherPdg << " sum to " << brTotal << ", expected 1 within " << BranchingRatioTolerance;
+      }
+      LOG(info) << "Decay table: overriding " << mDecayTable[motherPdg].size() << " decay channel(s) of PDG " << motherPdg;
+    }
+  }
+
+  template <typename TDatabase>
+  std::vector<o2::upgrade::OTFParticle> decayParticle(const OTFParticle& particle, const TDatabase& pdgDB)
+  {
+    auto particleInfo = pdgDB->GetParticle(particle.pdgCode());
     if (!particleInfo) {
       return {};
     }
 
     const int charge = particleInfo->Charge() / 3;
     const double mass = particleInfo->Mass();
-
-    const double u = mRand3.Uniform(0.001, 0.999);
-    const double ctau = o2::constants::physics::LightSpeedCm2S * particleInfo->Lifetime(); // cm
-    const double betaGamma = particle.p() / mass;
-    const double rxyz = -betaGamma * ctau * std::log(1 - u);
-    double px, py, e;
+    std::array<double, 3> decayVtx = generateDecayVertex<double>(particle, pdgDB);
+    mVx = decayVtx[0];
+    mVy = decayVtx[1];
+    mVz = decayVtx[2];
+    double px{}, py{}, e{};
 
     if (!charge) {
-      mVx = particle.vx() + rxyz * (particle.px() / particle.p());
-      mVy = particle.vy() + rxyz * (particle.py() / particle.p());
-      mVz = particle.vz() + rxyz * (particle.pz() / particle.p());
       px = particle.px();
       py = particle.py();
     } else {
-      o2::track::TrackParCov track;
-      o2::math_utils::CircleXYf_t circle;
-      o2::upgrade::convertOTFParticleToO2Track(particle, track, pdgDB);
-
-      float sna{}, csa{};
-      track.getCircleParams(mBz, circle, sna, csa);
-      const double rxy = rxyz / std::sqrt(1. + track.getTgl() * track.getTgl());
-      const double theta = rxy / circle.rC;
-
-      mVx = ((particle.vx() - circle.xC) * std::cos(theta) - (particle.vy() - circle.yC) * std::sin(theta)) + circle.xC;
-      mVy = ((particle.vy() - circle.yC) * std::cos(theta) + (particle.vx() - circle.xC) * std::sin(theta)) + circle.yC;
-      mVz = particle.vz() + rxyz * (particle.pz() / track.getP());
-
-      px = particle.px() * std::cos(theta) - particle.py() * std::sin(theta);
-      py = particle.py() * std::cos(theta) + particle.px() * std::sin(theta);
+      px = particle.px() * std::cos(mTheta) - particle.py() * std::sin(mTheta);
+      py = particle.py() * std::cos(mTheta) + particle.px() * std::sin(mTheta);
     }
 
-    double brTotal = 0.;
     e = std::sqrt(mass * mass + px * px + py * py + particle.pz() * particle.pz());
-    for (int ch = 0; ch < particleInfo->NDecayChannels(); ++ch) {
-      brTotal += particleInfo->DecayChannel(ch)->BranchingRatio();
+    const std::vector<DecayChannel> channels = getDecayChannels(particle.pdgCode(), particleInfo);
+
+    double brTotal = 0.;
+    for (const auto& channel : channels) {
+      brTotal += channel.branchingRatio;
     }
 
     double brSum = 0.;
     std::vector<double> dauMasses;
     std::vector<int> pdgCodesDaughters;
     const double randomChannel = mRand3.Uniform(0., brTotal);
-    for (int ch = 0; ch < particleInfo->NDecayChannels(); ++ch) {
-      brSum += particleInfo->DecayChannel(ch)->BranchingRatio();
+    for (const auto& channel : channels) {
+      brSum += channel.branchingRatio;
       if (randomChannel < brSum) {
-        for (int dau = 0; dau < particleInfo->DecayChannel(ch)->NDaughters(); ++dau) {
-          const int pdgDau = particleInfo->DecayChannel(ch)->DaughterPdgCode(dau);
+        for (const int pdgDau : channel.daughters) {
           pdgCodesDaughters.push_back(pdgDau);
           const auto& dauInfo = pdgDB->GetParticle(pdgDau);
           dauMasses.push_back(dauInfo->Mass());
@@ -120,17 +157,53 @@ class Decayer
     decay.Generate();
 
     std::vector<o2::upgrade::OTFParticle> decayProducts;
+    decayProducts.reserve(dauMasses.size());
     for (size_t i = 0; i < dauMasses.size(); ++i) {
-      o2::upgrade::OTFParticle particle;
-      TLorentzVector dau = *decay.GetDecay(i);
-      particle.setPDG(pdgCodesDaughters[i]);
-      particle.setVxVyVz(mVx, mVy, mVz);
-      particle.setPxPyPzE(dau.Px(), dau.Py(), dau.Pz(), dau.E());
-      particle.setBitOn(o2::upgrade::DecayerBits::ProducedByDecayer);
-      decayProducts.push_back(particle);
+      o2::upgrade::OTFParticle daughter;
+      const TLorentzVector& dau = *decay.GetDecay(i);
+      daughter.setPDG(pdgCodesDaughters[i]);
+      daughter.setVxVyVz(mVx, mVy, mVz);
+      daughter.setPxPyPzE(dau.Px(), dau.Py(), dau.Pz(), dau.E());
+      daughter.setBitOn(o2::upgrade::DecayerBits::ProducedByDecayer);
+      decayProducts.push_back(daughter);
+    }
+    return decayProducts;
+  }
+
+  template <typename T = float, typename TDatabase, typename TParticle>
+  std::array<T, 3> generateDecayVertex(const TParticle& particle, const TDatabase& pdgDB)
+  {
+    std::array<T, 3> decayVertex{};
+    auto particleInfo = pdgDB->GetParticle(particle.pdgCode());
+    if (!particleInfo) {
+      return {};
     }
 
-    return decayProducts;
+    const int charge = particleInfo->Charge() / 3;
+    const double mass = particleInfo->Mass();
+    const double u = mRand3.Uniform(0.001, 0.999);
+    const double ctau = o2::constants::physics::LightSpeedCm2S * particleInfo->Lifetime(); // cm
+    const double betaGamma = particle.p() / mass;
+    const double rxyz = -betaGamma * ctau * std::log(1 - u);
+
+    if (!charge) {
+      decayVertex[0] = particle.vx() + rxyz * (particle.px() / particle.p());
+      decayVertex[1] = particle.vy() + rxyz * (particle.py() / particle.p());
+      decayVertex[2] = particle.vz() + rxyz * (particle.pz() / particle.p());
+    } else {
+      o2::math_utils::CircleXYf_t circle;
+      o2::track::TrackParCov track = o2::upgrade::convertMCParticleToO2Track(particle, pdgDB);
+
+      float sna{}, csa{};
+      track.getCircleParams(mBz, circle, sna, csa);
+      const double rxy = rxyz / std::sqrt(1. + track.getTgl() * track.getTgl());
+      mTheta = rxy / circle.rC;
+
+      decayVertex[0] = ((particle.vx() - circle.xC) * std::cos(mTheta) - (particle.vy() - circle.yC) * std::sin(mTheta)) + circle.xC;
+      decayVertex[1] = ((particle.vy() - circle.yC) * std::cos(mTheta) + (particle.vx() - circle.xC) * std::sin(mTheta)) + circle.yC;
+      decayVertex[2] = particle.vz() + rxyz * (particle.pz() / track.getP());
+    }
+    return decayVertex;
   }
 
   // Setters
@@ -142,18 +215,39 @@ class Decayer
   }
 
   // Getters
-  float getSecondaryVertexX() const { return static_cast<float>(mVx); }
-  float getSecondaryVertexY() const { return static_cast<float>(mVy); }
-  float getSecondaryVertexZ() const { return static_cast<float>(mVz); }
-  float getDecayRadius() const { return static_cast<float>(std::hypot(mVx, mVy)); }
+  [[nodiscard]] float getSecondaryVertexX() const { return static_cast<float>(mVx); }
+  [[nodiscard]] float getSecondaryVertexY() const { return static_cast<float>(mVy); }
+  [[nodiscard]] float getSecondaryVertexZ() const { return static_cast<float>(mVz); }
+  [[nodiscard]] float getDecayRadius() const { return static_cast<float>(std::hypot(mVx, mVy)); }
 
  private:
+  /// Decay channels from the loaded decay table if the mother is listed there, otherwise from TDatabasePDG
+  template <typename TParticleInfo>
+  std::vector<DecayChannel> getDecayChannels(const int pdgCode, const TParticleInfo& particleInfo) const
+  {
+    if (const auto it = mDecayTable.find(pdgCode); it != mDecayTable.end()) {
+      return it->second;
+    }
+
+    std::vector<DecayChannel> channels;
+    for (int ch = 0; ch < particleInfo->NDecayChannels(); ++ch) {
+      DecayChannel channel;
+      channel.branchingRatio = particleInfo->DecayChannel(ch)->BranchingRatio();
+      for (int dau = 0; dau < particleInfo->DecayChannel(ch)->NDaughters(); ++dau) {
+        channel.daughters.push_back(particleInfo->DecayChannel(ch)->DaughterPdgCode(dau));
+      }
+      channels.push_back(channel);
+    }
+    return channels;
+  }
+
+  std::unordered_map<int, std::vector<DecayChannel>> mDecayTable;
   double mBz{20.}; // kG
   double mVx{-1.}, mVy{-1.}, mVz{-1.};
-  TRandom3 mRand3{};
+  double mTheta{};
+  TRandom3 mRand3;
 };
 
-} // namespace upgrade
-} // namespace o2
+} // namespace o2::upgrade
 
 #endif // ALICE3_CORE_DECAYER_H_

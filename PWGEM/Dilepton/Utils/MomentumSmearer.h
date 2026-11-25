@@ -32,6 +32,7 @@
 #include <TString.h>
 
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 class MomentumSmearer
@@ -43,11 +44,11 @@ class MomentumSmearer
   /// Constructor with resolution histograms
   MomentumSmearer(TString resFileName, TString resPtHistName, TString resEtaHistName, TString resPhiPosHistName, TString resPhiNegHistName)
   {
-    setResFileName(resFileName);
-    setResPtHistName(resPtHistName);
-    setResEtaHistName(resEtaHistName);
-    setResPhiPosHistName(resPhiPosHistName);
-    setResPhiNegHistName(resPhiNegHistName);
+    setResFileName(std::move(resFileName));
+    setResPtHistName(std::move(resPtHistName));
+    setResEtaHistName(std::move(resEtaHistName));
+    setResPhiPosHistName(std::move(resPhiPosHistName));
+    setResPhiNegHistName(std::move(resPhiNegHistName));
     setEffFileName("");
     setEffHistName("");
     setDCAFileName("");
@@ -58,8 +59,8 @@ class MomentumSmearer
   /// Constructor with resolution ND sparse histogram
   MomentumSmearer(TString resFileName, TString resNDHistName)
   {
-    setResFileName(resFileName);
-    setResNDHistName(resNDHistName);
+    setResFileName(std::move(resFileName));
+    setResNDHistName(std::move(resNDHistName));
     setResPtHistName("");
     setResEtaHistName("");
     setResPhiPosHistName("");
@@ -75,13 +76,13 @@ class MomentumSmearer
   /// Constructor with resolution histograms and efficiency
   MomentumSmearer(TString resFileName, TString resPtHistName, TString resEtaHistName, TString resPhiPosHistName, TString resPhiNegHistName, TString effFileName, TString effHistName)
   {
-    setResFileName(resFileName);
-    setResPtHistName(resPtHistName);
-    setResEtaHistName(resEtaHistName);
-    setResPhiPosHistName(resPhiPosHistName);
-    setResPhiNegHistName(resPhiNegHistName);
-    setEffFileName(effFileName);
-    setEffHistName(effHistName);
+    setResFileName(std::move(resFileName));
+    setResPtHistName(std::move(resPtHistName));
+    setResEtaHistName(std::move(resEtaHistName));
+    setResPhiPosHistName(std::move(resPhiPosHistName));
+    setResPhiNegHistName(std::move(resPhiNegHistName));
+    setEffFileName(std::move(effFileName));
+    setEffHistName(std::move(effHistName));
     setDCAFileName("");
     setDCAHistName("");
     init();
@@ -90,15 +91,15 @@ class MomentumSmearer
   /// Constructor with resolution histograms and efficiency and dca
   MomentumSmearer(TString resFileName, TString resPtHistName, TString resEtaHistName, TString resPhiPosHistName, TString resPhiNegHistName, TString effFileName, TString effHistName, TString dcaFileName, TString dcaHistName)
   {
-    setResFileName(resFileName);
-    setResPtHistName(resPtHistName);
-    setResEtaHistName(resEtaHistName);
-    setResPhiPosHistName(resPhiPosHistName);
-    setResPhiNegHistName(resPhiNegHistName);
-    setEffFileName(effFileName);
-    setEffHistName(effHistName);
-    setDCAFileName(dcaFileName);
-    setDCAHistName(dcaHistName);
+    setResFileName(std::move(resFileName));
+    setResPtHistName(std::move(resPtHistName));
+    setResEtaHistName(std::move(resEtaHistName));
+    setResPhiPosHistName(std::move(resPhiPosHistName));
+    setResPhiNegHistName(std::move(resPhiNegHistName));
+    setEffFileName(std::move(effFileName));
+    setEffHistName(std::move(effHistName));
+    setDCAFileName(std::move(dcaFileName));
+    setDCAHistName(std::move(dcaHistName));
     init();
   }
 
@@ -109,34 +110,34 @@ class MomentumSmearer
   void getResolutionHistos(TList* list)
   {
 
-    fResoPt = reinterpret_cast<TH2F*>(list->FindObject(fResPtHistName));
+    fResoPt = dynamic_cast<TH2*>(list->FindObject(fResPtHistName));
     if (!fResoPt) {
       LOGP(fatal, "Could not open {} from file {}", fResPtHistName.Data(), fResFileName.Data());
     }
 
-    fResoEta = reinterpret_cast<TH2F*>(list->FindObject(fResEtaHistName));
+    fResoEta = dynamic_cast<TH2*>(list->FindObject(fResEtaHistName));
     if (!fResoEta) {
       LOGP(fatal, "Could not open {} from file {}", fResEtaHistName.Data(), fResFileName.Data());
     }
 
-    fResoPhi_Pos = reinterpret_cast<TH2F*>(list->FindObject(fResPhiPosHistName));
+    fResoPhi_Pos = dynamic_cast<TH2*>(list->FindObject(fResPhiPosHistName));
     if (!fResoPhi_Pos) {
       LOGP(fatal, "Could not open {} from file {}", fResPhiPosHistName.Data(), fResFileName.Data());
     }
 
-    fResoPhi_Neg = reinterpret_cast<TH2F*>(list->FindObject(fResPhiNegHistName));
+    fResoPhi_Neg = dynamic_cast<TH2*>(list->FindObject(fResPhiNegHistName));
     if (!fResoPhi_Neg) {
       LOGP(fatal, "Could not open {} from file {}", fResPhiNegHistName.Data(), fResFileName.Data());
     }
   }
 
-  void fillVecReso(TH2F* fReso, std::vector<TH1F*>& fVecReso, const char* suffix)
+  void fillVecReso(TH2* fReso, std::vector<TH1D*>& fVecReso, const char* suffix)
   {
     TAxis* axisPt = fReso->GetXaxis(); // be careful! This works only for variable bin width.
     int nBinsPt = axisPt->GetNbins();
     fVecReso.resize(nBinsPt);
     for (int i = 0; i < nBinsPt; i++) {
-      auto h1 = reinterpret_cast<TH1F*>(fReso->ProjectionY(Form("h1reso%s_pt%d", suffix, i), i + 1, i + 1));
+      auto h1 = dynamic_cast<TH1D*>(fReso->ProjectionY(Form("h1reso%s_pt%d", suffix, i), i + 1, i + 1));
       h1->Scale(1.f, "width"); // convert ntrack to probability density
       fVecReso[i] = h1;
     }
@@ -155,7 +156,7 @@ class MomentumSmearer
 
     fVecResoND.resize(fNCenBins, std::vector<std::vector<std::vector<std::vector<TH3D*>>>>(fNPtBins, std::vector<std::vector<std::vector<TH3D*>>>(fNEtaBins, std::vector<std::vector<TH3D*>>(fNPhiBins, std::vector<TH3D*>(fNChBins)))));
     // fVecResoND.resize(fNPtBins, std::vector<std::vector<std::vector<TH3D*>>>(fNEtaBins, std::vector<std::vector<TH3D*>>(fNPhiBins, std::vector<TH3D*>(fNChBins))));
-    //  auto h3 = reinterpret_cast<TH3D*>(hs_reso->Projection(4, 5, 6));
+    //  auto h3 = hs_reso->Projection(4, 5, 6);
     //  h3->SetName(Form("h3reso_pt%d_eta%d_phi%d_ch%d", 0, 0, 0, 0));
     //  fVecResoND[0][0][0][0] = h3;
 
@@ -172,7 +173,7 @@ class MomentumSmearer
                 continue;
               }
               hs_reso->GetAxis(4)->SetRange(ich + 1, ich + 1);
-              auto h3 = reinterpret_cast<TH3D*>(hs_reso->Projection(5, 6, 7));
+              auto h3 = hs_reso->Projection(5, 6, 7);
               h3->SetName(Form("h3reso_cen%d_pt%d_eta%d_phi%d_ch%d", icen, ipt, ieta, iphi, ich));
               h3->Scale(1.f, "width"); // convert ntrack to probability density
               fVecResoND[icen][ipt][ieta][iphi][ich] = h3;
@@ -213,7 +214,7 @@ class MomentumSmearer
           return;
         }
         if (fFile->GetListOfKeys()->Contains("ccdb_object")) {
-          listRes = reinterpret_cast<TList*>(fFile->Get("ccdb_object"));
+          listRes = dynamic_cast<TList*>(fFile->Get("ccdb_object"));
         } else {
           for (TObject* keyAsObj : *(fFile->GetListOfKeys())) {
             auto key = dynamic_cast<TKey*>(keyAsObj);
@@ -230,7 +231,7 @@ class MomentumSmearer
 
     if (fDoNDSmearing) {
       if (fResType != 0) {
-        fResoND = reinterpret_cast<THnSparseF*>(listRes->FindObject(fResNDHistName));
+        fResoND = dynamic_cast<THnSparseF*>(listRes->FindObject(fResNDHistName));
         if (!fResoND) {
           LOGP(fatal, "Could not open {} from file {}", fResNDHistName.Data(), fResFileName.Data());
         }
@@ -238,22 +239,22 @@ class MomentumSmearer
       }
     } else {
       if (fResType != 0) {
-        fResoPt = reinterpret_cast<TH2F*>(listRes->FindObject(fResPtHistName));
+        fResoPt = dynamic_cast<TH2*>(listRes->FindObject(fResPtHistName));
         if (!fResoPt) {
           LOGP(fatal, "Could not open {} from file {}", fResPtHistName.Data(), fResFileName.Data());
         }
 
-        fResoEta = reinterpret_cast<TH2F*>(listRes->FindObject(fResEtaHistName));
+        fResoEta = dynamic_cast<TH2*>(listRes->FindObject(fResEtaHistName));
         if (!fResoEta) {
           LOGP(fatal, "Could not open {} from file {}", fResEtaHistName.Data(), fResFileName.Data());
         }
 
-        fResoPhi_Pos = reinterpret_cast<TH2F*>(listRes->FindObject(fResPhiPosHistName));
+        fResoPhi_Pos = dynamic_cast<TH2*>(listRes->FindObject(fResPhiPosHistName));
         if (!fResoPhi_Pos) {
           LOGP(fatal, "Could not open {} from file {}", fResPhiPosHistName.Data(), fResFileName.Data());
         }
 
-        fResoPhi_Neg = reinterpret_cast<TH2F*>(listRes->FindObject(fResPhiNegHistName));
+        fResoPhi_Neg = dynamic_cast<TH2*>(listRes->FindObject(fResPhiNegHistName));
         if (!fResoPhi_Neg) {
           LOGP(fatal, "Could not open {} from file {}", fResPhiNegHistName.Data(), fResFileName.Data());
         }
@@ -288,7 +289,7 @@ class MomentumSmearer
           return;
         }
         if (fFile->GetListOfKeys()->Contains("ccdb_object")) {
-          listEff = reinterpret_cast<TList*>(fFile->Get("ccdb_object"));
+          listEff = dynamic_cast<TList*>(fFile->Get("ccdb_object"));
         } else {
           for (TObject* keyAsObj : *(fFile->GetListOfKeys())) {
             auto key = dynamic_cast<TKey*>(keyAsObj);
@@ -301,7 +302,7 @@ class MomentumSmearer
       }
     }
     if (fEffType != 0) {
-      fEff = reinterpret_cast<TObject*>(listEff->FindObject(fEffHistName));
+      fEff = listEff->FindObject(fEffHistName);
       if (!fEff) {
         LOGP(fatal, "Could not open {} from file {}", fEffHistName.Data(), fEffFileName.Data());
       }
@@ -344,7 +345,7 @@ class MomentumSmearer
           return;
         }
         if (fFile->GetListOfKeys()->Contains("ccdb_object")) {
-          listDCA = reinterpret_cast<TList*>(fFile->Get("ccdb_object"));
+          listDCA = dynamic_cast<TList*>(fFile->Get("ccdb_object"));
         } else {
           for (TObject* keyAsObj : *(fFile->GetListOfKeys())) {
             auto key = dynamic_cast<TKey*>(keyAsObj);
@@ -357,7 +358,7 @@ class MomentumSmearer
       }
     }
     if (fDCAType != 0) {
-      fDCA = reinterpret_cast<TH2F*>(listDCA->FindObject(fDCAHistName));
+      fDCA = dynamic_cast<TH2F*>(listDCA->FindObject(fDCAHistName));
       if (!fDCA) {
         LOGP(fatal, "Could not open {} from file {}", fDCAHistName.Data(), fDCAFileName.Data());
       }
@@ -371,7 +372,7 @@ class MomentumSmearer
     fInitialized = true;
   }
 
-  void applySmearing(const float ptgen, const float vargen, const float multiply, float& varsmeared, TH2F* fReso, std::vector<TH1F*>& fVecReso)
+  void applySmearing(const float ptgen, const float vargen, const float multiply, float& varsmeared, TH2* fReso, std::vector<TH1D*>& fVecReso)
   {
     float ptgen_tmp = ptgen > fMinPtGen ? ptgen : fMinPtGen;
     TAxis* axisPt = fReso->GetXaxis();
@@ -480,7 +481,7 @@ class MomentumSmearer
     }
 
     if (fEffType == 1) {
-      TH1F* hist = reinterpret_cast<TH1F*>(fEff);
+      TH1F* hist = dynamic_cast<TH1F*>(fEff);
       int ptbin = hist->GetXaxis()->FindBin(pt);
       int ptbin_max = hist->GetXaxis()->GetNbins();
       // make sure that no underflow or overflow bins are used
@@ -492,7 +493,7 @@ class MomentumSmearer
     }
 
     if (fEffType == 2) {
-      TH2F* hist = reinterpret_cast<TH2F*>(fEff);
+      TH2F* hist = dynamic_cast<TH2F*>(fEff);
       int ptbin = hist->GetXaxis()->FindBin(pt);
       int ptbin_max = hist->GetXaxis()->GetNbins();
       int etabin = hist->GetYaxis()->FindBin(eta);
@@ -510,7 +511,7 @@ class MomentumSmearer
     }
 
     if (fEffType == 3) {
-      TH3F* hist = reinterpret_cast<TH3F*>(fEff);
+      TH3F* hist = dynamic_cast<TH3F*>(fEff);
       int ptbin = hist->GetXaxis()->FindBin(pt);
       int ptbin_max = hist->GetXaxis()->GetNbins();
       int etabin = hist->GetYaxis()->FindBin(eta);
@@ -560,19 +561,19 @@ class MomentumSmearer
 
   // setters
   void setNDSmearing(bool flag) { fDoNDSmearing = flag; }
-  void setResFileName(TString resFileName) { fResFileName = resFileName; }
-  void setResNDHistName(TString resNDHistName) { fResNDHistName = resNDHistName; }
-  void setResPtHistName(TString resPtHistName) { fResPtHistName = resPtHistName; }
-  void setResEtaHistName(TString resEtaHistName) { fResEtaHistName = resEtaHistName; }
-  void setResPhiPosHistName(TString resPhiPosHistName) { fResPhiPosHistName = resPhiPosHistName; }
-  void setResPhiNegHistName(TString resPhiNegHistName) { fResPhiNegHistName = resPhiNegHistName; }
-  void setEffFileName(TString effFileName) { fEffFileName = effFileName; }
-  void setEffHistName(TString effHistName) { fEffHistName = effHistName; }
-  void setDCAFileName(TString dcaFileName) { fDCAFileName = dcaFileName; }
-  void setDCAHistName(TString dcaHistName) { fDCAHistName = dcaHistName; }
-  void setCcdbPathRes(TString ccdbPathRes) { fCcdbPathRes = ccdbPathRes; }
-  void setCcdbPathEff(TString ccdbPathEff) { fCcdbPathEff = ccdbPathEff; }
-  void setCcdbPathDCA(TString ccdbPathDCA) { fCcdbPathDCA = ccdbPathDCA; }
+  void setResFileName(TString resFileName) { fResFileName = std::move(resFileName); }
+  void setResNDHistName(TString resNDHistName) { fResNDHistName = std::move(resNDHistName); }
+  void setResPtHistName(TString resPtHistName) { fResPtHistName = std::move(resPtHistName); }
+  void setResEtaHistName(TString resEtaHistName) { fResEtaHistName = std::move(resEtaHistName); }
+  void setResPhiPosHistName(TString resPhiPosHistName) { fResPhiPosHistName = std::move(resPhiPosHistName); }
+  void setResPhiNegHistName(TString resPhiNegHistName) { fResPhiNegHistName = std::move(resPhiNegHistName); }
+  void setEffFileName(TString effFileName) { fEffFileName = std::move(effFileName); }
+  void setEffHistName(TString effHistName) { fEffHistName = std::move(effHistName); }
+  void setDCAFileName(TString dcaFileName) { fDCAFileName = std::move(dcaFileName); }
+  void setDCAHistName(TString dcaHistName) { fDCAHistName = std::move(dcaHistName); }
+  void setCcdbPathRes(TString ccdbPathRes) { fCcdbPathRes = std::move(ccdbPathRes); }
+  void setCcdbPathEff(TString ccdbPathEff) { fCcdbPathEff = std::move(ccdbPathEff); }
+  void setCcdbPathDCA(TString ccdbPathDCA) { fCcdbPathDCA = std::move(ccdbPathDCA); }
   void setCcdb(o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb)
   {
     fCcdb = ccdb;
@@ -593,10 +594,10 @@ class MomentumSmearer
   TString getEffHistName() { return fEffHistName; }
   TString getDCAFileName() { return fDCAFileName; }
   TString getDCaHistName() { return fDCAHistName; }
-  TH2F* getHistResoPt() { return fResoPt; }
-  TH2F* getHistResoEta() { return fResoEta; }
-  TH2F* getHistResoPhiPos() { return fResoPhi_Pos; }
-  TH2F* getHistResoPhiNeg() { return fResoPhi_Neg; }
+  TH2* getHistResoPt() { return fResoPt; }
+  TH2* getHistResoEta() { return fResoEta; }
+  TH2* getHistResoPhiPos() { return fResoPhi_Pos; }
+  TH2* getHistResoPhiNeg() { return fResoPhi_Neg; }
   TObject* getHistEff() { return fEff; }
   TString getCcdbPathRes() { return fCcdbPathRes; }
   TString getCcdbPathEff() { return fCcdbPathEff; }
@@ -623,23 +624,23 @@ class MomentumSmearer
   int fResType = 0;
   int fDCAType = 0;
   THnSparseF* fResoND;
-  TH2F* fResoPt;
-  TH2F* fResoEta;
-  TH2F* fResoPhi_Pos;
-  TH2F* fResoPhi_Neg;
+  TH2* fResoPt;
+  TH2* fResoEta;
+  TH2* fResoPhi_Pos;
+  TH2* fResoPhi_Neg;
   std::vector<std::vector<std::vector<std::vector<std::vector<TH3D*>>>>> fVecResoND;
   int fNCenBins = 1;
   int fNPtBins = 1;
   int fNEtaBins = 1;
   int fNPhiBins = 1;
   int fNChBins = 1;
-  std::vector<TH1F*> fVecResoPt;
-  std::vector<TH1F*> fVecResoEta;
-  std::vector<TH1F*> fVecResoPhi_Pos;
-  std::vector<TH1F*> fVecResoPhi_Neg;
+  std::vector<TH1D*> fVecResoPt;
+  std::vector<TH1D*> fVecResoEta;
+  std::vector<TH1D*> fVecResoPhi_Pos;
+  std::vector<TH1D*> fVecResoPhi_Neg;
   TObject* fEff;
   TH2F* fDCA;
-  std::vector<TH1F*> fVecDCA;
+  std::vector<TH1D*> fVecDCA;
   int64_t fTimestamp;
   bool fFromCcdb = false;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> fCcdb;

@@ -453,8 +453,8 @@ struct Phi1020SpherocityAnalysis {
   void processMix(ResoCols const& collisions, ResoTracks const& tracks)
   {
     LOGF(debug, "Event Mixing Started");
-    BinningType1 binningPositions1{{mixVtxBins, mixMultBins, mixSphBins}, true};
-    BinningType2 binningPositions2{{mixVtxBins, mixMultBins}, true};
+    BinningType1 binningPositions1{{mixVtxBins, mixMultBins, mixSphBins}};
+    BinningType2 binningPositions2{{mixVtxBins, mixMultBins}};
     auto tracksTuple = std::make_tuple(tracks);
     if (mixSph) {
       SameKindPair<ResoCols, ResoTracks, BinningType1> pairs{binningPositions1, numMixEv, -1, collisions, tracksTuple, &cache};

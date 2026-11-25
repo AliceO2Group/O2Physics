@@ -80,7 +80,7 @@ struct MCGeneratorStudies {
     hBCCounter->GetXaxis()->SetBinLabel(2, "+TVX");
     hBCCounter->GetXaxis()->SetBinLabel(3, "+Collision");
 
-    TString mesonLatexString = (TString)mSelectedParticleCode;
+    TString mesonLatexString = TString(mSelectedParticleCode);
     switch (mSelectedParticleCode) {
       case 0:
         mesonLatexString = "particles";
@@ -224,7 +224,7 @@ struct MCGeneratorStudies {
   }
 
   template <typename TMCParticle, typename TMCParticles>
-  bool isGammaGammaDecay(TMCParticle mcParticle, TMCParticles mcParticles)
+  bool isGammaGammaDecay(const TMCParticle& mcParticle, const TMCParticles& mcParticles)
   {
     auto daughtersIds = mcParticle.daughtersIds();
     if (daughtersIds.size() != 2)
@@ -237,7 +237,7 @@ struct MCGeneratorStudies {
   }
 
   template <typename TMCParticle, typename TMCParticles>
-  bool isAccepted(TMCParticle mcParticle, TMCParticles mcParticles)
+  bool isAccepted(const TMCParticle& mcParticle, const TMCParticles& mcParticles)
   {
     auto daughtersIds = mcParticle.daughtersIds();
     if (daughtersIds.size() != 2)

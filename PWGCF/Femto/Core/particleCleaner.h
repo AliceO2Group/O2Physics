@@ -16,17 +16,17 @@
 #ifndef PWGCF_FEMTO_CORE_PARTICLECLEANER_H_
 #define PWGCF_FEMTO_CORE_PARTICLECLEANER_H_
 
+#include "PWGCF/Femto/Core/femtoUtils.h"
+
+#include <CommonConstants/MathConstants.h>
 #include <Framework/Configurable.h>
 
 #include <string>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::particlecleaner
 {
-namespace particlecleaner
-{
-
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfParticleCleaner : o2::framework::ConfigurableGroup {
   std::string prefix = std::string(Prefix);
   o2::framework::Configurable<bool> activate{"activate", false, "Activate particle cleaner"};
@@ -34,11 +34,28 @@ struct ConfParticleCleaner : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<int>> rejectedPdgCodes{"rejectedPdgCodes", {}, "Reject particles with this exact pdg code (including the sign!)"};
   o2::framework::Configurable<bool> rejectParticleWithoutMcParticle{"rejectParticleWithoutMcParticle", false, "If true, particles which have no associated MC information, are rejected"};
   o2::framework::Configurable<bool> rejectParticleWithoutMcMother{"rejectParticleWithoutMcMother", false, "If true, particles which have no associated mother are rejected"};
-  o2::framework::Configurable<bool> rejectParticleWithoutMcPartonicMother{"rejectParticleWithoutMcPartonicMother", false, "If true, all particles which have no associated partonic mother"};
-  o2::framework::Configurable<std::vector<int>> requiredMotherPdgCodes{"requiredMotherPdgCodes", {}, "Only consider particles whose mothers have one of the supplied pdg codes (inclduing the sign!)"};
-  o2::framework::Configurable<std::vector<int>> rejectMotherPdgCodes{"rejectMotherPdgCodes", {}, "Only consider particles whose mothers do not have one of the supplied pdg codes (inclduing the sign!)"};
-  o2::framework::Configurable<std::vector<int>> requiredPartonicMotherPdgCodes{"requiredPartonicMotherPdgCodes", {}, "Only consider particles whose partonic mothers have one of the supplied pdg codes (inclduing the sign!)"};
-  o2::framework::Configurable<std::vector<int>> rejectPartonicMotherPdgCodes{"rejectPartonicMotherPdgCodes", {}, "Only consider particles whose mothers do not have one of the supplied pdg codes (inclduing the sign!)"};
+  o2::framework::Configurable<bool> rejectParticleWithoutMcPartonicMother{"rejectParticleWithoutMcPartonicMother", false, "If true, particles which have no associated partonic mother are rejected"};
+  o2::framework::Configurable<std::vector<int>> requiredMotherPdgCodes{"requiredMotherPdgCodes", {}, "Only consider particles whose mothers have one of the supplied pdg codes (including the sign!)"};
+  o2::framework::Configurable<std::vector<int>> rejectMotherPdgCodes{"rejectMotherPdgCodes", {}, "Only consider particles whose mothers do not have one of the supplied pdg codes (including the sign!)"};
+  // Kinematic window on the mother itself (e.g. to select on the Delta++'s own pt/eta/phi, not
+  // just its pdg code). There is only ONE window here, not one per entry in
+  // requiredMotherPdgCodes/rejectMotherPdgCodes above: whichever mother pdg code ends up being
+  // allowed by those two lists, this same pt/eta/phi range is what its kinematics are checked
+  // against -- the window does not vary per pdg code. Defaults are wide open (no-op) like every
+  // other kinematic window in this codebase, so setting these has no effect unless narrowed.
+  // activateMotherKinematics gates the whole check (default off), so it has zero cost -- no
+  // mass lookup, no rapidity computation -- unless explicitly turned on.
+  o2::framework::Configurable<bool> activateMotherKinematics{"activateMotherKinematics", false, "Activate the pt/eta/phi/rapidity kinematic cut on the mother"};
+  o2::framework::Configurable<float> motherPtMin{"motherPtMin", 0.f, "Minimum pT of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
+  o2::framework::Configurable<float> motherPtMax{"motherPtMax", 1e6f, "Maximum pT of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
+  o2::framework::Configurable<float> motherEtaMin{"motherEtaMin", -1e6f, "Minimum eta of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
+  o2::framework::Configurable<float> motherEtaMax{"motherEtaMax", 1e6f, "Maximum eta of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
+  o2::framework::Configurable<float> motherRapidityMin{"motherRapidityMin", -1e6f, "Minimum rapidity of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
+  o2::framework::Configurable<float> motherRapidityMax{"motherRapidityMax", 1e6f, "Maximum rapidity of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
+  o2::framework::Configurable<float> motherPhiMin{"motherPhiMin", 0.f, "Minimum phi of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched"};
+  o2::framework::Configurable<float> motherPhiMax{"motherPhiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi of the mother. One shared window applies regardless of which requiredMotherPdgCodes/rejectMotherPdgCodes entry the mother's own pdg code matched -- not one window per pdg code."};
+  o2::framework::Configurable<std::vector<int>> requiredPartonicMotherPdgCodes{"requiredPartonicMotherPdgCodes", {}, "Only consider particles whose partonic mothers have one of the supplied pdg codes (including the sign!)"};
+  o2::framework::Configurable<std::vector<int>> rejectPartonicMotherPdgCodes{"rejectPartonicMotherPdgCodes", {}, "Only consider particles whose partonic mothers do not have one of the supplied pdg codes (including the sign!)"};
 };
 
 constexpr const char PrefixTrackCleaner1[] = "TrackCleaner1";
@@ -52,6 +69,14 @@ constexpr const char PrefixLambdaCleaner1[] = "LambdaCleaner1";
 constexpr const char PrefixLambdaCleaner2[] = "LambdaCleaner2";
 using ConfLambdaCleaner1 = ConfParticleCleaner<PrefixLambdaCleaner1>;
 using ConfLambdaCleaner2 = ConfParticleCleaner<PrefixLambdaCleaner2>;
+
+constexpr const char PrefixD0Cleaner1[] = "D0Cleaner1";
+constexpr const char PrefixD0Cleaner2[] = "D0Cleaner2";
+using ConfD0Cleaner1 = ConfParticleCleaner<PrefixD0Cleaner1>;
+using ConfD0Cleaner2 = ConfParticleCleaner<PrefixD0Cleaner2>;
+
+constexpr const char PrefixLcCleaner1[] = "LcCleaner1";
+using ConfLcCleaner1 = ConfParticleCleaner<PrefixLcCleaner1>;
 
 constexpr const char PrefixK0shortCleaner1[] = "K0shortCleaner1";
 constexpr const char PrefixK0shortCleaner2[] = "K0shortCleaner2";
@@ -68,6 +93,11 @@ constexpr const char PrefixSigmaPlusCleaner2[] = "SigmaPlusCleaner2";
 using ConfSigmaPlusCleaner1 = ConfParticleCleaner<PrefixSigmaPlusCleaner1>;
 using ConfSigmaPlusCleaner2 = ConfParticleCleaner<PrefixSigmaPlusCleaner2>;
 
+constexpr const char PrefixSigmaPlusPcmCleaner1[] = "SigmaPlusPcmCleaner1";
+constexpr const char PrefixSigmaPlusPcmCleaner2[] = "SigmaPlusPcmCleaner2";
+using ConfSigmaPlusPcmCleaner1 = ConfParticleCleaner<PrefixSigmaPlusPcmCleaner1>;
+using ConfSigmaPlusPcmCleaner2 = ConfParticleCleaner<PrefixSigmaPlusPcmCleaner2>;
+
 constexpr const char PrefixXiCleaner1[] = "XiCleaner1";
 constexpr const char PrefixXiCleaner2[] = "XiCleaner2";
 using ConfXiCleaner1 = ConfParticleCleaner<PrefixXiCleaner1>;
@@ -80,8 +110,10 @@ using ConfOmegaCleaner2 = ConfParticleCleaner<PrefixOmegaCleaner2>;
 
 constexpr const char PrefixMcParticleCleaner1[] = "McParticleCleaner1";
 constexpr const char PrefixMcParticleCleaner2[] = "McParticleCleaner2";
+constexpr const char PrefixMcParticleCleaner3[] = "McParticleCleaner3";
 using ConfMcParticleCleaner1 = ConfParticleCleaner<PrefixMcParticleCleaner1>;
 using ConfMcParticleCleaner2 = ConfParticleCleaner<PrefixMcParticleCleaner2>;
+using ConfMcParticleCleaner3 = ConfParticleCleaner<PrefixMcParticleCleaner3>;
 
 class ParticleCleaner
 {
@@ -104,6 +136,16 @@ class ParticleCleaner
     mRequiredMotherPdgCodes = confMpc.requiredMotherPdgCodes.value;
     mRejectedMotherPdgCodes = confMpc.rejectMotherPdgCodes.value;
 
+    mActivateMotherKinematics = confMpc.activateMotherKinematics.value;
+    mMotherPtMin = confMpc.motherPtMin.value;
+    mMotherPtMax = confMpc.motherPtMax.value;
+    mMotherEtaMin = confMpc.motherEtaMin.value;
+    mMotherEtaMax = confMpc.motherEtaMax.value;
+    mMotherPhiMin = confMpc.motherPhiMin.value;
+    mMotherPhiMax = confMpc.motherPhiMax.value;
+    mMotherRapidityMin = confMpc.motherRapidityMin.value;
+    mMotherRapidityMax = confMpc.motherRapidityMax.value;
+
     mRequiredPartonicMotherPdgCodes = confMpc.requiredPartonicMotherPdgCodes.value;
     mRejectedPartonicMotherPdgCodes = confMpc.rejectPartonicMotherPdgCodes.value;
   }
@@ -122,12 +164,9 @@ class ParticleCleaner
     // No MC particle at all → no mother/partonic-mother info is reachable either,
     // since that lookup now goes through the mc particle row.
     if (!particle.has_fMcParticle()) {
-      if (mRejectParticleWithoutMcParticle || !mRequiredPdgCodes.empty() ||
-          mRejectParticleWithoutMcMother || !mRequiredMotherPdgCodes.empty() ||
-          mRejectParticleWithoutMcPartonicMother || !mRequiredPartonicMotherPdgCodes.empty()) {
-        return false;
-      }
-      return true;
+      return !mRejectParticleWithoutMcParticle && mRequiredPdgCodes.empty() &&
+             !mRejectParticleWithoutMcMother && mRequiredMotherPdgCodes.empty() &&
+             !mRejectParticleWithoutMcPartonicMother && mRequiredPartonicMotherPdgCodes.empty();
     }
 
     auto mcParticle = particle.template fMcParticle_as<T2>();
@@ -150,6 +189,7 @@ class ParticleCleaner
 
     bool hasMotherWithRequiredPdgCode = true;
     bool hasMotherWithRejectedPdgCode = false;
+    bool motherKinematicsOk = true;
 
     bool hasPartonicMotherWithRequiredPdgCode = true;
     bool hasPartonicMotherWithRejectedPdgCode = false;
@@ -200,6 +240,20 @@ class ParticleCleaner
           }
         }
       }
+
+      // One shared pt/eta/phi/rapidity window, applied to the mother regardless of which (if
+      // any) requiredMotherPdgCodes/rejectMotherPdgCodes entry it matched above. Gated behind
+      // activateMotherKinematics so it costs nothing (no mass lookup, no rapidity computation)
+      // unless explicitly turned on.
+      if (mActivateMotherKinematics) {
+        double motherRapidity = mother.y(utils::getPdgMass(mother.pdgCode()));
+        if (!(mother.pt() > mMotherPtMin && mother.pt() < mMotherPtMax &&
+              mother.eta() > mMotherEtaMin && mother.eta() < mMotherEtaMax &&
+              motherRapidity > mMotherRapidityMin && motherRapidity < mMotherRapidityMax &&
+              mother.phi() > mMotherPhiMin && mother.phi() < mMotherPhiMax)) {
+          motherKinematicsOk = false;
+        }
+      }
     }
 
     // MC partonic mother — same idea, via mcParticle
@@ -231,25 +285,34 @@ class ParticleCleaner
       }
     }
 
-    return hasRequiredPdgCode && !hasRejectedPdgCode &&
+    return motherKinematicsOk &&
+           hasRequiredPdgCode && !hasRejectedPdgCode &&
            hasMotherWithRequiredPdgCode && !hasMotherWithRejectedPdgCode &&
            hasPartonicMotherWithRequiredPdgCode && !hasPartonicMotherWithRejectedPdgCode;
   }
 
  private:
   bool mActivate = false;
-  bool mRejectParticleWithoutMcParticle = true;
-  bool mRejectParticleWithoutMcMother = true;
-  bool mRejectParticleWithoutMcPartonicMother = true;
-  std::vector<int> mRequiredPdgCodes{};
-  std::vector<int> mRejectedPdgCodes{};
-  std::vector<int> mRequiredMotherPdgCodes{};
-  std::vector<int> mRejectedMotherPdgCodes{};
-  std::vector<int> mRequiredPartonicMotherPdgCodes{};
-  std::vector<int> mRejectedPartonicMotherPdgCodes{};
+  bool mRejectParticleWithoutMcParticle = false;
+  bool mRejectParticleWithoutMcMother = false;
+  bool mRejectParticleWithoutMcPartonicMother = false;
+  std::vector<int> mRequiredPdgCodes;
+  std::vector<int> mRejectedPdgCodes;
+  std::vector<int> mRequiredMotherPdgCodes;
+  std::vector<int> mRejectedMotherPdgCodes;
+  bool mActivateMotherKinematics = false;
+  float mMotherPtMin = 0.f;
+  float mMotherPtMax = 1e6f;
+  float mMotherEtaMin = -1e6f;
+  float mMotherEtaMax = 1e6f;
+  float mMotherPhiMin = 0.f;
+  float mMotherPhiMax = 1.f * o2::constants::math::TwoPI;
+  float mMotherRapidityMin = -1e6f;
+  float mMotherRapidityMax = 1e6f;
+  std::vector<int> mRequiredPartonicMotherPdgCodes;
+  std::vector<int> mRejectedPartonicMotherPdgCodes;
 };
 
-} // namespace particlecleaner
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::particlecleaner
 
 #endif // PWGCF_FEMTO_CORE_PARTICLECLEANER_H_

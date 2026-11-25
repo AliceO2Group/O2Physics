@@ -19,6 +19,7 @@
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
@@ -39,10 +40,11 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
-#include <MathUtils/Utils.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
+
+#include <sys/types.h>
 
 #include <cmath>
 #include <cstddef>
@@ -316,8 +318,8 @@ struct prefilterDielectron {
 
   SliceCache cache;
   Preslice<MyTracks> perCollision_track = aod::emprimaryelectron::emeventId;
-  Partition<MyTracks> posTracks = o2::aod::emprimaryelectron::sign > int8_t(0);
-  Partition<MyTracks> negTracks = o2::aod::emprimaryelectron::sign < int8_t(0);
+  Partition<MyTracks> posTracks = o2::aod::emprimaryelectron::sign > static_cast<int8_t>(0);
+  Partition<MyTracks> negTracks = o2::aod::emprimaryelectron::sign < static_cast<int8_t>(0);
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;

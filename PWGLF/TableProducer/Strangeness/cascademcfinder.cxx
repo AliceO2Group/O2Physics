@@ -76,8 +76,8 @@ struct cascademcfinder {
   void init(InitContext&)
   {
     // initialize histograms
-    const AxisSpec axisNTimesCollRecoed{static_cast<int>(10), -0.5f, +9.5f, ""};
-    const AxisSpec axisPt{static_cast<int>(100), +0.0f, +10.0f, "p_{T} (GeV/c)"};
+    const AxisSpec axisNTimesCollRecoed{10, -0.5f, +9.5f, ""};
+    const AxisSpec axisPt{100, +0.0f, +10.0f, "p_{T} (GeV/c)"};
 
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
 

@@ -9,9 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+// NOLINT(build/header_guard)
+
 #pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
 
 #pragma link C++ class std::vector < std::vector < unsigned int>> + ;
 #pragma link C++ class std::vector < std::vector < std::uint32_t>> + ;
+#pragma link C++ class o2::fastsim::SecondaryLutAxis + ;
+#pragma link C++ class o2::fastsim::SecondaryLutEntry + ;
+#pragma link C++ class std::vector < o2::fastsim::SecondaryLutEntry> + ;
+#pragma link C++ class o2::fastsim::SecondaryLut + ;

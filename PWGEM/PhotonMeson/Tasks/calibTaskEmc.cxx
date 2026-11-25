@@ -20,7 +20,6 @@
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -38,6 +37,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
 #include <Framework/GroupedCombinations.h>
@@ -71,34 +71,12 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
 
-enum QvecEstimator {
-  FT0M = 0,
-  FT0A = 1,
-  FT0C,
-  TPCPos,
-  TPCNeg,
-  TPCTot,
-  FV0A
-};
-
 enum CentralityEstimator {
   None = 0,
-  CFT0A = 1,
+  CFT0A,
   CFT0C,
   CFT0M,
   NCentralityEstimators
-};
-
-enum Harmonics {
-  kNone = 0,
-  kDirect = 1,
-  kElliptic = 2,
-  kTriangluar = 3,
-  kQuadrangular = 4,
-  kPentagonal = 5,
-  kHexagonal = 6,
-  kHeptagonal = 7,
-  kOctagonal = 8
 };
 
 enum class MapLevel {
@@ -228,7 +206,7 @@ struct CalibTaskEmc {
   } correctionConfig;
 
   SliceCache cache;
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   int runNow = 0;
   int runBefore = -1;
 
@@ -246,8 +224,8 @@ struct CalibTaskEmc {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  o2::emcal::Geometry* emcalGeom;
-  o2::emcal::BadChannelMap* mBadChannels;
+  o2::emcal::Geometry* emcalGeom{};
+  o2::emcal::BadChannelMap* mBadChannels{};
   // Constants for eta and phi ranges for the look up table
   static constexpr double EtaMin = -0.75, etaMax = 0.75;
   static constexpr int NBinsEta = 150; // 150 bins for eta
@@ -255,7 +233,7 @@ struct CalibTaskEmc {
   static constexpr double PhiMin = 1.35, phiMax = 5.75;
   static constexpr int NBinsPhi = 440; // (440 bins = 0.01 step size covering most regions)
 
-  std::array<int8_t, NBinsEta * NBinsPhi> lookupTable1D;
+  std::array<int8_t, NBinsEta * NBinsPhi> lookupTable1D{};
 
   // Usage when cfgEnableNonLin is enabled
   uint8_t nColl = 1;
@@ -293,6 +271,7 @@ struct CalibTaskEmc {
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
+    fEMEventCut.SetFT0COccupancyRange(eventcuts.cfgFT0COccupancyMin, eventcuts.cfgFT0COccupancyMax);
   }
 
   void defineEMCCut()
@@ -362,7 +341,7 @@ struct CalibTaskEmc {
     fEMCCut.addQAHistograms(&registry);
     definePCMCut();
     fV0PhotonCut.addQAHistograms(&registry);
-    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&registry);
+    fEMEventCut.addEventHistograms(&registry);
 
     const AxisSpec thnAxisInvMass{thnConfigAxisInvMass, "#it{M}_{#gamma#gamma} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality (%)"};
@@ -446,7 +425,7 @@ struct CalibTaskEmc {
   template <const int histType>
   void fillThn(const float mass, const float pt, const float cent)
   {
-    static constexpr std::string_view HistTypes[3] = {"hSparsePi0", "hSparseBkgRot", "hSparseBkgMix"};
+    static constexpr std::array<std::string_view, 3> HistTypes = {"hSparsePi0", "hSparseBkgRot", "hSparseBkgMix"};
     registry.fill(HIST(HistTypes[histType]), mass, pt, cent);
   }
 
@@ -457,7 +436,7 @@ struct CalibTaskEmc {
   template <const int histType>
   void fillOpeningAngleHisto(const float openingAngle, const float pt, const float cent)
   {
-    static constexpr std::string_view HistTypes[3] = {"hOpeningAngleSE", "hOpeningAngleRot", "hOpeningAngleME"};
+    static constexpr std::array<std::string_view, 3> HistTypes = {"hOpeningAngleSE", "hOpeningAngleRot", "hOpeningAngleME"};
     registry.fill(HIST(HistTypes[histType]), openingAngle, pt, cent);
   }
 
@@ -504,9 +483,7 @@ struct CalibTaskEmc {
     int iRowLast = 24;
     if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_HALF) {
       iRowLast /= 2; // 2/3 sm case
-    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_THIRD) {
-      iRowLast /= 3; // 1/3 sm case
-    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::DCAL_EXT) {
+    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_THIRD || emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::DCAL_EXT) {
       iRowLast /= 3; // 1/3 sm case
     }
 
@@ -579,7 +556,6 @@ struct CalibTaskEmc {
     float massCand = meson.M();
 
     fillThn<histType>(massCand, photonCalibValue, cent);
-    return;
   }
 
   /// \brief check if standard event cuts + FT0 occupancy + centrality + QVec good is
@@ -589,14 +565,10 @@ struct CalibTaskEmc {
   bool isFullEventSelected(TCollision const& collision, bool fillHisto = false)
   {
     if (fillHisto) {
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&registry, collision);
+      fEMEventCut.fillEventInfo<0>(&registry, collision);
     }
     if (!(fEMEventCut.IsSelected(collision))) {
       // general event selection
-      return false;
-    }
-    if (!(eventcuts.cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
-      // occupancy selection
       return false;
     }
     float cent = getCentrality(collision);
@@ -605,9 +577,8 @@ struct CalibTaskEmc {
       return false;
     }
     if (fillHisto) {
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&registry, collision);
-      registry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
-      registry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
+      fEMEventCut.fillEventInfo<1>(&registry, collision);
+      fEMEventCut.fillAccepted(&registry);
     }
     return true;
   }
@@ -706,7 +677,7 @@ struct CalibTaskEmc {
     fEMCCut.AreSelectedRunning(flags, clusters, matchedPrims, matchedSeconds);
 
     using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}, true};
+    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}};
 
     auto clustersTuple = std::make_tuple(clusters);
     SameKindPair<FilteredCollsWithQvecs, EMCalPhotons, BinningType> pair{binningMixedEvent, mixingConfig.cfgMixingDepth, -1, collisions, clustersTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
@@ -714,10 +685,6 @@ struct CalibTaskEmc {
     for (const auto& [c1, clusters1, c2, clusters2] : pair) {
       if (!(fEMEventCut.IsSelected(c1)) || !(fEMEventCut.IsSelected(c2))) {
         // general event selection
-        continue;
-      }
-      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange() && c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange() && c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
-        // occupancy selection
         continue;
       }
       if (getCentrality(c1) < eventcuts.cfgMinCent || getCentrality(c1) > eventcuts.cfgMaxCent || getCentrality(c2) < eventcuts.cfgMinCent || getCentrality(c2) > eventcuts.cfgMaxCent) {
@@ -739,7 +706,7 @@ struct CalibTaskEmc {
           continue;
         }
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
-        if (cfgDistanceToEdge.value) {
+        if (cfgDistanceToEdge.value > 0) {
           if (checkEtaPhi1D(g1.eta(), RecoDecay::constrainAngle(g1.phi())) >= cfgEMCalMapLevelBackground.value) {
             continue;
           }
@@ -819,7 +786,7 @@ struct CalibTaskEmc {
         }
 
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
-        if (cfgDistanceToEdge.value) {
+        if (cfgDistanceToEdge.value > 0) {
           if (checkEtaPhi1D(g1.eta(), RecoDecay::constrainAngle(g1.phi())) >= cfgEMCalMapLevelSameEvent.value) {
             continue;
           }
@@ -868,7 +835,7 @@ struct CalibTaskEmc {
       return;
     }
     using BinningTypeMixed = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-    BinningTypeMixed binningOnPositions{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}, true};
+    BinningTypeMixed binningOnPositions{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}};
 
     auto associatedTables = std::make_tuple(clusters, pcmPhotons);
 
@@ -889,10 +856,6 @@ struct CalibTaskEmc {
         // general event selection
         continue;
       }
-      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange() && c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange() && c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
-        // occupancy selection
-        continue;
-      }
       if (getCentrality(c1) < eventcuts.cfgMinCent || getCentrality(c1) > eventcuts.cfgMaxCent || getCentrality(c2) < eventcuts.cfgMinCent || getCentrality(c2) > eventcuts.cfgMaxCent) {
         // event selection
         continue;
@@ -908,7 +871,7 @@ struct CalibTaskEmc {
           continue;
         }
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
-        if (cfgDistanceToEdge.value) {
+        if (cfgDistanceToEdge.value > 0) {
           if (checkEtaPhi1D(g1.eta(), RecoDecay::constrainAngle(g1.phi())) >= cfgEMCalMapLevelBackground.value) {
             continue;
           }
@@ -1022,7 +985,7 @@ struct CalibTaskEmc {
       return;
     }
     using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}, true};
+    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}};
 
     auto pcmPhotonTuple = std::make_tuple(pcmPhotons);
     SameKindPair<FilteredCollsWithQvecs, PCMPhotons, BinningType> pair{binningMixedEvent, mixingConfig.cfgMixingDepth, -1, collisions, pcmPhotonTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
@@ -1033,10 +996,6 @@ struct CalibTaskEmc {
     for (const auto& [c1, photon1, c2, photon2] : pair) {
       if (!(fEMEventCut.IsSelected(c1)) || !(fEMEventCut.IsSelected(c2))) {
         // general event selection
-        continue;
-      }
-      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange() && c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange() && c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
-        // occupancy selection
         continue;
       }
       if (getCentrality(c1) < eventcuts.cfgMinCent || getCentrality(c1) > eventcuts.cfgMaxCent || getCentrality(c2) < eventcuts.cfgMinCent || getCentrality(c2) > eventcuts.cfgMaxCent) {
@@ -1092,7 +1051,7 @@ struct CalibTaskEmc {
 
 }; // End struct CalibTaskEmc
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<CalibTaskEmc>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<CalibTaskEmc>(context)};
 }

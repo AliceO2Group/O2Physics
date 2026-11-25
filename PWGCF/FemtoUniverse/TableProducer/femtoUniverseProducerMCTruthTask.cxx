@@ -17,7 +17,11 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseCollisionSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
@@ -40,6 +44,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <set>
 #include <vector>
 
 using namespace o2;
@@ -47,6 +52,7 @@ using namespace o2::analysis::femto_universe;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
+using namespace o2::aod::rctsel;
 
 namespace o2::aod
 {
@@ -76,20 +82,21 @@ int getRowDaughters(int daughID, T const& vecID)
 }
 
 struct FemtoUniverseProducerMCTruthTask {
-  int mRunNumber;
-  float mMagField;
-  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
+
+  float mMagField = 0.;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{}; /// Accessing the CCDB
 
   // Tables being produced
   Produces<aod::FdCollisions> outputCollision;
   Produces<aod::FDParticles> outputParts;
-  // Produces<aod::FDMCLabels> outputPartsMCLabels;
-  // Produces<aod::FdMCParticles> outputPartsMC;
+
+  RCTFlagsChecker rctChecker;
+
+  static constexpr int HadElasticScatt = 20;   // kPHElastic - hadronic elastic scattering
+  static constexpr int HadInelasticScatt = 23; // kPHInhelastic - hadronic inelastic scattering
 
   // Analysis configs
   Configurable<bool> confIsRun3{"confIsRun3", false, "Running on Run3 or pilot"};
-  Configurable<bool> confIsMC{"confIsMC", false, "Running on MC; implemented only for Run3"};
-  Configurable<bool> confIsForceGRP{"confIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
   Configurable<std::vector<int>> confPDGCodes{"confPDGCodes", std::vector<int>{211, -211, 2212, -2212, 333}, "PDG of particles to be stored"};
   Configurable<bool> confAnalysisWithPID{"confAnalysisWithPID", true, "1: take only particles with specified PDG, 0: all particles"};
 
@@ -101,6 +108,10 @@ struct FemtoUniverseProducerMCTruthTask {
   Configurable<float> confCentFT0Min{"confCentFT0Min", 0.f, "Min CentFT0 value for centrality selection"};
   Configurable<float> confCentFT0Max{"confCentFT0Max", 200.f, "Max CentFT0 value for centrality selection"};
   Configurable<bool> confDoSpher{"confDoSpher", false, "Calculate sphericity. If false sphericity will take value of 2."};
+  Configurable<bool> confIsCheckRCTFlags{"confIsCheckRCTFlags", true, "Use RCTFlags"};
+  Configurable<bool> confUseIsGoodZvtxFT0vsPV{"confUseIsGoodZvtxFT0vsPV", false, "Check consistency between PVz from central barrel with that from FT0 timing"};
+  Configurable<bool> confUseIsVertexITSTPC{"confUseIsVertexITSTPC", false, "At least one ITS-TPC track (reject vertices built from ITS-only tracks)"};
+  Configurable<bool> confUseNoSameBunchPileup{"confUseNoSameBunchPileup", false, "Exclude collisions in bunches with more than 1 reco. PV"};
 
   // Track cuts
   struct : o2::framework::ConfigurableGroup {
@@ -113,21 +124,26 @@ struct FemtoUniverseProducerMCTruthTask {
   Configurable<float> yD0CandGenMax{"yD0CandGenMax", 0.5, "Rapidity cut for the D0/D0bar mesons"};
 
   FemtoUniverseCollisionSelection colCuts;
+  FemtoUniverseCollisionSelection recoCollCuts;
   FemtoUniverseTrackSelection trackCuts;
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry qaRecoRegistry{"QARecoHistos", {}, OutputObjHandlingPolicy::QAObject};
 
   void init(InitContext&)
   {
-    if ((doprocessTrackMC) == false) {
-      LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
+    if (!doprocessTrackMc && !doprocessTrackMcWithHf && !doprocessTrackMcOnlyRecoColl && !doprocessTrackMcOnlyRecoCollWithHf) {
+      LOGF(fatal, "No process enabled. Please choose one.");
     }
-
+    rctChecker.init("CBT_hadronPID", false, true);
+    // MC Truth collisions
     colCuts.setCuts(confEvtZvtx, confEvtTriggerCheck, confEvtTriggerSel, confEvtOfflineCheck, confIsRun3, confCentFT0Min, confCentFT0Max);
-
     colCuts.init(&qaRegistry);
+    // MC Reco collisions
+    recoCollCuts.setCuts(confEvtZvtx, confEvtTriggerCheck, confEvtTriggerSel, confEvtOfflineCheck, confIsRun3, confCentFT0Min, confCentFT0Max);
+    recoCollCuts.init(&qaRecoRegistry);
+
     trackCuts.init<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::TrackType::kNoChild, aod::femtouniverseparticle::CutContainerType>(&qaRegistry);
 
-    mRunNumber = 0;
     mMagField = 0.0;
 
     /// Initializing CCDB
@@ -159,6 +175,48 @@ struct FemtoUniverseProducerMCTruthTask {
     }
   }
 
+  template <typename CollisionType>
+  bool checkMcRecoCollisions(CollisionType const& col)
+  {
+    if (confIsCheckRCTFlags && !rctChecker(col)) {
+      return false;
+    }
+    // check whether the basic event selection criteria are fulfilled
+    // if the basic selection is NOT fulfilled MC Truth collision is rejected
+    if (!recoCollCuts.isSelected(col)) {
+      return false;
+    }
+    // additional checks on the reconstructed collisions
+    if (confUseNoSameBunchPileup && !col.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+    if (confUseIsGoodZvtxFT0vsPV && !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+    if (confUseIsVertexITSTPC && !col.selection_bit(aod::evsel::kIsVertexITSTPC)) {
+      return false;
+    }
+    recoCollCuts.fillQA(col);
+    return true;
+  }
+
+  template <typename ParticleType>
+  int getMotherPDG(ParticleType const& particle)
+  {
+    if (particle.isPhysicalPrimary()) {
+      return 0;
+    }
+    if (particle.has_mothers()) {
+      if (particle.getProcess() == HadElasticScatt || particle.getProcess() == HadInelasticScatt) { // treat particles from hadronic scattering (20, 23) as primary
+        return 0;
+      }
+      auto motherparticlesMC = particle.template mothers_as<aod::McParticles>();
+      const auto& motherparticleMC = motherparticlesMC.front();
+      return motherparticleMC.pdgCode();
+    }
+    return 999;
+  }
+
   template <typename TrackType>
   void fillParticles(TrackType const& tracks)
   {
@@ -168,8 +226,9 @@ struct FemtoUniverseProducerMCTruthTask {
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
 
-      if (particle.pt() < ConfFilteringTracks.confPtLowFilterCut || particle.pt() > ConfFilteringTracks.confPtHighFilterCut)
+      if (particle.pt() < ConfFilteringTracks.confPtLowFilterCut || particle.pt() > ConfFilteringTracks.confPtHighFilterCut) {
         continue;
+      }
 
       int pdgCode = particle.pdgCode();
 
@@ -177,51 +236,42 @@ struct FemtoUniverseProducerMCTruthTask {
         bool pass = false;
         std::vector<int> tmpPDGCodes = confPDGCodes; // necessary due to some features of the Configurable
         for (auto const& pdg : tmpPDGCodes) {
-          if (pdgCode == Pdg::kPhi) { // phi meson
+          if (pdgCode == Pdg::kPhi ||          // phi meson
+              std::abs(pdgCode) == Pdg::kD0 || // D0(bar) meson
+              pdgCode == Pdg::kDPlus ||        // D+ meson
+              (pdg == pdgCode && particle.isPhysicalPrimary())) {
             pass = true;
-          } else if (std::abs(pdgCode) == Pdg::kD0) { // D0(bar) meson
-            pass = true;
-          } else if (pdgCode == Pdg::kDPlus) { // D+ meson
-            pass = true;
-          } else if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
-            if (particle.isPhysicalPrimary())
-              pass = true;
+            break; // Exit early once a match is found
           }
         }
-        if (!pass)
+        if (!pass) {
           continue;
+        }
       }
-
       // check if D0/D0bar mesons pass the rapidity cut
       // if pass then saving the orgin of D0/D0bar
       // check if tracks (besides D0/D0bar) pass pseudorapidity cut
       int8_t origin = -99;
-      if (std::abs(particle.pdgCode()) == Pdg::kD0) {
-        if (std::abs(particle.y()) > yD0CandGenMax) {
-          continue;
-        } else {
-          origin = RecoDecay::getCharmHadronOrigin(tracks, particle);
-        }
-      } else {
-        if (std::abs(particle.eta()) > ConfFilteringTracks.confEtaFilterCut) {
-          continue;
-        } else {
-          origin = -99;
-        }
-      }
-
-      /// check if we end-up with the correct final state using MC info
       int8_t sign = 0;
-      if (std::abs(pdgCode) == Pdg::kD0 && !RecoDecay::isMatchedMCGen(tracks, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
-        /// check if we have D0(bar) → π± K∓
+      if (std::abs(particle.pdgCode()) == Pdg::kD0) {
+        if (yD0CandGenMax >= 0. && std::abs(particle.y()) > yD0CandGenMax) {
+          continue;
+        }
+        /// check if we end-up with the correct final state using MC info
+        if (!RecoDecay::isMatchedMCGen(tracks, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 2)) {
+          /// check if we have D0(bar) → π± K∓
+          continue;
+        }
+        origin = RecoDecay::getCharmHadronOrigin(tracks, particle);
+      } else if (std::abs(particle.eta()) > ConfFilteringTracks.confEtaFilterCut) {
         continue;
       }
-
+      // Getting the PDG code of the mother particle
+      int motherPDG = getMotherPDG(particle);
       // we cannot use isSelectedMinimal since it takes Ncls
       // if (!trackCuts.isSelectedMinimal(track)) {
       //   continue;
       // }
-
       // trackCuts.fillQA<aod::femtouniverseparticle::ParticleType::kTrack,
       //                  aod::femtouniverseparticle::TrackType::kNoChild>(track);
       //  the bit-wise container of the systematic variations is obtained
@@ -239,22 +289,163 @@ struct FemtoUniverseProducerMCTruthTask {
                   pdgCode,
                   childIDs,
                   origin,
-                  -999.);
+                  motherPDG);
     }
   }
 
-  void
-    processTrackMC(aod::McCollision const&,
-                   soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
-                   aod::McParticles const& mcParticles,
-                   aod::BCsWithTimestamps const&)
+  template <typename TrackType>
+  void fillParticlesWithHf(TrackType const& tracks)
+  {
+    std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
+
+    for (const auto& particle : tracks) {
+      // check the pT range
+      if (particle.pt() < ConfFilteringTracks.confPtLowFilterCut || particle.pt() > ConfFilteringTracks.confPtHighFilterCut) {
+        continue;
+      }
+      // get the PDG code
+      int pdgCode = particle.pdgCode();
+
+      if (confAnalysisWithPID) {
+        bool pass = false;
+        std::vector<int> tmpPDGCodes = confPDGCodes; // necessary due to some features of the Configurable
+        for (auto const& pdg : tmpPDGCodes) {
+          if (pdgCode == Pdg::kPhi ||          // phi meson
+              std::abs(pdgCode) == Pdg::kD0 || // D0(bar) meson
+              pdgCode == Pdg::kDPlus ||        // D+ meson
+              (pdg == pdgCode && particle.isPhysicalPrimary())) {
+            pass = true;
+            break; // Exit early once a match is found
+          }
+        }
+        if (!pass) {
+          continue;
+        }
+      }
+      // check if D0/D0bar mesons pass the rapidity cut
+      // if pass then saving the orgin of D0/D0bar
+      // check if tracks (besides D0/D0bar) pass pseudorapidity cut
+      int8_t origin = -99;
+      const bool isD0 = std::abs(particle.pdgCode()) == Pdg::kD0;
+      const int decayChannel = static_cast<int>(hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
+
+      if (isD0) {
+        if (particle.flagMcMatchGen() != (particle.pdgCode() == Pdg::kD0 ? decayChannel : -decayChannel)) {
+          continue;
+        }
+        if (yD0CandGenMax >= 0.0 && std::abs(RecoDecay::y(particle.pVector(), MassD0)) > yD0CandGenMax) {
+          continue;
+        }
+        origin = particle.originMcGen();
+      } else if (std::abs(particle.eta()) > ConfFilteringTracks.confEtaFilterCut) {
+        continue;
+      }
+      // Getting the PDG code of the mother particle
+      auto motherparticlesMC = particle.template mothers_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>();
+      const auto& mcMotherPart = motherparticlesMC.front();
+
+      // filling the table with the selected paricles
+      outputParts(outputCollision.lastIndex(),
+                  particle.pt(),
+                  particle.eta(),
+                  particle.phi(),
+                  aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
+                  0,
+                  pdgCode,
+                  pdgCode,
+                  childIDs,
+                  origin,
+                  mcMotherPart.pdgCode());
+    }
+  }
+
+  void processTrackMc(aod::McCollision const&,
+                      soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
+                      aod::McParticles const& mcParticles,
+                      aod::BCsWithTimestamps const&)
   {
     // magnetic field for run not needed for mc truth
     // fill the tables
     fillCollisions(collisions, mcParticles);
     fillParticles(mcParticles);
   }
-  PROCESS_SWITCH(FemtoUniverseProducerMCTruthTask, processTrackMC, "Provide MC data for track analysis", true);
+  PROCESS_SWITCH(FemtoUniverseProducerMCTruthTask, processTrackMc, "Provide MC data for track analysis", false);
+
+  void processTrackMcWithHf(aod::McCollision const&,
+                            soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
+                            soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
+                            aod::BCsWithTimestamps const&)
+  {
+    // magnetic field for run not needed for mc truth
+    // fill the tables
+    fillCollisions(collisions, mcParticles);
+    fillParticlesWithHf(mcParticles);
+  }
+  PROCESS_SWITCH(FemtoUniverseProducerMCTruthTask, processTrackMcWithHf, "Provide MC data for track-HF analysis", true);
+
+  Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
+  Preslice<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>> perMcCollHf = aod::mcparticle::mcCollisionId;
+  PresliceUnsorted<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> recoCollsPerMCColl = aod::mcparticle::mcCollisionId;
+
+  void processTrackMcOnlyRecoColl(aod::McCollisions const& mccols,
+                                  soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const& collisions,
+                                  aod::McParticles const& mcParticles,
+                                  aod::BCsWithTimestamps const&)
+  {
+    // check on the reco collisions
+    static std::set<int> mcColIds;
+    mcColIds.clear();
+
+    for (const auto& col : collisions) {
+      const auto colcheck = checkMcRecoCollisions(col);
+      if (colcheck) {
+        mcColIds.insert(col.mcCollisionId());
+      }
+    }
+    // filling truth collisions and particles
+    for (const auto& mccol : mccols) {
+      if (!mcColIds.contains(mccol.globalIndex())) {
+        continue;
+      }
+      auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
+      auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
+      // magnetic field for run not needed for mc truth
+      // fill the tables
+      fillCollisions(groupedCollisions, groupedMCParticles);
+      fillParticles(groupedMCParticles);
+    }
+  }
+  PROCESS_SWITCH(FemtoUniverseProducerMCTruthTask, processTrackMcOnlyRecoColl, "Provide MC data for track analysis from truth coll which were recontructed ", false);
+
+  void processTrackMcOnlyRecoCollWithHf(aod::McCollisions const& mccols,
+                                        soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const& collisions,
+                                        soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
+                                        aod::BCsWithTimestamps const&)
+  {
+    // check on the reco collisions
+    static std::set<int> mcColIds;
+    mcColIds.clear();
+
+    for (const auto& col : collisions) {
+      const auto colcheck = checkMcRecoCollisions(col);
+      if (colcheck) {
+        mcColIds.insert(col.mcCollisionId());
+      }
+    }
+    // filling truth collisions and particles
+    for (const auto& mccol : mccols) {
+      if (!mcColIds.contains(mccol.globalIndex())) {
+        continue;
+      }
+      auto groupedMCParticles = mcParticles.sliceBy(perMcCollHf, mccol.globalIndex());
+      auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
+      // magnetic field for run not needed for mc truth
+      // fill the tables
+      fillCollisions(groupedCollisions, groupedMCParticles);
+      fillParticlesWithHf(groupedMCParticles);
+    }
+  }
+  PROCESS_SWITCH(FemtoUniverseProducerMCTruthTask, processTrackMcOnlyRecoCollWithHf, "Provide MC data for track-HF particle analysis from only reconstucted MC Truth collisions", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
