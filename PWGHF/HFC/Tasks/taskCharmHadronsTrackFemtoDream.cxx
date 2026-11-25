@@ -997,6 +997,12 @@ struct HfTaskCharmHadronsTrackFemtoDream {
                      << trackSel.pdgCodeTrack1.value;
           break;
       }
+      int originMcTrack = -1;
+      if constexpr (IsMc) {
+        if (part.has_fdMCParticle()) {
+          originMcTrack = static_cast<int>(part.fdMCParticle().partOriginMCTruth());
+        }
+      }
       tables.rowFemtoResultTrk(
         col.globalIndex(),
         timeStamp,
@@ -1009,7 +1015,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         part.tpcNClsFindable(),
         part.tpcNClsCrossedRows(),
         tpcNSigma,
-        tofNSigma);
+        tofNSigma,
+        part.dcaXY(),
+        originMcTrack);
     }
 
     // ---- Fill Collision Table ----
@@ -1637,7 +1645,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           nCls,
           nCls,
           nSigma,
-          nSigma);
+          nSigma,
+          -999.f, // No reconstructed DCAxy is available for generated tracks.
+          -1);    // Generated track input does not carry an MC origin label.
       }
       if (sliceGenCharmHad.size() > 0 || sliceGenTrk1.size() > 0) {
         tables.rowFemtoResultColl(col.globalIndex(), timeStamp, col.posZ(), col.multNtr());
