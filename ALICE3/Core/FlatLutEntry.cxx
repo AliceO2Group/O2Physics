@@ -151,8 +151,11 @@ lutEntry_t* FlatLutData::getEntry(int nch_bin, int rad_bin, int eta_bin, int pt_
 
 void FlatLutData::setEntry(int rad_bin, const lutEntry_t& entry)
 {
+  const int nch_bin = getHeaderRef().nchmap.find(entry.nch);
+  const int eta_bin = getHeaderRef().etamap.find(entry.eta);
+  const int pt_bin = getHeaderRef().ptmap.find(entry.pt);
   // Calculate the linear index based on the entry's bin indices
-  const size_t offset = getEntryOffset(entry.nch, rad_bin, entry.eta, entry.pt);
+  const size_t offset = getEntryOffset(nch_bin, rad_bin, eta_bin, pt_bin);
   std::memcpy(mData.data() + offset, &entry, sizeof(lutEntry_t));
 }
 
