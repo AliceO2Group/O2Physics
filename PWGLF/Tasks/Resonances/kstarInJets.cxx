@@ -16,10 +16,6 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
-// #include "Common/CCDB/EventSelectionParams.h"
-// #include "Common/DataModel/Centrality.h"
-// #include "Common/DataModel/EventSelection.h"
-// #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -38,14 +34,11 @@
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
-// #include <TH1.h>
 #include <TMath.h>
-// #include <TString.h>
 #include <TVector2.h>
 
 #include <chrono>
 #include <cmath>
-// #include <cstddef>
 #include <cstdlib>
 #include <string>
 #include <utility>
@@ -1144,7 +1137,6 @@ struct kstarInJets {
         continue;
       }
       histos.fill(HIST("hKstar_VtxEvt"), mcParticle.pt()); // SL: denominator
-
     } // mcParticles in GenEvents
 
     //=================
@@ -1167,13 +1159,18 @@ struct kstarInJets {
 
     //  Find Gen K*0
     for (const auto& mcParticle : mcParticles) {
-      if (!KPidaughters(mcParticle)) {
+      if (std::abs(mcParticle.pdgCode()) != Kstar0PDG) {
         continue;
       }
-      histos.fill(HIST("hKstar_Gen"), mcParticle.pt()); // SL: numerator and eff: denominator
+      if (std::abs(mcParticle.eta()) > cfgTrackMaxEta) {
+        continue;
+      }
+      if (mcParticle.pt() < cfgTrackMinPt) {
+        continue;
+      }
+      histos.fill(HIST("hKstar_Gen"), mcParticle.pt());
       histos.fill(HIST("Gen_mother"), mcParticle.pdgCode());
-
-    } // mcParticles of BR
+    }
   } // end of process
   PROCESS_SWITCH(kstarInJets, processGen, "Process Generated Particles", false);
 
