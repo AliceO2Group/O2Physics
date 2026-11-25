@@ -22,6 +22,7 @@
 
 #include "Common/DataModel/OccupancyTables.h"
 
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <ReconstructionDataFormats/PID.h>
 
