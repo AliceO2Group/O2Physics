@@ -128,10 +128,10 @@ struct NetchargeFluctuations {
   ConfigurableAxis centBining{"centBining", {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "Centrality/Multiplicity percentile bining"};
   Configurable<bool> cPileupReject{"cPileupReject", true, "Pileup rejection"};                          // pileup
   Configurable<bool> cfgUseGoodItsLayerAllCut{"cfgUseGoodItsLayerAllCut", true, "Good ITS Layers All"}; // pileup
-  Configurable<bool> cTFBorder{"cTFBorder", false, "Timeframe Border Selection"};                       // pileup
-  Configurable<bool> cNoItsROBorder{"cNoItsROBorder", false, "No ITSRO Border Cut"};                    // pileup
-  Configurable<bool> cItsTpcVtx{"cItsTpcVtx", false, "ITS+TPC Vertex Selection"};                       // pileup
-  Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", false, "z-vtx time diff selection"};                // pileup
+  Configurable<bool> cTFBorder{"cTFBorder", false, "Timeframe Border Selection"};                        // pileup
+  Configurable<bool> cNoItsROBorder{"cNoItsROBorder", false, "No ITSRO Border Cut"};                     // pileup
+  Configurable<bool> cItsTpcVtx{"cItsTpcVtx", false, "ITS+TPC Vertex Selection"};                        // pileup
+  Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", false, "z-vtx time diff selection"};                 // pileup
   Configurable<bool> cPVcont{"cPVcont", true, "primary vertex contributor"};
 
   // Configurable to enable multiplicity correlation cuts
@@ -236,10 +236,7 @@ struct NetchargeFluctuations {
 
     // Add QA histograms
     //
-    histogramRegistry.add("MCResponse/hNrecVsNgen",
-                          "Reconstructed vs generated multiplicity;"
-                          "N_{ch}^{gen};N_{ch}^{rec}",
-                          kTH2F, {AxisSpec{1000, 0, 1000}, AxisSpec{1000, 0, 1000}});
+    histogramRegistry.add("MCResponse/hNrecVsNgen", "Reconstructed vs generated multiplicity;" "N_{ch}^{gen};N_{ch}^{rec}", kTH2F, {AxisSpec{1000, 0, 1000}, AxisSpec{1000, 0, 1000}});
     histogramRegistry.add("QA/hVtxZ_before", "", kTH1F, {vtxzAxis});
     histogramRegistry.add("QA/hDcaXY_before", "", kTH1F, {dcaAxis});
     histogramRegistry.add("QA/hphi", "", kTH1F, {phiAxis});
@@ -285,7 +282,9 @@ struct NetchargeFluctuations {
     histogramRegistry.add("gen/cent_neg_sq", "cent vs sqfneg", kTProfile, {cent1Axis});
     histogramRegistry.add("gen/cent_posneg", "cent vs fpos*fneg", kTProfile, {cent1Axis});
     histogramRegistry.add("gen/cent_nch", "cent vs nch", kTProfile, {cent1Axis});
+    histogramRegistry.add("gen/cent_nchTotal", "cent vs nch", kTH2F, {cent1Axis, nchAxis});
     histogramRegistry.add("gen/nch", "", kTH1F, {nchAxis});
+    histogramRegistry.add("gen/nchTotal", "", kTH1F, {nchAxis});
     histogramRegistry.add("gen/delta_eta_eta", "delta_eta ", kTH1F, {etaAxis});
     histogramRegistry.add("gen/delta_eta_pos", "delta_eta vs fpos ", kTProfile, {deltaEtaAxis});
     histogramRegistry.add("gen/delta_eta_neg", "delta_eta vs fneg ", kTProfile, {deltaEtaAxis});
@@ -942,7 +941,7 @@ struct NetchargeFluctuations {
     termNGen = negGen * (negGen - 1);
     posNegGen = posGen * negGen;
 
-    histogramRegistry.fill(HIST("MCResponse/hNrecVsNgen"), nchGen, nch);
+    histogramRegistry.fill( HIST("MCResponse/hNrecVsNgen"), nchGen, nch);
     histogramRegistry.fill(HIST("gen/cent_pos"), cent, posGen);
     histogramRegistry.fill(HIST("gen/cent_neg"), cent, negGen);
     histogramRegistry.fill(HIST("gen/cent_termp"), cent, termPGen);
@@ -1323,7 +1322,7 @@ struct NetchargeFluctuations {
   void mcPredictionsCent(aod::McCollision const& collision, aod::McParticles const& particles)
   {
     (void)collision;
-    int posGen = 0, negGen = 0, posNegGen = 0, termNGen = 0, termPGen = 0, nchGen = 0;
+    int posGen = 0, negGen = 0, posNegGen = 0, termNGen = 0, termPGen = 0, nchGen = 0, nchTotal = 0;
     auto cent = getCentrality(particles);
 
     if (cent < 0) {
@@ -1351,6 +1350,7 @@ struct NetchargeFluctuations {
           std::abs(pid) != kProton) {
         continue;
       }
+      nchTotal ++;
 
       if (std::fabs(mcpart.eta()) >= etaCut) {
         continue;
@@ -1388,6 +1388,8 @@ struct NetchargeFluctuations {
     histogramRegistry.fill(HIST("gen/cent_posneg"), cent, posNegGen);
     histogramRegistry.fill(HIST("gen/cent_nch"), cent, nchGen);
     histogramRegistry.fill(HIST("gen/nch"), nchGen);
+    histogramRegistry.fill(HIST("gen/nchTotal"), nchTotal);
+    histogramRegistry.fill(HIST("gen/cent_nchTotal"),cent, nchTotal);
 
     float lRandom = fRndm->Rndm();
     int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
@@ -1521,7 +1523,7 @@ struct NetchargeFluctuations {
       calculationMcDeltaEta<kRun3>(coll, inputTracks, mcCollisions, mcParticles, etaMin, etaMax);
     }
   }
-  PROCESS_SWITCH(NetchargeFluctuations, processMcRun3, "Process reconstructed", true);
+  PROCESS_SWITCH(NetchargeFluctuations, processMcRun3, "Process reconstructed", false);
 
   // process function for MC Run2
 
@@ -1548,7 +1550,7 @@ struct NetchargeFluctuations {
     }
   }
 
-  PROCESS_SWITCH(NetchargeFluctuations, processMcPrediction, "Process Prediction", false);
+  PROCESS_SWITCH(NetchargeFluctuations, processMcPrediction, "Process Prediction", true);
 };
 
 // struct
@@ -1557,3 +1559,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     {adaptAnalysisTask<NetchargeFluctuations>(cfgc)}};
 }
+
