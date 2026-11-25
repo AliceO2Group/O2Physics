@@ -125,18 +125,11 @@ struct PhiMesonCandProducer {
   Configurable<std::vector<double>> binspTPhi{"binspTPhi", {0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 15.0, 20.0}, "pT bin limits for Phi"};
 
   // Filter on default selected collisions
-  // Filter collisionFilter = aod::lf_selection_default_collision::defaultSel == true;
   // Filter collisionFilter = aod::lf_selection_event::defaultSel == true;
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::CentFT0Ms, aod::PVMults>;
   using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
-
-  /*using SelCollisions = soa::Join<aod::Collisions, aod::CentFT0Ms, aod::PVMults, aod::PhiStrangeDefEvtSelDataLike>;
-  using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels, aod::PhiStrangeDefEvtSelMcGen>;
-
-  using FilteredSelCollisions = soa::Filtered<SelCollisions>;
-  using FilteredSimCollisions = soa::Filtered<SimCollisions>;*/
 
   // Defining the type of the phi's daughter tracks for data and MC
   using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa>;
@@ -496,7 +489,6 @@ struct V0ReducedCandProducer {
   static constexpr double MassLambda = o2::constants::physics::MassLambda0;
 
   // Filter on default selected collisions
-  // Filter collisionFilter = aod::lf_selection_default_collision::defaultSel == true;
   Filter collisionFilter = aod::lf_selection_event::defaultSel == true;
 
   // Defining filters on V0s (cannot filter on dynamic columns)
@@ -1085,7 +1077,6 @@ struct PionTrackProducer {
   static constexpr double MassPi = o2::constants::physics::MassPiPlus;
 
   // Filter on default selected collisions
-  // Filter collisionFilter = aod::lf_selection_default_collision::defaultSel == true;
   Filter collisionFilter = aod::lf_selection_event::defaultSel == true;
 
   // Defining the type of the collisions for data and MC
@@ -1549,18 +1540,14 @@ struct EventSelectionProducer {
   // Default event selection
   void processData(SelCollisions::iterator const& collision)
   {
-    // phiStrangeDefEvtSelDataLike(defaultEventSelection<false>(collision));
     phiStrangeEvtSelDataLike(defaultEventSelection<false>(collision), false);
-    // defaultSelectionData(defaultEventSelection<false>(collision), false);
   }
 
   PROCESS_SWITCH(EventSelectionProducer, processData, "Process function to select default events in Data", true);
 
   void processMCReco(SimCollisions::iterator const& collision, MCCollisions const&)
   {
-    // phiStrangeDefEvtSelDataLike(defaultEventSelection<true, MCCollisions>(collision));
     phiStrangeEvtSelDataLike(defaultEventSelection<true, MCCollisions>(collision), false);
-    // defaultSelectionData(defaultEventSelection<true, MCCollisions>(collision));
   }
 
   PROCESS_SWITCH(EventSelectionProducer, processMCReco, "Process function to select default events in MCReco", false);
@@ -1568,34 +1555,35 @@ struct EventSelectionProducer {
   void processMCGen(MCCollisions::iterator const&, aod::McParticles const& mcParticles)
   {
 
-    // phiStrangeDefEvtSelMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB));
     phiStrangeEvtSelMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB), false);
-    // defaultSelectionMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB));
   }
 
   PROCESS_SWITCH(EventSelectionProducer, processMCGen, "Process function to select default events in MCGen", false);
 
-  // Default event selection + phi meson requirement
+  // Default event selection + phi meson requirement. eventHasPhi runs only on the events the default selection keeps:
+  // it fills the WPhi QA histograms and, in MC reconstruction, reads the generated collision, which a rejected one
+  // may not have (has_mcCollision is part of the default selection). phimesonSel is then false for a rejected event,
+  // which changes no selection: it is read only together with defaultSel
   void processDataWPhi(SelCollisions::iterator const& collision, aod::PhimesonCandidatesData const& phiCandidatesData)
   {
-    phiStrangeEvtSelDataLike(defaultEventSelection<false>(collision), eventHasPhi<false>(collision, phiCandidatesData));
-    // phimesonSelectionData(defaultEventSelection<false>(collision) && eventHasPhi<false>(collision, phiCandidatesData));
+    const bool isSelected = defaultEventSelection<false>(collision);
+    phiStrangeEvtSelDataLike(isSelected, isSelected && eventHasPhi<false>(collision, phiCandidatesData));
   }
 
   PROCESS_SWITCH(EventSelectionProducer, processDataWPhi, "Process function to select events with Phi mesons in Data", false);
 
   void processMCRecoWPhi(SimCollisions::iterator const& collision, MCCollisions const&, aod::PhimesonCandidatesData const& phiCandidatesData)
   {
-    phiStrangeEvtSelDataLike(defaultEventSelection<true, MCCollisions>(collision), eventHasPhi<true, MCCollisions>(collision, phiCandidatesData));
-    // phimesonSelectionData(defaultEventSelection<true, MCCollisions>(collision) && eventHasPhi<true, MCCollisions>(collision, phiCandidatesData));
+    const bool isSelected = defaultEventSelection<true, MCCollisions>(collision);
+    phiStrangeEvtSelDataLike(isSelected, isSelected && eventHasPhi<true, MCCollisions>(collision, phiCandidatesData));
   }
 
   PROCESS_SWITCH(EventSelectionProducer, processMCRecoWPhi, "Process function to select events with Phi mesons in MCReco", false);
 
   void processMCGenWPhi(MCCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles, aod::PhimesonCandidatesMcGen const& phiCandidatesMcGen)
   {
-    phiStrangeEvtSelMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB), eventHasPhi<true>(mcCollision, phiCandidatesMcGen));
-    // phimesonSelectionMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB) && eventHasPhi<true>(mcCollision, phiCandidatesMcGen));
+    const bool isSelected = pwglf::isINELgt0mc(mcParticles, pdgDB);
+    phiStrangeEvtSelMcGen(isSelected, isSelected && eventHasPhi<true>(mcCollision, phiCandidatesMcGen));
   }
 
   PROCESS_SWITCH(EventSelectionProducer, processMCGenWPhi, "Process function to select events with Phi mesons in MCGen", false);
