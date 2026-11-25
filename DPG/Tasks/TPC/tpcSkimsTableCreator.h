@@ -40,6 +40,7 @@ DECLARE_SOA_COLUMN(BetaGamma, betaGamma, float);
 DECLARE_SOA_COLUMN(NormMultTPC, normMultTPC, float);
 DECLARE_SOA_COLUMN(NormNClustersTPC, normNClustersTPC, float);
 DECLARE_SOA_COLUMN(NormNClustersTPCPID, normNClustersTPCPID, float);
+DECLARE_SOA_COLUMN(NormNClustersShared, normNClustersShared, float);
 DECLARE_SOA_COLUMN(PidIndex, pidIndex, uint8_t);
 DECLARE_SOA_COLUMN(NSigTPC, nSigTPC, float);
 DECLARE_SOA_COLUMN(NSigTOF, nSigTOF, float);
@@ -75,6 +76,7 @@ DECLARE_SOA_COLUMN(BcBcInTimeFrame, bcBcInTimeFrame, int);
     tpcskims::NormMultTPC,         \
     tpcskims::NormNClustersTPC,    \
     tpcskims::NormNClustersTPCPID, \
+    tpcskims::NormNClustersShared, \
     tpcskims::PidIndex,            \
     tpcskims::NSigTPC,             \
     tpcskims::NSigTOF,             \

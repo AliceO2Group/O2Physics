@@ -308,6 +308,7 @@ struct TreeWriterTpcV0 {
   {
     const double ncl = track.tpcNClsFound();
     const double nclPID = track.tpcNClsPID();
+    const double nclShared = track.tpcNClsShared();
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
@@ -343,6 +344,7 @@ struct TreeWriterTpcV0 {
                  multTPC / MultiplicityNorm,
                  std::sqrt(cfgsCommon.nClNorm / ncl),
                  nclPID,
+                 nclShared,
                  id,
                  nSigmaTPC,
                  nSigmaTOF,
@@ -374,6 +376,7 @@ struct TreeWriterTpcV0 {
                           multTPC / MultiplicityNorm,
                           std::sqrt(cfgsCommon.nClNorm / ncl),
                           nclPID,
+                          nclShared,
                           id,
                           nSigmaTPC,
                           nSigmaTOF,
@@ -804,6 +807,7 @@ struct TreeWriterTpcTof {
   {
     const double ncl = track.tpcNClsFound();
     const double nclPID = track.tpcNClsPID();
+    const double nclShared = track.tpcNClsShared();
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
@@ -832,6 +836,7 @@ struct TreeWriterTpcTof {
                     multTPC / MultiplicityNorm,
                     std::sqrt(cfgsCommon.nClNorm / ncl),
                     nclPID,
+                    nclShared,
                     id,
                     nSigmaTPC,
                     nSigmaTOF,
@@ -857,6 +862,7 @@ struct TreeWriterTpcTof {
                              multTPC / MultiplicityNorm,
                              std::sqrt(cfgsCommon.nClNorm / ncl),
                              nclPID,
+                             nclShared,
                              id,
                              nSigmaTPC,
                              nSigmaTOF,
