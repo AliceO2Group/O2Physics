@@ -160,7 +160,7 @@ struct tableMakerMuonMchTrkEfficiency {
     /// set event cuts
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigEventCuts.value;
-    fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+    fEventCut->addCut(dqcuts::getAnalysisCut(eventCutStr.Data()));
     LOGF(debug, ">> Event cut: %s", eventCutStr.Data());
 
     /// set muon cuts
@@ -169,7 +169,7 @@ struct tableMakerMuonMchTrkEfficiency {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         LOGF(debug, ">> Muon cut added: %s", objArray->At(icut)->GetName());
-        fMuonCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fMuonCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
 
@@ -403,7 +403,7 @@ struct tableMakerMuonMchTrkEfficiency {
 
     /// Analyse only selected events
     registry.fill(HIST("hEventCounter"), 0);
-    if (!fEventCut->IsSelected(VarManager::fgValues)) {
+    if (!fEventCut->isSelected(VarManager::fgValues)) {
       return;
     }
     registry.fill(HIST("hEventCounter"), 1);
@@ -440,7 +440,7 @@ struct tableMakerMuonMchTrkEfficiency {
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, j++) {
         isMuonSelected.push_back(false);
         LOGF(debug, " checking muon selected for cut %i", j);
-        if ((*cut).IsSelected(VarManager::fgValues)) {
+        if ((*cut).isSelected(VarManager::fgValues)) {
           LOGF(debug, " muon IS selected for cut %i", j);
           isMuonSelected[j] = true;
           isMuonSelectedAny = true;
@@ -549,7 +549,7 @@ struct tableMakerMuonMchTrkEfficiency {
       ///   check the cuts and filters
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, j++) {
         isMuonSelected.push_back(false);
-        if ((*cut).IsSelected(VarManager::fgValues)) {
+        if ((*cut).isSelected(VarManager::fgValues)) {
           isMuonSelected[j] = true;
           isMuonSelectedAny = true;
           nselmuons[j] += 1;

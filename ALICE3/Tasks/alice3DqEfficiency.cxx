@@ -176,17 +176,17 @@ struct Alice3DqEfficiencyAnalysisEventSelection {
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = cfgEventCuts.value;
     if (eventCutStr != "") {
-      AnalysisCut* cut = dqcuts::GetAnalysisCut(eventCutStr.Data());
+      AnalysisCut* cut = dqcuts::getAnalysisCut(eventCutStr.Data());
       if (cut != nullptr) {
-        fEventCut->AddCut(cut);
+        fEventCut->addCut(cut);
       }
     }
     // Additional cuts via JSON
     TString eventCutJSONStr = cfgEventCutsJSON.value;
     if (eventCutJSONStr != "") {
-      std::vector<AnalysisCut*> jsonCuts = dqcuts::GetCutsFromJSON(eventCutJSONStr.Data());
+      std::vector<AnalysisCut*> jsonCuts = dqcuts::getCutsFromJSON(eventCutJSONStr.Data());
       for (const auto& cutIt : jsonCuts) {
-        fEventCut->AddCut(cutIt);
+        fEventCut->addCut(cutIt);
       }
     }
 
@@ -231,7 +231,7 @@ struct Alice3DqEfficiencyAnalysisEventSelection {
       if (cfgQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", dqefficiency_helpers::varValues()); // automatically fill all the histograms in the class Event
       }
-      if (fEventCut->IsSelected(dqefficiency_helpers::varValues())) {
+      if (fEventCut->isSelected(dqefficiency_helpers::varValues())) {
         if (cfgQA) {
           fHistMan->FillHistClass("Event_AfterCuts", dqefficiency_helpers::varValues());
         }
@@ -319,13 +319,13 @@ struct Alice3DqEfficiencyAnalysisTrackSelection {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.push_back(dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     // add extra cuts from JSON
     TString addTrackCutsStr = cfgBarrelTrackCutsJSON.value;
     if (addTrackCutsStr != "") {
-      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::getCutsFromJSON(addTrackCutsStr.Data());
       for (const auto& t : addTrackCuts) {
         fTrackCuts.push_back(t);
       }
@@ -434,7 +434,7 @@ struct Alice3DqEfficiencyAnalysisTrackSelection {
       int iCut = 0;
       auto filterMap = static_cast<uint32_t>(0);
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, iCut++) {
-        if ((*cut)->IsSelected(dqefficiency_helpers::varValues())) {
+        if ((*cut)->isSelected(dqefficiency_helpers::varValues())) {
           filterMap |= (static_cast<uint32_t>(1) << iCut);
           if (cfgQA) {
             fHistMan->FillHistClass(fHistNamesReco[iCut], dqefficiency_helpers::varValues());
@@ -600,7 +600,7 @@ struct Alice3DqEfficiencyAnalysisPrefilterSelection {
       getTaskOptionValue<string>(context, "alice3-dq-efficiency-analysis-track-selection", "cfgBarrelTrackCutsJSON", trackCuts, false);
       TString addTrackCutsStr = trackCuts;
       if (addTrackCutsStr != "") {
-        std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
+        std::vector<AnalysisCut*> addTrackCuts = dqcuts::getCutsFromJSON(addTrackCutsStr.Data());
         for (const auto& t : addTrackCuts) {
           allTrackCutsStr += Form(",%s", t->GetName());
         }
@@ -626,7 +626,7 @@ struct Alice3DqEfficiencyAnalysisPrefilterSelection {
       fPairCut = new AnalysisCompositeCut(true);
       TString pairCutStr = cfgPrefilterPairCut.value;
       if (!pairCutStr.IsNull()) {
-        fPairCut = dqcuts::GetCompositeCut(pairCutStr.Data());
+        fPairCut = dqcuts::getCompositeCut(pairCutStr.Data());
       }
     }
     if (fPrefilterMask == static_cast<uint32_t>(0) || fPrefilterCutBit < 0) {
@@ -672,7 +672,7 @@ struct Alice3DqEfficiencyAnalysisPrefilterSelection {
         VarManager::FillPairCollision<VarManager::kDecayToEE, GkTrackFillMap>(event, track1, track2);
       }
       // if the pair fullfils the criteria, add an entry into the prefilter map for the two tracks
-      if (fPairCut->IsSelected(dqefficiency_helpers::varValues())) {
+      if (fPairCut->isSelected(dqefficiency_helpers::varValues())) {
         if (!fPrefilterMap.contains(track1.globalIndex()) && track1Candidate > 0) {
           fPrefilterMap[track1.globalIndex()] = track1Candidate;
         }
@@ -803,7 +803,7 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
     if (!pairCutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(pairCutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fPairCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fPairCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
 
@@ -848,7 +848,7 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
     getTaskOptionValue<string>(context, "alice3-dq-efficiency-analysis-track-selection", "cfgBarrelTrackCutsJSON", tempCuts, false);
     TString addTrackCutsStr = tempCuts;
     if (addTrackCutsStr != "") {
-      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::getCutsFromJSON(addTrackCutsStr.Data());
       for (const auto& t : addTrackCuts) {
         tempCutsStr += Form(",%s", t->GetName());
       }
@@ -857,9 +857,9 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
     // get the mc generated acceptance cut
     TString mcGenAccCutStr = cfgTrackCuts.cfgMCGenAccCut.value;
     if (mcGenAccCutStr != "") {
-      AnalysisCut* cut = dqcuts::GetAnalysisCut(mcGenAccCutStr.Data());
+      AnalysisCut* cut = dqcuts::getAnalysisCut(mcGenAccCutStr.Data());
       if (cut != nullptr) {
-        fMCGenAccCut.AddCut(cut);
+        fMCGenAccCut.addCut(cut);
       }
       fUseMCGenAccCut = true;
     }
@@ -1154,7 +1154,7 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
             }
             for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++) {
               AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
-              if (!(cut.IsSelected(dqefficiency_helpers::varValues()))) { // apply pair cuts
+              if (!(cut.isSelected(dqefficiency_helpers::varValues()))) { // apply pair cuts
                 continue;
               }
               if (sign1 * sign2 < 0) {
@@ -1181,7 +1181,7 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
       VarManager::FillTrackMC(mcTracks, mctrack);
       // if we have a mc generated acceptance cut, apply it here
       if (fUseMCGenAccCut) {
-        if (!fMCGenAccCut.IsSelected(dqefficiency_helpers::varValues())) {
+        if (!fMCGenAccCut.isSelected(dqefficiency_helpers::varValues())) {
           continue;
         }
       }
@@ -1210,7 +1210,7 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
         VarManager::FillTrackMC(mcTracks, track);
         // if we have a mc generated acceptance cut, apply it here
         if (fUseMCGenAccCut) {
-          if (!fMCGenAccCut.IsSelected(dqefficiency_helpers::varValues())) {
+          if (!fMCGenAccCut.isSelected(dqefficiency_helpers::varValues())) {
             continue;
           }
         }
@@ -1235,7 +1235,7 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
             if (sig->CheckSignal(true, t1Raw, t2Raw)) {
               VarManager::FillPairMC<VarManager::kDecayToEE>(t1, t2);
               if (fUseMCGenAccCut) {
-                if (!fMCGenAccCut.IsSelected(dqefficiency_helpers::varValues())) {
+                if (!fMCGenAccCut.isSelected(dqefficiency_helpers::varValues())) {
                   continue;
                 }
               }
@@ -1267,7 +1267,7 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
               if (sig->CheckSignal(true, t1Raw, t2Raw)) {
                 VarManager::FillPairMC<VarManager::kDecayToEE>(t1, t2);
                 if (fUseMCGenAccCut) {
-                  if (!fMCGenAccCut.IsSelected(dqefficiency_helpers::varValues())) {
+                  if (!fMCGenAccCut.isSelected(dqefficiency_helpers::varValues())) {
                     continue;
                   }
                 }
@@ -1560,13 +1560,13 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
     if (!pairCutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(pairCutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fPairCuts.push_back(dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fPairCuts.push_back(dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     // Extra pair cuts via JSON
     TString addPairCutsStr = cfgPairCutsJSON.value;
     if (addPairCutsStr != "") {
-      std::vector<AnalysisCut*> addPairCuts = dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
+      std::vector<AnalysisCut*> addPairCuts = dqcuts::getCutsFromJSON(addPairCutsStr.Data());
       for (const auto& t : addPairCuts) {
         fPairCuts.push_back(t);
         pairCutNamesStr += Form(",%s", t->GetName());
@@ -1613,7 +1613,7 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
     getTaskOptionValue<string>(context, "alice3-dq-efficiency-analysis-track-selection", "cfgBarrelTrackCutsJSON", tempCuts, false);
     TString addTrackCutsStr = tempCuts;
     if (addTrackCutsStr != "") {
-      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::getCutsFromJSON(addTrackCutsStr.Data());
       for (const auto& t : addTrackCuts) {
         tempCutsStr += Form(",%s", t->GetName());
       }
@@ -2056,7 +2056,7 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
             } // end loop (common cuts)
             int iPairCut = 0;
             for (auto cut = fPairCuts.begin(); cut != fPairCuts.end(); cut++, iPairCut++) {
-              if (!((*cut)->IsSelected(dqefficiency_helpers::varValues()))) { // apply pair cuts
+              if (!((*cut)->isSelected(dqefficiency_helpers::varValues()))) { // apply pair cuts
                 continue;
               }
               // Histograms with pair cuts
@@ -2267,7 +2267,7 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
         } // end loop (common cuts)
         int iPairCut = 0;
         for (auto cut = fPairCuts.begin(); cut != fPairCuts.end(); cut++, iPairCut++) {
-          if (!((*cut)->IsSelected(dqefficiency_helpers::varValues()))) { // apply pair cuts
+          if (!((*cut)->isSelected(dqefficiency_helpers::varValues()))) { // apply pair cuts
             continue;
           }
           // Histograms with pair cuts

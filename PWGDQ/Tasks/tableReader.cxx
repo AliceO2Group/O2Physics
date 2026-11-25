@@ -190,7 +190,7 @@ struct AnalysisEventSelection {
 
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigEventCuts.value;
-    fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+    fEventCut->addCut(dqcuts::getAnalysisCut(eventCutStr.Data()));
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
 
     VarManager::SetDefaultVarNames();
@@ -252,7 +252,7 @@ struct AnalysisEventSelection {
     }
 
     if (!fConfigRunZorro) {
-      if (fEventCut->IsSelected(VarManager::fgValues)) {
+      if (fEventCut->isSelected(VarManager::fgValues)) {
         if (fConfigQA) {
           fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
         }
@@ -261,7 +261,7 @@ struct AnalysisEventSelection {
         eventSel(0);
       }
     } else {
-      if (fEventCut->IsSelected(VarManager::fgValues) && event.tag_bit(56)) { // This is the bit used for the software trigger event selections [TO BE DONE: find a more clear way to use it]
+      if (fEventCut->isSelected(VarManager::fgValues) && event.tag_bit(56)) { // This is the bit used for the software trigger event selections [TO BE DONE: find a more clear way to use it]
         if (fConfigQA) {
           fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
         }
@@ -368,7 +368,7 @@ struct AnalysisTrackSelection {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
 
@@ -437,7 +437,7 @@ struct AnalysisTrackSelection {
       }
       iCut = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, iCut++) {
-        if ((*cut).IsSelected(VarManager::fgValues)) {
+        if ((*cut).isSelected(VarManager::fgValues)) {
           if (iCut != fConfigPrefilterCutId) {
             filterMap |= (static_cast<uint32_t>(1) << iCut);
           }
@@ -496,7 +496,7 @@ struct AnalysisMuonSelection {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fMuonCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fMuonCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -539,7 +539,7 @@ struct AnalysisMuonSelection {
 
         iCut = 0;
         for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, iCut++) {
-          if ((*cut).IsSelected(VarManager::fgValues)) {
+          if ((*cut).isSelected(VarManager::fgValues)) {
             filterMap |= (static_cast<uint32_t>(1) << iCut);
           }
         }
@@ -559,7 +559,7 @@ struct AnalysisMuonSelection {
 
       iCut = 0;
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, iCut++) {
-        if ((*cut).IsSelected(VarManager::fgValues)) {
+        if ((*cut).isSelected(VarManager::fgValues)) {
           filterMap |= (static_cast<uint32_t>(1) << iCut);
           if (fConfigQA) { // TODO: make this compile time
             fHistMan->FillHistClass(Form("TrackMuon_%s", (*cut).GetName()), VarManager::fgValues);
@@ -626,7 +626,7 @@ struct AnalysisPrefilterSelection {
     fPairCut = new AnalysisCompositeCut(true);
     TString pairCutStr = fConfigPrefilterPairCut.value;
     if (!pairCutStr.IsNull()) {
-      fPairCut = dqcuts::GetCompositeCut(pairCutStr.Data());
+      fPairCut = dqcuts::getCompositeCut(pairCutStr.Data());
     }
 
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -648,7 +648,7 @@ struct AnalysisPrefilterSelection {
       // pairing
       VarManager::FillPair<TPairType, TTrackFillMap>(track1, track2);
 
-      if (fPairCut->IsSelected(VarManager::fgValues)) {
+      if (fPairCut->isSelected(VarManager::fgValues)) {
         fPrefiltermap[track1.globalIndex()] = true;
         fPrefiltermap[track2.globalIndex()] = true;
       }
@@ -1151,7 +1151,7 @@ struct AnalysisSameEventPairing {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fPairCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fPairCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
 
@@ -1164,7 +1164,7 @@ struct AnalysisSameEventPairing {
       std::vector<std::string> namesInputFeatures;
       std::vector<std::string> onnxFileNames;
 
-      auto config = o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFromJSON(fConfigBdtCutsJSON.value.c_str());
+      auto config = o2::aod::dqmlcuts::getBdtScoreCutsAndConfigFromJSON(fConfigBdtCutsJSON.value.c_str());
 
       if (std::holds_alternative<dqmlcuts::BinaryBdtScoreConfig>(config)) {
         auto& cfg = std::get<dqmlcuts::BinaryBdtScoreConfig>(config);
@@ -1643,7 +1643,7 @@ struct AnalysisSameEventPairing {
           iCut++;
           for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++, iCut++) {
             AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
-            if (!(cut.IsSelected(VarManager::fgValues))) // apply pair cuts
+            if (!(cut.isSelected(VarManager::fgValues))) // apply pair cuts
               continue;
             if (t1.sign() * t2.sign() < 0) {
               fHistMan->FillHistClass(histNames[iCut][0].Data(), VarManager::fgValues);
@@ -2140,13 +2140,13 @@ struct AnalysisDileptonTrackTrack {
       fIsSameTrackCut = true;
     }
     TString configDileptonCutNamesStr = fConfigDileptonCut.value;
-    fDileptonCut = *dqcuts::GetCompositeCut(configDileptonCutNamesStr.Data());
+    fDileptonCut = *dqcuts::getCompositeCut(configDileptonCutNamesStr.Data());
     TString configQuadruletCutNamesStr = fConfigQuadrupletCuts.value;
     std::unique_ptr<TObjArray> objArray(configQuadruletCutNamesStr.Tokenize(","));
     for (Int_t icut = 0; icut < objArray->GetEntries(); ++icut) {
       TString cutName = objArray->At(icut)->GetName();
       fQuadrupletCutNames.push_back(cutName);
-      fQuadrupletCuts.push_back(*dqcuts::GetCompositeCut(cutName.Data()));
+      fQuadrupletCuts.push_back(*dqcuts::getCompositeCut(cutName.Data()));
     }
 
     if (!context.mOptions.get<bool>("processDummy")) {
@@ -2201,7 +2201,7 @@ struct AnalysisDileptonTrackTrack {
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesQuadruplet);
 
       // apply the dilepton cut
-      if (!fDileptonCut.IsSelected(fValuesQuadruplet))
+      if (!fDileptonCut.isSelected(fValuesQuadruplet))
         continue;
 
       fHistMan->FillHistClass(Form("Pairs_%s", fDileptonCut.GetName()), fValuesQuadruplet);
@@ -2246,7 +2246,7 @@ struct AnalysisDileptonTrackTrack {
         uint32_t CutDecision = 0;
         for (auto cutname = fQuadrupletCutNames.begin(); cutname != fQuadrupletCutNames.end(); cutname++, iCut++) {
           // apply dilepton-track-track cut
-          if (fQuadrupletCuts[iCut].IsSelected(fValuesQuadruplet)) {
+          if (fQuadrupletCuts[iCut].isSelected(fValuesQuadruplet)) {
             CutDecision |= (1 << iCut);
             if (fIsSameTrackCut) {
               if (t1.sign() * t2.sign() < 0) {

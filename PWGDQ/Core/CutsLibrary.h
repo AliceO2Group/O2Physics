@@ -9,8 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
-//
+/// \author Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
+/// \brief Library with cuts to use
+/// \file CutsLibrary.h
 
 #ifndef PWGDQ_CORE_CUTSLIBRARY_H_
 #define PWGDQ_CORE_CUTSLIBRARY_H_
@@ -105,21 +106,21 @@ namespace o2::aod
 {
 namespace dqcuts
 {
-AnalysisCompositeCut* GetCompositeCut(const char* cutName);
-AnalysisCut* GetAnalysisCut(const char* cutName);
+AnalysisCompositeCut* getCompositeCut(const char* cutName);
+AnalysisCut* getAnalysisCut(const char* cutName);
 
-std::vector<AnalysisCut*> GetCutsFromJSON(const char* json);
-// AnalysisCut** GetCutsFromJSON(const char* json);
+std::vector<AnalysisCut*> getCutsFromJSON(const char* json);
+// AnalysisCut** getCutsFromJSON(const char* json);
 template <typename T>
-bool ValidateJSONAnalysisCut(T cut);
+bool validateJSONAnalysisCut(T cut);
 template <typename T>
-bool ValidateJSONAddCut(T cut, bool isSimple);
+bool validateJSONaddCut(T cut, bool isSimple);
 template <typename T>
-AnalysisCut* ParseJSONAnalysisCut(T cut, const char* cutName);
+AnalysisCut* parseJSONAnalysisCut(T cut, const char* cutName);
 template <typename T>
-bool ValidateJSONAnalysisCompositeCut(T cut);
+bool validateJSONAnalysisCompositeCut(T cut);
 template <typename T>
-AnalysisCompositeCut* ParseJSONAnalysisCompositeCut(T key, const char* cutName);
+AnalysisCompositeCut* parseJSONAnalysisCompositeCut(T key, const char* cutName);
 } // namespace dqcuts
 namespace dqmlcuts
 {
@@ -147,7 +148,7 @@ struct MultiClassBdtScoreConfig {
 
 using BdtScoreConfig = std::variant<BinaryBdtScoreConfig, MultiClassBdtScoreConfig>;
 
-BdtScoreConfig GetBdtScoreCutsAndConfigFromJSON(const char* json);
+BdtScoreConfig getBdtScoreCutsAndConfigFromJSON(const char* json);
 
 o2::framework::LabeledArray<double> makeLabeledCutsMl(const std::vector<std::vector<double>>& cuts,
                                                       const std::vector<std::string>& labelsPt,
@@ -158,5 +159,5 @@ int getMlBinIndex(double cent, double pt,
 } // namespace dqmlcuts
 } // namespace o2::aod
 
-AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName);
+AnalysisCompositeCut* o2::aod::dqcuts::getCompositeCut(const char* cutName);
 #endif // PWGDQ_CORE_CUTSLIBRARY_H_
