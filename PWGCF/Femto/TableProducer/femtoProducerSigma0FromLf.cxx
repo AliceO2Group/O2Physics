@@ -185,12 +185,10 @@ struct FemtoProducerSigma0FromLf {
       // Lambda hypotheses accepted for this candidate
       const float dLambda = std::abs(sigma0.lambdaMass() - o2::constants::physics::MassLambda0);
       const float dAntiLambda = std::abs(sigma0.antilambdaMass() - o2::constants::physics::MassLambda0);
-      std::array<bool, 2> hypotheses = {false, false}; // {Lambda, AntiLambda}
-      if (confConversion.lambdaMassWindow.value > 0.f) {
-        hypotheses = {dLambda < confConversion.lambdaMassWindow.value, dAntiLambda < confConversion.lambdaMassWindow.value};
-      } else {
-        hypotheses = {dLambda <= dAntiLambda, dAntiLambda < dLambda};
-      }
+      const float window = confConversion.lambdaMassWindow.value;
+      // {Lambda, AntiLambda}; window <= 0: only the hypothesis closer to the PDG mass
+      const std::array<bool, 2> hypotheses = window > 0.f ? std::array<bool, 2>{dLambda < window, dAntiLambda < window}
+                                                          : std::array<bool, 2>{dLambda <= dAntiLambda, dAntiLambda < dLambda};
 
       // Sigma0 kinematics with the femto convention (PDG Lambda mass, massless photon)
       const ROOT::Math::PxPyPzMVector vecLambda{sigma0.lambdaPx(), sigma0.lambdaPy(), sigma0.lambdaPz(), o2::constants::physics::MassLambda0};
