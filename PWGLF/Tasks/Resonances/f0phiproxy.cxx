@@ -26,6 +26,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/CompactTHnSparse.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -289,7 +290,7 @@ struct F0phiproxy {
   std::shared_ptr<TH1> pidSelectionNonfinite{};
 
   std::array<std::shared_ptr<THnSparse>, NMixClasses> dipionSpectra{};
-  std::array<std::array<std::shared_ptr<THnSparse>, NMixClasses>, NChannels> compactProxy{}, fullProxy{};
+  std::array<std::array<std::shared_ptr<CompactTHnSparse>, NMixClasses>, NChannels> compactProxy{}, fullProxy{};
   std::array<std::array<std::array<std::shared_ptr<THnSparse>, NCharges>, NMixClasses>, NChannels> controls{};
   std::array<std::array<std::shared_ptr<TH2>, NTruthClasses>, NChannels> recoComponents{};
   std::array<std::shared_ptr<TH2>, NChannels> recoTrueParent{}, recoPtResponse{}, proxyPtResponse{};
@@ -536,10 +537,10 @@ struct F0phiproxy {
         if (channelEnabled(channel)) {
           // The measured dipion mass is retained; a mass window is not an f0 tag.
           if (enableCompactProxy.value) {
-            compactProxy[channel][mix] = histos.add<THnSparse>(recoName(compactNames[channel][mix]).c_str(), "Grouped-pT/multiplicity proxy; no constituent charge is measured", HistType::kTHnSparseF, {mass, compactPt, compactMassPi, compactMult, charge, bachelorCharge, tof});
+            compactProxy[channel][mix] = histos.add<CompactTHnSparse>(recoName(compactNames[channel][mix]).c_str(), "Grouped-pT/multiplicity proxy; no constituent charge is measured", HistType::kCompactTHnSparseF, {mass, compactPt, compactMassPi, compactMult, charge, bachelorCharge, tof});
           }
           if (enableFullProxySparse.value) {
-            fullProxy[channel][mix] = histos.add<THnSparse>(recoName(fullNames[channel][mix]).c_str(), "Diagnostic full proxy", HistType::kTHnSparseF, {mass, pt, massPi, mult, charge, bachelorCharge, tof});
+            fullProxy[channel][mix] = histos.add<CompactTHnSparse>(recoName(fullNames[channel][mix]).c_str(), "Diagnostic full proxy", HistType::kCompactTHnSparseF, {mass, pt, massPi, mult, charge, bachelorCharge, tof});
           }
         }
         if (controlEnabled(channel)) {
@@ -668,7 +669,8 @@ struct F0phiproxy {
     }
   }
 
-  static void fillSparse(std::shared_ptr<THnSparse> const& histogram, std::initializer_list<double> coordinates)
+  template <typename Hist>
+  static void fillSparse(std::shared_ptr<Hist> const& histogram, std::initializer_list<double> coordinates)
   {
     if (histogram) {
       histogram->Fill(coordinates.begin());
