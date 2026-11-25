@@ -47,6 +47,8 @@ struct SecondaryLutAxis {
   [[nodiscard]] float lowEdge(int bin) const;
   /// Upper edge in the variable's natural units
   [[nodiscard]] float upEdge(int bin) const;
+  /// Number of bins in the axis
+  [[nodiscard]] int getNbins() const { return nbins; }
 
   ClassDefNV(SecondaryLutAxis, 1);
 };
