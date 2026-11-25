@@ -149,6 +149,13 @@ lutEntry_t* FlatLutData::getEntry(int nch_bin, int rad_bin, int eta_bin, int pt_
   return reinterpret_cast<lutEntry_t*>(mData.data() + offset); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
 }
 
+void FlatLutData::setEntry(int rad_bin, const lutEntry_t& entry)
+{
+  // Calculate the linear index based on the entry's bin indices
+  const size_t offset = getEntryOffset(entry.nch, rad_bin, entry.eta, entry.pt);
+  std::memcpy(mData.data() + offset, &entry, sizeof(lutEntry_t));
+}
+
 const lutHeader_t& FlatLutData::getHeaderRef() const
 {
   return *reinterpret_cast<const lutHeader_t*>(mDataRef.data()); // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
