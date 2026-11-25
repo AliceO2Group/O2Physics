@@ -10,27 +10,17 @@
 // or submit itself to any jurisdiction.
 
 /// \file femtoProducerSigma0FromLf.cxx
-/// \brief TEST ONLY: converts PWGLF Sigma0 candidates (sigma0builder) into femto tables
+/// \brief TEST: converts PWGLF Sigma0 candidates (sigma0builder) into femto tables
 ///
-/// Cross-check of the femto Sigma0 builder against the PWGLF one. Runs on AO2D in one workflow with
-///   strangenessbuilder + strangederivedbuilder (+ LF V0 ML-score tables) + sigma0builder + this task,
-/// and writes the femto collision and track tables (like femto-producer with processTracksRun3pp)
-/// together with FSigma0s, FSigma0Masks and optionally FSigma0Extras, so that the femto pair/triplet
-/// tasks can run on it unchanged.
+/// Cross-check of the femto Sigma0 builder against the PWGLF one. To be run with
+///   strangenessbuilder + strangederivedbuilder (+ LF V0 ML-score tables) + sigma0builder
+/// Writes FCollisions + FTracks + FSigma0s + FSigma0Masks (+ optionally FSigma0Extras), so that the femto pair/triplet
+/// tasks can run on output unchanged.
 ///
-/// The collision of each LF Sigma0 is taken from SigmaCollRef; StraCollisions must be 1:1 with the AO2D
-/// collisions (strangederivedbuilder with fillEmptyCollisions=true, fillOnlySelectedCollisions=false).
-/// The Lambda daughters of each LF Sigma0 are mapped to AO2D tracks via V0Indices (row-aligned with
-/// V0Cores, which sigma0builder indexes with LambdaV0ID) and registered in FTracks with the femto
-/// track builder, exactly like the femto V0 builder does. The photon has no femto counterpart
-/// (PhotonId = -1); masks are set to all bits, so the mask cuts of the Sigma0 partitions must be 0.
-///
-/// LF accepts a Lambda if either the Lambda or the AntiLambda mass is in its window, so a candidate
-/// is written once per hypothesis within lambdaMassWindow (like the separate femto Lambda/AntiLambda
-/// builders). The Sigma0 kinematics are recomputed with the femto convention (PDG Lambda mass,
-/// massless photon) and the femto Sigma0 filters are applied.
-///
+/// StraCollisions must be 1:1 with the AO2D collisions (strangederivedbuilder with fillEmptyCollisions=true).
+/// Masks are set to all bits, so the mask cuts of downstream Sigma0 partitions must be 0.
 /// Only the PCM photon branch of sigma0builder is supported (processRealData*); no MC.
+///
 /// \author Yakiv Paroviak, CTU in Prague, yakiv.paroviak@cern.ch
 
 #include "PWGCF/Femto/Core/collisionBuilder.h"
