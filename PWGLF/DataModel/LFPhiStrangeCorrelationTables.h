@@ -193,7 +193,7 @@ DECLARE_SOA_COLUMN(NSigmaTOF, nSigmaTOF, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
-// Whether the TOF enters the PID of this track: it has a TOF signal and pT >= tofPIDThreshold of the producer, the
+// Whether the TOF enters the PID of this track: it has a TOF signal and pT >= minPtTOFInPID of the producer, the
 // threshold above which the producer also requires the TOF. Below it the pion is identified with the TPC alone, track
 // with TOF or not, so that one threshold, in one place, decides where the TOF is used.
 DECLARE_SOA_COLUMN(UseTOFInPID, useTOFInPID, bool);

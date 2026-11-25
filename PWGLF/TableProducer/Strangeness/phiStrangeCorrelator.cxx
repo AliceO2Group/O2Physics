@@ -1059,7 +1059,9 @@ struct PionTrackProducer {
     Configurable<int> minITSnCls{"minITSnCls", 4, "min number of ITS clusters"};
 
     // Configurable<bool> forceTOF{"forceTOF", false, "force the TOF signal for the PID"};
-    Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.5, "minimum pT after which TOF PID is applicable"};
+    // Was tofPIDThreshold, which bounded only this producer's TOF requirement: renamed with its meaning, now that it
+    // also decides where the TOF enters the PID (useTOFInPID), so that a train configuration says which rule it ran
+    Configurable<float> minPtTOFInPID{"minPtTOFInPID", 0.5, "pT from which the TOF is required (cfgIsTOFChecked) and enters the pion PID, here and in the nSigma window of phiStrangeCorrelation"};
     Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Kaon, o2::track::PID::Proton}, "Trk sel: Particles species for PID rejection, kaon, proton"};
     Configurable<bool> applyElRejection{"applyElRejection", false, "Apply or not the electron rejection"};
     Configurable<std::pair<float, float>> pidRangeTPCEl{"pidRangeTPCEl", {-3.0f, 5.0f}, "nSigma TPC range for electrons"};
@@ -1102,7 +1104,7 @@ struct PionTrackProducer {
     histos.add("h3PionTOFnSigma", "Pion TOF nSigma distribution", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaTOFPiAxis});
 
     // The selected pions split by TOF: with TOF, the TPC and TOF nSigma together; without TOF, the TPC one alone.
-    // phiStrangeCorrelation counts in the TPC window alone below tofPIDThreshold and in both windows above it
+    // phiStrangeCorrelation counts in the TPC window alone below minPtTOFInPID and in both windows above it
     // (useTOFInPID), so fits of these give the purity and the nSigma-window efficiency of the counted sample, which the
     // two distributions above, each over every track, cannot. Below the threshold, the tracks with TOF also show what a
     // TOF cut would remove there
@@ -1133,7 +1135,7 @@ struct PionTrackProducer {
         if (std::abs(nSigmaTPC) >= trackConfigs.pidTPCMax->at(speciesIndex)) {
           return false; // TPC check failed
         }
-        if (trackConfigs.forceTOF || (track.pt() >= trackConfigs.tofPIDThreshold && track.hasTOF())) {
+        if (trackConfigs.forceTOF || (track.pt() >= trackConfigs.minPtTOFInPID && track.hasTOF())) {
           auto nSigmaTOF = aod::pidutils::tofNSigma(pid, track);
           if (std::abs(nSigmaTOF) >= trackConfigs.pidTOFMax->at(speciesIndex)) {
             return false; // TOF check failed
@@ -1156,14 +1158,14 @@ struct PionTrackProducer {
     return true;
   }*/
 
-  // The TOF enters the pion PID from tofPIDThreshold up and never below, here in the K/p rejection and in the nSigma
+  // The TOF enters the pion PID from minPtTOFInPID up and never below, here in the K/p rejection and in the nSigma
   // window of phiStrangeCorrelation (the UseTOFInPID column). Below the threshold the TPC separates the pion alone; a
   // TOF cut on the tracks that happen to have a TOF signal only adds the matching and the mismatch to the efficiency,
   // on a fraction of the tracks that changes with pT, and the old fit-based analysis did not use the TOF there either
   template <typename T>
   bool useTOFInPID(const T& track)
   {
-    return track.pt() >= trackConfigs.tofPIDThreshold && track.hasTOF();
+    return track.pt() >= trackConfigs.minPtTOFInPID && track.hasTOF();
   }
 
   // PID Hypotheses rejection for Pions
@@ -1251,7 +1253,7 @@ struct PionTrackProducer {
       }
     }
 
-    if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.tofPIDThreshold && !track.hasTOF()) {
+    if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.minPtTOFInPID && !track.hasTOF()) {
       return false;
     }
 
@@ -1264,9 +1266,9 @@ struct PionTrackProducer {
 
     /*
     if (analysisMode == 1) {
-      if (track.pt() < trackConfigs.tofPIDThreshold && std::abs(track.tpcNSigmaPi()) >= trackConfigs.nSigmaCutTPCPrimPion)
+      if (track.pt() < trackConfigs.minPtTOFInPID && std::abs(track.tpcNSigmaPi()) >= trackConfigs.nSigmaCutTPCPrimPion)
         return false;
-      if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.tofPIDThreshold && (std::pow(track.tofNSigmaPi(), 2) + std::pow(track.tpcNSigmaPi(), 2)) >= std::pow(trackConfigs.nSigmaCutCombinedPi, 2))
+      if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.minPtTOFInPID && (std::pow(track.tofNSigmaPi(), 2) + std::pow(track.tpcNSigmaPi(), 2)) >= std::pow(trackConfigs.nSigmaCutCombinedPi, 2))
         return false;
     }
     */
