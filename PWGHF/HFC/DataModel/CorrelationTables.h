@@ -230,6 +230,7 @@ DECLARE_SOA_COLUMN(MCandHadron, mCandHadron, float);                       //! I
 DECLARE_SOA_COLUMN(PtCombined, ptCombined, float);                         //! Transverse momentum of combined Lc+Hadron system
 DECLARE_SOA_COLUMN(MV0, mV0, float);                                       //! Invariant mass of V0
 DECLARE_SOA_COLUMN(MV0Ref, mV0Ref, float);                                 //! Invariant mass of reflected V0
+DECLARE_SOA_COLUMN(HadPdg, hadPdg, int);                                   //! PDG code of the MC particle matched to the associated track (0 if not matched)
 } // namespace hf_correlation_lc_hadron
 
 DECLARE_SOA_TABLE(PtLcFromScHPair, "AOD", "PTLCSCHPAIR", //! Sc-->Lc pT for paired Sc-proton
@@ -283,6 +284,8 @@ DECLARE_SOA_TABLE(LcHadronTrkPID, "AOD", "LCHTRKPID", //! Lc-proton details
                   aod::hf_correlation_lc_hadron::PrNsigmTOF,
                   aod::hf_correlation_lc_hadron::KaNsigmTOF,
                   aod::hf_correlation_lc_hadron::PiNsigmTOF);
+DECLARE_SOA_TABLE(HadronPdg, "AOD", "HADPDG", //! hadron pdg details
+                  aod::hf_correlation_lc_hadron::HadPdg);
 
 DECLARE_SOA_TABLE(LcHadronGenInfo, "AOD", "LCHGENINFO", //! Lc-Hadrons pairs Generated Information
                   aod::hf_correlation_lc_hadron::IsPrompt,
