@@ -102,7 +102,6 @@ struct HfTaskCharmHadronsV0FemtoDream {
     Configurable<float> charmHadMinInvMass{"charmHadMinInvMass", 2.15, "Minimum invariant mass of Charm Hadron (particle 2)"};
     Configurable<float> charmHadMinPt{"charmHadMinPt", 0., "Minimum pT of Charm Hadron (particle 2)"};
     Configurable<float> charmHadMaxPt{"charmHadMaxPt", 999., "Maximum pT of Charm Hadron (particle 2)"};
-    Configurable<int> charmHadPDGCode{"charmHadPDGCode", 4122, "PDG code of particle 2 Charm Hadron"};
     Configurable<float> charmHadPromptBDTmin{"charmHadPromptBDTmin", 0., "Minimum prompt bdt score Charm Hadron (particle 2)"};
     Configurable<float> charmHadPromptBDTmax{"charmHadPromptBDTmax", 1., "Maximum prompt bdt score Charm Hadron (particle 2)"};
   } charmSel;
@@ -316,7 +315,8 @@ struct HfTaskCharmHadronsV0FemtoDream {
   HistogramRegistry registryCharmHadronQa{"registryCharmHadronQa"};
 
   float massOne = o2::analysis::femtoDream::getMass(v0Sel.pdgCodeV0);
-  float massTwo = o2::analysis::femtoDream::getMass(charmSel.charmHadPDGCode);
+  float massTwo = -1.f;     // set in init() from the enabled process function
+  int charmHadPDGCode = -1; // PDG code of the charm hadron, set in init() from the enabled process function
   int8_t partSign = 0;
   int64_t processType = 0;
 
@@ -326,6 +326,19 @@ struct HfTaskCharmHadronsV0FemtoDream {
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
+
+    // The mass hypothesis of the charm hadron enters the pair kT, k* and mT and the
+    // internal calculations of the container, so it is defined by the process function in use.
+    if (doprocessDataLcV0) {
+      charmHadPDGCode = o2::constants::physics::Pdg::kLambdaCPlus;
+    } else if (doprocessDataDplusV0 || doprocessMcDplusV0) {
+      charmHadPDGCode = o2::constants::physics::Pdg::kDPlus;
+    } else if (doprocessDataD0V0) {
+      charmHadPDGCode = o2::constants::physics::Pdg::kD0;
+    } else {
+      charmHadPDGCode = o2::constants::physics::Pdg::kDStar;
+    }
+    massTwo = o2::analysis::femtoDream::getMass(charmHadPDGCode);
     bool process3Prong = doprocessDataLcV0 || doprocessDataDplusV0 || doprocessMcDplusV0;
     bool process2Prong = doprocessDataD0V0;
     bool processDstar = doprocessDataDstarV0 || doprocessMcDstarV0;
@@ -349,7 +362,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
                        highkstarCut,
                        smearingByOrigin, AxisBinning.binInvMass);
 
-    sameEventCont.setPDGCodes(v0Sel.pdgCodeV0, charmSel.charmHadPDGCode);
+    sameEventCont.setPDGCodes(v0Sel.pdgCodeV0, charmHadPDGCode);
     mixedEventCont.init(&registry,
                         AxisBinning.binkstar, AxisBinning.binpTV0, AxisBinning.binkT, AxisBinning.binmT, AxisBinning.mixingBinMult, AxisBinning.mixingBinMultPercentile,
                         AxisBinning.bin4Dkstar, AxisBinning.bin4DmT, AxisBinning.bin4DMult, AxisBinning.bin4DmultPercentile,
@@ -357,7 +370,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
                         highkstarCut,
                         smearingByOrigin, AxisBinning.binInvMass);
 
-    mixedEventCont.setPDGCodes(v0Sel.pdgCodeV0, charmSel.charmHadPDGCode);
+    mixedEventCont.setPDGCodes(v0Sel.pdgCodeV0, charmHadPDGCode);
     registryMixQa.add("MixingQA/hSECollisionBins", "; bin; Entries", kTH1F, {{120, -0.5, 119.5}});
     registryMixQa.add("MixingQA/hSECollisionPool", "; Vz (cm); Mul", kTH2F, {{100, -10, 10}, {200, 0, 200}});
     registryMixQa.add("MixingQA/hMECollisionBins", "; bin; Entries", kTH1F, {{120, -0.5, 119.5}});
