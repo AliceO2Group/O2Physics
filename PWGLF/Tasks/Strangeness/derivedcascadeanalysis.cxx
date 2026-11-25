@@ -1513,7 +1513,7 @@ struct Derivedcascadeanalysis {
         }
       }
 
-      if (std::abs(posExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows || std::abs(negExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows || std::abs(bachExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows) {
+      if (std::abs(posExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows || std::abs(negExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows || (!candidateSelectionFlags.doBachelorITSTracking && std::abs(bachExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows)) {
         continue;
       }
       histos.fill(HIST("hCandidate"), ++counter);
@@ -1585,7 +1585,7 @@ struct Derivedcascadeanalysis {
 
       if (isXi) {
 
-        if (candidateSelectionFlags.doNTPCSigmaCut) {
+        if (candidateSelectionFlags.doNTPCSigmaCut && !candidateSelectionFlags.doBachelorITSTracking) {
           if (std::abs(bachExtra.tpcNSigmaPi()) > candidateSelectionValues.nsigmatpcPi) {
             continue;
           }
@@ -1594,7 +1594,7 @@ struct Derivedcascadeanalysis {
           ++counter;
         }
 
-        if (bachExtra.hasTOF() && candidateSelectionFlags.doNTOFSigmaBachelorCut) {
+        if (bachExtra.hasTOF() && candidateSelectionFlags.doNTOFSigmaBachelorCut && !candidateSelectionFlags.doBachelorITSTracking) {
           histos.fill(HIST("hNsigmaTOFBachelorPion"), casc.tofNSigmaXiPi(), fullmomentumBachelor, centrality);
           if (std::abs(casc.tofNSigmaXiPi()) > candidateSelectionValues.nsigmatofBachPion) {
             continue;
@@ -1614,7 +1614,7 @@ struct Derivedcascadeanalysis {
           ++counter;
         }
       } else {
-        if (candidateSelectionFlags.doNTPCSigmaCut) {
+        if (candidateSelectionFlags.doNTPCSigmaCut && !candidateSelectionFlags.doBachelorITSTracking) {
           if (std::abs(bachExtra.tpcNSigmaKa()) > candidateSelectionValues.nsigmatpcKa) {
             continue;
           }
