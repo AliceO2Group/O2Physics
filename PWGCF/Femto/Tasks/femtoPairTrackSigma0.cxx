@@ -158,16 +158,20 @@ struct FemtoPairTrackSigma0 {
     if (processData) {
       colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
       trackHistSpec = trackhistmanager::makeTrackHistSpecMap(confTrackBinning);
-      posDauSpec = trackhistmanager::makeTrackHistSpecMap(confPosDauBinning);
-      negDauSpec = trackhistmanager::makeTrackHistSpecMap(confNegDauBinning);
+      if (confSigma0Binning.plotDaughters.value) {
+        posDauSpec = trackhistmanager::makeTrackHistSpecMap(confPosDauBinning);
+        negDauSpec = trackhistmanager::makeTrackHistSpecMap(confNegDauBinning);
+      }
       sigma0HistSpec = sigma0histmanager::makeSigma0HistSpecMap(confSigma0Binning);
       pairTrackSigma0HistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confMixing);
       pairTrackSigma0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confSigma0Selection, confSigma0Cleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigma0HistSpec, posDauSpec, negDauSpec, pairTrackSigma0HistSpec, cprHistSpec, pairCleanerHistSpec);
     } else if (processMc) {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
       trackHistSpec = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning);
-      posDauSpec = trackhistmanager::makeTrackMcHistSpecMap(confPosDauBinning);
-      negDauSpec = trackhistmanager::makeTrackMcHistSpecMap(confNegDauBinning);
+      if (confSigma0Binning.plotDaughters.value) {
+        posDauSpec = trackhistmanager::makeTrackMcHistSpecMap(confPosDauBinning);
+        negDauSpec = trackhistmanager::makeTrackMcHistSpecMap(confNegDauBinning);
+      }
       sigma0HistSpec = sigma0histmanager::makeSigma0McHistSpecMap(confSigma0Binning);
       pairTrackSigma0HistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning, confMixing);
       pairTrackSigma0Builder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confSigma0Selection, confSigma0Cleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigma0HistSpec, posDauSpec, negDauSpec, pairTrackSigma0HistSpec, cprHistSpec, pairCleanerHistSpec);

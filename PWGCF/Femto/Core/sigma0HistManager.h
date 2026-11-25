@@ -85,6 +85,7 @@ struct ConfSigma0Binning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis mass{"mass", {{200, 1.1, 1.3}}, "Mass"};
   o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};
   o2::framework::ConfigurableAxis pdgCodes{"pdgCodes", {{8001, -4000.5, 4000.5}}, "MC ONLY: PDG codes of reconstructed Sigma0s"};
+  o2::framework::Configurable<bool> plotDaughters{"plotDaughters", false, "Histogram the Lambda daughter tracks of the Sigma0 (Sigma0PosDau/Sigma0NegDau)"};
 };
 
 constexpr const char PrefixSigma0Binning[] = "Sigma0Binning";
@@ -251,8 +252,12 @@ class Sigma0HistManager
     mHistogramRegistry = registry;
     this->setPdgCodes(ConfSigma0Selection);
 
-    mPosDauManager.template init<mode>(registry, PosDauSpecs, AbsCharge, SignPlus, mPosDauPdgCodeAbs);
-    mNegDauManager.template init<mode>(registry, NegDauSpecs, AbsCharge, SignMinus, mNegDauPdgCodeAbs);
+    // daughter histograms are optional: they are skipped if no specs are passed (see ConfSigma0Binning::plotDaughters)
+    mPlotDaughters = !PosDauSpecs.empty() && !NegDauSpecs.empty();
+    if (mPlotDaughters) {
+      mPosDauManager.template init<mode>(registry, PosDauSpecs, AbsCharge, SignPlus, mPosDauPdgCodeAbs);
+      mNegDauManager.template init<mode>(registry, NegDauSpecs, AbsCharge, SignMinus, mNegDauPdgCodeAbs);
+    }
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(sigma0Specs);
@@ -293,10 +298,12 @@ class Sigma0HistManager
   template <modes::Mode mode, typename T1, typename T2>
   void fill(T1 const& sigma0Candidate, T2 const& tracks)
   {
-    auto posDaughter = tracks.rawIteratorAt(sigma0Candidate.posDauId() - tracks.offset());
-    mPosDauManager.template fill<mode>(posDaughter, tracks);
-    auto negDaughter = tracks.rawIteratorAt(sigma0Candidate.negDauId() - tracks.offset());
-    mNegDauManager.template fill<mode>(negDaughter, tracks);
+    if (mPlotDaughters) {
+      auto posDaughter = tracks.rawIteratorAt(sigma0Candidate.posDauId() - tracks.offset());
+      mPosDauManager.template fill<mode>(posDaughter, tracks);
+      auto negDaughter = tracks.rawIteratorAt(sigma0Candidate.negDauId() - tracks.offset());
+      mNegDauManager.template fill<mode>(negDaughter, tracks);
+    }
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(sigma0Candidate);
@@ -309,10 +316,12 @@ class Sigma0HistManager
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void fill(T1 const& sigma0Candidate, T2 const& tracks, T3 const& col, T4 const& mcParticles, T5 const& mcMothers, T6 const& mcPartonicMothers)
   {
-    auto posDaughter = tracks.rawIteratorAt(sigma0Candidate.posDauId() - tracks.offset());
-    mPosDauManager.template fill<mode>(posDaughter, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
-    auto negDaughter = tracks.rawIteratorAt(sigma0Candidate.negDauId() - tracks.offset());
-    mNegDauManager.template fill<mode>(negDaughter, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
+    if (mPlotDaughters) {
+      auto posDaughter = tracks.rawIteratorAt(sigma0Candidate.posDauId() - tracks.offset());
+      mPosDauManager.template fill<mode>(posDaughter, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
+      auto negDaughter = tracks.rawIteratorAt(sigma0Candidate.negDauId() - tracks.offset());
+      mNegDauManager.template fill<mode>(negDaughter, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
+    }
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(sigma0Candidate);
@@ -497,6 +506,7 @@ class Sigma0HistManager
   int mPosDauPdgCodeAbs = 0;
   int mNegDauPdgCodeAbs = 0;
   bool mPlot2d = false;
+  bool mPlotDaughters = true; // always on for the QA init
 
   trackhistmanager::TrackHistManager<posDauPrefix> mPosDauManager;
   trackhistmanager::TrackHistManager<negDauPrefix> mNegDauManager;

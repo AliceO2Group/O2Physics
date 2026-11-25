@@ -156,8 +156,10 @@ struct FemtoTripletTrackTrackSigma0 {
       trackHistSpec1 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning2);
       sigma0HistSpec = sigma0histmanager::makeSigma0HistSpecMap(confSigma0Binning);
-      posDauHistSpec = trackhistmanager::makeTrackHistSpecMap(confPosDauBinning);
-      negDauHistSpec = trackhistmanager::makeTrackHistSpecMap(confNegDauBinning);
+      if (confSigma0Binning.plotDaughters.value) {
+        posDauHistSpec = trackhistmanager::makeTrackHistSpecMap(confPosDauBinning);
+        negDauHistSpec = trackhistmanager::makeTrackHistSpecMap(confNegDauBinning);
+      }
       tripletHistSpec = triplethistmanager::makeTripletHistSpecMap(confTripletBinning, confMixing);
       tripletTrackTrackSigma0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confSigma0Selection, confTrackCleaner1, confTrackCleaner2, confSigma0Cleaner, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, sigma0HistSpec, posDauHistSpec, negDauHistSpec, tripletHistSpec, ctrHistSpec, tripletCleanerHistSpec);
     } else if (processMc) {
@@ -165,8 +167,10 @@ struct FemtoTripletTrackTrackSigma0 {
       trackHistSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning2);
       sigma0HistSpec = sigma0histmanager::makeSigma0McHistSpecMap(confSigma0Binning);
-      posDauHistSpec = trackhistmanager::makeTrackMcHistSpecMap(confPosDauBinning);
-      negDauHistSpec = trackhistmanager::makeTrackMcHistSpecMap(confNegDauBinning);
+      if (confSigma0Binning.plotDaughters.value) {
+        posDauHistSpec = trackhistmanager::makeTrackMcHistSpecMap(confPosDauBinning);
+        negDauHistSpec = trackhistmanager::makeTrackMcHistSpecMap(confNegDauBinning);
+      }
       tripletHistSpec = triplethistmanager::makeTripletMcHistSpecMap(confTripletBinning, confMixing);
       tripletTrackTrackSigma0Builder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confSigma0Selection, confTrackCleaner1, confTrackCleaner2, confSigma0Cleaner, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, sigma0HistSpec, posDauHistSpec, negDauHistSpec, tripletHistSpec, ctrHistSpec, tripletCleanerHistSpec);
     }
