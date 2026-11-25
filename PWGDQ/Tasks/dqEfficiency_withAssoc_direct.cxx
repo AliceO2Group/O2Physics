@@ -2340,7 +2340,7 @@ struct AnalysisSameEventPairing {
     runMCGen<VarManager::kDecayToEE, gkEventFillMapWithMults>(events, mcEvents, mcTracks);
     // cout << "AnalysisSameEventPairing::processBarrelOnly() completed" << endl;
   }
-  
+
   void processBarrelOnlyNoCov(MyEventsSelected const& events, BCsWithTimestamps const& bcs,
                               soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
                               MyBarrelTracksWithAmbiguities const& barrelTracks, McCollisions const& mcEvents, McParticles const& mcTracks)
