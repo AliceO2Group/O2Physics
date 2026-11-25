@@ -129,6 +129,7 @@ struct HfCandidateCreator3Prong {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "do validation plots"};
+  Configurable<bool> setDcaFitterOldMode{"setDcaFitterOldMode", true, "set old method of DCAFitter"};
   // magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -251,6 +252,7 @@ struct HfCandidateCreator3Prong {
     df.setMinRelChi2Change(static_cast<float>(minRelChi2Change));
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
+    df.setOldMode(setDcaFitterOldMode);
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
