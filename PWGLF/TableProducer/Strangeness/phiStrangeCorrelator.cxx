@@ -1100,6 +1100,9 @@ struct PionTrackProducer {
     AxisSpec binnedpTPiAxis{std::vector<double>(binspTPi), "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec nSigmaTPCPiAxis = {100, -10.0f, 10.0f, "N#sigma_{TPC} #pi"};
     AxisSpec nSigmaTOFPiAxis = {100, -10.0f, 10.0f, "N#sigma_{TOF} #pi"};
+    // Wide enough for the DCAxy cut at the lowest pT (0.004 + 0.013 / 0.2 = 0.069 cm with the defaults), so that the
+    // templates are not truncated where the secondaries weigh most
+    AxisSpec dcaXYPiAxis = {4000, -0.1f, 0.1f, "DCA_{xy} (cm)"};
 
     histos.add("h3PionTPCnSigma", "Pion TPC nSigma distribution", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis});
     histos.add("h3PionTOFnSigma", "Pion TOF nSigma distribution", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaTOFPiAxis});
@@ -1115,9 +1118,9 @@ struct PionTrackProducer {
     histos.add("h4RecMCPionTPCTOFnSigma", "True primary pion TPC and TOF nSigma, tracks with TOF", kTHnSparseF, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis, nSigmaTOFPiAxis});
     histos.add("h3RecMCPionTPCnSigmaNoTOF", "True primary pion TPC nSigma, tracks without TOF", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis});
 
-    histos.add("h2RecMCDCAxyPrimPi", "Dcaxy distribution vs pt for Primary Pions", kTH2F, {binnedpTPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
-    histos.add("h2RecMCDCAxySecWeakDecayPi", "Dcaz distribution vs pt for Secondary Pions from Weak Decay", kTH2F, {binnedpTPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
-    histos.add("h2RecMCDCAxySecMaterialPi", "Dcaxy distribution vs pt for Secondary Pions from Material", kTH2F, {binnedpTPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
+    histos.add("h2RecMCDCAxyPrimPi", "Dcaxy distribution vs pt for Primary Pions", kTH2F, {binnedpTPiAxis, dcaXYPiAxis});
+    histos.add("h2RecMCDCAxySecWeakDecayPi", "Dcaxy distribution vs pt for Secondary Pions from Weak Decay", kTH2F, {binnedpTPiAxis, dcaXYPiAxis});
+    histos.add("h2RecMCDCAxySecMaterialPi", "Dcaxy distribution vs pt for Secondary Pions from Material", kTH2F, {binnedpTPiAxis, dcaXYPiAxis});
   }
 
   /*// PID selection for Pions
