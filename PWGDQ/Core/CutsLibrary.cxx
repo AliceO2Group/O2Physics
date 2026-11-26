@@ -7960,7 +7960,7 @@ AnalysisCut* o2::aod::dqcuts::parseJSONAnalysisCut(T cut, const char* cutName)
 
     TString itName = it->name.GetString();
 
-    if (itName.Contains("addCut")) {
+    if (itName.Contains("AddCut")) {
 
       LOG(debug) << "Parsing " << itName.Data();
       const auto& addcut = it->value;
@@ -8091,7 +8091,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::parseJSONAnalysisCompositeCut(T cut, cons
 
     TString itName = it->name.GetString();
 
-    if (itName.Contains("addCut")) {
+    if (itName.Contains("AddCut")) {
 
       LOG(debug) << "Parsing " << itName.Data();
       const auto& addcut = it->value;
