@@ -1432,9 +1432,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_PtLong", "", false, 500, alice3MassBins.data(), VarManager::kMass, 20, pTBins.data(), VarManager::kPt);
       }
       if (subGroupStr.Contains("alice3pair")) {
+        hm->AddHistogram(histClass, "Rapidity", "y", false, 2000.0, -5.0, 5.0, VarManager::kRap);
         hm->AddHistogram(histClass, "CosinePointingAngle", "cos(#theta_{p})", false, 2000.0, -1.0, 1.0, VarManager::kCosPointingAngle);
-        hm->AddHistogram(histClass, "DCADaughters", "DCA_{dau}", false, 2000.0, -10.0, 10.0, VarManager::kD0DcaDaughters);
-        hm->AddHistogram(histClass, "ImpParProduct", "d_{k} #times d_{#pi}", false, 2000.0, -100.0, 100.0, VarManager::kD0ImpParProduct);
+        hm->AddHistogram(histClass, "CosineHelicityAngle", "cos(#theta^{*})", false, 2000.0, -1.0, 1.0, VarManager::kCosThetaHE);
+        hm->AddHistogram(histClass, "DCADaughters", "DCA_{dau}", false, 2000.0, -10.0, 10.0, VarManager::kDCADaughters);
+        hm->AddHistogram(histClass, "ImpParProduct", "d_{1} #times d_{2}", false, 2000.0, -100.0, 100.0, VarManager::kDCATrackProd);
+        hm->AddHistogram(histClass, "DCASignificance", "DCAxy/#sigma_{DCA}", false, 100, 0.0, 20.0, VarManager::kDCASignificance);
         hm->AddHistogram(histClass, "DCAxy1", "DCA_{xy, 1}", false, 2000.0, -10.0, 10.0, VarManager::kDCAxy1);
         hm->AddHistogram(histClass, "DCAxy2", "DCA_{xy, 2}", false, 2000.0, -10.0, 10.0, VarManager::kDCAxy2);
       }

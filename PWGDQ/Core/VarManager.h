@@ -73,11 +73,13 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <complex>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <map>
 #include <tuple>
 #include <utility>
@@ -564,6 +566,7 @@ class VarManager : public TObject
     kKFMassGeoTop,
 
     kPt1,
+    kP1,
     kEta1,
     kPhi1,
     kCharge1,
@@ -577,6 +580,7 @@ class VarManager : public TObject
     kTPCnSigmaKa_leg1,
     kPin_leg2,
     kPt2,
+    kP2,
     kEta2,
     kPhi2,
     kCharge2,
@@ -586,6 +590,13 @@ class VarManager : public TObject
     kDCAzOverSig2,
     kITSclusterMap2,
     kTPCnSigmaEl2,
+    kPt3,
+    kP3,
+    kEta3,
+    kPhi3,
+    kCharge3,
+    kDCAxy3,
+    kDCAz3,
 
     // Barrel track variables
     kPin,
@@ -905,8 +916,10 @@ class VarManager : public TObject
     kSignQuadDCAsigXY,
     kCosPointingAngle,
     kVertexingImpactParameter,
-    kD0ImpParProduct,
-    kD0DcaDaughters,
+    kDCADaughters,
+    kDCAResolution,
+    kDCASignificance,
+    kLxySignificance,
     kImpParXYJpsi,
     kImpParXYK,
     kDCATrackProd,
@@ -1219,6 +1232,24 @@ class VarManager : public TObject
     kInnerTOFnSigmaTr,
     kInnerTOFnSigmaHe3,
     kInnerTOFnSigmaAl,
+    kRICHSeparationKPi,
+    kRICHSeparationKPr,
+    kRICHSeparationKEl,
+    kRICHSeparationPiPr,
+    kRICHSeparationPiEl,
+    kRICHSeparationPrEl,
+    kInnerTOFSeparationKPi,
+    kInnerTOFSeparationKPr,
+    kInnerTOFSeparationKEl,
+    kInnerTOFSeparationPiPr,
+    kInnerTOFSeparationPiEl,
+    kInnerTOFSeparationPrEl,
+    kOuterTOFSeparationKPi,
+    kOuterTOFSeparationKPr,
+    kOuterTOFSeparationKEl,
+    kOuterTOFSeparationPiPr,
+    kOuterTOFSeparationPiEl,
+    kOuterTOFSeparationPrEl,
     kA3Variables,
 
     kNVars
@@ -3089,8 +3120,8 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kPhi] = track.phi();
     values[kCharge] = track.sign();
     if (fgUsedVars[kPhiTPCOuter]) {
-      if (track.pt() > 0.022 * fgMagField) {
-        values[kPhiTPCOuter] = RecoDecay::constrainAngle(track.phi() - track.sign() * (o2::constants::math::PIHalf - std::acos(0.022 * fgMagField / track.pt())));
+      if (track.pt() > o2::dqconstants::defaults::minPtOuterTPCReferenceR * fgMagField) {
+        values[kPhiTPCOuter] = RecoDecay::constrainAngle(track.phi() - track.sign() * (o2::constants::math::PIHalf - std::acos(o2::dqconstants::defaults::minPtOuterTPCReferenceR * fgMagField / track.pt())));
       } else {
         values[kPhiTPCOuter] = o2::dqconstants::InvalidValueF;
       }
@@ -4447,6 +4478,30 @@ void VarManager::FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* val
     values[kEta] = v123.Eta();
     values[kPhi] = v123.Phi();
     values[kRap] = -v123.Rapidity();
+
+    values[kPt1] = t1.pt();
+    values[kPt2] = t2.pt();
+    values[kPt3] = t3.pt();
+
+    values[kEta1] = t1.eta();
+    values[kEta2] = t2.eta();
+    values[kEta3] = t3.eta();
+
+    values[kPhi1] = t1.phi();
+    values[kPhi2] = t2.phi();
+    values[kPhi3] = t3.phi();
+
+    values[kCharge1] = t1.sign();
+    values[kCharge2] = t2.sign();
+    values[kCharge3] = t3.sign();
+
+    values[kDCAxy1] = t1.dcaXY();
+    values[kDCAxy2] = t2.dcaXY();
+    values[kDCAxy3] = t3.dcaXY();
+
+    values[kDCAz1] = t1.dcaZ();
+    values[kDCAz2] = t2.dcaZ();
+    values[kDCAz3] = t3.dcaZ();
   }
 }
 
@@ -7740,6 +7795,74 @@ void VarManager::FillTrackAlice3(T const& track, float* values)
     values[kInnerTOFnSigmaTr] = track.nSigmaTritonInnerTOF();
     values[kInnerTOFnSigmaHe3] = track.nSigmaHelium3InnerTOF();
     values[kInnerTOFnSigmaAl] = track.nSigmaAlphaInnerTOF();
+
+    auto GetPIDSeparation = [](float meanA, float sigmaA, float meanB, float sigmaB) {
+      if (!std::isfinite(meanA) || !std::isfinite(meanB) || !std::isfinite(sigmaA) || !std::isfinite(sigmaB) || sigmaA <= 0.f || sigmaB <= 0.f) {
+        return -1.f;
+      }
+      return std::abs(meanA - meanB) / std::max(sigmaA, sigmaB);
+    };
+
+    enum Species : std::size_t { El,
+                                 Pi,
+                                 Ka,
+                                 Pr,
+                                 NSpecies };
+    constexpr std::array<double, NSpecies> Masses{o2::constants::physics::MassElectron, o2::constants::physics::MassPionCharged, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassProton};
+
+    const double momentum = track.p();
+    const double innerLengthCm = track.innerTOFTrackLengthReco();
+    const double outerLengthCm = track.outerTOFTrackLengthReco();
+
+    const std::array<bool, NSpecies> richHypothesisValid{track.hasSigEl(), track.hasSigPi(), track.hasSigKa(), track.hasSigPr()};
+
+    constexpr double InvalidMean = std::numeric_limits<double>::quiet_NaN();
+    std::array<double, NSpecies> innerMeanPs, outerMeanPs, richMeanRad;
+    innerMeanPs.fill(InvalidMean);
+    outerMeanPs.fill(InvalidMean);
+    richMeanRad.fill(InvalidMean);
+
+    const float eventTimeErrPs = track.tofEventTimeErr();
+
+    const auto tofSigmaPs = [eventTimeErrPs](float detectorResolutionPs) {
+      if (!std::isfinite(eventTimeErrPs) || eventTimeErrPs < 0.f) {
+        return std::numeric_limits<float>::quiet_NaN();
+      }
+      return std::hypot(detectorResolutionPs, eventTimeErrPs);
+    };
+
+    const float innerSigmaPs = tofSigmaPs(o2::dqconstants::defaults::TOFResolutionPs);
+    const float outerSigmaPs = tofSigmaPs(o2::dqconstants::defaults::TOFResolutionPs);
+
+    if (std::isfinite(momentum) && momentum > 0.) {
+      for (std::size_t h = 0; h < NSpecies; ++h) {
+        const double invBeta = std::hypot(1., Masses[h] / momentum);
+
+        if (std::isfinite(innerLengthCm) && innerLengthCm > 0.) {
+          innerMeanPs[h] = innerLengthCm * o2::constants::physics::invLightSpeedCm2PS * invBeta;
+        }
+        if (std::isfinite(outerLengthCm) && outerLengthCm > 0.) {
+          outerMeanPs[h] = outerLengthCm * o2::constants::physics::invLightSpeedCm2PS * invBeta;
+        }
+
+        if (track.hasSig() && richHypothesisValid[h] && std::isfinite(o2::dqconstants::defaults::AerogelIndex) && o2::dqconstants::defaults::AerogelIndex > invBeta) {
+          richMeanRad[h] = std::acos(invBeta / o2::dqconstants::defaults::AerogelIndex);
+        }
+      }
+    }
+
+    const auto fillSeparation = [&](Species a, Species b, int innerVar, int outerVar, int richVar) {
+      values[innerVar] = GetPIDSeparation(innerMeanPs[a], innerSigmaPs, innerMeanPs[b], innerSigmaPs);
+      values[outerVar] = GetPIDSeparation(outerMeanPs[a], outerSigmaPs, outerMeanPs[b], outerSigmaPs);
+      values[richVar] = GetPIDSeparation(richMeanRad[a], o2::dqconstants::defaults::RichSigmaRad, richMeanRad[b], o2::dqconstants::defaults::RichSigmaRad);
+    };
+
+    fillSeparation(Ka, Pi, kInnerTOFSeparationKPi, kOuterTOFSeparationKPi, kRICHSeparationKPi);
+    fillSeparation(Ka, Pr, kInnerTOFSeparationKPr, kOuterTOFSeparationKPr, kRICHSeparationKPr);
+    fillSeparation(Ka, El, kInnerTOFSeparationKEl, kOuterTOFSeparationKEl, kRICHSeparationKEl);
+    fillSeparation(Pi, Pr, kInnerTOFSeparationPiPr, kOuterTOFSeparationPiPr, kRICHSeparationPiPr);
+    fillSeparation(Pi, El, kInnerTOFSeparationPiEl, kOuterTOFSeparationPiEl, kRICHSeparationPiEl);
+    fillSeparation(Pr, El, kInnerTOFSeparationPrEl, kOuterTOFSeparationPrEl, kRICHSeparationPrEl);
   }
 
   // Quantities based on the pair table(s)
@@ -7762,10 +7885,6 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
 
   float m1 = o2::constants::physics::MassElectron;
   float m2 = o2::constants::physics::MassElectron;
-  if constexpr (pairType == kDecayToMuMu) {
-    m1 = o2::constants::physics::MassMuon;
-    m2 = o2::constants::physics::MassMuon;
-  }
 
   if constexpr (pairType == kDecayToPiPi) {
     m1 = o2::constants::physics::MassPionCharged;
@@ -7793,25 +7912,13 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
   values[kDeltaPtotTracks] = Ptot1 - Ptot2;
 
   values[kPt1] = t1.pt();
+  values[kP1] = t1.p();
   values[kEta1] = t1.eta();
   values[kPhi1] = t1.phi();
   values[kPt2] = t2.pt();
+  values[kP2] = t2.p();
   values[kEta2] = t2.eta();
   values[kPhi2] = t2.phi();
-
-  if (fgUsedVars[kDeltaPhiPair2]) {
-    values[kDeltaPhiPair2] = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), -o2::constants::math::PIHalf);
-  }
-
-  if (fgUsedVars[kDeltaEtaPair2]) {
-    values[kDeltaEtaPair2] = v1.Eta() - v2.Eta();
-  }
-
-  if (fgUsedVars[kPsiPair]) {
-    values[kDeltaPhiPair] = (t1.sign() * fgMagField > 0.) ? (v1.Phi() - v2.Phi()) : (v2.Phi() - v1.Phi());
-    double xipair = std::acos((v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / v1.P() / v2.P());
-    values[kPsiPair] = (t1.sign() * fgMagField > 0.) ? std::asin((v1.Theta() - v2.Theta()) / xipair) : std::asin((v2.Theta() - v1.Theta()) / xipair);
-  }
 
   if (fgUsedVars[kOpeningAngle]) {
     double scalar = v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz();
@@ -7830,210 +7937,20 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
     }
   }
 
-  // polarization parameters
-  bool useHE = fgUsedVars[kCosThetaHE] || fgUsedVars[kPhiHE];       // helicity frame
-  bool useCS = fgUsedVars[kCosThetaCS] || fgUsedVars[kPhiCS];       // Collins-Soper frame
-  bool useGJB1 = fgUsedVars[kCosThetaGJB1] || fgUsedVars[kPhiGJB1]; // Gottfried-Jackson frame, beam 1 (+z)
-  bool useGJB2 = fgUsedVars[kCosThetaGJB2] || fgUsedVars[kPhiGJB2]; // Gottfried-Jackson frame, beam 2 (-z)
-  bool usePP = fgUsedVars[kCosThetaPP];                             // production plane frame
-  bool useRM = fgUsedVars[kCosThetaRM];                             // Random frame
+  ROOT::Math::Boost boostv12{v12.BoostToCM()};
+  ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
+  ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
+  // using positive sign convention for the first track
+  ROOT::Math::XYZVectorF v_CM = (t1.sign() > 0 ? v1_CM : v2_CM);
 
-  if (useHE || useCS || useGJB1 || useGJB2 || usePP || useRM) {
-    ROOT::Math::Boost boostv12{v12.BoostToCM()};
-    ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
-    ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
-    ROOT::Math::XYZVectorF Beam1_CM{(boostv12(fgBeamA).Vect()).Unit()};
-    ROOT::Math::XYZVectorF Beam2_CM{(boostv12(fgBeamC).Vect()).Unit()};
-
-    // using positive sign convention for the first track
-    ROOT::Math::XYZVectorF v_CM = (t1.sign() > 0 ? v1_CM : v2_CM);
-
-    if (useHE) {
-      ROOT::Math::XYZVectorF zaxis_HE{(v12.Vect()).Unit()};
-      ROOT::Math::XYZVectorF yaxis_HE{(Beam1_CM.Cross(Beam2_CM)).Unit()};
-      ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
-      if (fgUsedVars[kCosThetaHE]) {
-        values[kCosThetaHE] = zaxis_HE.Dot(v_CM);
-      }
-      if (fgUsedVars[kPhiHE]) {
-        values[kPhiHE] = RecoDecay::constrainAngle(std::atan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM)));
-      }
-      if (fgUsedVars[kPhiTildeHE]) {
-        if (fgUsedVars[kCosThetaHE] && fgUsedVars[kPhiHE]) {
-          if (values[kCosThetaHE] > 0) {
-            values[kPhiTildeHE] = RecoDecay::constrainAngle(values[kPhiHE] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
-          } else {
-            values[kPhiTildeHE] = RecoDecay::constrainAngle(values[kPhiHE] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
-          }
-        } else {
-          values[kPhiTildeHE] = o2::dqconstants::InvalidValueF; // not computable
-        }
-      }
-    }
-
-    if (useCS) {
-      ROOT::Math::XYZVectorF zaxis_CS{(Beam1_CM - Beam2_CM).Unit()};
-      ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
-      ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
-      if (fgUsedVars[kCosThetaCS]) {
-        values[kCosThetaCS] = zaxis_CS.Dot(v_CM);
-      }
-      if (fgUsedVars[kPhiCS]) {
-        values[kPhiCS] = RecoDecay::constrainAngle(std::atan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM)));
-      }
-      if (fgUsedVars[kPhiTildeCS]) {
-        if (fgUsedVars[kCosThetaCS] && fgUsedVars[kPhiCS]) {
-          if (values[kCosThetaCS] > 0) {
-            values[kPhiTildeCS] = RecoDecay::constrainAngle(values[kPhiCS] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
-          } else {
-            values[kPhiTildeCS] = RecoDecay::constrainAngle(values[kPhiCS] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
-          }
-        } else {
-          values[kPhiTildeCS] = o2::dqconstants::InvalidValueF; // not computable
-        }
-      }
-    }
-
-    if (useGJB1) {
-      // z-axis: beam direction in the mother rest frame
-      ROOT::Math::XYZVectorF zaxis_GJB1{Beam1_CM.Unit()};
-      // mother momentum in LAB (defines the production plane)
-      ROOT::Math::XYZVectorF motherLab_GJB1{(ROOT::Math::XYZVectorF(v12.Vect())).Unit()};
-      // y-axis: normal to the production plane (fallback to (0,1,0) if degenerate)
-      ROOT::Math::XYZVectorF yaxis_GJB1{zaxis_GJB1.Cross(motherLab_GJB1)};
-      if (yaxis_GJB1.Mag2() > o2::dqconstants::defaults::GJMinMagnitude) {
-        yaxis_GJB1 = yaxis_GJB1.Unit();
-      } else {
-        yaxis_GJB1 = ROOT::Math::XYZVectorF(0.f, 1.f, 0.f);
-      }
-      ROOT::Math::XYZVectorF xaxis_GJB1{(yaxis_GJB1.Cross(zaxis_GJB1)).Unit()};
-      if (fgUsedVars[kCosThetaGJB1]) {
-        values[kCosThetaGJB1] = zaxis_GJB1.Dot(v_CM);
-      }
-      if (fgUsedVars[kPhiGJB1]) {
-        values[kPhiGJB1] = RecoDecay::constrainAngle(std::atan2(yaxis_GJB1.Dot(v_CM), xaxis_GJB1.Dot(v_CM)));
-      }
-      if (fgUsedVars[kPhiTildeGJB1]) {
-        if (fgUsedVars[kCosThetaGJB1] && fgUsedVars[kPhiGJB1]) {
-          if (values[kCosThetaGJB1] > 0) {
-            values[kPhiTildeGJB1] = RecoDecay::constrainAngle(values[kPhiGJB1] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
-          } else {
-            values[kPhiTildeGJB1] = RecoDecay::constrainAngle(values[kPhiGJB1] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
-          }
-        } else {
-          values[kPhiTildeGJB1] = o2::dqconstants::InvalidValueF; // not computable
-        }
-      }
-    }
-
-    if (useGJB2) {
-      // z-axis: beam direction in the mother rest frame
-      ROOT::Math::XYZVectorF zaxis_GJB2{Beam2_CM.Unit()};
-      // mother momentum in LAB (defines the production plane)
-      ROOT::Math::XYZVectorF motherLab_GJB2{(ROOT::Math::XYZVectorF(v12.Vect())).Unit()};
-      // y-axis: normal to the production plane (fallback to (0,1,0) if degenerate)
-      ROOT::Math::XYZVectorF yaxis_GJB2{zaxis_GJB2.Cross(motherLab_GJB2)};
-      if (yaxis_GJB2.Mag2() > o2::dqconstants::defaults::GJMinMagnitude) {
-        yaxis_GJB2 = yaxis_GJB2.Unit();
-      } else {
-        yaxis_GJB2 = ROOT::Math::XYZVectorF(0.f, 1.f, 0.f);
-      }
-      ROOT::Math::XYZVectorF xaxis_GJB2{(yaxis_GJB2.Cross(zaxis_GJB2)).Unit()};
-      if (fgUsedVars[kCosThetaGJB2]) {
-        values[kCosThetaGJB2] = zaxis_GJB2.Dot(v_CM);
-      }
-      if (fgUsedVars[kPhiGJB2]) {
-        values[kPhiGJB2] = RecoDecay::constrainAngle(std::atan2(yaxis_GJB2.Dot(v_CM), xaxis_GJB2.Dot(v_CM)));
-      }
-      if (fgUsedVars[kPhiTildeGJB2]) {
-        if (fgUsedVars[kCosThetaGJB2] && fgUsedVars[kPhiGJB2]) {
-          if (values[kCosThetaGJB2] > 0) {
-            values[kPhiTildeGJB2] = RecoDecay::constrainAngle(values[kPhiGJB2] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
-          } else {
-            values[kPhiTildeGJB2] = RecoDecay::constrainAngle(values[kPhiGJB2] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
-          }
-        } else {
-          values[kPhiTildeGJB2] = o2::dqconstants::InvalidValueF; // not computable
-        }
-      }
-    }
-
-    if (usePP) {
-      ROOT::Math::XYZVector zaxis_PP = ROOT::Math::XYZVector(v12.Py(), -v12.Px(), 0.f);
-      ROOT::Math::XYZVector yaxis_PP{(v12.Vect()).Unit()};
-      ROOT::Math::XYZVector xaxis_PP{(yaxis_PP.Cross(zaxis_PP)).Unit()};
-      if (fgUsedVars[kCosThetaPP]) {
-        values[kCosThetaPP] = zaxis_PP.Dot(v_CM) / std::sqrt(zaxis_PP.Mag2());
-      }
-      if (fgUsedVars[kPhiPP]) {
-        values[kPhiPP] = RecoDecay::constrainAngle(std::atan2(yaxis_PP.Dot(v_CM), xaxis_PP.Dot(v_CM)));
-      }
-      if (fgUsedVars[kPhiTildePP]) {
-        if (fgUsedVars[kCosThetaPP] && fgUsedVars[kPhiPP]) {
-          if (values[kCosThetaPP] > 0) {
-            values[kPhiTildePP] = RecoDecay::constrainAngle(values[kPhiPP] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
-          } else {
-            values[kPhiTildePP] = RecoDecay::constrainAngle(values[kPhiPP] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
-          }
-        } else {
-          values[kPhiTildePP] = o2::dqconstants::InvalidValueF; // not computable
-        }
-      }
-    }
-
-    if (useRM) {
-      double randomCostheta = gRandom->Uniform(-1., 1.);
-      double randomPhi = gRandom->Uniform(0., o2::constants::math::TwoPI);
-      ROOT::Math::XYZVectorF zaxis_RM(randomCostheta, std::sqrt(1 - randomCostheta * randomCostheta) * std::cos(randomPhi), std::sqrt(1 - randomCostheta * randomCostheta) * std::sin(randomPhi));
-      if (fgUsedVars[kCosThetaRM]) {
-        values[kCosThetaRM] = zaxis_RM.Dot(v_CM);
-      }
-    }
-  }
-
-  if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
-
-    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAabsZ] || fgUsedVars[kQuadDCAsigZ] || fgUsedVars[kQuadDCAsigXYZ] || fgUsedVars[kSignQuadDCAsigXY]) {
-      // Quantities based on the barrel tables
-      double dca1XY = t1.dcaXY();
-      double dca2XY = t2.dcaXY();
-      double dca1Z = t1.dcaZ();
-      double dca2Z = t2.dcaZ();
-      double dca1sigXY = dca1XY / std::sqrt(t1.cYY());
-      double dca2sigXY = dca2XY / std::sqrt(t2.cYY());
-      double dca1sigZ = dca1Z / std::sqrt(t1.cZZ());
-      double dca2sigZ = dca2Z / std::sqrt(t2.cZZ());
-
-      values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2);
-      values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
-      values[kQuadDCAabsZ] = std::sqrt((dca1Z * dca1Z + dca2Z * dca2Z) / 2);
-      values[kQuadDCAsigZ] = std::sqrt((dca1sigZ * dca1sigZ + dca2sigZ * dca2sigZ) / 2);
-      values[kSignQuadDCAsigXY] = t1.sign() * t2.sign() * std::copysign(1., dca1sigXY) * std::copysign(1., dca2sigXY) * std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
-
-      double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
-      double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
-      if ((det1 < 0) || (det2 < 0)) {
-        values[kQuadDCAsigXYZ] = o2::dqconstants::InvalidValueF;
-      } else {
-        double chi2t1 = (dca1XY * dca1XY * t1.cZZ() + dca1Z * dca1Z * t1.cYY() - 2. * dca1XY * dca1Z * t1.cZY()) / det1;
-        double chi2t2 = (dca2XY * dca2XY * t2.cZZ() + dca2Z * dca2Z * t2.cYY() - 2. * dca2XY * dca2Z * t2.cZY()) / det2;
-
-        double dca1sigXYZ = std::sqrt(std::abs(chi2t1) / 2.);
-        double dca2sigXYZ = std::sqrt(std::abs(chi2t2) / 2.);
-
-        values[kQuadDCAsigXYZ] = std::sqrt((dca1sigXYZ * dca1sigXYZ + dca2sigXYZ * dca2sigXYZ) / 2);
-      }
-    }
-  }
-  if (fgUsedVars[kPairPhiv]) {
-    values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
-  }
+  ROOT::Math::XYZVectorF zaxis_HE{(v12.Vect()).Unit()};
+  values[kCosThetaHE] = zaxis_HE.Dot(v_CM);
 
   if constexpr (pairType == kDecayToKPi) {
     if constexpr ((fillMap & TrackDCA) > 0 || (fillMap & ReducedTrackBarrel) > 0) {
       values[kDCAxy1] = t1.dcaXY();
       values[kDCAxy2] = t2.dcaXY();
-      values[kD0ImpParProduct] = t1.dcaXY() * t2.dcaXY();
+      values[kDCATrackProd] = (t1.dcaXY() * 1e4) * (t2.dcaXY() * 1e4); // convert to mu m^2
     }
   }
 }
@@ -8149,7 +8066,7 @@ void VarManager::FillPairVertexingAlice3(C const& collision, T const& t1, T cons
         const double dy = pos1.Y() - pos2.Y();
         const double dz = pos1.Z() - pos2.Z();
 
-        values[kD0DcaDaughters] = std::sqrt(dx * dx + dy * dy + dz * dz);
+        values[kDCADaughters] = std::sqrt(dx * dx + dy * dy + dz * dz);
       }
 
       double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
@@ -8182,6 +8099,18 @@ void VarManager::FillPairVertexingAlice3(C const& collision, T const& t1, T cons
                                    (secondaryVertex[1] - collision.posY()) * v12.Py() +
                                    (secondaryVertex[2] - collision.posZ()) * v12.Pz()) /
                                   (v12.P() * values[VarManager::kVertexingLxyz]);
+
+      values[kVertexingImpactParameter] = values[kVertexingLxyz] * std::sqrt(std::max(0.0f, 1.0f - values[kCosPointingAngle] * values[kCosPointingAngle]));
+
+      double t1Component = 1.0 / (1.0 + std::pow(m1 / t1.p(), 2));
+      double t2Component = 1.0 / (1.0 + std::pow(m2 / t2.p(), 2));
+
+      double multipleScatteringContribution = 2 * std::pow(o2::dqconstants::defaults::multipleScatteringResLimit, 2);
+      double trackResContribution = 2 * std::pow(o2::dqconstants::defaults::trackResolutionResLimit / v12.Pt(), 2) * (1.0 / (t1Component + t2Component));
+
+      values[kDCAResolution] = 1.e-4 * std::sqrt(multipleScatteringContribution + trackResContribution);
+      values[kDCASignificance] = values[kVertexingImpactParameter] / values[kDCAResolution];
+
       // Decay length defined as in Run 2
       values[kVertexingLzProjected] = ((secondaryVertex[2] - collision.posZ()) * v12.Pz()) / std::sqrt(v12.Pz() * v12.Pz());
       values[kVertexingLxyProjected] = ((secondaryVertex[0] - collision.posX()) * v12.Px()) + ((secondaryVertex[1] - collision.posY()) * v12.Py());
@@ -8341,6 +8270,19 @@ void VarManager::FillTripletVertexingALICE3(C const& collision, T const& t1, T c
                                  (secondaryVertex[1] - collision.posY()) * v123.Py() +
                                  (secondaryVertex[2] - collision.posZ()) * v123.Pz()) /
                                 (v123.P() * values[VarManager::kVertexingLxyz]);
+
+    values[kVertexingImpactParameter] = values[kVertexingLxyz] * std::sqrt(std::max(0.0f, 1.0f - values[kCosPointingAngle] * values[kCosPointingAngle]));
+
+    double t1Component = 1.0 / (1.0 + std::pow(m1 / t1.p(), 2));
+    double t2Component = 1.0 / (1.0 + std::pow(m2 / t2.p(), 2));
+    double t3Component = 1.0 / (1.0 + std::pow(m3 / t3.p(), 2));
+
+    double multipleScatteringContribution = 2 * std::pow(o2::dqconstants::defaults::multipleScatteringResLimit, 2);
+    double trackResContribution = 2 * std::pow(o2::dqconstants::defaults::trackResolutionResLimit / v123.Pt(), 2) * (1.0 / (t1Component + t2Component + t3Component));
+
+    values[kDCAResolution] = 1.e-4 * std::sqrt(multipleScatteringContribution + trackResContribution);
+    values[kDCASignificance] = values[kVertexingImpactParameter] / values[kDCAResolution];
+
     // run 2 definitions: Decay length projected onto the momentum vector of the candidate
     values[kVertexingLzProjected] = (secondaryVertex[2] - collision.posZ()) * v123.Pz();
     values[kVertexingLzProjected] = values[kVertexingLzProjected] / std::sqrt(v123.Pz() * v123.Pz());
