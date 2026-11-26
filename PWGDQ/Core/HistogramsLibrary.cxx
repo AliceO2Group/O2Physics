@@ -1338,6 +1338,20 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     std::array<double, 5> xmax = {4., 3., 100, 1., 6.28};
     hm->AddHistogram(histClass, "MC_Dielectron_Mass_Pt_Cent_cosThetaCS", "", 5, varspTCS.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
   }
+  if (groupStr.CompareTo("polarization-dielectron-pbpb-midy-rm-gen") == 0) {
+    std::array<int, 4> varspTRM = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCEventCentrFT0C, VarManager::kMCCosThetaRM};
+    std::array<int, 4> bins = {50, 30, 10, 10};
+    std::array<double, 4> xmin = {2., 0., 0, -1.};
+    std::array<double, 4> xmax = {4., 3., 100, 1.};
+    hm->AddHistogram(histClass, "MC_Dielectron_Mass_Pt_Cent_cosThetaRM", "", 4, varspTRM.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
+  }
+  if (groupStr.CompareTo("polarization-dielectron-pbpb-midy-he-thetaphi-gen") == 0) {
+    std::array<int, 4> varspTHEphi = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCEventCentrFT0C, VarManager::kMCPhiTildeHE};
+    std::array<int, 4> bins = {50, 30, 10, 10};
+    std::array<double, 4> xmin = {2., 0., 0, 0.0};
+    std::array<double, 4> xmax = {4., 3., 100, 6.28};
+    hm->AddHistogram(histClass, "MC_Dielectron_Mass_Pt_Cent_phiTildeHE", "", 4, varspTHEphi.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
+  }
   if (groupStr.CompareTo("pair") == 0) {
     if (subGroupStr.Contains("cepf")) {
       hm->AddHistogram(histClass, "Mass", "", false, 300, 0.0, 12.0, VarManager::kMass);
@@ -1479,6 +1493,22 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<double, 5> xminpT = {2.0, 0., 0, -1., 0.0};
         std::array<double, 5> xmaxpT = {4.5, 3., 100, 1., 6.28};
         hm->AddHistogram(histClass, "Dielectron_Mass_Pt_Cent_cosThetaCS", "", 5, varsCSpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
+      }
+
+      if (subGroupStr.Contains("dielectron-polarization-rm-pbpb")) {
+        std::array<int, 4> varsRMpbpb = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaRM};
+        std::array<int, 4> binspT = {100, 30, 10, 10};
+        std::array<double, 4> xminpT = {2., 0., 0, -1.};
+        std::array<double, 4> xmaxpT = {4.5, 3., 100, 1.};
+        hm->AddHistogram(histClass, "Dielectron_Mass_Pt_Cent_cosThetaRM", "", 4, varsRMpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
+      }
+
+      if (subGroupStr.Contains("dielectron-polarization-he-thetaphi-pbpb")) {
+        std::array<int, 4> varsHEphipbpb = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kPhiTildeHE};
+        std::array<int, 4> binspT = {100, 30, 10, 10};
+        std::array<double, 4> xminpT = {2., 0., 0, 0.0};
+        std::array<double, 4> xmaxpT = {4.5, 3., 100, 6.28};
+        hm->AddHistogram(histClass, "Dielectron_Mass_Pt_Cent_phiTildeHE", "", 4, varsHEphipbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("polarization")) {
         if (subGroupStr.Contains("helicity")) {
