@@ -13,29 +13,28 @@
 /// \author Diana Rosales Herrera (diana.rosales.herrera@cern.ch)
 /// \author Chiara De Martin (chiara.de.martin@cern.ch)
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/runDataProcessing.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/OutputObjHeader.h>
-#include <Framework/Configurable.h>
-#include <Framework/AnalysisHelpers.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
 #include <TDatabasePDG.h>
 
-#include <Common/DataModel/TrackSelectionTables.h>
-#include <Common/DataModel/EventSelection.h>
-#include <Common/DataModel/Centrality.h>
-#include <Common/DataModel/Multiplicity.h>
-
-#include "Common/CCDB/EventSelectionParams.h"
-
+#include <cmath>
 #include <string>
 #include <vector>
-#include <cmath>
-
 
 using namespace o2;
 using namespace o2::framework;
@@ -46,8 +45,7 @@ using TrackCandidates = soa::Join<aod::Tracks, aod::TracksDCA, aod::TracksExtra>
 using McCollisionCandidates = soa::Join<CollisionCandidates, aod::McCollisionLabels>;
 using McTrackCandidates = soa::Join<TrackCandidates, aod::McTrackLabels>;
 
-struct heatCapacity
-{
+struct heatCapacity {
   Service<o2::framework::O2DatabasePDG> pdg;
   Preslice<McTrackCandidates> perCollision = aod::track::collisionId;
 
@@ -65,7 +63,7 @@ struct heatCapacity
     Configurable<float> maxCent{"maxCent", 100.0f, "max centrality percentil"};
     Configurable<float> minCent{"minCent", 0.0f, "min centrality percentil"};
   } eventSelections;
-  
+
   struct TrackSelections : ConfigurableGroup {
     std::string prefix = "TrackSelections-Configurations"; // JSON group name
     Configurable<int> minTPCrows{"minTPCrows", 70, "minimum TPC crossed rows"};
@@ -73,7 +71,7 @@ struct heatCapacity
     Configurable<bool> requireITSRefit{"RequireITSRefit", true, "Require ITS Refit"};
     Configurable<bool> requireITSibAny{"requireITSibAny", true, "Require ITS inner barrel (ib) any hits"};
 
-    //Configurable<float> dcaZpos{"dcaZpos", 0.2, "DCA Pos To PV (cm)"};
+    // Configurable<float> dcaZpos{"dcaZpos", 0.2, "DCA Pos To PV (cm)"};
     Configurable<float> dcaZconst{"dcaZconst", 0.0028f, "Constant term for DCAz cut (cm)"};
     Configurable<float> dcaZpt{"dcaZpt", 0.0175f, "pT-dependent coefficient for DCAz cut (cm)"};
     Configurable<float> dcaZexp{"dcaZexp", -0.88f, "Exponent for DCAz cut"};
@@ -86,27 +84,24 @@ struct heatCapacity
     Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "Max Chi2 per cluster ITS "};
     Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
   } trackSelections;
-  
+
   struct AxisConfigurations : ConfigurableGroup {
     std::string prefix = "axis-Configurations"; // JSON group name
     ConfigurableAxis axispTVar{"axispTVar", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p}_{T} (GeV/#it{c})"};
     ConfigurableAxis axisEta{"axisEta", {100, -2.0f, 2.0f}, "Eta"};
     ConfigurableAxis axisPhi{"axisPhi", {100, 0, 2 * M_PI}, "  Phi"};
     ConfigurableAxis axispT{"axispT", {100, 0.15f, 10}, "  pT"};
-    ConfigurableAxis axisdcaZ{"axisdcaZ",{2000, -3.0f, 3.0f}, "dcaZ"};
-    ConfigurableAxis axisdcaXY{"axisdcaXY",{2000, -1.0f, 1.0f}, "dcaXY"};
-    ConfigurableAxis axisEvSelection{"axisEvSelection",{10, 0.5f, 10.5f}, ""};
-    ConfigurableAxis axisTrackSelection{"axisTrackSelection",{8, 0.5f, 8.5f}, ""};
-    ConfigurableAxis axisCent{"axisCent",{100, 0, 100}, ""};
-    ConfigurableAxis axisMult{"axisMult",{500, 0.0f, 5000.0f}, "Multiplicity"};
-    ConfigurableAxis axisAmplitude{"axisAmplitude",{1400, 0.0f, 70000.0f},"FT0C Amplitude"};
+    ConfigurableAxis axisdcaZ{"axisdcaZ", {2000, -3.0f, 3.0f}, "dcaZ"};
+    ConfigurableAxis axisdcaXY{"axisdcaXY", {2000, -1.0f, 1.0f}, "dcaXY"};
+    ConfigurableAxis axisEvSelection{"axisEvSelection", {10, 0.5f, 10.5f}, ""};
+    ConfigurableAxis axisTrackSelection{"axisTrackSelection", {8, 0.5f, 8.5f}, ""};
+    ConfigurableAxis axisCent{"axisCent", {100, 0, 100}, ""};
+    ConfigurableAxis axisMult{"axisMult", {500, 0.0f, 5000.0f}, "Multiplicity"};
+    ConfigurableAxis axisAmplitude{"axisAmplitude", {1400, 0.0f, 70000.0f}, "FT0C Amplitude"};
     ConfigurableAxis axisVz{"axisVz", {200, -10.0f, 10.0f}, "V_{z} (cm)"};
   } axisConfigurations;
 
-
-
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
 
   void init(InitContext const&)
   {
@@ -118,15 +113,15 @@ struct heatCapacity
 
     histos.add("hEventPVcontributorsVsCentralityBefCuts", "hEventPVcontributorsVsCentralityBefCuts", kTH2F, {{100, 0, 100}, {5000, 0, 5000}});
     histos.add("hEventPVcontributorsVsCentrality", "hEventPVcontributorsVsCentrality", kTH2F, {{100, 0, 100}, {5000, 0, 5000}});
-    
+
     histos.add("hEventGlobalTracksVsCentralityBefCuts", "hEventGlobalTracksVsCentralityBefCuts", kTH2F, {{100, 0, 100}, {2500, 0, 2500}});
     histos.add("hEventGlobalTracksVsCentrality", "hEventGlobalTracksVsCentrality", kTH2F, {{100, 0, 100}, {2500, 0, 2500}});
-  
+
     histos.add("hNTracksVSetaBefCuts", "hNTracksVSetaBefCuts", kTH1D, {axisConfigurations.axisEta});
     histos.add("hNTracksVSeta", "hNTracksVSeta", kTH1D, {axisConfigurations.axisEta});
 
-    histos.add("hNTracksVSphiBefCuts", "hNTracksVSphiBefCuts", kTH1D, {axisConfigurations.axisPhi}); 
-    histos.add("hNTracksVSphi", "hNTracksVSphi", kTH1D, {axisConfigurations.axisPhi}); 
+    histos.add("hNTracksVSphiBefCuts", "hNTracksVSphiBefCuts", kTH1D, {axisConfigurations.axisPhi});
+    histos.add("hNTracksVSphi", "hNTracksVSphi", kTH1D, {axisConfigurations.axisPhi});
 
     histos.add("hdcaZVSptBefCuts", "hdcaZVSptBefCuts", kTH2F, {axisConfigurations.axisdcaZ, axisConfigurations.axispT});
     histos.add("hdcaZVSpt", "hdcaZVSpt", kTH2F, {axisConfigurations.axisdcaZ, axisConfigurations.axispT});
@@ -134,25 +129,25 @@ struct heatCapacity
     histos.add("hdcaXYVSptBefCuts", "hdcaXYVSptBefCut", kTH2F, {axisConfigurations.axisdcaXY, axisConfigurations.axispT});
     histos.add("hdcaXYVSpt", "hdcaXYVSpt", kTH2F, {axisConfigurations.axisdcaXY, axisConfigurations.axispT});
 
-    //processReco Using sumAmpC
-    histos.add("hFT0CAmplitude", "hFT0CAmplitude", kTH1D, {axisConfigurations.axisAmplitude}); 
+    // processReco Using sumAmpC
+    histos.add("hFT0CAmplitude", "hFT0CAmplitude", kTH1D, {axisConfigurations.axisAmplitude});
     histos.add("hFT0CAmplitudeVSMult", "hFT0CAmplitudeVSMult", kTH2F, {axisConfigurations.axisAmplitude, axisConfigurations.axisMult});
     histos.add("hFT0CAmplitudeVSpT", "hFT0CAmplitudeVSpT", kTH2F, {axisConfigurations.axisAmplitude, axisConfigurations.axispTVar});
     histos.add("hFT0CAmplitudeVsVz", "hFT0CAmplitudeVsVz", kTH2F, {axisConfigurations.axisAmplitude, axisConfigurations.axisVz});
-    //processReco Using centFT0C
-    histos.add("hCentFT0", "hCentFT0", kTH1D, {axisConfigurations.axisCent}); 
+    // processReco Using centFT0C
+    histos.add("hCentFT0", "hCentFT0", kTH1D, {axisConfigurations.axisCent});
     histos.add("hCentFT0VSMult", "hCentFT0VSMult", kTH2F, {axisConfigurations.axisCent, axisConfigurations.axisMult});
     histos.add("hCentFT0VSpT", "hCentFT0VSpT", kTH2F, {axisConfigurations.axisCent, axisConfigurations.axispTVar});
     histos.add("hCentFT0VsVz", "hCentFT0VsVz", kTH2F, {axisConfigurations.axisCent, axisConfigurations.axisVz});
     histos.add("hCentFT0MultpT", "hCentFT0MultpT;Centrality; Multiplicity; pT", kTH3F, {axisConfigurations.axisCent, axisConfigurations.axisMult, axisConfigurations.axispTVar});
-    //Multiplicity per tracks
+    // Multiplicity per tracks
     histos.add("hMultGlobalTracks", "Global tracks multiplicity;multNTracksGlobal;Events", kTH1D, {axisConfigurations.axisMult});
     histos.add("hMultPVeta1", "PV contributors eta< 1; multNTracksPVeta1;Events", kTH1D, {axisConfigurations.axisMult});
     histos.add("hpT", "pT histogram", kTH1D, {axisConfigurations.axispTVar});
     histos.add("hMultVSpT", "MultVSpT; Mult; pT)", kTH2F, {axisConfigurations.axisMult, axisConfigurations.axispTVar});
     histos.add("hMult", "hMult; Mult-selected tracks; Events", kTH1D, {axisConfigurations.axisMult});
-    
-    //processMC histograms
+
+    // processMC histograms
     if (doprocessMC) {
       histos.add("MC/hMcCentFT0", "hMcCentFT0; Centrality FT0; Entries", kTH1D, {axisConfigurations.axisCent});
       histos.add("MC/hMcCentFT0VsVz", "hMcCentFT0VsVz", kTH2F, {axisConfigurations.axisVz, axisConfigurations.axisCent});
@@ -170,15 +165,15 @@ struct heatCapacity
       histos.add("MC/hMcCentFT0Mult", "MC Selected events; Centrality; Mult", kTH2D, {axisConfigurations.axisCent, axisConfigurations.axisMult});
       histos.add("MC/hMcCentFT0MultpTRecoPrim", "Primary reco tracks; Centrality; Mul; pT_MC", kTH3F, {axisConfigurations.axisCent, axisConfigurations.axisMult, axisConfigurations.axispTVar});
       histos.add("MC/hMcCentFT0MultpTGenPrim", "Primary gen particles; Centrality; Mult; pT_MC", kTH3F, {axisConfigurations.axisCent, axisConfigurations.axisMult, axisConfigurations.axispTVar});
-      //MCmultiplicity 
+      // MCmultiplicity
       histos.add("MC/hMcMult", "MC delected mult events", kTH1D, {axisConfigurations.axisMult});
       histos.add("MC/hMcMultVspTRecoPrim", "Primary reco tracks; Mult; pT_MC", kTH2F, {axisConfigurations.axisMult, axisConfigurations.axispTVar});
-      histos.add("MC/hMcMultVspTGenPrim","Primary gen charged particles; Mult; pT_MC", kTH2F, {axisConfigurations.axisMult, axisConfigurations.axispTVar});
+      histos.add("MC/hMcMultVspTGenPrim", "Primary gen charged particles; Mult; pT_MC", kTH2F, {axisConfigurations.axisMult, axisConfigurations.axispTVar});
       histos.add("MC/hMcMultGen", "MC mult generated ; N_gen; Events", kTH1D, {axisConfigurations.axisMult});
 
-      histos.add("MC/hNRecoCollisionsPerMc", "Reco collisions per MC event; reco collisions; MC events", kTH1D, {{10, -0.5, 9.5}});      
+      histos.add("MC/hNRecoCollisionsPerMc", "Reco collisions per MC event; reco collisions; MC events", kTH1D, {{10, -0.5, 9.5}});
     }
-    
+
     auto hEvSelCount = histos.get<TH1>(HIST("hEventSelection"));
     hEvSelCount->GetXaxis()->SetBinLabel(1, "All events");
     hEvSelCount->GetXaxis()->SetBinLabel(2, "sel8");
@@ -186,7 +181,7 @@ struct heatCapacity
     hEvSelCount->GetXaxis()->SetBinLabel(4, "Vertex Z position");
     hEvSelCount->GetXaxis()->SetBinLabel(5, "kIsGoodZvtxFT0vsPV");
     hEvSelCount->GetXaxis()->SetBinLabel(6, "kNoSameBunchPileup");
-    hEvSelCount->GetXaxis()->SetBinLabel(7, "Below min occup."); 
+    hEvSelCount->GetXaxis()->SetBinLabel(7, "Below min occup.");
     hEvSelCount->GetXaxis()->SetBinLabel(8, "Above max occup.");
     hEvSelCount->GetXaxis()->SetBinLabel(9, "Centrality");
     hEvSelCount->GetXaxis()->SetBinLabel(10, "Selected events");
@@ -200,7 +195,6 @@ struct heatCapacity
     hTrackSelCount->GetXaxis()->SetBinLabel(6, "dcaXY");
     hTrackSelCount->GetXaxis()->SetBinLabel(7, "dcaZ");
     hTrackSelCount->GetXaxis()->SetBinLabel(8, "Selected tracks");
-
   }
 
   template <typename TCollision>
@@ -224,7 +218,7 @@ struct heatCapacity
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 3 );
+      histos.fill(HIST("hEventSelection"), 3);
     }
 
     if (std::abs(collision.posZ()) > eventSelections.maxZVtxPosition) {
@@ -238,7 +232,7 @@ struct heatCapacity
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 5 );
+      histos.fill(HIST("hEventSelection"), 5);
     }
 
     if (eventSelections.rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
@@ -262,26 +256,24 @@ struct heatCapacity
     if (fillHists) {
       histos.fill(HIST("hEventSelection"), 8);
     }
-  
+
     if (collision.centFT0C() < eventSelections.minCent || collision.centFT0C() > eventSelections.maxCent) {
       return false;
     }
     if (fillHists) {
       histos.fill(HIST("hEventSelection"), 9);
     }
-      
 
     if (fillHists) {
-      //Arfer Event Selection
+      // Arfer Event Selection
       histos.fill(HIST("hEventSelection"), 10);
       histos.fill(HIST("hEventNchCorrelation"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
       histos.fill(HIST("hEventPVcontributorsVsCentrality"), collision.centFT0C(), collision.multNTracksPVeta1());
       histos.fill(HIST("hEventGlobalTracksVsCentrality"), collision.centFT0C(), collision.multNTracksGlobal());
     }
-  
+
     return true;
   }
-
 
   template <typename CheckTrack>
   bool IsTrackSelected(CheckTrack const& track, bool fillHists)
@@ -290,10 +282,10 @@ struct heatCapacity
       histos.fill(HIST("hTrackSelection"), 1);
     }
 
-    //TPC cuts
+    // TPC cuts
     if (trackSelections.requireTPCRefit && !track.hasTPC()) {
       return false;
-    } 
+    }
     if (track.hasTPC() && (track.tpcNClsCrossedRows() < trackSelections.minTPCrows || track.tpcChi2NCl() > trackSelections.maxChi2TPC || track.tpcCrossedRowsOverFindableCls() < trackSelections.minNCrossedRowsOverFindableClustersTPC)) {
       return false;
     }
@@ -301,7 +293,7 @@ struct heatCapacity
       histos.fill(HIST("hTrackSelection"), 2);
     }
 
-    //ITS cuts
+    // ITS cuts
     if (trackSelections.requireITSRefit && !track.hasITS()) {
       return false;
     }
@@ -316,7 +308,7 @@ struct heatCapacity
     }
 
     // eta cut
-    if(fabs(track.eta()) > trackSelections.maxeta){
+    if (fabs(track.eta()) > trackSelections.maxeta) {
       return false;
     }
     if (fillHists) {
@@ -324,7 +316,7 @@ struct heatCapacity
     }
 
     // pT cut
-    if(track.pt() < trackSelections.minpT){
+    if (track.pt() < trackSelections.minpT) {
       return false;
     }
     if (fillHists) {
@@ -333,23 +325,23 @@ struct heatCapacity
 
     // dcaXY cut
     float maxDCAxy = trackSelections.dcaXYconst + trackSelections.dcaXYpt * std::pow(track.pt(), trackSelections.dcaXYexp);
-    if(fabs(track.dcaXY()) > maxDCAxy){
+    if (fabs(track.dcaXY()) > maxDCAxy) {
       return false;
     }
     if (fillHists) {
       histos.fill(HIST("hTrackSelection"), 6);
-      //dcaZ VS pt before max dcaZ=0.2 selection, but after dcaXY
+      // dcaZ VS pt before max dcaZ=0.2 selection, but after dcaXY
       histos.fill(HIST("hdcaZVSptBefCuts"), track.dcaZ(), track.pt());
     }
 
     // dcaZ cut
     float maxDCAz = trackSelections.dcaZconst + trackSelections.dcaZpt * std::pow(track.pt(), trackSelections.dcaZexp);
-    if(fabs(track.dcaZ()) > maxDCAz){
+    if (fabs(track.dcaZ()) > maxDCAz) {
       return false;
-    } 
+    }
     if (fillHists) {
       histos.fill(HIST("hTrackSelection"), 7);
-      //dcaZ VS pt after max dcaZ=0.2 selection 
+      // dcaZ VS pt after max dcaZ=0.2 selection
       histos.fill(HIST("hdcaZVSpt"), track.dcaZ(), track.pt());
       histos.fill(HIST("hTrackSelection"), 8);
     }
@@ -373,51 +365,50 @@ struct heatCapacity
     if (std::abs(pdgTrack->Charge()) < 3) {
       return false;
     }
-    if (std::abs(particle.eta()) >trackSelections.maxeta) {
+    if (std::abs(particle.eta()) > trackSelections.maxeta) {
       return false;
     }
-    if(particle.pt() < trackSelections.minpT){
+    if (particle.pt() < trackSelections.minpT) {
       return false;
     }
     return true;
   }
 
-  void processReco(CollisionCandidates::iterator const& collision, TrackCandidates const& tracks, aod::FT0s const& )
-  {  
+  void processReco(CollisionCandidates::iterator const& collision, TrackCandidates const& tracks, aod::FT0s const&)
+  {
     if (!isEventAccepted(collision, true)) {
       return;
     }
 
-    //Using .centFT0C
+    // Using .centFT0C
     float centrality = collision.centFT0C();
     int mult = collision.multNTracksPVeta1();
 
-    //1/Nev
+    // 1/Nev
     histos.fill(HIST("hCentFT0"), centrality);
     histos.fill(HIST("hCentFT0VsVz"), centrality, collision.posZ());
     histos.fill(HIST("hCentFT0VSMult"), centrality, mult);
     histos.fill(HIST("hMultGlobalTracks"), collision.multNTracksGlobal());
     histos.fill(HIST("hMultPVeta1"), mult);
 
-    
-    //Using has_foundFT0() and .sumAmpC
+    // Using has_foundFT0() and .sumAmpC
     if (!collision.has_foundFT0()) {
       return;
     }
     const auto& ft0 = collision.foundFT0();
     float ft0cAmp = ft0.sumAmpC();
-    histos.fill(HIST("hFT0CAmplitude"),ft0cAmp);
+    histos.fill(HIST("hFT0CAmplitude"), ft0cAmp);
     histos.fill(HIST("hFT0CAmplitudeVsVz"), ft0cAmp, collision.posZ());
     histos.fill(HIST("hFT0CAmplitudeVSMult"), ft0cAmp, mult);
-    
+
     int nSelectedTracks = 0;
-    //Looping over tracks before selection
-    for (int i = 0; i < tracks.size(); i++)  {
+    // Looping over tracks before selection
+    for (int i = 0; i < tracks.size(); i++) {
       auto track = tracks.iteratorAt(i);
       histos.fill(HIST("hNTracksVSetaBefCuts"), track.eta());
-      histos.fill(HIST("hNTracksVSphiBefCuts"), track.phi()); 
-      histos.fill(HIST("hdcaXYVSptBefCuts"), track.dcaXY(), track.pt()); 
-    
+      histos.fill(HIST("hNTracksVSphiBefCuts"), track.phi());
+      histos.fill(HIST("hdcaXYVSptBefCuts"), track.dcaXY(), track.pt());
+
       if (!IsTrackSelected(track, true)) {
         continue;
       }
@@ -430,11 +421,11 @@ struct heatCapacity
       histos.fill(HIST("hdcaXYVSpt"), track.dcaXY(), track.pt());
       histos.fill(HIST("hFT0CAmplitudeVSpT"), ft0cAmp, track.pt());
       histos.fill(HIST("hCentFT0VSpT"), centrality, track.pt());
-    } 
-    //Mult dist per event
+    }
+    // Mult dist per event
     histos.fill(HIST("hMult"), nSelectedTracks);
   }
-  
+
   PROCESS_SWITCH(heatCapacity, processReco, "Process for Reco data", false);
 
   void processMC(aod::McCollisions::iterator const&, soa::SmallGroups<McCollisionCandidates> const& collisions, McTrackCandidates const& tracks, aod::McParticles const& mcParticles)
@@ -443,10 +434,10 @@ struct heatCapacity
     float bestMult = -1.0f;
     float bestCent = -1.0f;
     float bestVz = 0.0f;
-    
+
     histos.fill(HIST("MC/hNRecoCollisionsPerMc"), collisions.size());
     for (const auto& collision : collisions) {
-      if (!isEventAccepted(collision,false)) {
+      if (!isEventAccepted(collision, false)) {
         continue;
       }
       atLeastOne = true;
@@ -459,19 +450,17 @@ struct heatCapacity
         bestVz = collision.posZ();
       }
 
-
       auto tracksPerColl = tracks.sliceBy(perCollision, collision.globalIndex());
       for (const auto& track : tracksPerColl) {
         if (!IsTrackSelected(track, false)) {
           continue;
         }
-        //All reco tracks passing cuts
+        // All reco tracks passing cuts
         histos.fill(HIST("MC/hMcpTAll"), track.pt());
         histos.fill(HIST("MC/hMcCentFT0VspTAll"), centrality, track.pt());
         histos.fill(HIST("MC/hMcCentFT0_pT_eta_All"), centrality, track.pt(), track.eta());
-        
-        
-        //Numerator
+
+        // Numerator
         if (track.has_mcParticle()) {
           const auto& mcPart = track.mcParticle();
           if (mcPart.isPhysicalPrimary() && mcPart.producedByGenerator()) {
@@ -502,7 +491,7 @@ struct heatCapacity
       nGenParticles++;
       histos.fill(HIST("MC/hMcpTGenPrim"), particle.pt());
       histos.fill(HIST("MC/hMcCentFT0VspTGenPrim"), bestCent, particle.pt());
-      histos.fill(HIST("MC/hMcCentFT0_pT_eta_GenPrim"), bestCent, particle.pt(), particle.eta()); 
+      histos.fill(HIST("MC/hMcCentFT0_pT_eta_GenPrim"), bestCent, particle.pt(), particle.eta());
       histos.fill(HIST("MC/hMcMultVspTGenPrim"), bestMult, particle.pt());
       histos.fill(HIST("MC/hMcCentFT0MultpTGenPrim"), bestCent, bestMult, particle.pt());
     }
@@ -514,6 +503,5 @@ struct heatCapacity
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<heatCapacity>(cfgc)
-  };
+    adaptAnalysisTask<heatCapacity>(cfgc)};
 }
