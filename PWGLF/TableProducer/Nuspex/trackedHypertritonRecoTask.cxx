@@ -330,9 +330,10 @@ struct TrackedHypertritonRecoTask {
     zorroEvents->GetYaxis()->SetBinLabel(2, "after sel8");
 
     if (doprocessMC) {
-      auto hMcEventCounter = registry.add<TH1>("hMcEventCounter", "hMcEventCounter; Selection; Counts", HistType::kTH1D, {{2, 0.0f, 2.0f}});
+      auto hMcEventCounter = registry.add<TH1>("hMcEventCounter", "hMcEventCounter; Selection; Counts", HistType::kTH1D, {{3, 0.0f, 3.0f}});
       hMcEventCounter->GetXaxis()->SetBinLabel(1, "all");
       hMcEventCounter->GetXaxis()->SetBinLabel(2, "reconstructed");
+      hMcEventCounter->GetXaxis()->SetBinLabel(3, "selected");
       hMcEventCounter->LabelsOption("v");
     }
 
@@ -1015,15 +1016,19 @@ struct TrackedHypertritonRecoTask {
                  aod::BCsWithTimestamps const&,
                  aod::McParticles const& mcParticles)
   {
+    selectCollisions(collisions, false);
+
     // MC collision counting for event loss and MC closure
     registry.fill(HIST("hMcEventCounter"), 0.5, mcCollisions.size());
     for (const auto& collision : collisions) {
       if (collision.has_mcCollision()) {
         registry.fill(HIST("hMcEventCounter"), 1.5);
+        if (goodCollision[collision.globalIndex()]) {
+          registry.fill(HIST("hMcEventCounter"), 2.5);
+        }
       }
     }
 
-    selectCollisions(collisions, false);
     prepareMCEventInformation(collisions, mcCollisions);
     std::vector<bool> reconstructedTwoBody(mcParticles.size(), false);
     std::vector<bool> reconstructedThreeBody(mcParticles.size(), false);
