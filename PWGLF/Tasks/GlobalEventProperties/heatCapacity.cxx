@@ -49,7 +49,6 @@ using McTrackCandidates = soa::Join<TrackCandidates, aod::McTrackLabels>;
 struct heatCapacity
 {
   Service<o2::framework::O2DatabasePDG> pdg;
-  //Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   Preslice<McTrackCandidates> perCollision = aod::track::collisionId;
 
   struct EventSelections : ConfigurableGroup {
@@ -138,33 +137,46 @@ struct heatCapacity
     //processReco Using sumAmpC
     histos.add("hFT0CAmplitude", "hFT0CAmplitude", kTH1D, {axisConfigurations.axisAmplitude}); 
     histos.add("hFT0CAmplitudeVSMult", "hFT0CAmplitudeVSMult", kTH2F, {axisConfigurations.axisAmplitude, axisConfigurations.axisMult});
-    histos.add("hFT0CAmplitudeVSpT", "hFT0CAmplitudeVSpT", kTH2F, {axisConfigurations.axisAmplitude, axisConfigurations.axispT});
+    histos.add("hFT0CAmplitudeVSpT", "hFT0CAmplitudeVSpT", kTH2F, {axisConfigurations.axisAmplitude, axisConfigurations.axispTVar});
     histos.add("hFT0CAmplitudeVsVz", "hFT0CAmplitudeVsVz", kTH2F, {axisConfigurations.axisAmplitude, axisConfigurations.axisVz});
     //processReco Using centFT0C
     histos.add("hCentFT0", "hCentFT0", kTH1D, {axisConfigurations.axisCent}); 
     histos.add("hCentFT0VSMult", "hCentFT0VSMult", kTH2F, {axisConfigurations.axisCent, axisConfigurations.axisMult});
-    histos.add("hCentFT0VSpT", "hCentFT0VSpT", kTH2F, {axisConfigurations.axisCent, axisConfigurations.axispT});
+    histos.add("hCentFT0VSpT", "hCentFT0VSpT", kTH2F, {axisConfigurations.axisCent, axisConfigurations.axispTVar});
     histos.add("hCentFT0VsVz", "hCentFT0VsVz", kTH2F, {axisConfigurations.axisCent, axisConfigurations.axisVz});
-
+    histos.add("hCentFT0MultpT", "hCentFT0MultpT;Centrality; Multiplicity; pT", kTH3F, {axisConfigurations.axisCent, axisConfigurations.axisMult, axisConfigurations.axispTVar});
     //Multiplicity per tracks
     histos.add("hMultGlobalTracks", "Global tracks multiplicity;multNTracksGlobal;Events", kTH1D, {axisConfigurations.axisMult});
-    histos.add("hMultPVeta1", "PV contributors (|#eta| < 1);multNTracksPVeta1;Events", kTH1D, {axisConfigurations.axisMult});
+    histos.add("hMultPVeta1", "PV contributors eta< 1; multNTracksPVeta1;Events", kTH1D, {axisConfigurations.axisMult});
     histos.add("hpT", "pT histogram", kTH1D, {axisConfigurations.axispTVar});
+    histos.add("hMultVSpT", "MultVSpT; Mult; pT)", kTH2F, {axisConfigurations.axisMult, axisConfigurations.axispTVar});
+    histos.add("hMult", "hMult; Mult-selected tracks; Events", kTH1D, {axisConfigurations.axisMult});
     
     //processMC histograms
     if (doprocessMC) {
-      histos.add("MC/hMcCentFT0", "hMcCentFT0", kTH1D, {axisConfigurations.axisCent});
+      histos.add("MC/hMcCentFT0", "hMcCentFT0; Centrality FT0; Entries", kTH1D, {axisConfigurations.axisCent});
       histos.add("MC/hMcCentFT0VsVz", "hMcCentFT0VsVz", kTH2F, {axisConfigurations.axisVz, axisConfigurations.axisCent});
-      histos.add("MC/hMcCentFT0VspTAll", "All selected reco tracks (Cent, pT_rec)", kTH2F, {axisConfigurations.axisCent, axisConfigurations.axispTVar});
-      histos.add("MC/hMcCentFT0VspTRecoPrim", "Primary reco tracks (Cent, pT_MC)", kTH2F, {axisConfigurations.axisCent, axisConfigurations.axispTVar});
-      histos.add("MC/hMcCentFT0VspTGenPrim", "Primary gen charged particles (Cent, pT_MC)", kTH2F, {axisConfigurations.axisCent, axisConfigurations.axispTVar});
-      histos.add("MC/hMcpTAll", "hMcpTAll", kTH1D, {axisConfigurations.axispTVar});
+      histos.add("MC/hMcCentFT0VspTAll", "All selected reco tracks passing cuts; Cent; pT_rec", kTH2F, {axisConfigurations.axisCent, axisConfigurations.axispTVar});
+      histos.add("MC/hMcCentFT0VspTRecoPrim", "Primary reco tracks;Cent; pT_MC", kTH2F, {axisConfigurations.axisCent, axisConfigurations.axispTVar});
+      histos.add("MC/hMcCentFT0VspTGenPrim", "Primary gen charged particles; Cent; pT_MC", kTH2F, {axisConfigurations.axisCent, axisConfigurations.axispTVar});
+      histos.add("MC/hMcpTAll", "hMcpTAll; pT from all selected tracks; Entries", kTH1D, {axisConfigurations.axispTVar});
       histos.add("MC/hMcpTRecoPrim", "hMcpTRecoPrim", kTH1D, {axisConfigurations.axispTVar});
       histos.add("MC/hMcpTGenPrim", "hMcpTGenPrim", kTH1D, {axisConfigurations.axispTVar});
       histos.add("MC/hMcdcaZVSpt", "hMcdcaZVSpt", kTH2F, {axisConfigurations.axisdcaZ, axisConfigurations.axispTVar});
-      histos.add("MC/hMcdcaZVSptBefCuts", "hMcdcaZVSptBefCuts", kTH2F, {axisConfigurations.axisdcaZ, axisConfigurations.axispT});
-      histos.add("MC/hMcCentFT0_pT_eta_RecoPrim", "Reco Primary (Cent, pT_MC, Eta_MC)", kTH3D, {axisConfigurations.axisCent, axisConfigurations.axispTVar, axisConfigurations.axisEta});
-      histos.add("MC/hMcCentFT0_pT_eta_GenPrim", "Gen Primary (Cent, pT_MC, Eta_MC)", kTH3D, {axisConfigurations.axisCent, axisConfigurations.axispTVar, axisConfigurations.axisEta});
+      histos.add("MC/hMcdcaZVSptBefCuts", "hMcdcaZVSptBefCuts", kTH2F, {axisConfigurations.axisdcaZ, axisConfigurations.axispTVar});
+      histos.add("MC/hMcCentFT0_pT_eta_RecoPrim", "Primary Reco; Cent; pT_MC; Eta_MC", kTH3D, {axisConfigurations.axisCent, axisConfigurations.axispTVar, axisConfigurations.axisEta});
+      histos.add("MC/hMcCentFT0_pT_eta_GenPrim", "Primary gen; Cent; pT_MC: Eta_MC", kTH3D, {axisConfigurations.axisCent, axisConfigurations.axispTVar, axisConfigurations.axisEta});
+      histos.add("MC/hMcCentFT0_pT_eta_All", "All tracks passing cuts; Cent; pT: Eta", kTH3D, {axisConfigurations.axisCent, axisConfigurations.axispTVar, axisConfigurations.axisEta});
+      histos.add("MC/hMcCentFT0Mult", "MC Selected events; Centrality; Mult", kTH2D, {axisConfigurations.axisCent, axisConfigurations.axisMult});
+      histos.add("MC/hMcCentFT0MultpTRecoPrim", "Primary reco tracks; Centrality; Mul; pT_MC", kTH3F, {axisConfigurations.axisCent, axisConfigurations.axisMult, axisConfigurations.axispTVar});
+      histos.add("MC/hMcCentFT0MultpTGenPrim", "Primary gen particles; Centrality; Mult; pT_MC", kTH3F, {axisConfigurations.axisCent, axisConfigurations.axisMult, axisConfigurations.axispTVar});
+      //MCmultiplicity 
+      histos.add("MC/hMcMult", "MC delected mult events", kTH1D, {axisConfigurations.axisMult});
+      histos.add("MC/hMcMultVspTRecoPrim", "Primary reco tracks; Mult; pT_MC", kTH2F, {axisConfigurations.axisMult, axisConfigurations.axispTVar});
+      histos.add("MC/hMcMultVspTGenPrim","Primary gen charged particles; Mult; pT_MC", kTH2F, {axisConfigurations.axisMult, axisConfigurations.axispTVar});
+      histos.add("MC/hMcMultGen", "MC mult generated ; N_gen; Events", kTH1D, {axisConfigurations.axisMult});
+
+      histos.add("MC/hNRecoCollisionsPerMc", "Reco collisions per MC event; reco collisions; MC events", kTH1D, {{10, -0.5, 9.5}});      
     }
     
     auto hEvSelCount = histos.get<TH1>(HIST("hEventSelection"));
@@ -379,10 +391,11 @@ struct heatCapacity
     //Using .centFT0C
     float centrality = collision.centFT0C();
     int mult = collision.multNTracksPVeta1();
+
+    //1/Nev
     histos.fill(HIST("hCentFT0"), centrality);
     histos.fill(HIST("hCentFT0VsVz"), centrality, collision.posZ());
     histos.fill(HIST("hCentFT0VSMult"), centrality, mult);
-
     histos.fill(HIST("hMultGlobalTracks"), collision.multNTracksGlobal());
     histos.fill(HIST("hMultPVeta1"), mult);
 
@@ -397,7 +410,7 @@ struct heatCapacity
     histos.fill(HIST("hFT0CAmplitudeVsVz"), ft0cAmp, collision.posZ());
     histos.fill(HIST("hFT0CAmplitudeVSMult"), ft0cAmp, mult);
     
-
+    int nSelectedTracks = 0;
     //Looping over tracks before selection
     for (int i = 0; i < tracks.size(); i++)  {
       auto track = tracks.iteratorAt(i);
@@ -408,66 +421,94 @@ struct heatCapacity
       if (!IsTrackSelected(track, true)) {
         continue;
       }
+      nSelectedTracks++;
+      histos.fill(HIST("hCentFT0MultpT"), centrality, mult, track.pt());
+      histos.fill(HIST("hMultVSpT"), mult, track.pt());
       histos.fill(HIST("hNTracksVSeta"), track.eta());
       histos.fill(HIST("hNTracksVSphi"), track.phi());
       histos.fill(HIST("hpT"), track.pt());
       histos.fill(HIST("hdcaXYVSpt"), track.dcaXY(), track.pt());
       histos.fill(HIST("hFT0CAmplitudeVSpT"), ft0cAmp, track.pt());
       histos.fill(HIST("hCentFT0VSpT"), centrality, track.pt());
-    }    
+    } 
+    //Mult dist per event
+    histos.fill(HIST("hMult"), nSelectedTracks);
   }
   
-  PROCESS_SWITCH(heatCapacity, processReco, "Process for Reco data", true);
+  PROCESS_SWITCH(heatCapacity, processReco, "Process for Reco data", false);
 
   void processMC(aod::McCollisions::iterator const&, soa::SmallGroups<McCollisionCandidates> const& collisions, McTrackCandidates const& tracks, aod::McParticles const& mcParticles)
   {
-    //hist counting gen events
-    //Do all reco collisions need to pass the selection?
+    bool atLeastOne = false;
+    float bestMult = -1.0f;
+    float bestCent = -1.0f;
+    float bestVz = 0.0f;
+    
+    histos.fill(HIST("MC/hNRecoCollisionsPerMc"), collisions.size());
     for (const auto& collision : collisions) {
-      //histogram
       if (!isEventAccepted(collision,false)) {
         continue;
       }
+      atLeastOne = true;
+
       float centrality = collision.centFT0C();
-      histos.fill(HIST("MC/hMcCentFT0VsVz"), collision.posZ(), centrality);
-      histos.fill(HIST("MC/hMcCentFT0"),centrality ); 
-      
-      
+      int mult = collision.multNTracksPVeta1();
+      if (mult > bestMult) {
+        bestMult = mult;
+        bestCent = centrality;
+        bestVz = collision.posZ();
+      }
+
 
       auto tracksPerColl = tracks.sliceBy(perCollision, collision.globalIndex());
       for (const auto& track : tracksPerColl) {
         if (!IsTrackSelected(track, false)) {
           continue;
         }
-        //Todas las trazas reconstruidas seleccionadas
+        //All reco tracks passing cuts
         histos.fill(HIST("MC/hMcpTAll"), track.pt());
         histos.fill(HIST("MC/hMcCentFT0VspTAll"), centrality, track.pt());
-        //Numerador de eficiencia
+        histos.fill(HIST("MC/hMcCentFT0_pT_eta_All"), centrality, track.pt(), track.eta());
+        
+        
+        //Numerator
         if (track.has_mcParticle()) {
           const auto& mcPart = track.mcParticle();
           if (mcPart.isPhysicalPrimary() && mcPart.producedByGenerator()) {
             histos.fill(HIST("MC/hMcpTRecoPrim"), mcPart.pt());
             histos.fill(HIST("MC/hMcCentFT0VspTRecoPrim"), centrality, mcPart.pt());
+            histos.fill(HIST("MC/hMcCentFT0MultpTRecoPrim"), centrality, mult, mcPart.pt());
             histos.fill(HIST("MC/hMcCentFT0_pT_eta_RecoPrim"), centrality, mcPart.pt(), mcPart.eta());
+            histos.fill(HIST("MC/hMcMultVspTRecoPrim"), mult, mcPart.pt());
           }
         }
       }
-    
-
-      // Denominador de eficiencia
-    
-      for (const auto& particle : mcParticles) {
-        if (!IsGenTrackSelected(particle)) {
-          continue;
-        }
-        histos.fill(HIST("MC/hMcpTGenPrim"), particle.pt());
-        histos.fill(HIST("MC/hMcCentFT0VspTGenPrim"), centrality, particle.pt());
-        histos.fill(HIST("MC/hMcCentFT0_pT_eta_GenPrim"), centrality, particle.pt(), particle.eta());
-      }
     }
-  }
-  PROCESS_SWITCH(heatCapacity, processMC, "Process for MC data", false);
 
+    if (!atLeastOne) {
+      return;
+    }
+    histos.fill(HIST("MC/hMcCentFT0VsVz"), bestVz, bestCent);
+    histos.fill(HIST("MC/hMcCentFT0"), bestCent);
+    histos.fill(HIST("MC/hMcMult"), bestMult);
+    histos.fill(HIST("MC/hMcCentFT0Mult"), bestCent, bestMult);
+
+    int nGenParticles = 0;
+    // Denominator
+    for (const auto& particle : mcParticles) {
+      if (!IsGenTrackSelected(particle)) {
+        continue;
+      }
+      nGenParticles++;
+      histos.fill(HIST("MC/hMcpTGenPrim"), particle.pt());
+      histos.fill(HIST("MC/hMcCentFT0VspTGenPrim"), bestCent, particle.pt());
+      histos.fill(HIST("MC/hMcCentFT0_pT_eta_GenPrim"), bestCent, particle.pt(), particle.eta()); 
+      histos.fill(HIST("MC/hMcMultVspTGenPrim"), bestMult, particle.pt());
+      histos.fill(HIST("MC/hMcCentFT0MultpTGenPrim"), bestCent, bestMult, particle.pt());
+    }
+    histos.fill(HIST("MC/hMcMultGen"), nGenParticles);
+  }
+  PROCESS_SWITCH(heatCapacity, processMC, "Process for MC data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
