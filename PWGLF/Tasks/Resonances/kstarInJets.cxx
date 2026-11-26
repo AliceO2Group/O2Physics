@@ -255,6 +255,7 @@ struct kstarInJets {
       histos.add("nEvents_Gen", "nEvents_Gen", kTH1F, {{7, 0.0, 7.0}});
       histos.add("hKstar_VtxEvt", "Kstar pT AC Vtx only (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hKstar_Gen", "Kstar pT AC good Event (GeV/c)", kTH1F, {{800, 0., 40.}});
+      histos.add("hKstar_EffGen", "Gen. Kstar pT (GeV/c)", kTH1F, {{800, 0., 40.}});
 
       histos.add("Gen_daughter", "Gen_daughter", kTH1F, {{1000, -500., 500}});
       histos.add("Gen_mother", "Gen_mother", kTH1F, {{1000, -500., 500}});
@@ -1139,9 +1140,6 @@ struct kstarInJets {
       histos.fill(HIST("hKstar_VtxEvt"), mcParticle.pt()); // SL: denominator
     } // mcParticles in GenEvents
 
-    //=================
-    //| Efficiency
-    //=================
     if (recocolls.size() <= 0) { // not reconstructed
       return;
     }
@@ -1157,7 +1155,7 @@ struct kstarInJets {
     } // reco.coll
     histos.fill(HIST("nEvents_Gen"), 2.5); // EL: numerator
 
-    //  Find Gen K*0
+    //  Find Gen K*0 for SL
     for (const auto& mcParticle : mcParticles) {
       if (std::abs(mcParticle.pdgCode()) != Kstar0PDG) {
         continue;
@@ -1168,9 +1166,21 @@ struct kstarInJets {
       if (mcParticle.pt() < cfgTrackMinPt) {
         continue;
       }
-      histos.fill(HIST("hKstar_Gen"), mcParticle.pt());
+      histos.fill(HIST("hKstar_Gen"), mcParticle.pt()); // SL: numorator
       histos.fill(HIST("Gen_mother"), mcParticle.pdgCode());
     }
+
+    //==============
+    //| Efficiency
+    //==============
+    //  Find Gen K*0 for eff
+    for (const auto& mcParticle : mcParticles) {
+      if (!KPidaughters(mcParticle)) {
+        continue;
+      }
+      histos.fill(HIST("hKstar_EffGen"), mcParticle.pt()); // eff: denominator
+    }
+
   } // end of process
   PROCESS_SWITCH(kstarInJets, processGen, "Process Generated Particles", false);
 
