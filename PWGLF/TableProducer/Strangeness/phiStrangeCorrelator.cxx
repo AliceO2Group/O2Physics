@@ -449,38 +449,39 @@ struct V0ReducedCandProducer {
     Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
   } trackConfigs;
 
-  // Configurables for V0 selection
+  // Configurables for V0 selection. The defaults of the topological cuts, the proper lifetime, the competing-mass
+  // rejection in the Lambda and the Armenteros cut are those of the K0S and Lambda analysis in pp at 13.6 TeV (V0
+  // production vs multiplicity, analysis note of June 2026, Table 1)
   struct : ConfigurableGroup {
     Configurable<float> decayRadius{"decayRadius", 0.9f, "V0 decay radius"};
-    Configurable<float> dcaV0Dau{"dcaV0Dau", 1.0f, "DCA V0 Daughters"};
+    Configurable<float> dcaV0Dau{"dcaV0Dau", 0.5f, "DCA V0 Daughters"};
     Configurable<float> dcaPosToPV{"dcaPosToPV", 0.06f, "DCA Pos To PV"};
     Configurable<float> dcaNegToPV{"dcaNegToPV", 0.06f, "DCA Neg To PV"};
 
-    Configurable<bool> applyCtauCut{"applyCtauCut", false, "Apply the ctau cuts (ctauK0S, ctauLambda)"};
+    Configurable<bool> applyCtauCut{"applyCtauCut", true, "Apply the ctau cuts (ctauK0S, ctauLambda)"};
 
     Configurable<float> yAcceptance{"yAcceptance", 0.5f, "Rapidity acceptance"};
 
-    struct : ConfigurableGroup {
-      Configurable<float> cosPAK0S{"cosPAK0S", 0.98f, "K0S CosPA"};
-      Configurable<float> ctauK0S{"ctauK0S", 20.0f, "C tau K0s(cm)"};
-      Configurable<float> rejMassK0S{"rejMassK0S", 0.005f, "V0 rej K0s"};
+    // K0S
+    Configurable<float> cosPAK0S{"cosPAK0S", 0.98f, "K0S CosPA"};
+    Configurable<float> ctauK0S{"ctauK0S", 20.0f, "C tau K0s(cm)"};
+    Configurable<float> rejMassK0S{"rejMassK0S", 0.005f, "K0S: half-width of the window around the Lambda mass in which vetoLambdaInK0S rejects (GeV/c2)"};
 
-      Configurable<float> paramArmenterosCutK0S{"paramArmenterosCutK0S", 0.2f, "Parameter for Armenteros Cut for K0S"};
-      Configurable<bool> vetoLambdaInK0S{"vetoLambdaInK0S", false, "Reject K0S candidates within rejMassK0S of the Lambda mass (either charge) and apply the Armenteros cut"};
+    Configurable<float> paramArmenterosCutK0S{"paramArmenterosCutK0S", 0.2f, "Parameter for Armenteros Cut for K0S"};
+    Configurable<bool> applyArmenterosCutK0S{"applyArmenterosCutK0S", true, "Apply the Armenteros cut to the K0S (qT > paramArmenterosCutK0S |alpha|)"};
+    Configurable<bool> vetoLambdaInK0S{"vetoLambdaInK0S", false, "Reject K0S candidates whose mass under the Lambda or AntiLambda hypothesis is within rejMassK0S of the Lambda mass"};
 
-      Configurable<float> minPtK0S{"minPtK0S", 0.0f, "K0S min pt"};
-      Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.0, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.4, 7.0, 8.0, 10.0}, "pT bin limits for K0S"};
-    } k0sConfigs;
+    Configurable<float> minPtK0S{"minPtK0S", 0.0f, "K0S min pt"};
+    Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.0, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.4, 7.0, 8.0, 10.0}, "pT bin limits for K0S"};
 
-    struct : ConfigurableGroup {
-      Configurable<float> cosPALambda{"cosPALambda", 0.995f, "Lambda CosPA"};
-      Configurable<float> ctauLambda{"ctauLambda", 30.0f, "C tau Lambda(cm)"};
-      Configurable<float> rejMassLambda{"rejMassLambda", 0.005f, "V0 rej Lambda"};
-      Configurable<bool> vetoK0SInLambda{"vetoK0SInLambda", false, "Reject Lambda and AntiLambda candidates within rejMassLambda of the K0S mass"};
+    // Lambda and AntiLambda
+    Configurable<float> cosPALambda{"cosPALambda", 0.995f, "Lambda CosPA"};
+    Configurable<float> ctauLambda{"ctauLambda", 30.0f, "C tau Lambda(cm)"};
+    Configurable<float> rejMassLambda{"rejMassLambda", 0.01f, "Lambda: half-width of the window around the K0S mass in which vetoK0SInLambda rejects (GeV/c2)"};
+    Configurable<bool> vetoK0SInLambda{"vetoK0SInLambda", true, "Reject Lambda and AntiLambda candidates whose mass under the K0S hypothesis is within rejMassLambda of the K0S mass"};
 
-      Configurable<float> minPtLambda{"minPtLambda", 0.8f, "Lambda min pt"};
-      Configurable<std::vector<double>> binspTLambda{"binspTLambda", {0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.4, 7.0, 8.0, 10.0}, "pT bin limits for Lambda"};
-    } lambdaConfigs;
+    Configurable<float> minPtLambda{"minPtLambda", 0.8f, "Lambda min pt"};
+    Configurable<std::vector<double>> binspTLambda{"binspTLambda", {0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.4, 7.0, 8.0, 10.0}, "pT bin limits for Lambda"};
   } v0Configs;
 
   Configurable<std::vector<double>> binspTXi{"binspTXi", {0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Xi"};
@@ -514,8 +515,8 @@ struct V0ReducedCandProducer {
   void init(InitContext&)
   {
     AxisSpec binnedmultAxis{std::vector<double>(binsMult), "centFT0M"};
-    AxisSpec binnedpTK0SAxis{std::vector<double>(v0Configs.k0sConfigs.binspTK0S), "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec binnedpTLambdaAxis{std::vector<double>(v0Configs.lambdaConfigs.binspTLambda), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTK0SAxis{std::vector<double>(v0Configs.binspTK0S), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTLambdaAxis{std::vector<double>(v0Configs.binspTLambda), "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec binnedpTXiAxis{std::vector<double>(binspTXi), "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec massK0SAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec massLambdaAxis = {200, 1.08f, 1.15f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
@@ -611,9 +612,10 @@ struct V0ReducedCandProducer {
       return false;
     }
 
-    const float cutCosPA = (v0Type == kK0S) ? v0Configs.k0sConfigs.cosPAK0S : v0Configs.lambdaConfigs.cosPALambda;
-    const float cutMinPt = (v0Type == kK0S) ? v0Configs.k0sConfigs.minPtK0S : v0Configs.lambdaConfigs.minPtLambda;
-    const float cutCtau = (v0Type == kK0S) ? v0Configs.k0sConfigs.ctauK0S : v0Configs.lambdaConfigs.ctauLambda;
+    constexpr bool IsK0S = v0Type == kK0S;
+    const float cutCosPA = IsK0S ? v0Configs.cosPAK0S : v0Configs.cosPALambda;
+    const float cutMinPt = IsK0S ? v0Configs.minPtK0S : v0Configs.minPtLambda;
+    const float cutCtau = IsK0S ? v0Configs.ctauK0S : v0Configs.ctauLambda;
 
     if (v0.v0cosPA() < cutCosPA) {
       return false;
@@ -626,24 +628,22 @@ struct V0ReducedCandProducer {
     // of the other (a K0S whose pi+ passes the proton PID enters the Lambda mass spectrum with a kinematic edge
     // that falls under the Lambda peak at low pT)
     if (v0Configs.applyCtauCut) {
-      constexpr float AssumedMass = v0Type == kK0S ? MassK0S : MassLambda;
+      constexpr float AssumedMass = IsK0S ? MassK0S : MassLambda;
       if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * AssumedMass > cutCtau) {
         return false;
       }
     }
 
-    if constexpr (v0Type == kK0S) {
-      if (v0Configs.k0sConfigs.vetoLambdaInK0S) {
-        if (std::abs(v0.mLambda() - MassLambda) < v0Configs.k0sConfigs.rejMassK0S ||
-            std::abs(v0.mAntiLambda() - MassLambda) < v0Configs.k0sConfigs.rejMassK0S) {
-          return false;
-        }
-        if (v0.qtarm() < (v0Configs.k0sConfigs.paramArmenterosCutK0S * std::abs(v0.alpha()))) {
-          return false;
-        }
+    if constexpr (IsK0S) {
+      if (v0Configs.vetoLambdaInK0S &&
+          (std::abs(v0.mLambda() - MassLambda) < v0Configs.rejMassK0S || std::abs(v0.mAntiLambda() - MassLambda) < v0Configs.rejMassK0S)) {
+        return false;
+      }
+      if (v0Configs.applyArmenterosCutK0S && v0.qtarm() < v0Configs.paramArmenterosCutK0S * std::abs(v0.alpha())) {
+        return false;
       }
     } else {
-      if (v0Configs.lambdaConfigs.vetoK0SInLambda && std::abs(v0.mK0Short() - MassK0S) < v0Configs.lambdaConfigs.rejMassLambda) {
+      if (v0Configs.vetoK0SInLambda && std::abs(v0.mK0Short() - MassK0S) < v0Configs.rejMassLambda) {
         return false;
       }
     }
@@ -774,50 +774,67 @@ struct CascadeReducedCandProducer {
     Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
   } trackConfigs;
 
-  // Configurables for Cascade selection
+  // Configurables for Cascade selection. The defaults are those of the Xi and Omega analysis in pp at 13.6 TeV
+  // (ALICE-ANA-2026-1446, Table 3)
   struct : ConfigurableGroup {
-    Configurable<float> dcaV0Dau{"dcaV0Dau", 0.5f, "DCA V0 Daughters"};
-    Configurable<float> dcaCascDau{"dcaCascDau", 1.0f, "DCA Cascade Daughters"};
-    Configurable<float> dcaPosToPV{"dcaPosToPV", 0.06f, "DCA Pos To PV"};
-    Configurable<float> dcaNegToPV{"dcaNegToPV", 0.06f, "DCA Neg To PV"};
-    Configurable<float> dcaBachToPV{"dcaBachToPV", 0.1f, "DCA Bach To PV"};
+    Configurable<float> dcaBachToPV{"dcaBachToPV", 0.05f, "DCA Bach To PV"};
+
+    // The cuts of the note that the trains have not applied so far, each with its own switch, off by default
+    Configurable<bool> applyDcaV0ToPVCut{"applyDcaV0ToPVCut", false, "Apply the minimum DCA of the V0 to the PV (dcaV0ToPVXi, dcaV0ToPVOmega)"};
+    Configurable<bool> applyBachBaryonCut{"applyBachBaryonCut", false, "Apply the minimum DCAxy to the PV of the bachelor-baryon pair (dcaBachBaryonXi, dcaBachBaryonOmega)"};
+    Configurable<bool> applyLambdaMassWindow{"applyLambdaMassWindow", false, "Apply the Lambda mass window to the V0 (massWindowLambdaXi, massWindowLambdaOmega)"};
+    Configurable<bool> applyCtauCut{"applyCtauCut", false, "Apply the proper decay length cuts (ctauXi, ctauOmega)"};
+    Configurable<bool> vetoXiInOmega{"vetoXiInOmega", false, "Reject Omega candidates within rejMassXiInOmega of the Xi mass"};
 
     Configurable<float> yAcceptance{"yAcceptance", 0.5f, "Rapidity acceptance"};
 
-    struct : ConfigurableGroup {
-      Configurable<float> v0CosPAXi{"v0CosPAXi", 0.98f, "Xi V0 CosPA"};
-      Configurable<float> cosPAXi{"cosPAXi", 0.99f, "Xi CosPA"};
-      Configurable<float> v0RadiusXi{"v0RadiusXi", 1.2f, "V0 decay radius"};
-      Configurable<float> radiusXi{"radiusXi", 1.0f, "Xi decay radius"};
+    // Xi
+    Configurable<float> dcaPosToPVXi{"dcaPosToPVXi", 0.06f, "Xi: DCA Pos To PV"};
+    Configurable<float> dcaNegToPVXi{"dcaNegToPVXi", 0.06f, "Xi: DCA Neg To PV"};
+    Configurable<float> dcaV0DauXi{"dcaV0DauXi", 0.5f, "Xi: DCA V0 Daughters"};
+    Configurable<float> dcaCascDauXi{"dcaCascDauXi", 0.25f, "Xi: DCA Cascade Daughters (bachelor and V0)"};
+    Configurable<float> dcaV0ToPVXi{"dcaV0ToPVXi", 0.03f, "Xi: DCA V0 To PV"};
+    Configurable<float> dcaBachBaryonXi{"dcaBachBaryonXi", 0.02f, "Xi: minimum DCAxy to PV of the bachelor-baryon pair"};
+    Configurable<float> v0CosPAXi{"v0CosPAXi", 0.9876f, "Xi V0 CosPA"};
+    Configurable<float> cosPAXi{"cosPAXi", 0.9947f, "Xi CosPA"};
+    Configurable<float> v0RadiusXi{"v0RadiusXi", 1.2f, "V0 decay radius"};
+    Configurable<float> radiusXi{"radiusXi", 1.0f, "Xi decay radius"};
+    Configurable<float> massWindowLambdaXi{"massWindowLambdaXi", 0.0116f, "Xi: maximum |m(V0) - m(Lambda)| (GeV/c2)"};
+    Configurable<float> ctauXi{"ctauXi", 22.6f, "Xi: maximum proper decay length L m / p (cm); the note's 4.6 c tau, with c tau = 4.91 cm (PDG)"};
 
-      Configurable<float> minPtXi{"minPtXi", 0.8f, "Xi min pt"};
-      Configurable<std::vector<double>> binspTXi{"binspTXi", {0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.5}, "pT bin limits for Xi"};
-    } xiConfigs;
+    Configurable<float> minPtXi{"minPtXi", 0.8f, "Xi min pt"};
+    Configurable<std::vector<double>> binspTXi{"binspTXi", {0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.5}, "pT bin limits for Xi"};
 
-    struct : ConfigurableGroup {
-      Configurable<float> v0CosPAOmega{"v0CosPAOmega", 0.98f, "Omega V0 CosPA"};
-      Configurable<float> cosPAOmega{"cosPAOmega", 0.99f, "Omega CosPA"};
-      Configurable<float> v0RadiusOmega{"v0RadiusOmega", 1.2f, "V0 decay radius"};
-      Configurable<float> radiusOmega{"radiusOmega", 0.8f, "Omega decay radius"};
+    // Omega
+    Configurable<float> dcaPosToPVOmega{"dcaPosToPVOmega", 0.05f, "Omega: DCA Pos To PV"};
+    Configurable<float> dcaNegToPVOmega{"dcaNegToPVOmega", 0.05f, "Omega: DCA Neg To PV"};
+    Configurable<float> dcaV0DauOmega{"dcaV0DauOmega", 0.4f, "Omega: DCA V0 Daughters"};
+    Configurable<float> dcaCascDauOmega{"dcaCascDauOmega", 0.8f, "Omega: DCA Cascade Daughters (bachelor and V0)"};
+    Configurable<float> dcaV0ToPVOmega{"dcaV0ToPVOmega", 0.04f, "Omega: DCA V0 To PV"};
+    Configurable<float> dcaBachBaryonOmega{"dcaBachBaryonOmega", 0.015f, "Omega: minimum DCAxy to PV of the bachelor-baryon pair"};
+    Configurable<float> v0CosPAOmega{"v0CosPAOmega", 0.985f, "Omega V0 CosPA"};
+    Configurable<float> cosPAOmega{"cosPAOmega", 0.99f, "Omega CosPA"};
+    Configurable<float> v0RadiusOmega{"v0RadiusOmega", 1.2f, "V0 decay radius"};
+    Configurable<float> radiusOmega{"radiusOmega", 0.8f, "Omega decay radius"};
+    Configurable<float> massWindowLambdaOmega{"massWindowLambdaOmega", 0.0075f, "Omega: maximum |m(V0) - m(Lambda)| (GeV/c2)"};
+    Configurable<float> ctauOmega{"ctauOmega", 17.2f, "Omega: maximum proper decay length L m / p (cm); the note's 7 c tau, with c tau = 2.461 cm (PDG)"};
+    Configurable<float> rejMassXiInOmega{"rejMassXiInOmega", 0.01f, "Omega: reject candidates within this distance of the Xi mass (GeV/c2)"};
 
-      Configurable<float> minPtOmega{"minPtOmega", 0.8f, "Omega min pt"};
-      Configurable<std::vector<double>> binspTOmega{"binspTOmega", {0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.5}, "pT bin limits for Omega"};
-    } omegaConfigs;
+    Configurable<float> minPtOmega{"minPtOmega", 0.8f, "Omega min pt"};
+    Configurable<std::vector<double>> binspTOmega{"binspTOmega", {0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.5}, "pT bin limits for Omega"};
   } cascadeConfigs;
 
   // Constants
   static constexpr double MassXi = o2::constants::physics::MassXiMinus;
   static constexpr double MassOmega = o2::constants::physics::MassOmegaMinus;
+  static constexpr double MassLambda = o2::constants::physics::MassLambda0;
 
   // Filter on default selected collisions
   Filter collisionFilter = aod::lf_selection_event::selectionLevel >= static_cast<uint8_t>(aod::lf_selection_event::kDefault);
 
-  // Defining filters on Cascades (cannot filter on dynamic columns)
-  Filter cascadePreFilter = (nabs(aod::cascdata::dcapostopv) > cascadeConfigs.dcaPosToPV &&
-                             nabs(aod::cascdata::dcanegtopv) > cascadeConfigs.dcaNegToPV &&
-                             nabs(aod::cascdata::dcabachtopv) > cascadeConfigs.dcaBachToPV &&
-                             aod::cascdata::dcaV0daughters < cascadeConfigs.dcaV0Dau &&
-                             aod::cascdata::dcacascdaughters < cascadeConfigs.dcaCascDau);
+  // Defining filters on Cascades (cannot filter on dynamic columns); the cuts that differ between Xi and Omega are
+  // applied in selectionCascade
+  Filter cascadePreFilter = nabs(aod::cascdata::dcabachtopv) > cascadeConfigs.dcaBachToPV;
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::CentFT0Ms, aod::PVMults, aod::PhiStrangeEvtSelDataLike>;
@@ -836,8 +853,8 @@ struct CascadeReducedCandProducer {
   void init(InitContext&)
   {
     AxisSpec binnedmultAxis{std::vector<double>(binsMult), "centFT0M"};
-    AxisSpec binnedpTXiAxis{std::vector<double>(cascadeConfigs.xiConfigs.binspTXi), "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec binnedpTOmegaAxis{std::vector<double>(cascadeConfigs.omegaConfigs.binspTOmega), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTXiAxis{std::vector<double>(cascadeConfigs.binspTXi), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTOmegaAxis{std::vector<double>(cascadeConfigs.binspTOmega), "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec massXiAxis = {200, 1.2f, 1.4f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec massOmegaAxis = {200, 1.6f, 1.8f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
 
@@ -941,16 +958,41 @@ struct CascadeReducedCandProducer {
       return false;
     }
 
-    const float cutV0CosPA = (cascadeType == kXi || cascadeType == kAntiXi) ? cascadeConfigs.xiConfigs.v0CosPAXi : cascadeConfigs.omegaConfigs.v0CosPAOmega;
-    const float cutCosPA = (cascadeType == kXi || cascadeType == kAntiXi) ? cascadeConfigs.xiConfigs.cosPAXi : cascadeConfigs.omegaConfigs.cosPAOmega;
-    const float cutV0Radius = (cascadeType == kXi || cascadeType == kAntiXi) ? cascadeConfigs.xiConfigs.v0RadiusXi : cascadeConfigs.omegaConfigs.v0RadiusOmega;
-    const float cutRadius = (cascadeType == kXi || cascadeType == kAntiXi) ? cascadeConfigs.xiConfigs.radiusXi : cascadeConfigs.omegaConfigs.radiusOmega;
-    const float cutMinPt = (cascadeType == kXi || cascadeType == kAntiXi) ? cascadeConfigs.xiConfigs.minPtXi : cascadeConfigs.omegaConfigs.minPtOmega;
+    constexpr bool IsXi = cascadeType == kXi || cascadeType == kAntiXi;
+    const float cutDcaPosToPV = IsXi ? cascadeConfigs.dcaPosToPVXi : cascadeConfigs.dcaPosToPVOmega;
+    const float cutDcaNegToPV = IsXi ? cascadeConfigs.dcaNegToPVXi : cascadeConfigs.dcaNegToPVOmega;
+    const float cutDcaV0Dau = IsXi ? cascadeConfigs.dcaV0DauXi : cascadeConfigs.dcaV0DauOmega;
+    const float cutDcaCascDau = IsXi ? cascadeConfigs.dcaCascDauXi : cascadeConfigs.dcaCascDauOmega;
+    const float cutDcaV0ToPV = IsXi ? cascadeConfigs.dcaV0ToPVXi : cascadeConfigs.dcaV0ToPVOmega;
+    const float cutDcaBachBaryon = IsXi ? cascadeConfigs.dcaBachBaryonXi : cascadeConfigs.dcaBachBaryonOmega;
+    const float cutV0CosPA = IsXi ? cascadeConfigs.v0CosPAXi : cascadeConfigs.v0CosPAOmega;
+    const float cutCosPA = IsXi ? cascadeConfigs.cosPAXi : cascadeConfigs.cosPAOmega;
+    const float cutV0Radius = IsXi ? cascadeConfigs.v0RadiusXi : cascadeConfigs.v0RadiusOmega;
+    const float cutRadius = IsXi ? cascadeConfigs.radiusXi : cascadeConfigs.radiusOmega;
+    const float cutMassWindowLambda = IsXi ? cascadeConfigs.massWindowLambdaXi : cascadeConfigs.massWindowLambdaOmega;
+    const float cutCtau = IsXi ? cascadeConfigs.ctauXi : cascadeConfigs.ctauOmega;
+    const float cutMinPt = IsXi ? cascadeConfigs.minPtXi : cascadeConfigs.minPtOmega;
 
     const auto& pvx = collision.posX();
     const auto& pvy = collision.posY();
     const auto& pvz = collision.posZ();
 
+    if (std::abs(cascade.dcapostopv()) < cutDcaPosToPV || std::abs(cascade.dcanegtopv()) < cutDcaNegToPV) {
+      return false;
+    }
+    if (cascade.dcaV0daughters() > cutDcaV0Dau || cascade.dcacascdaughters() > cutDcaCascDau) {
+      return false;
+    }
+    if (cascadeConfigs.applyDcaV0ToPVCut && cascade.dcav0topv(pvx, pvy, pvz) < cutDcaV0ToPV) {
+      return false;
+    }
+    // The bachelor and the baryon of the V0, fitted by the builder as a pair (bachBaryonDCAxyToPV): in a true cascade
+    // they come from two decay vertices and the pair does not point to the PV; when it does, the two are likely the
+    // pion and proton of a primary Lambda, joined by an unrelated track into a fake cascade, and such candidates pile
+    // up in a structure in the invariant mass
+    if (cascadeConfigs.applyBachBaryonCut && std::abs(cascade.bachBaryonDCAxyToPV()) < cutDcaBachBaryon) {
+      return false;
+    }
     if (cascade.v0cosPA(pvx, pvy, pvz) < cutV0CosPA) {
       return false;
     }
@@ -962,6 +1004,23 @@ struct CascadeReducedCandProducer {
     }
     if (cascade.cascradius() < cutRadius) {
       return false;
+    }
+    if (cascadeConfigs.applyLambdaMassWindow && std::abs(cascade.mLambda() - MassLambda) > cutMassWindowLambda) {
+      return false;
+    }
+    if constexpr (!IsXi) {
+      if (cascadeConfigs.vetoXiInOmega && std::abs(cascade.mXi() - MassXi) < cascadeConfigs.rejMassXiInOmega) {
+        return false;
+      }
+    }
+    // Proper decay length L m / p in cm, as for the V0s (ctauK0S, ctauLambda); computed here, since the cascade tables
+    // have no distovertotmom (only the V0 tables do)
+    if (cascadeConfigs.applyCtauCut) {
+      const float decayLength = std::hypot(cascade.x() - pvx, cascade.y() - pvy, cascade.z() - pvz);
+      const float properLength = decayLength * (IsXi ? MassXi : MassOmega) / std::hypot(cascade.px(), cascade.py(), cascade.pz());
+      if (properLength > cutCtau) {
+        return false;
+      }
     }
     if (cascade.pt() < cutMinPt) {
       return false;
