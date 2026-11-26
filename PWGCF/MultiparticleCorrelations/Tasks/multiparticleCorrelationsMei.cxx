@@ -1282,9 +1282,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       if (tc.fInternalValidationSwitch) {
         std::vector<std::vector<int>> harmonicIV = {{-2, 2}, {-3, 3}, {-4, 4}};
         for (int iv = 0; iv < eIntValHarmonics_N; ++iv) {
-          std::vector<TComplex> result = two(qVecTableIV, harmonicIV[iv]);
-          if (noneZeroDenom(result)) {
-            intval.fProfIntVal[iv]->Fill(thisCollCentReal, (result[0] / result[1].Re()).Re());
+          std::vector<TComplex> resultIntVal = two(qVecTableIV, harmonicIV[iv]);
+          if (noneZeroDenom(resultIntVal)) {
+            intval.fProfIntVal[iv]->Fill(thisCollCentReal, (resultIntVal[0] / resultIntVal[1].Re()).Re());
           }
         }
       } // end of if (tc.fInternalValidationSwitch) {
