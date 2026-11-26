@@ -7965,7 +7965,7 @@ AnalysisCut* o2::aod::dqcuts::parseJSONAnalysisCut(T cut, const char* cutName)
       LOG(debug) << "Parsing " << itName.Data();
       const auto& addcut = it->value;
       if (!validateJSONaddCut(&addcut, true)) {
-        LOG(fatal) << "addCut statement not properly defined";
+        LOG(fatal) << "AddCut statement not properly defined";
         return nullptr;
       }
 
@@ -8096,7 +8096,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::parseJSONAnalysisCompositeCut(T cut, cons
       LOG(debug) << "Parsing " << itName.Data();
       const auto& addcut = it->value;
       if (!validateJSONaddCut(&addcut, false)) {
-        LOG(fatal) << "addCut statement not properly defined";
+        LOG(fatal) << "AddCut statement not properly defined";
         return nullptr;
       }
 
