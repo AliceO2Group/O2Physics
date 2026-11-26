@@ -968,6 +968,8 @@ struct FlowSmallSystems {
         fillTrackQA<TrkSelNch>(track, vtxz);
         if (weight.hEfficiencyNch != nullptr) {
           nchCorrected += 1. / weight.hEfficiency->GetBinContent(weight.hEfficiencyNch->FindBin(track.pt()));
+        } else {
+          nchCorrected++;
         }
         nch++;
       }
