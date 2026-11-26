@@ -64,7 +64,7 @@ struct SgDeuteronSpectra {
   Configurable<float> vertexZCut{"vertexZCut", 10, "VertexZ cut"};
   Configurable<float> maxTracks{"maxTracks", 100, "Maximum number of tracks in the event"};
   Configurable<bool> useVtxFT0Cut{"useVtxFT0Cut", false, "Use zVtxFT0vPV cut in event selection"};
-  
+
   // Configurable axis for histograms
   ConfigurableAxis ptAxis{"ptAxis", {200, 0.0, 10.0}, "p_{T}"};
   ConfigurableAxis nSigmaAxis{"nSigmaAxis", {800, -20.0, 20.0}, "nSigma axis for TPC and TOF"};
@@ -91,7 +91,7 @@ struct SgDeuteronSpectra {
     }
     if (doprocessData) {
       registry.add("tracks/DCAxy_Pt_postracks_postcuts", "DCAxy vs Pt for positive tracks after cuts", {HistType::kTH2D, {axispt, axisdcaxy}});
-      registry.add("tracks/DCAxy_Pt_negtracks_postcuts", "DCAxy vs Pt for negative tracks after cuts", {HistType::kTH2D, {axispt,axisdcaxy}});
+      registry.add("tracks/DCAxy_Pt_negtracks_postcuts", "DCAxy vs Pt for negative tracks after cuts", {HistType::kTH2D, {axispt, axisdcaxy}});
       registry.add("tracks/DCAz_Pt_postracks_postcuts", "DCAz vs Pt for positive tracks after cuts", {HistType::kTH2D, {axispt, axisdcaz}});
       registry.add("tracks/DCAz_Pt_negtracks_postcuts", "DCAz vs Pt for negative tracks after cuts", {HistType::kTH2D, {axispt, axisdcaz}});
       registry.add("tracks/Deut_Pt_TPC_GapA", "", {HistType::kTH2D, {axispt, axistpc}});
@@ -115,10 +115,10 @@ struct SgDeuteronSpectra {
     }
     if (doprocessDCA) {
       registry.add("tracks/DCAxy_Pt_postracks_precuts", "DCAxy vs Pt for positive tracks before cuts", {HistType::kTH2D, {axispt, axisdcaxy}});
-      registry.add("tracks/DCAxy_Pt_negtracks_precuts", "DCAxy vs Pt for negative tracks before cuts", {HistType::kTH2D, {axispt,axisdcaxy}});
+      registry.add("tracks/DCAxy_Pt_negtracks_precuts", "DCAxy vs Pt for negative tracks before cuts", {HistType::kTH2D, {axispt, axisdcaxy}});
       registry.add("tracks/DCAz_Pt_postracks_precuts", "DCAz vs Pt for positive tracks before cuts", {HistType::kTH2D, {axispt, axisdcaz}});
       registry.add("tracks/DCAz_Pt_negtracks_precuts", "DCAz vs Pt for negative tracks before cuts", {HistType::kTH2D, {axispt, axisdcaz}});
-    } 
+    }
   }
 
   // Define data types
@@ -126,7 +126,7 @@ struct SgDeuteronSpectra {
   using UDCollisionFull = UDCollisionsFull::iterator;
   using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksPIDExtra, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
 
-  // define function for event selection 
+  // define function for event selection
   bool passEventSelection(UDCollisionFull const& coll, UDTracksFull const& tracks)
   {
     registry.fill(HIST("collisions/VertexZ_before"), coll.posZ());
@@ -173,7 +173,8 @@ struct SgDeuteronSpectra {
   }
 
   // fill gapside after quality cuts
-  int fillGapSide (UDCollisionFull const& coll) {
+  int fillGapSide(UDCollisionFull const& coll)
+  {
     registry.fill(HIST("collisions/GapSide"), coll.gapSide(), 1.);
     std::vector<float> fitCut = {fv0Cut, ft0aCut, ft0cCut, fddaCut, fddcCut};
     int truegapSide = sgSelector.trueGap(coll, fitCut[0], fitCut[1], fitCut[2], zdcCut);
@@ -182,15 +183,16 @@ struct SgDeuteronSpectra {
     return truegapSide;
   }
 
-  float computeNsigmaDCA(const float pt, const float dca, const char* dcaType = "xy") {
+  float computeNsigmaDCA(const float pt, const float dca, const char* dcaType = "xy")
+  {
     const int nParams = 4;
-    std::array<float, 4> params{{0.,0.,0.,0.}};
+    std::array<float, 4> params{{0., 0., 0., 0.}};
     if (std::strcmp(dcaType, "xy") == 0) {
-      for(int i = 0; i < nParams; ++i) {
+      for (int i = 0; i < nParams; ++i) {
         params[i] = dcaxyParameters->get(i);
       }
     } else if (std::strcmp(dcaType, "z") == 0) {
-      for(int i = 0; i < nParams; ++i) {
+      for (int i = 0; i < nParams; ++i) {
         params[i] = dcazParameters->get(i);
       }
     } else {
@@ -201,8 +203,9 @@ struct SgDeuteronSpectra {
     return (dca - mean) / sigma;
   }
 
-  // define function for track selection 
-  bool passTrackSelection(UDTracksFull::iterator const& tracks) {
+  // define function for track selection
+  bool passTrackSelection(UDTracksFull::iterator const& tracks)
+  {
     if (!tracks.isPVContributor()) {
       return false;
     }
@@ -301,7 +304,8 @@ struct SgDeuteronSpectra {
   }
   PROCESS_SWITCH(SgDeuteronSpectra, processData, "Process data for spectra analysis", true)
 
-  void processDCA(UDCollisionFull const& coll, UDTracksFull const& tracks) {
+  void processDCA(UDCollisionFull const& coll, UDTracksFull const& tracks)
+  {
     passEventSelection(coll, tracks);
     for (const auto& t : tracks) {
       if (t.sign() > 0) {
