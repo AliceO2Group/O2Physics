@@ -15,13 +15,13 @@
 /// \since September 2026
 
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Core/SGTrackSelector.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -29,6 +29,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <cmath>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -133,27 +134,27 @@ struct SgDeuteronSpectra {
     registry.fill(HIST("collisions/VertexZ_before"), coll.posZ());
     registry.fill(HIST("collisions/selectionCuts"), 0.5);
     // applying event cuts
-    if (!coll.tfb()) {
+    if (coll.tfb() == 0) {
       return false;
     }
     registry.fill(HIST("collisions/selectionCuts"), 1.5);
-    if (!coll.itsROFb()) {
+    if (coll.itsROFb() == 0) {
       return false;
     }
     registry.fill(HIST("collisions/selectionCuts"), 2.5);
-    if (!coll.sbp()) {
+    if (coll.sbp() == 0) {
       return false;
     }
     registry.fill(HIST("collisions/selectionCuts"), 3.5);
     if (useVtxFT0Cut) {
-      if (!coll.zVtxFT0vPV()) {
+      if (coll.zVtxFT0vPV() == 0) {
         return false;
       }
       registry.fill(HIST("collisions/selectionCuts"), 4.5);
     } else {
       registry.fill(HIST("collisions/selectionCuts"), 4.5);
     }
-    if (!coll.vtxITSTPC()) {
+    if (coll.vtxITSTPC() == 0) {
       return false;
     }
     registry.fill(HIST("collisions/selectionCuts"), 5.5);
