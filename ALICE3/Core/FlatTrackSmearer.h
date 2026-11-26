@@ -43,6 +43,7 @@ class TrackSmearer
   void useEfficiency(bool val) { mUseEfficiency = val; }
   void interpolateEfficiency(bool val) { mInterpolateEfficiency = val; }
   void skipUnreconstructed(bool val) { mSkipUnreconstructed = val; }
+  void allowSmearingFailures(bool val) { mAllowSmearingFailures = val; }
   enum EfficiencyType : uint8_t {
     kWhatEfficiencyReco = 0,
     kWhatEfficiencyRecoAndTOF = 1
@@ -73,6 +74,7 @@ class TrackSmearer
   bool mUseEfficiency = true;
   bool mInterpolateEfficiency = false;
   bool mSkipUnreconstructed = true; // don't smear tracks that are not reco'ed
+  bool mAllowSmearingFailures = false; // keep MC parameters if there is no valid LUT entry or smearing gives NaN
   EfficiencyType mWhatEfficiency = kWhatEfficiencyReco;
 
  private:

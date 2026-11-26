@@ -317,6 +317,9 @@ bool TrackSmearer::smearTrack(O2Track& o2track, const lutEntry_t* lutEntry, cons
     return false;
   }
 
+  // Keep the MC parameters in case smearing fails
+  const O2Track mcTrack = o2track;
+
   // Transform params vector and smear
   EigenArrayDouble params;
   for (int i = 0; i < kNumEigenModes; ++i) {
@@ -349,6 +352,20 @@ bool TrackSmearer::smearTrack(O2Track& o2track, const lutEntry_t* lutEntry, cons
     o2track.setCov(lutEntry->covm[i], i);
   }
 
+  // If requested, fall back to the MC parameters (keeping the LUT covariance) when smearing gives NaN
+  if (mAllowSmearingFailures) {
+    bool hasNaN = false;
+    for (int i = 0; i < kNumEigenModes; ++i) {
+      hasNaN = hasNaN || std::isnan(o2track.getParam(i));
+    }
+    if (hasNaN) {
+      LOG(debug) << "smearTrack gave NaN parameters, keeping MC parameters";
+      for (int i = 0; i < kNumEigenModes; ++i) {
+        o2track.setParam(mcTrack.getParam(i), i);
+      }
+    }
+  }
+
   return isReconstructed;
 }
 
@@ -367,7 +384,7 @@ bool TrackSmearer::smearTrack(O2Track& o2track, const int pdg, const float nch)
   const lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0.f, eta, pt, interpolatedEff);
 
   if (!lutEntry || !lutEntry->valid) {
-    return false;
+    return mAllowSmearingFailures; // if allowed, keep the track with MC parameters
   }
 
   return smearTrack(o2track, lutEntry, interpolatedEff);
