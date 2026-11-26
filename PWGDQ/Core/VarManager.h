@@ -3120,8 +3120,8 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kPhi] = track.phi();
     values[kCharge] = track.sign();
     if (fgUsedVars[kPhiTPCOuter]) {
-      if (track.pt() > 0.022 * fgMagField) {
-        values[kPhiTPCOuter] = RecoDecay::constrainAngle(track.phi() - track.sign() * (o2::constants::math::PIHalf - std::acos(0.022 * fgMagField / track.pt())));
+      if (track.pt() > minPtOuterTPCReferenceR * fgMagField) {
+        values[kPhiTPCOuter] = RecoDecay::constrainAngle(track.phi() - track.sign() * (o2::constants::math::PIHalf - std::acos(minPtOuterTPCReferenceR * fgMagField / track.pt())));
       } else {
         values[kPhiTPCOuter] = o2::dqconstants::InvalidValueF;
       }
@@ -7808,7 +7808,7 @@ void VarManager::FillTrackAlice3(T const& track, float* values)
                                  Ka,
                                  Pr,
                                  NSpecies };
-    constexpr std::array<double, NSpecies> masses{o2::constants::physics::MassElectron, o2::constants::physics::MassPionCharged, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassProton};
+    constexpr std::array<double, NSpecies> Masses{o2::constants::physics::MassElectron, o2::constants::physics::MassPionCharged, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassProton};
 
     const double momentum = track.p();
     const double innerLengthCm = track.innerTOFTrackLengthReco();
@@ -7816,11 +7816,11 @@ void VarManager::FillTrackAlice3(T const& track, float* values)
 
     const std::array<bool, NSpecies> richHypothesisValid{track.hasSigEl(), track.hasSigPi(), track.hasSigKa(), track.hasSigPr()};
 
-    constexpr double invalidMean = std::numeric_limits<double>::quiet_NaN();
+    constexpr double InvalidMean = std::numeric_limits<double>::quiet_NaN();
     std::array<double, NSpecies> innerMeanPs, outerMeanPs, richMeanRad;
-    innerMeanPs.fill(invalidMean);
-    outerMeanPs.fill(invalidMean);
-    richMeanRad.fill(invalidMean);
+    innerMeanPs.fill(InvalidMean);
+    outerMeanPs.fill(InvalidMean);
+    richMeanRad.fill(InvalidMean);
 
     const float eventTimeErrPs = track.tofEventTimeErr();
 
@@ -7836,7 +7836,7 @@ void VarManager::FillTrackAlice3(T const& track, float* values)
 
     if (std::isfinite(momentum) && momentum > 0.) {
       for (std::size_t h = 0; h < NSpecies; ++h) {
-        const double invBeta = std::hypot(1., masses[h] / momentum);
+        const double invBeta = std::hypot(1., Masses[h] / momentum);
 
         if (std::isfinite(innerLengthCm) && innerLengthCm > 0.) {
           innerMeanPs[h] = innerLengthCm * o2::constants::physics::invLightSpeedCm2PS * invBeta;

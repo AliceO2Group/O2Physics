@@ -173,7 +173,11 @@ inline constexpr int PostCalibProton = 3;
 inline constexpr int TPCPIDCalibrationMeanSigma = 1;
 inline constexpr int TPCPIDCalibrationMeanSigmaStatus = 2;
 
-inline constexpr int NumITSLayers = 7;
+inline constexpr float tpcOuterReferenceRadius = 147.f;       // cm
+inline constexpr float curvatureConversion = 0.000299792458f; // (GeV/c)/(kG cm)
+inline constexpr float minPtOuterTPCReferenceR = 0.5f * curvatureConversion* tpcOuterReferenceRadius
+
+  inline constexpr int NumITSLayers = 7;
 
 inline constexpr int NumMFTLayers = 10;
 inline constexpr float MuonAbsorberExitZ = -505.; // cm
