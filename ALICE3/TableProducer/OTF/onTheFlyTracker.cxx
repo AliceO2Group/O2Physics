@@ -1621,7 +1621,6 @@ struct OnTheFlyTracker {
     if (v0DecaySettings.doV0QA) {
       fillHist<TH1>(Form("V0Building_Configuration_%i/hV0Building", icfg), 0.0f);
     }
-    std::array<int, NV0Prongs> v0DaughterPdgs{};
     switch (mcParticle.pdgCode()) {
       case kK0Short:
         v0DaughterPdgs = {kPiMinus, kPiPlus};
