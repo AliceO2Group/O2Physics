@@ -104,8 +104,8 @@ class HistogramManager : public TNamed
   std::map<std::string, std::list<std::vector<int>>> fVariablesMap; //!  map holding identifiers for all variables needed by histograms
 
   // various
-  bool fUseDefaultVariableNames; //! toggle the usage of default variable names and units
-  uint64_t fBinsAllocated;       //! number of allocated bins
+  bool fUseDefaultVariableNames;       //! toggle the usage of default variable names and units
+  uint64_t fBinsAllocated;             //! number of allocated bins
   std::vector<TString> fVariableNames; //! variable names
   std::vector<TString> fVariableUnits; //! variable units
 

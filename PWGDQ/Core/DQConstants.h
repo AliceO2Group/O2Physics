@@ -190,6 +190,16 @@ inline constexpr float InitialHadronMass = 0.0f;
 inline constexpr float LifetimeBPlus = 1.638e-12f; // s
 inline constexpr float LifetimeB0 = 1.517e-12f;    // s
 
+// ALICE 3
+
+// Based on Scoping document target values
+inline constexpr float multipleScatteringResLimit = 3.422;
+inline constexpr float trackResolutionResLimit = 2.051;
+
+inline constexpr float TOFResolutionPs = 20.f;
+inline constexpr float RichSigmaRad = 1.5e-3f;
+inline constexpr float AerogelIndex = 1.03;
+
 } // namespace defaults
 
 } // namespace o2::dqconstants
