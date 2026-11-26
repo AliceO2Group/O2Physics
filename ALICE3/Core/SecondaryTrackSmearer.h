@@ -51,6 +51,11 @@ class SecondaryTrackSmearer
     mSkipUnreconstructed = value;
     mSmearer.skipUnreconstructed(value);
   }
+  void allowSmearingFailures(bool value)
+  {
+    mAllowSmearingFailures = value;
+    mSmearer.allowSmearingFailures(value);
+  }
   void setWhatEfficiency(EfficiencyType value);
   void setCcdbManager(o2::ccdb::BasicCCDBManager* manager) { mCcdbManager = manager; }
 
@@ -79,6 +84,7 @@ class SecondaryTrackSmearer
   bool mUseEfficiency = true;
   bool mInterpolateEfficiency = false;
   bool mSkipUnreconstructed = true;
+  bool mAllowSmearingFailures = false; // keep MC parameters if there is no valid LUT entry or smearing gives NaN
   EfficiencyType mWhatEfficiency = kWhatEfficiencyReco;
 };
 

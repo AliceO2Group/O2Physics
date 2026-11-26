@@ -160,6 +160,7 @@ struct OnTheFlyTracker {
   Configurable<bool> populateTrackSelection{"populateTrackSelection", false, "populate TrackSelection table (legacy)"};
 
   Configurable<bool> processUnreconstructedTracks{"processUnreconstructedTracks", false, "process (smear) unreco-ed tracks"};
+  Configurable<bool> allowSmearingFailures{"allowSmearingFailures", false, "keep tracks with MC parameters if LUT smearing fails (no valid LUT entry or NaN); only the efficiency rejects tracks"};
   Configurable<bool> doExtraQA{"doExtraQA", false, "do extra 2D QA plots"};
   Configurable<bool> extraQAwithoutDecayDaughters{"extraQAwithoutDecayDaughters", false, "remove decay daughters from qa plots (yes/no)"};
 
@@ -487,6 +488,7 @@ struct OnTheFlyTracker {
         smearer.setCcdbManager(ccdb.operator->());
         smearer.interpolateEfficiency(interpolateLutEfficiencyVsNch.value);
         smearer.skipUnreconstructed(!processUnreconstructedTracks.value);
+        smearer.allowSmearingFailures(allowSmearingFailures.value);
         const std::map<std::string, int> species = {{"secondaryLutEl", kElectron},
                                                     {"secondaryLutMu", kMuonMinus},
                                                     {"secondaryLutPi", kPiPlus},
@@ -587,6 +589,9 @@ struct OnTheFlyTracker {
 
         // smear un-reco'ed tracks if asked to do so
         mSmearer[igeo]->skipUnreconstructed(!processUnreconstructedTracks.value);
+
+        // keep tracks with MC parameters if smearing fails, if asked to do so
+        mSmearer[igeo]->allowSmearingFailures(allowSmearingFailures.value);
 
         insertHist(histPath + "hPtGenerated", "hPtGenerated;#it{p}_{T} (GeV/c);Counts", kTH1D, {{axes.axisMomentum}});
         insertHist(histPath + "hPhiGenerated", "hPhiGenerated;#phi (rad);Counts", kTH1D, {{100, 0.0f, o2::constants::math::TwoPI, "#phi (rad)"}});
