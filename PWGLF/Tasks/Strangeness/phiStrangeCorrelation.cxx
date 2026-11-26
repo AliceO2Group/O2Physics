@@ -297,9 +297,8 @@ struct PhiStrangeCorrelation {
   // every other efficiency holds that of its channel; or phi -> K+K- only, the BR then left to be applied explicitly
   Configurable<bool> phiEfficiencyKKOnly{"phiEfficiencyKKOnly", false, "Generated phi of the efficiency: false - every decay channel (the efficiency includes the BR to K+K-), true - phi -> K+K- only"};
 
-  // Filter on phi selected collisions
-  Filter collisionFilter = (eventSelectionType == 0 && aod::lf_selection_event::defaultSel == true) ||
-                           (eventSelectionType == 1 && aod::lf_selection_event::defaultSel == true && aod::lf_selection_event::phimesonSel == true);
+  // Filter on the selection level: eventSelectionType 0 keeps kDefault and above, 1 keeps kDefaultWithPhi
+  Filter collisionFilter = aod::lf_selection_event::selectionLevel > as<uint8_t>(eventSelectionType);
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults, aod::PhiStrangeEvtSelDataLike>>;

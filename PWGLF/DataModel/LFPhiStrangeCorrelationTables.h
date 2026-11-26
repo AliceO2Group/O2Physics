@@ -19,23 +19,27 @@
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
+#include <cstdint>
 #include <cstdlib>
 
 namespace o2::aod
 {
 namespace lf_selection_event
 {
-DECLARE_SOA_COLUMN(DefaultSel, defaultSel, bool);
-DECLARE_SOA_COLUMN(PhimesonSel, phimesonSel, bool);
+// The selection an event passes, each level containing the next: an event with a phi is a selected event
+enum Level : uint8_t {
+  kRejected = 0,
+  kDefault,        // the default event selection
+  kDefaultWithPhi, // the default event selection and a phi
+};
+DECLARE_SOA_COLUMN(SelectionLevel, selectionLevel, uint8_t);
 } // namespace lf_selection_event
 
 DECLARE_SOA_TABLE(PhiStrangeEvtSelDataLike, "AOD", "EVTSELDATA",
-                  lf_selection_event::DefaultSel,
-                  lf_selection_event::PhimesonSel);
+                  lf_selection_event::SelectionLevel);
 
 DECLARE_SOA_TABLE(PhiStrangeEvtSelMcGen, "AOD", "EVTSELMCGEN",
-                  lf_selection_event::DefaultSel,
-                  lf_selection_event::PhimesonSel);
+                  lf_selection_event::SelectionLevel);
 
 namespace lf_selection_phi_candidate
 {
