@@ -8,7 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
+/// \file heatCapacity.cxx
 /// \brief Task to measure charged particles spectra in ultracentral collisions
 /// \author Diana Rosales Herrera (diana.rosales.herrera@cern.ch)
 /// \author Chiara De Martin (chiara.de.martin@cern.ch)
@@ -262,9 +262,6 @@ struct heatCapacity {
     }
     if (fillHists) {
       histos.fill(HIST("hEventSelection"), 9);
-    }
-
-    if (fillHists) {
       // Arfer Event Selection
       histos.fill(HIST("hEventSelection"), 10);
       histos.fill(HIST("hEventNchCorrelation"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
