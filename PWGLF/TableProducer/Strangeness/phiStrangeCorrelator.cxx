@@ -1118,6 +1118,8 @@ struct PionTrackProducer {
     histos.add("h4RecMCPionTPCTOFnSigma", "True primary pion TPC and TOF nSigma, tracks with TOF", kTHnSparseF, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis, nSigmaTOFPiAxis});
     histos.add("h3RecMCPionTPCnSigmaNoTOF", "True primary pion TPC nSigma, tracks without TOF", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis});
 
+    // The data to fit with the templates below: every selected track, so with whatever is not a pion among them
+    histos.add("h2PionDCAxy", "Dcaxy distribution vs pt for selected Pion tracks", kTH2F, {binnedpTPiAxis, dcaXYPiAxis});
     histos.add("h2RecMCDCAxyPrimPi", "Dcaxy distribution vs pt for Primary Pions", kTH2F, {binnedpTPiAxis, dcaXYPiAxis});
     histos.add("h2RecMCDCAxySecWeakDecayPi", "Dcaxy distribution vs pt for Secondary Pions from Weak Decay", kTH2F, {binnedpTPiAxis, dcaXYPiAxis});
     histos.add("h2RecMCDCAxySecMaterialPi", "Dcaxy distribution vs pt for Secondary Pions from Material", kTH2F, {binnedpTPiAxis, dcaXYPiAxis});
@@ -1299,6 +1301,7 @@ struct PionTrackProducer {
       } else {
         histos.fill(HIST("h3PionTPCnSigmaNoTOF"), collision.centFT0M(), track.pt(), track.tpcNSigmaPi());
       }
+      histos.fill(HIST("h2PionDCAxy"), track.pt(), track.dcaXY());
 
       pionTracksData(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(MassPi), track.phi(), useTOFInPID(track));
     }
