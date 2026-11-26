@@ -22,6 +22,7 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -119,7 +120,7 @@ struct PhiMesonCandProducer {
     Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
   } phiConfigs;
 
-  Configurable<bool> trueGenPhi{"trueGenPhi", false, "Phi trigger in MC Collisions: false - gen K+K- pair, true - gen phi meson"};
+  Configurable<bool> trueGenPhi{"trueGenPhi", false, "Phi trigger in MC Collisions: false - gen K+K- pair, true - gen phi meson decaying to K+K-"};
 
   // Configurables on phi pT bins
   Configurable<std::vector<double>> binspTPhi{"binspTPhi", {0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 15.0, 20.0}, "pT bin limits for Phi"};
@@ -371,6 +372,10 @@ struct PhiMesonCandProducer {
         if (std::abs(mcParticle.pdgCode()) != o2::constants::physics::Pdg::kPhi) {
           continue;
         }
+        // Only phi -> K+K-, as the events with a phi of data and of trueGenPhi false
+        if (!RecoDecay::isMatchedMCGen(mcParticles, mcParticle, o2::constants::physics::Pdg::kPhi, std::array{-PDG_t::kKPlus, +PDG_t::kKPlus})) {
+          continue;
+        }
         if (mcParticle.pt() < phiConfigs.minPhiPt) {
           continue;
         }
@@ -381,18 +386,14 @@ struct PhiMesonCandProducer {
         phimesonCandidatesMcGen(mcCollision.globalIndex(), 0, mcParticle.pt(), mcParticle.y(), mcParticle.phi());
       }
     } else {
+      // K+ outside, K- inside: every pair once
       for (const auto& mcParticle1 : mcParticles) {
-        if (!mcParticle1.isPhysicalPrimary() || std::abs(mcParticle1.eta()) > trackConfigs.etaMax) {
+        if (mcParticle1.pdgCode() != PDG_t::kKPlus || !mcParticle1.isPhysicalPrimary() || std::abs(mcParticle1.eta()) > trackConfigs.etaMax) {
           continue;
         }
 
         for (const auto& mcParticle2 : mcParticles) {
-          if (!mcParticle2.isPhysicalPrimary() || std::abs(mcParticle2.eta()) > trackConfigs.etaMax) {
-            continue;
-          }
-
-          if ((mcParticle1.pdgCode() != PDG_t::kKPlus || mcParticle2.pdgCode() != PDG_t::kKMinus) &&
-              (mcParticle1.pdgCode() != PDG_t::kKMinus || mcParticle2.pdgCode() != PDG_t::kKPlus)) {
+          if (mcParticle2.pdgCode() != PDG_t::kKMinus || !mcParticle2.isPhysicalPrimary() || std::abs(mcParticle2.eta()) > trackConfigs.etaMax) {
             continue;
           }
 
@@ -1451,7 +1452,8 @@ struct EventSelectionProducer {
         return false;
       }
       histos.fill(HIST("hEventSelectionData"), 4); // RCTFlags cut
-    } else { // MCreco event
+    } else {
+      // MCreco event
       static_assert(!std::is_same_v<MC_T, void>, "Need to set MC_T to MCCollisions for isMC = true");
 
       histos.fill(HIST("hEventSelectionMC"), 0); // all collisions

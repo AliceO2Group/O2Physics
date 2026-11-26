@@ -293,6 +293,10 @@ struct PhiStrangeCorrelation {
     Configurable<bool> bypassPtCut{"bypassPtCut", false, "Bypass the minimum pt cut at MCGen level"};
   } minPtMcGenConfigs;
 
+  // The generated phi of the efficiency: every channel by default, so that the phi efficiency holds the BR to K+K- as
+  // every other efficiency holds that of its channel; or phi -> K+K- only, the BR then left to be applied explicitly
+  Configurable<bool> phiEfficiencyKKOnly{"phiEfficiencyKKOnly", false, "Generated phi of the efficiency: false - every decay channel (the efficiency includes the BR to K+K-), true - phi -> K+K- only"};
+
   // Filter on phi selected collisions
   Filter collisionFilter = (eventSelectionType == 0 && aod::lf_selection_event::defaultSel == true) ||
                            (eventSelectionType == 1 && aod::lf_selection_event::defaultSel == true && aod::lf_selection_event::phimesonSel == true);
@@ -1018,7 +1022,8 @@ struct PhiStrangeCorrelation {
 
         switch (std::abs(mcParticle.pdgCode())) {
           case o2::constants::physics::Pdg::kPhi:
-            if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPtPhi) {
+            if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPtPhi &&
+                (!phiEfficiencyKKOnly || RecoDecay::isMatchedMCGen(mcParticles, mcParticle, o2::constants::physics::Pdg::kPhi, std::array{-PDG_t::kKPlus, +PDG_t::kKPlus}))) {
               fillGenHistos(HIST("phi/h3PhiMCGen"), HIST("phi/h4PhiMCGenAssocReco"));
             }
             break;
@@ -1071,7 +1076,10 @@ struct PhiStrangeCorrelation {
 
       switch (std::abs(mcParticle.pdgCode())) {
         case o2::constants::physics::Pdg::kPhi:
-          if (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.minPtPhi) {
+          // Only phi -> K+K-, the trigger of data: a phi in another channel would be correlated with its own daughters
+          // (the K0S of K0S K0L, the pions of pi+pi-pi0), pairs data do not have
+          if ((minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.minPtPhi) &&
+              RecoDecay::isMatchedMCGen(mcParticles, mcParticle, o2::constants::physics::Pdg::kPhi, std::array{-PDG_t::kKPlus, +PDG_t::kKPlus})) {
             phiParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
           }
           break;
