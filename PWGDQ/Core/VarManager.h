@@ -3120,8 +3120,8 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kPhi] = track.phi();
     values[kCharge] = track.sign();
     if (fgUsedVars[kPhiTPCOuter]) {
-      if (track.pt() > minPtOuterTPCReferenceR * fgMagField) {
-        values[kPhiTPCOuter] = RecoDecay::constrainAngle(track.phi() - track.sign() * (o2::constants::math::PIHalf - std::acos(minPtOuterTPCReferenceR * fgMagField / track.pt())));
+      if (track.pt() > o2::dqconstants::defaults::minPtOuterTPCReferenceR * fgMagField) {
+        values[kPhiTPCOuter] = RecoDecay::constrainAngle(track.phi() - track.sign() * (o2::constants::math::PIHalf - std::acos(o2::dqconstants::defaults::minPtOuterTPCReferenceR * fgMagField / track.pt())));
       } else {
         values[kPhiTPCOuter] = o2::dqconstants::InvalidValueF;
       }
