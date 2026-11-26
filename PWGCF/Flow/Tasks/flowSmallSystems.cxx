@@ -40,6 +40,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TF1.h>
@@ -156,12 +157,15 @@ struct FlowSmallSystems {
   HistogramRegistry registryCorr{"registryCorr"};
   HistogramRegistry registryTrigger{"registryTrigger"};
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgEventSelection.cfgCutVertex);
+  Filter collisionFilterMC = (nabs(aod::mccollision::posZ) < cfgEventSelection.cfgCutVertex);
   Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
   Service<ccdb::BasicCCDBManager> ccdb{};
+  Service<o2::framework::O2DatabasePDG> pdgDB{};
   RCTFlagsChecker rctChecker{"CBT"};
   enum TrackSelectionGroup {
     TrkSelNch = 0,
     TrkSelObs,
+    TrkReco,
     TrkCounter
   };
   enum TrackCut {
@@ -255,7 +259,7 @@ struct FlowSmallSystems {
     GFWWeights* hAcceptance = nullptr;
   } weight;
   static constexpr std::array<std::string_view, 2> FillTimeName = {"beforeEventSelQA/", "afterEventSelQA/"};
-  static constexpr std::array<std::string_view, 2> FillTrackName = {"cutNch/", "cutObs/"};
+  static constexpr std::array<std::string_view, 3> FillTrackName = {"cutNch/", "cutObs/", "Reco/"};
   std::array<std::string, TriggerMenuCounter> triggerName = {"fHighTrackMult", "HighMultFv0", "fHighFt0Mult", "fHighFt0cFv0Mult", "fHighFt0Flat", "fHighFt0cFv0Flat"};
 
   std::array<EventCut, 8> eventSelectionCuts{};
@@ -275,6 +279,7 @@ struct FlowSmallSystems {
   std::array<TF1*, 2> fDCAxyCut{};
   std::vector<int> runNumbers;
   std::map<int, std::shared_ptr<TH3>> th3sPerRun;
+  std::map<int, std::shared_ptr<TH2>> th2sPerRun;
 
   int firstRunOfFill = -1;
 
@@ -382,23 +387,51 @@ struct FlowSmallSystems {
     AxisSpec axisGFW = {(cfgGFWSettings.cfgUseNch) ? binningNch : binningCent};
     int nPtBins = axisPt.binEdges.size() - 1;
     axisPtGFW = new TAxis(nPtBins, binningPt.value.data());
-    registryQA.add("cutNch/hTrackPhi", "Track #varphi distribution;#varphi;Count", {HistType::kTH1D, {axisPhi}});
-    registryQA.add("cutNch/hTrackEta", "Track #eta distribution;#eta;Count", {HistType::kTH1D, {axisEta}});
-    registryQA.add("cutNch/hPt", "p_{T} distribution for reconstructed particles in a given pT range;p_{T};Counts", {HistType::kTH1D, {axisPt}});
-    registryQA.add("cutNch/hChi2prTPCcls", "#chi^{2}/cluster for the TPC track segment;#chi^{2}/cluster;Counts", {HistType::kTH1D, {{100, 0., 5.}}});
-    registryQA.add("cutNch/hChi2prITScls", "#chi^{2}/cluster for the ITS track;#chi^{2}/cluster;Counts", {HistType::kTH1D, {{100, 0., 50.}}});
-    registryQA.add("cutNch/hnTPCClu", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
-    registryQA.add("cutNch/hnITSClu", "Number of found ITS clusters", {HistType::kTH1D, {{100, 0, 20}}});
-    registryQA.add("cutNch/hnTPCCrossedRow", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
-    registryQA.add("cutNch/hDCAz", "DCAz after cuts; DCAz (cm); p_{T}", {HistType::kTH2D, {{200, -1., 1.}, {200, 0, 5}}});
-    registryQA.add("cutNch/hDCAxy", "DCAxy after cuts; DCAxy (cm); p_{T}", {HistType::kTH2D, {{200, -1., 1.}, {200, 0, 5}}});
-    registryQA.add("cutNch/hPhiEtaVtxZ", ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {32, -0.8, 0.8}, {40, -10, 10}}});
-    registryQA.addClone("cutNch/", "cutObs/");
-    registryQA.add("hVtxZ", "Vertex Z distribution;Vtxz (cm);Count", {HistType::kTH1D, {axisVertex}});
-    registryQA.add("hCentrality", "Centrality distribution;Centrality;Count", {HistType::kTH1D, {axisCent}});
-    registryQA.add("hNch", "N_{ch} distribution;N_{ch}^{raw};Count", {HistType::kTH1D, {axisNch}});
-    if (!cfgGFWSettings.cfgEfficiencyNch.value.empty()) {
-      registryQA.add("hNchCorrected", "N_{ch} distribution;N_{ch}^{corrected};Count", {HistType::kTH1D, {axisNch}});
+    if (doprocessData) {
+      registryQA.add("cutNch/hTrackPhi", "Track #varphi distribution;#varphi;Count", {HistType::kTH1D, {axisPhi}});
+      registryQA.add("cutNch/hTrackEta", "Track #eta distribution;#eta;Count", {HistType::kTH1D, {axisEta}});
+      registryQA.add("cutNch/hPt", "p_{T} distribution for reconstructed particles in a given pT range;p_{T};Counts", {HistType::kTH1D, {axisPt}});
+      registryQA.add("cutNch/hChi2prTPCcls", "#chi^{2}/cluster for the TPC track segment;#chi^{2}/cluster;Counts", {HistType::kTH1D, {{100, 0., 5.}}});
+      registryQA.add("cutNch/hChi2prITScls", "#chi^{2}/cluster for the ITS track;#chi^{2}/cluster;Counts", {HistType::kTH1D, {{100, 0., 50.}}});
+      registryQA.add("cutNch/hnTPCClu", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
+      registryQA.add("cutNch/hnITSClu", "Number of found ITS clusters", {HistType::kTH1D, {{100, 0, 20}}});
+      registryQA.add("cutNch/hnTPCCrossedRow", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
+      registryQA.add("cutNch/hDCAz", "DCAz after cuts; DCAz (cm); p_{T}", {HistType::kTH2D, {{200, -1., 1.}, {200, 0, 5}}});
+      registryQA.add("cutNch/hDCAxy", "DCAxy after cuts; DCAxy (cm); p_{T}", {HistType::kTH2D, {{200, -1., 1.}, {200, 0, 5}}});
+      registryQA.add("cutNch/hPhiEtaVtxZ", ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {32, -0.8, 0.8}, {40, -10, 10}}});
+      registryQA.addClone("cutNch/", "cutObs/");
+      registryQA.add("hVtxZ", "Vertex Z distribution;Vtxz (cm);Count", {HistType::kTH1D, {axisVertex}});
+      registryQA.add("hCentrality", "Centrality distribution;Centrality;Count", {HistType::kTH1D, {axisCent}});
+      registryQA.add("hNch", "N_{ch} distribution;N_{ch}^{raw};Count", {HistType::kTH1D, {axisNch}});
+      if (!cfgGFWSettings.cfgEfficiencyNch.value.empty()) {
+        registryQA.add("hNchCorrected", "N_{ch} distribution;N_{ch}^{corrected};Count", {HistType::kTH1D, {axisNch}});
+      }
+    } else if (doprocessMC) {
+      registryQA.add("Reco/hTrackPhi", "Track #varphi distribution;#varphi;Count", {HistType::kTH1D, {axisPhi}});
+      registryQA.add("Reco/hTrackEta", "Track #eta distribution;#eta;Count", {HistType::kTH1D, {axisEta}});
+      registryQA.add("Reco/hPt", "p_{T} distribution for reconstructed particles in a given pT range;p_{T};Counts", {HistType::kTH1D, {axisPt}});
+      registryQA.add("Reco/hPtNch", "p_{T} distribution correlated with Nch distribution for reconstructed particles in a given pT range;p_{T};N_{ch};Counts", {HistType::kTH2D, {axisPt, axisNch}});
+      registryQA.add("Reco/hPtCent", "p_{T} distribution correlated with Nch distribution for reconstructed particles in a given pT range;p_{T};Centrality (%);Counts", {HistType::kTH2D, {axisPt, axisCent}});
+      registryQA.add("Reco/hChi2prTPCcls", "#chi^{2}/cluster for the TPC track segment;#chi^{2}/cluster;Counts", {HistType::kTH1D, {{100, 0., 5.}}});
+      registryQA.add("Reco/hChi2prITScls", "#chi^{2}/cluster for the ITS track;#chi^{2}/cluster;Counts", {HistType::kTH1D, {{100, 0., 50.}}});
+      registryQA.add("Reco/hnTPCClu", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
+      registryQA.add("Reco/hnITSClu", "Number of found ITS clusters", {HistType::kTH1D, {{100, 0, 20}}});
+      registryQA.add("Reco/hnTPCCrossedRow", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
+      registryQA.add("Reco/hDCAz", "DCAz after cuts; DCAz (cm); p_{T}", {HistType::kTH2D, {{200, -1., 1.}, {200, 0, 5}}});
+      registryQA.add("Reco/hDCAxy", "DCAxy after cuts; DCAxy (cm); p_{T}", {HistType::kTH2D, {{200, -1., 1.}, {200, 0, 5}}});
+      registryQA.add("Reco/hPhiEtaVtxZ", ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {32, -0.8, 0.8}, {40, -10, 10}}});
+      registryQA.add("Gen/hTrackPhi", "Track #varphi distribution;#varphi;Count", {HistType::kTH1D, {axisPhi}});
+      registryQA.add("Gen/hTrackEta", "Track #eta distribution;#eta;Count", {HistType::kTH1D, {axisEta}});
+      registryQA.add("Gen/hPt", "p_{T} distribution for generated particles in a given pT range;p_{T};Counts", {HistType::kTH1D, {axisPt}});
+      registryQA.add("Gen/hPtNch", "p_{T} distribution correlated with Nch distribution for generated particles in a given pT range;p_{T};N_{ch};Counts", {HistType::kTH2D, {axisPt, axisNch}});
+      registryQA.add("Gen/hPtCent", "p_{T} distribution correlated with Nch distribution for reconstructed particles in a given pT range;p_{T};Centrality (%);Counts", {HistType::kTH2D, {axisPt, axisCent}});
+      registryQA.add("hVtxZ", "Vertex Z distribution;Vtxz (cm);Count", {HistType::kTH1D, {axisVertex}});
+      registryQA.add("hCentrality", "Centrality distribution;Centrality;Count", {HistType::kTH1D, {axisCent}});
+      registryQA.add("hNch", "N_{ch} distribution;N_{ch}^{raw};Count", {HistType::kTH1D, {axisNch}});
+      registryQA.add("hGenVsReco", "Correlation between N_{ch} Gen and N_{ch} Reco; N_{ch} Gen; N_{ch} Reco", {HistType::kTH2D, {axisNch, axisNch}});
+      registryQA.add("hEventTrueVsGen", "Number of generated and reconstructed events used", {HistType::kTH1D, {{2, 0., 2.}}});
+      registryQA.get<TH1>(HIST("hEventTrueVsGen"))->GetXaxis()->SetBinLabel(1, "Gen Events");
+      registryQA.get<TH1>(HIST("hEventTrueVsGen"))->GetXaxis()->SetBinLabel(2, "Reco Events");
     }
     registryQA.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{13, 0.5, 13.5}}});
     registryQA.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(FilteredEvent, (cfgTriggeredData.cfgUseHighMultTrigger) ? "Filtered event + HM Trigger" : "Filtered event");
@@ -720,6 +753,17 @@ struct FlowSmallSystems {
     registryQA.fill(HIST(FillTimeName[ft]) + HIST("multV0A_multT0A"), collision.multFT0A(), collision.multFV0A());
     registryQA.fill(HIST(FillTimeName[ft]) + HIST("multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
   }
+  template <QAFillTime ft, typename TCollision>
+  inline void fillMCEventQA(const TCollision& collision, const int& ntrk)
+  {
+    registryQA.fill(HIST(FillTimeName[ft]) + HIST("globalTracks_centT0C"), collision.centFT0C(), ntrk);
+    registryQA.fill(HIST(FillTimeName[ft]) + HIST("PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV());
+    registryQA.fill(HIST(FillTimeName[ft]) + HIST("globalTracks_PVTracks"), collision.multNTracksPV(), ntrk);
+    registryQA.fill(HIST(FillTimeName[ft]) + HIST("globalTracks_multT0A"), collision.multFT0A(), ntrk);
+    registryQA.fill(HIST(FillTimeName[ft]) + HIST("globalTracks_multV0A"), collision.multFV0A(), ntrk);
+    registryQA.fill(HIST(FillTimeName[ft]) + HIST("multV0A_multT0A"), collision.multFT0A(), collision.multFV0A());
+    registryQA.fill(HIST(FillTimeName[ft]) + HIST("multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
+  }
   template <TrackSelectionGroup sg, typename TTracks>
   inline void fillTrackQA(const TTracks& track, const float& vtxz)
   {
@@ -869,7 +913,7 @@ struct FlowSmallSystems {
   }
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Mults>>;
-  void process(FilteredCollisions::iterator const& collision, aod::BCsWithTimestamps const&, FilteredTracks const& tracks)
+  void processData(FilteredCollisions::iterator const& collision, aod::BCsWithTimestamps const&, FilteredTracks const& tracks)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int run = bc.runNumber();
@@ -951,6 +995,142 @@ struct FlowSmallSystems {
     registryQA.fill(HIST("hNch"), nch);
     fillOutputObjects(cent, nchCorrCounter, nchCorrected, lRandom, trackCorr);
   }
+  PROCESS_SWITCH(FlowSmallSystems, processData, "Process analysis for non-derived data", false);
+  using FilteredTracksMC = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>>;
+  using CollisionsReco = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Mults>>;
+  using FilteredCollisionsMC = soa::Filtered<aod::McCollisions>;
+  void processMC(aod::McCollisions::iterator const&, CollisionsReco const& collisions, FilteredTracksMC const& tracks, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
+  {
+    int run = 0;
+    int nchReco = 0;
+    int nchGen = 0;
+    float cent = 0;
+    float vtxz = 0;
+    if (collisions.size() != 1) {
+      return;
+    }
+    for (const auto& particleMC : particlesMC) {
+      if (!particleMC.isPhysicalPrimary()) {
+        continue;
+      }
+      auto pdgParticle = pdgDB->GetParticle(particleMC.pdgCode());
+      if (pdgParticle == 0 || pdgParticle->Charge() == 0) {
+        continue;
+      }
+      if (std::fabs(particleMC.eta()) > cfgCutEta || particleMC.pt() < cfgCutPtMin || particleMC.pt() > cfgCutPtMax) {
+        continue;
+      }
+      nchGen++;
+    }
+    if (nchGen == 0) {
+      return;
+    }
+    for (const auto& collision : collisions) {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      run = bc.runNumber();
+      cent = getCentrality(collision);
+      vtxz = collision.posZ();
+      registryQA.fill(HIST("hEventCount"), FilteredEvent);
+      if (tracks.size() < 1) {
+        LOGF(info, "Size of the event is: %i", tracks.size());
+        return;
+      }
+      for (const auto& track : tracks) {
+        if (track.collisionId() != collision.globalIndex()) {
+          continue;
+        }
+        if (!trackSelected<TrkSelObs>(track)) {
+          continue;
+        }
+        if (track.mcParticleId() < 0 || !track.has_mcParticle()) {
+          continue;
+        }
+        auto mcParticle = track.mcParticle();
+        auto pdgParticle = pdgDB->GetParticle(mcParticle.pdgCode());
+        if (pdgParticle == 0) {
+          continue;
+        }
+        if (pdgParticle->Charge() == 0.) {
+          continue;
+        }
+        if (!mcParticle.isPhysicalPrimary()) {
+          continue;
+        }
+        if (std::fabs(mcParticle.eta()) > cfgCutEta || mcParticle.pt() < cfgCutPtMin || mcParticle.pt() > cfgCutPtMax) {
+          continue;
+        }
+        fillTrackQA<TrkReco>(track, vtxz);
+        nchReco++;
+      }
+      if (nchReco == 0) {
+        return;
+      }
+      fillMCEventQA<BeforeSel>(collision, nchReco);
+      if (cfgEventSelection.cfgEvSelUsage) {
+        if (!eventSelected(collision, nchReco, cent, run)) {
+          return;
+        }
+        fillMCEventQA<AfterSel>(collision, nchReco);
+      }
+      registryQA.fill(HIST("hEventTrueVsGen"), 0.5);
+      registryQA.fill(HIST("hVtxZ"), vtxz);
+      registryQA.fill(HIST("hCentrality"), cent);
+      for (const auto& track : tracks) {
+        if (track.collisionId() != collision.globalIndex()) {
+          continue;
+        }
+        if (!trackSelected<TrkSelObs>(track)) {
+          continue;
+        }
+        if (track.mcParticleId() < 0 || !track.has_mcParticle()) {
+          continue;
+        }
+        auto mcParticle = track.mcParticle();
+        auto pdgParticle = pdgDB->GetParticle(mcParticle.pdgCode());
+        if (pdgParticle == 0) {
+          continue;
+        }
+        if (pdgParticle->Charge() == 0.) {
+          continue;
+        }
+        if (!mcParticle.isPhysicalPrimary()) {
+          continue;
+        }
+        if (std::fabs(mcParticle.eta()) > cfgCutEta || mcParticle.pt() < cfgCutPtMin || mcParticle.pt() > cfgCutPtMax) {
+          continue;
+        }
+        registryQA.fill(HIST("Reco/hPtCent"), track.pt(), cent);
+        registryQA.fill(HIST("Reco/hPtNch"), track.pt(), nchReco);
+      }
+      registryQA.fill(HIST("hNch"), nchReco);
+    }
+    for (const auto& particleMC : particlesMC) {
+      if (!particleMC.isPhysicalPrimary()) {
+        continue;
+      }
+      auto pdgParticle = pdgDB->GetParticle(particleMC.pdgCode());
+      if (!pdgParticle || pdgParticle->Charge() == 0) {
+        continue;
+      }
+      if (std::fabs(particleMC.eta()) > cfgCutEta || particleMC.pt() < cfgCutPtMin || particleMC.pt() > cfgCutPtMax) {
+        continue;
+      }
+      registryQA.fill(HIST("Gen/hTrackPhi"), particleMC.phi());
+      registryQA.fill(HIST("Gen/hTrackEta"), particleMC.eta());
+      registryQA.fill(HIST("Gen/hPt"), particleMC.pt());
+      registryQA.fill(HIST("Gen/hPtNch"), particleMC.pt(), nchReco);
+      registryQA.fill(HIST("Gen/hPtCent"), particleMC.pt(), cent);
+    }
+    registryQA.fill(HIST("hGenVsReco"), nchGen, nchReco);
+    registryQA.fill(HIST("hEventTrueVsGen"), 1.5);
+    if (std::find(runNumbers.begin(), runNumbers.end(), run) == runNumbers.end()) {
+      std::shared_ptr<TH2> hGenVsReco = registryQA.add<TH2>(Form("GenVsReco/%i", run), ";N_{ch} Gen; N_{ch} Reco", {HistType::kTH2D, {{static_cast<int>(binningNch.value.back()), 0., binningNch.value.back()}, {static_cast<int>(binningNch.value.back()), 0., binningNch.value.back()}}});
+      th2sPerRun.insert(std::make_pair(run, hGenVsReco));
+      runNumbers.push_back(run);
+    }
+    th2sPerRun[run]->Fill(nchGen, nchReco);
+  }
+  PROCESS_SWITCH(FlowSmallSystems, processMC, "Process analysis for MC gen and reco levels", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
