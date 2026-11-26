@@ -453,7 +453,7 @@ struct OnTheFlyTracker {
     }
     nHits = hits.count;
     hitRadii = {hits.innerRadius, hits.outerRadius};
-    std::array<float, 3> productionPosition;
+    std::array<float, 3> productionPosition{};
     productionTrack.getXYZGlo(productionPosition);
     const float productionRadius = std::hypot(productionPosition[0], productionPosition[1]);
     return smearer->smearTrack(track, pdg, dNdEta, productionRadius, nHits, wasSmeared);
@@ -913,8 +913,7 @@ struct OnTheFlyTracker {
       case PDG_t::kLambda0:
         return o2::track::PID::Lambda;
       case PDG_t::kSigmaPlus:
-      case PDG_t::kSigmaMinus:
-        return o2::track::PID::XiMinus; // Close enough
+      case PDG_t::kSigmaMinus: // Close enough
       case PDG_t::kXiMinus:
         return o2::track::PID::XiMinus;
       case PDG_t::kOmegaMinus:
@@ -2001,16 +2000,16 @@ struct OnTheFlyTracker {
       std::string species;
       switch (std::abs(mcParticle.pdgCode())) {
         case kElectron:
-          species = "El";
+          species = "hEl";
           break;
         case kPiPlus:
-          species = "Pi";
+          species = "hPi";
           break;
         case kKPlus:
-          species = "Ka";
+          species = "hKa";
           break;
         case kProton:
-          species = "Pr";
+          species = "hPr";
           break;
         default:
           break;
@@ -2025,7 +2024,7 @@ struct OnTheFlyTracker {
       };
       fillQA(histPath + "h");
       if (!species.empty()) {
-        fillQA(histPath + "h" + species);
+        fillQA(histPath + species);
       }
     }
   }
