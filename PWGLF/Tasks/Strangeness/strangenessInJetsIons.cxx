@@ -227,6 +227,8 @@ struct StrangenessInJetsIons {
     Configurable<double> dcaNegToPVminV0{"dcaNegToPVminV0", 0.1f, "Minimum DCA of V0 negative track to primary vertex in cascades (cm)"};
     Configurable<double> v0cospaMinCasc{"v0cospaMinCasc", 0.99f, "Minimum V0 cosine of pointing angle for cascade analysis"};
     Configurable<float> casccospaMin{"casccospaMin", 0.99f, "Minimum cascade cosine of pointing angle"};
+    Configurable<float> bachBaryonCosPA{"bachBaryonCosPA", 0.9999f, "Maximum cosine of pointing angle of the bachelor-baryon pair: candidates above are rejected (Lambda contamination). Values <=0 disable this cut"};
+    Configurable<float> bachBaryonDCAxyToPV{"bachBaryonDCAxyToPV", 0.04f, "Minimum DCAxy to PV of the bachelor-baryon pair (cm): candidates below are rejected (Lambda contamination). Values <=0 disable this cut"};
     Configurable<float> ctauXi{"ctauXi", 25.0f, "C tau Xi (cm). Values <=0 disable this cut"};
     Configurable<float> ctauOmega{"ctauOmega", 15.0f, "C tau Omega (cm). Values <=0 disable this cut"};
 
@@ -1312,6 +1314,12 @@ struct StrangenessInJetsIons {
         return false;
     }
 
+    // Bachelor-baryon pair compatible with a primary Lambda: reject
+    if (configCasc.bachBaryonCosPA > 0 && casc.bachBaryonCosPA() > configCasc.bachBaryonCosPA)
+      return false;
+    if (configCasc.bachBaryonDCAxyToPV > 0 && std::fabs(casc.bachBaryonDCAxyToPV()) < configCasc.bachBaryonDCAxyToPV)
+      return false;
+
     // PID selection on bachelor
     if (btrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || btrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
       return false;
@@ -1432,6 +1440,12 @@ struct StrangenessInJetsIons {
       if (cascadeProperDecayLength(casc, coll, o2::constants::physics::MassOmegaMinus) > configCasc.ctauOmega)
         return false;
     }
+
+    // Bachelor-baryon pair compatible with a primary Lambda: reject
+    if (configCasc.bachBaryonCosPA > 0 && casc.bachBaryonCosPA() > configCasc.bachBaryonCosPA)
+      return false;
+    if (configCasc.bachBaryonDCAxyToPV > 0 && std::fabs(casc.bachBaryonDCAxyToPV()) < configCasc.bachBaryonDCAxyToPV)
+      return false;
 
     // PID selection on bachelor
     if (btrack.tpcNSigmaKa() < configTracks.nsigmaTPCmin || btrack.tpcNSigmaKa() > configTracks.nsigmaTPCmax)
