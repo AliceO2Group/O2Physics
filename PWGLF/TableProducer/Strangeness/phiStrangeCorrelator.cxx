@@ -383,7 +383,9 @@ struct PhiMesonCandProducer {
           continue;
         }
 
-        phimesonCandidatesMcGen(mcCollision.globalIndex(), 0, mcParticle.pt(), mcParticle.y(), mcParticle.phi());
+        // Its own mass, not a placeholder: the event selection keeps the candidates in the phi signal window, the
+        // generated phi as the K+K- pairs of trueGenPhi false (a mass of 0 made every event fail it)
+        phimesonCandidatesMcGen(mcCollision.globalIndex(), RecoDecay::m(mcParticle.p(), mcParticle.e()), mcParticle.pt(), mcParticle.y(), mcParticle.phi());
       }
     } else {
       // K+ outside, K- inside: every pair once
