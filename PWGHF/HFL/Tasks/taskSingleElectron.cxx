@@ -234,7 +234,7 @@ struct HfTaskSingleElectron {
     histos.add("hDcaSignedHadron", "TPC hadron band, before TOF selection;#it{p}_{T} (GeV/#it{c});DCA_{xy} #times #it{q} #times sign(#it{B}) (cm)", kTH2D, {{axisPtEl}, {axisDcaSig}});
     histos.add("hDcaSignedHadronAfterTofCut", "TPC hadron band, after TOF selection;#it{p}_{T} (GeV/#it{c});DCA_{xy} #times #it{q} #times sign(#it{B}) (cm)", kTH2D, {{axisPtEl}, {axisDcaSig}});
 
-    // DCA_xy x q x sign(B) per MC source species and sub-generator ID (-1: no sub-generator, 0: gap events, values > 0 merged into 1: injected events)
+    // DCA_xy x q x sign(B) per MC electron source species
     if (doprocessMc && fillDcaSignedMcSpecies) {
       const AxisSpec axisPtSpecies{axisPtEl, "#it{p}_{T} (GeV/#it{c})"};
       const AxisSpec axisDcaSigSpecies{axisDcaSignedMcSpecies, "DCA_{xy} #times #it{q} #times sign(#it{B}) (cm)"};
@@ -432,7 +432,7 @@ struct HfTaskSingleElectron {
     auto partMother = mcpart.template mothers_as<aod::McParticles>(); // first mother particle of electron
     auto partMotherCopy = partMother;                                 // copy of the first mother
     auto mctrack = partMother;                                        // will change all the time
-    if (partMother.size() == 0) { // electron without a stored mother: avoid front() on an empty span
+    if (partMother.size() == 0) {
       return Else;
     }
 
