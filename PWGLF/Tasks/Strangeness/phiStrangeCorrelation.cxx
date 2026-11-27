@@ -892,6 +892,12 @@ struct PhiStrangeCorrelation {
   template <AssociatedParticleType PartType, typename TCollisions, typename TPhiCands, typename TAssocCands>
   void processPhiAssocME(TCollisions const& collisions, TPhiCands const& phiCandidates, TAssocCands const& assocCands)
   {
+    // As in the same event: a species left out of activeCorrelationTypes has no pairs, and no efficiency map loaded,
+    // whose absence would read as an efficiency of 1
+    if (!isCorrelationTypeActive[PartType]) {
+      return;
+    }
+
     auto tuplePhiAssoc = std::make_tuple(phiCandidates, assocCands);
     Pair<TCollisions, TPhiCands, TAssocCands, BinningTypeVertexCent> pairPhiAssoc{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tuplePhiAssoc, &cache};
 
