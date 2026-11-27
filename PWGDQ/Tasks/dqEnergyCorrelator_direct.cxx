@@ -121,6 +121,7 @@ struct AnalysisEnergyCorrelator {
     Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> recSignals{"cfgMCRecSignals", "eeFromJpsi", "Comma separated list of MC signals (reconstructed)"};
     Configurable<std::string> recSignalsJSON{"cfgMCRecSignalsJSON", "", "Comma separated list of MC signals (reconstructed) via JSON"};
+    Configurable<bool> fUpdateKineAtSV{"cfgUpdateKineAtSV", true, "Update track kinematics at secondary vertex"};
   } fConfigPairOptions;
 
   struct : ConfigurableGroup { // Dilepton selection configurables
@@ -597,7 +598,7 @@ struct AnalysisEnergyCorrelator {
 
     // Fill dilepton-hadron variables
     std::vector<float> fTransRange = fConfigDileptonHadronOptions.fConfigTransRange;
-    VarManager::FillEnergyCorrelatorTriple<VarManager::kDecayToEE, gkEventFillMapWithMults, TTrackFillMap>(dileptonEvent, track1, track2, hadron, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigDileptonHadronOptions.fConfigApplyMassEC.value, -1, 1. / Effweight_rec);
+    VarManager::FillEnergyCorrelatorTriple<VarManager::kDecayToEE, gkEventFillMapWithMults, TTrackFillMap>(dileptonEvent, track1, track2, hadron, fConfigPairOptions.fUpdateKineAtSV, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigDileptonHadronOptions.fConfigApplyMassEC.value, -1, 1. / Effweight_rec);
     if (fConfigDileptonHadronOptions.fConfigUsePionMass.value) {
       VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiPionMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues, fConfigDileptonHadronOptions.fConfigApplyMassEC.value, 1. / Effweight_rec, 1. / Accweight_gen, fTransRange[0], fTransRange[1]);
     } else {
@@ -649,7 +650,7 @@ struct AnalysisEnergyCorrelator {
     } // end loop over MC signals
 
     VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
-    VarManager::FillPairVertexing<TPairType, gkEventFillMapWithMults, TTrackFillMap>(event, t1, t2, VarManager::fgValues);
+    VarManager::FillPairVertexing<TPairType, gkEventFillMapWithMults, TTrackFillMap>(event, t1, t2, fConfigPairOptions.fUpdateKineAtSV, VarManager::fgValues);
 
     if (sign1 * sign2 < 0) {                                                            // +- pairs
       fHistMan->FillHistClass(histNames[iEleCut][0].Data(), VarManager::fgValues);      // reconstructed, unmatched
@@ -933,7 +934,7 @@ struct AnalysisEnergyCorrelator {
           }
           // Fill pair variables for cut
           VarManager::FillPair<VarManager::kDecayToEE, gkTrackFillMapWithCov>(t1, t2, VarManager::fgValues);
-          VarManager::FillPairVertexing<VarManager::kDecayToEE, gkEventFillMapWithMults, gkTrackFillMapWithCov>(event1, t1, t2, VarManager::fgValues);
+          VarManager::FillPairVertexing<VarManager::kDecayToEE, gkEventFillMapWithMults, gkTrackFillMapWithCov>(event1, t1, t2, fConfigPairOptions.fUpdateKineAtSV, VarManager::fgValues);
           float mass = VarManager::fgValues[VarManager::kMass];
           float pt = VarManager::fgValues[VarManager::kPt];
           float rap = VarManager::fgValues[VarManager::kRap];

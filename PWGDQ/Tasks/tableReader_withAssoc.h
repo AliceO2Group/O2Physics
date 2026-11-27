@@ -1548,6 +1548,7 @@ struct AnalysisSameEventPairing {
     o2::framework::Configurable<int> efficiencyType{"cfgEfficiencyType", 0, "Type of efficiency to apply from CCDB: 0 no efficiency, 1 pt-cent-costhetastar"};
     o2::framework::Configurable<bool> useFlowReso{"cfgUseFlowReso", false, "Use remote flow information from CCDB"};
     o2::framework::Configurable<bool> usePhiDistribution{"cfgUsePhiDistribution", false, "Use phi distribution to correct track rotation"};
+    o2::framework::Configurable<bool> fUpdateKineAtSV{"cfgUpdateKineAtSV", true, "Update track kinematics at secondary vertex"};
   } fConfigOptions;
   struct : o2::framework::ConfigurableGroup {
     o2::framework::Configurable<bool> applyBDT{"applyBDT", false, "Flag to apply ML selections"};
@@ -2246,7 +2247,7 @@ struct AnalysisSameEventPairing {
             VarManager::FillPairCollision<TPairType, TTrackFillMap>(event, t1, t2);
           }
           if constexpr (TTwoProngFitter) {
-            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
+            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigOptions.fUpdateKineAtSV);
           }
           if constexpr (eventHasQvector) {
             VarManager::FillPairVn<TPairType>(t1, t2);
@@ -2396,7 +2397,7 @@ struct AnalysisSameEventPairing {
             VarManager::FillPairCollision<TPairType, TTrackFillMap>(event, t1, t2);
           }
           if constexpr (TTwoProngFitter) {
-            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
+            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigOptions.fUpdateKineAtSV);
           }
           if constexpr (eventHasQvector) {
             VarManager::FillPairVn<TPairType>(t1, t2);
@@ -3553,6 +3554,7 @@ struct AnalysisAsymmetricPairing {
 
   o2::framework::Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
   o2::framework::Configurable<bool> fConfigUseAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
+  o2::framework::Configurable<bool> fUpdateKineAtSV{"cfgUpdateKineAtSV", true, "Update track kinematics at secondary vertex"};
   o2::framework::Configurable<std::string> fConfigLutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   o2::framework::Configurable<bool> fConfigFetchInteractionRate{"cfgFetchInteractionRate", false, "Fetch event-wise interaction rate from the CCDB"};
   o2::framework::Configurable<std::string> fConfigIRSource{"cfgIRSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
@@ -3972,7 +3974,7 @@ struct AnalysisAsymmetricPairing {
 
         VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
         if constexpr (TTwoProngFitter) {
-          VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
+          VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fUpdateKineAtSV);
         }
 
         // Fill histograms
@@ -4281,6 +4283,7 @@ struct AnalysisDileptonTrack {
   o2::framework::Configurable<float> fConfigDileptonLxyCut{"cfgDileptonLxyCut", 0.0, "Lxy cut for dileptons used in the triplet vertexing"};
   o2::framework::Configurable<float> fConfigDileptonTauxyCut{"cfgDileptonTauxyCut", -10000, "Tauxy cut for dileptons used to select the non-prompt Jpsi"};
   o2::framework::Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
+  o2::framework::Configurable<bool> fUpdateKineAtSV{"cfgUpdateKineAtSV", true, "Update track kinematics at secondary vertex"};
 
   o2::framework::Configurable<std::string> fConfigHistogramSubgroups{"cfgDileptonTrackHistogramsSubgroups", "invmass,vertexing", "Comma separated list of dilepton-track histogram subgroups"};
   o2::framework::Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
@@ -4715,7 +4718,7 @@ struct AnalysisDileptonTrack {
           }
           std::vector<float> fTransRange = fConfigTransRange;
           if (fConfigEnergycorrelator) {
-            VarManager::FillEnergyCorrelatorTriple<VarManager::kDecayToEE, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom(), 1. / Effweight_rec);
+            VarManager::FillEnergyCorrelatorTriple<VarManager::kDecayToEE, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fUpdateKineAtSV, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom(), 1. / Effweight_rec);
           }
 
           // table to be written out for ML analysis
@@ -4977,7 +4980,7 @@ struct AnalysisDileptonTrack {
             }
           }
           std::vector<float> fTransRange = fConfigTransRange;
-          VarManager::FillEnergyCorrelatorTriple<VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event1, lepton1, lepton2, track, dqtablereader_helpers::varValues(), fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom(), 1. / Effweight_rec);
+          VarManager::FillEnergyCorrelatorTriple<VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event1, lepton1, lepton2, track, fUpdateKineAtSV, dqtablereader_helpers::varValues(), fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom(), 1. / Effweight_rec);
 
           // loop over dilepton leg cuts and track cuts and fill histograms separately for each combination
           for (int icut = 0; icut < fNCuts; icut++) {

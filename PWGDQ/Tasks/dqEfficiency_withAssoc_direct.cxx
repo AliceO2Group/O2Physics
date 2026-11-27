@@ -289,6 +289,10 @@ using MyBarrelTracksWithCovWithAmbiguities = soa::Join<aod::Tracks, aod::TracksE
                                                        aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                                        aod::pidTPCFullKa, aod::pidTPCFullPr,
                                                        aod::McTrackLabels, aod::BarrelAmbiguities>;
+using MyBarrelTracksWithAmbiguities = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
+                                                aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                                aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                                aod::McTrackLabels, aod::BarrelAmbiguities>;
 using MyDielectronCandidates = soa::Join<aod::Dielectrons, aod::DielectronsExtra>;
 // using MyMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
 // using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
@@ -297,6 +301,7 @@ using MyDielectronCandidates = soa::Join<aod::Dielectrons, aod::DielectronsExtra
 constexpr static uint32_t gkEventFillMapWithMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
 constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackPID;
 constexpr static uint32_t gkTrackFillMapWithDalitzBits = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackTPCPID | VarManager::ObjTypes::DalitzBits;
 constexpr static uint32_t gkTrackFillMapWithCovNoTOF = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackTPCPID | VarManager::ObjTypes::TrackTOFService;
 // constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
@@ -1207,6 +1212,7 @@ struct AnalysisSameEventPairing {
     Configurable<bool> removeDiamondConstrPV{"cfgRemoveDiamondPV", false, "remove diamond constrain for PV recomputation"};
     Configurable<bool> useAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
     Configurable<bool> propToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
+    Configurable<bool> fUpdateKineAtSV{"cfgUpdateKineAtSV", true, "Update track kinematics at secondary vertex"};
     Configurable<bool> corrFullGeo{"cfgCorrFullGeo", false, "Use full geometry to correct for MCS effects in track propagation"};
     Configurable<bool> noCorr{"cfgNoCorrFwdProp", false, "Do not correct for MCS effects in track propagation"};
     Configurable<std::string> collisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
@@ -1278,7 +1284,7 @@ struct AnalysisSameEventPairing {
     }
     VarManager::SetDefaultVarNames();
 
-    fEnableBarrelHistos = context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelPbPbOnly") || context.mOptions.get<bool>("processBarrelOnlyWithGlobalMults");
+    fEnableBarrelHistos = context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyNoCov") || context.mOptions.get<bool>("processBarrelPbPbOnly") || context.mOptions.get<bool>("processBarrelOnlyWithGlobalMults");
     ;
     // fEnableMuonHistos = context.mOptions.get<bool>("processMuonOnlySkimmed");
 
@@ -1890,7 +1896,7 @@ struct AnalysisSameEventPairing {
             VarManager::FillPairCollision<TPairType, TTrackFillMap>(event, t1, t2);
           }
           if constexpr (TTwoProngFitter) {
-            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
+            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigOptions.fUpdateKineAtSV);
             if (fConfigOptions.recomputePV) {
               VarManager::SetPVrecalculationKF(false);
               VarManager::ResetValues(VarManager::kVertexingLxyProjectedRecalculatePV, VarManager::kVertexingLxyProjectedRecalculatePV + 1);
@@ -2377,6 +2383,14 @@ struct AnalysisSameEventPairing {
     // cout << "AnalysisSameEventPairing::processBarrelOnly() completed" << endl;
   }
 
+  void processBarrelOnlyNoCov(MyEventsSelected const& events, BCsWithTimestamps const& bcs,
+                              soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                              MyBarrelTracksWithAmbiguities const& barrelTracks, McCollisions const& mcEvents, McParticles const& mcTracks)
+  {
+    runSameEventPairing<false, VarManager::kDecayToEE, gkEventFillMapWithMults, gkTrackFillMap>(events, bcs, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
+    runMCGen<VarManager::kDecayToEE, gkEventFillMapWithMults>(events, mcEvents, mcTracks);
+  }
+
   void processBarrelOnlyWithGlobalMults(MyEventsGlobalMultSelected const& events, BCsWithTimestamps const& bcs,
                                         soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
                                         MyBarrelTracksWithCovWithAmbiguities const& barrelTracks, McCollisions const& mcEvents, McParticles const& mcTracks)
@@ -2401,6 +2415,7 @@ struct AnalysisSameEventPairing {
   }
 
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnly, "Run barrel only pairing", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyNoCov, "Run barrel only pairing without vertexing", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithGlobalMults, "Run barrel only pairing with global track estimation", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelPbPbOnly, "Run barrel PbPb only pairing", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", true);

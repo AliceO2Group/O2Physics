@@ -1339,6 +1339,7 @@ struct AnalysisSameEventPairing {
     Configurable<bool> removeDiamondConstrPV{"cfgRemoveDiamondPV", false, "remove diamond constrain for PV recomputation"};
     Configurable<bool> useAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
     Configurable<bool> propToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
+    Configurable<bool> fUpdateKineAtSV{"cfgUpdateKineAtSV", true, "Update track kinematics at secondary vertex"};
     Configurable<bool> corrFullGeo{"cfgCorrFullGeo", false, "Use full geometry to correct for MCS effects in track propagation"};
     Configurable<bool> noCorr{"cfgNoCorrFwdProp", false, "Do not correct for MCS effects in track propagation"};
     Configurable<std::string> collisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
@@ -1788,7 +1789,7 @@ struct AnalysisSameEventPairing {
           }
 
           if constexpr (TTwoProngFitter) {
-            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
+            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigOptions.fUpdateKineAtSV);
             o2::dataformats::VertexBase pvRefit;
             if (fConfigOptions.recomputePV) {
               VarManager::SetPVrecalculationKF(false);

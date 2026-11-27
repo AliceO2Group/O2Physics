@@ -1599,7 +1599,7 @@ class VarManager : public TObject
   template <int candidateType, typename T1, typename T2>
   static void FillQuadMC(T1 const& dilepton, T2 const& track1, T2 const& track2, float* values = nullptr);
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
-  static void FillPairVertexing(C const& collision, T const& t1, T const& t2, float* values = nullptr);
+  static void FillPairVertexing(C const& collision, T const& t1, T const& t2, bool updateTrackKine, float* values = nullptr);
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
   static void FillPairVertexingRecomputePV(C const& /*collision*/, T const& t1, T const& t2, const o2::dataformats::VertexBase& pvRefitted, float* values = nullptr);
   template <uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
@@ -1609,7 +1609,7 @@ class VarManager : public TObject
   template <typename T1, typename T2>
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = o2::dqconstants::defaults::InitialHadronMass);
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T1, typename T2, typename T3>
-  static void FillEnergyCorrelatorTriple(C const& collision, T1 const& lepton1, T2 const& lepton2, T3 const& hadron, float* values = nullptr, float Translow = 1. / 3, float Transhigh = 2. / 3, bool applyFitMass = false, float sidebandMass = 0.0f, float weight = 1.0f);
+  static void FillEnergyCorrelatorTriple(C const& collision, T1 const& lepton1, T2 const& lepton2, T3 const& hadron, bool updateKineAtSV, float* values = nullptr, float Translow = 1. / 3, float Transhigh = 2. / 3, bool applyFitMass = false, float sidebandMass = 0.0f, float weight = 1.0f);
   template <int pairType, typename T1, typename T2, typename T3, typename T4, typename T5>
   static void FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, T4 const& track, T5 const& t1, float* values = nullptr, bool applyFitMass = false, float Effweight_rec = 1.f, float Accweight_gen = 1.f, float Translow = 1. / 3, float Transhigh = 2. / 3);
   template <typename T1, typename T2>
@@ -5273,7 +5273,7 @@ void VarManager::FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* v
 }
 
 template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
-void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2, float* values)
+void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2, bool updateTrackKine, float* values)
 {
   // check at compile time that the event and cov matrix have the cov matrix
   constexpr bool EventHasVtxCov = ((collFillMap & Collision) > 0 || (collFillMap & ReducedEventVtxCov) > 0);
@@ -5583,16 +5583,18 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       v12 = v1 + v2;
     }
   }
-  values[kMass] = v12.M();
-  values[kPt] = v12.Pt();
-  values[kEta] = v12.Eta();
-  values[kPhi] = RecoDecay::constrainAngle(v12.Phi());
-  values[kPt1] = v1.Pt();
-  values[kEta1] = v1.Eta();
-  values[kPhi1] = v1.Phi();
-  values[kPt2] = v2.Pt();
-  values[kEta2] = v2.Eta();
-  values[kPhi2] = v2.Phi();
+  if (updateTrackKine) {
+    values[kMass] = v12.M();
+    values[kPt] = v12.Pt();
+    values[kEta] = v12.Eta();
+    values[kPhi] = RecoDecay::constrainAngle(v12.Phi());
+    values[kPt1] = v1.Pt();
+    values[kEta1] = v1.Eta();
+    values[kPhi1] = v1.Phi();
+    values[kPt2] = v2.Pt();
+    values[kEta2] = v2.Eta();
+    values[kPhi2] = v2.Phi();
+  }
 }
 
 template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
@@ -6773,13 +6775,13 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
 }
 
 template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T1, typename T2, typename T3>
-void VarManager::FillEnergyCorrelatorTriple(C const& collision, T1 const& lepton1, T2 const& lepton2, T3 const& hadron, float* values, float Translow, float Transhigh, bool applyFitMass, float sidebandMass, float weight)
+void VarManager::FillEnergyCorrelatorTriple(C const& collision, T1 const& lepton1, T2 const& lepton2, T3 const& hadron, bool updateKineAtSV, float* values, float Translow, float Transhigh, bool applyFitMass, float sidebandMass, float weight)
 {
   if (!values) {
     values = static_cast<float*>(fgValues);
   }
   if (fgUsedVars[kVertexingTauxyProjectedPoleJPsiMass] || fgUsedVars[kVertexingLxyProjected]) {
-    FillPairVertexing<pairType, collFillMap, fillMap>(collision, lepton1, lepton2, values);
+    FillPairVertexing<pairType, collFillMap, fillMap>(collision, lepton1, lepton2, updateKineAtSV, values);
   }
   float m1 = o2::constants::physics::MassElectron;
   float m2 = o2::constants::physics::MassElectron;
