@@ -8,7 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \file heatCapacity.cxx
+///
+/// \file HeatCapacity.cxx
+///
 /// \brief Task to measure charged particles spectra in ultracentral collisions
 /// \author Diana Rosales Herrera (diana.rosales.herrera@cern.ch)
 /// \author Chiara De Martin (chiara.de.martin@cern.ch)
@@ -18,7 +20,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
+#include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -30,11 +32,10 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TDatabasePDG.h>
-
 #include <cmath>
 #include <string>
 #include <vector>
+#include <TH1.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -45,8 +46,8 @@ using TrackCandidates = soa::Join<aod::Tracks, aod::TracksDCA, aod::TracksExtra>
 using McCollisionCandidates = soa::Join<CollisionCandidates, aod::McCollisionLabels>;
 using McTrackCandidates = soa::Join<TrackCandidates, aod::McTrackLabels>;
 
-struct heatCapacity {
-  Service<o2::framework::O2DatabasePDG> pdg;
+struct HeatCapacity {
+  Service<o2::framework::O2DatabasePDG> pdg{};
   Preslice<McTrackCandidates> perCollision = aod::track::collisionId;
 
   struct EventSelections : ConfigurableGroup {
@@ -67,8 +68,8 @@ struct heatCapacity {
   struct TrackSelections : ConfigurableGroup {
     std::string prefix = "TrackSelections-Configurations"; // JSON group name
     Configurable<int> minTPCrows{"minTPCrows", 70, "minimum TPC crossed rows"};
-    Configurable<bool> requireTPCRefit{"RequireTPCRefit", true, "Require TPC Refit"};
-    Configurable<bool> requireITSRefit{"RequireITSRefit", true, "Require ITS Refit"};
+    Configurable<bool> requireTPCRefit{"requireTPCRefit", true, "Require TPC Refit"};
+    Configurable<bool> requireITSRefit{"requireITSRefit", true, "Require ITS Refit"};
     Configurable<bool> requireITSibAny{"requireITSibAny", true, "Require ITS inner barrel (ib) any hits"};
 
     // Configurable<float> dcaZpos{"dcaZpos", 0.2, "DCA Pos To PV (cm)"};
@@ -89,7 +90,7 @@ struct heatCapacity {
     std::string prefix = "axis-Configurations"; // JSON group name
     ConfigurableAxis axispTVar{"axispTVar", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p}_{T} (GeV/#it{c})"};
     ConfigurableAxis axisEta{"axisEta", {100, -2.0f, 2.0f}, "Eta"};
-    ConfigurableAxis axisPhi{"axisPhi", {100, 0, 2 * M_PI}, "  Phi"};
+    ConfigurableAxis axisPhi{"axisPhi", {100, 0, o2::constants::math::TwoPI}, "  Phi"};
     ConfigurableAxis axispT{"axispT", {100, 0.15f, 10}, "  pT"};
     ConfigurableAxis axisdcaZ{"axisdcaZ", {2000, -3.0f, 3.0f}, "dcaZ"};
     ConfigurableAxis axisdcaXY{"axisdcaXY", {2000, -1.0f, 1.0f}, "dcaXY"};
@@ -165,11 +166,13 @@ struct heatCapacity {
       histos.add("MC/hMcCentFT0Mult", "MC Selected events; Centrality; Mult", kTH2D, {axisConfigurations.axisCent, axisConfigurations.axisMult});
       histos.add("MC/hMcCentFT0MultpTRecoPrim", "Primary reco tracks; Centrality; Mul; pT_MC", kTH3F, {axisConfigurations.axisCent, axisConfigurations.axisMult, axisConfigurations.axispTVar});
       histos.add("MC/hMcCentFT0MultpTGenPrim", "Primary gen particles; Centrality; Mult; pT_MC", kTH3F, {axisConfigurations.axisCent, axisConfigurations.axisMult, axisConfigurations.axispTVar});
+      histos.add("MC/hMcCentFT0MultpTAll", "All tracks passing cuts; Centrality; Mult; pT", kTH3F, {axisConfigurations.axisCent, axisConfigurations.axisMult, axisConfigurations.axispTVar});
       // MCmultiplicity
-      histos.add("MC/hMcMult", "MC delected mult events", kTH1D, {axisConfigurations.axisMult});
+      histos.add("MC/hMcMult", "MC selected mult events", kTH1D, {axisConfigurations.axisMult});
       histos.add("MC/hMcMultVspTRecoPrim", "Primary reco tracks; Mult; pT_MC", kTH2F, {axisConfigurations.axisMult, axisConfigurations.axispTVar});
       histos.add("MC/hMcMultVspTGenPrim", "Primary gen charged particles; Mult; pT_MC", kTH2F, {axisConfigurations.axisMult, axisConfigurations.axispTVar});
       histos.add("MC/hMcMultGen", "MC mult generated ; N_gen; Events", kTH1D, {axisConfigurations.axisMult});
+      histos.add("MC/hMcMultVspTAll", "All tracks passing cuts; Mult; pT", kTH2F, {axisConfigurations.axisMult, axisConfigurations.axispTVar});
 
       histos.add("MC/hNRecoCollisionsPerMc", "Reco collisions per MC event; reco collisions; MC events", kTH1D, {{10, -0.5, 9.5}});
     }
@@ -273,7 +276,7 @@ struct heatCapacity {
   }
 
   template <typename CheckTrack>
-  bool IsTrackSelected(CheckTrack const& track, bool fillHists)
+  bool isTrackSelected(CheckTrack const& track, bool fillHists)
   {
     if (fillHists) {
       histos.fill(HIST("hTrackSelection"), 1);
@@ -305,7 +308,7 @@ struct heatCapacity {
     }
 
     // eta cut
-    if (fabs(track.eta()) > trackSelections.maxeta) {
+    if (std::abs(track.eta()) > trackSelections.maxeta) {
       return false;
     }
     if (fillHists) {
@@ -322,7 +325,7 @@ struct heatCapacity {
 
     // dcaXY cut
     float maxDCAxy = trackSelections.dcaXYconst + trackSelections.dcaXYpt * std::pow(track.pt(), trackSelections.dcaXYexp);
-    if (fabs(track.dcaXY()) > maxDCAxy) {
+    if (std::abs(track.dcaXY()) > maxDCAxy) {
       return false;
     }
     if (fillHists) {
@@ -333,7 +336,7 @@ struct heatCapacity {
 
     // dcaZ cut
     float maxDCAz = trackSelections.dcaZconst + trackSelections.dcaZpt * std::pow(track.pt(), trackSelections.dcaZexp);
-    if (fabs(track.dcaZ()) > maxDCAz) {
+    if (std::abs(track.dcaZ()) > maxDCAz) {
       return false;
     }
     if (fillHists) {
@@ -347,7 +350,7 @@ struct heatCapacity {
   }
 
   template <typename CheckGenTrack>
-  bool IsGenTrackSelected(CheckGenTrack const& particle)
+  bool isGenTrackSelected(CheckGenTrack const& particle)
   {
     if (!particle.isPhysicalPrimary()) {
       return false;
@@ -359,7 +362,8 @@ struct heatCapacity {
     if (pdgTrack == nullptr) {
       return false;
     }
-    if (std::abs(pdgTrack->Charge()) < 3) {
+    constexpr int kMinChargeUnits = 3;
+    if (std::abs(pdgTrack->Charge()) < kMinChargeUnits) {
       return false;
     }
     if (std::abs(particle.eta()) > trackSelections.maxeta) {
@@ -406,7 +410,7 @@ struct heatCapacity {
       histos.fill(HIST("hNTracksVSphiBefCuts"), track.phi());
       histos.fill(HIST("hdcaXYVSptBefCuts"), track.dcaXY(), track.pt());
 
-      if (!IsTrackSelected(track, true)) {
+      if (!isTrackSelected(track, true)) {
         continue;
       }
       nSelectedTracks++;
@@ -423,7 +427,7 @@ struct heatCapacity {
     histos.fill(HIST("hMult"), nSelectedTracks);
   }
 
-  PROCESS_SWITCH(heatCapacity, processReco, "Process for Reco data", false);
+  PROCESS_SWITCH(HeatCapacity, processReco, "Process for Reco data", false);
 
   void processMC(aod::McCollisions::iterator const&, soa::SmallGroups<McCollisionCandidates> const& collisions, McTrackCandidates const& tracks, aod::McParticles const& mcParticles)
   {
@@ -449,14 +453,16 @@ struct heatCapacity {
 
       auto tracksPerColl = tracks.sliceBy(perCollision, collision.globalIndex());
       for (const auto& track : tracksPerColl) {
-        if (!IsTrackSelected(track, false)) {
+        if (!isTrackSelected(track, false)) {
           continue;
         }
+
         // All reco tracks passing cuts
         histos.fill(HIST("MC/hMcpTAll"), track.pt());
         histos.fill(HIST("MC/hMcCentFT0VspTAll"), centrality, track.pt());
         histos.fill(HIST("MC/hMcCentFT0_pT_eta_All"), centrality, track.pt(), track.eta());
-
+        histos.fill(HIST("MC/hMcCentFT0MultpTAll"), centrality, mult, track.pt());
+        histos.fill(HIST("MC/hMcMultVspTAll"), mult, track.pt());
         // Numerator
         if (track.has_mcParticle()) {
           const auto& mcPart = track.mcParticle();
@@ -482,7 +488,7 @@ struct heatCapacity {
     int nGenParticles = 0;
     // Denominator
     for (const auto& particle : mcParticles) {
-      if (!IsGenTrackSelected(particle)) {
+      if (!isGenTrackSelected(particle)) {
         continue;
       }
       nGenParticles++;
@@ -494,11 +500,11 @@ struct heatCapacity {
     }
     histos.fill(HIST("MC/hMcMultGen"), nGenParticles);
   }
-  PROCESS_SWITCH(heatCapacity, processMC, "Process for MC data", true);
+  PROCESS_SWITCH(HeatCapacity, processMC, "Process for MC data", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<heatCapacity>(cfgc)};
+    adaptAnalysisTask<HeatCapacity>(context)};
 }

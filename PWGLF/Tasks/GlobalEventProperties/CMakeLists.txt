@@ -50,6 +50,6 @@ o2physics_add_dpl_workflow(dndeta-hi
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(heat-capacity
-                  SOURCES heatCapacity.cxx
+                  SOURCES HeatCapacity.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
