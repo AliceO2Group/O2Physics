@@ -200,6 +200,8 @@ constexpr const char PrefixLc1PionDauBinning[] = "Lc1PionDauBinning";
 constexpr const char PrefixCascadePosDauBinning[] = "CascadePosDauBinning";
 constexpr const char PrefixCascadeNegDauBinning[] = "CascadeNegDauBinning";
 constexpr const char PrefixCascadeBachelorBinning[] = "CascadeBachelorBinning";
+constexpr const char PrefixSigma0PosDauBinning[] = "Sigma0PosDauBinning";
+constexpr const char PrefixSigma0NegDauBinning[] = "Sigma0NegDauBinning";
 constexpr const char PrefixKinkChaDauBinning[] = "KinkChaDauBinning";
 constexpr const char PrefixResonancePosDauBinning[] = "ResonancePosDauBinning";
 constexpr const char PrefixResonanceNegDauBinning[] = "ResonanceNegDauBinning";
@@ -225,6 +227,8 @@ using ConfLc1PionDauBinning = ConfTrackBinning<PrefixLc1PionDauBinning>;
 using ConfCascadePosDauBinning = ConfTrackBinning<PrefixCascadePosDauBinning>;
 using ConfCascadeNegDauBinning = ConfTrackBinning<PrefixCascadeNegDauBinning>;
 using ConfCascadeBachelorBinning = ConfTrackBinning<PrefixCascadeBachelorBinning>;
+using ConfSigma0PosDauBinning = ConfTrackBinning<PrefixSigma0PosDauBinning>;
+using ConfSigma0NegDauBinning = ConfTrackBinning<PrefixSigma0NegDauBinning>;
 // for dN/deta tracks
 constexpr const char PrefixDndetaTrackGlobalBinning[] = "DndetaTrackGlobalBinning";
 constexpr const char PrefixDndetaTrackItsOnlyBinning[] = "DndetaTrackItsOnlyBinning";
@@ -689,6 +693,13 @@ constexpr char PrefixCascadeBachelorMe[] = "CascadeBachelor/ME/";
 constexpr char PrefixCascadePosDaughterQa[] = "CascadePosDauQa/";
 constexpr char PrefixCascadeNegDaughterQa[] = "CascadeNegDauQa/";
 constexpr char PrefixCascadeBachelorQa[] = "CascadeBachelorQa/";
+
+constexpr char PrefixSigma0PosDaughterSe[] = "Sigma0PosDau/SE/";
+constexpr char PrefixSigma0NegDaughterSe[] = "Sigma0NegDau/SE/";
+constexpr char PrefixSigma0PosDaughterMe[] = "Sigma0PosDau/ME/";
+constexpr char PrefixSigma0NegDaughterMe[] = "Sigma0NegDau/ME/";
+constexpr char PrefixSigma0PosDaughterQa[] = "Sigma0PosDauQa/";
+constexpr char PrefixSigma0NegDaughterQa[] = "Sigma0NegDauQa/";
 
 constexpr char PrefixKinkChaDaughterSe[] = "KinkChaDau/SE/";
 constexpr char PrefixKinkChaDaughterMe[] = "KinkChaDau/ME/";

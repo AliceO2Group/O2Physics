@@ -91,6 +91,7 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
 
 constexpr const char PrefixCprTrackTrack[] = "CprTrackTrack";
 constexpr const char PrefixCprTrackV0Daughter[] = "CprTrackV0Daughter";
+constexpr const char PrefixCprTrackSigma0Daughter[] = "CprTrackSigma0Daughter";
 constexpr const char PrefixCprTrackD0Daughter[] = "CprTrackD0Daughter";
 constexpr const char PrefixCprTrackLcProton[] = "CprTrackLcProton";
 constexpr const char PrefixCprTrackLcKaon[] = "CprTrackLcKaon";
@@ -110,6 +111,7 @@ constexpr const char PrefixCprMcParticleMcParticle[] = "CprMcParticleMcParticle"
 // pairs
 using ConfCprTrackTrack = ConfCpr<PrefixCprTrackTrack>;
 using ConfCprTrackV0Daughter = ConfCpr<PrefixCprTrackV0Daughter>;
+using ConfCprTrackSigma0Daughter = ConfCpr<PrefixCprTrackSigma0Daughter>;
 using ConfCprTrackD0Daughter = ConfCpr<PrefixCprTrackD0Daughter>;
 using ConfCprTrackLcProton = ConfCpr<PrefixCprTrackLcProton>;
 using ConfCprTrackLcKaon = ConfCpr<PrefixCprTrackLcKaon>;
@@ -136,6 +138,8 @@ constexpr char PrefixTrackTrackSe[] = "CPR_TrackTrack/SE/";
 constexpr char PrefixTrackTrackMe[] = "CPR_TrackTrack/ME/";
 constexpr char PrefixTrackV0DaughterSe[] = "CPR_TrackV0Dau/SE/";
 constexpr char PrefixTrackV0DaughterMe[] = "CPR_TrackV0Dau/ME/";
+constexpr char PrefixTrackSigma0DaughterSe[] = "CPR_TrackSigma0Dau/SE/";
+constexpr char PrefixTrackSigma0DaughterMe[] = "CPR_TrackSigma0Dau/ME/";
 constexpr char PrefixTrackD0DaughterSe[] = "CPR_TrackD0Dau/SE/";
 constexpr char PrefixTrackD0DaughterMe[] = "CPR_TrackD0Dau/ME/";
 constexpr char PrefixD0D0PosSe[] = "CPR_D0D0_PosDau/SE/";
@@ -748,6 +752,44 @@ class ClosePairRejectionTrackKink
 
  private:
   CloseTrackRejection<prefix> mCtr;
+};
+
+// photon legs are not in the Track table so Sigma0 pairs only need to cross-check aganist dau lambda
+template <auto& prefixV0Daughter>
+class ClosePairRejectionTrackSigma0
+{
+ public:
+  template <typename T1>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specsV0Daughter,
+            T1 const& confCprV0Daughter,
+            int absChargeTrack)
+  {
+    mCtrV0Daughter.init(registry, specsV0Daughter, confCprV0Daughter, absChargeTrack, 1);
+  }
+
+  void setMagField(float magField)
+  {
+    mCtrV0Daughter.setMagField(magField);
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  [[nodiscard]] bool isClosePair(T1 const& track, T2 const& sigma0, T3 const& trackTable, T4 const& pairHistManager)
+  {
+    bool isCloseV0Daughter = false;
+    if (track.sign() > 0) {
+      auto posDau = trackTable.rawIteratorAt(sigma0.posDauId() - trackTable.offset());
+      isCloseV0Daughter = mCtrV0Daughter.isClosePair(track, posDau, pairHistManager);
+    } else {
+      auto negDau = trackTable.rawIteratorAt(sigma0.negDauId() - trackTable.offset());
+      isCloseV0Daughter = mCtrV0Daughter.isClosePair(track, negDau, pairHistManager);
+    }
+
+    return isCloseV0Daughter;
+  }
+
+ private:
+  CloseTrackRejection<prefixV0Daughter> mCtrV0Daughter;
 };
 
 // PCM photon daughters are, for now, not indexed into the track table (see photonBuilder.h):
