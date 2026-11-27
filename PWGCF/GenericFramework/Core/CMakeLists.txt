@@ -19,6 +19,7 @@ o2physics_add_library(GFWCore
                         GFWWeightsList.cxx
                         FlowPtContainer.cxx
                         BootstrapProfile.cxx
+               INSTALL_HEADERS GFWConfig.h
                PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(GFWCore

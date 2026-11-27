@@ -173,7 +173,7 @@ struct DQEventQvector {
     if (!eventCutStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(eventCutStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fEventCut->AddCut(dqcuts::GetAnalysisCut(objArray->At(icut)->GetName()));
+        fEventCut->addCut(dqcuts::getAnalysisCut(objArray->At(icut)->GetName()));
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -339,14 +339,14 @@ struct DQEventQvector {
 
     if (fConfigQA) {
       fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
-      if (fEventCut->IsSelected(VarManager::fgValues)) {
+      if (fEventCut->isSelected(VarManager::fgValues)) {
         fHistMan->FillHistClass("Event_AfterCuts_centralFW", VarManager::fgValues);
       }
     }
 
     // Fill the tree for the reduced event table with Q vector quantities
     // temporarily removed --> this table is filled in the table-maker directly
-    // if (fEventCut->IsSelected(VarManager::fgValues)) {
+    // if (fEventCut->isSelected(VarManager::fgValues)) {
     //  eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
     //                    collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
     //  eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
@@ -385,12 +385,12 @@ struct DQEventQvector {
 
     if (fConfigQA) {
       fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
-      if (fEventCut->IsSelected(VarManager::fgValues)) {
+      if (fEventCut->isSelected(VarManager::fgValues)) {
         fHistMan->FillHistClass("Event_AfterCuts_centralFW", VarManager::fgValues);
       }
     }
 
-    if (fEventCut->IsSelected(VarManager::fgValues)) {
+    if (fEventCut->isSelected(VarManager::fgValues)) {
       // temporarily removed --> this table is filled in the table-maker directly
       // eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
       //                  collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
@@ -556,14 +556,14 @@ struct DQEventQvector {
     if (fConfigQA) {
       if ((tracks1.size() > 0) && (S10N * S10P * S10Full != 0.0)) {
         fHistMan->FillHistClass("Event_BeforeCuts_GFW", VarManager::fgValues);
-        if (fEventCut->IsSelected(VarManager::fgValues)) {
+        if (fEventCut->isSelected(VarManager::fgValues)) {
           fHistMan->FillHistClass("Event_AfterCuts_GFW", VarManager::fgValues);
         }
       }
     }
 
     // Fill the tree for the reduced event table with Q vector quantities
-    if (fEventCut->IsSelected(VarManager::fgValues)) {
+    if (fEventCut->isSelected(VarManager::fgValues)) {
       eventQvector(VarManager::fgValues[VarManager::kQ1X0A], VarManager::fgValues[VarManager::kQ1Y0A], VarManager::fgValues[VarManager::kQ1X0B], VarManager::fgValues[VarManager::kQ1Y0B], VarManager::fgValues[VarManager::kQ1X0C], VarManager::fgValues[VarManager::kQ1Y0C], VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultB], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kQ3X0A], VarManager::fgValues[VarManager::kQ3Y0A], VarManager::fgValues[VarManager::kQ3X0B], VarManager::fgValues[VarManager::kQ3Y0B], VarManager::fgValues[VarManager::kQ3X0C], VarManager::fgValues[VarManager::kQ3Y0C], VarManager::fgValues[VarManager::kQ4X0A], VarManager::fgValues[VarManager::kQ4Y0A], VarManager::fgValues[VarManager::kQ4X0B], VarManager::fgValues[VarManager::kQ4Y0B], VarManager::fgValues[VarManager::kQ4X0C], VarManager::fgValues[VarManager::kQ4Y0C]);
       eventQvectorExtra(VarManager::fgValues[VarManager::kQ42XA], VarManager::fgValues[VarManager::kQ42YA], VarManager::fgValues[VarManager::kQ23XA], VarManager::fgValues[VarManager::kQ23YA], VarManager::fgValues[VarManager::kS11A], VarManager::fgValues[VarManager::kS12A], VarManager::fgValues[VarManager::kS13A], VarManager::fgValues[VarManager::kS31A]);
       eventRefFlow(VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM11REFetagap], VarManager::fgValues[VarManager::kM1111REF], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR2REFetagap], VarManager::fgValues[VarManager::kCORR4REF], centrality);
@@ -580,12 +580,12 @@ struct DQEventQvector {
       if ((tracks1.size() > 0) && (VarManager::fgValues[VarManager::kMultA] * VarManager::fgValues[VarManager::kMultB] * VarManager::fgValues[VarManager::kMultC] != 0.0)) {
         if (fConfigQA) {
           fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
-          if (fEventCut->IsSelected(VarManager::fgValues)) {
+          if (fEventCut->isSelected(VarManager::fgValues)) {
             fHistMan->FillHistClass("Event_AfterCuts_centralFW", VarManager::fgValues);
           }
         }
       }
-      if (fEventCut->IsSelected(VarManager::fgValues)) {
+      if (fEventCut->isSelected(VarManager::fgValues)) {
         // temporarily removed --> this table is filled in the table-maker directly
         // eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
         //                   collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());

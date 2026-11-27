@@ -173,6 +173,10 @@ inline constexpr int PostCalibProton = 3;
 inline constexpr int TPCPIDCalibrationMeanSigma = 1;
 inline constexpr int TPCPIDCalibrationMeanSigmaStatus = 2;
 
+inline constexpr float tpcOuterReferenceRadius = 147.f;       // cm
+inline constexpr float curvatureConversion = 0.000299792458f; // (GeV/c)/(kG cm)
+inline constexpr float minPtOuterTPCReferenceR = 0.5f * curvatureConversion * tpcOuterReferenceRadius;
+
 inline constexpr int NumITSLayers = 7;
 
 inline constexpr int NumMFTLayers = 10;
@@ -189,6 +193,16 @@ inline constexpr float InitialHadronMass = 0.0f;
 // Lifetimes
 inline constexpr float LifetimeBPlus = 1.638e-12f; // s
 inline constexpr float LifetimeB0 = 1.517e-12f;    // s
+
+// ALICE 3
+
+// Based on Scoping document target values
+inline constexpr float multipleScatteringResLimit = 3.422;
+inline constexpr float trackResolutionResLimit = 2.051;
+
+inline constexpr float TOFResolutionPs = 20.f;
+inline constexpr float RichSigmaRad = 1.5e-3f;
+inline constexpr float AerogelIndex = 1.03;
 
 } // namespace defaults
 

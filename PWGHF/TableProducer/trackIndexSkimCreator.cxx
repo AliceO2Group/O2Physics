@@ -1415,6 +1415,7 @@ struct HfTrackIndexSkimCreator {
     Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
     Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
     Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
+    Configurable<bool> setDcaFitterOldMode{"setDcaFitterOldMode", true, "set old method of DCAFitter"};
     // CCDB
     Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
@@ -1597,6 +1598,7 @@ struct HfTrackIndexSkimCreator {
     df2.setMinRelChi2Change(config.minRelChi2Change);
     df2.setUseAbsDCA(config.useAbsDCA);
     df2.setWeightedFinalPCA(config.useWeightedFinalPCA);
+    df2.setOldMode(config.setDcaFitterOldMode);
 
     df3.setPropagateToPCA(config.propagateToPCA);
     df3.setMaxR(config.maxR);
@@ -1605,6 +1607,7 @@ struct HfTrackIndexSkimCreator {
     df3.setMinRelChi2Change(config.minRelChi2Change);
     df3.setUseAbsDCA(config.useAbsDCA);
     df3.setWeightedFinalPCA(config.useWeightedFinalPCA);
+    df3.setOldMode(config.setDcaFitterOldMode);
 
     ccdb->setURL(config.ccdbUrl);
     ccdb->setCaching(true);
@@ -3436,6 +3439,7 @@ struct HfTrackIndexSkimCreatorCascades {
     Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
     Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
     Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", true, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
+    Configurable<bool> setDcaFitterOldMode{"setDcaFitterOldMode", true, "set old method of DCAFitter"};
     // track cuts for V0 daughters
     Configurable<double> etaMinV0Daugh{"etaMinV0Daugh", std::forward<double>(etaMinDefault), "min. pseudorapidity V0 daughters"};
     Configurable<double> etaMaxV0Daugh{"etaMaxV0Daugh", 1.1, "max. pseudorapidity V0 daughters"};
@@ -3510,6 +3514,7 @@ struct HfTrackIndexSkimCreatorCascades {
       df2.setMaxDZIni(config.maxDZIni);
       df2.setUseAbsDCA(config.useAbsDCA);
       df2.setWeightedFinalPCA(config.useWeightedFinalPCA);
+      df2.setOldMode(config.setDcaFitterOldMode);
     }
 
     ccdb->setURL(config.ccdbUrl);
@@ -3749,6 +3754,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
     Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
     Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
     Configurable<double> maxChi2{"maxChi2", 100., "discard vertices with chi2/Nprongs > this (or sum{DCAi^2}/Nprongs for abs. distance minimization)"};
+    Configurable<bool> setDcaFitterOldMode{"setDcaFitterOldMode", true, "set old method of DCAFitter"};
 
     // Selection criteria
     // selections have been set to run2 lambda dedicated cuts
@@ -3826,6 +3832,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
     df2.setMinRelChi2Change(config.minRelChi2Change);
     df2.setUseAbsDCA(config.useAbsDCA);
     df2.setWeightedFinalPCA(config.useWeightedFinalPCA);
+    df2.setOldMode(config.setDcaFitterOldMode);
 
     ccdb->setURL(config.ccdbUrl);
     ccdb->setCaching(true);

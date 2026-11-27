@@ -159,6 +159,7 @@ struct FlowSP {
     O2_DEFINE_CONFIGURABLE(cCCDB_NUE3D, std::string, "Users/c/ckoster/flowSP/LHC23_PbPb_pass5/NUE3D/Default", "ccdb dir for NUE 3D corrections (pt, eta, centrality)");
     O2_DEFINE_CONFIGURABLE(cCCDBdir_centrality, std::string, "Users/c/ckoster/flowSP/LHC23_PbPb_pass5/centWeight/Default", "ccdb dir for Centrality corrections");
     O2_DEFINE_CONFIGURABLE(cCCDBdir_meanPt, std::string, "", "ccdb dir for Mean Pt corrections");
+    O2_DEFINE_CONFIGURABLE(cCCDBdir_meanPt3D, std::string, "", "ccdb dir for Mean Pt corrections binned in Pt (to check corrections)");
 
     // Configurables containing vector
     O2_DEFINE_CONFIGURABLE(cUsePredeFinedSigma, bool, true, "Use one of the pre-defines settings for the multiplicity vs. centrality plots");
@@ -167,6 +168,9 @@ struct FlowSP {
     Configurable<std::vector<double>> cEvSelsMultPv{"cEvSelsMultPv", std::vector<double>{2223.49, -75.1444, 0.963572, -0.00570399, 1.34877e-05, 3790.99, -137.064, 2.13044, -0.017122, 5.82834e-05}, "Multiplicity cuts (PV) first 5 parameters cutLOW last 5 cutHIGH (Default is +-2sigma pass5) "};
     Configurable<std::vector<double>> cEvSelsMult{"cEvSelsMult", std::vector<double>{1301.56, -41.4615, 0.478224, -0.00239449, 4.46966e-06, 2967.6, -102.927, 1.47488, -0.0106534, 3.28622e-05}, "Multiplicity cuts (Global) first 5 parameters cutLOW last 5 cutHIGH (Default is +-2sigma pass5) "};
     Configurable<std::vector<double>> cPtBinning{"cPtBinning", std::vector<double>{0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, "pT binning for vn"};
+
+    ConfigurableAxis cAxisCentMC{"cAxisCentMC", {90, 0, 90}, "Configurable centrality axis -> Used for MC!"};
+    ConfigurableAxis cAxisEtaMeanPt{"cAxisEtaMeanPt", {64, -0.8, 0.8}, "Configurableeta axis -> Used for mean pt! "};
 
   } cfg;
 
@@ -216,11 +220,13 @@ struct FlowSP {
     TProfile* hEvPlaneRes = nullptr;
     TH1D* hCentrality = nullptr;
     TProfile2D* hMeanPt = nullptr;
+    TProfile3D* hMeanPt3D = nullptr;
 
     bool clQQ = false;
     bool clEvPlaneRes = false;
     bool clCentrality = false;
     bool clMeanPt = false;
+    bool clMeanPt3D = false;
 
   } conf;
 
@@ -352,9 +358,16 @@ struct FlowSP {
     nParticleTypes
   };
 
+  enum SelectionType {
+    kEvent,
+    kTrack,
+    nSelectionTypes
+  };
+
   static constexpr std::array<std::string_view, 3> Charge = {"incl/", "pos/", "neg/"};
   static constexpr std::array<std::string_view, 4> Species = {"", "pion/", "kaon/", "proton/"};
   static constexpr std::array<std::string_view, 2> Time = {"before/", "after/"};
+  static constexpr std::array<std::string_view, 2> Selections = {"Event", "Track"};
 
   void init(InitContext const&)
   {
@@ -372,11 +385,11 @@ struct FlowSP {
     AxisSpec axisPhi = {60, 0, constants::math::TwoPI, "#varphi"};
     AxisSpec axisEta = {64, -1.6, 1.6, "#eta"};
     AxisSpec axisEtaVn = {8, -.8, .8, "#eta"};
-    AxisSpec axisCentrality = {20, 0, 100, "Centrality (%)"};
+    AxisSpec axisCentralityFivePercent = {20, 0, 100, "Centrality (%)"};
+    AxisSpec axisCentralityOnePercent = {90, 0, 90, "Centrality(%)"};
     AxisSpec axisVx = {40, -0.01, 0.01, "v_{x}"};
     AxisSpec axisVy = {40, -0.01, 0.01, "v_{y}"};
     AxisSpec axisVz = {40, -10, 10, "v_{z}"};
-    AxisSpec axisCent = {90, 0, 90, "Centrality(%)"};
     AxisSpec axisPhiPlane = {100, -constants::math::PI, constants::math::PI, "#Psi"};
     AxisSpec axisT0c = {70, 0, 100000, "N_{ch} (T0C)"};
     AxisSpec axisT0a = {70, 0, 200000, "N_{ch} (T0A)"};
@@ -395,8 +408,8 @@ struct FlowSP {
 
     rctChecker.init(cfg.cEvtRCTFlagCheckerLabel, cfg.cEvtRCTFlagCheckerZDCCheck, cfg.cEvtRCTFlagCheckerLimitAcceptAsBad);
 
-    histos.add("hCentrality", "Centrality; Centrality (%); ", {HistType::kTH1D, {axisCent}});
-    histos.add("hCentralityCW", "Centrality; Centrality (%); Weighted counts", {HistType::kTH1D, {axisCent}});
+    histos.add("hCentrality", "Centrality; Centrality (%); ", {HistType::kTH1D, {axisCentralityOnePercent}});
+    histos.add("hCentralityCW", "Centrality; Centrality (%); Weighted counts", {HistType::kTH1D, {axisCentralityOnePercent}});
 
     histos.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_FilteredEvent + 1, "Filtered events");
@@ -409,10 +422,20 @@ struct FlowSP {
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoCollInTimeRangeNarrow + 1, "kNoCollInTimeRangeNarrow");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsVertexITSTPC + 1, "kIsVertexITSTPC");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_CentCuts + 1, "Cenrality range");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayer0123 + 1, "kkIsGoodITSLayer0123");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kIsGoodITSLayersAll");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayer0123 + 1, "kIsGoodITSLayer0123");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_MultCuts + 1, "Multiplicity Cuts Pilup");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_isSelectedZDC + 1, "isSelected");
+
+    histos.add("hSingleEventRejection", "", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
+    histos.add("hEventRejectionMatrix", "", {HistType::kTH2D, {{nEventSelections, 0, nEventSelections}, {nEventSelections, 0, nEventSelections}}});
+
+    for (int i = 1; i <= nEventSelections; i++) {
+      const char* label = histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->GetBinLabel(i);
+      histos.get<TH2>(HIST("hEventRejectionMatrix"))->GetXaxis()->SetBinLabel(i, label);
+      histos.get<TH2>(HIST("hEventRejectionMatrix"))->GetYaxis()->SetBinLabel(i, label);
+      histos.get<TH1>(HIST("hSingleEventRejection"))->GetXaxis()->SetBinLabel(i, label);
+    }
 
     histos.add("hTrackCount", "Number of Tracks; Cut; #Tracks Passed Cut", {HistType::kTH1D, {{nTrackSelections, 0, nTrackSelections}}});
     histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_Eta + 1, "Eta");
@@ -425,6 +448,16 @@ struct FlowSP {
     histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_TPCBoundary + 1, "TPC Boundary");
     histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_ZeroCharge + 1, "Only charged");
     histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_ParticleWeights + 1, "Apply weights");
+
+    histos.add("hSingleTrackRejection", "", {HistType::kTH1D, {{nTrackSelections, 0, nTrackSelections}}});
+    histos.add("hTrackRejectionMatrix", "", {HistType::kTH2D, {{nTrackSelections, 0, nTrackSelections}, {nTrackSelections, 0, nTrackSelections}}});
+
+    for (int i = 1; i <= nTrackSelections; i++) {
+      const char* label = histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->GetBinLabel(i);
+      histos.get<TH2>(HIST("hTrackRejectionMatrix"))->GetXaxis()->SetBinLabel(i, label);
+      histos.get<TH2>(HIST("hTrackRejectionMatrix"))->GetYaxis()->SetBinLabel(i, label);
+      histos.get<TH1>(HIST("hSingleTrackRejection"))->GetXaxis()->SetBinLabel(i, label);
+    }
 
     if (cfg.cFillWeights) {
       registry.add<TH3>("weights2D/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
@@ -443,26 +476,26 @@ struct FlowSP {
     }
 
     if (cfg.cFillEventQA) {
-      histos.add("QA/after/hCentFT0C", " ; Cent FT0C (%); ", {HistType::kTH1D, {axisCent}});
-      histos.add("QA/after/hCentFT0M", "; Cent FT0M (%); ", {HistType::kTH1D, {axisCent}});
-      histos.add("QA/after/hCentFV0A", "; Cent FV0A (%); ", {HistType::kTH1D, {axisCent}});
-      histos.add("QA/after/hCentNGlobal", "; Cent NGlobal (%); ", {HistType::kTH1D, {axisCent}});
-      histos.add("QA/after/globalTracks_centT0C", "", {HistType::kTH2D, {axisCent, axisNch}});
-      histos.add("QA/after/PVTracks_centT0C", "", {HistType::kTH2D, {axisCent, axisMultpv}});
+      histos.add("QA/after/hCentFT0C", " ; Cent FT0C (%); ", {HistType::kTH1D, {axisCentralityOnePercent}});
+      histos.add("QA/after/hCentFT0M", "; Cent FT0M (%); ", {HistType::kTH1D, {axisCentralityOnePercent}});
+      histos.add("QA/after/hCentFV0A", "; Cent FV0A (%); ", {HistType::kTH1D, {axisCentralityOnePercent}});
+      histos.add("QA/after/hCentNGlobal", "; Cent NGlobal (%); ", {HistType::kTH1D, {axisCentralityOnePercent}});
+      histos.add("QA/after/globalTracks_centT0C", "", {HistType::kTH2D, {axisCentralityOnePercent, axisNch}});
+      histos.add("QA/after/PVTracks_centT0C", "", {HistType::kTH2D, {axisCentralityOnePercent, axisMultpv}});
       histos.add("QA/after/globalTracks_PVTracks", "", {HistType::kTH2D, {axisMultpv, axisNch}});
       histos.add("QA/after/globalTracks_multT0A", "", {HistType::kTH2D, {axisT0a, axisNch}});
       histos.add("QA/after/globalTracks_multV0A", "", {HistType::kTH2D, {axisV0a, axisNch}});
       histos.add("QA/after/multV0A_multT0A", "", {HistType::kTH2D, {axisT0a, axisV0a}});
-      histos.add("QA/after/multT0C_centT0C", "", {HistType::kTH2D, {axisCent, axisT0c}});
-      histos.add("QA/after/CentFT0C_vs_CentFT0Cvariant1", " ; Cent FT0C (%); Cent FT0Cvariant1 (%) ", {HistType::kTH2D, {axisCent, axisCent}});
-      histos.add("QA/after/CentFT0C_vs_CentFT0M", " ; Cent FT0C (%); Cent FT0M (%) ", {HistType::kTH2D, {axisCent, axisCent}});
-      histos.add("QA/after/CentFT0C_vs_CentFV0A", " ; Cent FT0C (%); Cent FV0A (%) ", {HistType::kTH2D, {axisCent, axisCent}});
-      histos.add("QA/after/CentFT0C_vs_CentNGlobal", " ; Cent FT0C (%); Cent NGlobal (%) ", {HistType::kTH2D, {axisCent, axisCent}});
+      histos.add("QA/after/multT0C_centT0C", "", {HistType::kTH2D, {axisCentralityOnePercent, axisT0c}});
+      histos.add("QA/after/CentFT0C_vs_CentFT0Cvariant1", " ; Cent FT0C (%); Cent FT0Cvariant1 (%) ", {HistType::kTH2D, {axisCentralityOnePercent, axisCentralityOnePercent}});
+      histos.add("QA/after/CentFT0C_vs_CentFT0M", " ; Cent FT0C (%); Cent FT0M (%) ", {HistType::kTH2D, {axisCentralityOnePercent, axisCentralityOnePercent}});
+      histos.add("QA/after/CentFT0C_vs_CentFV0A", " ; Cent FT0C (%); Cent FV0A (%) ", {HistType::kTH2D, {axisCentralityOnePercent, axisCentralityOnePercent}});
+      histos.add("QA/after/CentFT0C_vs_CentNGlobal", " ; Cent FT0C (%); Cent NGlobal (%) ", {HistType::kTH2D, {axisCentralityOnePercent, axisCentralityOnePercent}});
 
       if (cfg.cFillEventPlaneQA && doprocessData) {
-        histos.add("QA/after/PsiA_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
-        histos.add("QA/after/PsiC_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
-        histos.add("QA/after/PsiFull_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
+        histos.add("QA/after/PsiA_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCentralityOnePercent}});
+        histos.add("QA/after/PsiC_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCentralityOnePercent}});
+        histos.add("QA/after/PsiFull_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCentralityOnePercent}});
         histos.add("QA/after/PsiA_vs_Vx", "", {HistType::kTH2D, {axisPhiPlane, axisVx}});
         histos.add("QA/after/PsiC_vs_Vx", "", {HistType::kTH2D, {axisPhiPlane, axisVx}});
         histos.add("QA/after/PsiFull_vs_Vx", "", {HistType::kTH2D, {axisPhiPlane, axisVx}});
@@ -490,13 +523,13 @@ struct FlowSP {
         histos.add("incl/QA/after/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, axisShCl}});
         histos.add("incl/QA/after/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
         histos.add("incl/QA/after/hCrossedRows_vs_SharedClusters", "", {HistType::kTH2D, {axisCl, axisShCl}});
-        histos.add("incl/QA/after/hMeanPtEta", "", {HistType::kTProfile2D, {axisEta, axisCent}});
+        histos.add("incl/QA/after/hMeanPtEta", "", {HistType::kTProfile2D, {axisEta, axisCentralityOnePercent}});
 
         if (cfg.cTrackSelDoTrackQAvsCent) {
-          histos.add<TH3>("incl/QA/after/hPt_Eta", "", kTH3D, {axisPt, axisEta, axisCent});
-          histos.add<TH3>("incl/QA/after/hPt_Eta_uncorrected", "", kTH3D, {axisPt, axisEta, axisCent});
-          histos.add<TH3>("incl/QA/after/hPhi_Eta", "", kTH3D, {axisPhi, axisEta, axisCent});
-          histos.add<TH3>("incl/QA/after/hPhi_Eta_uncorrected", "", kTH3D, {axisPhi, axisEta, axisCent});
+          histos.add<TH3>("incl/QA/after/hPt_Eta", "", kTH3D, {axisPt, axisEta, axisCentralityFivePercent});
+          histos.add<TH3>("incl/QA/after/hPt_Eta_uncorrected", "", kTH3D, {axisPt, axisEta, axisCentralityFivePercent});
+          histos.add<TH3>("incl/QA/after/hPhi_Eta", "", kTH3D, {axisPhi, axisEta, axisCentralityFivePercent});
+          histos.add<TH3>("incl/QA/after/hPhi_Eta_uncorrected", "", kTH3D, {axisPhi, axisEta, axisCentralityFivePercent});
         } else {
           histos.add<TH3>("incl/QA/after/hPhi_Eta_Pt", "", kTH3D, {axisPhi, axisEta, axisPt});
           histos.add<TH3>("incl/QA/after/hPhi_Eta_Pt_corrected", "", kTH3D, {axisPhi, axisEta, axisPt});
@@ -523,10 +556,10 @@ struct FlowSP {
         histos.add("incl/pion/QA/after/hNsigmaTOF_pt", "", {HistType::kTH2D, {axisPt, axisNsigma}});
 
         if (cfg.cTrackSelDoTrackQAvsCent) {
-          histos.add<TH3>("incl/pion/QA/after/hPt_Eta", "", kTH3D, {axisPt, axisEta, axisCent});
-          histos.add<TH3>("incl/pion/QA/after/hPt_Eta_uncorrected", "", kTH3D, {axisPt, axisEta, axisCent});
-          histos.add<TH3>("incl/pion/QA/after/hPhi_Eta", "", kTH3D, {axisPhi, axisEta, axisCent});
-          histos.add<TH3>("incl/pion/QA/after/hPhi_Eta_uncorrected", "", kTH3D, {axisPhi, axisEta, axisCent});
+          histos.add<TH3>("incl/pion/QA/after/hPt_Eta", "", kTH3D, {axisPt, axisEta, axisCentralityFivePercent});
+          histos.add<TH3>("incl/pion/QA/after/hPt_Eta_uncorrected", "", kTH3D, {axisPt, axisEta, axisCentralityFivePercent});
+          histos.add<TH3>("incl/pion/QA/after/hPhi_Eta", "", kTH3D, {axisPhi, axisEta, axisCentralityFivePercent});
+          histos.add<TH3>("incl/pion/QA/after/hPhi_Eta_uncorrected", "", kTH3D, {axisPhi, axisEta, axisCentralityFivePercent});
         } else {
           histos.add<TH3>("incl/pion/QA/after/hPhi_Eta_Pt", "", kTH3D, {axisPhi, axisEta, axisPt});
           histos.add<TH3>("incl/pion/QA/after/hPhi_Eta_Pt_corrected", "", kTH3D, {axisPhi, axisEta, axisPt});
@@ -548,12 +581,12 @@ struct FlowSP {
       }
 
       if (cfg.cFillEventQA) {
-        histos.add("QA/hCentFull", " ; Centrality (%); ", {HistType::kTH1D, {axisCent}});
+        histos.add("QA/hCentFull", " ; Centrality (%); ", {HistType::kTH1D, {axisCentralityOnePercent}});
       }
 
       if (doprocessMCReco) {
-        registry.add("trackMCReco/after/incl/hIsPhysicalPrimary", "", {HistType::kTH3D, {axisCentrality, axisEta, axisPt}});
-        registry.add("trackMCReco/after/incl/hIsNotPhysicalPrimary", "", {HistType::kTH3D, {axisCentrality, axisEta, axisPt}});
+        registry.add("trackMCReco/after/incl/hIsPhysicalPrimary", "", {HistType::kTH3D, {axisCentralityFivePercent, axisEta, axisPt}});
+        registry.add("trackMCReco/after/incl/hIsNotPhysicalPrimary", "", {HistType::kTH3D, {axisCentralityFivePercent, axisEta, axisPt}});
         registry.add("trackMCReco/incl/hPtMCPtTrack", "", {HistType::kTH2D, {axisPt, axisPt}});
         registry.add("trackMCReco/incl/hEtaMCEtaTrack", "", {HistType::kTH2D, {axisEta, axisEta}});
         registry.add("trackMCReco/incl/hPtPerTrackSelection", "", {HistType::kTH2D, {axisPt, {nTrackSelections, 0, nTrackSelections}}});
@@ -568,12 +601,12 @@ struct FlowSP {
         registry.get<TH2>(HIST("trackMCReco/incl/hPtPerTrackSelection"))->GetYaxis()->SetBinLabel(trackSel_ZeroCharge + 1, "Only charged");
         registry.get<TH2>(HIST("trackMCReco/incl/hPtPerTrackSelection"))->GetYaxis()->SetBinLabel(trackSel_ParticleWeights + 1, "Apply weights");
 
-        registry.add("trackMCReco/hTrackSize_unFiltered", "", {HistType::kTH2D, {{100, 0, 4000}, axisCentrality}});
-        registry.add("trackMCReco/hTrackSize_Filtered", "", {HistType::kTH2D, {{100, 0, 4000}, axisCentrality}});
-        registry.add("trackMCReco/after/incl/hPt_hadron", "", {HistType::kTH3D, {axisPt, axisEta, axisCentrality}});
-        registry.add("trackMCReco/after/incl/hPt_proton", "", {HistType::kTH3D, {axisPt, axisEta, axisCentrality}});
-        registry.add("trackMCReco/after/incl/hPt_pion", "", {HistType::kTH3D, {axisPt, axisEta, axisCentrality}});
-        registry.add("trackMCReco/after/incl/hPt_kaon", "", {HistType::kTH3D, {axisPt, axisEta, axisCentrality}});
+        registry.add("trackMCReco/hTrackSize_unFiltered", "", {HistType::kTH2D, {{100, 0, 4000}, axisCentralityFivePercent}});
+        registry.add("trackMCReco/hTrackSize_Filtered", "", {HistType::kTH2D, {{100, 0, 4000}, axisCentralityFivePercent}});
+        registry.add("trackMCReco/after/incl/hPt_hadron", "", {HistType::kTH3D, {axisPt, axisEta, cfg.cAxisCentMC}});
+        registry.add("trackMCReco/after/incl/hPt_proton", "", {HistType::kTH3D, {axisPt, axisEta, cfg.cAxisCentMC}});
+        registry.add("trackMCReco/after/incl/hPt_pion", "", {HistType::kTH3D, {axisPt, axisEta, cfg.cAxisCentMC}});
+        registry.add("trackMCReco/after/incl/hPt_kaon", "", {HistType::kTH3D, {axisPt, axisEta, cfg.cAxisCentMC}});
         // Clone into particles and before/after
         registry.addClone("trackMCReco/after/incl/", "trackMCReco/after/pos/");
         registry.addClone("trackMCReco/after/incl/", "trackMCReco/after/neg/");
@@ -583,76 +616,81 @@ struct FlowSP {
       }
 
       if (doprocessData) {
-        registry.add<TProfile>("QQCorrelations/qAqCX", "", kTProfile, {axisCent});
-        registry.add<TProfile>("QQCorrelations/qAqCY", "", kTProfile, {axisCent});
-        registry.add<TProfile>("QQCorrelations/qAqCXY", "", kTProfile, {axisCent});
-        registry.add<TProfile>("QQCorrelations/qAXqCY", "", kTProfile, {axisCent});
-        registry.add<TProfile>("QQCorrelations/qAYqCX", "", kTProfile, {axisCent});
-        registry.add<TProfile>("QQCorrelations/qAXYqCXY", "", kTProfile, {axisCent});
+        registry.add<TProfile>("QQCorrelations/qAqCX", "", kTProfile, {axisCentralityOnePercent});
+        registry.add<TProfile>("QQCorrelations/qAqCY", "", kTProfile, {axisCentralityOnePercent});
+        registry.add<TProfile>("QQCorrelations/qAqCXY", "", kTProfile, {axisCentralityOnePercent});
+        registry.add<TProfile>("QQCorrelations/qAXqCY", "", kTProfile, {axisCentralityOnePercent});
+        registry.add<TProfile>("QQCorrelations/qAYqCX", "", kTProfile, {axisCentralityOnePercent});
+        registry.add<TProfile>("QQCorrelations/qAXYqCXY", "", kTProfile, {axisCentralityOnePercent});
         registry.add<TProfile3D>("shift/ShiftZDCC", "ShiftZDCC", kTProfile3D, {{100, 0, 100}, {2, 0, 2}, {10, 0, 10}});
         registry.add<TProfile3D>("shift/ShiftZDCA", "ShiftZDCA", kTProfile3D, {{100, 0, 100}, {2, 0, 2}, {10, 0, 10}});
 
         if (cfg.cFillGeneralV1Histos) {
           // track properties per centrality and per eta, pt bin
-          registry.add<TProfile3D>("incl/vnCodd", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/vnAodd", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/vnC", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/vnA", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/vnCSetPlane", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/vnASetPlane", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/vnOdd", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/vnEven", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
+          registry.add<TProfile3D>("incl/vnCodd", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnAodd", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnC", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnA", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnCCrossTPCZDC", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnACrossTPCZDC", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnOdd", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnEven", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
         }
         if (cfg.cFillMeanPT) {
-          registry.add<TProfile3D>("incl/meanPT/ptV1A3D", "", kTProfile3D, {axisPt, axisEtaVn, axisCent});
-          registry.add<TProfile3D>("incl/meanPT/ptV1C3D", "", kTProfile3D, {axisPt, axisEtaVn, axisCent});
+          registry.add<TProfile3D>("incl/meanPT/ptV1A3D", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/meanPT/ptV1C3D", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
 
           if (cfg.cFillMeanPTextra) {
-            registry.add<TProfile2D>("incl/meanPT/meanRelPtA", "", kTProfile2D, {axisEtaVn, axisCentrality});
-            registry.add<TProfile2D>("incl/meanPT/meanRelPtC", "", kTProfile2D, {axisEtaVn, axisCentrality});
+            registry.add<TProfile2D>("incl/meanPT/meanRelPtA", "", kTProfile2D, {axisEtaVn, axisCentralityFivePercent});
+            registry.add<TProfile2D>("incl/meanPT/meanRelPtC", "", kTProfile2D, {axisEtaVn, axisCentralityFivePercent});
 
-            registry.add<TProfile2D>("incl/meanPT/hMeanPtEtaCent", "", kTProfile2D, {axisEtaVn, axisCent});
-            registry.add<TProfile2D>("incl/meanPT/ptV1A", "", kTProfile2D, {axisEtaVn, axisCent});
-            registry.add<TProfile2D>("incl/meanPT/ptV1C", "", kTProfile2D, {axisEtaVn, axisCent});
-            registry.add<TProfile2D>("incl/meanPT/ptV1Aodd", "", kTProfile2D, {axisEtaVn, axisCent});
-            registry.add<TProfile2D>("incl/meanPT/ptV1Codd", "", kTProfile2D, {axisEtaVn, axisCent});
-            registry.add<TProfile>("incl/meanPT/hMeanPtCent", "", kTProfile, {axisCent});
+            registry.add<TProfile2D>("incl/meanPT/hMeanPtEtaCent", "", kTProfile2D, {cfg.cAxisEtaMeanPt, axisCentralityOnePercent});
+            registry.add<TProfile3D>("incl/meanPT/hMeanPtEtaCentPt", "", kTProfile3D, {cfg.cAxisEtaMeanPt, axisCentralityOnePercent, axisPt});
+            registry.add<TProfile2D>("incl/meanPT/ptV1A", "", kTProfile2D, {axisEtaVn, axisCentralityFivePercent});
+            registry.add<TProfile2D>("incl/meanPT/ptV1C", "", kTProfile2D, {axisEtaVn, axisCentralityFivePercent});
+            registry.add<TProfile2D>("incl/meanPT/ptV1Aodd", "", kTProfile2D, {axisEtaVn, axisCentralityFivePercent});
+            registry.add<TProfile2D>("incl/meanPT/ptV1Codd", "", kTProfile2D, {axisEtaVn, axisCentralityFivePercent});
+            registry.add<TProfile>("incl/meanPT/hMeanPtCent", "", kTProfile, {axisCentralityOnePercent});
 
-            registry.add<TProfile3D>("incl/meanPT/ptV1A3Dx", "", kTProfile3D, {axisPt, axisEtaVn, axisCent});
-            registry.add<TProfile3D>("incl/meanPT/ptV1C3Dx", "", kTProfile3D, {axisPt, axisEtaVn, axisCent});
+            registry.add<TProfile3D>("incl/meanPT/ptV1A3Dx", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+            registry.add<TProfile3D>("incl/meanPT/ptV1C3Dx", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
 
-            registry.add<TProfile3D>("incl/meanPT/ptV1A3Dy", "", kTProfile3D, {axisPt, axisEtaVn, axisCent});
-            registry.add<TProfile3D>("incl/meanPT/ptV1C3Dy", "", kTProfile3D, {axisPt, axisEtaVn, axisCent});
+            registry.add<TProfile3D>("incl/meanPT/ptV1A3Dy", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+            registry.add<TProfile3D>("incl/meanPT/ptV1C3Dy", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
 
-            registry.add<TH3>("incl/meanPT/meanPxA", "", kTH3D, {axisCent, axisPhiPlane, axisPx});
-            registry.add<TH3>("incl/meanPT/meanPxC", "", kTH3D, {axisCent, axisPhiPlane, axisPx});
+            registry.add<TH3>("incl/meanPT/meanPxA", "", kTH3D, {axisCentralityFivePercent, axisPhiPlane, axisPx});
+            registry.add<TH3>("incl/meanPT/meanPxC", "", kTH3D, {axisCentralityFivePercent, axisPhiPlane, axisPx});
           }
         }
         if (cfg.cFillXandYterms) {
-          registry.add<TProfile3D>("incl/vnAx", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/vnAy", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/vnCx", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/vnCy", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
+          registry.add<TProfile3D>("incl/vnAx", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnAxy", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnAy", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnAyx", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnCx", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnCxy", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnCy", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnCyx", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
         }
         if (cfg.cFillMixedHarmonics) {
-          registry.add<TProfile3D>("incl/MH/vnAxCxUx_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/MH/vnAyCyUx_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/MH/vnAxCyUy_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/MH/vnAyCxUy_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
+          registry.add<TProfile3D>("incl/MH/vnAxCxUx_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/MH/vnAyCyUx_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/MH/vnAxCyUy_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/MH/vnAyCxUy_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
         }
         if (cfg.cFillEventPlane) {
-          registry.add<TProfile3D>("incl/vnA_EP", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/vnC_EP", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/vnFull_EP", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
+          registry.add<TProfile3D>("incl/vnA_EP", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnC_EP", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnFull_EP", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
         }
         if (cfg.cFillEventPlaneQA) {
           histos.add<TH2>("QA/hSPplaneAC", "hSPplaneAC", kTH2D, {axisPhiPlane, axisPhiPlane});
           histos.add<TH1>("QA/hSPplaneFull", "hSPplaneFull", kTH1D, {axisPhiPlane});
-          histos.add<TProfile>("QA/hCosPhiACosPhiC", "hCosPhiACosPhiC; Centrality(%); #LT Cos(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCent});
-          histos.add<TProfile>("QA/hSinPhiASinPhiC", "hSinPhiASinPhiC; Centrality(%); #LT Sin(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCent});
-          histos.add<TProfile>("QA/hSinPhiACosPhiC", "hSinPhiACosPhiC; Centrality(%); #LT Sin(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCent});
-          histos.add<TProfile>("QA/hCosPhiASinsPhiC", "hCosPhiASinsPhiC; Centrality(%); #LT Cos(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCent});
-          histos.add<TProfile>("QA/hFullEvPlaneRes", "hFullEvPlaneRes; Centrality(%); -#LT Cos(#Psi^{A} - #Psi^{C})#GT ", kTProfile, {axisCent});
+          histos.add<TProfile>("QA/hCosPhiACosPhiC", "hCosPhiACosPhiC; Centrality(%); #LT Cos(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCentralityOnePercent});
+          histos.add<TProfile>("QA/hSinPhiASinPhiC", "hSinPhiASinPhiC; Centrality(%); #LT Sin(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCentralityOnePercent});
+          histos.add<TProfile>("QA/hSinPhiACosPhiC", "hSinPhiACosPhiC; Centrality(%); #LT Sin(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCentralityOnePercent});
+          histos.add<TProfile>("QA/hCosPhiASinsPhiC", "hCosPhiASinsPhiC; Centrality(%); #LT Cos(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCentralityOnePercent});
+          histos.add<TProfile>("QA/hFullEvPlaneRes", "hFullEvPlaneRes; Centrality(%); -#LT Cos(#Psi^{A} - #Psi^{C})#GT ", kTProfile, {axisCentralityOnePercent});
         }
 
       } // end of doProcessData
@@ -668,30 +706,30 @@ struct FlowSP {
 
       if (doprocessDataPID) {
         if (cfg.cFillGeneralV1Histos) {
-          registry.add<TProfile3D>("incl/pion/vnCodd", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/pion/vnAodd", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/pion/vnC", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/pion/vnA", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/vnCSetPlane", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/vnASetPlane", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
+          registry.add<TProfile3D>("incl/pion/vnCodd", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/pion/vnAodd", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/pion/vnC", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/pion/vnA", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnCCrossTPCZDC", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/vnACrossTPCZDC", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
         }
 
         if (cfg.cFillEventPlane) {
-          registry.add<TProfile3D>("incl/pion/vnA_EP", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/pion/vnC_EP", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/pion/vnFull_EP", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
+          registry.add<TProfile3D>("incl/pion/vnA_EP", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/pion/vnC_EP", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/pion/vnFull_EP", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
         }
         if (cfg.cFillXandYterms) {
-          registry.add<TProfile3D>("incl/pion/vnAx", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/pion/vnAy", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/pion/vnCx", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/pion/vnCy", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
+          registry.add<TProfile3D>("incl/pion/vnAx", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/pion/vnAy", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/pion/vnCx", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/pion/vnCy", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
         }
         if (cfg.cFillMixedHarmonics) {
-          registry.add<TProfile3D>("incl/pion/MH/vnAxCxUx_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/pion/MH/vnAyCyUx_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/pion/MH/vnAxCyUy_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/pion/MH/vnAyCxUy_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
+          registry.add<TProfile3D>("incl/pion/MH/vnAxCxUx_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/pion/MH/vnAyCyUx_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/pion/MH/vnAxCyUy_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
+          registry.add<TProfile3D>("incl/pion/MH/vnAyCxUy_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentralityFivePercent});
         }
         registry.addClone("incl/pion/", "incl/proton/");
         registry.addClone("incl/pion/", "incl/kaon/");
@@ -703,10 +741,10 @@ struct FlowSP {
     }
     if (doprocessMCGen || doprocessMCReco) {
       registry.add("trackMCGen/nCollReconstructedPerMcCollision", "", {HistType::kTH1D, {{10, -5, 5}}});
-      registry.add("trackMCGen/after/incl/hPt_hadron", "", {HistType::kTH3D, {axisPt, axisEta, axisCentrality}});
-      registry.add("trackMCGen/after/incl/hPt_proton", "", {HistType::kTH3D, {axisPt, axisEta, axisCentrality}});
-      registry.add("trackMCGen/after/incl/hPt_pion", "", {HistType::kTH3D, {axisPt, axisEta, axisCentrality}});
-      registry.add("trackMCGen/after/incl/hPt_kaon", "", {HistType::kTH3D, {axisPt, axisEta, axisCentrality}});
+      registry.add("trackMCGen/after/incl/hPt_hadron", "", {HistType::kTH3D, {axisPt, axisEta, axisCentralityOnePercent}});
+      registry.add("trackMCGen/after/incl/hPt_proton", "", {HistType::kTH3D, {axisPt, axisEta, axisCentralityOnePercent}});
+      registry.add("trackMCGen/after/incl/hPt_pion", "", {HistType::kTH3D, {axisPt, axisEta, axisCentralityOnePercent}});
+      registry.add("trackMCGen/after/incl/hPt_kaon", "", {HistType::kTH3D, {axisPt, axisEta, axisCentralityOnePercent}});
       registry.add("trackMCGen/after/incl/phi_eta_vtxZ_gen", "", {HistType::kTH3D, {axisPhi, axisEta, axisVz}});
 
       registry.addClone("trackMCGen/after/incl/", "trackMCGen/after/pos/");
@@ -1011,80 +1049,145 @@ struct FlowSP {
     }
   }
 
+  // HIER
+  template <SelectionType st>
+  void makeSelectionMatrix(const std::vector<bool>& passedCuts)
+  {
+    int nCuts = static_cast<int>(passedCuts.size());
+
+    int nRejected = 0;
+    int rejectedIndex = -1;
+
+    for (int i = 0; i < nCuts; i++) {
+      if (passedCuts[i]) {
+        continue;
+      }
+
+      nRejected++;
+      rejectedIndex = i;
+
+      // Loop over entire matrix again for this specific cut that failed
+      for (int j = 0; j < nCuts; j++) {
+        if (!passedCuts[j]) {
+          histos.fill(HIST("h") + HIST(Selections[st]) + HIST("RejectionMatrix"), i, j);
+        }
+      }
+    }
+
+    // Check if only one single selection rejected event or track
+    if (nRejected == 1) {
+      histos.fill(HIST("hSingle") + HIST(Selections[st]) + HIST("Rejection"), rejectedIndex);
+    }
+  }
+
   template <typename TCollision>
   bool eventSelected(const TCollision& collision, const int& multTrk)
   {
+
+    bool isEventSelected = true;
+    std::vector<bool> passedCuts(nEventSelections, true);
+
     if (!collision.sel8()) {
-      return 0;
+      isEventSelected = false;
+      passedCuts[evSel_sel8] = false;
     }
-    histos.fill(HIST("hEventCount"), evSel_sel8);
+    if (isEventSelected) {
+      histos.fill(HIST("hEventCount"), evSel_sel8);
+    }
 
     if (cfg.cEvtUseRCTFlagChecker && !rctChecker(collision)) {
-      return 0;
+      isEventSelected = false;
+      passedCuts[evSel_RCTFlagsZDC] = false;
     }
-    histos.fill(HIST("hEventCount"), evSel_RCTFlagsZDC);
+    if (isEventSelected) {
+      histos.fill(HIST("hEventCount"), evSel_RCTFlagsZDC);
+    }
 
     // Occupancy
     if (cfg.cEvSelsDoOccupancySel) {
       auto occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy > cfg.cEvSelsMaxOccupancy || occupancy < cfg.cEvSelsMinOccupancy) {
-        return 0;
+        isEventSelected = false;
+        passedCuts[evSel_occupancy] = false;
       }
     }
-    histos.fill(HIST("hEventCount"), evSel_occupancy);
+    if (isEventSelected) {
+      histos.fill(HIST("hEventCount"), evSel_occupancy);
+    }
 
     if (cfg.cEvSelsNoSameBunchPileupCut) {
       if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
         // rejects collisions which are associated with the same "found-by-T0" bunch crossing
         // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
-        return 0;
+        isEventSelected = false;
+        passedCuts[evSel_kNoSameBunchPileup] = false;
       }
     }
-    histos.fill(HIST("hEventCount"), evSel_kNoSameBunchPileup);
+    if (isEventSelected) {
+      histos.fill(HIST("hEventCount"), evSel_kNoSameBunchPileup);
+    }
     if (cfg.cEvSelsIsGoodZvtxFT0vsPV) {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
         // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
         // use this cut at low multiplicities with caution
-        return 0;
+        isEventSelected = false;
+        passedCuts[evSel_kIsGoodZvtxFT0vsPV] = false;
       }
     }
-    histos.fill(HIST("hEventCount"), evSel_kIsGoodZvtxFT0vsPV);
+    if (isEventSelected) {
+      histos.fill(HIST("hEventCount"), evSel_kIsGoodZvtxFT0vsPV);
+    }
     if (cfg.cEvSelsNoCollInTimeRangeStandard) {
       if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         //  Rejection of the collisions which have other events nearby
-        return 0;
+        isEventSelected = false;
+        passedCuts[evSel_kNoCollInTimeRangeStandard] = false;
       }
     }
-    histos.fill(HIST("hEventCount"), evSel_kNoCollInTimeRangeStandard);
+    if (isEventSelected) {
+      histos.fill(HIST("hEventCount"), evSel_kNoCollInTimeRangeStandard);
+    }
     if (cfg.cEvSelsNoCollInTimeRangeNarrow) {
       if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
         // Rejection of the collisions which have other events nearby
-        return 0;
+        isEventSelected = false;
+        passedCuts[evSel_kNoCollInTimeRangeNarrow] = false;
       }
     }
-    histos.fill(HIST("hEventCount"), evSel_kNoCollInTimeRangeNarrow);
+    if (isEventSelected) {
+      histos.fill(HIST("hEventCount"), evSel_kNoCollInTimeRangeNarrow);
+    }
     if (cfg.cEvSelsIsVertexITSTPC) {
       if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
         // selects collisions with at least one ITS-TPC track, and thus rejects vertices built from ITS-only tracks
-        return 0;
+        isEventSelected = false;
+        passedCuts[evSel_kIsVertexITSTPC] = false;
       }
     }
-    histos.fill(HIST("hEventCount"), evSel_kIsVertexITSTPC);
+    if (isEventSelected) {
+      histos.fill(HIST("hEventCount"), evSel_kIsVertexITSTPC);
+    }
 
     if (cfg.cEvSelsIsGoodITSLayersAll) {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         // New event selection bits to cut time intervals with dead ITS staves
         // https://indico.cern.ch/event/1493023/ (09-01-2025)
-        return 0;
+        isEventSelected = false;
+        passedCuts[evSel_kIsGoodITSLayersAll] = false;
       }
     }
-    histos.fill(HIST("hEventCount"), evSel_kIsGoodITSLayersAll);
+    if (isEventSelected) {
+      histos.fill(HIST("hEventCount"), evSel_kIsGoodITSLayersAll);
+    }
     if (cfg.cEvSelsIsGoodITSLayer0123) {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
-        return 0;
+        isEventSelected = false;
+        passedCuts[evSel_kIsGoodITSLayer0123] = false;
       }
     }
-    histos.fill(HIST("hEventCount"), evSel_kIsGoodITSLayer0123);
+    if (isEventSelected) {
+      histos.fill(HIST("hEventCount"), evSel_kIsGoodITSLayer0123);
+    }
 
     if (cfg.cEvSelsUseAdditionalEventCut) {
       float vtxz = -999;
@@ -1100,30 +1203,44 @@ struct FlowSP {
 
       auto multNTracksPV = collision.multNTracksPV();
 
-      if (vtxz > cfg.cEvSelsVtxZ || vtxz < -cfg.cEvSelsVtxZ) {
-        return 0;
-      }
-      if (multNTracksPV < fMultPVCutLow->Eval(collision.centFT0C())) {
-        return 0;
-      }
-      if (multNTracksPV > fMultPVCutHigh->Eval(collision.centFT0C())) {
-        return 0;
-      }
-      if (multTrk < fMultCutLow->Eval(collision.centFT0C())) {
-        return 0;
-      }
-      if (multTrk > fMultCutHigh->Eval(collision.centFT0C())) {
-        return 0;
+      if (vtxz > cfg.cEvSelsVtxZ || vtxz < -cfg.cEvSelsVtxZ || multNTracksPV < fMultPVCutLow->Eval(collision.centFT0C()) || multNTracksPV > fMultPVCutHigh->Eval(collision.centFT0C()) || multTrk < fMultCutLow->Eval(collision.centFT0C()) || multTrk > fMultCutHigh->Eval(collision.centFT0C())) {
+        isEventSelected = false;
+        passedCuts[evSel_MultCuts] = false;
       }
     }
-    histos.fill(HIST("hEventCount"), evSel_MultCuts);
+    if (isEventSelected) {
+      histos.fill(HIST("hEventCount"), evSel_MultCuts);
+    }
 
-    return 1;
+    if constexpr (o2::framework::has_type_v<aod::sptablezdc::IsSelected, typename TCollision::all_columns>) {
+      if (!collision.isSelected()) {
+        isEventSelected = false;
+        passedCuts[evSel_isSelectedZDC] = false;
+      }
+      if (isEventSelected) {
+        histos.fill(HIST("hEventCount"), evSel_isSelectedZDC);
+      }
+    }
+
+    if (spm.centrality > cfg.cCentMax || spm.centrality < cfg.cCentMin) {
+      isEventSelected = false;
+      passedCuts[evSel_CentCuts] = false;
+    }
+    histos.fill(HIST("hEventCount"), evSel_CentCuts);
+
+    makeSelectionMatrix<kEvent>(passedCuts);
+
+    return isEventSelected;
   }
 
   template <typename TrackObject>
   bool trackSelected(const TrackObject& track, const int& field)
   {
+
+    bool isTrackSelected = true;
+    std::vector<bool> passedCuts(nTrackSelections, true);
+
+    //---- This is a lambda!!
     auto fillSpectraStudyMCReco = [&](TrackSelections sel) {
       if constexpr (o2::framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
         if (!track.has_mcParticle()) {
@@ -1140,24 +1257,34 @@ struct FlowSP {
         }
       }
     };
+    //---- End of lambda
 
     if (std::fabs(track.eta()) > cfg.cTrackSelsEta) {
-      return false;
+      isTrackSelected = false;
+      passedCuts[trackSel_Eta] = false;
     }
-    histos.fill(HIST("hTrackCount"), trackSel_Eta);
-    fillSpectraStudyMCReco(trackSel_Eta);
+    if (isTrackSelected) {
+      histos.fill(HIST("hTrackCount"), trackSel_Eta);
+      fillSpectraStudyMCReco(trackSel_Eta);
+    }
 
     if (track.pt() < cfg.cTrackSelsPtmin || track.pt() > cfg.cTrackSelsPtmax) {
-      return false;
+      isTrackSelected = false;
+      passedCuts[trackSel_Pt] = false;
     }
-    histos.fill(HIST("hTrackCount"), trackSel_Pt);
-    fillSpectraStudyMCReco(trackSel_Pt);
+    if (isTrackSelected) {
+      histos.fill(HIST("hTrackCount"), trackSel_Pt);
+      fillSpectraStudyMCReco(trackSel_Pt);
+    }
 
     if (track.tpcNClsCrossedRows() < cfg.cTrackSelsNcls) {
-      return false;
+      isTrackSelected = false;
+      passedCuts[trackSel_NCls] = false;
     }
-    histos.fill(HIST("hTrackCount"), trackSel_NCls);
-    fillSpectraStudyMCReco(trackSel_NCls);
+    if (isTrackSelected) {
+      histos.fill(HIST("hTrackCount"), trackSel_NCls);
+      fillSpectraStudyMCReco(trackSel_NCls);
+    }
 
     double phimodn = track.phi();
     if (field < 0) {
@@ -1178,69 +1305,107 @@ struct FlowSP {
 
     if (cfg.cTrackSelsUseAdditionalTrackCut) {
       if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt())) {
-        return false; // reject track
+        isTrackSelected = false;
+        passedCuts[trackSel_TPCBoundary] = false; // reject track
       }
     }
-    if (cfg.cFillTrackQA) {
-      histos.fill(HIST("incl/QA/after/pt_phi"), track.pt(), phimodn);
-    }
-    histos.fill(HIST("hTrackCount"), trackSel_TPCBoundary);
-    fillSpectraStudyMCReco(trackSel_TPCBoundary);
-
-    // Only fill primary/secondary histos for MC data.
-    if constexpr (o2::framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
-      auto mcParticle = track.template mcParticle_as<MCs>();
-
-      fillPrimaryHistos<kBefore, kInclusive>(mcParticle);
-      if (spm.charge == kPositive) {
-        fillPrimaryHistos<kBefore, kPositive>(mcParticle);
-      } else {
-        fillPrimaryHistos<kBefore, kNegative>(mcParticle);
+    if (isTrackSelected) {
+      histos.fill(HIST("hTrackCount"), trackSel_TPCBoundary);
+      fillSpectraStudyMCReco(trackSel_TPCBoundary);
+      if (cfg.cFillTrackQA) {
+        histos.fill(HIST("incl/QA/after/pt_phi"), track.pt(), phimodn);
       }
-
-      if (std::fabs(track.dcaXY()) > cfg.cTrackSelsDCAxy || std::fabs(track.dcaXY()) > fDCACut->Eval(track.pt())) {
-        return false;
-      }
-      histos.fill(HIST("hTrackCount"), trackSel_DCAxy);
-      fillSpectraStudyMCReco(trackSel_DCAxy);
-
-      if (std::fabs(track.dcaZ()) > cfg.cTrackSelsDCAz || (cfg.cTrackSelsDoDCApt && std::fabs(track.dcaZ()) > fDCACut->Eval(track.pt()))) {
-        return false;
-      }
-      histos.fill(HIST("hTrackCount"), trackSel_DCAz);
-      fillSpectraStudyMCReco(trackSel_DCAz);
-
-      fillPrimaryHistos<kAfter, kInclusive>(mcParticle);
-      if (spm.charge == kPositive) {
-        fillPrimaryHistos<kAfter, kPositive>(mcParticle);
-      } else {
-        fillPrimaryHistos<kAfter, kNegative>(mcParticle);
-      }
-    } else { // Only apply DCA-cuts for data
-      if (std::fabs(track.dcaXY()) > cfg.cTrackSelsDCAxy || std::fabs(track.dcaXY()) > fDCACut->Eval(track.pt())) {
-        return false;
-      }
-      histos.fill(HIST("hTrackCount"), trackSel_DCAxy);
-
-      if (std::fabs(track.dcaZ()) > cfg.cTrackSelsDCAz || (cfg.cTrackSelsDoDCApt && std::fabs(track.dcaZ()) > fDCACut->Eval(track.pt()))) {
-        return false;
-      }
-      histos.fill(HIST("hTrackCount"), trackSel_DCAz);
     }
 
     if (track.tpcFractionSharedCls() > cfg.cTrackSelsFshcls) {
-      return false;
+      isTrackSelected = false;
+      passedCuts[trackSel_FshCls] = false;
     }
-    histos.fill(HIST("hTrackCount"), trackSel_FshCls);
-    fillSpectraStudyMCReco(trackSel_FshCls);
-
-    if (!track.isGlobalTrack()) {
-      return false;
+    if (isTrackSelected) {
+      histos.fill(HIST("hTrackCount"), trackSel_FshCls);
+      fillSpectraStudyMCReco(trackSel_FshCls);
     }
-    histos.fill(HIST("hTrackCount"), trackSel_GlobalTracks);
-    fillSpectraStudyMCReco(trackSel_GlobalTracks);
 
-    return true;
+    // Only fill primary/secondary histos for MC data.
+    if constexpr (o2::framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
+      if (!track.has_mcParticle()) {
+        return false;
+      }
+      auto mcParticle = track.template mcParticle_as<MCs>();
+
+      if (isTrackSelected) {
+        fillPrimaryHistos<kBefore, kInclusive>(mcParticle);
+        if (spm.charge == kPositive) {
+          fillPrimaryHistos<kBefore, kPositive>(mcParticle);
+        } else {
+          fillPrimaryHistos<kBefore, kNegative>(mcParticle);
+        }
+      }
+
+      if (std::fabs(track.dcaXY()) > cfg.cTrackSelsDCAxy || std::fabs(track.dcaXY()) > fDCACut->Eval(track.pt())) {
+        isTrackSelected = false;
+        passedCuts[trackSel_DCAxy] = false;
+      }
+      if (isTrackSelected) {
+        histos.fill(HIST("hTrackCount"), trackSel_DCAxy);
+        fillSpectraStudyMCReco(trackSel_DCAxy);
+      }
+
+      if (std::fabs(track.dcaZ()) > cfg.cTrackSelsDCAz || (cfg.cTrackSelsDoDCApt && std::fabs(track.dcaZ()) > fDCACut->Eval(track.pt()))) {
+        isTrackSelected = false;
+        passedCuts[trackSel_DCAz] = false;
+      }
+      if (isTrackSelected) {
+        histos.fill(HIST("hTrackCount"), trackSel_DCAz);
+        fillSpectraStudyMCReco(trackSel_DCAz);
+      }
+
+      if (!track.isGlobalTrack()) {
+        isTrackSelected = false;
+        passedCuts[trackSel_GlobalTracks] = false;
+      }
+      if (isTrackSelected) {
+        histos.fill(HIST("hTrackCount"), trackSel_GlobalTracks);
+        fillSpectraStudyMCReco(trackSel_GlobalTracks);
+
+        fillPrimaryHistos<kAfter, kInclusive>(mcParticle);
+        if (spm.charge == kPositive) {
+          fillPrimaryHistos<kAfter, kPositive>(mcParticle);
+        } else {
+          fillPrimaryHistos<kAfter, kNegative>(mcParticle);
+        }
+      }
+    } else { // Only apply DCA-cuts for data (Do not fill secondary plots in between in data as we don't have that info)
+      if (std::fabs(track.dcaXY()) > cfg.cTrackSelsDCAxy || std::fabs(track.dcaXY()) > fDCACut->Eval(track.pt())) {
+        isTrackSelected = false;
+        passedCuts[trackSel_DCAxy] = false;
+      }
+      if (isTrackSelected) {
+        histos.fill(HIST("hTrackCount"), trackSel_DCAxy);
+      }
+
+      if (std::fabs(track.dcaZ()) > cfg.cTrackSelsDCAz || (cfg.cTrackSelsDoDCApt && std::fabs(track.dcaZ()) > fDCACut->Eval(track.pt()))) {
+        isTrackSelected = false;
+        passedCuts[trackSel_DCAz] = false;
+      }
+      if (isTrackSelected) {
+        histos.fill(HIST("hTrackCount"), trackSel_DCAz);
+        fillSpectraStudyMCReco(trackSel_DCAz);
+      }
+
+      if (!track.isGlobalTrack()) {
+        isTrackSelected = false;
+        passedCuts[trackSel_GlobalTracks] = false;
+      }
+      if (isTrackSelected) {
+        histos.fill(HIST("hTrackCount"), trackSel_GlobalTracks);
+        fillSpectraStudyMCReco(trackSel_GlobalTracks);
+      }
+    }
+
+    makeSelectionMatrix<kTrack>(passedCuts);
+
+    return isTrackSelected;
   }
 
   template <FillType ft, typename CollisionObject, typename TracksObject>
@@ -1294,16 +1459,18 @@ struct FlowSP {
   {
     double weight = spm.wacc[ct][pt] * spm.weff[ct][pt] * spm.centWeight;
     float scale = 1.0;
-    float minusQ = -1.0;
     if (track.eta() < 0)
       scale = -1.0;
 
     const double invSqrtQQ = 1.0 / std::sqrt(std::fabs(spm.corrQQ));
     const double invSqrtQQx = 1.0 / std::sqrt(std::fabs(spm.corrQQx));
     const double invSqrtQQy = 1.0 / std::sqrt(std::fabs(spm.corrQQy));
+    const double invMeanPtQQ = 1.0 / spm.meanPtWeight;
+
     const double uqA = spm.uy * spm.qyA + spm.ux * spm.qxA;
     const double uqC = spm.uy * spm.qyC + spm.ux * spm.qxC;
-    const double invMeanPtQQ = 1.0 / spm.meanPtWeight;
+    const double uqCcross = spm.ux * spm.qyC + spm.uy * spm.qxC;
+    const double uqACross = spm.ux * spm.qyA + spm.uy * spm.qxA;
 
     if (cfg.cFillGeneralV1Histos) {
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAodd"), track.pt(), track.eta(), spm.centrality, scale * (uqA)*invSqrtQQ, weight);
@@ -1312,8 +1479,8 @@ struct FlowSP {
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnEven"), track.pt(), track.eta(), spm.centrality, 0.5 * ((uqA) + (uqC)) * invSqrtQQ, weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnA"), track.pt(), track.eta(), spm.centrality, (uqA)*invSqrtQQ, weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnC"), track.pt(), track.eta(), spm.centrality, (uqC)*invSqrtQQ, weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCSetPlane"), track.pt(), track.eta(), spm.centrality, (spm.uy + spm.ux) * invSqrtQQ, weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnASetPlane"), track.pt(), track.eta(), spm.centrality, (minusQ * spm.ux - spm.uy) * invSqrtQQ, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCCrossTPCZDC"), track.pt(), track.eta(), spm.centrality, uqCcross * invSqrtQQ, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnACrossTPCZDC"), track.pt(), track.eta(), spm.centrality, uqACross * invSqrtQQ, weight);
     }
 
     if (cfg.cFillMixedHarmonics) {
@@ -1325,9 +1492,16 @@ struct FlowSP {
 
     if (cfg.cFillXandYterms) {
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAx"), track.pt(), track.eta(), spm.centrality, (spm.ux * spm.qxA) * invSqrtQQx, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAxy"), track.pt(), track.eta(), spm.centrality, (spm.ux * spm.qyA) * invSqrtQQx, weight);
+
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAy"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qyA) * invSqrtQQy, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAyx"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qxA) * invSqrtQQy, weight);
+
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCx"), track.pt(), track.eta(), spm.centrality, (spm.ux * spm.qxC) * invSqrtQQx, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCxy"), track.pt(), track.eta(), spm.centrality, (spm.ux * spm.qyC) * invSqrtQQx, weight);
+
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCy"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qyC) * invSqrtQQy, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCyx"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qxC) * invSqrtQQy, weight);
     }
 
     if (cfg.cFillEventPlane) { // only fill for inclusive!
@@ -1342,12 +1516,14 @@ struct FlowSP {
 
       if (cfg.cFillMeanPTextra) {
         registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/hMeanPtEtaCent"), track.eta(), spm.centrality, track.pt(), weight);
+        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/hMeanPtEtaCentPt"), track.eta(), spm.centrality, track.pt(), track.pt(), weight);
         registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/hMeanPtCent"), spm.centrality, track.pt(), weight);
-        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1A"), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyA + spm.ux * spm.qxA) * (invSqrtQQ * invMeanPtQQ)), weight);
-        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1C"), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) * (invSqrtQQ * invMeanPtQQ)), weight);
 
-        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1Aodd"), track.eta(), spm.centrality, track.pt() * scale * ((spm.uy * spm.qyA + spm.ux * spm.qxA) * (invSqrtQQ * invMeanPtQQ)), weight);
-        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1Codd"), track.eta(), spm.centrality, track.pt() * scale * ((spm.uy * spm.qyC + spm.ux * spm.qxC) * (invSqrtQQ * invMeanPtQQ)), weight);
+        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1A"), track.eta(), spm.centrality, track.pt() * ((uqA) * (invSqrtQQ * invMeanPtQQ)), weight);
+        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1C"), track.eta(), spm.centrality, track.pt() * ((uqA) * (invSqrtQQ * invMeanPtQQ)), weight);
+
+        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1Aodd"), track.eta(), spm.centrality, track.pt() * scale * ((uqA) * (invSqrtQQ * invMeanPtQQ)), weight);
+        registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1Codd"), track.eta(), spm.centrality, track.pt() * scale * ((uqA) * (invSqrtQQ * invMeanPtQQ)), weight);
 
         registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1A3Dx"), track.pt(), track.eta(), spm.centrality, track.pt() * ((spm.ux * spm.qxA) * (invSqrtQQx * invMeanPtQQ)), weight);
         registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1C3Dx"), track.pt(), track.eta(), spm.centrality, track.pt() * ((spm.ux * spm.qxC) * (invSqrtQQx * invMeanPtQQ)), weight);
@@ -1504,12 +1680,6 @@ struct FlowSP {
     if (!eventSelected(collision, tracks.size())) {
       return;
     }
-
-    if (!collision.isSelected()) { // selected by ZDCQVectors task (checks signal in ZDC) --> only possible in data not MC
-      return;
-    }
-    histos.fill(HIST("hEventCount"), evSel_isSelectedZDC);
-
     // Always fill centrality histogram after event selections!
     histos.fill(HIST("hCentrality"), spm.centrality);
 
@@ -1555,12 +1725,6 @@ struct FlowSP {
       histos.fill(HIST("QA/hCosPhiASinsPhiC"), spm.centrality, std::cos(spm.psiA) * std::sin(spm.psiC));
       histos.fill(HIST("QA/hFullEvPlaneRes"), spm.centrality, -1 * std::cos(spm.psiA - spm.psiC));
     }
-
-    if (spm.centrality > cfg.cCentMax || spm.centrality < cfg.cCentMin) {
-      return;
-    }
-
-    histos.fill(HIST("hEventCount"), evSel_CentCuts);
 
     // Load correlations and SP resolution needed for Scalar Product and event plane methods.
     // Only load once!
@@ -1657,12 +1821,31 @@ struct FlowSP {
         int centBin = conf.hMeanPt->GetYaxis()->FindBin(spm.centrality);
         double weight = conf.hMeanPt->GetBinContent(etaBin, centBin);
         if (weight > 0) {
-          spm.meanPtWeight = 1.0 / weight;
+          spm.meanPtWeight = weight;
         } else {
           LOGF(info, "MeanPt cannot be negative or 0.. (weight = 1/meanPt) -> setting to 0. for (%.2f, %.2f)", track.eta(), spm.centrality);
           spm.meanPtWeight = 0.0;
         }
       }
+
+      if (!cfg.cCCDBdir_meanPt3D.value.empty()) {
+        if (!conf.clMeanPt) {
+          conf.hMeanPt3D = ccdb->getForTimeStamp<TProfile3D>(cfg.cCCDBdir_meanPt.value, bc.timestamp());
+          conf.clMeanPt3D = true;
+        }
+        int etaBin = conf.hMeanPt3D->GetXaxis()->FindBin(track.eta());
+        int centBin = conf.hMeanPt3D->GetYaxis()->FindBin(spm.centrality);
+        int ptBin = conf.hMeanPt3D->GetZaxis()->FindBin(track.pt());
+        double weight = conf.hMeanPt3D->GetBinContent(etaBin, centBin, ptBin);
+        if (weight > 0) {
+          spm.meanPtWeight = weight;
+        } else {
+          LOGF(info, "MeanPt cannot be negative or 0.. (weight = 1/meanPt) -> setting to 0. for (%.2f, %.2f)", track.eta(), spm.centrality);
+          spm.meanPtWeight = 0.0;
+        }
+      }
+
+      // Add possibility to make 3D pt weights to check
 
       // constrain angle to 0 -> [0,0+2pi]
       auto phi = RecoDecay::constrainAngle(track.phi(), 0);
@@ -2056,6 +2239,8 @@ struct FlowSP {
       spm.centrality = collision.centNGlobal();
     }
 
+    histos.fill(HIST("hCentrality"), spm.centrality);
+
     if (cfg.cFillQABefore) {
       fillEventQA<kBefore>(collision, filteredTracks);
     }
@@ -2063,12 +2248,6 @@ struct FlowSP {
     if (!eventSelected(collision, filteredTracks.size())) {
       return;
     }
-
-    if (spm.centrality > cfg.cCentMax || spm.centrality < cfg.cCentMin) {
-      return;
-    }
-
-    histos.fill(HIST("hEventCount"), evSel_CentCuts);
 
     if (!collision.has_mcCollision()) {
       return;
@@ -2125,6 +2304,21 @@ struct FlowSP {
 
       if (!trackSelected(track, field)) {
         continue;
+      }
+
+      auto phi = RecoDecay::constrainAngle(track.phi(), 0);
+
+      if (cfg.cFillWeights) {
+        fWeights->fill(phi, track.eta(), spm.vz, track.pt(), spm.centrality, 0);
+        registry.fill(HIST("weights2D/hPhi_Eta_vz"), phi, track.eta(), spm.vz, 1);
+      }
+      if (cfg.cFillWeightsPOS && spm.charge == kPositive) {
+        fWeightsPOS->fill(phi, track.eta(), spm.vz, track.pt(), spm.centrality, 0);
+        registry.fill(HIST("weights2D/hPhi_Eta_vz_positive"), phi, track.eta(), spm.vz, 1);
+      }
+      if (cfg.cFillWeightsNEG && spm.charge == kNegative) {
+        fWeightsNEG->fill(phi, track.eta(), spm.vz, track.pt(), spm.centrality, 0);
+        registry.fill(HIST("weights2D/hPhi_Eta_vz_negative"), phi, track.eta(), spm.vz, 1);
       }
 
       if (!mcParticle.isPhysicalPrimary()) {

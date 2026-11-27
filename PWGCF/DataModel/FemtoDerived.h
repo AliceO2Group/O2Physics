@@ -326,6 +326,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,                                            
 
 DECLARE_SOA_COLUMN(K0sDcaToPv, k0sDcaToPv, float); //! DCA of the K0s candidate to the primary vertex (cm)
 DECLARE_SOA_COLUMN(OriginMcV0, originMcV0, int);   //! MC truth origin of the V0 candidate, see ParticleOriginMCTruth
+DECLARE_SOA_COLUMN(OriginMcTrack, originMcTrack, int); //! Track origin from ParticleOriginMCTruth; -1 if unavailable
 
 } // namespace fdhf
 
@@ -691,7 +692,9 @@ DECLARE_SOA_TABLE(FDHfTrk, "AOD", "FDHFTRK", //! table to store results for HF f
                   track::TPCNClsFindable,
                   femtodreamparticle::TPCNClsCrossedRows,
                   femtodreamparticle::TPCNSigmaPr,
-                  femtodreamparticle::TOFNSigmaPr);
+                  femtodreamparticle::TOFNSigmaPr,
+                  track::DcaXY,
+                  fdhf::OriginMcTrack);
 
 DECLARE_SOA_TABLE(FDHfV0, "AOD", "FDHFV0", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,

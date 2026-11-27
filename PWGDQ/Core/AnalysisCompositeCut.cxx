@@ -8,6 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \author Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
+/// \brief Implementation of AnalysisCompositeCut
+/// \file AnalysisCompositeCut.cxx
 
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 
@@ -69,25 +73,25 @@ AnalysisCompositeCut& AnalysisCompositeCut::operator=(const AnalysisCompositeCut
 AnalysisCompositeCut::~AnalysisCompositeCut() = default;
 
 //____________________________________________________________________________
-bool AnalysisCompositeCut::IsSelected(float* values)
+bool AnalysisCompositeCut::isSelected(float* values)
 {
   //
   // apply cuts
   //
   for (std::vector<AnalysisCut>::iterator it = fCutList.begin(); it < fCutList.end(); ++it) {
-    if (fOptionUseAND && !(*it).IsSelected(values)) {
+    if (fOptionUseAND && !(*it).isSelected(values)) {
       return false;
     }
-    if (!fOptionUseAND && (*it).IsSelected(values)) {
+    if (!fOptionUseAND && (*it).isSelected(values)) {
       return true;
     }
   }
 
   for (std::vector<AnalysisCompositeCut>::iterator it = fCompositeCutList.begin(); it < fCompositeCutList.end(); ++it) {
-    if (fOptionUseAND && !(*it).IsSelected(values)) {
+    if (fOptionUseAND && !(*it).isSelected(values)) {
       return false;
     }
-    if (!fOptionUseAND && (*it).IsSelected(values)) {
+    if (!fOptionUseAND && (*it).isSelected(values)) {
       return true;
     }
   }

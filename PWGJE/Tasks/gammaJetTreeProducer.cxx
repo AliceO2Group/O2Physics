@@ -119,10 +119,37 @@ struct GammaJetTreeProducer {
   static constexpr int PromptMaxStatus = 90;
   static constexpr int MinFSRStatus = 40;
 
-  std::unordered_map<int32_t, int32_t> collisionMapping;
+  // event selection steps, used to determine the highest step a MC collision reached (via any of its rec collisions)
+  enum EventSelectionStep {
+    kNoRecCollision = 0,
+    kRecCollision,
+    kVertex,
+    kSel8,
+    kRCT,
+    kTriggerMask,
+    kEMCalReadout,
+    kClusterE,
+    kNEventSelectionSteps
+  };
+
+  // origin categories of gen level photons for the event selection THnSparse
+  enum GenPhotonCategory {
+    kDirectPrompt = 0,
+    kFragmentation,
+    kDecay,
+    kOther,
+    kNGenPhotonCategories
+  };
+
+  struct StoredCollision {
+    int64_t index;         // row in the events table
+    bool passedClusterCut; // if false, only gen level tables are filled for this collision
+  };
+  std::unordered_map<int32_t, StoredCollision> collisionMapping;
   std::unordered_map<int32_t, int> mcJetIndexMapping; // maps the global index to the index in the mc jets table (per event). This is because later we want to later construct all trees on a per event level, and we need to know at what position in the table per event this is stored
   std::vector<int> triggerMaskBits;
-  std::vector<int32_t> mcCollisionsMultiRecCollisions; // used for MC. global index of MC collisions that have multiple matched rec collisions
+  std::vector<int32_t> mcCollisionsMultiRecCollisions;    // used for MC. global index of MC collisions that have multiple matched rec collisions
+  std::unordered_set<int32_t> mcCollisionsWithPrimaryRec; // used for MC. global index of MC collisions for which a primary rec collision was already stored
 
   // kd tree for tracks and mc particles (used for fast isolation calculation)
   std::vector<float> trackEta;
@@ -147,6 +174,7 @@ struct GammaJetTreeProducer {
 
   // other constants
   static constexpr float InvalidValue = -99.0f;
+  static constexpr float MaxGenPhotonEta = 1.0f; // eta range of gen level photons in the event selection THnSparse
 
   // keeping track of the current collision index
   // to determine if we need to rebuild the kdTree
@@ -254,6 +282,28 @@ struct GammaJetTreeProducer {
     for (int iBin = 0; iBin < nRecCollisionBins; iBin++) {
       mHistograms.get<TH1>(HIST("mcCollisionsWithRecCollisions"))->GetXaxis()->SetBinLabel(iBin + 1, recCollisionLabels[iBin]);
     }
+
+    // gen level photons in all MC collisions vs the highest event selection step reached by any of the matched rec collisions (weighted)
+    // used to calculate the event selection efficiency and the fraction of photons in multiple assigned MC collisions
+    const O2Axis genPtAxis{100, 0, 200, "#it{p}_{T}^{gen} (GeV/#it{c})"};
+    const O2Axis genEtaAxis{40, -1, 1, "#eta^{gen}"};
+    const O2Axis genIsoAxis{50, 0, 25, "#it{p}_{T}^{iso, gen} (GeV/#it{c})"};
+    const O2Axis genCategoryAxis{kNGenPhotonCategories, -0.5, static_cast<double>(kNGenPhotonCategories) - 0.5, "origin"};
+    const O2Axis eventSelectionStepAxis{kNEventSelectionSteps, -0.5, static_cast<double>(kNEventSelectionSteps) - 0.5, "highest event selection step"};
+    const O2Axis nSelectedRecCollisionsAxis{3, -0.5, 2.5, "selected rec collisions"};
+    auto hGenPhotonEventSelection = mHistograms.add<THnSparse>("mcGenPhotonEventSelection", "gen level photons vs event selection", O2HistType::kTHnSparseD, {genPtAxis, genEtaAxis, genIsoAxis, genCategoryAxis, eventSelectionStepAxis, nSelectedRecCollisionsAxis}, true);
+    const std::array<TString, kNGenPhotonCategories> genCategoryLabels = {"direct prompt", "fragmentation", "decay", "other"};
+    for (int iBin = 0; iBin < kNGenPhotonCategories; iBin++) {
+      hGenPhotonEventSelection->GetAxis(3)->SetBinLabel(iBin + 1, genCategoryLabels[iBin]);
+    }
+    const std::array<TString, kNEventSelectionSteps> eventSelectionStepLabels = {"no rec collision", "rec collision", "vertex", "sel8", "RCT", "trigger mask", "EMCal readout", "cluster E"};
+    for (int iBin = 0; iBin < kNEventSelectionSteps; iBin++) {
+      hGenPhotonEventSelection->GetAxis(4)->SetBinLabel(iBin + 1, eventSelectionStepLabels[iBin]);
+    }
+    const std::array<TString, 3> nSelectedRecCollisionsLabels = {"0", "1", ">=2"};
+    for (int iBin = 0; iBin < 3; iBin++) {
+      hGenPhotonEventSelection->GetAxis(5)->SetBinLabel(iBin + 1, nSelectedRecCollisionsLabels[iBin]);
+    }
   }
 
   // ---------------------
@@ -261,6 +311,7 @@ struct GammaJetTreeProducer {
   // ---------------------
 
   /// \brief Builds the kd tree for the tracks or mc particles (used for fast isolation calculation)
+  /// \param collision The collision the objects belong to (rec collision for tracks, MC collision for mc particles)
   /// \param objects The objects to build the kd tree for (tracks or mc particles)
   template <typename T>
   void buildKdTree(const auto& collision, const T& objects)
@@ -388,49 +439,93 @@ struct GammaJetTreeProducer {
 
   /// \brief Gets the stored collision index from the collision mapping
   /// \param collision The collision to look up
+  /// \param requireClusterCut If true, collisions that failed the cluster energy cut are treated as not stored (use false for gen level tables)
   /// \return The stored collision index, or -1 if not found
-  int getStoredColIndex(const auto& collision)
+  int getStoredColIndex(const auto& collision, bool requireClusterCut = true)
   {
-    int32_t storedColIndex = -1;
-    if (auto foundCol = collisionMapping.find(collision.globalIndex()); foundCol != collisionMapping.end()) {
-      storedColIndex = foundCol->second;
+    auto foundCol = collisionMapping.find(collision.globalIndex());
+    if (foundCol == collisionMapping.end()) {
+      return -1;
     }
-    return storedColIndex;
+    if (requireClusterCut && !foundCol->second.passedClusterCut) {
+      return -1;
+    }
+    return foundCol->second.index;
   }
 
-  /// \brief Checks if an event passes all selection criteria
+  /// \brief Determines the highest event selection step (without cluster energy cut) passed by a rec collision
   /// \param collision The collision to check
-  /// \param clusters The EMCAL clusters in the event
-  /// \return true if event passes all selection criteria, false otherwise
-  bool isEventAccepted(const auto& collision, const auto& clusters)
+  /// \return The highest passed step, kEMCalReadout if all selection criteria are passed
+  EventSelectionStep getEventSelectionStep(const auto& collision)
   {
-    mHistograms.fill(HIST("eventQA"), 0);
-
     if (std::abs(collision.posZ()) > vertexCut) {
-      return false;
+      return kRecCollision;
     }
-    mHistograms.fill(HIST("eventQA"), 1);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, true, true, rctLabel)) {
-      return false;
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, true, false)) {
+      return kVertex;
     }
-    mHistograms.fill(HIST("eventQA"), 2);
+    if (!jetderiveddatautilities::selectCollision(collision, {}, false, true, rctLabel)) {
+      return kSel8;
+    }
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
-      return false;
+      return kRCT;
     }
-    mHistograms.fill(HIST("eventQA"), 3);
     if (!jetderiveddatautilities::eventEMCAL(collision)) {
-      return false;
+      return kTriggerMask;
     }
-    mHistograms.fill(HIST("eventQA"), 4);
+    return kEMCalReadout;
+  }
 
-    // Check if event contains a cluster with energy > minClusterETrigger
+  /// \brief Checks if an event passes all selection criteria except the cluster energy cut
+  /// \param collision The collision to check
+  /// \return true if event passes all selection criteria, false otherwise
+  bool isEventAccepted(const auto& collision)
+  {
+    EventSelectionStep step = getEventSelectionStep(collision);
+    mHistograms.fill(HIST("eventQA"), 0);
+    if (step >= kVertex) {
+      mHistograms.fill(HIST("eventQA"), 1);
+    }
+    if (step >= kRCT) {
+      mHistograms.fill(HIST("eventQA"), 2);
+    }
+    if (step >= kTriggerMask) {
+      mHistograms.fill(HIST("eventQA"), 3);
+    }
+    if (step >= kEMCalReadout) {
+      mHistograms.fill(HIST("eventQA"), 4);
+    }
+    return step == kEMCalReadout;
+  }
+
+  /// \brief Checks if an event contains a cluster with energy > minClusterETrigger
+  /// \param clusters The EMCAL clusters in the event
+  /// \return true if such a cluster is found, false otherwise
+  bool hasClusterAboveThreshold(const auto& clusters)
+  {
     for (const auto& cluster : clusters) {
       if (cluster.energy() > minClusterETrigger) {
-        mHistograms.fill(HIST("eventQA"), 5);
         return true;
       }
     }
     return false;
+  }
+
+  /// \brief Assigns a gen level photon to an origin category for the event selection THnSparse
+  /// \param origin The origin bitmask from getMCParticleOrigin
+  /// \return The origin category
+  GenPhotonCategory getGenPhotonCategory(uint16_t origin)
+  {
+    if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDirectPromptPhoton))) {
+      return kDirectPrompt;
+    }
+    if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ParticleOrigin::kFragmentationPhoton))) {
+      return kFragmentation;
+    }
+    if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhoton))) {
+      return kDecay;
+    }
+    return kOther;
   }
 
   /// \brief Checks if a particle is charged
@@ -439,6 +534,24 @@ struct GammaJetTreeProducer {
   bool isCharged(const auto& particle)
   {
     return std::abs(pdg->GetParticle(particle.pdgCode())->Charge()) >= 1.;
+  }
+
+  /// \brief Checks if a gen level particle is stored in the mc particles table (photons and pi0s above minMCGenPt)
+  /// \param particle The MC particle to check
+  /// \return true if the particle is stored, false otherwise
+  bool isStoredGenParticle(const auto& particle)
+  {
+    if (particle.pt() < minMCGenPt) {
+      return false;
+    }
+    // Test if a particle is a physical primary according to the following definition:
+    // Particles produced in the collision including products of strong and
+    // electromagnetic decay and excluding feed-down from weak decays of strange
+    // particles.
+    if (!particle.isPhysicalPrimary() && particle.pdgCode() != PDG_t::kPi0) {
+      return false;
+    }
+    return particle.pdgCode() == PDG_t::kPi0 || particle.pdgCode() == PDG_t::kGamma;
   }
 
   /// \brief Sums pt values once per unique source index from KD-tree query indices
@@ -1056,37 +1169,37 @@ struct GammaJetTreeProducer {
   {
     collisionMapping.clear();
     mcCollisionsMultiRecCollisions.clear();
+    mcCollisionsWithPrimaryRec.clear();
     mcJetIndexMapping.clear();
   }
 
   // WARNING: This function always has to run second in the processing chain
-  /// \brief Processes MC event matching QA
+  Preslice<EmcClusters> clustersPerCollision = aod::jcluster::collisionId;
+  /// \brief Processes MC event matching QA and fills the gen level photon event selection THnSparse
   /// \param mcCollision The MC collision to process
   /// \param collisions The rec collisions collection
   /// \param mcgenparticles The MC particles collection
-  void processMCCollisionsMatching(aod::JetMcCollision const& mcCollision, soa::SmallGroups<aod::JetCollisionsMCD> const& collisions, aod::JetParticles const& mcgenparticles)
+  /// \param clusters The EMCAL clusters collection
+  void processMCCollisionsMatching(aod::JetMcCollision const& mcCollision, soa::SmallGroups<aod::JetCollisionsMCD> const& collisions, aod::JetParticles const& mcgenparticles, EmcClusters const& clusters)
   {
     if (mcCollision.weight() == 0) {
       return;
     }
 
-    // determine number of rec collisions
+    // determine number of selected rec collisions and the highest event selection step reached by any rec collision
     int nRecCollisions = 0;
+    EventSelectionStep highestStep = kNoRecCollision;
     mHistograms.fill(HIST("mcCollisionsWithRecCollisions"), 0);
     for (auto const& collision : collisions) {
-      if (std::abs(collision.posZ()) > vertexCut) {
-        continue;
+      EventSelectionStep step = getEventSelectionStep(collision);
+      if (step == kEMCalReadout) {
+        nRecCollisions++;
+        auto clustersOfCollision = clusters.sliceBy(clustersPerCollision, collision.globalIndex());
+        if (hasClusterAboveThreshold(clustersOfCollision)) {
+          step = kClusterE;
+        }
       }
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, true, true, rctLabel)) {
-        continue;
-      }
-      if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
-        continue;
-      }
-      if (!jetderiveddatautilities::eventEMCAL(collision)) {
-        continue;
-      }
-      nRecCollisions++;
+      highestStep = std::max(highestStep, step);
     }
     if (nRecCollisions == 0) {
       mHistograms.fill(HIST("mcCollisionsWithRecCollisions"), 3);
@@ -1109,6 +1222,24 @@ struct GammaJetTreeProducer {
       }
       mHistograms.fill(HIST("numberRecCollisionsVsPhotonPt"), nRecCollisions, particle.pt());
     }
+
+    // fill gen level photon event selection THnSparse (MB gap events are never stored, so they are excluded here as well)
+    if (mcCollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
+    buildKdTree(mcCollision, mcgenparticles);
+    const int nSelectedRecCollisionsBin = std::min(nRecCollisions, 2);
+    for (auto const& particle : mcgenparticles) {
+      if (!particle.isPhysicalPrimary() || particle.pdgCode() != PDG_t::kGamma) {
+        continue;
+      }
+      if (particle.pt() < minMCGenPt || std::abs(particle.eta()) > MaxGenPhotonEta) {
+        continue;
+      }
+      double mcIsolation = chIsoInCone(particle, isoR, true);
+      GenPhotonCategory category = getGenPhotonCategory(getMCParticleOrigin(particle));
+      mHistograms.fill(HIST("mcGenPhotonEventSelection"), particle.pt(), particle.eta(), mcIsolation, category, highestStep, nSelectedRecCollisionsBin, mcCollision.weight());
+    }
   }
 
   /// \brief Processes data events in data fill event table
@@ -1116,43 +1247,69 @@ struct GammaJetTreeProducer {
   /// \param clusters The EMCAL clusters in the event
   void processEventData(soa::Join<aod::JetCollisions, aod::BkgChargedRhos>::iterator const& collision, EmcClusters const& clusters)
   {
-    if (!isEventAccepted(collision, clusters)) {
+    if (!isEventAccepted(collision) || !hasClusterAboveThreshold(clusters)) {
       return;
     }
+    mHistograms.fill(HIST("eventQA"), 5);
 
     eventsTable(collision.multFT0M(), collision.centFT0M(), collision.rho(), collision.eventSel(), collision.trackOccupancyInTimeRange(), collision.alias_raw());
-    collisionMapping[collision.globalIndex()] = eventsTable.lastIndex();
+    collisionMapping[collision.globalIndex()] = {eventsTable.lastIndex(), true};
   }
 
   using MCCol = o2::soa::Join<aod::JMcCollisions, aod::BkgChargedMcRhos>;
 
   /// \brief Processes MC events and fills rec and MC event tables (disable processEventData)
+  /// Events failing only the cluster energy cut are stored as well (flagged via passedClusterCut), but only gen level tables are filled for them
   /// \param collision The collision to process
   /// \param clusters The EMCAL clusters in the event
+  /// \param mcgenparticles The MC particles collection
   /// \param mcCollisions The MC collisions collection
-  void processEventMC(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, JMcCollisionLbs>::iterator const& collision, EmcClusters const& clusters, MCCol const&)
+  void processEventMC(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, JMcCollisionLbs>::iterator const& collision, EmcClusters const& clusters, aod::JetParticles const& mcgenparticles, MCCol const&)
   {
-    if (!isEventAccepted(collision, clusters)) {
+    if (!isEventAccepted(collision)) {
       return;
+    }
+    bool passedClusterCut = hasClusterAboveThreshold(clusters);
+    if (passedClusterCut) {
+      mHistograms.fill(HIST("eventQA"), 5);
     }
 
     // check that this event has a MC collision
     if (!collision.has_mcCollision()) {
       return;
     }
-    mHistograms.fill(HIST("eventQA"), 6);
+    if (passedClusterCut) {
+      mHistograms.fill(HIST("eventQA"), 6);
+    }
 
     // check if this event is not MB gap event
     if (collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
-    mHistograms.fill(HIST("eventQA"), 7);
+    if (passedClusterCut) {
+      mHistograms.fill(HIST("eventQA"), 7);
+    }
+
+    // events failing the cluster energy cut are only stored if they contain at least one gen level particle that would be stored
+    if (!passedClusterCut) {
+      auto particlesPerMcCollision = mcgenparticles.sliceBy(particlesPerMcCollisions, collision.mcCollisionId());
+      bool hasStoredGenParticle = false;
+      for (const auto& particle : particlesPerMcCollision) {
+        if (isStoredGenParticle(particle)) {
+          hasStoredGenParticle = true;
+          break;
+        }
+      }
+      if (!hasStoredGenParticle) {
+        return;
+      }
+    }
 
     // fill rec collision table
     eventsTable(collision.multFT0M(), collision.centFT0M(), collision.rho(), collision.eventSel(), collision.trackOccupancyInTimeRange(), collision.alias_raw());
 
     // fill collision mapping
-    collisionMapping[collision.globalIndex()] = eventsTable.lastIndex();
+    collisionMapping[collision.globalIndex()] = {eventsTable.lastIndex(), passedClusterCut};
 
     auto mcCollision = collision.mcCollision_as<MCCol>();
 
@@ -1161,7 +1318,9 @@ struct GammaJetTreeProducer {
     if (std::find(mcCollisionsMultiRecCollisions.begin(), mcCollisionsMultiRecCollisions.end(), mcCollision.globalIndex()) != mcCollisionsMultiRecCollisions.end()) {
       isMultipleAssigned = true;
     }
-    mcEventsTable(eventsTable.lastIndex(), mcCollision.weight(), mcCollision.rho(), mcCollision.ptHard(), isMultipleAssigned);
+    // the first stored rec collision of each MC collision is flagged as primary
+    bool isPrimaryRecCollision = mcCollisionsWithPrimaryRec.insert(mcCollision.globalIndex()).second;
+    mcEventsTable(eventsTable.lastIndex(), mcCollision.weight(), mcCollision.rho(), mcCollision.ptHard(), isMultipleAssigned, passedClusterCut, isPrimaryRecCollision);
   }
 
   // ---------------------
@@ -1248,7 +1407,10 @@ struct GammaJetTreeProducer {
     for (const auto& mcCluster : mcClusters) {
       mHistograms.fill(HIST("clusterMC_E_All"), mcCluster.energy());
       auto [origin, mcIndex] = getClusterOrigin(mcCluster, mcParticles);
-      float leadingEnergyFraction = mcCluster.amplitudeA()[0]; // amplitudes are already stored as energy fractions
+      // amplitudes are already stored as energy fractions
+      // check is needed because in rare cases xtalk produces empty list
+      const auto& amplitudes = mcCluster.amplitudeA();
+      float leadingEnergyFraction = amplitudes.empty() ? InvalidValue : amplitudes[0];
       // Fill MC origin QA histograms
       if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ClusterOrigin::kPhoton))) {
         mHistograms.fill(HIST("clusterMC_E_Photon"), mcCluster.energy());
@@ -1477,8 +1639,8 @@ struct GammaJetTreeProducer {
   /// \param mcgenparticles The MC particles to process
   void processMCParticles(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, JMcCollisionLbs>::iterator const& collision, aod::JetParticles const& mcgenparticles, MCCol const&)
   {
-    // event selection
-    int32_t storedColIndex = getStoredColIndex(collision);
+    // event selection (without cluster energy cut)
+    int32_t storedColIndex = getStoredColIndex(collision, false);
     if (storedColIndex == -1) {
       return;
     }
@@ -1491,24 +1653,12 @@ struct GammaJetTreeProducer {
     auto particlesPerMcCollision = mcgenparticles.sliceBy(particlesPerMcCollisions, collision.mcCollisionId());
 
     // build kd tree for mc particles
-    buildKdTree(collision, particlesPerMcCollision);
+    buildKdTree(collision.mcCollision_as<MCCol>(), particlesPerMcCollision);
 
     // Now we want to store every pi0 and every prompt photon that we find on generator level
     for (const auto& particle : particlesPerMcCollision) {
-      // only store particles above a given threshold
-      if (particle.pt() < minMCGenPt) {
-        continue;
-      }
-      // Test if a particle is a physical primary according to the following definition:
-      // Particles produced in the collision including products of strong and
-      // electromagnetic decay and excluding feed-down from weak decays of strange
-      // particles.
-      if (!particle.isPhysicalPrimary() && particle.pdgCode() != PDG_t::kPi0) {
-        continue;
-      }
-
-      // only store photons and pi0s in mcgen stack
-      if (particle.pdgCode() != PDG_t::kPi0 && particle.pdgCode() != PDG_t::kGamma) {
+      // only store photons and pi0s above a given threshold
+      if (!isStoredGenParticle(particle)) {
         continue;
       }
 
@@ -1567,8 +1717,8 @@ struct GammaJetTreeProducer {
   /// \param mcCollisions The MC collisions collection
   void processChargedJetsMCP(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, JMcCollisionLbs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& chargedJets, aod::JetParticles const& mcgenparticles, MCCol const&)
   {
-    // event selection
-    int32_t storedColIndex = getStoredColIndex(collision);
+    // event selection (without cluster energy cut)
+    int32_t storedColIndex = getStoredColIndex(collision, false);
     if (storedColIndex == -1) {
       return;
     }
@@ -1579,7 +1729,7 @@ struct GammaJetTreeProducer {
 
     // build kd tree for mc particles (needed for perpendicular cone rho calculation)
     auto particlesPerMcCollision = mcgenparticles.sliceBy(particlesPerMcCollisions, collision.mcCollisionId());
-    buildKdTree(collision, particlesPerMcCollision);
+    buildKdTree(collision.mcCollision_as<MCCol>(), particlesPerMcCollision);
 
     int localIndex = 0;
     auto pjetsPerMcCollision = chargedJets.sliceBy(pJetsPerMcCollisions, collision.mcCollisionId());

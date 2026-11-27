@@ -120,7 +120,9 @@ struct CascDiHadronCorr {
     O2_DEFINE_CONFIGURABLE(cfgEvSelV0AT0ACut, bool, true, "V0A T0A 5 sigma cut")
     O2_DEFINE_CONFIGURABLE(cfgEvSelOccupancy, bool, true, "Occupancy cut")
     O2_DEFINE_CONFIGURABLE(cfgEvSelHaveXi, bool, false, "reject the collisions without any Xi reconstracted")
-    O2_DEFINE_CONFIGURABLE(cfgEvSelHaveOmega, bool, false, "reject the collisions without any Xi reconstracted")
+    O2_DEFINE_CONFIGURABLE(cfgEvSelHaveOmega, bool, false, "reject the collisions without any Omega reconstracted")
+    O2_DEFINE_CONFIGURABLE(cfgEvSelHaveCascMixed, bool, false, "Use only cascades event in mixing")
+    O2_DEFINE_CONFIGURABLE(cfgEvSelBkgRatio, std::string, "", "CCDB path to cascades background ratio object")
   } cfgEvSel;
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
@@ -225,6 +227,7 @@ struct CascDiHadronCorr {
   TH3D* mEfficiency = nullptr;
   TH3D* mEfficiencyCasc = nullptr;
   TH1D* mCentralityWeight = nullptr;
+  TH3D* mBkgRatio = nullptr;
   bool correctionsLoaded = false;
 
   // Define the outputs
@@ -361,6 +364,9 @@ struct CascDiHadronCorr {
       registry.add("zVtx_used", "zVtx_used", {HistType::kTH1D, {axisVertex}});
       registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
     }
+    if (doprocessMixedBuffer || doprocessMixedBufferCasc) {
+      registry.add("EventPoolMixed", "", {HistType::kTH2D, {axisMultMix, axisVtxMix}});
+    }
     if (cfgSoloPtTrack && doprocessSame) {
       registry.add("Nch_final_pt", "pT", {HistType::kTH1D, {axisPtTrigger}});
       registry.add("Solo_tracks_trigger", "pT", {HistType::kTH1D, {axisPtTrigger}});
@@ -479,8 +485,8 @@ struct CascDiHadronCorr {
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userAxis));
 
-    o2::framework::AxisSpec axisMult = axisMultiplicity;
-    o2::framework::AxisSpec axisVtx = axisVertex;
+    o2::framework::AxisSpec axisMult = axisMultMix;
+    o2::framework::AxisSpec axisVtx = axisVtxMix;
     int nMultBins = axisMult.binEdges.size() - 1;
     int nVtxBins = axisVtx.binEdges.size() - 1;
     validCollisions.resize(nMultBins * nVtxBins);
@@ -901,6 +907,13 @@ struct CascDiHadronCorr {
       }
       LOGF(info, "Loaded efficiency histogram from %s", cfgCentralityWeight.value.c_str());
     }
+    if (!cfgEvSel.cfgEvSelBkgRatio.value.empty()) {
+      mBkgRatio = ccdb->getForTimeStamp<TH3D>(cfgEvSel.cfgEvSelBkgRatio.value, timestamp);
+      if (mBkgRatio == nullptr) {
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEvSel.cfgEvSelBkgRatio.value.c_str());
+      }
+      LOGF(info, "Loaded efficiency histogram from %s", cfgEvSel.cfgEvSelBkgRatio.value.c_str());
+    }
     correctionsLoaded = true;
   }
 
@@ -950,6 +963,21 @@ struct CascDiHadronCorr {
       return false;
     }
     weightCent = weight;
+    return true;
+  }
+
+  bool getBkgRatio(float& bkgRatio, float invmass, float pt, const float centrality)
+  {
+    double weight = 0.;
+    if (mBkgRatio != nullptr) {
+      int massBin = mBkgRatio->GetXaxis()->FindBin(invmass);
+      int ptBin = mBkgRatio->GetYaxis()->FindBin(pt);
+      int centBin = mBkgRatio->GetZaxis()->FindBin(centrality);
+      weight = mBkgRatio->GetBinContent(massBin, ptBin, centBin);
+    } else {
+      weight = 0.;
+    }
+    bkgRatio = weight;
     return true;
   }
 
@@ -1743,22 +1771,33 @@ struct CascDiHadronCorr {
     if (cfgEvSel.cfgUseAdditionalEventCut.value && !eventSelected(collision, tracks.size(), cent, true)) {
       return;
     }
-
+    float bkgRatioAll = 0;
+    loadCorrection(bc.timestamp());
     if (cfgEvSel.cfgEvSelHaveXi.value || cfgEvSel.cfgEvSelHaveOmega.value) {
       bool haveCasc = false;
+      bkgRatioAll = 1;
       for (const auto& cascade : cascades) {
         if (cascSelected(cascade, collision.posX(), collision.posY(), collision.posZ())) {
           haveCasc = true;
-          break;
+          float bkgRatio = 1;
+          if (cfgEvSel.cfgEvSelHaveXi.value) {
+            getBkgRatio(bkgRatio, cascade.mXi(), cascade.pt(), cent);
+          } else {
+            getBkgRatio(bkgRatio, cascade.mOmega(), cascade.pt(), cent);
+          }
+          bkgRatioAll = bkgRatioAll * bkgRatio;
         }
       }
       if (!haveCasc) {
         return;
       }
     }
-    loadCorrection(bc.timestamp());
+
     if (!cfgCentTableUnavailable) {
       getCentralityWeight(weightCent, cent);
+      if (cfgEvSel.cfgEvSelHaveXi.value || cfgEvSel.cfgEvSelHaveOmega.value) {
+        weightCent = weightCent * (1 - bkgRatioAll);
+      }
       registry.fill(HIST("Centrality"), cent);
       registry.fill(HIST("CentralityWeighted"), cent, weightCent);
     }
@@ -1927,7 +1966,7 @@ struct CascDiHadronCorr {
   PROCESS_SWITCH(CascDiHadronCorr, processMixedCasc, "Process mixed events", true);
 
   // the process for filling the mixed events by buffer
-  void processMixedBuffer(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::CascDatas const& cascades, DaughterTracks const&)
+  void processMixedBuffer(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::CascDatas const& cascades, aod::BCsWithTimestamps const&, DaughterTracks const&)
   {
     ValidCollision currentCollision;
     int nBinsMult = 0;
@@ -1937,10 +1976,10 @@ struct CascDiHadronCorr {
     currentCollision.pvz = collision.posZ();
     currentCollision.mult = tracks.size();
 
-    nBinsMult = registry.get<TH1>(HIST("Nch"))->GetNbinsX();
-    binMult = registry.get<TH1>(HIST("Nch"))->GetXaxis()->FindBin(tracks.size()) - 1;
-    nBinsVtxZ = registry.get<TH1>(HIST("zVtx"))->GetNbinsX();
-    binVtxZ = registry.get<TH1>(HIST("zVtx"))->GetXaxis()->FindBin(collision.posZ()) - 1;
+    nBinsMult = registry.get<TH2>(HIST("EventPoolMixed"))->GetNbinsX();
+    binMult = registry.get<TH2>(HIST("EventPoolMixed"))->GetXaxis()->FindBin(tracks.size()) - 1;
+    nBinsVtxZ = registry.get<TH2>(HIST("EventPoolMixed"))->GetNbinsY();
+    binVtxZ = registry.get<TH2>(HIST("EventPoolMixed"))->GetYaxis()->FindBin(collision.posZ()) - 1;
     if (binVtxZ < 0 || binVtxZ > nBinsVtxZ - 1 || binMult < 0 || binMult > nBinsMult - 1) {
       return;
     }
@@ -1949,6 +1988,7 @@ struct CascDiHadronCorr {
     if (!collision.sel8()) {
       return;
     }
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 
     if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
       return;
@@ -1966,12 +2006,22 @@ struct CascDiHadronCorr {
       return;
     }
 
-    if (cfgEvSel.cfgEvSelHaveXi.value || cfgEvSel.cfgEvSelHaveOmega.value) {
+    float weightCent = 1.0f;
+    float bkgRatioAll = 0;
+    loadCorrection(bc.timestamp());
+    if (cfgEvSel.cfgEvSelHaveCascMixed.value && (cfgEvSel.cfgEvSelHaveXi.value || cfgEvSel.cfgEvSelHaveOmega.value)) {
       bool haveCasc = false;
+      bkgRatioAll = 1;
       for (const auto& cascade : cascades) {
         if (cascSelected(cascade, collision.posX(), collision.posY(), collision.posZ())) {
           haveCasc = true;
-          break;
+          float bkgRatio = 1;
+          if (cfgEvSel.cfgEvSelHaveXi.value) {
+            getBkgRatio(bkgRatio, cascade.mXi(), cascade.pt(), cent);
+          } else {
+            getBkgRatio(bkgRatio, cascade.mOmega(), cascade.pt(), cent);
+          }
+          bkgRatioAll = bkgRatioAll * bkgRatio;
         }
       }
       if (!haveCasc) {
@@ -1979,9 +2029,11 @@ struct CascDiHadronCorr {
       }
     }
 
-    float weightCent = 1.0f;
     if (!cfgCentTableUnavailable) {
       getCentralityWeight(weightCent, cent);
+      if (cfgEvSel.cfgEvSelHaveXi.value || cfgEvSel.cfgEvSelHaveOmega.value) {
+        weightCent = weightCent * (1 - bkgRatioAll);
+      }
     }
 
     for (const auto& track : tracks) {
@@ -2000,7 +2052,7 @@ struct CascDiHadronCorr {
 
   PROCESS_SWITCH(CascDiHadronCorr, processMixedBuffer, "Process mixed events", false);
 
-  void processMixedBufferCasc(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::CascDatas const& cascades, DaughterTracks const&)
+  void processMixedBufferCasc(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::CascDatas const& cascades, aod::BCsWithTimestamps const&, DaughterTracks const&)
   {
     ValidCollision currentCollision;
     int nBinsMult = 0;
@@ -2010,10 +2062,10 @@ struct CascDiHadronCorr {
     currentCollision.pvz = collision.posZ();
     currentCollision.mult = tracks.size();
 
-    nBinsMult = registry.get<TH1>(HIST("Nch"))->GetNbinsX();
-    binMult = registry.get<TH1>(HIST("Nch"))->GetXaxis()->FindBin(tracks.size()) - 1;
-    nBinsVtxZ = registry.get<TH1>(HIST("zVtx"))->GetNbinsX();
-    binVtxZ = registry.get<TH1>(HIST("zVtx"))->GetXaxis()->FindBin(collision.posZ()) - 1;
+    nBinsMult = registry.get<TH2>(HIST("EventPoolMixed"))->GetNbinsX();
+    binMult = registry.get<TH2>(HIST("EventPoolMixed"))->GetXaxis()->FindBin(tracks.size()) - 1;
+    nBinsVtxZ = registry.get<TH2>(HIST("EventPoolMixed"))->GetNbinsY();
+    binVtxZ = registry.get<TH2>(HIST("EventPoolMixed"))->GetYaxis()->FindBin(collision.posZ()) - 1;
     if (binVtxZ < 0 || binVtxZ > nBinsVtxZ - 1 || binMult < 0 || binMult > nBinsMult - 1) {
       return;
     }
@@ -2022,6 +2074,7 @@ struct CascDiHadronCorr {
     if (!collision.sel8()) {
       return;
     }
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 
     if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
       return;
@@ -2039,12 +2092,22 @@ struct CascDiHadronCorr {
       return;
     }
 
-    if (cfgEvSel.cfgEvSelHaveXi.value || cfgEvSel.cfgEvSelHaveOmega.value) {
+    float weightCent = 1.0f;
+    float bkgRatioAll = 0;
+    loadCorrection(bc.timestamp());
+    if (cfgEvSel.cfgEvSelHaveCascMixed.value && (cfgEvSel.cfgEvSelHaveXi.value || cfgEvSel.cfgEvSelHaveOmega.value)) {
       bool haveCasc = false;
+      bkgRatioAll = 1;
       for (const auto& cascade : cascades) {
         if (cascSelected(cascade, collision.posX(), collision.posY(), collision.posZ())) {
           haveCasc = true;
-          break;
+          float bkgRatio = 1;
+          if (cfgEvSel.cfgEvSelHaveXi.value) {
+            getBkgRatio(bkgRatio, cascade.mXi(), cascade.pt(), cent);
+          } else {
+            getBkgRatio(bkgRatio, cascade.mOmega(), cascade.pt(), cent);
+          }
+          bkgRatioAll = bkgRatioAll * bkgRatio;
         }
       }
       if (!haveCasc) {
@@ -2052,9 +2115,11 @@ struct CascDiHadronCorr {
       }
     }
 
-    float weightCent = 1.0f;
     if (!cfgCentTableUnavailable) {
       getCentralityWeight(weightCent, cent);
+      if (cfgEvSel.cfgEvSelHaveXi.value || cfgEvSel.cfgEvSelHaveOmega.value) {
+        weightCent = weightCent * (1 - bkgRatioAll);
+      }
     }
 
     for (const auto& track : tracks) {

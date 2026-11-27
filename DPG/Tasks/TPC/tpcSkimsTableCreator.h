@@ -22,10 +22,13 @@
 
 #include "Common/DataModel/OccupancyTables.h"
 
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <ReconstructionDataFormats/PID.h>
 
+#include <array>
 #include <cstdint>
+#include <string_view>
 
 namespace o2::aod
 {
@@ -38,6 +41,7 @@ DECLARE_SOA_COLUMN(BetaGamma, betaGamma, float);
 DECLARE_SOA_COLUMN(NormMultTPC, normMultTPC, float);
 DECLARE_SOA_COLUMN(NormNClustersTPC, normNClustersTPC, float);
 DECLARE_SOA_COLUMN(NormNClustersTPCPID, normNClustersTPCPID, float);
+DECLARE_SOA_COLUMN(NormNClustersShared, normNClustersShared, float);
 DECLARE_SOA_COLUMN(PidIndex, pidIndex, uint8_t);
 DECLARE_SOA_COLUMN(NSigTPC, nSigTPC, float);
 DECLARE_SOA_COLUMN(NSigTOF, nSigTOF, float);
@@ -73,6 +77,7 @@ DECLARE_SOA_COLUMN(BcBcInTimeFrame, bcBcInTimeFrame, int);
     tpcskims::NormMultTPC,         \
     tpcskims::NormNClustersTPC,    \
     tpcskims::NormNClustersTPCPID, \
+    tpcskims::NormNClustersShared, \
     tpcskims::PidIndex,            \
     tpcskims::NSigTPC,             \
     tpcskims::NSigTOF,             \
@@ -163,5 +168,7 @@ constexpr double UndefValueDouble{-999.};
 constexpr double MultiplicityNorm{11000.};
 
 constexpr float OneToKilo{1e-3f};
+
+constexpr std::array<std::string_view, o2::track::PID::NIDs> ParticleNames{"e", "#mu", "#pi", "K", "p", "d", "t", "{}^{3}He", "#alpha"};
 } // namespace o2::dpg_tpcskimstablecreator
 #endif // DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_

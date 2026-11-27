@@ -52,7 +52,9 @@ class FemtoWorldObjectSelection
   void fillSelectionHistogram()
   {
     int nBins = mSelections.size();
-    mHistogramRegistry->add((static_cast<std::string>(o2::aod::femtoworldparticle::ParticleTypeName[part]) + "/cuthist").c_str(), "; Cut; Value", o2::framework::HistType::kTH1F, {{nBins, 0, static_cast<double>(nBins)}});
+    std::string histName{o2::aod::femtoworldparticle::ParticleTypeName[part]};
+    histName += "/cuthist";
+    mHistogramRegistry->add(histName, "; Cut; Value", o2::framework::HistType::kTH1F, {{nBins, 0, static_cast<double>(nBins)}});
     auto hist = mHistogramRegistry->get<TH1>(HIST(o2::aod::femtoworldparticle::ParticleTypeName[part]) + HIST("/cuthist"));
     for (size_t i = 0; i < mSelections.size(); ++i) {
       hist->GetXaxis()->SetBinLabel(i + 1, Form("%u", mSelections.at(i).getSelectionVariable()));

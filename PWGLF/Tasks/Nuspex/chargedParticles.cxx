@@ -17,13 +17,18 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/MetadataHelper.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
+#include <DataFormatsCTP/Configuration.h>
+#include <DataFormatsCTP/Scalers.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -40,6 +45,7 @@
 #include <TAxis.h>
 #include <TH1.h>
 #include <TH2.h>
+#include <TProfile.h>
 
 #include <fairmq/Device.h>
 
@@ -52,6 +58,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <initializer_list>
+#include <map>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -104,18 +111,22 @@ struct ChargedParticles { // NOLINT(clang-analyzer-optin.performance.Padding): o
 
   HistogramRegistry histos;
   Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{}; // ctp scalers for the interaction rate
+  o2::ctpRateFetcher rateFetcher;
 
   enum DataRun : int { kRunAuto = 0,
                        kRun2 = 2,
                        kRun3 = 3 };
   Configurable<int> dataRun{"dataRun", kRunAuto, "lhc run of the data: 0 = auto (from ao2d metadata), 2 = run 2 (converted), 3 = run 3"};
   bool isRun3{true}; // from dataRun
-  Configurable<std::string> collisionSystem{"collisionSystem", "pp", "collision system (sets multiplicity axes and event selection default): pp, pPb, pO, OO, NeNe, XeXe, PbPb"};
+  Configurable<std::string> collisionSystem{"collisionSystem", "pp", "collision system (sets multiplicity axes, event selection default and interaction rate source): pp, pPb, pO, OO, NeNe, XeXe, PbPb"};
   int maxMultMeas{100}; // from collisionSystem
   int maxMultTrue{100};
+  std::string irSource{"T0VTX"}; // interaction rate estimator (ctp rate fetcher), from collisionSystem
   Configurable<float> etaCut{"etaCut", 0.8f, "eta cut"};
-  Configurable<std::string> ptRange{"ptRange", "nominal", "pt window and binning of tracks and particles: nominal (0.15-10), lowPt (0.05-10, low field), highPt (0.15-50)"};
+  Configurable<std::string> ptRange{"ptRange", "nominal", "pt window and binning of tracks and particles: nominal (0.15-10), lowPt (0.075-10, low field), highPt (0.15-50)"};
   Configurable<bool> fiducialMult{"fiducialMult", true, "count n_ch (measured and true, and so the event class fiducial) only in the fiducial window 0.15 < pt < 10, whatever ptRange"};
+  Configurable<int> multEstimator{"multEstimator", 0, "measured multiplicity: 0 = selected tracks (ITS-TPC), 1 = also ITS-only tracks that pass all other selections (spectra stay ITS-TPC)"};
   static constexpr float FiducialPtMin = 0.15f;
   static constexpr float FiducialPtMax = 10.f;
   float ptMin{FiducialPtMin}; // from ptRange
@@ -146,8 +157,10 @@ struct ChargedParticles { // NOLINT(clang-analyzer-optin.performance.Padding): o
   bool isInDir(int dir) const { return ((vars.classMask >> (dir == kNClasses ? flatClass : dir)) & 1) != 0; }
   static constexpr int NStagesMC = 8;
   static constexpr int NLayersITS = 7;
-  std::string metaLabel; // qa: ao2d metadata label
-  int lastRunNumber{-1}; // qa: cached run label
+  std::string metaLabel;      // qa: ao2d metadata label
+  int lastRunNumber{-1};      // qa: cached run label
+  TProfile* rateRun{nullptr}; // qa: interaction rate per run (run 3, nominal)
+  bool hasRateInfo{false};    // qa: ccdb objects of the rate fetcher found for the current run
   struct ParticleTracks {
     float pt{0.f};
     int nTracks{0};
@@ -159,9 +172,29 @@ struct ChargedParticles { // NOLINT(clang-analyzer-optin.performance.Padding): o
   int phiRunBin{0};           // qa: run bin of qa/tracks/phiRun (0 = no run label yet)
   int lastEvSelRunNumber{-1}; // qa: run label of the per-run cut flow (all candidates, not only accepted events)
   std::string evSelRunLabel;
-  std::string mcRunLabel; // qa: run of the current mc collision (per-run efficiencies)
+  std::string mcRunLabel;                           // qa: run of the current mc collision (per-run efficiencies)
+  std::array<double, kNClasses + 1> primGenRunX{};  // qa: x of the run bin of qa/tracks/primGenRun per class, set once per mc collision
+  std::array<double, kNClasses + 1> primRecoRunX{}; // qa: same for qa/tracks/primRecoRun, set once per reco collision
   Configurable<std::string> evSelBits{"evSelBits", "auto", "event selection bits on top of sel8 (names as in EventSelectionParams), comma separated; auto = default of the collision system (currently kNoSameBunchPileup for all)"};
   Configurable<float> maxVtxZ{"maxVtxZ", 10.f, "max |z| of the reco and true vertex"};
+  // own dca cuts |dca| < k * sigma(pt), sigma = p0 + p1 / pt^p2 (cm), k fixed for the analysis; run 3: measured
+  // resolution; run 2 (converted data): the dca cuts of the central global track selection (dca_xy 0.0105 + 0.035 /
+  // pt^1.1, dca_z 2 cm)
+  struct DcaPars {
+    float p0{0.f};
+    float p1{0.f};
+    float p2{1.f};
+  };
+  static constexpr DcaPars DefaultDcaXY{.p0 = 0.0015f, .p1 = 0.005f, .p2 = 1.1f};
+  static constexpr DcaPars DefaultDcaZ{.p0 = 0.2f, .p1 = 0.f, .p2 = 1.f};
+  static constexpr float NSigmaDcaXY = 7.f; // as in run 2; variations 4, 10
+  static constexpr float NSigmaDcaZ = 10.f; // variations 6, 14
+  DcaPars dcaCutXY{};                       // cut = p0 + p1 / pt^p2, i.e. k * sigma (from init)
+  DcaPars dcaCutZ{};
+  // run 3 dca resolution: core width of pp 13.6 tev data (2026, lhc26ac), used for all systems (within 20 % in pp at
+  // low field, o-o and pb-pb mc)
+  static constexpr DcaPars DcaResRun3XY{.p0 = 0.0006405f, .p1 = 0.002207f, .p2 = 0.950f};
+  static constexpr DcaPars DcaResRun3Z{.p0 = 0.0005770f, .p1 = 0.002423f, .p2 = 0.9414f};
   uint64_t evSelMask{0};
   std::vector<int> evSelBitList; // configured bits in the given order (cut-flow)
   std::vector<int> trackCutBits; // single cuts of the track selection mask (track qa)
@@ -183,13 +216,13 @@ struct ChargedParticles { // NOLINT(clang-analyzer-optin.performance.Padding): o
     kSystDownTPCCrossedRowsOverNCls, // 105
     kSystUpTPCCrossedRowsOverNCls,   // 106
     kSystDownTPCFracSharedCls,       // 107
-    kSystDownDCAxy = 111,
-    kSystUpDCAxy,            // 112
-    kSystDownDCAz,           // 113
-    kSystUpDCAz,             // 114
-    kSystITSHits,            // 115, only relevant for converted data
-    kSystDownTPCCrossedRows, // 116
-    kSystUpTPCCrossedRows,   // 117
+    kSystDownDCAxy = 111,            // 4 sigma (nominal 7)
+    kSystUpDCAxy,                    // 112, 10 sigma
+    kSystDownDCAz,                   // 113, 6 sigma (nominal 10)
+    kSystUpDCAz,                     // 114, 14 sigma
+    kSystITSHits,                    // 115, only relevant for converted data
+    kSystDownTPCCrossedRows,         // 116
+    kSystUpTPCCrossedRows,           // 117
     kSystDownPCC = 120,
     kSystUpPCC,                 // 121
     kSystDownVtxZ = 130,        // |z| < 7 cm (reco and true vertex)
@@ -244,6 +277,18 @@ struct ChargedParticles { // NOLINT(clang-analyzer-optin.performance.Padding): o
 
   template <bool IS_MC, typename P = aod::McParticles, typename T>
   void processMeas(const T& tracks, bool isRepresentative = true);
+  template <typename T>
+  void fillMatchQA(const T& tracks);
+  template <typename T>
+  bool isItsOnlyCandidate(const T& track);
+  template <typename T>
+  bool passesDcaXY(const T& track) const;
+  template <typename T>
+  bool passesDcaZ(const T& track) const;
+  static bool isTpcCut(TrackSelection::TrackCuts cut)
+  {
+    return cut == TrackSelection::TrackCuts::kTPCNCls || cut == TrackSelection::TrackCuts::kTPCCrossedRows || cut == TrackSelection::TrackCuts::kTPCCrossedRowsOverNCls || cut == TrackSelection::TrackCuts::kTPCChi2NDF || cut == TrackSelection::TrackCuts::kTPCRefit || cut == TrackSelection::TrackCuts::kTPCFracSharedCls;
+  }
 
   template <typename P>
   void processTrue(const P& particles);
@@ -256,17 +301,18 @@ struct ChargedParticles { // NOLINT(clang-analyzer-optin.performance.Padding): o
 
   template <bool IS_MC, typename C>
   void fillEvSelQA(const C& collision, aod::FT0s const& ft0s, bool isRepresentative = false);
+  bool hasCtpRateInfo(uint64_t timestamp, int runNumber);
 
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
   using TrackTableData = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection>;
-  void processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks, aod::FT0s const& ft0s, aod::BCs const&);
+  void processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks, aod::FT0s const& ft0s, aod::BCsWithTimestamps const&);
   PROCESS_SWITCH(ChargedParticles, processData, "process data", false);
 
   using CollisionTableMCTrue = aod::McCollisions;
   using CollisionTableMC = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>>;
   using TrackTableMC = soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
   using ParticleTableMC = soa::Join<aod::McParticles, aod::ParticleCompositionCorrection>;
-  using BCsWithSel = soa::Join<aod::BCs, aod::BcSels>; // trigger info of the mc collision's bc
+  using BCsWithSel = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps>; // trigger info of the mc collision's bc; timestamp for the interaction rate
   Preslice<TrackTableMC> perCollision = aod::track::collisionId;
   template <typename P>
   void processMCImpl(CollisionTableMCTrue::iterator const& mcCollision, TrackTableMC const& tracks, CollisionTableMC const& collisions, P const& particles, aod::FT0s const& ft0s);
@@ -347,6 +393,7 @@ void ChargedParticles::init(InitContext& ic)
   } else {
     LOGP(fatal, "unknown collisionSystem '{}' (pp, pPb, pO, OO, NeNe, XeXe, PbPb)", collisionSystem.value);
   }
+  irSource = (collisionSystem.value == "PbPb") ? "ZNC hadronic" : "T0VTX";
 
   // event classes: one class -> flat output, several -> one subfolder per class
   int nClasses = 0;
@@ -423,7 +470,7 @@ void ChargedParticles::init(InitContext& ic)
                                     6.0, 6.5, 7.0, 8.0, 9.0, 10.0};
   // pt window = first and last edge
   if (ptRange.value == "lowPt") {
-    ptBinEdges.insert(ptBinEdges.begin(), {0.05, 0.075, 0.1, 0.125});
+    ptBinEdges.insert(ptBinEdges.begin(), {0.075, 0.1, 0.125});
   } else if (ptRange.value == "highPt") {
     ptBinEdges.insert(ptBinEdges.end(), {11., 12., 13., 14., 15., 16., 18., 20., 22., 24., 26., 30., 34., 40., 50.});
   } else if (ptRange.value != "nominal") {
@@ -460,11 +507,20 @@ void ChargedParticles::init(InitContext& ic)
     histos.add("QA/events/eventSelection", "", kTH1D, {{nStages, -0.5, nStages - 0.5}});
     histos.add("QA/events/eventSelectionRun", "", kTH2D, {{512, 0., 512.}, {nStages, -0.5, nStages - 0.5}}); // run axis labelled as runStatistics
     histos.add("QA/events/runStatistics", "", kTH1D, {{512, 0., 512.}});
+    if (isRun3) {
+      rateRun = histos.add<TProfile>("QA/events/rateRun", "", kTProfile, {{512, 0., 512.}}).get(); // mean interaction rate (khz) of accepted events per run; run axis labelled as runStatistics
+    }
     histos.add("QA/events/metaInfo", "", kTH1D, {{4, 0., 4.}});
     // track qa (selected tracks in selected events), run 2 names and binning (7 its layers, run 3 dca cut ranges)
     histos.add("QA/tracks/signed1Pt", "", kTH1D, {{200, -8., 8., "q/#it{p}_{T}"}});
     histos.add("QA/tracks/eta", "", kTH1D, {{180, -0.9, 0.9, "#eta"}});
     histos.add("QA/tracks/phi", "", kTH1D, {{180, 0., o2::constants::math::TwoPI, "#phi (rad)"}});
+    histos.add("QA/tracks/etaPhi", "", kTH2D, {{16, -0.8, 0.8, "#eta"}, {180, 0., o2::constants::math::TwoPI, "#phi (rad)"}}); // acceptance holes: tpc (phi stripes) vs its (eta-phi patches)
+    const AxisSpec matchPtAxis{std::vector<double>{0.15, 0.5, 1., 2., 5., 10.}, "#it{p}_{T} of a selected track (GeV/#it{c})"};
+    const AxisSpec matchCandAxis{3, 1.5, 4.5, "candidates (selected + ITS-only)"};
+    const AxisSpec matchOtherAxis{std::vector<double>{0.15, 0.5, 10.}, "#it{p}_{T} of another candidate (GeV/#it{c})"};
+    histos.add("QA/tracks/matchOthersSelected", "", kTH3D, {matchPtAxis, matchCandAxis, matchOtherAxis});              // its-tpc matching of the other tracks vs a selected track, collisions with 2-4 candidates: other candidate selected
+    histos.add("QA/tracks/matchOthersItsOnly", "", kTH3D, {matchPtAxis, matchCandAxis, matchOtherAxis});               // same, other candidate its-only
     histos.add("QA/tracks/phiRun", "", kTH2D, {{180, 0., o2::constants::math::TwoPI, "#phi (rad)"}, {512, 0., 512.}}); // run axis labelled as runStatistics
     histos.add("QA/tracks/itsNCls", "", kTH1D, {{8, -0.5, 7.5, "# clusters ITS"}});
     histos.add("QA/tracks/itsHits", "", kTH1D, {{7, -0.5, 6.5, "layer ITS"}});
@@ -527,6 +583,20 @@ void ChargedParticles::init(InitContext& ic)
 
     const int nBinsMultTrue = maxMultTrue + 1;
     const AxisSpec multTrueAxis = {nBinsMultTrue, -0.5, nBinsMultTrue - 0.5, "#it{N}_{ch}", "mult_true"};
+    // per-run qa: unit bins up to n_ch = 100, then about 50 equal bins (keeps the 512-run histograms small in pb-pb)
+    constexpr int MaxUnitBinsRun = 100;
+    constexpr int NCoarseBinsRun = 50;
+    std::vector<double> runMultEdges;
+    for (int i = 0; i <= std::min(maxMultTrue, MaxUnitBinsRun) + 1; ++i) {
+      runMultEdges.push_back(i - 0.5);
+    }
+    if (maxMultTrue > MaxUnitBinsRun) {
+      const int step = (maxMultTrue - MaxUnitBinsRun + NCoarseBinsRun - 1) / NCoarseBinsRun;
+      while (runMultEdges.back() < maxMultTrue + 0.5) {
+        runMultEdges.push_back(runMultEdges.back() + step);
+      }
+    }
+    const AxisSpec runMultTrueAxis{runMultEdges, "#it{N}_{ch}", "mult_true_run"};
 
     histos.add("collision_ambiguity", "", kTH1D, {{6, -0.5, 5.5, "reco collisions per true collision"}}); // log the number of collisions that were reconstructed for a MC collision
     histos.add("track_ambiguity", "", kTH1D, {{6, 0.5, 6.5, "reco tracks per true particle"}});           // log the number of tracks that were reconstructed for a MC particle
@@ -552,6 +622,7 @@ void ChargedParticles::init(InitContext& ic)
       histos.add((dir + "multPtSpec_prim_meas").c_str(), "", kTH2D, {multTrueAxis, ptTrueAxis});        // measured primary charged particles as function of true properties (no contamination from background events)
       histos.add((dir + "multPtSpec_trk_prim_meas").c_str(), "", kTH2D, {multMeasAxis, ptMeasAxis});    // tracks from measured primaries (no contamination from secondaries, particles smeared into acceptance or background events)
       histos.add((dir + "multPtSpec_trk_sec_meas").c_str(), "", kTH2D, {multMeasAxis, ptMeasAxis});     // tracks from measured secondaries (no contamination from particles smeared into acceptance or background events)  [for QA to disentangle secondaries from other contamination]
+      histos.add((dir + "multPtSpec_trk_pileup_meas").c_str(), "", kTH2D, {multMeasAxis, ptMeasAxis});  // tracks from other mc collisions (pileup) in measured events of the class  [for QA to disentangle pileup from other contamination]
       histos.add((dir + "multPtSpec_trk_meas_evtcont").c_str(), "", kTH2D, {multMeasAxis, ptMeasAxis}); // tracks from events that are measured, but do not belong to the desired class of events
       histos.add((dir + "multPtSpec_trk_inter").c_str(), "", kTH2D, {multTrueAxis, ptMeasAxis});
       if (isNominal) {
@@ -559,8 +630,8 @@ void ChargedParticles::init(InitContext& ic)
         histos.add((dir + "QA/events/eventSelectionMC").c_str(), "", kTH1D, {{NStagesMC, -0.5, NStagesMC - 0.5}});
         histos.add((dir + "QA/tracks/deltaPt").c_str(), "", kTH2D, {ptMeasAxis, {relResEdges, "#Delta(#it{p}_{T}) / #it{p}^{ meas}_{T}"}});
         // event and tracking efficiency per run, as in the unfolding (run axis labelled as runStatistics)
-        histos.add((dir + "QA/events/evtGenRun").c_str(), "", kTH2D, {{512, 0., 512.}, multTrueAxis});
-        histos.add((dir + "QA/events/evtRecoRun").c_str(), "", kTH2D, {{512, 0., 512.}, multTrueAxis});
+        histos.add((dir + "QA/events/evtGenRun").c_str(), "", kTH2D, {{512, 0., 512.}, runMultTrueAxis});
+        histos.add((dir + "QA/events/evtRecoRun").c_str(), "", kTH2D, {{512, 0., 512.}, runMultTrueAxis});
         histos.add((dir + "QA/tracks/primGenRun").c_str(), "", kTH2D, {{512, 0., 512.}, ptTrueAxis});
         histos.add((dir + "QA/tracks/primRecoRun").c_str(), "", kTH2D, {{512, 0., 512.}, ptTrueAxis});
       }
@@ -617,6 +688,9 @@ void ChargedParticles::init(InitContext& ic)
     if (ptRange.value != "nominal") {
       metaLabel += ", ptRange " + ptRange.value + ", fiducialMult " + (fiducialMult.value ? "true" : "false");
     }
+    if (multEstimator.value != 0) {
+      metaLabel += ", multEstimator " + std::to_string(multEstimator.value);
+    }
     if (doprocessMC || doprocessMCnoPCC) {
       metaLabel += ", " + eventClasses.value;
       forEachDir([&](auto dir) {
@@ -660,22 +734,8 @@ void ChargedParticles::init(InitContext& ic)
   } else if (systMode == kSystDownTPCFracSharedCls) {
     trackSel.SetMaxTPCFractionSharedCls(0.4f); // not in the nominal mask: nothing to remove from it
     trackSelFlag = TrackSelection::TrackCuts::kTPCFracSharedCls;
-  } else if (systMode == kSystDownDCAxy) {
-    trackSel.SetMaxDcaXYPtDep([](float pt) { return 4. / 7. * (0.0105f + 0.0350f / std::pow(pt, 1.1f)); });
-    cutVarFlag = TrackSelectionFlags::kDCAxy;
-    trackSelFlag = TrackSelection::TrackCuts::kDCAxy;
-  } else if (systMode == kSystUpDCAxy) {
-    trackSel.SetMaxDcaXYPtDep([](float pt) { return 10. / 7. * (0.0105f + 0.0350f / std::pow(pt, 1.1f)); });
-    cutVarFlag = TrackSelectionFlags::kDCAxy;
-    trackSelFlag = TrackSelection::TrackCuts::kDCAxy;
-  } else if (systMode == kSystDownDCAz) {
-    trackSel.SetMaxDcaZ(1.0);
-    cutVarFlag = TrackSelectionFlags::kDCAz;
-    trackSelFlag = TrackSelection::TrackCuts::kDCAz;
-  } else if (systMode == kSystUpDCAz) {
-    trackSel.SetMaxDcaZ(5.0);
-    cutVarFlag = TrackSelectionFlags::kDCAz;
-    trackSelFlag = TrackSelection::TrackCuts::kDCAz;
+  } else if (systMode == kSystDownDCAxy || systMode == kSystUpDCAxy || systMode == kSystDownDCAz || systMode == kSystUpDCAz) {
+    // own dca cuts with another number of sigmas (below)
   } else if (systMode == kSystITSHits) {
     trackSel.ResetITSRequirements();
     cutVarFlag = TrackSelectionFlags::kITSHits;
@@ -697,6 +757,37 @@ void ChargedParticles::init(InitContext& ic)
   }
   isCutVar = (cutVarFlag != 0) || (systMode == kSystDownTPCFracSharedCls);
   trackSelMask &= (~cutVarFlag);
+
+  // own dca cuts replace the dca bits of the central track selection
+  trackSelMask &= ~(TrackSelectionFlags::kDCAxy | TrackSelectionFlags::kDCAz);
+  float nSigmaXY = NSigmaDcaXY;
+  float nSigmaZ = NSigmaDcaZ;
+  if (systMode == kSystDownDCAxy) {
+    nSigmaXY = 4.f;
+  } else if (systMode == kSystUpDCAxy) {
+    nSigmaXY = 10.f;
+  } else if (systMode == kSystDownDCAz) {
+    nSigmaZ = 6.f;
+  } else if (systMode == kSystUpDCAz) {
+    nSigmaZ = 14.f;
+  }
+  const DcaPars resXY = isRun3 ? DcaResRun3XY : DefaultDcaXY;
+  const DcaPars resZ = isRun3 ? DcaResRun3Z : DefaultDcaZ;
+  dcaCutXY = {.p0 = nSigmaXY * resXY.p0, .p1 = nSigmaXY * resXY.p1, .p2 = resXY.p2};
+  dcaCutZ = {.p0 = nSigmaZ * resZ.p0, .p1 = nSigmaZ * resZ.p1, .p2 = resZ.p2};
+
+  if (multEstimator.value != 0 && multEstimator.value != 1) {
+    LOGP(fatal, "invalid multEstimator {} (0 = selected tracks, 1 = also its-only tracks)", multEstimator.value);
+  }
+  if (multEstimator.value == 1 && !isRun3) {
+    LOGP(fatal, "multEstimator 1 (its-only tracks) is defined for run 3 only");
+  }
+  if (rateRun != nullptr) { // ctp scalers: run 3 only
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false); // missing objects: run without rate logging (hasCtpRateInfo)
+  }
 }
 
 //**************************************************************************************************
@@ -704,7 +795,7 @@ void ChargedParticles::init(InitContext& ic)
  * Entrypoint to processes data.
  */
 //**************************************************************************************************
-void ChargedParticles::processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks, aod::FT0s const& ft0s, aod::BCs const&)
+void ChargedParticles::processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks, aod::FT0s const& ft0s, aod::BCsWithTimestamps const&)
 {
   initEvent<false>(collision, tracks);
   fillEvSelQA<false>(collision, ft0s);
@@ -853,6 +944,45 @@ uint32_t ChargedParticles::getTrackRepetitions(const T& track, bool& isValidPart
 
 //**************************************************************************************************
 /**
+ * ITS-only track (run 3): no TPC, passes every selection that does not concern the TPC (with the varied cut of a
+ * systematic variant, if not a TPC cut) and the optional dca_z cut, in the eta/pt and multiplicity window.
+ */
+//**************************************************************************************************
+template <typename T>
+bool ChargedParticles::isItsOnlyCandidate(const T& track)
+{
+  if (track.hasTPC() || std::abs(track.eta()) >= etaCut || track.pt() <= ptMin || track.pt() >= ptMax || !isInMultWindow(track.pt())) {
+    return false;
+  }
+  constexpr uint32_t TpcBits = TrackSelectionFlags::kTPCNCls | TrackSelectionFlags::kTPCCrossedRows | TrackSelectionFlags::kTPCCrossedRowsOverNCls | TrackSelectionFlags::kTPCChi2NDF | TrackSelectionFlags::kTPCRefit;
+  if (((~static_cast<uint32_t>(track.trackCutFlag())) & trackSelMask & ~TpcBits) != 0) {
+    return false;
+  }
+  if (!passesDcaXY(track) || !passesDcaZ(track)) {
+    return false;
+  }
+  return !(isCutVar && !isTpcCut(trackSelFlag) && !trackSel.IsSelected(track, trackSelFlag));
+}
+
+//**************************************************************************************************
+/**
+ * Own DCA cuts |DCA| < k * sigma(pT) (dcaCutXY, dcaCutZ = k * parameters; same arithmetic as the central selection).
+ */
+//**************************************************************************************************
+template <typename T>
+bool ChargedParticles::passesDcaXY(const T& track) const
+{
+  return std::fabs(track.dcaXY()) <= dcaCutXY.p0 + dcaCutXY.p1 / std::pow(track.pt(), dcaCutXY.p2);
+}
+
+template <typename T>
+bool ChargedParticles::passesDcaZ(const T& track) const
+{
+  return std::fabs(track.dcaZ()) <= dcaCutZ.p0 + dcaCutZ.p1 / std::pow(track.pt(), dcaCutZ.p2);
+}
+
+//**************************************************************************************************
+/**
  * Check if track is good.
  */
 //**************************************************************************************************
@@ -866,6 +996,9 @@ bool ChargedParticles::initTrack(const T& track)
     return false;
   }
   if (!TrackSelectionFlags::checkFlag(track.trackCutFlag(), trackSelMask)) {
+    return false;
+  }
+  if (!passesDcaXY(track) || !passesDcaZ(track)) {
     return false;
   }
   // for systematic variation of standard selections, check if the varied cut is passed
@@ -886,8 +1019,9 @@ void ChargedParticles::initEvent(const C& collision, const T& tracks)
   vars.multMeas = 0;
   bool isValidParticle{false};
   for (const auto& track : tracks) {
-    if (initTrack(track) && isInMultWindow(track.pt())) {
-      // same definition in data and mc: every selected track counts
+    // same definition in data and mc: every selected track counts
+    // multEstimator 1: also its-only candidates
+    if ((initTrack(track) && isInMultWindow(track.pt())) || (multEstimator.value == 1 && isItsOnlyCandidate(track))) {
       vars.multMeas += getTrackRepetitions<IS_MC, P>(track, isValidParticle);
     }
   }
@@ -904,7 +1038,7 @@ void ChargedParticles::initEvent(const C& collision, const T& tracks)
       if constexpr (IS_MC) {
         runNumber = collision.template bc_as<BCsWithSel>().runNumber();
       } else {
-        runNumber = collision.template bc_as<aod::BCs>().runNumber();
+        runNumber = collision.template bc_as<aod::BCsWithTimestamps>().runNumber();
       }
       const bool isMC = doprocessMC || doprocessMCnoPCC;
       if (isINT1Period(runNumber)) {
@@ -978,7 +1112,13 @@ void ChargedParticles::fillTrackCutQA(const T& track)
   }
   const auto flags = track.trackCutFlag();
   const int nCuts = trackCutBits.size();
-  const auto passes = [&](int bit) { return (flags & (1 << bit)) != 0; };
+  const int dcaXYBit = static_cast<int>(TrackSelection::TrackCuts::kDCAxy);
+  const int dcaZBit = static_cast<int>(TrackSelection::TrackCuts::kDCAz);
+  const bool ownDcaXY = passesDcaXY(track);
+  const bool ownDcaZ = passesDcaZ(track);
+  const auto passes = [&](int bit) { // dca bits: own cuts
+    return bit == dcaXYBit ? ownDcaXY : (bit == dcaZBit ? ownDcaZ : (flags & (1 << bit)) != 0);
+  };
   int nFailed = 0;
   int failedBit = -1;
   for (const auto& bit : trackCutBits) {
@@ -1047,6 +1187,7 @@ void ChargedParticles::fillTrackQA(const T& track)
   histos.fill(HIST("QA/tracks/signed1Pt"), track.signed1Pt());
   histos.fill(HIST("QA/tracks/eta"), track.eta());
   histos.fill(HIST("QA/tracks/phi"), track.phi());
+  histos.fill(HIST("QA/tracks/etaPhi"), track.eta(), track.phi());
   if (phiRunBin > 0) {
     histos.fill(HIST("QA/tracks/phiRun"), track.phi(), phiRunBin - 0.5);
   }
@@ -1073,6 +1214,25 @@ void ChargedParticles::fillTrackQA(const T& track)
  * Event qa: cut-flow, z vertex, run statistics, metadata; for sel8 events in the z range every evsel bit separately and z_ft0 - z_pv.
  */
 //**************************************************************************************************
+/**
+ * Whether the ccdb holds the objects the ctp rate fetcher needs for this run (it stops the task when one is missing).
+ */
+//**************************************************************************************************
+bool ChargedParticles::hasCtpRateInfo(uint64_t timestamp, int runNumber)
+{
+  std::map<std::string, std::string> metadata;
+  const bool hasLhcIf = ccdb->getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timestamp, metadata) != nullptr;
+  metadata["runNumber"] = std::to_string(runNumber);
+  const bool hasConfig = ccdb->getSpecific<o2::ctp::CTPConfiguration>("CTP/Config/Config", timestamp, metadata) != nullptr;
+  const bool hasScalers = ccdb->getSpecific<o2::ctp::CTPRunScalers>("CTP/Calib/Scalers", timestamp, metadata) != nullptr;
+  if (!(hasLhcIf && hasConfig && hasScalers)) {
+    LOGP(warning, "run {}: no ctp rate information in the ccdb (lhcif {}, config {}, scalers {}), no interaction rate logged", runNumber, hasLhcIf, hasConfig, hasScalers);
+    return false;
+  }
+  return true;
+}
+
+//**************************************************************************************************
 template <bool IS_MC, typename C>
 void ChargedParticles::fillEvSelQA(const C& collision, aod::FT0s const& ft0s, bool isRepresentative)
 {
@@ -1083,7 +1243,7 @@ void ChargedParticles::fillEvSelQA(const C& collision, aod::FT0s const& ft0s, bo
   if constexpr (IS_MC) {
     evSelRunNumber = collision.template bc_as<BCsWithSel>().runNumber();
   } else {
-    evSelRunNumber = collision.template bc_as<aod::BCs>().runNumber();
+    evSelRunNumber = collision.template bc_as<aod::BCsWithTimestamps>().runNumber();
   }
   if (evSelRunNumber != lastEvSelRunNumber) {
     lastEvSelRunNumber = evSelRunNumber;
@@ -1115,17 +1275,29 @@ void ChargedParticles::fillEvSelQA(const C& collision, aod::FT0s const& ft0s, bo
   histos.fill(HIST("QA/events/zVtxMeas"), collision.posZ());
   if (vars.isAcceptedEvent) {
     int runNumber = -1;
+    uint64_t timestamp = 0;
     if constexpr (IS_MC) {
-      runNumber = collision.template bc_as<BCsWithSel>().runNumber();
+      const auto& bc = collision.template bc_as<BCsWithSel>();
+      runNumber = bc.runNumber();
+      timestamp = bc.timestamp();
     } else {
-      runNumber = collision.template bc_as<aod::BCs>().runNumber();
+      const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      runNumber = bc.runNumber();
+      timestamp = bc.timestamp();
     }
     if (runNumber != lastRunNumber) {
       lastRunNumber = runNumber;
       lastRunLabel = std::to_string(runNumber);
       phiRunBin = histos.get<TH2>(HIST("QA/tracks/phiRun"))->GetYaxis()->FindBin(lastRunLabel.c_str()); // adds the label once per run
+      hasRateInfo = (rateRun != nullptr) && hasCtpRateInfo(timestamp, runNumber);
     }
     histos.get<TH1>(HIST("QA/events/runStatistics"))->Fill(lastRunLabel.c_str(), 1.);
+    if (hasRateInfo) {
+      const double rate = rateFetcher.fetch(ccdb.service, timestamp, runNumber, irSource, false); // hz; negative: not available
+      if (rate >= 0.) {
+        rateRun->Fill(lastRunLabel.c_str(), rate * 1.e-3); // khz
+      }
+    }
   }
   if (std::abs(collision.posZ()) >= vtxZCut()) {
     return;
@@ -1181,6 +1353,8 @@ void ChargedParticles::processTrue(const P& particles)
       histos.fill(HIST(ClassDir[Dir]) + HIST("multDist_evt_gen"), vars.multTrue);
       if (fillRunQA) {
         histos.get<TH2>(HIST(ClassDir[Dir]) + HIST("QA/events/evtGenRun"))->Fill(mcRunLabel.c_str(), vars.multTrue, 1.);
+        auto* axis = histos.get<TH2>(HIST(ClassDir[Dir]) + HIST("QA/tracks/primGenRun"))->GetXaxis();
+        primGenRunX[Dir] = axis->GetBinCenter(axis->FindBin(mcRunLabel.c_str())); // adds the label once per run
       }
       if (vars.isTriggeredMC) {
         histos.fill(HIST(ClassDir[Dir]) + HIST("multDist_evt_gen_trig"), vars.multTrue);
@@ -1198,7 +1372,7 @@ void ChargedParticles::processTrue(const P& particles)
             if (!vars.isAcceptedEvent) {
               histos.fill(HIST(ClassDir[Dir]) + HIST("multPtSpec_prim_gen_evtloss"), vars.multTrue, particle.pt());
             } else if (fillRunQA) {
-              histos.get<TH2>(HIST(ClassDir[Dir]) + HIST("QA/tracks/primGenRun"))->Fill(mcRunLabel.c_str(), particle.pt(), 1.);
+              histos.fill(HIST(ClassDir[Dir]) + HIST("QA/tracks/primGenRun"), primGenRunX[Dir], particle.pt());
             }
           }
         });
@@ -1206,6 +1380,49 @@ void ChargedParticles::processTrue(const P& particles)
           histos.fill(HIST("multPtSpec_prim_gen_notrig"), vars.multTrue, particle.pt());
         }
       }
+    }
+  }
+}
+
+//**************************************************************************************************
+/**
+ * ITS-TPC matching QA: in collisions with 2-4 candidates (selected tracks and ITS-only tracks), for every selected
+ * track the other candidates, matched or not.
+ */
+//**************************************************************************************************
+template <typename T>
+void ChargedParticles::fillMatchQA(const T& tracks)
+{
+  constexpr size_t MinCandidates = 2;
+  constexpr size_t MaxCandidates = 4;
+  std::array<float, MaxCandidates> selectedPt{}, itsOnlyPt{};
+  size_t nSelected = 0, nItsOnly = 0;
+  for (const auto& track : tracks) {
+    const bool isSelected = initTrack(track) && isInMultWindow(track.pt());
+    if (!isSelected && !isItsOnlyCandidate(track)) {
+      continue;
+    }
+    if (nSelected + nItsOnly == MaxCandidates) {
+      return; // more than 4 candidates
+    }
+    if (isSelected) {
+      selectedPt[nSelected++] = track.pt();
+    } else {
+      itsOnlyPt[nItsOnly++] = track.pt();
+    }
+  }
+  const size_t nCandidates = nSelected + nItsOnly;
+  if (nCandidates < MinCandidates) {
+    return;
+  }
+  for (size_t i = 0; i < nSelected; ++i) {
+    for (size_t j = 0; j < nSelected; ++j) {
+      if (j != i) {
+        histos.fill(HIST("QA/tracks/matchOthersSelected"), selectedPt[i], nCandidates, selectedPt[j]);
+      }
+    }
+    for (size_t j = 0; j < nItsOnly; ++j) {
+      histos.fill(HIST("QA/tracks/matchOthersItsOnly"), selectedPt[i], nCandidates, itsOnlyPt[j]);
     }
   }
 }
@@ -1221,6 +1438,9 @@ void ChargedParticles::processMeas(const T& tracks, bool isRepresentative)
   if (!vars.isAcceptedEvent) {
     return;
   }
+  if (isNominal && isRun3) { // its-only = no tpc: run 3 tracking
+    fillMatchQA(tracks);
+  }
   // mc: only the representative collision corresponds to the true event (per event class)
   [[maybe_unused]] auto isTrueEvent = [&](int dir) { return isRepresentative && isInDir(dir); };
 
@@ -1233,6 +1453,8 @@ void ChargedParticles::processMeas(const T& tracks, bool isRepresentative)
         histos.fill(HIST(ClassDir[Dir]) + HIST("multCorrel_evt"), vars.multMeas, vars.multTrue);
         if (isNominal && isRun3) {
           histos.get<TH2>(HIST(ClassDir[Dir]) + HIST("QA/events/evtRecoRun"))->Fill(mcRunLabel.c_str(), vars.multTrue, 1.);
+          auto* axis = histos.get<TH2>(HIST(ClassDir[Dir]) + HIST("QA/tracks/primRecoRun"))->GetXaxis();
+          primRecoRunX[Dir] = axis->GetBinCenter(axis->FindBin(mcRunLabel.c_str())); // adds the label once per run
         }
       }
     });
@@ -1254,6 +1476,10 @@ void ChargedParticles::processMeas(const T& tracks, bool isRepresentative)
     // all fills repeated as often as the particle (pcc)
     bool isValidParticle{false};
     const uint32_t nRepetitions = getTrackRepetitions<IS_MC, P>(track, isValidParticle);
+    [[maybe_unused]] bool isPileup{false}; // particle from another mc collision
+    if constexpr (IS_MC) {
+      isPileup = track.has_mcParticle() && track.template mcParticle_as<P>().mcCollisionId() != vars.mcCollisionIndex;
+    }
     if (isNominal) {
       for (auto i = 0u; i < nRepetitions; ++i) {
         fillTrackQA(track);
@@ -1309,10 +1535,12 @@ void ChargedParticles::processMeas(const T& tracks, bool isRepresentative)
               histos.fill(HIST(ClassDir[Dir]) + HIST("ptCorrel_prim"), track.pt(), particle.pt());
               histos.fill(HIST(ClassDir[Dir]) + HIST("multPtSpec_prim_meas"), vars.multTrue, particle.pt());
               if (isNominal && isRun3) {
-                histos.get<TH2>(HIST(ClassDir[Dir]) + HIST("QA/tracks/primRecoRun"))->Fill(mcRunLabel.c_str(), particle.pt(), 1.);
+                histos.fill(HIST(ClassDir[Dir]) + HIST("QA/tracks/primRecoRun"), primRecoRunX[Dir], particle.pt());
               }
               histos.fill(HIST(ClassDir[Dir]) + HIST("multPtSpec_trk_prim_meas"), vars.multMeas, track.pt());
             }
+          } else if (isPileup) {
+            histos.fill(HIST(ClassDir[Dir]) + HIST("multPtSpec_trk_pileup_meas"), vars.multMeas, track.pt());
           }
         });
       }

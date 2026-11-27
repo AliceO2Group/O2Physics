@@ -205,7 +205,6 @@ struct TreeCreatorPidTpcDiagnostics {
     }
 
     std::string irSource{};
-    float sqrtSNN{}; // placeholder to satisfy evaluateIrSourceAndSqrtSnn's signature
     bool isFirstCollision{true};
     for (const auto& collision : collisions) {
       if (!isEventSelected(collision, applyEvSel) || (std::abs(collision.posZ()) > cutVtxZ)) {
@@ -219,7 +218,7 @@ struct TreeCreatorPidTpcDiagnostics {
 
       const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       if (isFirstCollision) {
-        evaluateIrSourceAndSqrtSnn(ccdb, ccdbPathGrpLhcIf, bc.timestamp(), irSource, sqrtSNN);
+        irSource = evaluateIrSource(ccdb, ccdbPathGrpLhcIf, bc.timestamp());
       }
       isFirstCollision = false;
       const float ft0Occ = collision.ft0cOccupancyInTimeRange();

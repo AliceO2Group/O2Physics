@@ -26,9 +26,13 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+
+#include <TAxis.h>
+#include <TH1.h>
 
 #include <algorithm>
 #include <array>
@@ -71,6 +75,16 @@ struct StronglyIntensiveCorr {
   Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", true, "Pileup removal"};
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time intervals with bad ITS layers"};
   Configurable<bool> cfgEvSelUseGoodZvtxFT0vsPV{"cfgEvSelUseGoodZvtxFT0vsPV", true, "Good z-vertex FT0 vs PV cut"};
+
+  // Eta-vertex-phi QA and occupancy selection.
+  Configurable<bool> cfgUseNoCollInTimeRangeStandard{"cfgUseNoCollInTimeRangeStandard", true, "Reject nearby collisions"};
+  Configurable<bool> cfgUseOccupancyCut{"cfgUseOccupancyCut", true, "Apply track occupancy cut"};
+  Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 500, "Minimum track occupancy (inclusive)"};
+  Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 3000, "Maximum track occupancy (inclusive)"};
+  Configurable<bool> cfgUseNoITSROFrameBorder{"cfgUseNoITSROFrameBorder", true, "Reject ITS readout frame borders"};
+  Configurable<bool> cfgUseNoTimeFrameBorder{"cfgUseNoTimeFrameBorder", true, "Reject time frame borders"};
+  Configurable<bool> cfgFillEtaVtxQA{"cfgFillEtaVtxQA", true, "Fill centrality-resolved eta versus vertex QA for data"};
+  Configurable<bool> cfgFillEtaVtxPhiQA{"cfgFillEtaVtxPhiQA", true, "Fill centrality-resolved eta, vertex and phi QA for data"};
 
   Configurable<bool> cfgUseOnlyPhysicalPrimary{"cfgUseOnlyPhysicalPrimary", true, "MC truth: require physical primary"};
   Configurable<bool> cfgUseOnlyChargedMC{"cfgUseOnlyChargedMC", true, "MC truth: require charged particle"};
@@ -136,10 +150,20 @@ struct StronglyIntensiveCorr {
   // ------------------------------------------------------------------
   void init(InitContext&)
   {
+    if (cfgUseOccupancyCut.value && (cfgMinOccupancy.value < 0 || cfgMaxOccupancy.value < cfgMinOccupancy.value)) {
+      LOGF(fatal, "Invalid occupancy interval: require 0 <= cfgMinOccupancy <= cfgMaxOccupancy");
+    }
+
     AxisSpec centAxis = {100, 0.0, 100.0, "centrality (%)"};
     std::vector<double> centClassEdges(centEdges.begin(), centEdges.end());
     AxisSpec centClassAxis = {centClassEdges, "centrality class (%)"};
     AxisSpec etaGapAxis = {NEtaGaps, -0.05, 1.55, "#Delta#eta"};
+
+    // Seven physical, non-overlapping FB gaps:
+    // DeltaEta = 0.0, 0.2, ..., 1.2.
+    std::vector<double> physicalGapEdges = {-0.1, 0.1, 0.3, 0.5, 0.7, 0.9, 1.1, 1.3};
+
+    AxisSpec physicalGapAxis = {physicalGapEdges, "#Delta#eta"};
     AxisSpec nAxis = {500, 0.0, 500.0, "N"};
     AxisSpec counterAxis = {20, 0.5, 20.5, "counter"};
     AxisSpec ptAxis = {{0.2, 0.5, 0.8, 1.0, 1.5, 2.0, 5.0}, "#it{p}_{T} (GeV/#it{c})"};
@@ -175,6 +199,12 @@ struct StronglyIntensiveCorr {
     histos.add("QA/fb/nFminusNB", "nF-nB;nF-nB;Counts", kTH1D, {{500, -250.0, 250.0}});
     histos.add("QA/fb/nFplusNB", "nF+nB;nF+nB;Counts", kTH1D, {{500, 0.0, 500.0}});
 
+    // Event-level multiplicity QA for every physical gap.
+    // Axes: centrality x DeltaEta x multiplicity.
+    histos.add("QA/fbAllGaps/nFvsCentGap", "Forward multiplicity;centrality (%);#Delta#eta;n_{F}", kTH3D, {centAxis, physicalGapAxis, nAxis});
+
+    histos.add("QA/fbAllGaps/nBvsCentGap", "Backward multiplicity;centrality (%);#Delta#eta;n_{B}", kTH3D, {centAxis, physicalGapAxis, nAxis});
+
     histos.add("QA/mcReco/nRecoAll", "MC reco all selected;n;Counts", kTH1D, {nAxis});
     histos.add("QA/mcReco/nRecoPrimary", "MC reco primary selected;n;Counts", kTH1D, {nAxis});
     histos.add("QA/mcReco/nRecoSecondary", "MC reco secondary selected;n;Counts", kTH1D, {nAxis});
@@ -192,6 +222,52 @@ struct StronglyIntensiveCorr {
     histos.add("eventQA/after/centFT0M", "after;FT0M centrality (%);Counts", kTH1D, {centAxis});
     histos.add("eventQA/before/centFT0CvsFT0M", "before;FT0C;FT0M", kTH2D, {centAxis, centAxis});
     histos.add("eventQA/after/centFT0CvsFT0M", "after;FT0C;FT0M", kTH2D, {centAxis, centAxis});
+
+    // The centrality coordinate is the percentile, with full 10%-wide classes.
+    // The 4D QA has coarser z/eta bins to limit memory; its axes are cent,z,eta,phi.
+    if (cfgFillEtaVtxQA.value || cfgFillEtaVtxPhiQA.value) {
+      AxisSpec etaVtxZAxis = {400, -10.0, 10.0, "z_{vtx} (cm)"};
+      histos.add("eventQA/after/vtxZvsCentClass", "Selected data events;centrality (%);z_{vtx} (cm)", kTH2D, {centClassAxis, etaVtxZAxis});
+      histos.add("eventQA/after/centralityForEtaVtx", "Selected data events;centrality (%);events", kTH1D, {centAxis});
+      if (cfgFillEtaVtxQA.value) {
+        AxisSpec etaVtxEtaBeforeAxis = {200, -1.0, 1.0, "#eta"};
+        AxisSpec etaVtxEtaAfterAxis = {160, -0.8, 0.8, "#eta"};
+        histos.add("trackQA/before/etaVsVtxZCent", "Tracks before manual selection in selected data events;centrality (%);z_{vtx} (cm);#eta", kTH3D, {centClassAxis, etaVtxZAxis, etaVtxEtaBeforeAxis});
+        histos.add("trackQA/after/etaVsVtxZCent", "Selected data tracks;centrality (%);z_{vtx} (cm);#eta", kTH3D, {centClassAxis, etaVtxZAxis, etaVtxEtaAfterAxis});
+      }
+    }
+    if (cfgFillEtaVtxPhiQA.value) {
+      AxisSpec etaVtxPhiZAxis = {200, -10.0, 10.0, "z_{vtx} (cm)"};
+      AxisSpec etaVtxPhiEtaBeforeAxis = {100, -1.0, 1.0, "#eta"};
+      AxisSpec etaVtxPhiEtaAfterAxis = {80, -0.8, 0.8, "#eta"};
+      AxisSpec etaVtxPhiAxis = {36, 0.0, TwoPi, "#varphi (rad)"};
+      // Dense THnD: about 108 MiB for both histograms, including flow bins.
+      histos.add("trackQA/before/etaVsVtxZPhiCent", "Tracks before manual selection in selected data events;centrality (%);z_{vtx} (cm);#eta;#varphi (rad)", kTHnD, {centClassAxis, etaVtxPhiZAxis, etaVtxPhiEtaBeforeAxis, etaVtxPhiAxis});
+      histos.add("trackQA/after/etaVsVtxZPhiCent", "Selected data tracks;centrality (%);z_{vtx} (cm);#eta;#varphi (rad)", kTHnD, {centClassAxis, etaVtxPhiZAxis, etaVtxPhiEtaAfterAxis, etaVtxPhiAxis});
+    }
+
+    // Fine 1D occupancy retains the exact integer cut boundaries and -1.
+    // Coarser 2D occupancy keeps -1 in its own bin; >=20000 is overflow there.
+    AxisSpec occupancyAxis = {20002, -1.5, 20000.5, "track occupancy"};
+    std::vector<double> occupancyEdges = {-1.5, -0.5};
+    for (int upper = 10; upper <= 20000; upper += 10) {
+      occupancyEdges.push_back(upper - 0.5);
+    }
+    AxisSpec occupancyVsCentAxis = {occupancyEdges, "track occupancy"};
+    histos.add("eventQA/occupancy/beforeExtraCuts", "After original event-quality cuts, before extra cuts;track occupancy;events", kTH1D, {occupancyAxis});
+    histos.add("eventQA/occupancy/beforeExtraCutsVsCent", "After original event-quality cuts, before extra cuts;centrality (%);track occupancy", kTH2D, {centAxis, occupancyVsCentAxis});
+    histos.add("eventQA/occupancy/beforeOccupancyCut", "After nearby-collision rejection, before occupancy cut;track occupancy;events", kTH1D, {occupancyAxis});
+    histos.add("eventQA/occupancy/beforeOccupancyCutVsCent", "After nearby-collision rejection, before occupancy cut;centrality (%);track occupancy", kTH2D, {centAxis, occupancyVsCentAxis});
+    histos.add("eventQA/occupancy/after", "After all event selections including centrality;track occupancy;events", kTH1D, {occupancyAxis});
+    histos.add("eventQA/occupancy/afterVsCent", "After all event selections including centrality;centrality (%);track occupancy", kTH2D, {centAxis, occupancyVsCentAxis});
+
+    const std::array<const char*, 11> eventSelectionLabels = {
+      "Input after collision filter", "Vertex z", "sel8", "Good ITS layers", "No same-bunch pileup", "Good FT0-PV z", "No ITS ROF border", "No TF border", "No nearby collision", "Occupancy interval", "Centrality / selected"};
+    auto eventCounter = histos.get<TH1>(HIST("QA/eventCounter"));
+    eventCounter->SetTitle("Sequential event selection;passed or disabled cut;collisions");
+    for (unsigned int i = 0; i < eventSelectionLabels.size(); ++i) {
+      eventCounter->GetXaxis()->SetBinLabel(i + 1, eventSelectionLabels[i]);
+    }
 
     // Track QA
     histos.add("trackQA/before/nITSClusters", "before;N ITS clusters;Counts", kTH1D, {itsClsAxis});
@@ -434,17 +510,51 @@ struct StronglyIntensiveCorr {
     }
     histos.fill(HIST("QA/eventCounter"), 6);
 
+    // Occupancy is supplied by EvSels, not the current event's nF or nB.
+    const int occupancy = coll.trackOccupancyInTimeRange();
+    cent = getCentrality(coll);
+    const bool hasValidCentrality = std::isfinite(cent) && cent >= 0.f && cent < 100.f;
+    histos.fill(HIST("eventQA/occupancy/beforeExtraCuts"), occupancy);
+    if (hasValidCentrality) {
+      histos.fill(HIST("eventQA/occupancy/beforeExtraCutsVsCent"), cent, occupancy);
+    }
+
+    if (cfgUseNoITSROFrameBorder.value && !coll.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
+    histos.fill(HIST("QA/eventCounter"), 7);
+
+    if (cfgUseNoTimeFrameBorder.value && !coll.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+    histos.fill(HIST("QA/eventCounter"), 8);
+
+    if (cfgUseNoCollInTimeRangeStandard.value && !coll.selection_bit(aod::evsel::kNoCollInTimeRangeStandard)) {
+      return false;
+    }
+    histos.fill(HIST("QA/eventCounter"), 9);
+
+    histos.fill(HIST("eventQA/occupancy/beforeOccupancyCut"), occupancy);
+    if (hasValidCentrality) {
+      histos.fill(HIST("eventQA/occupancy/beforeOccupancyCutVsCent"), cent, occupancy);
+    }
+    if (cfgUseOccupancyCut.value && (occupancy < cfgMinOccupancy.value || occupancy > cfgMaxOccupancy.value)) {
+      return false;
+    }
+    histos.fill(HIST("QA/eventCounter"), 10);
+
     constexpr float MinCentrality = 0.f;
     constexpr float MaxCentrality = 100.f;
 
-    cent = getCentrality(coll);
     if (!std::isfinite(cent) || cent < MinCentrality || cent >= MaxCentrality) {
       return false;
     }
     if (cent < cfgCentMin.value || cent >= cfgCentMax.value) {
       return false;
     }
-    histos.fill(HIST("QA/eventCounter"), 7);
+    histos.fill(HIST("QA/eventCounter"), 11);
+    histos.fill(HIST("eventQA/occupancy/after"), occupancy);
+    histos.fill(HIST("eventQA/occupancy/afterVsCent"), cent, occupancy);
 
     return true;
   }
@@ -624,6 +734,26 @@ struct StronglyIntensiveCorr {
     histos.fill(HIST("QA/fb/nFvsNB"), nf, nb);
     histos.fill(HIST("QA/fb/nFminusNB"), nf - nb);
     histos.fill(HIST("QA/fb/nFplusNB"), nf + nb);
+  }
+
+  void fillAllGapMultiplicityQA(float cent,
+                                std::array<double, NEtaGaps> const& nF,
+                                std::array<double, NEtaGaps> const& nB)
+  {
+    for (int i = 0; i < NEtaGaps; ++i) {
+      const double gap = 2.0 * (etaCenter[i] - cfgEtaWidth.value / 2.0);
+
+      // etaCenter = 0 corresponds to overlapping windows and
+      // gives DeltaEta = -0.2. Keep only the seven physical,
+      // non-overlapping values from 0.0 to 1.2.
+      if (gap < -1.e-6 || gap > 1.200001) {
+        continue;
+      }
+
+      histos.fill(HIST("QA/fbAllGaps/nFvsCentGap"), cent, gap, nF[i]);
+
+      histos.fill(HIST("QA/fbAllGaps/nBvsCentGap"), cent, gap, nB[i]);
+    }
   }
 
   void fillInclusiveEtaGapMoments(std::array<double, NEtaGaps> const& nF,
@@ -944,12 +1074,37 @@ struct StronglyIntensiveCorr {
 
     histos.fill(HIST("QA/hCentrality"), cent);
     fillFBQA(cent, nF, nB);
+    fillAllGapMultiplicityQA(cent, nF, nB);
     fillInclusiveEtaGapMoments(nF, nB);
     fillCentClassEtaGapMoments(centClass, nF, nB);
     fillCentWindowEtaGapMoments(centWindowClass, nF, nB);
     fillSubsampleCentWindowEtaGapMoments(subsampleIndex, centWindowClass, nF, nB);
     fillDifferentialEtaPtPhiMoments(nFPtPhi, nBPtPhi);
     fillSubsampleDifferentialEtaPtPhiMoments(subsampleIndex, nFPtPhi, nBPtPhi);
+  }
+
+  template <bool AfterSelection, typename T>
+  void fillEtaVertexQA(float cent, float vertexZ, T const& track)
+  {
+    // Both stages use selected data events; "before" precedes selTrack().
+    if (cfgFillEtaVtxQA.value) {
+      if constexpr (AfterSelection) {
+        histos.fill(HIST("trackQA/after/etaVsVtxZCent"), cent, vertexZ, track.eta());
+      } else {
+        histos.fill(HIST("trackQA/before/etaVsVtxZCent"), cent, vertexZ, track.eta());
+      }
+    }
+    if (cfgFillEtaVtxPhiQA.value && std::isfinite(track.phi())) {
+      double phi = std::fmod(static_cast<double>(track.phi()), TwoPi);
+      if (phi < 0.0) {
+        phi += TwoPi;
+      }
+      if constexpr (AfterSelection) {
+        histos.fill(HIST("trackQA/after/etaVsVtxZPhiCent"), cent, vertexZ, track.eta(), phi);
+      } else {
+        histos.fill(HIST("trackQA/before/etaVsVtxZPhiCent"), cent, vertexZ, track.eta(), phi);
+      }
+    }
   }
 
   // ------------------------------------------------------------------
@@ -965,6 +1120,10 @@ struct StronglyIntensiveCorr {
       return;
     }
     fillEventQAAfter(coll, cent);
+    if (cfgFillEtaVtxQA.value || cfgFillEtaVtxPhiQA.value) {
+      histos.fill(HIST("eventQA/after/vtxZvsCentClass"), cent, coll.posZ());
+      histos.fill(HIST("eventQA/after/centralityForEtaVtx"), cent);
+    }
 
     std::array<double, NEtaGaps> nF{};
     std::array<double, NEtaGaps> nB{};
@@ -975,10 +1134,12 @@ struct StronglyIntensiveCorr {
 
     for (auto const& track : tracks) {
       fillTrackQABefore(track);
+      fillEtaVertexQA<false>(cent, coll.posZ(), track);
       if (!selTrack(track)) {
         continue;
       }
       fillTrackQAAfter(track);
+      fillEtaVertexQA<true>(cent, coll.posZ(), track);
 
       addToFBCounters(track.eta(), track.pt(), track.phi(), nF, nB, nFPtPhi, nBPtPhi);
     }

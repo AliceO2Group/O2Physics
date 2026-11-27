@@ -32,6 +32,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <CommonDataFormat/TimeStamp.h>
+#include <DCAFitter/FwdDCAFitterN.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
@@ -60,6 +61,7 @@
 #include <Math/ProbFuncMathCore.h>
 #include <Math/SMatrix.h>
 #include <Math/SVector.h>
+#include <Math/Vector3Dfwd.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TAxis.h>
@@ -381,6 +383,7 @@ struct QaMatching {
   Configurable<int> cfgMftTrackMultiplicityMax{"cfgMftTrackMultiplicityMax", 1000, "Maximum number of MFT tracks per collision"};
 
   Configurable<int> cfgQaMatchingAodDebug{"cfgQaMatchingAodDebug", 0, "If >0, print AO2D filling debug (0=off, N=max collisions)"};
+  Configurable<int> cfgUPCMode{"cfgUPCMode", -1, "UPC mode for AO2D output (-1=all, 0=non-UPC, 1=UPC)"};
 
   double mBzAtMftCenter{0};
 
@@ -617,7 +620,7 @@ struct QaMatching {
 
       AxisSpec resonanceTypeAxis = {8, 0, 8, ""};
       o2::framework::HistPtr histPtr;
-      auto setAxisLabels = [](std::shared_ptr<THnSparse> hn) {
+      auto setAxisLabels = [](const std::shared_ptr<THnSparse>& hn) {
         hn->GetAxis(4)->SetBinLabel(1, "");
         hn->GetAxis(4)->SetBinLabel(2, "#omega");
         hn->GetAxis(4)->SetBinLabel(3, "#phi");
@@ -723,7 +726,7 @@ struct QaMatching {
       AxisSpec uthetaAxis = {500, 0, 50, "pull(theta)"};
       AxisSpec utotAxis = {500, 0, 50, "pull(tot)"};
 
-      auto setResonanceAxisLabels = [](std::shared_ptr<THnSparse> hn) {
+      auto setResonanceAxisLabels = [](const std::shared_ptr<THnSparse>& hn) {
         hn->GetAxis(7)->SetBinLabel(1, "");
         hn->GetAxis(7)->SetBinLabel(2, "#omega");
         hn->GetAxis(7)->SetBinLabel(3, "#phi");
@@ -805,7 +808,7 @@ struct QaMatching {
       AxisSpec promptNonPromptAxis = {2, 0, 2, ""};
 
       o2::framework::HistPtr histPtr;
-      auto setResonanceAxisLabels = [](std::shared_ptr<THnSparse> hn) {
+      auto setResonanceAxisLabels = [](const std::shared_ptr<THnSparse>& hn) {
         hn->GetAxis(4)->SetBinLabel(1, "");
         hn->GetAxis(4)->SetBinLabel(2, "#omega");
         hn->GetAxis(4)->SetBinLabel(3, "#phi");
@@ -1126,7 +1129,7 @@ struct QaMatching {
     AxisSpec correctAssociationAxis = {4, 0, 4, "correct association"};
 
     o2::framework::HistPtr histPtr;
-    auto setResonanceAxisLabels = [](std::shared_ptr<THnSparse> hn) {
+    auto setResonanceAxisLabels = [](const std::shared_ptr<THnSparse>& hn) {
       hn->GetAxis(2)->SetBinLabel(1, "");
       hn->GetAxis(2)->SetBinLabel(2, "#omega");
       hn->GetAxis(2)->SetBinLabel(3, "#phi");
@@ -1136,12 +1139,12 @@ struct QaMatching {
       hn->GetAxis(2)->SetBinLabel(7, "#Upsilon(2S)");
       hn->GetAxis(2)->SetBinLabel(8, "#Upsilon(3S)");
     };
-    auto setPromptAxisLabels = [](std::shared_ptr<THnSparse> hn) {
+    auto setPromptAxisLabels = [](const std::shared_ptr<THnSparse>& hn) {
       hn->GetAxis(3)->SetBinLabel(1, "undef");
       hn->GetAxis(3)->SetBinLabel(2, "prompt");
       hn->GetAxis(3)->SetBinLabel(3, "non-prompt");
     };
-    auto setMotherAxisLabels = [](std::shared_ptr<THnSparse> hn) {
+    auto setMotherAxisLabels = [](const std::shared_ptr<THnSparse>& hn) {
       hn->GetAxis(4)->SetBinLabel(1, "undef");
       hn->GetAxis(4)->SetBinLabel(2, "c mesons");
       hn->GetAxis(4)->SetBinLabel(3, "b mesons");
@@ -1311,6 +1314,10 @@ struct QaMatching {
 
   void init(o2::framework::InitContext&)
   {
+    if (cfgUPCMode < -1 || cfgUPCMode > 1) {
+      LOGF(warning, "Invalid cfgUPCMode=%d. Treating it as -1 and writing AO2D output for all UPC modes.", static_cast<int>(cfgUPCMode));
+    }
+
     // Load geometry
     ccdbManager->setURL(ccdbUrl);
     ccdbManager->setCaching(true);
@@ -3488,9 +3495,12 @@ struct QaMatching {
     std::vector<int64_t> taggedMuons;
     getTaggedMuons(collisionInfo, collisions, muonTracks, taggedMuons);
 
+    const bool writeQaMatchingAod = shouldWriteQaMatchingAod(collisionInfo, collision);
     int debugCounter{0};
-    fillQaMatchingAodEventForCollision(collisionInfo, collision, collisionInfo.reducedEventId, debugCounter);
-    fillQaMatchingMchTracksForCollision(collision, muonTracks, taggedMuons, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds);
+    if (writeQaMatchingAod) {
+      fillQaMatchingAodEventForCollision(collisionInfo, collision, collisionInfo.reducedEventId, debugCounter);
+      fillQaMatchingMchTracksForCollision(collision, muonTracks, taggedMuons, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds);
+    }
 
     registry.get<TH1>(HIST("tracksMultiplicityMFT"))->Fill(collisionInfo.mftTracks.size());
     registry.get<TH1>(HIST("tracksMultiplicityMCH"))->Fill(collisionInfo.mchTracks.size());
@@ -3558,7 +3568,9 @@ struct QaMatching {
 
     //-------------------------------
     // Chi2-based matching from production
-    fillQaMatchingAodTablesForCollision(collision, muonTracks, mftTracks, collisionInfo.matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds, mftCovs);
+    if (writeQaMatchingAod) {
+      fillQaMatchingAodTablesForCollision(collision, muonTracks, mftTracks, collisionInfo.matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds, mftCovs);
+    }
     if constexpr (isMC) {
       fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, taggedMuons, collisionInfo.matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, cfgMatchingChi2ScoreMftMchLow, fChi2MatchingPlotter.get(), false);
     } else {
@@ -3589,7 +3601,9 @@ struct QaMatching {
       double matchingScoreCut = matchingScoreCuts.at(label);
 
       matchingMethodCounter += 1;
-      fillQaMatchingAodTablesForCollision(collision, muonTracks, mftTracks, matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds, mftCovs);
+      if (writeQaMatchingAod) {
+        fillQaMatchingAodTablesForCollision(collision, muonTracks, mftTracks, matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds, mftCovs);
+      }
       if constexpr (isMC) {
         fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, taggedMuons, matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, matchingScoreCut, plotter, false);
       } else {
@@ -3607,7 +3621,9 @@ struct QaMatching {
       double matchingScoreCut = matchingScoreCuts.at(label);
 
       matchingMethodCounter += 1;
-      fillQaMatchingAodTablesForCollision(collision, muonTracks, mftTracks, matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds, mftCovs);
+      if (writeQaMatchingAod) {
+        fillQaMatchingAodTablesForCollision(collision, muonTracks, mftTracks, matchingCandidates, matchingMethodCounter, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds, mftCovs);
+      }
       if constexpr (isMC) {
         fillMatchingPlotsMc(collision, collisionInfo, muonTracks, mftTracks, taggedMuons, matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, matchingScoreCut, plotter);
       } else {
@@ -3622,6 +3638,22 @@ struct QaMatching {
     } else {
       fillDimuonPlots(collisionInfo, collisions, muonTracks, mftTracks);
     }
+  }
+
+  template <class TCOLLISION>
+  bool shouldWriteQaMatchingAod(const CollisionInfo& collisionInfo, TCOLLISION const& collision) const
+  {
+    if (collisionInfo.mchTracks.empty() || collisionInfo.mftTracks.empty()) {
+      return false;
+    }
+
+    const int upcModeFilter = cfgUPCMode.value;
+    if (upcModeFilter != 0 && upcModeFilter != 1) {
+      return true;
+    }
+
+    const bool upcMode = (collision.flags() & o2::dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0;
+    return static_cast<int>(upcMode) == upcModeFilter;
   }
 
   template <class TCOLLISION, class TMUON, class TMFT, class CMFT>

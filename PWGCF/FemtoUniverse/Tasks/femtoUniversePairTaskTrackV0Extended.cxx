@@ -601,7 +601,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
           trackHistoPartOnePos.fillQA<false, false>(part);
         }
         if (ConfTrkSelection.confChargePart1 < 0) {
-          trackHistoPartOnePos.fillQA<false, false>(part);
+          trackHistoPartOneNeg.fillQA<false, false>(part);
         }
       }
     }
@@ -776,7 +776,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
           continue;
         }
         if (ConfV0Selection.confUseStrangenessTOF) {
-          if (((ConfV0Selection.confV0Type2 == 0) && (part.pidCut() & 3) != 3) || ((ConfV0Selection.confV0Type1 == 1) && (part.pidCut() & 12) != 12) || ((ConfV0Selection.confV0Type2 == 2) && (part.pidCut() & 48) != 48)) {
+          if (((ConfV0Selection.confV0Type2 == 0) && (part.pidCut() & 3) != 3) || ((ConfV0Selection.confV0Type2 == 1) && (part.pidCut() & 12) != 12) || ((ConfV0Selection.confV0Type2 == 2) && (part.pidCut() & 48) != 48)) {
             continue;
           }
         } else {
@@ -1002,12 +1002,13 @@ struct FemtoUniversePairTaskTrackV0Extended {
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processSameEventV0MCReco, "Enable processing same event for V0 - V0 MC Reco", false);
 
   /// This function processes MC same events for Track - V0
-  void processMCSameEvent(FilteredFDCollision const& col, FemtoFullParticles const& parts)
+  template <typename PartType, typename PartitionType>
+  void doMCSameEvent(FilteredFDCollision const& col, PartType const& parts, PartitionType& partsOneMC, PartitionType& partsTwoMC)
   {
     const auto& magFieldTesla = col.magField();
 
-    auto groupPartsOne = partsOneMCFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    auto groupPartsTwo = partsTwoMCFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsOne = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     const int multCol = confUseCent ? static_cast<int>(col.multV0M()) : col.multNtr();
 
     eventHisto.fillQA(col);
@@ -1018,7 +1019,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
       if ((ConfV0Selection.confV0Type1 == 0 && pdgCode != kLambda0) || (ConfV0Selection.confV0Type1 == 1 && pdgCode != kLambda0Bar)) {
         continue;
       }
-      trackHistoPartTwo.fillQA<false, true>(part);
+      trackHistoPartTwo.fillQA<false, std::experimental::is_detected<HasSigma, typename PartType::iterator>::value>(part);
     }
 
     for (const auto& part : groupPartsOne) {
@@ -1032,9 +1033,9 @@ struct FemtoUniversePairTaskTrackV0Extended {
       }
       /// PID plot for particle 1
       if (pdgParticle->Charge() > 0.0) {
-        trackHistoPartOnePos.fillQA<false, false>(part);
+        trackHistoPartOnePos.fillQA<false, std::experimental::is_detected<HasSigma, typename PartType::iterator>::value>(part);
       } else if (pdgParticle->Charge() < 0.0) {
-        trackHistoPartOneNeg.fillQA<false, false>(part);
+        trackHistoPartOneNeg.fillQA<false, std::experimental::is_detected<HasSigma, typename PartType::iterator>::value>(part);
       }
     }
 
@@ -1057,12 +1058,11 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
   }
 
-  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCSameEvent, "Enable processing same event for MC truth track - V0", false);
-
   /// This function processes MC same events for V0 - V0
-  void processMCSameEventV0(FilteredFDCollision const& col, FemtoFullParticles const& parts)
+  template <typename PartType, typename PartitionType>
+  void doMCSameEventV0(FilteredFDCollision const& col, PartType const& parts, PartitionType& partsTwoMC)
   {
-    auto groupPartsTwo = partsTwoMCFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     const int multCol = confUseCent ? static_cast<int>(col.multV0M()) : col.multNtr();
 
     eventHisto.fillQA(col);
@@ -1073,17 +1073,17 @@ struct FemtoUniversePairTaskTrackV0Extended {
       const auto& negChild = parts.iteratorAt(part.index() - 1);
       int pdgCode = static_cast<int>(part.pidCut());
       if ((ConfV0Selection.confV0Type1 == 0 && pdgCode == kLambda0) || (ConfV0Selection.confV0Type1 == 1 && pdgCode == kLambda0Bar)) {
-        trackHistoV0Type1.fillQABase<false, true>(part, HIST("V0Type1"));
-        posChildV0Type1.fillQABase<false, true>(posChild, HIST("posChildV0Type1"));
-        negChildV0Type1.fillQABase<false, true>(negChild, HIST("negChildV0Type1"));
+        trackHistoV0Type1.fillQABase<false, std::experimental::is_detected<HasSigma, typename PartType::iterator>::value>(part, HIST("V0Type1"));
+        posChildV0Type1.fillQABase<false, std::experimental::is_detected<HasSigma, typename PartType::iterator>::value>(posChild, HIST("posChildV0Type1"));
+        negChildV0Type1.fillQABase<false, std::experimental::is_detected<HasSigma, typename PartType::iterator>::value>(negChild, HIST("negChildV0Type1"));
         qaRegistry.fill(HIST("V0Type1/hInvMassLambdaVsCent"), multCol, part.mLambda());
         qaRegistry.fill(HIST("V0Type1/hInvMassAntiLambdaVsCent"), multCol, part.mAntiLambda());
         effCorrection.fillTruthHist<ParticleNo::ONE, FilteredFDCollisions>(part);
       }
       if ((ConfV0Selection.confV0Type2 == 0 && pdgCode == kLambda0) || (ConfV0Selection.confV0Type2 == 1 && pdgCode == kLambda0Bar)) {
-        trackHistoV0Type2.fillQABase<false, true>(part, HIST("V0Type2"));
-        posChildV0Type2.fillQABase<false, true>(posChild, HIST("posChildV0Type2"));
-        negChildV0Type2.fillQABase<false, true>(negChild, HIST("negChildV0Type2"));
+        trackHistoV0Type2.fillQABase<false, std::experimental::is_detected<HasSigma, typename PartType::iterator>::value>(part, HIST("V0Type2"));
+        posChildV0Type2.fillQABase<false, std::experimental::is_detected<HasSigma, typename PartType::iterator>::value>(posChild, HIST("posChildV0Type2"));
+        negChildV0Type2.fillQABase<false, std::experimental::is_detected<HasSigma, typename PartType::iterator>::value>(negChild, HIST("negChildV0Type2"));
         qaRegistry.fill(HIST("V0Type2/hInvMassLambdaVsCent"), multCol, part.mLambda());
         qaRegistry.fill(HIST("V0Type2/hInvMassAntiLambdaVsCent"), multCol, part.mAntiLambda());
         effCorrection.fillTruthHist<ParticleNo::TWO, FilteredFDCollisions>(part);
@@ -1114,8 +1114,6 @@ struct FemtoUniversePairTaskTrackV0Extended {
       }
     }
   }
-
-  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCSameEventV0, "Enable processing same event for MC truth V0 - V0", false);
 
   /// This function processes the mixed event for track - V0
   template <typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
@@ -1406,7 +1404,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMixedEventV0MCReco, "Enable processing mixed event for V0 - V0 for MC Reco", false);
 
   /// This function processes MC mixed events for Track - V0
-  void processMCMixedEvent(FilteredFDCollisions const& cols, FemtoFullParticles const& parts)
+  template <typename PartType, typename PartitionType>
+  void doMCMixedEvent(FilteredFDCollisions const& cols, PartType const& parts, PartitionType& partsOneMC, PartitionType& partsTwoMC)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
@@ -1414,8 +1413,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
       const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : collision1.multNtr();
 
-      auto groupPartsOne = partsOneMCFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
-      auto groupPartsTwo = partsTwoMCFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+      auto groupPartsOne = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
@@ -1453,10 +1452,9 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
   }
 
-  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCMixedEvent, "Enable processing mixed events for MC truth track - V0", false);
-
   /// This function processes MC mixed events for V0 - V0
-  void processMCMixedEventV0(FilteredFDCollisions const& cols, FemtoFullParticles const& /*parts*/)
+  template <typename PartType, typename PartitionType>
+  void doMCMixedEventV0(FilteredFDCollisions const& cols, PartType const& /*parts*/, PartitionType& partsTwoMC)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
@@ -1464,8 +1462,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
       const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : collision1.multNtr();
 
-      auto groupPartsOne = partsTwoMCFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
-      auto groupPartsTwo = partsTwoMCFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+      auto groupPartsOne = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
 
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         int pdgCode1 = static_cast<int>(p1.pidCut());
@@ -1493,7 +1491,53 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
   }
 
+  void processMCSameEvent(FilteredFDCollision const& col, FemtoFullParticles const& parts)
+  {
+    doMCSameEvent(col, parts, partsOneMCFull, partsTwoMCFull);
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCSameEvent, "Enable processing same event for MC truth track - V0", false);
+
+  void processMCSameEventBitmask(FilteredFDCollision const& col, aod::FDParticles const& parts)
+  {
+    doMCSameEvent(col, parts, partsOneMCBasic, partsTwoMCBasic);
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCSameEventBitmask, "Enable processing same event for MC truth track - V0 using bitmask", false);
+
+  void processMCMixedEvent(FilteredFDCollisions const& cols, FemtoFullParticles const& parts)
+  {
+    doMCMixedEvent(cols, parts, partsOneMCFull, partsTwoMCFull);
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCMixedEvent, "Enable processing mixed events for MC truth track - V0", false);
+
+  void processMCMixedEventBitmask(FilteredFDCollisions const& cols, aod::FDParticles const& parts)
+  {
+    doMCMixedEvent(cols, parts, partsOneMCBasic, partsTwoMCBasic);
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCMixedEventBitmask, "Enable processing mixed events for MC truth track - V0 using bitmask", false);
+
+  void processMCSameEventV0(FilteredFDCollision const& col, FemtoFullParticles const& parts)
+  {
+    doMCSameEventV0(col, parts, partsTwoMCFull);
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCSameEventV0, "Enable processing same event for MC truth V0 - V0", false);
+
+  void processMCSameEventV0Bitmask(FilteredFDCollision const& col, aod::FDParticles const& parts)
+  {
+    doMCSameEventV0(col, parts, partsTwoMCBasic);
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCSameEventV0Bitmask, "Enable processing same event for MC truth V0 - V0 using bitmask", false);
+
+  void processMCMixedEventV0(FilteredFDCollisions const& cols, FemtoFullParticles const& parts)
+  {
+    doMCMixedEventV0(cols, parts, partsTwoMCFull);
+  }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCMixedEventV0, "Enable processing mixed events for MC truth V0 - V0", false);
+
+  void processMCMixedEventV0Bitmask(FilteredFDCollisions const& cols, aod::FDParticles const& parts)
+  {
+    doMCMixedEventV0(cols, parts, partsTwoMCBasic);
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCMixedEventV0Bitmask, "Enable processing mixed events for MC truth V0 - V0 using bitmask", false);
 
   ///--------------------------------------------MC-------------------------------------------------///
 

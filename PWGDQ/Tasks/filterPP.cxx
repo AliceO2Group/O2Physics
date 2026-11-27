@@ -126,7 +126,7 @@ struct DQEventSelectionTask {
     if (!eventCutStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(eventCutStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fEventCut->AddCut(dqcuts::GetAnalysisCut(objArray->At(icut)->GetName()));
+        fEventCut->addCut(dqcuts::getAnalysisCut(objArray->At(icut)->GetName()));
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -153,7 +153,7 @@ struct DQEventSelectionTask {
     if (fConfigQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
     }
-    if (fEventCut->IsSelected(VarManager::fgValues)) {
+    if (fEventCut->isSelected(VarManager::fgValues)) {
       if (fConfigQA) {
         fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
       }
@@ -202,7 +202,7 @@ struct DQBarrelTrackSelection {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        AnalysisCompositeCut* cut = dqcuts::GetCompositeCut(objArray->At(icut)->GetName());
+        AnalysisCompositeCut* cut = dqcuts::getCompositeCut(objArray->At(icut)->GetName());
         if (cut) {
           fTrackCuts.push_back(*cut);
         } else {
@@ -270,7 +270,7 @@ struct DQBarrelTrackSelection {
         }
         int i = 0;
         for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
-          if ((*cut).IsSelected(VarManager::fgValues)) {
+          if ((*cut).isSelected(VarManager::fgValues)) {
             filterMap |= (static_cast<uint32_t>(1) << i);
             if (fConfigQA) {
               fHistMan->FillHistClass(fCutHistNames[i].Data(), VarManager::fgValues);
@@ -313,7 +313,7 @@ struct DQMuonsSelection {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars);
@@ -356,7 +356,7 @@ struct DQMuonsSelection {
         }
         int i = 0;
         for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
-          if ((*cut).IsSelected(VarManager::fgValues)) {
+          if ((*cut).isSelected(VarManager::fgValues)) {
             filterMap |= (static_cast<uint32_t>(1) << i);
             if (fConfigQA) {
               fHistMan->FillHistClass(fCutHistNames[i].Data(), VarManager::fgValues);
@@ -422,7 +422,7 @@ struct DQFilterPPTask {
         }
         // if "sel" contains 3 entries, it means the user provided both the track and pair cuts
         if (sel->GetEntries() == 3) {
-          fBarrelPairCuts[icut] = (*dqcuts::GetCompositeCut(sel->At(1)->GetName()));
+          fBarrelPairCuts[icut] = (*dqcuts::getCompositeCut(sel->At(1)->GetName()));
           fBarrelRunPairing.push_back(true);
           fBarrelNreqObjs.push_back(std::atoi(sel->At(2)->GetName()));
           fBarrelPairHistNames[icut] = Form("PairsBarrelSEPM_%s_%s", sel->At(0)->GetName(), sel->At(1)->GetName());
@@ -444,7 +444,7 @@ struct DQFilterPPTask {
         }
         // if "sel" contains 3 entries, it means the user provided both the track and pair cuts
         if (sel->GetEntries() == 3) {
-          fMuonPairCuts[icut] = (*dqcuts::GetCompositeCut(sel->At(1)->GetName()));
+          fMuonPairCuts[icut] = (*dqcuts::getCompositeCut(sel->At(1)->GetName()));
           fMuonRunPairing.push_back(true);
           fMuonNreqObjs.push_back(std::atoi(sel->At(2)->GetName()));
           fMuonPairHistNames[icut] = Form("PairsForwardSEPM_%s_%s", sel->At(0)->GetName(), sel->At(1)->GetName());
@@ -572,7 +572,7 @@ struct DQFilterPPTask {
           if (!(pairFilter & (static_cast<uint32_t>(1) << icut))) {
             continue;
           }
-          if (!fBarrelPairCuts[icut].IsSelected(VarManager::fgValues)) {
+          if (!fBarrelPairCuts[icut].isSelected(VarManager::fgValues)) {
             continue;
           }
           objCountersBarrel[icut] += 1; // count the pair
@@ -636,7 +636,7 @@ struct DQFilterPPTask {
           if (!(pairFilter & (static_cast<uint32_t>(1) << icut))) {
             continue;
           }
-          if (!fMuonPairCuts[icut].IsSelected(VarManager::fgValues)) {
+          if (!fMuonPairCuts[icut].isSelected(VarManager::fgValues)) {
             continue;
           }
           objCountersMuon[icut] += 1;

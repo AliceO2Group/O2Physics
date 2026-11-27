@@ -26,15 +26,21 @@
 #include "Common/DataModel/OccupancyTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
 
+#include <TFile.h>
+#include <TH2.h>
 #include <TRandom3.h>
 
 #include <cmath>
 #include <cstdint>
+#include <filesystem>
+#include <map>
 #include <string>
 
 namespace o2::dpg_tpcskimstablecreator
@@ -59,34 +65,6 @@ template <typename CollisionType>
 bool isEventSelected(const CollisionType& collision, const int applyEvSel)
 {
   if ((applyEvSel == EventSelectionRun2 && !collision.sel7()) || (applyEvSel == EventSelectionRun3 && !collision.sel8())) {
-    return false;
-  } else {
-    return true;
-  }
-};
-
-/// Random downsampling trigger function using Tsalis/Hagedorn spectra fit (sqrt(s) = 62.4 GeV to 13 TeV)
-/// as in https://iopscience.iop.org/article/10.1088/2399-6528/aab00f/pdf
-inline bool downsampleTsalisCharged(TRandom3* fRndm, const double pt, const double factor1Pt, const double mass, const double sqrtSNN, const double maxPt = 1e9)
-{
-  if (factor1Pt < 0. || pt > maxPt) {
-    return true;
-  }
-
-  auto tsalisCharged = [&](const double pT) {
-    const double a = 6.81, b = 59.24;
-    const double c = 0.082, d = 0.151;
-    const double mt = std::sqrt(mass * mass + pT * pT);
-    const double n = a + b / sqrtSNN;
-    const double t = c + d / sqrtSNN;
-    const double p0 = n * t;
-    const double result = std::pow((1. + mt / p0), -n);
-    return result;
-  };
-
-  const double prob = tsalisCharged(pt) * pt;
-  const double probNorm = tsalisCharged(1.);
-  if ((fRndm->Rndm() * ((prob / probNorm) * pt * pt)) > factor1Pt) {
     return false;
   } else {
     return true;
@@ -119,9 +97,10 @@ double tpcSignalGeneric(const TrkType& track)
   }
 }
 
-/// Determine interaction rate source and sqrtSNN from CCDB
-void evaluateIrSourceAndSqrtSnn(const o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, const std::string& ccdbPathGrpLhcIf, const uint64_t timestamp, std::string& irSource, float& sqrtSNN)
+/// Determine interaction rate source from CCDB
+std::string evaluateIrSource(const o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, const std::string& ccdbPathGrpLhcIf, const uint64_t timestamp)
 {
+  std::string irSource{""};
   o2::parameters::GRPLHCIFData* genRunParams = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(ccdbPathGrpLhcIf, timestamp);
   if (genRunParams != nullptr) {
     const auto collSys = CollisionSystemType::getCollisionTypeFromGrp(genRunParams);
@@ -130,14 +109,11 @@ void evaluateIrSourceAndSqrtSnn(const o2::framework::Service<o2::ccdb::BasicCCDB
     } else {
       irSource = "ZNC hadronic";
     }
-    sqrtSNN = genRunParams->getSqrtS();
     LOG(info) << "irSource determined from General Run Parameters: " << irSource;
-    LOG(info) << "sqrtSNN determined from General Run Parameters: " << sqrtSNN << " GeV";
   } else {
-    irSource = "";
-    sqrtSNN = 5360.f;
-    LOG(warning) << "No General Run Parameters object found. irSource will remain undefined, sqrtSNN defaulted to 5360 GeV";
+    LOG(warning) << "No General Run Parameters object found. irSource will remain undefined";
   }
+  return irSource;
 }
 
 struct OccupancyValues {
@@ -173,6 +149,55 @@ void evaluateOccupancyVariables(const TrkType& track, OccupancyValues& occValues
   occValues.twmoFT0AUnfm80 = tmoFromTrack.twmoFT0AUnfm80();
   occValues.twmoFT0CUnfm80 = tmoFromTrack.twmoFT0CUnfm80();
   occValues.twmoRT0V0PrimUnfm80 = tmoFromTrack.twmoRobustT0V0PrimUnfm80();
+}
+
+inline void initAdaptDwnsplHistograms(const std::string& ccdbPathForAdaptDwnsplFile, const std::string& adaptDwnsplFileName, const std::string& adaptDwnsplHistoName, TH2*& histo)
+{
+  o2::ccdb::CcdbApi ccdbApi;
+  ccdbApi.init("http://alice-ccdb.cern.ch");
+  const std::map<std::string, std::string> metadata;
+  if (!std::filesystem::exists(adaptDwnsplFileName.c_str())) {
+    // Retrieve the file from CCDB
+    const bool isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForAdaptDwnsplFile, ".", metadata, -1, false, adaptDwnsplFileName);
+    if (!isFileAvailable) {
+      LOGF(fatal, "Failed to retrieve expected-momentum histograms file from CCDB: %s/%s", ccdbPathForAdaptDwnsplFile.c_str(), adaptDwnsplFileName.c_str());
+      return;
+    }
+  } else {
+    LOGF(fatal, "The file %s already exists. Make sure that 'adaptDwnsplFileName' has different values for V0 and TPC-TOF", adaptDwnsplFileName.c_str());
+    return;
+  }
+  TFile* adaptDwsplFile = TFile::Open(adaptDwnsplFileName.c_str(), "read");
+  if (adaptDwsplFile == nullptr || adaptDwsplFile->IsZombie()) {
+    LOGF(fatal, "Failed to open expected-momentum histograms file from CCDB: %s/%s", ccdbPathForAdaptDwnsplFile.c_str(), adaptDwnsplFileName.c_str());
+    return;
+  }
+  histo = dynamic_cast<TH2*>(adaptDwsplFile->Get<TH2>(adaptDwnsplHistoName.c_str())->Clone());
+  if (histo == nullptr) {
+    LOGF(fatal, "Histogram %s not found in expected-momentum histograms file!", adaptDwnsplHistoName.c_str());
+    return;
+  }
+  if (histo->GetXaxis()->IsVariableBinSize()) {
+    LOGF(fatal, "Histogram %s has variable bin size, which is not allowed!", adaptDwnsplHistoName.c_str());
+    return;
+  }
+  histo->SetDirectory(nullptr);
+  adaptDwsplFile->Close();
+  delete adaptDwsplFile;
+  adaptDwsplFile = nullptr;
+}
+
+inline bool performAdaptiveDownsampling(TRandom3* fRndm, const double p, const o2::track::PID::ID pid, const double targetYieldPerBin, const TH2* histoExpected, const bool isPositive)
+{
+  const int pidShift = isPositive ? 0 : o2::track::PID::NIDs;
+  const double yieldExpected = histoExpected->GetBinContent(histoExpected->GetXaxis()->FindBin(std::log10(p)), histoExpected->GetYaxis()->FindBin(pidShift + pid));
+  if (yieldExpected < targetYieldPerBin) {
+    return true;
+  }
+  if (fRndm->Uniform(1) > (targetYieldPerBin / yieldExpected)) {
+    return false;
+  }
+  return true;
 }
 
 } // namespace o2::dpg_tpcskimstablecreator

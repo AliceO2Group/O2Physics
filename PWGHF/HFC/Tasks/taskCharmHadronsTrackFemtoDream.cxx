@@ -121,7 +121,6 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     Configurable<float> charmHadMinInvMass{"charmHadMinInvMass", 2.15, "Minimum charm invariant mass or DeltaM (GeV/c2)"};
     Configurable<float> charmHadMinPt{"charmHadMinPt", 0., "Minimum pT of Charm Hadron (particle 2)"};
     Configurable<float> charmHadMaxPt{"charmHadMaxPt", 999., "Maximum pT of Charm Hadron (particle 2)"};
-    Configurable<int> charmHadPDGCode{"charmHadPDGCode", Pdg::kLambdaCPlus, "PDG code of particle 2 Charm Hadron"};
     Configurable<float> charmHadPromptBDTmin{"charmHadPromptBDTmin", 0., "Minimum prompt bdt score Charm Hadron (particle 2)"};
     Configurable<float> charmHadPromptBDTmax{"charmHadPromptBDTmax", 1., "Maximum prompt bdt score Charm Hadron (particle 2)"};
   } charmSel;
@@ -316,6 +315,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
   float massOne = 0.f;
   float massTwo = 0.f;
+  int charmHadPDGCode = -1; // PDG code of the charm hadron, set in init() from the enabled process function
   int64_t processType = 0;
 
   void init(InitContext& /*context*/)
@@ -337,7 +337,24 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     }
 
     massOne = o2::analysis::femtoDream::getMass(trackSel.pdgCodeTrack1.value);
-    massTwo = processSc ? 0.f : o2::analysis::femtoDream::getMass(charmSel.charmHadPDGCode.value);
+    // The mass hypothesis of the charm hadron enters the pair kT, k* and mT and the
+    // internal calculations of the container, so it is defined by the process function in use.
+    if (processSc) {
+      // the mass is set per candidate, since it depends on the SigmaC charge; a supported
+      // placeholder is needed here, because the containers are initialised with it
+      charmHadPDGCode = Pdg::kSigmaCPlusPlus;
+    } else if (doprocessDataLcTrk || doprocessMcLcTrk) {
+      charmHadPDGCode = Pdg::kLambdaCPlus;
+    } else if (doprocessDataDplusTrk || doprocessMcDplusTrk || doprocessMcDplusTrkGen) {
+      charmHadPDGCode = Pdg::kDPlus;
+    } else if (doprocessDataD0Trk || doprocessMcD0Trk) {
+      charmHadPDGCode = Pdg::kD0;
+    } else if (doprocessDataXicTrk || doprocessMcXicTrk) {
+      charmHadPDGCode = Pdg::kXiCPlus;
+    } else {
+      charmHadPDGCode = Pdg::kDStar;
+    }
+    massTwo = processSc ? 0.f : o2::analysis::femtoDream::getMass(charmHadPDGCode);
 
     // setup columnpolicy for binning
     colBinningMult = {{mixingBinVztx, mixingBinMult}};
@@ -354,7 +371,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
                        highkstarCut,
                        smearingByOrigin, binInvMass);
 
-    sameEventCont.setPDGCodes(trackSel.pdgCodeTrack1.value, charmSel.charmHadPDGCode.value);
+    sameEventCont.setPDGCodes(trackSel.pdgCodeTrack1.value, charmHadPDGCode);
     mixedEventCont.init(&registry,
                         binkstar, binpTTrack, binkT, binmT, mixingBinMult, mixingBinMultPercentile,
                         bin4Dkstar, bin4DmT, bin4DMult, bin4DmultPercentile,
@@ -362,7 +379,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
                         highkstarCut,
                         smearingByOrigin, binInvMass);
 
-    mixedEventCont.setPDGCodes(trackSel.pdgCodeTrack1.value, charmSel.charmHadPDGCode.value);
+    mixedEventCont.setPDGCodes(trackSel.pdgCodeTrack1.value, charmHadPDGCode);
     registryMixQa.add("MixingQA/hSECollisionBins", "; bin; Entries", kTH1F, {{120, -0.5, 119.5}});
     registryMixQa.add("MixingQA/hSECollisionPool", "; Vz (cm); Mul", kTH2F, {{100, -10, 10}, {200, 0, 200}});
     registryMixQa.add("MixingQA/hMECollisionBins", "; bin; Entries", kTH1F, {{120, -0.5, 119.5}});
@@ -997,6 +1014,12 @@ struct HfTaskCharmHadronsTrackFemtoDream {
                      << trackSel.pdgCodeTrack1.value;
           break;
       }
+      int originMcTrack = -1;
+      if constexpr (IsMc) {
+        if (part.has_fdMCParticle()) {
+          originMcTrack = static_cast<int>(part.fdMCParticle().partOriginMCTruth());
+        }
+      }
       tables.rowFemtoResultTrk(
         col.globalIndex(),
         timeStamp,
@@ -1009,7 +1032,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         part.tpcNClsFindable(),
         part.tpcNClsCrossedRows(),
         tpcNSigma,
-        tofNSigma);
+        tofNSigma,
+        part.dcaXY(),
+        originMcTrack);
     }
 
     // ---- Fill Collision Table ----
@@ -1637,7 +1662,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           nCls,
           nCls,
           nSigma,
-          nSigma);
+          nSigma,
+          -999.f, // No reconstructed DCAxy is available for generated tracks.
+          -1);    // Generated track input does not carry an MC origin label.
       }
       if (sliceGenCharmHad.size() > 0 || sliceGenTrk1.size() > 0) {
         tables.rowFemtoResultColl(col.globalIndex(), timeStamp, col.posZ(), col.multNtr());

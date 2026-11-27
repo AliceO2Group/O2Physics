@@ -23,7 +23,6 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetReducedDataV0.h"
-#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
@@ -58,7 +57,9 @@
 #include <cmath>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -152,6 +153,42 @@ struct LfJetSpectra {
                   kNV0Sources };
   static constexpr std::array<std::string_view, kNV0Sources> SourceLabels = {"primary", "from #Xi^{#pm}", "from #Xi^{0}", "from #Omega^{#pm}", "other secondary"};
 
+  // Species of the per-jet V0 multiplicity and momentum fraction histograms: V0 constituents passing the selection of the
+  // species and in its invariant mass window. The first three entries coincide with V0Species; kJetLambdaAntiLambda counts
+  // once a candidate passing the Lambda or the AntiLambda selection
+  enum JetV0Species { kJetK0s = 0,
+                      kJetLambda,
+                      kJetAntiLambda,
+                      kJetLambdaAntiLambda,
+                      kNJetV0Species };
+  static constexpr std::array<std::string_view, kNJetV0Species> JetV0SpeciesNames = {"K0s", "Lambda", "AntiLambda", "LambdaAntiLambda"};
+
+  // Strange hadrons in the particle-level jets: charged kaons (jet particles) and K0S, Lambda, AntiLambda (V0 constituents,
+  // physical primaries). kStrangeK0s + V0Species gives the V0 entries. Strangeness: sign of the strangeness of the hadron
+  // (K+ and AntiLambda +1, K- and Lambda -1); the K0S has none (superposition of K0 and K0bar)
+  enum JetStrangeSpecies { kStrangeKPlus = 0,
+                           kStrangeKMinus,
+                           kStrangeK0s,
+                           kStrangeLambda,
+                           kStrangeAntiLambda,
+                           kNJetStrangeSpecies };
+  static constexpr std::array<std::string_view, kNJetStrangeSpecies> JetStrangeLabels = {"K^{+}", "K^{-}", "K^{0}_{S}", "#Lambda", "#bar{#Lambda}"};
+  static constexpr std::array<int, kNJetStrangeSpecies> JetStrangeStrangeness = {1, -1, 0, -1, 1};
+  static constexpr int kNJetStrangePairs = kNJetStrangeSpecies * (kNJetStrangeSpecies + 1) / 2;
+  // Unordered pair of species (i <= j): K+K+, K+K-, K+K0S, ..., AntiLambda AntiLambda
+  static constexpr int jetStrangePairIndex(int i, int j)
+  {
+    if (i > j) {
+      std::swap(i, j);
+    }
+    return i * kNJetStrangeSpecies - i * (i - 1) / 2 + (j - i);
+  }
+  enum JetStrangePairSign { kPairSameStrangeness = 0,
+                            kPairOppositeStrangeness,
+                            kPairWithK0s,
+                            kNJetStrangePairSigns };
+  static constexpr std::array<std::string_view, kNJetStrangePairSigns> JetStrangePairSignLabels = {"same S", "opposite S", "with K^{0}_{S}"};
+
   Configurable<bool> fillV0QAHistograms{"fillV0QAHistograms", true, "fill the V0 QA histograms (cut flow and topological variables before/after selections)"};
 
   // Event selection
@@ -183,6 +220,9 @@ struct LfJetSpectra {
     Configurable<bool> doCompetingMassRejection{"doCompetingMassRejection", true, "Apply the competing V0 mass rejection"};
     Configurable<float> lambdaRejWindow{"lambdaRejWindow", 0.005, "Lambda mass window rejected for K0s candidates (GeV/c^2)"};
     Configurable<float> k0sRejWindow{"k0sRejWindow", 0.010, "K0s mass window rejected for (Anti)Lambda candidates (GeV/c^2)"};
+    // invariant mass windows, used only in the per-jet V0 multiplicity and momentum fraction histograms
+    Configurable<float> k0sMassWindow{"k0sMassWindow", 0.015, "Half-width of the K0s mass window around the PDG mass (GeV/c^2), per-jet V0 histograms"};
+    Configurable<float> lambdaMassWindow{"lambdaMassWindow", 0.006, "Half-width of the (Anti)Lambda mass window around the PDG mass (GeV/c^2), per-jet V0 histograms"};
   } v0Cuts;
 
   // MC options
@@ -191,7 +231,7 @@ struct LfJetSpectra {
   // Multiplicity binning
   ConfigurableAxis multBinning{"multBinning", {VARIABLE_WIDTH, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "Binning of multiplicity axis"};
 
-  Service<o2::framework::O2DatabasePDG> pdgDatabase;
+  Service<o2::framework::O2DatabasePDG> pdgDatabase{};
 
   // phiExclusionMin at or below this value: no phi exclusion region (same convention as the V0 jet finder)
   static constexpr float PhiExclusionUnset = -998.f;
@@ -228,6 +268,9 @@ struct LfJetSpectra {
 
   std::vector<int> eventSelectionBits;
   std::vector<fastjet::PseudoJet> inputParticles;
+  // Selected tracks (pT, eta, phi) that the V0 jet finder removes as daughters of V0s it does not cluster: their momentum is
+  // in neither the tracks nor the V0s of the jets. Filled by buildDetectorLevelInput
+  std::vector<std::array<float, 3>> lostDaughterTracks;
 
   Filter jetCollisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
   Filter jetMcCollisionFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
@@ -365,12 +408,45 @@ struct LfJetSpectra {
     // V0 content of the selected jets (number of V0 constituents per jet vs background-subtracted jet pT)
     const AxisSpec jetPtAxis{200, 0., 200., "#it{p}_{T,jet}^{sub} (GeV/#it{c})"};
     const AxisSpec nV0Axis{30, -0.5, 29.5, "number of V0s per jet"};
+    // Coarse axes of the per-jet histograms vs the number of candidates (TH3)
+    const AxisSpec jetPtCoarseAxis{std::vector<double>{0., 10., 15., 20., 25., 30., 40., 50., 60., 80., 100., 200.}, "#it{p}_{T,jet}^{sub} (GeV/#it{c})"};
+    const AxisSpec nCandidatesAxis{10, -0.5, 9.5, "candidates per jet"};
     if (doprocessData || doprocessMCReco) {
       auto& registry = doprocessData ? registryData : registryMC;
       registry.add("jetV0s/nV0Constituents", "V0 constituents (all V0s clustered by the jet finder)", HistType::kTH2F, {jetPtAxis, nV0Axis});
       registry.add("jetV0s/nK0sSelected", "V0 constituents passing the K^{0}_{S} selection", HistType::kTH2F, {jetPtAxis, nV0Axis});
       registry.add("jetV0s/nLambdaSelected", "V0 constituents passing the #Lambda selection", HistType::kTH2F, {jetPtAxis, nV0Axis});
       registry.add("jetV0s/nAntiLambdaSelected", "V0 constituents passing the #bar{#Lambda} selection", HistType::kTH2F, {jetPtAxis, nV0Axis});
+
+      // Per-jet multiplicity (all the selected jets, also without candidates) and fraction of the subtracted jet pT carried by
+      // the V0 constituents passing the selection of the species and in its mass window (jets with at least one candidate)
+      const AxisSpec zAxis{120, 0., 1.2, "#Sigma#it{p}_{T}^{V0} / #it{p}_{T,jet}^{sub}"};
+      registry.add("jetV0s/nJets", "selected jets", HistType::kTH1D, {jetPtAxis});
+      for (const auto& species : JetV0SpeciesNames) {
+        const std::string dir = "jetV0s/" + std::string(species) + "/";
+        registry.add((dir + "nInMassWindow").c_str(), "V0 constituents passing the selection and in the mass window, per jet", HistType::kTH2F, {jetPtAxis, nV0Axis});
+        registry.add((dir + "ptFraction").c_str(), "fraction of the subtracted jet pT carried by the V0 constituents passing the selection and in the mass window (jets with at least one)", HistType::kTH2F, {jetPtAxis, zAxis});
+        // Mean over all the selected jets (z = 0 without candidates), filled with the exact value
+        registry.add((dir + "ptFractionProfile").c_str(), "mean fraction of the subtracted jet pT carried by the V0 constituents passing the selection and in the mass window (all jets);#it{p}_{T,jet}^{sub} (GeV/#it{c});#LT #Sigma#it{p}_{T}^{V0} / #it{p}_{T,jet}^{sub} #GT", HistType::kTProfile, {jetPtAxis});
+        // The same vs the number of candidates in the jet, to select e.g. the jets with two or more (jets with at least one)
+        registry.add((dir + "ptFractionVsN").c_str(), "fraction of the subtracted jet pT carried by the candidates vs their number (jets with at least one)", HistType::kTH3F, {jetPtCoarseAxis, nCandidatesAxis, zAxis});
+        // Number of candidates after removing those that share a daughter track with a candidate of larger cos(PA)
+        registry.add((dir + "nDedupVsN").c_str(), "candidates without shared daughters vs all the candidates (jets with at least one);#it{p}_{T,jet}^{sub} (GeV/#it{c});candidates per jet;candidates per jet without shared daughters", HistType::kTH3F, {jetPtCoarseAxis, nCandidatesAxis, nCandidatesAxis});
+      }
+
+      // Checks of the V0 jet finder input. (1) Selected tracks within R of the jet axis that the jet finder removes as daughters
+      // of V0s it does not cluster (rejected by the v0-selector flags or outside the candidate pT/y range): their momentum is in
+      // neither the tracks nor the V0s of the jet. (2) V0 constituents of the jet sharing a daughter track: the momentum of
+      // that track enters the jet more than once
+      const AxisSpec nLostAxis{30, -0.5, 29.5, "tracks per jet"};
+      const AxisSpec nSharedAxis{10, -0.5, 9.5, "pairs of V0 constituents sharing a daughter track"};
+      const AxisSpec checkFractionAxis{100, 0., 0.5, "#Sigma#it{p}_{T} / #it{p}_{T,jet}^{raw}"};
+      registry.add("jetV0s/lostDaughterTracks", "selected tracks within R of the jet axis removed as daughters of V0s not clustered (all jets)", HistType::kTH2F, {jetPtAxis, nLostAxis});
+      registry.add("jetV0s/lostDaughterPtFraction", "fraction of the raw jet pT of the selected tracks within R removed as daughters of V0s not clustered (jets with at least one)", HistType::kTH2F, {jetPtAxis, checkFractionAxis});
+      registry.add("jetV0s/lostDaughterPtFractionProfile", "mean fraction of the raw jet pT of the selected tracks within R removed as daughters of V0s not clustered (all jets);#it{p}_{T,jet}^{sub} (GeV/#it{c});#LT #Sigma#it{p}_{T}^{lost} / #it{p}_{T,jet}^{raw} #GT", HistType::kTProfile, {jetPtAxis});
+      registry.add("jetV0s/sharedDaughterPairs", "pairs of V0 constituents sharing a daughter track (all jets)", HistType::kTH2F, {jetPtAxis, nSharedAxis});
+      registry.add("jetV0s/doubleCountedPtFraction", "fraction of the raw jet pT counted more than once through shared V0 daughters (jets with at least one shared pair)", HistType::kTH2F, {jetPtAxis, checkFractionAxis});
+      registry.add("jetV0s/doubleCountedPtFractionProfile", "mean fraction of the raw jet pT counted more than once through shared V0 daughters (all jets);#it{p}_{T,jet}^{sub} (GeV/#it{c});#LT #Sigma#it{p}_{T}^{double counted} / #it{p}_{T,jet}^{raw} #GT", HistType::kTProfile, {jetPtAxis});
     }
     if (doprocessMCReco) {
       const AxisSpec originAxis{kNV0Origins, -0.5, static_cast<double>(kNV0Origins) - 0.5, "MC origin"};
@@ -397,6 +473,10 @@ struct LfJetSpectra {
         hOrigin->GetZaxis()->SetBinLabel(i + 1, std::string(OriginLabels[i]).c_str());
         hSelectedOrigin->GetZaxis()->SetBinLabel(i + 1, std::string(OriginLabels[i]).c_str());
       }
+      // Bin labels make the axes extendable: the merging would then append the labels of the other inputs and move their
+      // content to new bins. Fixed axes merge bin by bin
+      hOrigin->SetCanExtend(TH1::kNoAxis);
+      hSelectedOrigin->SetCanExtend(TH1::kNoAxis);
 
       // Real V0 constituents by source (primary / secondary from Xi+-, Xi0, Omega+-, other) and fraction of the (raw) jet pT
       // they carry: the secondary ones are the detector-level counterpart of the momentum of their mother
@@ -405,11 +485,49 @@ struct LfJetSpectra {
       registryMC.add("jetV0s/V0ConstituentSource", "source of the real V0 constituents", HistType::kTH3F, {jetPtAxis, ptAxis, sourceAxis});
       registryMC.add("jetV0s/V0SourcePtFraction", "fraction of the jet pT carried by the real V0 constituents of each source", HistType::kTH3F, {jetPtAxis, sourceAxis, sourceFractionAxis});
       registryMC.add("jetV0s/V0SourcePtFractionProfile", "mean fraction of the jet pT carried by the real V0 constituents of each source;#it{p}_{T,jet}^{sub} (GeV/#it{c});V0 source;#LT #Sigma#it{p}_{T}^{V0} / #it{p}_{T,jet}^{raw} #GT", HistType::kTProfile2D, {jetPtAxis, sourceAxis});
+      registryMC.add("jetV0s/V0SecondaryPtFractionProfile", "mean fraction of the jet pT carried by all secondary real V0 constituents;#it{p}_{T,jet}^{sub} (GeV/#it{c});#LT #Sigma#it{p}_{T}^{secondary V0} / #it{p}_{T,jet}^{raw} #GT", HistType::kTProfile, {jetPtAxis});
       for (const auto& axis : {registryMC.get<TH3>(HIST("jetV0s/V0ConstituentSource"))->GetZaxis(), registryMC.get<TH3>(HIST("jetV0s/V0SourcePtFraction"))->GetYaxis(),
                                registryMC.get<TProfile2D>(HIST("jetV0s/V0SourcePtFractionProfile"))->GetYaxis()}) {
         for (int i = 0; i < kNV0Sources; i++) {
           axis->SetBinLabel(i + 1, std::string(SourceLabels[i]).c_str());
         }
+        axis->SetCanExtend(false); // see V0ConstituentOrigin
+      }
+
+      // Fraction of the subtracted jet pT carried by the fake V0 constituents (MC origin not K0s, Lambda or AntiLambda, as in
+      // fakeV0PtFraction) passing the selection of the species and in its mass window (jets with at least one candidate)
+      const AxisSpec zFakeAxis{120, 0., 1.2, "#Sigma#it{p}_{T}^{fake V0} / #it{p}_{T,jet}^{sub}"};
+      for (const auto& species : JetV0SpeciesNames) {
+        const std::string dir = "jetV0s/" + std::string(species) + "/";
+        registryMC.add((dir + "fakePtFraction").c_str(), "fraction of the subtracted jet pT carried by the fake V0 constituents passing the selection and in the mass window (jets with at least one candidate)", HistType::kTH2F, {jetPtAxis, zFakeAxis});
+        registryMC.add((dir + "fakePtFractionProfile").c_str(), "mean fraction of the subtracted jet pT carried by the fake V0 constituents passing the selection and in the mass window (all jets);#it{p}_{T,jet}^{sub} (GeV/#it{c});#LT #Sigma#it{p}_{T}^{fake V0} / #it{p}_{T,jet}^{sub} #GT", HistType::kTProfile, {jetPtAxis});
+      }
+
+      // Candidates that are not a true V0 of the species (any other MC origin, including a true V0 of another species) vs the
+      // number of candidates in the jet: their number (jets with at least one candidate) and the fraction of the subtracted
+      // jet pT they carry (jets with at least one such candidate)
+      const AxisSpec nNotTrueAxis{10, -0.5, 9.5, "candidates per jet that are not a true V0 of the species"};
+      const AxisSpec zNotTrueAxis{120, 0., 1.2, "#Sigma#it{p}_{T}^{not true} / #it{p}_{T,jet}^{sub}"};
+      for (const auto& species : JetV0SpeciesNames) {
+        const std::string dir = "jetV0s/" + std::string(species) + "/";
+        registryMC.add((dir + "nNotTrueVsN").c_str(), "candidates that are not a true V0 of the species vs all the candidates (jets with at least one candidate)", HistType::kTH3F, {jetPtCoarseAxis, nCandidatesAxis, nNotTrueAxis});
+        registryMC.add((dir + "notTruePtFractionVsN").c_str(), "fraction of the subtracted jet pT carried by the candidates that are not a true V0 of the species vs the number of candidates (jets with at least one such candidate)", HistType::kTH3F, {jetPtCoarseAxis, nCandidatesAxis, zNotTrueAxis});
+      }
+
+      // Jets with a true V0 and a not-true candidate of the same species (both in the mass window). The jet finder clusters
+      // both, so the not-true one adds its pT to the jet: its fraction of the jet pT, split by whether the jet also has a true
+      // candidate (jets with at least one not-true candidate). Shared daughters: in the jets with at least one true candidate,
+      // whether a true candidate shares a daughter track with another V0 constituent (0: no; 1: with a not-true candidate of
+      // the species in the window; 2: only with other V0 constituents), and the pT of those shared daughters counted more than
+      // once, as a fraction of the raw jet pT (jets where it happens)
+      const AxisSpec hasTrueAxis{2, -0.5, 1.5, "jet with a true candidate (0: no, 1: yes)"};
+      const AxisSpec sharedCaseAxis{3, -0.5, 2.5, "true candidate sharing a daughter (0: no, 1: with a not-true candidate, 2: with other V0s)"};
+      const AxisSpec doubleCountedAxis{100, 0., 0.5, "#Sigma#it{p}_{T}^{double counted} / #it{p}_{T,jet}^{raw}"};
+      for (const auto& species : JetV0SpeciesNames) {
+        const std::string dir = "jetV0s/" + std::string(species) + "/";
+        registryMC.add((dir + "notTruePtFractionByTrue").c_str(), "fraction of the subtracted jet pT carried by the not-true candidates, jets without / with a true candidate (jets with at least one not-true candidate)", HistType::kTH3F, {jetPtAxis, hasTrueAxis, zNotTrueAxis});
+        registryMC.add((dir + "trueSharedDaughter").c_str(), "true candidates sharing a daughter track with another V0 constituent (jets with at least one true candidate)", HistType::kTH2F, {jetPtCoarseAxis, sharedCaseAxis});
+        registryMC.add((dir + "trueSharedDoubleCountedPtFraction").c_str(), "pT of the daughters of true candidates shared with other V0 constituents, counted more than once (jets where it happens)", HistType::kTH3F, {jetPtCoarseAxis, sharedCaseAxis, doubleCountedAxis});
       }
     }
 
@@ -445,6 +563,45 @@ struct LfJetSpectra {
       registryMC.add("number_of_events_vsmultiplicity_gen", "number of generated events vs multiplicity", HistType::kTH1D, {multAxis});
       registryMC.add("number_of_jets_vsmultiplicity_gen", "number of generated jets vs multiplicity", HistType::kTH1D, {multAxis});
       registryMC.add("rhoPerpCone_gen", "Perpendicular cone #rho, particle level", HistType::kTH2F, {multAxis, rhoAxis});
+      const AxisSpec genJetPtRawAxis{200, 0., 200., "true #it{p}_{T,jet}^{raw} (GeV/#it{c})"};
+      const AxisSpec genJetPtSubAxis{200, 0., 200., "true #it{p}_{T,jet}^{sub} (GeV/#it{c})"};
+      const AxisSpec genV0PtAxis{200, 0., 20., "true primary #it{p}_{T,V0} (GeV/#it{c})"};
+      registryMC.add("jetV0s/genJetPtRawVsSub", "particle-level jet pT before and after background subtraction", HistType::kTH2F, {genJetPtRawAxis, genJetPtSubAxis});
+      registryMC.add("jetV0s/genV0PtVsJetPtRaw", "true primary V0 constituent pT vs true raw particle-level jet pT", HistType::kTH2F, {genJetPtRawAxis, genV0PtAxis});
+      registryMC.add("jetV0s/genV0PtSumVsJetPtRaw", "mean sum of true primary V0 pT per particle-level jet vs true raw jet pT;true #it{p}_{T,jet}^{raw} (GeV/#it{c});#LT #Sigma #it{p}_{T,V0}^{true} #GT (GeV/#it{c})", HistType::kTProfile, {genJetPtRawAxis});
+      registryMC.add("jetV0s/genV0PtFractionVsJetPtRaw", "mean sum of true primary V0 pT divided by true raw particle-level jet pT;true #it{p}_{T,jet}^{raw} (GeV/#it{c});#LT #Sigma #it{p}_{T,V0}^{true} / #it{p}_{T,jet}^{raw,true} #GT", HistType::kTProfile, {genJetPtRawAxis});
+      registryMC.add("jetV0s/genV0CountVsJetPtRaw", "mean number of true primary V0 constituents per particle-level jet;true #it{p}_{T,jet}^{raw} (GeV/#it{c});#LT N_{V0}^{true} #GT", HistType::kTProfile, {genJetPtRawAxis});
+
+      // Strange hadrons (K+, K-, K0S, Lambda, AntiLambda, see JetStrangeSpecies) in the selected particle-level jets: number
+      // per jet (all and per species, all the jets) and the pairs of them in the same jet, by species and by the relative sign
+      // of their strangeness, vs the number of strange hadrons in the jet (one entry per pair: the jets with exactly two
+      // have one pair each)
+      const AxisSpec genJetPtCoarseAxis{std::vector<double>{0., 10., 15., 20., 25., 30., 40., 50., 60., 80., 100., 200.}, "true #it{p}_{T,jet}^{sub} (GeV/#it{c})"};
+      const AxisSpec nStrangeAxis{15, -0.5, 14.5, "strange hadrons per jet"};
+      const AxisSpec nStrangeSpeciesAxis{10, -0.5, 9.5, "strange hadrons of the species per jet"};
+      const AxisSpec strangeSpeciesAxis{kNJetStrangeSpecies, -0.5, static_cast<double>(kNJetStrangeSpecies) - 0.5, "species"};
+      const AxisSpec strangePairAxis{kNJetStrangePairs, -0.5, kNJetStrangePairs - 0.5, "pair"};
+      const AxisSpec strangePairSignAxis{kNJetStrangePairSigns, -0.5, static_cast<double>(kNJetStrangePairSigns) - 0.5, "strangeness of the pair"};
+      registryMC.add("jetStrange/nStrange", "strange hadrons (K^{#pm}, K^{0}_{S}, #Lambda, #bar{#Lambda}) per particle-level jet (all jets)", HistType::kTH2F, {genJetPtCoarseAxis, nStrangeAxis});
+      registryMC.add("jetStrange/nPerSpecies", "strange hadrons of each species per particle-level jet (all jets)", HistType::kTH3F, {genJetPtCoarseAxis, strangeSpeciesAxis, nStrangeSpeciesAxis});
+      registryMC.add("jetStrange/pairs", "pairs of strange hadrons in the same particle-level jet, by species, vs the strange hadrons in the jet", HistType::kTH3F, {genJetPtCoarseAxis, strangePairAxis, nStrangeAxis});
+      registryMC.add("jetStrange/pairSign", "pairs of strange hadrons in the same particle-level jet, by relative sign of the strangeness, vs the strange hadrons in the jet", HistType::kTH3F, {genJetPtCoarseAxis, strangePairSignAxis, nStrangeAxis});
+      auto hPerSpecies = registryMC.get<TH3>(HIST("jetStrange/nPerSpecies"));
+      auto hPairs = registryMC.get<TH3>(HIST("jetStrange/pairs"));
+      auto hPairSign = registryMC.get<TH3>(HIST("jetStrange/pairSign"));
+      for (int i = 0; i < kNJetStrangeSpecies; i++) {
+        hPerSpecies->GetYaxis()->SetBinLabel(i + 1, std::string(JetStrangeLabels[i]).c_str());
+        for (int j = i; j < kNJetStrangeSpecies; j++) {
+          hPairs->GetYaxis()->SetBinLabel(jetStrangePairIndex(i, j) + 1, (std::string(JetStrangeLabels[i]) + std::string(JetStrangeLabels[j])).c_str());
+        }
+      }
+      for (int i = 0; i < kNJetStrangePairSigns; i++) {
+        hPairSign->GetYaxis()->SetBinLabel(i + 1, std::string(JetStrangePairSignLabels[i]).c_str());
+      }
+      // see V0ConstituentOrigin
+      hPerSpecies->SetCanExtend(TH1::kNoAxis);
+      hPairs->SetCanExtend(TH1::kNoAxis);
+      hPairSign->SetCanExtend(TH1::kNoAxis);
     }
     for (int iHist = 0; iHist < kNMCHistograms; iHist++) {
       const bool isGenLevelHistogram = (iHist == kGenJet || iHist == kGenUE || iHist == kGenFullEvent);
@@ -466,6 +623,7 @@ struct LfJetSpectra {
       for (int i = 0; i < nFlagBins; i++) {
         hFlags->GetXaxis()->SetBinLabel(i + 1, flagLabels[i].c_str());
       }
+      hFlags->SetCanExtend(TH1::kNoAxis); // see V0ConstituentOrigin
 
       registryQC.add("QA/V0CutFlow", "V0 cut flow", HistType::kTH2D, {{3, -0.5, 2.5}, {kNSelectionSteps, -0.5, static_cast<double>(kNSelectionSteps) - 0.5}});
       auto hCutFlow = registryQC.get<TH2>(HIST("QA/V0CutFlow"));
@@ -475,6 +633,7 @@ struct LfJetSpectra {
       for (int step = 0; step < kNSelectionSteps; step++) {
         hCutFlow->GetYaxis()->SetBinLabel(step + 1, std::string(StepLabels[step]).c_str());
       }
+      hCutFlow->SetCanExtend(TH1::kNoAxis); // see V0ConstituentOrigin
 
       const AxisSpec radiusAxis{240, 0., 60., "V0 radius (cm)"};
       const AxisSpec dcaToPVAxis{200, 0., 1., "|DCA| to PV (cm)"};
@@ -530,22 +689,31 @@ struct LfJetSpectra {
     return true;
   }
 
-  // Track selection of the V0 jet finder (kinematic filter + track selection + removal of the V0 daughters)
+  // Track selection of the V0 jet finder (kinematic filter + track selection + removal of the V0 daughters). The jet finder
+  // removes the daughters of all the V0s of the collision, also of those it does not cluster
+  enum JetFinderTrackStatus { kTrackNotSelected = 0,
+                              kTrackClustered,
+                              kTrackDaughterOfClusteredV0,
+                              kTrackDaughterOfNotClusteredV0 };
   template <typename T, typename U>
-  bool isJetFinderTrack(T const& track, U const& v0s)
+  int jetFinderTrackStatus(T const& track, U const& v0s, std::unordered_set<int> const& jetFinderV0s)
   {
     if (!passedJetFinderKinematics(track, jetFinderConfigDet)) {
-      return false;
+      return kTrackNotSelected;
     }
     if (!jetderiveddatautilities::selectTrack(track, trackSelection, jetFinderConfigDet.isEmbedding)) {
-      return false;
+      return kTrackNotSelected;
     }
+    bool isDaughter = false;
     for (const auto& v0 : v0s) {
       if (jetcandidateutilities::isDaughterTrack(track, v0)) {
-        return false;
+        if (jetFinderV0s.contains(v0.globalIndex())) {
+          return kTrackDaughterOfClusteredV0;
+        }
+        isDaughter = true;
       }
     }
-    return true;
+    return isDaughter ? kTrackDaughterOfNotClusteredV0 : kTrackClustered;
   }
 
   // Collect the indices of the V0 pseudojets (status candidate) in the jet finder input
@@ -568,9 +736,13 @@ struct LfJetSpectra {
     inputParticles.clear();
     jetfindingutilities::analyseV0s(inputParticles, v0s, jetFinderConfigDet.candPtMin, jetFinderConfigDet.candPtMax, jetFinderConfigDet.candYMin, jetFinderConfigDet.candYMax, candIndex, jetFinderConfigDet.useV0SignalFlags);
     const auto jetFinderV0s = getJetFinderV0s();
+    lostDaughterTracks.clear();
     for (const auto& track : tracks) {
-      if (isJetFinderTrack(track, v0s)) {
+      const int status = jetFinderTrackStatus(track, v0s, jetFinderV0s);
+      if (status == kTrackClustered) {
         fastjetutilities::fillTracks(track, inputParticles, track.globalIndex());
+      } else if (status == kTrackDaughterOfNotClusteredV0) {
+        lostDaughterTracks.push_back({track.pt(), track.eta(), track.phi()});
       }
     }
     return jetFinderV0s;
@@ -730,6 +902,17 @@ struct LfJetSpectra {
   bool passedV0Selection(T const& v0, V0Species species)
   {
     return lastPassedSelectionStep(v0, species, true) == kStepCompetingMass;
+  }
+
+  // Invariant mass window of a species, used only in the per-jet V0 multiplicity and momentum fraction histograms
+  template <typename T>
+  bool isInMassWindow(T const& v0, V0Species species)
+  {
+    if (species == kK0s) {
+      return std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0Cuts.k0sMassWindow;
+    }
+    const float mass = (species == kLambda) ? v0.mLambda() : v0.mAntiLambda();
+    return std::abs(mass - o2::constants::physics::MassLambda) < v0Cuts.lambdaMassWindow;
   }
 
   // ---------------------------------------------------------------------------------------------------------------
@@ -924,6 +1107,16 @@ struct LfJetSpectra {
     return false;
   }
 
+  // True V0 of a JetV0Species: for kJetLambdaAntiLambda a true Lambda or AntiLambda
+  template <typename T>
+  bool isTrueJetV0(T const& v0, int jetSpecies)
+  {
+    if (jetSpecies == kJetLambdaAntiLambda) {
+      return isTrueV0(v0, kLambda) || isTrueV0(v0, kAntiLambda);
+    }
+    return isTrueV0(v0, static_cast<V0Species>(jetSpecies));
+  }
+
   // Species of a generated V0 (-1 if not a K0s, Lambda or AntiLambda)
   template <typename T>
   int genV0Species(T const& v0)
@@ -945,11 +1138,11 @@ struct LfJetSpectra {
   {
     switch (v0.pdgCode()) {
       case PDG_t::kK0Short:
-        return kOriginK0s;
+        return isTrueV0(v0, kK0s) ? kOriginK0s : kOriginOtherMother;
       case PDG_t::kLambda0:
-        return kOriginLambda;
+        return isTrueV0(v0, kLambda) ? kOriginLambda : kOriginOtherMother;
       case PDG_t::kLambda0Bar:
-        return kOriginAntiLambda;
+        return isTrueV0(v0, kAntiLambda) ? kOriginAntiLambda : kOriginOtherMother;
       case PDG_t::kGamma:
         return kOriginGammaConversion;
       case 0:
@@ -976,12 +1169,58 @@ struct LfJetSpectra {
     return kSourceOtherSecondary;
   }
 
+  // Daughter tracks of a V0, for the checks of the daughters shared by several V0s
+  struct V0Daughters {
+    int posId = -1;
+    int negId = -1;
+    float ptPos = 0.f;
+    float ptNeg = 0.f;
+    float cosPA = 0.f;
+    bool isTrue = false; // MC: true V0 of the species, for the candidates in a mass window
+  };
+
+  // Candidates of one JetV0Species in its mass window in a jet. MC: the not-true ones (any other MC origin, including a
+  // true V0 of another species) and the "fake" ones (MC origin not K0s, Lambda or AntiLambda); trueSharedCase and
+  // trueSharedDoublePt as in the histograms trueSharedDaughter and trueSharedDoubleCountedPtFraction
+  struct JetSpeciesContent {
+    int n = 0;
+    float pt = 0.f;
+    float fakePt = 0.f;
+    int nNotTrue = 0;
+    float notTruePt = 0.f;
+    int nDedup = 0;
+    int trueSharedCase = 0;
+    float trueSharedDoublePt = 0.f;
+  };
+
+  // Number of candidates left after removing, in order of decreasing cos(PA), those that share a daughter track with a
+  // candidate already kept
+  static int nWithoutSharedDaughters(std::vector<V0Daughters> candidates)
+  {
+    std::sort(candidates.begin(), candidates.end(), [](const auto& a, const auto& b) { return a.cosPA > b.cosPA; });
+    std::unordered_set<int> usedTracks;
+    int nKept = 0;
+    for (const auto& candidate : candidates) {
+      if (usedTracks.contains(candidate.posId) || usedTracks.contains(candidate.negId)) {
+        continue;
+      }
+      usedTracks.insert(candidate.posId);
+      usedTracks.insert(candidate.negId);
+      nKept++;
+    }
+    return nKept;
+  }
+
   // V0 content of a selected jet: number of V0 constituents (all, and passing the selection of each species). In MC also
   // the number of real / fake constituents, the true selected constituents, the MC origin of the constituents and the
-  // fraction of the (raw) jet pT carried by fake V0s, which are clustered by the jet finder as the real ones
+  // fraction of the (raw) jet pT carried by fake V0s, which are clustered by the jet finder as the real ones.
+  // Checks of the jet finder input: selected tracks within R removed as daughters of V0s not clustered (lostDaughterTracks,
+  // filled by buildDetectorLevelInput for the same collision) and V0 constituents sharing a daughter track
   template <bool isMC, typename TV0Table, typename TJet>
   void fillJetV0Content(TJet const& jet, float ptSub, float weight = 1.)
   {
+    std::vector<V0Daughters> constituentDaughters;
+    std::array<std::vector<V0Daughters>, kNJetV0Species> candidatesInWindow;
     int nV0s = 0;
     int nReal = 0;
     int nFake = 0;
@@ -990,15 +1229,41 @@ struct LfJetSpectra {
     float fakePt = 0.;
     float fakeSelectedPt = 0.;
     std::array<float, kNV0Sources> sourcePt{};
+    std::array<JetSpeciesContent, kNJetV0Species> content{};
     for (const auto& v0 : jet.template candidates_as<TV0Table>()) {
       nV0s++;
       bool passedAnySelection = false;
+      bool isLambdaOrAntiLambdaInWindow = false;
+      const V0Daughters daughters{static_cast<int>(v0.posTrackId()), static_cast<int>(v0.negTrackId()), std::hypot(v0.pxpos(), v0.pypos()),
+                                  std::hypot(v0.pxneg(), v0.pyneg()), v0.v0cosPA()};
+      constituentDaughters.push_back(daughters);
+      auto countInWindow = [&](int jetSpecies) {
+        auto& c = content[jetSpecies];
+        c.n++;
+        c.pt += v0.pt();
+        auto candidate = daughters;
+        if constexpr (isMC) {
+          if (v0Origin(v0) > kOriginAntiLambda) {
+            c.fakePt += v0.pt();
+          }
+          candidate.isTrue = isTrueJetV0(v0, jetSpecies);
+          if (!candidate.isTrue) {
+            c.nNotTrue++;
+            c.notTruePt += v0.pt();
+          }
+        }
+        candidatesInWindow[jetSpecies].push_back(candidate);
+      };
       for (const auto& species : {kK0s, kLambda, kAntiLambda}) {
         if (!passedV0Selection(v0, species)) {
           continue;
         }
         passedAnySelection = true;
         nSelected[species]++;
+        if (isInMassWindow(v0, species)) {
+          countInWindow(species);
+          isLambdaOrAntiLambdaInWindow |= (species != kK0s);
+        }
         if constexpr (isMC) {
           if (isTrueV0(v0, species)) {
             nTrueSelected[species]++;
@@ -1022,6 +1287,101 @@ struct LfJetSpectra {
           }
         }
       }
+      if (isLambdaOrAntiLambdaInWindow) {
+        countInWindow(kJetLambdaAntiLambda);
+      }
+    }
+
+    if constexpr (isMC) {
+      registryMC.fill(HIST("jetV0s/nJets"), ptSub, weight);
+    } else {
+      registryData.fill(HIST("jetV0s/nJets"), ptSub, weight);
+    }
+    // Daughter tracks of all the V0 constituents: how many constituents use each one, and its pT
+    std::unordered_map<int, std::pair<int, float>> daughterUses; // track index -> (V0 constituents using it, pT)
+    for (const auto& d : constituentDaughters) {
+      for (const auto& [trackId, trackPt] : {std::pair{d.posId, d.ptPos}, std::pair{d.negId, d.ptNeg}}) {
+        daughterUses[trackId].first++;
+        daughterUses[trackId].second = trackPt;
+      }
+    }
+
+    for (int jetSpecies = 0; jetSpecies < kNJetV0Species; jetSpecies++) {
+      auto& c = content[jetSpecies];
+      const auto& candidates = candidatesInWindow[jetSpecies];
+      c.nDedup = nWithoutSharedDaughters(candidates);
+      if constexpr (isMC) {
+        // True candidates sharing a daughter with another V0 constituent: with a not-true candidate of the species in the
+        // window (case 1) or only with other V0 constituents (case 2); the shared daughters are counted once per track
+        std::unordered_set<int> sharedTracks;
+        for (const auto& t : candidates) {
+          if (!t.isTrue) {
+            continue;
+          }
+          for (const int trackId : {t.posId, t.negId}) {
+            if (daughterUses[trackId].first < 2) {
+              continue;
+            }
+            sharedTracks.insert(trackId);
+            bool withNotTrue = false;
+            for (const auto& o : candidates) {
+              if (!o.isTrue && (o.posId == trackId || o.negId == trackId)) {
+                withNotTrue = true;
+                break;
+              }
+            }
+            if (withNotTrue) {
+              c.trueSharedCase = 1;
+            } else if (c.trueSharedCase == 0) {
+              c.trueSharedCase = 2;
+            }
+          }
+        }
+        for (const int trackId : sharedTracks) {
+          c.trueSharedDoublePt += (daughterUses[trackId].first - 1) * daughterUses[trackId].second;
+        }
+      }
+    }
+    fillJetV0SpeciesContent<isMC, kJetK0s>(ptSub, jet.pt(), content[kJetK0s], weight);
+    fillJetV0SpeciesContent<isMC, kJetLambda>(ptSub, jet.pt(), content[kJetLambda], weight);
+    fillJetV0SpeciesContent<isMC, kJetAntiLambda>(ptSub, jet.pt(), content[kJetAntiLambda], weight);
+    fillJetV0SpeciesContent<isMC, kJetLambdaAntiLambda>(ptSub, jet.pt(), content[kJetLambdaAntiLambda], weight);
+
+    // (1) selected tracks within R of the jet axis removed by the jet finder as daughters of V0s it did not cluster
+    int nLost = 0;
+    float lostPt = 0.f;
+    for (const auto& [trackPt, trackEta, trackPhi] : lostDaughterTracks) {
+      if (jetutilities::deltaR(trackEta, trackPhi, jet.eta(), jet.phi()) < jet.r() / 100.f) {
+        nLost++;
+        lostPt += trackPt;
+      }
+    }
+    // (2) pairs of V0 constituents sharing a daughter track, and the pT of the daughters used more than once (scalar sum:
+    // an estimate of the jet pT counted twice)
+    int nSharedPairs = 0;
+    for (size_t i = 0; i < constituentDaughters.size(); i++) {
+      for (size_t j = i + 1; j < constituentDaughters.size(); j++) {
+        const auto& a = constituentDaughters[i];
+        const auto& b = constituentDaughters[j];
+        if (a.posId == b.posId || a.posId == b.negId || a.negId == b.posId || a.negId == b.negId) {
+          nSharedPairs++;
+        }
+      }
+    }
+    float doubleCountedPt = 0.f;
+    for (const auto& [trackId, use] : daughterUses) {
+      doubleCountedPt += (use.first - 1) * use.second;
+    }
+    auto& checkRegistry = isMC ? registryMC : registryData;
+    checkRegistry.fill(HIST("jetV0s/lostDaughterTracks"), ptSub, nLost, weight);
+    checkRegistry.fill(HIST("jetV0s/lostDaughterPtFractionProfile"), ptSub, lostPt / jet.pt(), weight);
+    if (nLost > 0) {
+      checkRegistry.fill(HIST("jetV0s/lostDaughterPtFraction"), ptSub, lostPt / jet.pt(), weight);
+    }
+    checkRegistry.fill(HIST("jetV0s/sharedDaughterPairs"), ptSub, nSharedPairs, weight);
+    checkRegistry.fill(HIST("jetV0s/doubleCountedPtFractionProfile"), ptSub, doubleCountedPt / jet.pt(), weight);
+    if (nSharedPairs > 0) {
+      checkRegistry.fill(HIST("jetV0s/doubleCountedPtFraction"), ptSub, doubleCountedPt / jet.pt(), weight);
     }
 
     if constexpr (isMC) {
@@ -1038,15 +1398,56 @@ struct LfJetSpectra {
       registryMC.fill(HIST("jetV0s/fakeSelectedV0PtFraction"), ptSub, fakeSelectedPt / jet.pt(), weight);
       registryMC.fill(HIST("jetV0s/fakeV0PtFractionProfile"), ptSub, fakePt / jet.pt(), weight);
       registryMC.fill(HIST("jetV0s/fakeSelectedV0PtFractionProfile"), ptSub, fakeSelectedPt / jet.pt(), weight);
+      float secondaryPt = 0.f;
       for (int source = 0; source < kNV0Sources; source++) {
         registryMC.fill(HIST("jetV0s/V0SourcePtFraction"), ptSub, source, sourcePt[source] / jet.pt(), weight);
         registryMC.fill(HIST("jetV0s/V0SourcePtFractionProfile"), ptSub, source, sourcePt[source] / jet.pt(), weight);
+        if (source != kSourcePrimary) {
+          secondaryPt += sourcePt[source];
+        }
       }
+      registryMC.fill(HIST("jetV0s/V0SecondaryPtFractionProfile"), ptSub, secondaryPt / jet.pt(), weight);
     } else {
       registryData.fill(HIST("jetV0s/nV0Constituents"), ptSub, nV0s);
       registryData.fill(HIST("jetV0s/nK0sSelected"), ptSub, nSelected[kK0s]);
       registryData.fill(HIST("jetV0s/nLambdaSelected"), ptSub, nSelected[kLambda]);
       registryData.fill(HIST("jetV0s/nAntiLambdaSelected"), ptSub, nSelected[kAntiLambda]);
+    }
+  }
+
+  // Per-jet V0 histograms of one species (see JetV0Species), filled once per selected jet after the loop over its V0
+  // constituents: multiplicity and mean momentum fractions for all the jets, momentum fraction distributions only for the
+  // jets with at least one candidate (see JetSpeciesContent). ptRaw: unsubtracted jet pT
+  template <bool isMC, int iSpecies>
+  void fillJetV0SpeciesContent(float ptSub, float ptRaw, const JetSpeciesContent& c, float weight)
+  {
+    constexpr auto Folder = HIST("jetV0s/") + HIST(JetV0SpeciesNames[iSpecies]);
+    auto& registry = isMC ? registryMC : registryData;
+    registry.fill(Folder + HIST("/nInMassWindow"), ptSub, c.n, weight);
+    registry.fill(Folder + HIST("/ptFractionProfile"), ptSub, c.pt / ptSub, weight);
+    if constexpr (isMC) {
+      registryMC.fill(Folder + HIST("/fakePtFractionProfile"), ptSub, c.fakePt / ptSub, weight);
+    }
+    if (c.n == 0) {
+      return;
+    }
+    registry.fill(Folder + HIST("/ptFraction"), ptSub, c.pt / ptSub, weight);
+    registry.fill(Folder + HIST("/ptFractionVsN"), ptSub, c.n, c.pt / ptSub, weight);
+    registry.fill(Folder + HIST("/nDedupVsN"), ptSub, c.n, c.nDedup, weight);
+    if constexpr (isMC) {
+      registryMC.fill(Folder + HIST("/fakePtFraction"), ptSub, c.fakePt / ptSub, weight);
+      registryMC.fill(Folder + HIST("/nNotTrueVsN"), ptSub, c.n, c.nNotTrue, weight);
+      const int nTrue = c.n - c.nNotTrue;
+      if (c.nNotTrue > 0) {
+        registryMC.fill(Folder + HIST("/notTruePtFractionVsN"), ptSub, c.n, c.notTruePt / ptSub, weight);
+        registryMC.fill(Folder + HIST("/notTruePtFractionByTrue"), ptSub, nTrue > 0 ? 1 : 0, c.notTruePt / ptSub, weight);
+      }
+      if (nTrue > 0) {
+        registryMC.fill(Folder + HIST("/trueSharedDaughter"), ptSub, c.trueSharedCase, weight);
+        if (c.trueSharedCase > 0) {
+          registryMC.fill(Folder + HIST("/trueSharedDoubleCountedPtFraction"), ptSub, c.trueSharedCase, c.trueSharedDoublePt / ptRaw, weight);
+        }
+      }
     }
   }
 
@@ -1176,6 +1577,46 @@ struct LfJetSpectra {
   }
   PROCESS_SWITCH(LfJetSpectra, processMCReco, "V0s in jets and in the UE, MC detector level (efficiency and feed-down)", false);
 
+  // Strange hadrons in a selected particle-level jet (see JetStrangeSpecies): their number (all and per species) and the
+  // pairs of them, by species and by relative sign of the strangeness
+  template <typename TJet>
+  void fillJetStrangeContent(TJet const& jet, float ptSub, float weight)
+  {
+    std::vector<int> strange; // JetStrangeSpecies of the strange hadrons of the jet
+    for (const auto& particle : jet.template tracks_as<aod::JetParticles>()) {
+      if (particle.pdgCode() == PDG_t::kKPlus) {
+        strange.push_back(kStrangeKPlus);
+      } else if (particle.pdgCode() == PDG_t::kKMinus) {
+        strange.push_back(kStrangeKMinus);
+      }
+    }
+    for (const auto& v0 : jet.template candidates_as<aod::CandidatesV0MCP>()) {
+      const int species = genV0Species(v0);
+      if (species >= 0) {
+        strange.push_back(kStrangeK0s + species);
+      }
+    }
+
+    const int n = strange.size();
+    std::array<int, kNJetStrangeSpecies> nPerSpecies{};
+    for (const int s : strange) {
+      nPerSpecies[s]++;
+    }
+    registryMC.fill(HIST("jetStrange/nStrange"), ptSub, n, weight);
+    for (int s = 0; s < kNJetStrangeSpecies; s++) {
+      registryMC.fill(HIST("jetStrange/nPerSpecies"), ptSub, s, nPerSpecies[s], weight);
+    }
+    for (int a = 0; a < n; a++) {
+      for (int b = a + 1; b < n; b++) {
+        registryMC.fill(HIST("jetStrange/pairs"), ptSub, jetStrangePairIndex(strange[a], strange[b]), n, weight);
+        const int sa = JetStrangeStrangeness[strange[a]];
+        const int sb = JetStrangeStrangeness[strange[b]];
+        const int sign = (sa == 0 || sb == 0) ? kPairWithK0s : (sa == sb ? kPairSameStrangeness : kPairOppositeStrangeness);
+        registryMC.fill(HIST("jetStrange/pairSign"), ptSub, sign, n, weight);
+      }
+    }
+  }
+
   // MC particle level: generated V0s in particle-level jets and in their UE (defined as in data), and in the full event
   void processMCGen(soa::Filtered<aod::JetMcCollisions>::iterator const& mcCollision, MCPV0JetsWithConstituents const& v0jets,
                     aod::CandidatesV0MCP const& v0s, aod::JetParticles const& particles)
@@ -1206,6 +1647,9 @@ struct LfJetSpectra {
     collectJetsAboveThreshold(v0jets, rho, v0sInJets, jetAxes);
 
     for (const auto& jet : v0jets) {
+      if (isInJetAcceptance(jet)) {
+        registryMC.fill(HIST("jetV0s/genJetPtRawVsSub"), jet.pt(), subtractedPt(jet, rho), weight);
+      }
       if (!isSelectedJet(jet, rho)) {
         continue;
       }
@@ -1213,9 +1657,20 @@ struct LfJetSpectra {
 
       // Generated V0s, in-jet region: constituents of the particle-level jet (anti-kT clustering of the V0s as single
       // pseudojets, daughters removed from the particle list, as at detector level)
+      float sumV0Pt = 0.f;
+      int nV0sInJet = 0;
       for (const auto& v0 : jet.candidates_as<aod::CandidatesV0MCP>()) {
+        sumV0Pt += v0.pt();
+        nV0sInJet++;
+        registryMC.fill(HIST("jetV0s/genV0PtVsJetPtRaw"), jet.pt(), v0.pt(), weight);
         fillMCGenV0<kGenJet>(v0, multiplicity, weight);
       }
+      if (jet.pt() > 0.f) {
+        registryMC.fill(HIST("jetV0s/genV0PtSumVsJetPtRaw"), jet.pt(), sumV0Pt, weight);
+        registryMC.fill(HIST("jetV0s/genV0PtFractionVsJetPtRaw"), jet.pt(), sumV0Pt / jet.pt(), weight);
+      }
+      registryMC.fill(HIST("jetV0s/genV0CountVsJetPtRaw"), jet.pt(), nV0sInJet, weight);
+      fillJetStrangeContent(jet, subtractedPt(jet, rho), weight);
       // Generated V0s, UE region: accepted by the particle-level jet finder and not constituents of another jet above threshold
       for (const auto& v0 : v0s) {
         if (!jetFinderV0s.contains(v0.globalIndex()) || v0sInJets.contains(v0.globalIndex())) {

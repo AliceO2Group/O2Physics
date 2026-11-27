@@ -260,6 +260,7 @@ struct UpcCandProducerBarrel {
   int rofStartBorderMargin = 0;
   int rofEndBorderMargin = 0;
   std::bitset<NBCsPerOrbit> collidingBCs;
+  std::vector<int> distanceToNearestCollidingBC;
 
   Configurable<int> nTracks{"nTracks", 2, "Required N tracks in selected collisions"};
   Configurable<float> maxAbsEta{"maxAbsEta", 0.8f, "Maximum |eta| of selected tracks"};
@@ -269,6 +270,7 @@ struct UpcCandProducerBarrel {
   Configurable<int> vetoFV0{"vetoFV0", 0, "FV0 veto: 0=off, 1=on"};
   Configurable<int> vetoFDD{"vetoFDD", 0, "FDD veto: 0=off, 1=on"};
   Configurable<int> useTCE{"useTCE", 0, "Use TCE for lumi accounting: 0=off, 1=on"};
+  Configurable<int> useNearestCollidingBC{"useNearestCollidingBC", 0, "Use nearest colliding BC: 0=off, 1=on"};
   Configurable<int> signalSourceId{"signalSourceId", 1, "MC source ID stored as embedded signal"};
 
   Configurable<float> minAmpFV0A{"minAmpFV0A", 150.f, "Minimum amplitude for FV0A veto"};
@@ -396,6 +398,26 @@ struct UpcCandProducerBarrel {
     tfEndBorder = configuredTFEndBorder < 0 ? eventSelectionParams->fTimeFrameEndBorderMargin : configuredTFEndBorder;
     collidingBCs = runInfo.grpLHC->getBunchFilling().getBCPattern();
 
+    if (useNearestCollidingBC) {
+      LOGP(debug, "Filling distanceToNearestCollidingBC vector since useNearestCollidingBC option is on");
+      distanceToNearestCollidingBC.assign(NBCsPerOrbit, NBCsPerOrbit);
+      for (int bc = 0; bc < NBCsPerOrbit; ++bc) {
+        for (int distance = 0; distance <= NBCsPerOrbit / 2; ++distance) {
+          const int futureBC = (bc + distance) % NBCsPerOrbit;
+          if (collidingBCs[futureBC]) {
+            distanceToNearestCollidingBC[bc] = distance;
+            break;
+          }
+
+          const int pastBC = (bc - distance + NBCsPerOrbit) % NBCsPerOrbit;
+          if (collidingBCs[pastBC]) {
+            distanceToNearestCollidingBC[bc] = -distance;
+            break;
+          }
+        }
+      }
+    } // useNearestCollidingBC
+
     // get ITS ROF parameters
     auto alppar = ccdb->getForRun<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", runNumber);
     rofOffset = alppar->roFrameBiasInBC;
@@ -463,7 +485,7 @@ struct UpcCandProducerBarrel {
 
     LOGP(debug, "Collect number of all collisions and upc-mode collisions per ROF");
     std::vector<std::map<int32_t, float>> vMultTracks(tfIDs.size(), std::map<int32_t, float>());
-    std::vector<std::vector<int>> vCollisionsPerROF(tfIDs.size(), std::vector<int>(nRofPerTF, 0));
+    std::vector<std::vector<int>> vNonUpcColisionsPerROF(tfIDs.size(), std::vector<int>(nRofPerTF, 0));
     std::vector<std::vector<int>> vUpcModePerROF(tfIDs.size(), std::vector<int>(nRofPerTF, 0));
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<BCsWithSels>();
@@ -471,7 +493,8 @@ struct UpcCandProducerBarrel {
       const int32_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
       const auto iTF = localTFIndex[bc.globalIndex()];
       const int32_t rofInTF = getRofInTF(bcInTF);
-      vCollisionsPerROF[iTF][rofInTF]++;
+      // skipping 2-track UPC candidates and counting collisions with > 2 tracks
+      vNonUpcColisionsPerROF[iTF][rofInTF] += collision.numContrib() > 2 ? 1 : 0;
       const bool upcMode = (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0;
       if (upcMode) {
         vUpcModePerROF[iTF][rofInTF]++;
@@ -558,8 +581,8 @@ struct UpcCandProducerBarrel {
         const int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
         LOGP(debug, "setting flags for MC collision");
         const int32_t rofInTF = getRofInTF(bcInTF);
-        const bool upcMode = vCollisionsPerROF[iTF][rofInTF] == 0 || vUpcModePerROF[iTF][rofInTF] > 0;
-        const bool noPileupInRof = vCollisionsPerROF[iTF][rofInTF] <= 1;
+        const bool upcMode = vNonUpcColisionsPerROF[iTF][rofInTF] == 0 || vUpcModePerROF[iTF][rofInTF] > 0;
+        const bool noPileupInRof = vNonUpcColisionsPerROF[iTF][rofInTF] == 0;
         uint8_t bcFlags = 0;
         bcFlags |= upcMode << 0;
         bcFlags |= noPileupInRof << 1;
@@ -663,8 +686,8 @@ struct UpcCandProducerBarrel {
         const int64_t globalBC = tfStartBC + bcInTF;
         const int bcInOrbit = globalBC % NBCsPerOrbit;
         const int32_t rofInTF = getRofInTF(bcInTF);
-        bool upcMode = vCollisionsPerROF[iTF][rofInTF] == 0 || vUpcModePerROF[iTF][rofInTF] > 0;
-        bool pileupInROF = vCollisionsPerROF[iTF][rofInTF] >= 1;
+        bool upcMode = vNonUpcColisionsPerROF[iTF][rofInTF] == 0 || vUpcModePerROF[iTF][rofInTF] > 0;
+        bool pileupInROF = vNonUpcColisionsPerROF[iTF][rofInTF] >= 1;
         const auto distanceFT0 = minDistanceFT0[iTF][bcInTF];
         const auto distanceFV0 = minDistanceFV0[iTF][bcInTF];
         const auto distanceFDD = minDistanceFDD[iTF][bcInTF];
@@ -726,11 +749,12 @@ struct UpcCandProducerBarrel {
       }
       auto bc = collision.template bc_as<BCsWithSels>();
       int64_t globalBC = bc.globalBC();
+      globalBC += useNearestCollidingBC ? distanceToNearestCollidingBC[globalBC % NBCsPerOrbit] : 0;
       const auto iTF = localTFIndex[bc.globalIndex()];
       const int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
       const int32_t rofInTF = getRofInTF(bcInTF);
       const bool upcMode = (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0;
-      const bool noPileupInRof = vCollisionsPerROF[iTF][rofInTF] <= 1;
+      const bool noPileupInRof = (vNonUpcColisionsPerROF[iTF][rofInTF] == 0);
       uint8_t flags = 0;
       flags |= upcMode << 0;
       flags |= noPileupInRof << 1;

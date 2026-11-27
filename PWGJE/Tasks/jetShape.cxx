@@ -17,8 +17,12 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -54,6 +58,7 @@ using namespace o2::framework::expressions;
 struct JetShapeTask {
 
   static constexpr float PionMass = static_cast<float>(o2::constants::physics::MassPionCharged);
+  static constexpr float KaonMass = static_cast<float>(o2::constants::physics::MassKaonCharged);
   static constexpr float ProtonMass = static_cast<float>(o2::constants::physics::MassProton);
   static constexpr float RandomConeNegativeSideProbability = 0.5f;
 
@@ -97,16 +102,35 @@ struct JetShapeTask {
   Configurable<unsigned int> randomConeSeed{"randomConeSeed", 0u, "TRandom3 seed; 0 lets ROOT choose a unique seed"};
   Configurable<bool> fillDetailedQA{"fillDetailedQA", false, "Fill high-volume dE/dx, beta and distance QA histograms"};
   Configurable<bool> fillPidNsigmaQA{"fillPidNsigmaQA", true, "Fill the light centrality / TOF-matching / nSigma_TOF histograms used to validate the normalisation and the PID efficiency on data"};
-  Configurable<bool> fillPid2D{"fillPid2D", true, "Fill the dense (p, nSigma_TPC^p, nSigma_TOF^p) map of inclusive tracks with TOF of ALL selected events (no jet bias), without any PID cut"};
-  Configurable<bool> fillPid2DJet{"fillPid2DJet", true, "Fill dense (p, nSigma_TPC^p, nSigma_TOF^p, r x jet pT) maps for signal and perpendicular cones, plus the inclusive map of the same events, without any PID cut (shared-shape 2D fit)"};
-  Configurable<float> pid2DCentMin{"pid2DCentMin", 0.f, "Lower centrality edge for the pid2D jet maps"};
-  Configurable<float> pid2DCentMax{"pid2DCentMax", 10.f, "Upper centrality edge for the pid2D jet maps"};
-  Configurable<float> pid2DPMin{"pid2DPMin", 2.0f, "Lower momentum edge of all pid2D maps (GeV/c)"};
-  Configurable<float> pid2DPMax{"pid2DPMax", 7.4f, "Upper momentum edge of all pid2D maps (GeV/c); p_T <= 5 at |eta| < 0.9 needs p <= 7.2"};
-  Configurable<bool> fillPid2DMismatch{"fillPid2DMismatch", true, "Fill TOF-mismatch templates: nSigma_TOF^p recomputed with the TOF time of another (random / nearest) TOF track of the same collision"};
-  Configurable<bool> fillPid2DTpcOnly{"fillPid2DTpcOnly", true, "Fill the TPC-only (p, nSigma_TPC^p, hasTOF, region) map without TOF requirement (TOF matching of p+K relative to pi on data)"};
-  Configurable<bool> fillPid2DMc{"fillPid2DMc", true, "MC: fill the pid2D maps split by true species, origin and TOF-match quality (closure of the 2D fit)"};
-  Configurable<float> pid2DMcTofBadNSigma{"pid2DMcTofBadNSigma", 5.f, "MC: flag the TOF hit as mismatched when |nSigma_TOF| under the true mass hypothesis exceeds this"};
+  struct : ConfigurableGroup {
+    Configurable<bool> fillPid2D{"fillPid2D", true, "Fill the dense (p, nSigma_TPC^p, nSigma_TOF^p) map of inclusive tracks with TOF of ALL selected events (no jet bias), without any PID cut"};
+    Configurable<bool> fillPid2DJet{"fillPid2DJet", true, "Fill dense (p, nSigma_TPC^p, nSigma_TOF^p, r x jet pT) maps for signal and perpendicular cones, plus the inclusive map of the same events, without any PID cut (shared-shape 2D fit)"};
+    Configurable<float> pid2DCentMin{"pid2DCentMin", 0.f, "Lower centrality edge for the pid2D jet maps"};
+    Configurable<float> pid2DCentMax{"pid2DCentMax", 10.f, "Upper centrality edge for the pid2D jet maps"};
+    Configurable<float> pid2DPMin{"pid2DPMin", 0.8f, "Lower momentum edge of the proton-hypothesis pid2D maps (GeV/c)"};
+    Configurable<float> pid2DPMax{"pid2DPMax", 7.4f, "Upper momentum edge of the proton-hypothesis pid2D maps (GeV/c); p_T <= 5 at |eta| < 0.9 needs p <= 7.2"};
+    Configurable<bool> fillPid2DPi{"fillPid2DPi", true, "Also fill the pion-hypothesis pid2D maps (nSigma^pi: pi at the origin with unit width, no p smearing of the pion) in [pid2DPiPMin, pid2DPiPMax)"};
+    Configurable<float> pid2DPiPMin{"pid2DPiPMin", 0.8f, "Lower momentum edge of the pion-hypothesis pid2D maps (GeV/c)"};
+    Configurable<float> pid2DPiPMax{"pid2DPiPMax", 4.0f, "Upper momentum edge of the pion-hypothesis pid2D maps (GeV/c); p_T < 2.8 at |eta| < 0.9 needs p <= 4.0, above that pi is taken from the proton map"};
+    Configurable<bool> fillPid2DKa{"fillPid2DKa", true, "Also fill the kaon-hypothesis pid2D maps (nSigma^K) in [pid2DKaPMin, pid2DKaPMax)"};
+    Configurable<float> pid2DKaPMin{"pid2DKaPMin", 0.8f, "Lower momentum edge of the kaon-hypothesis pid2D maps (GeV/c)"};
+    Configurable<float> pid2DKaPMax{"pid2DKaPMax", 7.4f, "Upper momentum edge of the kaon-hypothesis pid2D maps (GeV/c); 7.4 = K to p_T 5 at |eta| < 0.9 from its own map (K at the origin, no extrapolated K position)"};
+    Configurable<bool> fillPid2DMismatch{"fillPid2DMismatch", true, "Fill TOF-mismatch templates: nSigma_TOF^p recomputed with the TOF time of another (random / nearest) TOF track of the same collision"};
+    Configurable<bool> fillPid2DTpcOnly{"fillPid2DTpcOnly", true, "Fill the TPC-only (p, nSigma_TPC^p, hasTOF, region) map without TOF requirement (TOF matching of p+K relative to pi on data)"};
+    Configurable<bool> fillPid2DMc{"fillPid2DMc", true, "MC: fill the pid2D maps split by true species, origin and TOF-match quality (closure of the 2D fit)"};
+    Configurable<float> pid2DMcTofBadNSigma{"pid2DMcTofBadNSigma", 5.f, "MC: flag the TOF hit as mismatched when |nSigma_TOF| under the true mass hypothesis exceeds this"};
+    Configurable<float> pid2DTpcOnlyPMax{"pid2DTpcOnlyPMax", 1.6f, "Upper momentum edge of the TPC-only pion map and of the TPC-only cone maps (GeV/c); the TPC separates protons only below ~1.4 GeV/c"};
+    Configurable<float> pid2DV0PMin{"pid2DV0PMin", 0.6f, "V0 daughters (processPid2DV0Daughters): lower momentum edge (GeV/c)"};
+    Configurable<float> pid2DV0PMax{"pid2DV0PMax", 4.0f, "V0 daughters: upper momentum edge (GeV/c)"};
+    Configurable<float> pid2DV0CosPAMin{"pid2DV0CosPAMin", 0.995f, "V0 daughters: minimum cosine of the V0 pointing angle"};
+    Configurable<float> pid2DV0DcaDauMax{"pid2DV0DcaDauMax", 1.0f, "V0 daughters: maximum DCA between the two daughters (cm)"};
+    Configurable<float> pid2DV0DcaDauToPvMin{"pid2DV0DcaDauToPvMin", 0.1f, "V0 daughters: minimum |DCA| of each daughter to the primary vertex (cm)"};
+    Configurable<float> pid2DV0RadiusMin{"pid2DV0RadiusMin", 0.5f, "V0 daughters: minimum decay radius (cm)"};
+    Configurable<float> pid2DV0RadiusMax{"pid2DV0RadiusMax", 20.f, "V0 daughters: maximum decay radius (cm); the TOF expected time assumes a primary track, so the maps keep the radius as an axis"};
+    Configurable<float> pid2DV0LambdaWindow{"pid2DV0LambdaWindow", 0.006f, "V0 daughters: Lambda mass window half width (GeV/c^2); side bands at 2-3 half widths on both sides"};
+    Configurable<float> pid2DV0K0SWindow{"pid2DV0K0SWindow", 0.015f, "V0 daughters: K0S mass window half width (GeV/c^2); side bands at 2-3 half widths on both sides"};
+    Configurable<float> pid2DV0CompetingVeto{"pid2DV0CompetingVeto", 0.01f, "V0 daughters: reject Lambda candidates within this of the K0S mass, and K0S candidates within half of it of the Lambda mass (GeV/c^2)"};
+  } pid2DOpts;
   Configurable<bool> fillTofMismatchQA{"fillTofMismatchQA", true, "Fill the wide-range nSigma_TOF histograms used to measure the TOF-mismatch pedestal; the data side also needs fillPidNsigmaQA"};
   Configurable<float> nSigmaWideMid{"nSigmaWideMid", 100.0f, "Boundary between the medium and the coarse part of the wide nSigma_TOF axis"};
   Configurable<float> nSigmaWideMax{"nSigmaWideMax", 1000.0f, "Outer edge of the wide nSigma_TOF axis; one bunch crossing is about 625 sigma"};
@@ -155,6 +179,7 @@ struct JetShapeTask {
   TRandom3 randomNumber;
 
   std::vector<int> eventSelectionBits;
+  o2::aod::rctsel::RCTFlagsChecker pid2DV0RctChecker{"CBT_hadronPID"}; // same RCT label as jetderiveddatautilities::selectCollision
   std::vector<int> emptyEventSelectionBits;
   int trackSelection = -1;
   int trackSelectionForDca = -1;
@@ -260,43 +285,130 @@ struct JetShapeTask {
     // of this size is filled to >50 % and costs far more per bin. Centrality is a window
     // (pid2DCentMin/Max), not an axis: a THn keeps under/overflow bins on every axis.
     const AxisSpec axisP2D{pid2DPEdges(), "#it{p} (GeV/#it{c})"};
-    const AxisSpec axisTpc2D{44, -4., 7., "n#sigma_{TPC}^{p}"};
+    const AxisSpec axisTpc2D{22, -4., 7., "n#sigma_{TPC}^{p}"}; // 0.5: < 0.5 % information loss (Asimov)
     const AxisSpec axisTof2D{72, -12., 6., "n#sigma_{TOF}^{p}"};
     const AxisSpec axisRJet2D{28, 0., 28., "r bin + 7 #times jet p_{T} bin"};
-    const bool anyPid2D = fillPid2D || fillPid2DJet;
+    const bool anyPid2D = pid2DOpts.fillPid2D || pid2DOpts.fillPid2DJet;
+    // Pion / kaon hypothesis maps: the hypothesis species sits at the origin with unit width at every p,
+    // so its yield needs no p-bin smearing model (pi at p < 4, where it is far off in nSigma_TOF^p; K at low p).
+    // TOF: pi map [-6, 12] holds K (+27 at p 0.8, +2.4 at 2.8); K map [-10, 12] holds pi (< 0) and p (> 0).
+    const AxisSpec axisP2DPi{pid2DPEdges(pid2DOpts.pid2DPiPMin.value, pid2DOpts.pid2DPiPMax.value), "#it{p} (GeV/#it{c})"};
+    const AxisSpec axisTpc2DPi{28, -6., 8., "n#sigma_{TPC}^{#pi}"};
+    const AxisSpec axisTof2DPi{72, -6., 12., "n#sigma_{TOF}^{#pi}"};
+    const AxisSpec axisP2DKa{pid2DPEdges(pid2DOpts.pid2DKaPMin.value, pid2DOpts.pid2DKaPMax.value), "#it{p} (GeV/#it{c})"};
+    const AxisSpec axisTpc2DKa{32, -8., 8., "n#sigma_{TPC}^{K}"};
+    const AxisSpec axisTof2DKa{88, -10., 12., "n#sigma_{TOF}^{K}"};
+    const bool pid2DPiOn = anyPid2D && pid2DOpts.fillPid2DPi;
+    const bool pid2DKaOn = anyPid2D && pid2DOpts.fillPid2DKa;
 
-    if (fillPid2D) {
+    if (pid2DOpts.fillPid2D) {
       registry.add("pid2DPr", "inclusive tracks with TOF, all events, no PID cut;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p}", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D});
+      if (pid2DOpts.fillPid2DPi) {
+        registry.add("pid2DPi", "inclusive tracks with TOF, all events, no PID cut;#it{p};n#sigma_{TPC}^{#pi};n#sigma_{TOF}^{#pi}", HistType::kTHnF, {axisP2DPi, axisTpc2DPi, axisTof2DPi});
+      }
+      if (pid2DOpts.fillPid2DKa) {
+        registry.add("pid2DKa", "inclusive tracks with TOF, all events, no PID cut;#it{p};n#sigma_{TPC}^{K};n#sigma_{TOF}^{K}", HistType::kTHnF, {axisP2DKa, axisTpc2DKa, axisTof2DKa});
+      }
     }
 
-    if (fillPid2DJet) {
+    if (pid2DOpts.fillPid2DJet) {
       registry.add("pid2DJetPr", "signal cone, tracks with TOF, no PID cut;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p};r bin + 7 jet bin", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D, axisRJet2D});
       registry.add("pid2DPerpPr", "perpendicular cones, tracks with TOF, no PID cut;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p};r bin + 7 jet bin", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D, axisRJet2D});
       registry.add("pid2DRandPr", "random cones, tracks with TOF, no PID cut;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p};r bin + 7 reference-jet bin", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D, axisRJet2D});
       registry.add("pid2DIncPr", "all tracks with TOF in events with an accepted jet;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p}", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D});
+      if (pid2DOpts.fillPid2DPi) {
+        registry.add("pid2DJetPi", "signal cone, tracks with TOF, no PID cut;#it{p};n#sigma_{TPC}^{#pi};n#sigma_{TOF}^{#pi};r bin + 7 jet bin", HistType::kTHnF, {axisP2DPi, axisTpc2DPi, axisTof2DPi, axisRJet2D});
+        registry.add("pid2DPerpPi", "perpendicular cones, tracks with TOF, no PID cut;#it{p};n#sigma_{TPC}^{#pi};n#sigma_{TOF}^{#pi};r bin + 7 jet bin", HistType::kTHnF, {axisP2DPi, axisTpc2DPi, axisTof2DPi, axisRJet2D});
+        registry.add("pid2DRandPi", "random cones, tracks with TOF, no PID cut;#it{p};n#sigma_{TPC}^{#pi};n#sigma_{TOF}^{#pi};r bin + 7 reference-jet bin", HistType::kTHnF, {axisP2DPi, axisTpc2DPi, axisTof2DPi, axisRJet2D});
+        registry.add("pid2DIncPi", "all tracks with TOF in events with an accepted jet;#it{p};n#sigma_{TPC}^{#pi};n#sigma_{TOF}^{#pi}", HistType::kTHnF, {axisP2DPi, axisTpc2DPi, axisTof2DPi});
+      }
+      if (pid2DOpts.fillPid2DKa) {
+        registry.add("pid2DJetKa", "signal cone, tracks with TOF, no PID cut;#it{p};n#sigma_{TPC}^{K};n#sigma_{TOF}^{K};r bin + 7 jet bin", HistType::kTHnF, {axisP2DKa, axisTpc2DKa, axisTof2DKa, axisRJet2D});
+        registry.add("pid2DPerpKa", "perpendicular cones, tracks with TOF, no PID cut;#it{p};n#sigma_{TPC}^{K};n#sigma_{TOF}^{K};r bin + 7 jet bin", HistType::kTHnF, {axisP2DKa, axisTpc2DKa, axisTof2DKa, axisRJet2D});
+        registry.add("pid2DRandKa", "random cones, tracks with TOF, no PID cut;#it{p};n#sigma_{TPC}^{K};n#sigma_{TOF}^{K};r bin + 7 reference-jet bin", HistType::kTHnF, {axisP2DKa, axisTpc2DKa, axisTof2DKa, axisRJet2D});
+        registry.add("pid2DIncKa", "all tracks with TOF in events with an accepted jet;#it{p};n#sigma_{TPC}^{K};n#sigma_{TOF}^{K}", HistType::kTHnF, {axisP2DKa, axisTpc2DKa, axisTof2DKa});
+      }
     }
 
-    if (fillPid2DMismatch && anyPid2D) {
+    if (pid2DOpts.fillPid2DMismatch && anyPid2D) {
       registry.add("pid2DMisPr", "TOF-mismatch template;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p} (borrowed time);source + 2 region", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D, {10, 0., 10., "source + 2 #times region"}});
+      if (pid2DOpts.fillPid2DPi) {
+        registry.add("pid2DMisPi", "TOF-mismatch template;#it{p};n#sigma_{TPC}^{#pi};n#sigma_{TOF}^{#pi} (borrowed time);source + 2 region", HistType::kTHnF, {axisP2DPi, axisTpc2DPi, axisTof2DPi, {10, 0., 10., "source + 2 #times region"}});
+      }
+      if (pid2DOpts.fillPid2DKa) {
+        registry.add("pid2DMisKa", "TOF-mismatch template;#it{p};n#sigma_{TPC}^{K};n#sigma_{TOF}^{K} (borrowed time);source + 2 region", HistType::kTHnF, {axisP2DKa, axisTpc2DKa, axisTof2DKa, {10, 0., 10., "source + 2 #times region"}});
+      }
     }
 
-    if (fillPid2DTpcOnly && anyPid2D) {
+    if (pid2DOpts.fillPid2DTpcOnly && anyPid2D) {
       registry.add("pid2DTpcOnlyPr", "TPC only, no TOF requirement;#it{p};n#sigma_{TPC}^{p};hasTOF;region", HistType::kTHnF, {axisP2D, axisTpc2D, {2, 0., 2., "hasTOF"}, {3, 0., 3., "region"}});
+      // Low-p TPC-only yields (p and pi with the same method) and the data TOF matching probability.
+      const AxisSpec axisP2DTpcOnly{pid2DPEdges(pid2DOpts.pid2DPMin.value, pid2DOpts.pid2DTpcOnlyPMax.value), "#it{p} (GeV/#it{c})"};
+      registry.add("pid2DTpcOnlyPi", "TPC only, no TOF requirement;#it{p};n#sigma_{TPC}^{#pi};hasTOF;region", HistType::kTHnF, {axisP2DTpcOnly, axisTpc2DPi, {2, 0., 2., "hasTOF"}, {3, 0., 3., "region"}});
+      registry.add("pid2DTpcOnlyKa", "TPC only, no TOF requirement;#it{p};n#sigma_{TPC}^{K};hasTOF;region", HistType::kTHnF, {axisP2DTpcOnly, axisTpc2DKa, {2, 0., 2., "hasTOF"}, {3, 0., 3., "region"}});
+      if (pid2DOpts.fillPid2DJet) {
+        const AxisSpec axisTpcOnlyCone{56, 0., 56., "r bin + 7 #times jet p_{T} bin + 28 #times (0 signal, 1 perp)"};
+        registry.add("pid2DTpcOnlyConePr", "TPC only, signal / perp cones;#it{p};n#sigma_{TPC}^{p};hasTOF;cone index", HistType::kTHnF, {axisP2DTpcOnly, axisTpc2D, {2, 0., 2., "hasTOF"}, axisTpcOnlyCone});
+        registry.add("pid2DTpcOnlyConePi", "TPC only, signal / perp cones;#it{p};n#sigma_{TPC}^{#pi};hasTOF;cone index", HistType::kTHnF, {axisP2DTpcOnly, axisTpc2DPi, {2, 0., 2., "hasTOF"}, axisTpcOnlyCone});
+        registry.add("pid2DTpcOnlyConeKa", "TPC only, signal / perp cones;#it{p};n#sigma_{TPC}^{K};hasTOF;cone index", HistType::kTHnF, {axisP2DTpcOnly, axisTpc2DKa, {2, 0., 2., "hasTOF"}, axisTpcOnlyCone});
+      }
+    }
+
+    if (doprocessPid2DV0Daughters) {
+      // Identified daughters (Lambda -> p pi, K0S -> pi pi): TOF matching probability of p / pi on data (note-style bookkeeping).
+      // No TOF hit -> nSigma_TOF filled as underflow, and hasTOF = 0 in the status axis.
+      const AxisSpec axisP2DV0{pid2DPEdges(pid2DOpts.pid2DV0PMin.value, pid2DOpts.pid2DV0PMax.value), "#it{p} (GeV/#it{c})"};
+      const AxisSpec axisV0Status{4, 0., 4., "hasTOF + 2 #times (0 mass window, 1 side bands)"};
+      const AxisSpec axisV0Radius{std::vector<double>{0., 3., 8., 100.}, "V0 decay radius (cm)"};
+      registry.add("pid2DV0Pr", "protons from Lambda / anti-Lambda;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p};status;radius", HistType::kTHnF, {axisP2DV0, axisTpc2D, axisTof2D, axisV0Status, axisV0Radius});
+      registry.add("pid2DV0Pi", "pions from K0S;#it{p};n#sigma_{TPC}^{#pi};n#sigma_{TOF}^{#pi};status;radius", HistType::kTHnF, {axisP2DV0, axisTpc2DPi, axisTof2DPi, axisV0Status, axisV0Radius});
+      registry.add("pid2DV0MassLambda", "Lambda and anti-Lambda candidates;#it{p}_{T} (GeV/#it{c});#it{m} (GeV/#it{c}^{2})", HistType::kTH2F, {{25, 0., 5.}, {140, 1.08, 1.15}});
+      registry.add("pid2DV0MassK0S", "K0S candidates;#it{p}_{T} (GeV/#it{c});#it{m} (GeV/#it{c}^{2})", HistType::kTH2F, {{25, 0., 5.}, {160, 0.42, 0.58}});
+      registry.add("pid2DV0Events", "events entering processPid2DV0Daughters;centrality (%);events", HistType::kTH1F, {{20, 0., 100.}});
     }
 
     if (anyPid2D) {
-      constexpr double PtMin2D = 1.0;
+      constexpr double PtMin2D = 0.5; // p_T 0.8-1.0 needs tracks down to p_T 0.8 / cosh(0) and the 0.1 grid
       constexpr double PtBinWidth2D = 0.1;
-      const int nPt2D = static_cast<int>(std::lround((pid2DPMax.value - PtMin2D) / PtBinWidth2D));
-      registry.add("pid2DPVsPt", "tracks entering the pid2D maps;#it{p};#it{p}_{T};region", HistType::kTHnF, {axisP2D, {nPt2D, PtMin2D, PtMin2D + nPt2D * PtBinWidth2D, "#it{p}_{T} (GeV/#it{c})"}, {5, 0., 5., "region"}});
+      auto axisPt2D = [&](float pMax) {
+        const int nPt2D = static_cast<int>(std::lround((pMax - PtMin2D) / PtBinWidth2D));
+        return AxisSpec{nPt2D, PtMin2D, PtMin2D + nPt2D * PtBinWidth2D, "#it{p}_{T} (GeV/#it{c})"};
+      };
+      registry.add("pid2DPVsPt", "tracks entering the pid2D maps;#it{p};#it{p}_{T};region", HistType::kTHnF, {axisP2D, axisPt2D(pid2DOpts.pid2DPMax.value), {5, 0., 5., "region"}});
+      // Separate p -> p_T matrices: with useRapiditySelection the pi / K maps hold a different track set.
+      if (pid2DPiOn) {
+        registry.add("pid2DPVsPtPi", "tracks entering the pion-hypothesis pid2D maps;#it{p};#it{p}_{T};region", HistType::kTHnF, {axisP2DPi, axisPt2D(pid2DOpts.pid2DPiPMax.value), {5, 0., 5., "region"}});
+      }
+      if (pid2DKaOn) {
+        registry.add("pid2DPVsPtKa", "tracks entering the kaon-hypothesis pid2D maps;#it{p};#it{p}_{T};region", HistType::kTHnF, {axisP2DKa, axisPt2D(pid2DOpts.pid2DKaPMax.value), {5, 0., 5., "region"}});
+      }
     }
 
-    if (fillPid2DMc && doprocessEfficiencyAndPurity) {
+    if (pid2DOpts.fillPid2DMc && pid2DOpts.fillPid2DTpcOnly && doprocessEfficiencyAndPurity) {
+      // MC closure of the TPC-only counting and the true P_hit / P_correct per species (TOF status 0 none, 1 good, 2 bad)
+      const AxisSpec axisP2DTpcOnlyMc{pid2DPEdges(pid2DOpts.pid2DPMin.value, pid2DOpts.pid2DTpcOnlyPMax.value), "#it{p} (GeV/#it{c})"};
+      const AxisSpec axisTruthTpcOnlyMc{36, 0., 36., "species + 6 #times (origin + 2 #times TOF status)"};
+      registry.add("mcPid2DTpcOnlyPr", "MC: TPC only, all tracks in events with a matched jet;#it{p};n#sigma_{TPC}^{p};truth index", HistType::kTHnF, {axisP2DTpcOnlyMc, axisTpc2D, axisTruthTpcOnlyMc});
+      registry.add("mcPid2DTpcOnlyPi", "MC: TPC only, all tracks in events with a matched jet;#it{p};n#sigma_{TPC}^{#pi};truth index", HistType::kTHnF, {axisP2DTpcOnlyMc, axisTpc2DPi, axisTruthTpcOnlyMc});
+      registry.add("mcPid2DTpcOnlyKa", "MC: TPC only, all tracks in events with a matched jet;#it{p};n#sigma_{TPC}^{K};truth index", HistType::kTHnF, {axisP2DTpcOnlyMc, axisTpc2DKa, axisTruthTpcOnlyMc});
+    }
+
+    if (pid2DOpts.fillPid2DMc && doprocessEfficiencyAndPurity) {
       const AxisSpec axisTruthInc2DMc{24, 0., 24., "species + 6 #times (origin + 2 #times tofBad)"};
       const AxisSpec axisTruthCone2DMc{24, 0., 24., "species4 + 4 #times (tofBad + 2 #times r bin)"};
       registry.add("mcPid2DIncPr", "MC: all tracks with TOF in events with a matched jet;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p};truth index", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D, axisTruthInc2DMc});
       registry.add("mcPid2DJetPr", "MC: signal cone, tracks with TOF;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p};truth index", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D, axisTruthCone2DMc});
       registry.add("mcPid2DPerpPr", "MC: perpendicular cones, tracks with TOF;#it{p};n#sigma_{TPC}^{p};n#sigma_{TOF}^{p};truth index", HistType::kTHnF, {axisP2D, axisTpc2D, axisTof2D, axisTruthCone2DMc});
+      if (pid2DOpts.fillPid2DPi) {
+        registry.add("mcPid2DIncPi", "MC: all tracks with TOF in events with a matched jet;#it{p};n#sigma_{TPC}^{#pi};n#sigma_{TOF}^{#pi};truth index", HistType::kTHnF, {axisP2DPi, axisTpc2DPi, axisTof2DPi, axisTruthInc2DMc});
+        registry.add("mcPid2DJetPi", "MC: signal cone, tracks with TOF;#it{p};n#sigma_{TPC}^{#pi};n#sigma_{TOF}^{#pi};truth index", HistType::kTHnF, {axisP2DPi, axisTpc2DPi, axisTof2DPi, axisTruthCone2DMc});
+        registry.add("mcPid2DPerpPi", "MC: perpendicular cones, tracks with TOF;#it{p};n#sigma_{TPC}^{#pi};n#sigma_{TOF}^{#pi};truth index", HistType::kTHnF, {axisP2DPi, axisTpc2DPi, axisTof2DPi, axisTruthCone2DMc});
+      }
+      if (pid2DOpts.fillPid2DKa) {
+        registry.add("mcPid2DIncKa", "MC: all tracks with TOF in events with a matched jet;#it{p};n#sigma_{TPC}^{K};n#sigma_{TOF}^{K};truth index", HistType::kTHnF, {axisP2DKa, axisTpc2DKa, axisTof2DKa, axisTruthInc2DMc});
+        registry.add("mcPid2DJetKa", "MC: signal cone, tracks with TOF;#it{p};n#sigma_{TPC}^{K};n#sigma_{TOF}^{K};truth index", HistType::kTHnF, {axisP2DKa, axisTpc2DKa, axisTof2DKa, axisTruthCone2DMc});
+        registry.add("mcPid2DPerpKa", "MC: perpendicular cones, tracks with TOF;#it{p};n#sigma_{TPC}^{K};n#sigma_{TOF}^{K};truth index", HistType::kTHnF, {axisP2DKa, axisTpc2DKa, axisTof2DKa, axisTruthCone2DMc});
+      }
     }
 
     registry.add("jetTpcPi", "jetTpcPi", HistType::kTH2F, {{nBinsP.value, 0, pMax.value}, {nBinsNSigma.value, nSigmaMin.value, nSigmaMax.value}});
@@ -581,16 +693,24 @@ struct JetShapeTask {
 
   std::vector<double> pid2DPEdges() const
   {
+    return pid2DPEdges(pid2DOpts.pid2DPMin.value, pid2DOpts.pid2DPMax.value);
+  }
+
+  // 0.2 GeV/c up to 5 GeV/c, 0.4 GeV/c above (common to all hypotheses, so the maps share bin edges).
+  static std::vector<double> pid2DPEdges(double pMin, double pMax)
+  {
     constexpr double FineWidth = 0.2;
     constexpr double CoarseWidth = 0.4;
     constexpr double FineUpTo = 5.0;
     constexpr double Tolerance = 1e-6;
     constexpr double Rounding = 1000.;
-    std::vector<double> edges{static_cast<double>(pid2DPMin.value)};
-    double p = pid2DPMin.value;
-    while (p < pid2DPMax.value - Tolerance) {
+    pMin = std::round(pMin * Rounding) / Rounding;
+    pMax = std::round(pMax * Rounding) / Rounding;
+    std::vector<double> edges{pMin};
+    double p = pMin;
+    while (p < pMax - Tolerance) {
       p += (p < FineUpTo - Tolerance) ? FineWidth : CoarseWidth;
-      p = std::min(std::round(p * Rounding) / Rounding, static_cast<double>(pid2DPMax.value));
+      p = std::min(std::round(p * Rounding) / Rounding, pMax);
       edges.push_back(p);
     }
     return edges;
@@ -628,23 +748,24 @@ struct JetShapeTask {
     }
   }
 
+  // Time difference (ps) between a borrowed TOF hit of the same collision and the track's own hit:
+  // [0] a random other hit, [1] the nearest other hit in (eta, phi) at the vertex. NaN if not available.
+  // The same borrowed hit is used for all mass hypotheses, so the p, K and pi templates are consistent.
   template <typename TrackT>
-  std::array<float, 2> mismatchNSigmaPr(TrackT const& track, std::vector<TofHit2D> const& hits)
+  std::array<float, 2> mismatchDeltaT(TrackT const& track, std::vector<TofHit2D> const& hits)
   {
     constexpr int MaxAttempts = 10;
     constexpr size_t MinHits = 2;
     std::array<float, 2> out{std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()};
     float time = 0.f;
-    const float sigma = track.tofExpSigmaPr();
-    if (hits.size() < MinHits || sigma <= 0.f || !tofTimeOfFlight(track, time)) {
+    if (hits.size() < MinHits || !tofTimeOfFlight(track, time)) {
       return out;
     }
     const int64_t self = track.globalIndex();
-    const float nSigma = track.tofNSigmaPr();
     for (int attempt = 0; attempt < MaxAttempts; ++attempt) {
       const auto& hit = hits[randomNumber.Integer(static_cast<uint32_t>(hits.size()))];
       if (hit.index != self) {
-        out[0] = nSigma + (hit.time - time) / sigma;
+        out[0] = hit.time - time;
         break;
       }
     }
@@ -663,9 +784,18 @@ struct JetShapeTask {
       }
     }
     if (nearest != nullptr) {
-      out[1] = nSigma + (nearest->time - time) / sigma;
+      out[1] = nearest->time - time;
     }
     return out;
+  }
+
+  // nSigma_TOF^h with the borrowed time: nSigma_h + dt / sigma_h (sigma_h = tofExpSigma of hypothesis h).
+  static std::array<float, 2> mismatchNSigma(std::array<float, 2> const& dt, float nSigma, float sigma)
+  {
+    if (!(sigma > 0.f)) {
+      return {std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()};
+    }
+    return {nSigma + dt[0] / sigma, nSigma + dt[1] / sigma};
   }
 
   // Regions of the pid2D maps (int constants, not an enum: they are combined with float bin centres).
@@ -675,12 +805,26 @@ struct JetShapeTask {
   static constexpr int RegPerp = 3;
   static constexpr int RegRand = 4;
 
-  void fillMismatchTemplate(float p, float tpcPr, std::array<float, 2> const& mis, int region)
+  // Mass hypotheses of the pid2D maps.
+  static constexpr int Hyp2DPr = 0;
+  static constexpr int Hyp2DPi = 1;
+  static constexpr int Hyp2DKa = 2;
+
+  template <int Hyp = Hyp2DPr>
+  void fillMismatchTemplate(float p, float tpc, std::array<float, 2> const& mis, int region)
   {
     constexpr int NSources = 2;
     for (int src = 0; src < NSources; ++src) {
-      if (std::isfinite(mis[src])) {
-        registry.fill(HIST("pid2DMisPr"), p, tpcPr, mis[src], src + NSources * region + 0.5f);
+      if (!std::isfinite(mis[src])) {
+        continue;
+      }
+      const float index = src + NSources * region + 0.5f;
+      if constexpr (Hyp == Hyp2DPi) {
+        registry.fill(HIST("pid2DMisPi"), p, tpc, mis[src], index);
+      } else if constexpr (Hyp == Hyp2DKa) {
+        registry.fill(HIST("pid2DMisKa"), p, tpc, mis[src], index);
+      } else {
+        registry.fill(HIST("pid2DMisPr"), p, tpc, mis[src], index);
       }
     }
   }
@@ -859,7 +1003,7 @@ struct JetShapeTask {
   using JetTracksWithPI = soa::Join<aod::JetTracks, aod::JTrackPIs>;
   using JetTracksWithPIMC = soa::Join<aod::JetTracks, aod::JTrackPIs, aod::JMcTrackLbs>;
 
-  using FullTrackInfo = soa::Join<aod::Tracks, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta>;
+  using FullTrackInfo = soa::Join<aod::Tracks, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta>;
   using FullTrackInfoMC = soa::Join<aod::Tracks, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::pidTOFbeta>;
 
   void processJetShape(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, aod::JetTracks const& tracks, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
@@ -1079,7 +1223,7 @@ struct JetShapeTask {
     const float maxR2 = distanceMax * distanceMax;
 
     std::vector<TofHit2D> tofHits;
-    if (fillPid2DJet && fillPid2DMismatch) {
+    if (pid2DOpts.fillPid2DJet && pid2DOpts.fillPid2DMismatch) {
       collectTofHits<FullTrackInfo>(tracks, tofHits);
     }
 
@@ -1120,21 +1264,120 @@ struct JetShapeTask {
       const bool isTpcPiRange = (tpcPi > tpcNSigmaPiMin && tpcPi < tpcNSigmaPiMax);
       const bool isTpcPrRange = (tpcPr > tpcNSigmaPrMin && tpcPr < tpcNSigmaPrMax);
 
-      const bool inPid2DWindow = fillPid2DJet && passesNominal && passPrKinematics &&
-                                 centrality >= pid2DCentMin && centrality < pid2DCentMax &&
-                                 trkP >= pid2DPMin && trkP < pid2DPMax;
+      const bool inPid2DWindow = pid2DOpts.fillPid2DJet && passesNominal && passPrKinematics &&
+                                 centrality >= pid2DOpts.pid2DCentMin && centrality < pid2DOpts.pid2DCentMax &&
+                                 trkP >= pid2DOpts.pid2DPMin && trkP < pid2DOpts.pid2DPMax;
       const bool fillPid2DTrack = inPid2DWindow && track.hasTOF();
-      const bool fillPid2DTpcOnlyTrack = inPid2DWindow && fillPid2DTpcOnly;
+      const bool fillPid2DTpcOnlyTrack = inPid2DWindow && pid2DOpts.fillPid2DTpcOnly;
       const float hasTofBin = track.hasTOF() ? 1.5f : 0.5f;
+
+      // Pion / kaon hypothesis maps: same track and event selection, own p window and kinematics.
+      const bool inPid2DOther = pid2DOpts.fillPid2DJet && passesNominal && track.hasTOF() &&
+                                centrality >= pid2DOpts.pid2DCentMin && centrality < pid2DOpts.pid2DCentMax;
+      const bool fillPid2DPiTrack = inPid2DOther && pid2DOpts.fillPid2DPi && passPiKinematics &&
+                                    trkP >= pid2DOpts.pid2DPiPMin && trkP < pid2DOpts.pid2DPiPMax;
+      const bool fillPid2DKaTrack = inPid2DOther && pid2DOpts.fillPid2DKa && passSpeciesKinematics(trkPt, trkEta, KaonMass) &&
+                                    trkP >= pid2DOpts.pid2DKaPMin && trkP < pid2DOpts.pid2DKaPMax;
+      const float tpcKa = track.tpcNSigmaKa();
+      const float tofKa = track.tofNSigmaKa();
+
       std::array<float, 2> misNSigma{std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()};
+      std::array<float, 2> misNSigmaPi = misNSigma;
+      std::array<float, 2> misNSigmaKa = misNSigma;
+      if (pid2DOpts.fillPid2DMismatch && (fillPid2DTrack || fillPid2DPiTrack || fillPid2DKaTrack)) {
+        const auto misDt = mismatchDeltaT(track, tofHits);
+        misNSigma = mismatchNSigma(misDt, tofPr, track.tofExpSigmaPr());
+        misNSigmaPi = mismatchNSigma(misDt, tofPi, track.tofExpSigmaPi());
+        misNSigmaKa = mismatchNSigma(misDt, tofKa, track.tofExpSigmaKa());
+      }
       if (fillPid2DTrack) {
         registry.fill(HIST("pid2DIncPr"), trkP, tpcPr, tofPr);
         registry.fill(HIST("pid2DPVsPt"), trkP, trkPt, RegIncJet + 0.5f);
-        if (fillPid2DMismatch) {
-          misNSigma = mismatchNSigmaPr(track, tofHits);
-          fillMismatchTemplate(trkP, tpcPr, misNSigma, RegIncJet);
+        if (pid2DOpts.fillPid2DMismatch) {
+          fillMismatchTemplate<Hyp2DPr>(trkP, tpcPr, misNSigma, RegIncJet);
         }
       }
+      if (fillPid2DPiTrack) {
+        registry.fill(HIST("pid2DIncPi"), trkP, tpcPi, tofPi);
+        registry.fill(HIST("pid2DPVsPtPi"), trkP, trkPt, RegIncJet + 0.5f);
+        if (pid2DOpts.fillPid2DMismatch) {
+          fillMismatchTemplate<Hyp2DPi>(trkP, tpcPi, misNSigmaPi, RegIncJet);
+        }
+      }
+      if (fillPid2DKaTrack) {
+        registry.fill(HIST("pid2DIncKa"), trkP, tpcKa, tofKa);
+        registry.fill(HIST("pid2DPVsPtKa"), trkP, trkPt, RegIncJet + 0.5f);
+        if (pid2DOpts.fillPid2DMismatch) {
+          fillMismatchTemplate<Hyp2DKa>(trkP, tpcKa, misNSigmaKa, RegIncJet);
+        }
+      }
+      // Cone maps (signal / perp / random cone) of the pion and kaon hypotheses.
+      auto fillPid2DPiKaCone = [&](int region, float r, float jetPtForIndex) {
+        if (!fillPid2DPiTrack && !fillPid2DKaTrack) {
+          return;
+        }
+        const int idx = rJetIndex2D(r, jetPtForIndex);
+        if (idx < 0) {
+          return;
+        }
+        const float bin = idx + 0.5f;
+        if (fillPid2DPiTrack) {
+          if (region == RegSignal) {
+            registry.fill(HIST("pid2DJetPi"), trkP, tpcPi, tofPi, bin);
+          } else if (region == RegPerp) {
+            registry.fill(HIST("pid2DPerpPi"), trkP, tpcPi, tofPi, bin);
+          } else {
+            registry.fill(HIST("pid2DRandPi"), trkP, tpcPi, tofPi, bin);
+          }
+          registry.fill(HIST("pid2DPVsPtPi"), trkP, trkPt, region + 0.5f);
+          if (pid2DOpts.fillPid2DMismatch) {
+            fillMismatchTemplate<Hyp2DPi>(trkP, tpcPi, misNSigmaPi, region);
+          }
+        }
+        if (fillPid2DKaTrack) {
+          if (region == RegSignal) {
+            registry.fill(HIST("pid2DJetKa"), trkP, tpcKa, tofKa, bin);
+          } else if (region == RegPerp) {
+            registry.fill(HIST("pid2DPerpKa"), trkP, tpcKa, tofKa, bin);
+          } else {
+            registry.fill(HIST("pid2DRandKa"), trkP, tpcKa, tofKa, bin);
+          }
+          registry.fill(HIST("pid2DPVsPtKa"), trkP, trkPt, region + 0.5f);
+          if (pid2DOpts.fillPid2DMismatch) {
+            fillMismatchTemplate<Hyp2DKa>(trkP, tpcKa, misNSigmaKa, region);
+          }
+        }
+      };
+
+      // TPC-only cone maps (p and pi hypotheses, with and without TOF hit) for the low-p_T TPC-only yields.
+      const bool inTpcOnlyCone = pid2DOpts.fillPid2DJet && pid2DOpts.fillPid2DTpcOnly && passesNominal &&
+                                 centrality >= pid2DOpts.pid2DCentMin && centrality < pid2DOpts.pid2DCentMax &&
+                                 trkP >= pid2DOpts.pid2DPMin && trkP < pid2DOpts.pid2DTpcOnlyPMax;
+      const bool fillTpcOnlyConePr = inTpcOnlyCone && passPrKinematics;
+      const bool fillTpcOnlyConePi = inTpcOnlyCone && passPiKinematics;
+      const bool fillTpcOnlyConeKa = inTpcOnlyCone && passSpeciesKinematics(trkPt, trkEta, KaonMass);
+      auto fillTpcOnlyCone = [&](int region, float r, float jetPtForIndex) {
+        if (!fillTpcOnlyConePr && !fillTpcOnlyConePi && !fillTpcOnlyConeKa) {
+          return;
+        }
+        const int idx = rJetIndex2D(r, jetPtForIndex);
+        if (idx < 0) {
+          return;
+        }
+        constexpr int NCells2D = 28;
+        const float bin = idx + NCells2D * (region == RegSignal ? 0 : 1) + 0.5f;
+        if (fillTpcOnlyConePr) {
+          registry.fill(HIST("pid2DTpcOnlyConePr"), trkP, tpcPr, hasTofBin, bin);
+        }
+        if (fillTpcOnlyConePi) {
+          registry.fill(HIST("pid2DTpcOnlyConePi"), trkP, tpcPi, hasTofBin, bin);
+          registry.fill(HIST("pid2DTpcOnlyPi"), trkP, tpcPi, hasTofBin, region == RegSignal ? 1.5f : 2.5f);
+        }
+        if (fillTpcOnlyConeKa) {
+          registry.fill(HIST("pid2DTpcOnlyConeKa"), trkP, tpcKa, hasTofBin, bin);
+          registry.fill(HIST("pid2DTpcOnlyKa"), trkP, tpcKa, hasTofBin, region == RegSignal ? 1.5f : 2.5f);
+        }
+      };
 
       if (passesNominal && fillDetailedQA) {
         registry.fill(HIST("jetTpcPi"), trkP, tpcPi);
@@ -1170,12 +1413,14 @@ struct JetShapeTask {
               if (fillPid2DTrack) {
                 registry.fill(HIST("pid2DPerpPr"), trkP, tpcPr, tofPr, idx2D + 0.5f);
                 registry.fill(HIST("pid2DPVsPt"), trkP, trkPt, RegPerp + 0.5f);
-                if (fillPid2DMismatch) {
-                  fillMismatchTemplate(trkP, tpcPr, misNSigma, RegPerp);
+                if (pid2DOpts.fillPid2DMismatch) {
+                  fillMismatchTemplate<Hyp2DPr>(trkP, tpcPr, misNSigma, RegPerp);
                 }
               }
             }
           }
+          fillPid2DPiKaCone(RegPerp, distBg, jet.ptCorr);
+          fillTpcOnlyCone(RegPerp, distBg, jet.ptCorr);
 
           if (passesWideDca) {
             if (hasTofPr && isTpcPrRange) {
@@ -1222,12 +1467,14 @@ struct JetShapeTask {
             if (fillPid2DTrack) {
               registry.fill(HIST("pid2DJetPr"), trkP, tpcPr, tofPr, idx2D + 0.5f);
               registry.fill(HIST("pid2DPVsPt"), trkP, trkPt, RegSignal + 0.5f);
-              if (fillPid2DMismatch) {
-                fillMismatchTemplate(trkP, tpcPr, misNSigma, RegSignal);
+              if (pid2DOpts.fillPid2DMismatch) {
+                fillMismatchTemplate<Hyp2DPr>(trkP, tpcPr, misNSigma, RegSignal);
               }
             }
           }
         }
+        fillPid2DPiKaCone(RegSignal, distance, jet.ptCorr);
+        fillTpcOnlyCone(RegSignal, distance, jet.ptCorr);
 
         if (passesWideDca) {
           if (hasTofPr && isTpcPrRange) {
@@ -1277,11 +1524,12 @@ struct JetShapeTask {
           if (idx2D >= 0) {
             registry.fill(HIST("pid2DRandPr"), trkP, tpcPr, tofPr, idx2D + 0.5f);
             registry.fill(HIST("pid2DPVsPt"), trkP, trkPt, RegRand + 0.5f);
-            if (fillPid2DMismatch) {
-              fillMismatchTemplate(trkP, tpcPr, misNSigma, RegRand);
+            if (pid2DOpts.fillPid2DMismatch) {
+              fillMismatchTemplate<Hyp2DPr>(trkP, tpcPr, misNSigma, RegRand);
             }
           }
         }
+        fillPid2DPiKaCone(RegRand, distRC, cone.referenceJetPtCorr);
 
         if (passesWideDca) {
           if (hasTofPr && isTpcPrRange) {
@@ -1346,7 +1594,7 @@ struct JetShapeTask {
     registry.fill(HIST("eventCounterInc"), centrality);
 
     std::vector<TofHit2D> tofHits;
-    if (fillPid2D && fillPid2DMismatch) {
+    if (pid2DOpts.fillPid2D && pid2DOpts.fillPid2DMismatch) {
       collectTofHits<FullTrackInfo>(tracks, tofHits);
     }
 
@@ -1437,16 +1685,51 @@ struct JetShapeTask {
         }
       }
 
-      if (fillPid2D && passPrKinematics && centrality >= pid2DCentMin && centrality < pid2DCentMax &&
-          track.p() >= pid2DPMin && track.p() < pid2DPMax) {
-        if (fillPid2DTpcOnly) {
-          registry.fill(HIST("pid2DTpcOnlyPr"), track.p(), track.tpcNSigmaPr(), track.hasTOF() ? 1.5f : 0.5f, 0.5f);
+      // pid2D inclusive maps (all events, no jet bias), proton / pion / kaon hypotheses.
+      // One borrowed TOF hit per track serves the mismatch templates of all hypotheses.
+      if (pid2DOpts.fillPid2D && centrality >= pid2DOpts.pid2DCentMin && centrality < pid2DOpts.pid2DCentMax) {
+        const float trkP = track.p();
+        const bool inPr = passPrKinematics && trkP >= pid2DOpts.pid2DPMin && trkP < pid2DOpts.pid2DPMax;
+        const bool inPi = pid2DOpts.fillPid2DPi && track.hasTOF() && passPiKinematics && trkP >= pid2DOpts.pid2DPiPMin && trkP < pid2DOpts.pid2DPiPMax;
+        const bool inKa = pid2DOpts.fillPid2DKa && track.hasTOF() && passSpeciesKinematics(track.pt(), track.eta(), KaonMass) &&
+                          trkP >= pid2DOpts.pid2DKaPMin && trkP < pid2DOpts.pid2DKaPMax;
+        std::array<float, 2> misDt{std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()};
+        if (pid2DOpts.fillPid2DMismatch && ((inPr && track.hasTOF()) || inPi || inKa)) {
+          misDt = mismatchDeltaT(track, tofHits);
         }
-        if (track.hasTOF()) {
-          registry.fill(HIST("pid2DPr"), track.p(), track.tpcNSigmaPr(), track.tofNSigmaPr());
-          registry.fill(HIST("pid2DPVsPt"), track.p(), track.pt(), RegIncAll + 0.5f);
-          if (fillPid2DMismatch) {
-            fillMismatchTemplate(track.p(), track.tpcNSigmaPr(), mismatchNSigmaPr(track, tofHits), RegIncAll);
+        if (inPr) {
+          if (pid2DOpts.fillPid2DTpcOnly) {
+            registry.fill(HIST("pid2DTpcOnlyPr"), trkP, track.tpcNSigmaPr(), track.hasTOF() ? 1.5f : 0.5f, 0.5f);
+          }
+          if (track.hasTOF()) {
+            registry.fill(HIST("pid2DPr"), trkP, track.tpcNSigmaPr(), track.tofNSigmaPr());
+            registry.fill(HIST("pid2DPVsPt"), trkP, track.pt(), RegIncAll + 0.5f);
+            if (pid2DOpts.fillPid2DMismatch) {
+              fillMismatchTemplate<Hyp2DPr>(trkP, track.tpcNSigmaPr(), mismatchNSigma(misDt, track.tofNSigmaPr(), track.tofExpSigmaPr()), RegIncAll);
+            }
+          }
+        }
+        if (pid2DOpts.fillPid2DTpcOnly && trkP >= pid2DOpts.pid2DPMin && trkP < pid2DOpts.pid2DTpcOnlyPMax) {
+          const float hasTofBinInc = track.hasTOF() ? 1.5f : 0.5f;
+          if (passPiKinematics) {
+            registry.fill(HIST("pid2DTpcOnlyPi"), trkP, track.tpcNSigmaPi(), hasTofBinInc, 0.5f);
+          }
+          if (passSpeciesKinematics(track.pt(), track.eta(), KaonMass)) {
+            registry.fill(HIST("pid2DTpcOnlyKa"), trkP, track.tpcNSigmaKa(), hasTofBinInc, 0.5f);
+          }
+        }
+        if (inPi) {
+          registry.fill(HIST("pid2DPi"), trkP, track.tpcNSigmaPi(), track.tofNSigmaPi());
+          registry.fill(HIST("pid2DPVsPtPi"), trkP, track.pt(), RegIncAll + 0.5f);
+          if (pid2DOpts.fillPid2DMismatch) {
+            fillMismatchTemplate<Hyp2DPi>(trkP, track.tpcNSigmaPi(), mismatchNSigma(misDt, track.tofNSigmaPi(), track.tofExpSigmaPi()), RegIncAll);
+          }
+        }
+        if (inKa) {
+          registry.fill(HIST("pid2DKa"), trkP, track.tpcNSigmaKa(), track.tofNSigmaKa());
+          registry.fill(HIST("pid2DPVsPtKa"), trkP, track.pt(), RegIncAll + 0.5f);
+          if (pid2DOpts.fillPid2DMismatch) {
+            fillMismatchTemplate<Hyp2DKa>(trkP, track.tpcNSigmaKa(), mismatchNSigma(misDt, track.tofNSigmaKa(), track.tofExpSigmaKa()), RegIncAll);
           }
         }
       }
@@ -1477,8 +1760,197 @@ struct JetShapeTask {
   }
   PROCESS_SWITCH(JetShapeTask, processInclusiveProductionRatio, "inclusive Production ratio", false);
 
+  // ---- Lambda -> p pi and K0S -> pi pi daughters: TOF matching probability of identified p / pi on data.
+  using V0DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr,
+                                aod::pidTOFbeta, aod::TrackSelection>;
+  using V0Collisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>>;
+
+  // 0 = mass window (|m - m0| < w), 1 = side bands (2w <= |m - m0| < 3w; same total width), -1 = neither
+  static int v0MassRegion(float m, float m0, float halfWidth)
+  {
+    constexpr float SideLo = 2.f;
+    constexpr float SideHi = 3.f;
+    const float d = std::abs(m - m0);
+    if (d < halfWidth) {
+      return 0;
+    }
+    if (d >= SideLo * halfWidth && d < SideHi * halfWidth) {
+      return 1;
+    }
+    return -1;
+  }
+
+  // Same track quality as the analysis tracks, without the DCA cut (the daughters are secondaries).
+  template <bool IsProton, typename TrackT>
+  void fillPid2DV0Daughter(TrackT const& dau, int massRegion, float radius)
+  {
+    if (!passCommonTrackQuality(dau) || !dau.isQualityTrackITS() || !dau.isQualityTrackTPC()) {
+      return;
+    }
+    const float p = dau.p();
+    if (p < pid2DOpts.pid2DV0PMin || p >= pid2DOpts.pid2DV0PMax) {
+      return;
+    }
+    constexpr float NoTofValue = -999.f;
+    const bool hasTof = dau.hasTOF();
+    const float status = (hasTof ? 1.f : 0.f) + 2.f * massRegion + 0.5f;
+    if constexpr (IsProton) {
+      registry.fill(HIST("pid2DV0Pr"), p, dau.tpcNSigmaPr(), hasTof ? dau.tofNSigmaPr() : NoTofValue, status, radius);
+    } else {
+      registry.fill(HIST("pid2DV0Pi"), p, dau.tpcNSigmaPi(), hasTof ? dau.tofNSigmaPi() : NoTofValue, status, radius);
+    }
+  }
+
+  // Same event selection as the JE collisions of the other processes (eventSelections bits and the RCT flags),
+  // rebuilt from the EvSels columns: the TOF matching probability depends on the pileup / occupancy selection.
+  template <typename CollisionT>
+  bool passPid2DV0EventSelection(CollisionT const& collision)
+  {
+    if (applyRctSelection && !pid2DV0RctChecker.checkTable(collision)) {
+      return false;
+    }
+    const uint16_t bits = jetderiveddatautilities::setEventSelectionBit(collision);
+    bool isOrCondition = false;
+    for (const auto& bit : eventSelectionBits) {
+      if (bit < 0) {
+        isOrCondition = true;
+        continue;
+      }
+      const bool isSet = (bits & (1U << bit)) != 0;
+      if (!isOrCondition && !isSet) {
+        return false;
+      }
+      if (isOrCondition && isSet) {
+        return true;
+      }
+    }
+    return !isOrCondition;
+  }
+
+  void processPid2DV0Daughters(V0Collisions::iterator const& collision, V0DauTracks const&, aod::V0Datas const& v0s)
+  {
+    if (!passPid2DV0EventSelection(collision)) {
+      return;
+    }
+    const float centrality = collision.centFT0M();
+    if (centrality < pid2DOpts.pid2DCentMin || centrality >= pid2DOpts.pid2DCentMax) {
+      return;
+    }
+    registry.fill(HIST("pid2DV0Events"), centrality);
+    constexpr float MassLambda = o2::constants::physics::MassLambda0;
+    constexpr float MassK0S = o2::constants::physics::MassK0Short;
+    constexpr float PionDauTpcNSigmaMax = 5.f; // the pion of a Lambda is slow: clean TPC selection, no bias on the proton
+    constexpr float LambdaVetoFraction = 0.5f; // K0S candidates are vetoed within half of the window around the Lambda mass
+    const float veto = pid2DOpts.pid2DV0CompetingVeto;
+    for (const auto& v0 : v0s) {
+      if (v0.v0cosPA() < pid2DOpts.pid2DV0CosPAMin || v0.dcaV0daughters() > pid2DOpts.pid2DV0DcaDauMax) {
+        continue;
+      }
+      const float radius = v0.v0radius();
+      if (radius < pid2DOpts.pid2DV0RadiusMin || radius > pid2DOpts.pid2DV0RadiusMax) {
+        continue;
+      }
+      if (std::abs(v0.dcapostopv()) < pid2DOpts.pid2DV0DcaDauToPvMin || std::abs(v0.dcanegtopv()) < pid2DOpts.pid2DV0DcaDauToPvMin) {
+        continue;
+      }
+      const auto pos = v0.template posTrack_as<V0DauTracks>();
+      const auto neg = v0.template negTrack_as<V0DauTracks>();
+      const bool k0sLike = std::abs(v0.mK0Short() - MassK0S) < veto;
+      const bool lambdaLike = std::abs(v0.mLambda() - MassLambda) < LambdaVetoFraction * veto || std::abs(v0.mAntiLambda() - MassLambda) < LambdaVetoFraction * veto;
+      if (!k0sLike) {
+        // Lambda: proton = positive daughter, pi- = negative. Anti-Lambda: antiproton = negative daughter.
+        if (std::abs(neg.tpcNSigmaPi()) < PionDauTpcNSigmaMax) {
+          registry.fill(HIST("pid2DV0MassLambda"), v0.pt(), v0.mLambda());
+          const int region = v0MassRegion(v0.mLambda(), MassLambda, pid2DOpts.pid2DV0LambdaWindow);
+          if (region >= 0) {
+            fillPid2DV0Daughter<true>(pos, region, radius);
+          }
+        }
+        if (std::abs(pos.tpcNSigmaPi()) < PionDauTpcNSigmaMax) {
+          registry.fill(HIST("pid2DV0MassLambda"), v0.pt(), v0.mAntiLambda());
+          const int region = v0MassRegion(v0.mAntiLambda(), MassLambda, pid2DOpts.pid2DV0LambdaWindow);
+          if (region >= 0) {
+            fillPid2DV0Daughter<true>(neg, region, radius);
+          }
+        }
+      }
+      if (!lambdaLike) {
+        registry.fill(HIST("pid2DV0MassK0S"), v0.pt(), v0.mK0Short());
+        const int region = v0MassRegion(v0.mK0Short(), MassK0S, pid2DOpts.pid2DV0K0SWindow);
+        if (region >= 0) {
+          fillPid2DV0Daughter<false>(pos, region, radius);
+          fillPid2DV0Daughter<false>(neg, region, radius);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(JetShapeTask, processPid2DV0Daughters, "Lambda / K0S daughters: data TOF matching probability of identified p / pi (needs the V0 tables, e.g. from the propagation service)", false);
+
+  // MC: TPC-only maps of all reconstructed tracks (with and without TOF) with the true species, origin and TOF status.
+  template <typename JetTrackT, typename TrackT>
+  void fillPid2DMcTpcOnlyTrack(JetTrackT const& jetTrack, TrackT const& track)
+  {
+    constexpr int SpPi = 0;
+    constexpr int SpKa = 1;
+    constexpr int SpPr = 2;
+    constexpr int SpEl = 3;
+    constexpr int SpMu = 4;
+    constexpr int SpOther = 5;
+    constexpr int NSpecies = 6;
+    constexpr int TofNone = 0;
+    constexpr int TofGood = 1;
+    constexpr int TofBad = 2;
+    int species = SpOther;
+    int origin = 1;
+    float tofTrue = 0.f;
+    if (jetTrack.has_mcParticle()) {
+      const auto mcPart = jetTrack.template mcParticle_as<aod::JetParticles>();
+      origin = mcPart.isPhysicalPrimary() ? 0 : 1;
+      switch (std::abs(mcPart.pdgCode())) {
+        case PDG_t::kPiPlus:
+          species = SpPi;
+          tofTrue = track.tofNSigmaPi();
+          break;
+        case PDG_t::kKPlus:
+          species = SpKa;
+          tofTrue = track.tofNSigmaKa();
+          break;
+        case PDG_t::kProton:
+          species = SpPr;
+          tofTrue = track.tofNSigmaPr();
+          break;
+        case PDG_t::kElectron:
+          species = SpEl;
+          tofTrue = track.tofNSigmaPi();
+          break;
+        case PDG_t::kMuonMinus:
+          species = SpMu;
+          tofTrue = track.tofNSigmaPi();
+          break;
+        default:
+          break;
+      }
+    }
+    int tofStatus = TofNone;
+    if (track.hasTOF()) {
+      tofStatus = (species != SpOther && std::abs(tofTrue) > pid2DOpts.pid2DMcTofBadNSigma) ? TofBad : TofGood;
+    }
+    const float index = species + NSpecies * (origin + 2 * tofStatus) + 0.5f;
+    const float trkP = track.p();
+    if (passSpeciesKinematics(track.pt(), track.eta(), ProtonMass)) {
+      registry.fill(HIST("mcPid2DTpcOnlyPr"), trkP, track.tpcNSigmaPr(), index);
+    }
+    if (passSpeciesKinematics(track.pt(), track.eta(), PionMass)) {
+      registry.fill(HIST("mcPid2DTpcOnlyPi"), trkP, track.tpcNSigmaPi(), index);
+    }
+    if (passSpeciesKinematics(track.pt(), track.eta(), KaonMass)) {
+      registry.fill(HIST("mcPid2DTpcOnlyKa"), trkP, track.tpcNSigmaKa(), index);
+    }
+  }
+
   template <typename JetTrackT, typename TrackT, typename JetT>
-  void fillPid2DMcTrack(JetTrackT const& jetTrack, TrackT const& track, std::vector<JetT> const& jets, float maxR2)
+  void fillPid2DMcTrack(JetTrackT const& jetTrack, TrackT const& track, std::vector<JetT> const& jets, float maxR2,
+                        bool inPr, bool inPi, bool inKa)
   {
     constexpr int SpPi = 0;
     constexpr int SpKa = 1;
@@ -1529,8 +2001,21 @@ struct JetShapeTask {
           break;
       }
     }
-    const int tofBad = (species != SpOther && std::abs(tofTrue) > pid2DMcTofBadNSigma) ? 1 : 0;
-    registry.fill(HIST("mcPid2DIncPr"), trkP, tpcPr, tofPr, species + NSpecies * (origin + 2 * tofBad) + 0.5f);
+    const int tofBad = (species != SpOther && std::abs(tofTrue) > pid2DOpts.pid2DMcTofBadNSigma) ? 1 : 0;
+    const float incIndex = species + NSpecies * (origin + 2 * tofBad) + 0.5f;
+    const float tpcPi = track.tpcNSigmaPi();
+    const float tofPi = track.tofNSigmaPi();
+    const float tpcKa = track.tpcNSigmaKa();
+    const float tofKa = track.tofNSigmaKa();
+    if (inPr) {
+      registry.fill(HIST("mcPid2DIncPr"), trkP, tpcPr, tofPr, incIndex);
+    }
+    if (inPi) {
+      registry.fill(HIST("mcPid2DIncPi"), trkP, tpcPi, tofPi, incIndex);
+    }
+    if (inKa) {
+      registry.fill(HIST("mcPid2DIncKa"), trkP, tpcKa, tofKa, incIndex);
+    }
 
     const int speciesCone = std::min(species, NSpeciesCone - 1);
     auto coneIndex = [&](float r) {
@@ -1553,7 +2038,16 @@ struct JetShapeTask {
       if (distSq < maxR2) {
         const float r = std::sqrt(distSq);
         if (r < RMax2D) {
-          registry.fill(HIST("mcPid2DJetPr"), trkP, tpcPr, tofPr, coneIndex(r));
+          const float index = coneIndex(r);
+          if (inPr) {
+            registry.fill(HIST("mcPid2DJetPr"), trkP, tpcPr, tofPr, index);
+          }
+          if (inPi) {
+            registry.fill(HIST("mcPid2DJetPi"), trkP, tpcPi, tofPi, index);
+          }
+          if (inKa) {
+            registry.fill(HIST("mcPid2DJetKa"), trkP, tpcKa, tofKa, index);
+          }
         }
       }
       // Both perpendicular cones, as for pid2DPerpPr in data.
@@ -1563,7 +2057,16 @@ struct JetShapeTask {
         if (distBgSq < maxR2) {
           const float rBg = std::sqrt(distBgSq);
           if (rBg < RMax2D) {
-            registry.fill(HIST("mcPid2DPerpPr"), trkP, tpcPr, tofPr, coneIndex(rBg));
+            const float index = coneIndex(rBg);
+            if (inPr) {
+              registry.fill(HIST("mcPid2DPerpPr"), trkP, tpcPr, tofPr, index);
+            }
+            if (inPi) {
+              registry.fill(HIST("mcPid2DPerpPi"), trkP, tpcPi, tofPi, index);
+            }
+            if (inKa) {
+              registry.fill(HIST("mcPid2DPerpKa"), trkP, tpcKa, tofKa, index);
+            }
           }
         }
       }
@@ -1782,11 +2285,20 @@ struct JetShapeTask {
         continue;
       }
 
-      if (fillPid2DMc && passesNominal && track.hasTOF() && !validJets.empty() &&
-          centrality >= pid2DCentMin && centrality < pid2DCentMax &&
-          track.p() >= pid2DPMin && track.p() < pid2DPMax &&
-          passSpeciesKinematics(track.pt(), track.eta(), ProtonMass)) {
-        fillPid2DMcTrack(jetTrack, track, validJets, maxR2);
+      if (pid2DOpts.fillPid2DMc && pid2DOpts.fillPid2DTpcOnly && passesNominal && !validJets.empty() &&
+          centrality >= pid2DOpts.pid2DCentMin && centrality < pid2DOpts.pid2DCentMax &&
+          track.p() >= pid2DOpts.pid2DPMin && track.p() < pid2DOpts.pid2DTpcOnlyPMax) {
+        fillPid2DMcTpcOnlyTrack(jetTrack, track);
+      }
+      if (pid2DOpts.fillPid2DMc && passesNominal && track.hasTOF() && !validJets.empty() &&
+          centrality >= pid2DOpts.pid2DCentMin && centrality < pid2DOpts.pid2DCentMax) {
+        const float trkPMc = track.p();
+        const bool inPr = trkPMc >= pid2DOpts.pid2DPMin && trkPMc < pid2DOpts.pid2DPMax && passSpeciesKinematics(track.pt(), track.eta(), ProtonMass);
+        const bool inPi = pid2DOpts.fillPid2DPi && trkPMc >= pid2DOpts.pid2DPiPMin && trkPMc < pid2DOpts.pid2DPiPMax && passSpeciesKinematics(track.pt(), track.eta(), PionMass);
+        const bool inKa = pid2DOpts.fillPid2DKa && trkPMc >= pid2DOpts.pid2DKaPMin && trkPMc < pid2DOpts.pid2DKaPMax && passSpeciesKinematics(track.pt(), track.eta(), KaonMass);
+        if (inPr || inPi || inKa) {
+          fillPid2DMcTrack(jetTrack, track, validJets, maxR2, inPr, inPi, inKa);
+        }
       }
 
       if (!jetTrack.has_mcParticle()) {

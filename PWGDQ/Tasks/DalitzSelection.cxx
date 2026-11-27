@@ -87,8 +87,31 @@ constexpr static uint32_t EventFillMapWithCent = VarManager::ObjTypes::Collision
 constexpr static uint32_t TrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackPID;
 constexpr static uint32_t TrackFillMapNoTOF = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackTPCPID;
 
+// table with basic information from tag and probe method (track quality variables only for the probe to limit data size)
+namespace o2::aod
+{
+namespace dqdalitzelectrons
+{
+DECLARE_SOA_COLUMN(FilterMap, filterMap, uint8_t);
+DECLARE_SOA_COLUMN(Pt1, pt1, float); // pt*sign
+DECLARE_SOA_COLUMN(Eta1, eta1, float);
+DECLARE_SOA_COLUMN(Phi1, phi1, float);
+DECLARE_SOA_COLUMN(Pt2, pt2, float); // pt*sign
+DECLARE_SOA_COLUMN(Eta2, eta2, float);
+DECLARE_SOA_COLUMN(Phi2, phi2, float);
+DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int16_t);
+} // namespace dqdalitzelectrons
+DECLARE_SOA_TABLE(DalitzElectrons, "AOD", "DQDALITZSEL", dqdalitzelectrons::FilterMap,
+                  dqdalitzelectrons::Pt1, dqdalitzelectrons::Eta1, dqdalitzelectrons::Phi1,
+                  dqdalitzelectrons::Pt2, dqdalitzelectrons::Eta2, dqdalitzelectrons::Phi2,
+                  o2::aod::track::ITSClusterMap, o2::aod::track::TPCChi2NCl, dqdalitzelectrons::TPCNClsFound,
+                  o2::aod::track::DcaXY, o2::aod::track::DcaZ,
+                  cent::CentFT0C, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange);
+} // namespace o2::aod
+
 struct DalitzSelection {
   Produces<o2::aod::DalitzBits> dalitzbits;
+  Produces<o2::aod::DalitzElectrons> dalitzInfo;
   Preslice<MyBarrelTracks> perCollision = aod::track::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
@@ -176,7 +199,7 @@ struct DalitzSelection {
     // Event cuts
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigCuts.fConfigEventCuts.value;
-    fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+    fEventCut->addCut(dqcuts::getAnalysisCut(eventCutStr.Data()));
 
     // Barrel track cuts
     // Tag cuts or symmetric cuts
@@ -184,13 +207,13 @@ struct DalitzSelection {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     // extra cuts via JSON
     TString addTrackCutsStr = fConfigCuts.fConfigTrackCutsJSON.value;
     if (addTrackCutsStr != "") {
-      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::getCutsFromJSON(addTrackCutsStr.Data());
       for (const auto& t : addTrackCuts) {
         fTrackCuts.push_back(*dynamic_cast<AnalysisCompositeCut*>(t));
       }
@@ -202,13 +225,13 @@ struct DalitzSelection {
     if (!cutNamesProbeStr.IsNull() && (cutNamesProbeStr.CompareTo(cutNamesStr) != 0 || addTrackCutsProbeStr.CompareTo(addTrackCutsStr) != 0)) {
       std::unique_ptr<TObjArray> objArray(cutNamesProbeStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCutsProbe.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCutsProbe.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
       fIsTagAndProbe = true;
     }
     // extra cuts via JSON
     if (addTrackCutsProbeStr != "" && (cutNamesProbeStr.CompareTo(cutNamesStr) != 0 || addTrackCutsProbeStr.CompareTo(addTrackCutsStr) != 0)) {
-      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsProbeStr.Data());
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::getCutsFromJSON(addTrackCutsProbeStr.Data());
       for (const auto& t : addTrackCuts) {
         fTrackCutsProbe.push_back(*dynamic_cast<AnalysisCompositeCut*>(t));
       }
@@ -220,13 +243,13 @@ struct DalitzSelection {
     if (!cutNamesPairStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesPairStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fPairCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fPairCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     // extra cuts via JSON
     TString addPairCutsStr = fConfigCuts.fConfigPairCutsJSON.value;
     if (addPairCutsStr != "") {
-      std::vector<AnalysisCut*> addPairCuts = dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
+      std::vector<AnalysisCut*> addPairCuts = dqcuts::getCutsFromJSON(addPairCutsStr.Data());
       for (const auto& t : addPairCuts) {
         fPairCuts.push_back(*dynamic_cast<AnalysisCompositeCut*>(t));
       }
@@ -385,30 +408,7 @@ struct DalitzSelection {
         VarManager::FillTrack<TTrackFillMap>(fullTrack);
         VarManager::FillTrackCollision<TTrackFillMap>(fullTrack, collision);
         // if the track is TPC only, we shift it in z to be compatible with vertex time
-        if (!fullTrack.hasITS() && !fullTrack.hasTOF() && !fullTrack.hasTRD() && fVdrift > 0. && fConfigOptions.fConfigShiftTPConly) {
-          float tTB = 0.;
-          if (collision.collisionTimeRes() < 0.f || fullTrack.collisionId() < 0) { // use track data
-            tTB = fullTrack.trackTime();
-          } else {
-            // The TPC track can be associated to a different BC than the one the collision under assumption is;
-            // we need to calculate the difference and subtract this from the trackTime()
-            const auto trackBC = fullTrack.template collision_as<MyEventsWithCent>().template bc_as<aod::BCsWithTimestamps>().globalBC();
-            const auto colBC = collision.template foundBC_as<aod::BCsWithTimestamps>().globalBC();
-            float sign{1.f};
-            uint64_t diffBC{0};
-            if (colBC < trackBC) {
-              sign = -1.f;
-              diffBC = (trackBC - colBC);
-            } else {
-              diffBC = (colBC - trackBC);
-            }
-            float diffBCNS = sign * static_cast<float>(diffBC) * static_cast<float>(o2::constants::lhc::LHCBunchSpacingNS);
-            tTB = collision.collisionTime() + diffBCNS;
-          }
-          float dTime = tTB - fullTrack.trackTime();
-          float dDrift = dTime * fVdrift;
-          VarManager::fgValues[VarManager::kTrackDCAz] += ((fullTrack.tgl() < 0.) ? -dDrift : dDrift);
-        }
+        shiftDCAz(fullTrack, collision);
         fullTrackIdx = fullTrack.globalIndex();
       } else {
         VarManager::FillTrack<TTrackFillMap>(track1);
@@ -416,7 +416,7 @@ struct DalitzSelection {
       }
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
-        if ((*cut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
+        if ((*cut).isSelected(static_cast<float*>(VarManager::fgValues))) {
           filterMap |= (static_cast<uint8_t>(1) << i);
           fSkipEvent = false;
         }
@@ -424,7 +424,7 @@ struct DalitzSelection {
       if (fIsTagAndProbe) {
         i = 0;
         for (auto cut = fTrackCutsProbe.begin(); cut != fTrackCutsProbe.end(); ++cut, ++i) {
-          if ((*cut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
+          if ((*cut).isSelected(static_cast<float*>(VarManager::fgValues))) {
             filterMapProbe |= (static_cast<uint8_t>(1) << i);
           }
         }
@@ -531,11 +531,12 @@ struct DalitzSelection {
         // Fill pair selection map and fill pair histogram
         int icut = 0;
         auto trackCut = fTrackCuts.begin();
+        uint8_t pairFilterMap = static_cast<uint8_t>(0);
         for (auto pairCut = fPairCuts.begin(); pairCut != fPairCuts.end(); pairCut++, trackCut++, icut++) {
           if (!(twoTracksFilterMap & (static_cast<uint8_t>(1) << icut))) {
             continue;
           }
-          if ((*pairCut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
+          if ((*pairCut).isSelected(static_cast<float*>(VarManager::fgValues))) {
             fSkipEvent = false;
             bool isPairAlreadySelected = false;
             if (isReassoc & fConfigOptions.fRemoveDoubleCounting) {
@@ -550,6 +551,9 @@ struct DalitzSelection {
               } else {
                 fAmbiguousPairs[iPair] = static_cast<uint8_t>(1) << icut;
               }
+            }
+            if (!isPairAlreadySelected) {
+              pairFilterMap |= (static_cast<uint8_t>(1) << icut);
             }
             if (!isLikeSign) {
               if (isReassoc & fConfigOptions.fRemoveDoubleCounting) {
@@ -588,6 +592,25 @@ struct DalitzSelection {
             } // end if like-sign
           } // end if isSelected
         } // end cut loop
+
+        if (pairFilterMap) {
+          if constexpr (isReassoc) {
+            auto const& fullTrack1 = track1.template track_as<TFullTracks>();
+            auto const& fullTrack2 = track2.template track_as<TFullTracks>();
+            VarManager::FillTrackCollision<TTrackFillMap>(fullTrack2, collision);
+            shiftDCAz(fullTrack2, collision);
+            dalitzInfo(pairFilterMap, fullTrack1.pt() * fullTrack1.sign(), fullTrack1.eta(), fullTrack1.phi(),
+                       fullTrack2.pt() * fullTrack2.sign(), fullTrack2.eta(), fullTrack2.phi(),
+                       fullTrack2.itsClusterMap(), fullTrack2.tpcChi2NCl(), fullTrack2.tpcNClsFound() == 256 ? 0 : fullTrack2.tpcNClsFound(),
+                       VarManager::fgValues[VarManager::kTrackDCAxy], VarManager::fgValues[VarManager::kTrackDCAz],
+                       collision.centFT0C(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+          } else {
+            dalitzInfo(pairFilterMap, track1.pt() * track1.sign(), track1.eta(), track1.phi(), track2.pt() * track2.sign(), track2.eta(), track2.phi(),
+                       track2.itsClusterMap(), track2.tpcChi2NCl(), track2.tpcNClsFound() == 256 ? 0 : track2.tpcNClsFound(),
+                       track2.dcaXY(), track2.dcaZ(),
+                       collision.centFT0C(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+          }
+        }
       }
     } // end of tracksP,N loop
 
@@ -619,30 +642,7 @@ struct DalitzSelection {
           // The caveat here is that we only fill the DCA to the first selected collision
           VarManager::FillTrackCollision<TTrackFillMap>(fullTrack, collision);
           // if the track is TPC only, we shift it in z to be compatible with vertex time
-          if (!fullTrack.hasITS() && !fullTrack.hasTOF() && !fullTrack.hasTRD() && fVdrift > 0. && fConfigOptions.fConfigShiftTPConly) {
-            float tTB = 0.;
-            if (collision.collisionTimeRes() < 0.f || fullTrack.collisionId() < 0) { // use track data
-              tTB = fullTrack.trackTime();
-            } else {
-              // The TPC track can be associated to a different BC than the one the collision under assumption is;
-              // we need to calculate the difference and subtract this from the trackTime()
-              const auto trackBC = fullTrack.template collision_as<MyEventsWithCent>().template bc_as<aod::BCsWithTimestamps>().globalBC();
-              const auto colBC = collision.template foundBC_as<aod::BCsWithTimestamps>().globalBC();
-              float sign{1.f};
-              uint64_t diffBC{0};
-              if (colBC < trackBC) {
-                sign = -1.f;
-                diffBC = (trackBC - colBC);
-              } else {
-                diffBC = (colBC - trackBC);
-              }
-              float diffBCNS = sign * static_cast<float>(diffBC) * static_cast<float>(o2::constants::lhc::LHCBunchSpacingNS);
-              tTB = collision.collisionTime() + diffBCNS;
-            }
-            float dTime = tTB - fullTrack.trackTime();
-            float dDrift = dTime * fVdrift;
-            VarManager::fgValues[VarManager::kTrackDCAz] += ((fullTrack.tgl() < 0.) ? -dDrift : dDrift);
-          }
+          shiftDCAz(fullTrack, collision);
         } else {
           filterMap = fDalitzmap[track.globalIndex()];
           filterMapProbe = fDalitzmapProbe[track.globalIndex()];
@@ -667,6 +667,36 @@ struct DalitzSelection {
           }
         }
       }
+    }
+  }
+
+  template <typename TTracks, typename TEvent>
+  void shiftDCAz(TTracks const& track, TEvent const& collision)
+  {
+    // shift track DCAz from the var manager if track is a TPC only track
+    if (!track.hasITS() && !track.hasTOF() && !track.hasTRD() && fVdrift > 0. && fConfigOptions.fConfigShiftTPConly) {
+      float tTB = 0.;
+      if (collision.collisionTimeRes() < 0.f || track.collisionId() < 0) { // use track data
+        tTB = track.trackTime();
+      } else {
+        // The TPC track can be associated to a different BC than the one the collision under assumption is;
+        // we need to calculate the difference and subtract this from the trackTime()
+        const auto trackBC = track.template collision_as<MyEventsWithCent>().template bc_as<aod::BCsWithTimestamps>().globalBC();
+        const auto colBC = collision.template foundBC_as<aod::BCsWithTimestamps>().globalBC();
+        float sign{1.f};
+        uint64_t diffBC{0};
+        if (colBC < trackBC) {
+          sign = -1.f;
+          diffBC = (trackBC - colBC);
+        } else {
+          diffBC = (colBC - trackBC);
+        }
+        float diffBCNS = sign * static_cast<float>(diffBC) * static_cast<float>(o2::constants::lhc::LHCBunchSpacingNS);
+        tTB = collision.collisionTime() + diffBCNS;
+      }
+      float dTime = tTB - track.trackTime();
+      float dDrift = dTime * fVdrift;
+      VarManager::fgValues[VarManager::kTrackDCAz] += ((track.tgl() < 0.) ? -dDrift : dDrift);
     }
   }
 
@@ -703,7 +733,7 @@ struct DalitzSelection {
           }
           bool isLS = (t1.filteringFlags & (static_cast<uint32_t>(1) << 8)) == (t2.filteringFlags & (static_cast<uint32_t>(1) << 8));
           for (uint32_t icut = 0; icut < fPairCuts.size(); icut++) {
-            if (((mixedTwoTrackFilter & (static_cast<uint8_t>(1) << icut)) != 0) && fPairCuts.at(icut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
+            if (((mixedTwoTrackFilter & (static_cast<uint8_t>(1) << icut)) != 0) && fPairCuts.at(icut).isSelected(static_cast<float*>(VarManager::fgValues))) {
               if (fIsTagAndProbe) {
                 if (!isLS) {
                   fHistMan->FillHistClass(Form("PairME_%s_%s_%s", fTrackCuts.at(icut).GetName(), fTrackCutsProbe.at(icut).GetName(), fPairCuts.at(icut).GetName()), static_cast<float*>(VarManager::fgValues));
@@ -741,7 +771,7 @@ struct DalitzSelection {
             }
             bool isLS = (t1.filteringFlags & (static_cast<uint32_t>(1) << 8)) == (t2.filteringFlags & (static_cast<uint32_t>(1) << 8));
             for (uint32_t icut = 0; icut < fPairCuts.size(); icut++) {
-              if (((mixedTwoTrackFilter & (static_cast<uint8_t>(1) << icut)) != 0) && fPairCuts.at(icut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
+              if (((mixedTwoTrackFilter & (static_cast<uint8_t>(1) << icut)) != 0) && fPairCuts.at(icut).isSelected(static_cast<float*>(VarManager::fgValues))) {
                 if (!isLS) {
                   fHistMan->FillHistClass(Form("PairME_%s_%s_%s", fTrackCuts.at(icut).GetName(), fTrackCutsProbe.at(icut).GetName(), fPairCuts.at(icut).GetName()), static_cast<float*>(VarManager::fgValues));
                 } else {
@@ -818,7 +848,7 @@ struct DalitzSelection {
       fTrackmapProbe.clear();
       VarManager::ResetValues(VarManager::kNRunWiseVariables, VarManager::kNBarrelTrackVariables);
       VarManager::FillEvent<EventFillMapWithCent>(collision);
-      bool isEventSelected = fEventCut->IsSelected(static_cast<float*>(VarManager::fgValues));
+      bool isEventSelected = fEventCut->isSelected(static_cast<float*>(VarManager::fgValues));
 
       if (isEventSelected) {
         dynamic_cast<TH1I*>(fStatsList->At(0))->Fill(0);
@@ -842,7 +872,7 @@ struct DalitzSelection {
         auto groupedFilteredTracks = filteredTracks.sliceBy(perCollision, collision.globalIndex());
         runTrackSelection<false, TrackFillMap, MyBarrelTracks>(groupedFilteredTracks, nullptr);
         if (!fSkipEvent) {
-          runDalitzPairing<false, pairType, TrackFillMap, MyBarrelTracks>(groupedFilteredTracks, groupedFilteredTracks, nullptr);
+          runDalitzPairing<false, pairType, TrackFillMap, MyBarrelTracks>(groupedFilteredTracks, groupedFilteredTracks, collision);
         }
 
         if (fConfigOptions.fRunEventMixing) {
@@ -892,7 +922,7 @@ struct DalitzSelection {
       fTrackmapProbe.clear();
       VarManager::ResetValues(VarManager::kNRunWiseVariables, VarManager::kNBarrelTrackVariables);
       VarManager::FillEvent<EventFillMapWithCent>(collision);
-      bool isEventSelected = fEventCut->IsSelected(static_cast<float*>(VarManager::fgValues));
+      bool isEventSelected = fEventCut->isSelected(static_cast<float*>(VarManager::fgValues));
 
       if (isEventSelected) {
 
@@ -967,7 +997,7 @@ struct DalitzSelection {
       fTrackmapProbe.clear();
       VarManager::ResetValues(VarManager::kNRunWiseVariables, VarManager::kNBarrelTrackVariables);
       VarManager::FillEvent<EventFillMapWithCent>(collision);
-      bool isEventSelected = fEventCut->IsSelected(static_cast<float*>(VarManager::fgValues));
+      bool isEventSelected = fEventCut->isSelected(static_cast<float*>(VarManager::fgValues));
 
       if (isEventSelected) {
 

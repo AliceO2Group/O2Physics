@@ -234,13 +234,13 @@ struct Alice3DqTableMaker {
   {
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigCuts.cfgEventCuts.value;
-    fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+    fEventCut->addCut(dqcuts::getAnalysisCut(eventCutStr.Data()));
 
     TString addEvCutsStr = fConfigCuts.cfgEventCutsJSON.value;
     if (addEvCutsStr != "") {
-      std::vector<AnalysisCut*> addEvCuts = dqcuts::GetCutsFromJSON(addEvCutsStr.Data());
+      std::vector<AnalysisCut*> addEvCuts = dqcuts::getCutsFromJSON(addEvCutsStr.Data());
       for (const auto& cutIt : addEvCuts) {
-        fEventCut->AddCut(cutIt);
+        fEventCut->addCut(cutIt);
       }
     }
 
@@ -249,13 +249,13 @@ struct Alice3DqTableMaker {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.push_back(dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     // Additional Barrel track cuts via JSON
     TString addTrackCutsStr = fConfigCuts.cfgBarrelTrackCutsJSON.value;
     if (addTrackCutsStr != "") {
-      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::getCutsFromJSON(addTrackCutsStr.Data());
       for (const auto& t : addTrackCuts) {
         fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
       }
@@ -441,7 +441,7 @@ struct Alice3DqTableMaker {
       }
 
       // Apply the user specified event selection
-      if (!fEventCut->IsSelected(dqefficiency_helpers::varValues())) {
+      if (!fEventCut->isSelected(dqefficiency_helpers::varValues())) {
         continue;
       }
 
@@ -500,7 +500,7 @@ struct Alice3DqTableMaker {
 
       int n = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, n++) {
-        if ((*cut)->IsSelected(dqefficiency_helpers::varValues())) {
+        if ((*cut)->isSelected(dqefficiency_helpers::varValues())) {
           trackTempFilterMap |= (static_cast<uint32_t>(1) << n);
           if (fConfigHistOutput.cfgQA) {
             fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut)->GetName()), dqefficiency_helpers::varValues());

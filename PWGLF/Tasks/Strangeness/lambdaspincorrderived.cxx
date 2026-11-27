@@ -353,8 +353,6 @@ struct lambdaspincorrderived {
   Configurable<int> cfgV5NeighborPhi{"cfgV5NeighborPhi", 0, "v5: neighbor bins in phi (use symmetric ±N, periodic wrap)"};
   Configurable<int> cfgV5MaxMatches{"cfgV5MaxMatches", 50, "v5: max ME replacements per SE pair (after all cuts)"};
 
-  Configurable<int> cfgV6MinMatches{"cfgV6MinMatches", 5, "Minimum accepted ME pairs per replacement branch; <=0 disables threshold"};
-
   Configurable<uint64_t> cfgMixSeed{"cfgMixSeed", 0xdecafbadULL, "RNG seed for downsampling matches (deterministic)"};
   Configurable<bool> cfgV6CarryUnmatched{"cfgV6CarryUnmatched", false, "Carry data and MC V6 replacement branches with zero matches to later data frames"};
   Configurable<int> cfgV6MaxPendingBranches{"cfgV6MaxPendingBranches", 0, "Maximum retained V6 branches per data or MC buffer; <=0 means unlimited"};
@@ -620,9 +618,6 @@ struct lambdaspincorrderived {
       histos.add("etaCent", "etaCent", HistType::kTH2D, {{32, -0.8, 0.8}, {8, 0.0, 80.0}}, true);
       histos.add("hNMEperSE_leg1", "ME replacements per SE pair, leg1", HistType::kTH1D, {{12, -0.5, 11.5}}, true);
       histos.add("hNMEperSE_leg2", "ME replacements per SE pair, leg2", HistType::kTH1D, {{12, -0.5, 11.5}}, true);
-
-      histos.add("hNMEperSE_leg1_aftercut", "ME replacements per SE pair, leg1", HistType::kTH1D, {{12, -0.5, 11.5}}, true);
-      histos.add("hNMEperSE_leg2_aftercut", "ME replacements per SE pair, leg2", HistType::kTH1D, {{12, -0.5, 11.5}}, true);
     }
 
     if (fillHistConfig.fillWeightQAHistos) {
@@ -774,7 +769,7 @@ struct lambdaspincorrderived {
     if (fillHistConfig.fillAnalysisSparses) {
       histos.add("hSparseLambdaLambdaAnalysis", "hSparseLambdaLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
       histos.add("hSparseLambdaAntiLambdaAnalysis", "hSparseLambdaAntiLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
-      histos.add("hSparseAntiLambdaLambdaAnalysis", "hSparseAntiLambdLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
+      histos.add("hSparseAntiLambdaLambdaAnalysis", "hSparseAntiLambdaLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
       histos.add("hSparseAntiLambdaAntiLambdaAnalysis", "hSparseAntiLambdaAntiLambdaAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
 
       histos.add("hSparseLambdaLambdaMixedAnalysis", "hSparseLambdaLambdaMixedAnalysis", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisDeltaR, configThnAxisDeltaRap, configThnAxisDeltaPhi}, true);
@@ -1843,7 +1838,7 @@ struct lambdaspincorrderived {
           fillHistograms(0, 1, lambda, lambda2, proton, proton2, 0, 1.0);
         }
         if (v0.v0Status() == 1 && v02.v0Status() == 0) {
-          fillHistograms(0, 1, lambda2, lambda, proton2, proton, 0, 1.0);
+          fillHistograms(1, 0, lambda, lambda2, proton, proton2, 0, 1.0);
         }
         if (v0.v0Status() == 1 && v02.v0Status() == 1) {
           fillHistograms(1, 1, lambda, lambda2, proton, proton2, 0, 1.0);
@@ -2461,7 +2456,7 @@ struct lambdaspincorrderived {
       if (repStatus == 0 && fixedStatus == 1) {
         fillHistograms(0, 1, repLambda, fixedLambda, repProton, fixedProton, 1, mixWeight, 1, 1);
       } else if (repStatus == 1 && fixedStatus == 0) {
-        fillHistograms(0, 1, fixedLambda, repLambda, fixedProton, repProton, 1, mixWeight, 2, 1);
+        fillHistograms(1, 0, repLambda, fixedLambda, repProton, fixedProton, 1, mixWeight, 1, 1);
       } else {
         fillHistograms(repStatus, fixedStatus, repLambda, fixedLambda, repProton, fixedProton, 1, mixWeight, 1, 1);
       }
@@ -2476,7 +2471,7 @@ struct lambdaspincorrderived {
     if (fixedStatus == 0 && repStatus == 1) {
       fillHistograms(0, 1, fixedLambda, repLambda, fixedProton, repProton, 1, mixWeight, 2, 2);
     } else if (fixedStatus == 1 && repStatus == 0) {
-      fillHistograms(0, 1, repLambda, fixedLambda, repProton, fixedProton, 1, mixWeight, 1, 2);
+      fillHistograms(1, 0, fixedLambda, repLambda, fixedProton, repProton, 1, mixWeight, 2, 2);
     } else {
       fillHistograms(fixedStatus, repStatus, fixedLambda, repLambda, fixedProton, repProton, 1, mixWeight, 2, 2);
     }
@@ -3147,9 +3142,7 @@ struct lambdaspincorrderived {
           ++nAccepted;
         }
 
-        const int minRequired = cfgV6MinMatches.value > 0 ? cfgV6MinMatches.value : 1;
-
-        if (nAccepted < minRequired) {
+        if (nAccepted < 1) {
           ++it;
           continue;
         }
@@ -3285,12 +3278,12 @@ struct lambdaspincorrderived {
           const auto hasPendingSpace = [&]() {
             return cfgV6MaxPendingBranches.value <= 0 || static_cast<int>(v6Pending.data.size()) < cfgV6MaxPendingBranches.value;
           };
-          if (doMixLeg1 && nFill1 < (cfgV6MinMatches.value > 0 ? cfgV6MinMatches.value : 1) && hasPendingSpace()) {
+          if (doMixLeg1 && nFill1 < 1 && hasPendingSpace()) {
             v6Pending.data.push_back({storeV6Candidate(t1, curColIdx), storeV6Candidate(t2, curColIdx), colBin, 1, 0,
                                       static_cast<uint64_t>(t1.globalIndex()) ^ splitmix64(static_cast<uint64_t>(t2.globalIndex())) ^ splitmix64(static_cast<uint64_t>(curColIdx))});
             ++pendingAdded;
           }
-          if (doMixLeg2 && nFill2 < (cfgV6MinMatches.value > 0 ? cfgV6MinMatches.value : 1) && hasPendingSpace()) {
+          if (doMixLeg2 && nFill2 < 1 && hasPendingSpace()) {
             v6Pending.data.push_back({storeV6Candidate(t2, curColIdx), storeV6Candidate(t1, curColIdx), colBin, 2, 0,
                                       static_cast<uint64_t>(t2.globalIndex()) ^ splitmix64(static_cast<uint64_t>(t1.globalIndex())) ^ splitmix64(static_cast<uint64_t>(curColIdx))});
             ++pendingAdded;
@@ -3300,22 +3293,10 @@ struct lambdaspincorrderived {
         histos.fill(HIST("hNMEperSE_leg1"), nFill1);
 
         // Reject branches with fewer accepted mixed pairs than required.
-        if (cfgV6MinMatches.value > 0) {
-          if (nFill1 < cfgV6MinMatches.value) {
-            nFill1 = 0;
-          }
-          if (nFill2 < cfgV6MinMatches.value) {
-            nFill2 = 0;
-          }
-        }
 
         if (nFill1 <= 0 && nFill2 <= 0) {
           continue;
         }
-
-        histos.fill(HIST("hNMEperSE_leg2_aftercut"), nFill2);
-        histos.fill(HIST("hNMEperSE_leg1_aftercut"), nFill1);
-
         // Residual-weight QA needs a leg-specific normalization:
         // TGT_leg is filled once per same-event target candidate with weight 1.
         // REP_leg is the average replacement distribution for that same target.
@@ -3379,7 +3360,7 @@ struct lambdaspincorrderived {
             if (s1 == 0 && s2 == 1) {
               fillHistograms(0, 1, lambda, lambda2, proton, proton2, 1, meWeight, 1, 1);
             } else if (s1 == 1 && s2 == 0) {
-              fillHistograms(0, 1, lambda2, lambda, proton2, proton, 1, meWeight, 2, 1);
+              fillHistograms(1, 0, lambda, lambda2, proton, proton2, 1, meWeight, 1, 1);
             } else {
               fillHistograms(s1, s2, lambda, lambda2, proton, proton2, 1, meWeight, 1, 1);
             }
@@ -3427,7 +3408,7 @@ struct lambdaspincorrderived {
             if (s1 == 0 && s2 == 1) {
               fillHistograms(0, 1, lambda, lambda2, proton, proton2, 1, meWeight, 2, 2);
             } else if (s1 == 1 && s2 == 0) {
-              fillHistograms(0, 1, lambda2, lambda, proton2, proton, 1, meWeight, 1, 2);
+              fillHistograms(1, 0, lambda, lambda2, proton, proton2, 1, meWeight, 2, 2);
             } else {
               fillHistograms(s1, s2, lambda, lambda2, proton, proton2, 1, meWeight, 2, 2);
             }

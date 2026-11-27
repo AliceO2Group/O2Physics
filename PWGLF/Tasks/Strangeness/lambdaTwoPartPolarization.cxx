@@ -172,20 +172,20 @@ struct LfLambdaTwoPartPolarization {
       histos.add("QA/nsigma_tpc_pt_mpi", "", {HistType::kTH2F, {ptAxis, pidAxis}});
     }
 
-    histos.add("Ana/Signal", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, cosSigAxis}});
-    histos.add("Ana/SignalCos2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, cosSigAxis}});
-    histos.add("Ana/Acceptance", "", {HistType::kTHnSparseF, {ptAxis, centAxis, rapAxis, cosAccAxis}});
+    histos.add("Ana/Signal", "", {HistType::kCompactTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, cosSigAxis}});
+    histos.add("Ana/SignalCos2", "", {HistType::kCompactTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, cosSigAxis}});
+    histos.add("Ana/Acceptance", "", {HistType::kCompactTHnSparseF, {ptAxis, centAxis, rapAxis, cosAccAxis}});
 
-    histos.add("AnaHL/LambdaSignal", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
-    histos.add("AnaHL/ALambdaSignal", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
+    histos.add("AnaHL/LambdaSignal", "", {HistType::kCompactTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
+    histos.add("AnaHL/ALambdaSignal", "", {HistType::kCompactTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
 
-    histos.add("AnaHL/LambdaSignalSin2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
-    histos.add("AnaHL/LambdaSignalCos2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
-    histos.add("AnaHL/ALambdaSignalSin2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
-    histos.add("AnaHL/ALambdaSignalCos2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
+    histos.add("AnaHL/LambdaSignalSin2", "", {HistType::kCompactTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
+    histos.add("AnaHL/LambdaSignalCos2", "", {HistType::kCompactTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
+    histos.add("AnaHL/ALambdaSignalSin2", "", {HistType::kCompactTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
+    histos.add("AnaHL/ALambdaSignalCos2", "", {HistType::kCompactTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
 
     histos.add("AnaHL/RefTrig", "", {HistType::kTH2F, {ptAxis, centAxis}});
-    histos.add("AnaHL/Ref", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis}});
+    histos.add("AnaHL/Ref", "", {HistType::kCompactTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis}});
 
     fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
     fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);

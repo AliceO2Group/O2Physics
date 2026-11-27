@@ -204,6 +204,7 @@ struct SingleTrackQCMC {
     o2::framework::Configurable<bool> acceptOnlyCorrectMatch{"acceptOnlyCorrectMatch", false, "flag to accept only correct match between ITS and TPC"}; // this is only for MC study, as we don't know correct match in data.
     o2::framework::Configurable<bool> acceptOnlyWrongMatch{"acceptOnlyWrongMatch", false, "flag to accept only wrong match between ITS and TPC"};       // this is only for MC study, as we don't know correct match in data.
     o2::framework::Configurable<bool> cfg_separatePromptLF{"cfg_separatePromptLF", false, "flag to separate the promptLF sources. Can not be set ON together with cfgFillQA."};
+    o2::framework::Configurable<bool> cfg_study_contamination{"cfg_study_contamination", false, "flag to separate electrons and other particles into Track and Contamination"};
 
     // configuration for PID ML
     // o2::framework::Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
@@ -352,6 +353,12 @@ struct SingleTrackQCMC {
         fRegistry.addClone("Track/PromptJPsi/", "Track/Phi/");
         fRegistry.addClone("Track/PromptJPsi/", "Track/PromptPi0/");
         fRegistry.addClone("Track/PromptJPsi/", "Track/NonPromptPi0/");
+      }
+      if (dielectroncuts.cfg_study_contamination) {
+        fRegistry.addClone("Track/PromptJPsi/positive/", "Track/positive/");
+        fRegistry.addClone("Track/PromptJPsi/positive/", "Track/negative/");
+        fRegistry.addClone("Track/PromptJPsi/positive/", "Contamination/positive/");
+        fRegistry.addClone("Track/PromptJPsi/positive/", "Contamination/negative/");
       }
 
       fRegistry.add("Track/Photon/positive/hProdVtx", "production vertex of e from #gamma;p_{T,e}^{rec} (GeV/c);r_{xy}^{gen} (cm);", o2::framework::HistType::kTH2F, {axis_pt, {100, 0, 100}}, false);
@@ -656,14 +663,18 @@ struct SingleTrackQCMC {
   void fillTrackInfo(TTrack const& track, TCollision const& collision)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      fillElectronInfo<moresources, lepton_source_id, TMCParticles>(track);
+      if constexpr (!moresources) {
+        fillElectronInfo<lepton_source_id, TMCParticles>(track, HIST("Track/") + HIST(lepton_source_types[lepton_source_id]), -track.template emmcparticle_as<TMCParticles>().pdgCode() / pdg_lepton);
+      } else {
+        fillElectronInfo<lepton_source_id, TMCParticles>(track, HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]), -track.template emmcparticle_as<TMCParticles>().pdgCode() / pdg_lepton);
+      }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       fillMuonInfo<lepton_source_id, TMCParticles>(track, collision);
     }
   }
 
-  template <bool moresources, int lepton_source_id, typename TMCParticles, typename TTrack>
-  void fillElectronInfo(TTrack const& track)
+  template <int lepton_source_id, typename TMCParticles, typename TTrack, typename THistFolder>
+  void fillElectronInfo(TTrack const& track, THistFolder const& histFolder, float trueCharge, bool fillGlobalPID = true)
   {
     auto mctrack = track.template emmcparticle_as<TMCParticles>();
     float dca3D = o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(track);
@@ -677,163 +688,102 @@ struct SingleTrackQCMC {
     // LOGF(info, "map_weight[%d] = %f", track.globalIndex(), weight);
 
     if (track.sign() > 0) {
-      if constexpr (!moresources) {
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
-      } else {
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
-      }
+      fRegistry.fill(histFolder + HIST("positive/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, trueCharge, weight);
       if constexpr (lepton_source_id == 2) { // for electron from photon conversion
         fRegistry.fill(HIST("Track/Photon/positive/hProdVtx"), track.pt(), std::sqrt(std::pow(mctrack.vx(), 2) + std::pow(mctrack.vy(), 2)), weight);
       }
 
       if (fillGenValuesForRec) {
-        if constexpr (!moresources) {
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
-        } else {
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
-        }
+        fRegistry.fill(histFolder + HIST("positive/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, trueCharge, weight);
       }
       if (cfgFillQA) {
-        if constexpr (!moresources) {
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hQoverPt"), track.sign() / track.pt());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyz"), track.dcaXY(), track.dcaZ());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyzSigma"), dcaXY, dcaZ);
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4);                                          // convert cm to um
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);                                           // convert cm to um
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCA3dRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaDca3D(track) * 1e+4); // convert cm to um
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hNclsITS"), track.itsNCls());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hNclsTPC_Pt"), track.pt(), track.tpcNClsFound());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hNcrTPC_Pt"), track.pt(), track.tpcNClsCrossedRows());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2TPC"), track.tpcChi2NCl());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2ITS"), track.itsChi2NCl());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2TOF"), track.p(), track.tofChi2());
-          if (track.hasTPC()) {
-            fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDeltaPin"), track.tpcInnerParam(), (track.p() - track.tpcInnerParam()) / track.tpcInnerParam());
-          }
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hITSClusterMap"), track.itsClusterMap());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPIDForTracking"), track.pidForTracking());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
-        } else {
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hQoverPt"), track.sign() / track.pt());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hDCAxyz"), track.dcaXY(), track.dcaZ());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hDCAxyzSigma"), dcaXY, dcaZ);
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4);                                          // convert cm to um
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);                                           // convert cm to um
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hDCA3dRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaDca3D(track) * 1e+4); // convert cm to um
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hNclsITS"), track.itsNCls());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hNclsTPC_Pt"), track.pt(), track.tpcNClsFound());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hNcrTPC_Pt"), track.pt(), track.tpcNClsCrossedRows());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hChi2TPC"), track.tpcChi2NCl());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hChi2ITS"), track.itsChi2NCl());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hChi2TOF"), track.p(), track.tofChi2());
-          if (track.hasTPC()) {
-            fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hDeltaPin"), track.tpcInnerParam(), (track.p() - track.tpcInnerParam()) / track.tpcInnerParam());
-          }
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hITSClusterMap"), track.itsClusterMap());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hPIDForTracking"), track.pidForTracking());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("positive/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
+        fRegistry.fill(histFolder + HIST("positive/hQoverPt"), track.sign() / track.pt());
+        fRegistry.fill(histFolder + HIST("positive/hDCAxyz"), track.dcaXY(), track.dcaZ());
+        fRegistry.fill(histFolder + HIST("positive/hDCAxyzSigma"), dcaXY, dcaZ);
+        fRegistry.fill(histFolder + HIST("positive/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4);                                          // convert cm to um
+        fRegistry.fill(histFolder + HIST("positive/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);                                           // convert cm to um
+        fRegistry.fill(histFolder + HIST("positive/hDCA3dRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaDca3D(track) * 1e+4); // convert cm to um
+        fRegistry.fill(histFolder + HIST("positive/hNclsITS"), track.itsNCls());
+        fRegistry.fill(histFolder + HIST("positive/hNclsTPC_Pt"), track.pt(), track.tpcNClsFound());
+        fRegistry.fill(histFolder + HIST("positive/hNcrTPC_Pt"), track.pt(), track.tpcNClsCrossedRows());
+        fRegistry.fill(histFolder + HIST("positive/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
+        fRegistry.fill(histFolder + HIST("positive/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+        fRegistry.fill(histFolder + HIST("positive/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
+        fRegistry.fill(histFolder + HIST("positive/hChi2TPC"), track.tpcChi2NCl());
+        fRegistry.fill(histFolder + HIST("positive/hChi2ITS"), track.itsChi2NCl());
+        fRegistry.fill(histFolder + HIST("positive/hChi2TOF"), track.p(), track.tofChi2());
+        if (track.hasTPC()) {
+          fRegistry.fill(histFolder + HIST("positive/hDeltaPin"), track.tpcInnerParam(), (track.p() - track.tpcInnerParam()) / track.tpcInnerParam());
         }
-        fRegistry.fill(HIST("Track/PID/positive/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
-        fRegistry.fill(HIST("Track/PID/positive/hTPCdEdxMC"), track.tpcInnerParam(), track.mcTunedTPCSignal());
-        fRegistry.fill(HIST("Track/PID/positive/hTOFbeta"), track.p(), track.beta());
-        fRegistry.fill(HIST("Track/PID/positive/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
-        fRegistry.fill(HIST("Track/PID/positive/hMeanClusterSizeITSib"), track.p(), track.meanClusterSizeITSib() * std::cos(std::atan(track.tgl())));
-        fRegistry.fill(HIST("Track/PID/positive/hMeanClusterSizeITSob"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
-        fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-        fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
-        fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
-        fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
-        fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
-        fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
+        fRegistry.fill(histFolder + HIST("positive/hITSClusterMap"), track.itsClusterMap());
+        fRegistry.fill(histFolder + HIST("positive/hPIDForTracking"), track.pidForTracking());
+        fRegistry.fill(histFolder + HIST("positive/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
+        fRegistry.fill(histFolder + HIST("positive/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
+        fRegistry.fill(histFolder + HIST("positive/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
+
+        if (fillGlobalPID) {
+          fRegistry.fill(HIST("Track/PID/positive/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
+          fRegistry.fill(HIST("Track/PID/positive/hTPCdEdxMC"), track.tpcInnerParam(), track.mcTunedTPCSignal());
+          fRegistry.fill(HIST("Track/PID/positive/hTOFbeta"), track.p(), track.beta());
+          fRegistry.fill(HIST("Track/PID/positive/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
+          fRegistry.fill(HIST("Track/PID/positive/hMeanClusterSizeITSib"), track.p(), track.meanClusterSizeITSib() * std::cos(std::atan(track.tgl())));
+          fRegistry.fill(HIST("Track/PID/positive/hMeanClusterSizeITSob"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
+          fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
+          fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
+          fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
+          fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
+          fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
+          fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
+        }
       }
     } else {
-      if constexpr (!moresources) {
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
-      } else {
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
-      }
+
+      fRegistry.fill(histFolder + HIST("negative/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, trueCharge, weight);
       if constexpr (lepton_source_id == 2) { // for electron from photon conversion
         fRegistry.fill(HIST("Track/Photon/negative/hProdVtx"), track.pt(), std::sqrt(std::pow(mctrack.vx(), 2) + std::pow(mctrack.vy(), 2)), weight);
       }
       if (fillGenValuesForRec) {
-        if constexpr (!moresources) {
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
-        } else {
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
-        }
+        fRegistry.fill(histFolder + HIST("negative/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, trueCharge, weight);
       }
       if (cfgFillQA) {
-        if constexpr (!moresources) {
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hQoverPt"), track.sign() / track.pt());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyz"), track.dcaXY(), track.dcaZ());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyzSigma"), dcaXY, dcaZ);
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4);                                          // convert cm to um
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);                                           // convert cm to um
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCA3dRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaDca3D(track) * 1e+4); // convert cm to um
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hNclsITS"), track.itsNCls());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hNclsTPC_Pt"), track.pt(), track.tpcNClsFound());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hNcrTPC_Pt"), track.pt(), track.tpcNClsCrossedRows());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2TPC"), track.tpcChi2NCl());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2ITS"), track.itsChi2NCl());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2TOF"), track.p(), track.tofChi2());
-          if (track.hasTPC()) {
-            fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDeltaPin"), track.tpcInnerParam(), (track.p() - track.tpcInnerParam()) / track.tpcInnerParam());
-          }
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hITSClusterMap"), track.itsClusterMap());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPIDForTracking"), track.pidForTracking());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
-        } else {
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hQoverPt"), track.sign() / track.pt());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hDCAxyz"), track.dcaXY(), track.dcaZ());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hDCAxyzSigma"), dcaXY, dcaZ);
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4);                                          // convert cm to um
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);                                           // convert cm to um
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hDCA3dRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaDca3D(track) * 1e+4); // convert cm to um
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hNclsITS"), track.itsNCls());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hNclsTPC_Pt"), track.pt(), track.tpcNClsFound());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hNcrTPC_Pt"), track.pt(), track.tpcNClsCrossedRows());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hChi2TPC"), track.tpcChi2NCl());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hChi2ITS"), track.itsChi2NCl());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hChi2TOF"), track.p(), track.tofChi2());
-          if (track.hasTPC()) {
-            fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hDeltaPin"), track.tpcInnerParam(), (track.p() - track.tpcInnerParam()) / track.tpcInnerParam());
-          }
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hITSClusterMap"), track.itsClusterMap());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hPIDForTracking"), track.pidForTracking());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
-          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types_more[lepton_source_id]) + HIST("negative/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
+        fRegistry.fill(histFolder + HIST("negative/hQoverPt"), track.sign() / track.pt());
+        fRegistry.fill(histFolder + HIST("negative/hDCAxyz"), track.dcaXY(), track.dcaZ());
+        fRegistry.fill(histFolder + HIST("negative/hDCAxyzSigma"), dcaXY, dcaZ);
+        fRegistry.fill(histFolder + HIST("negative/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4);                                          // convert cm to um
+        fRegistry.fill(histFolder + HIST("negative/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);                                           // convert cm to um
+        fRegistry.fill(histFolder + HIST("negative/hDCA3dRes_Pt"), track.pt(), o2::aod::pwgem::dilepton::utils::emtrackutil::sigmaDca3D(track) * 1e+4); // convert cm to um
+        fRegistry.fill(histFolder + HIST("negative/hNclsITS"), track.itsNCls());
+        fRegistry.fill(histFolder + HIST("negative/hNclsTPC_Pt"), track.pt(), track.tpcNClsFound());
+        fRegistry.fill(histFolder + HIST("negative/hNcrTPC_Pt"), track.pt(), track.tpcNClsCrossedRows());
+        fRegistry.fill(histFolder + HIST("negative/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
+        fRegistry.fill(histFolder + HIST("negative/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+        fRegistry.fill(histFolder + HIST("negative/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
+        fRegistry.fill(histFolder + HIST("negative/hChi2TPC"), track.tpcChi2NCl());
+        fRegistry.fill(histFolder + HIST("negative/hChi2ITS"), track.itsChi2NCl());
+        fRegistry.fill(histFolder + HIST("negative/hChi2TOF"), track.p(), track.tofChi2());
+        if (track.hasTPC()) {
+          fRegistry.fill(histFolder + HIST("negative/hDeltaPin"), track.tpcInnerParam(), (track.p() - track.tpcInnerParam()) / track.tpcInnerParam());
         }
-        fRegistry.fill(HIST("Track/PID/negative/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
-        fRegistry.fill(HIST("Track/PID/negative/hTPCdEdxMC"), track.tpcInnerParam(), track.mcTunedTPCSignal());
-        fRegistry.fill(HIST("Track/PID/negative/hTOFbeta"), track.p(), track.beta());
-        fRegistry.fill(HIST("Track/PID/negative/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
-        fRegistry.fill(HIST("Track/PID/negative/hMeanClusterSizeITSib"), track.p(), track.meanClusterSizeITSib() * std::cos(std::atan(track.tgl())));
-        fRegistry.fill(HIST("Track/PID/negative/hMeanClusterSizeITSob"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
-        fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-        fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
-        fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
-        fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
-        fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
-        fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
+        fRegistry.fill(histFolder + HIST("negative/hITSClusterMap"), track.itsClusterMap());
+        fRegistry.fill(histFolder + HIST("negative/hPIDForTracking"), track.pidForTracking());
+        fRegistry.fill(histFolder + HIST("negative/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
+        fRegistry.fill(histFolder + HIST("negative/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
+        fRegistry.fill(histFolder + HIST("negative/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
+
+        if (fillGlobalPID) {
+          fRegistry.fill(HIST("Track/PID/negative/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
+          fRegistry.fill(HIST("Track/PID/negative/hTPCdEdxMC"), track.tpcInnerParam(), track.mcTunedTPCSignal());
+          fRegistry.fill(HIST("Track/PID/negative/hTOFbeta"), track.p(), track.beta());
+          fRegistry.fill(HIST("Track/PID/negative/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
+          fRegistry.fill(HIST("Track/PID/negative/hMeanClusterSizeITSib"), track.p(), track.meanClusterSizeITSib() * std::cos(std::atan(track.tgl())));
+          fRegistry.fill(HIST("Track/PID/negative/hMeanClusterSizeITSob"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
+          fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
+          fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
+          fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
+          fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
+          fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
+          fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
+        }
       }
     }
   }
@@ -950,17 +900,18 @@ struct SingleTrackQCMC {
 
       for (const auto& track : tracks_per_coll) {
         auto mctrack = track.template emmcparticle_as<TMCParticles>();
-        if (std::abs(mctrack.pdgCode()) != pdg_lepton) {
+        const bool isLepton = std::abs(mctrack.pdgCode()) == pdg_lepton;
+        if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+          if (!isLepton && !dielectroncuts.cfg_study_contamination) {
+            continue;
+          }
+        } else if (!isLepton) {
           continue;
         }
 
         if (!isInAcceptance<isSmeared>(mctrack)) {
           continue;
         }
-        if (!mctrack.has_mothers()) {
-          continue;
-        }
-
         auto mccollision_from_track = mctrack.template emmcevent_as<TMCCollisions>();
         if (cfgEventGeneratorType >= 0 && mccollision_from_track.getSubGeneratorId() != cfgEventGeneratorType) {
           continue;
@@ -971,14 +922,8 @@ struct SingleTrackQCMC {
         }
 
         if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-          if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-            if (!cut.template IsSelectedTrack<false>(track)) {
-              continue;
-            }
-          } else { // cut-based
-            if (!cut.template IsSelectedTrack<false>(track)) {
-              continue;
-            }
+          if (!cut.template IsSelectedTrack<false>(track)) {
+            continue;
           }
           if (dielectroncuts.acceptOnlyCorrectMatch && o2::aod::pwgem::dilepton::utils::mcutil::hasFakeMatchITSTPC(track)) {
             continue;
@@ -1004,6 +949,21 @@ struct SingleTrackQCMC {
           }
         }
 
+        if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+          if (dielectroncuts.cfg_study_contamination) {
+            if (isLepton) {
+              fillElectronInfo<0, TMCParticles>(track, HIST("Track/"), track.sign(), false);
+            } else {
+              fillElectronInfo<0, TMCParticles>(track, HIST("Contamination/"), track.sign(), false);
+              continue;
+            }
+          } else if (!isLepton) {
+            continue;
+          }
+        }
+        if (!mctrack.has_mothers()) {
+          continue;
+        }
         auto mcmother = mcparticles.iteratorAt(mctrack.mothersIds()[0]);
         int pdg_mother = std::abs(mcmother.pdgCode());
 
@@ -1268,14 +1228,8 @@ struct SingleTrackQCMC {
             continue;
           }
 
-          if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-            if (!cut.template IsSelectedTrack<false>(track)) {
-              continue;
-            }
-          } else { // cut-based
-            if (!cut.template IsSelectedTrack<false>(track)) {
-              continue;
-            }
+          if (!cut.template IsSelectedTrack<false>(track)) {
+            continue;
           }
           passed_trackIds.emplace_back(track.globalIndex());
         } // end of track loop

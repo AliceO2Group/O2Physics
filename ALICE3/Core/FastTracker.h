@@ -93,6 +93,7 @@ class FastTracker
    *
    * Propagates the given input track through the detector layers, applying
    * relevant corrections and updates, and stores the result in outputTrack.
+   * Silicon disks are not included in this tracking calculation.
    *
    * @param inputTrack The input track parameters and covariance (const, by value).
    * @param outputTrack Reference to the output track parameters and covariance, to be filled.
@@ -100,6 +101,16 @@ class FastTracker
    * @return int i.e. number of intercepts (implementation-defined).
    */
   int fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, const float nch, const float maxRadius = 100.f);
+
+  struct SiliconLayerHits {
+    int count = 0;
+    float innerRadius = -1.f;
+    float outerRadius = -1.f;
+  };
+  /// Count distinct silicon cylinders and disks crossed in the first turn of
+  /// the ideal production helix, including their longitudinal/radial acceptance.
+  /// Material, dead regions and layer efficiencies are not applied. count is -1 on error.
+  [[nodiscard]] SiliconLayerHits countSiliconLayerHits(const o2::track::TrackParCov& track) const;
 
   // For efficiency calculation
   float dist(float z, float radius);

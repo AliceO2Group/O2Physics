@@ -66,19 +66,19 @@ struct zdc2stagecalibration {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 80.0f, "Centrality cut Max"};
+  Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 100.0f, "Centrality cut Max"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 0.0f, "Centrality cut Min"};
-  Configurable<int> calibrationStage{"calibrationStage", 1, "1: derive detector calibration QA, 2: apply detector calibration and produce corrected Q"};
+  Configurable<int> calibrationStage{"calibrationStage", 2, "1: derive detector calibration QA, 2: apply detector calibration and produce corrected Q"};
   Configurable<float> cfgTimeSliceMinutes{"cfgTimeSliceMinutes", 30.0f, "Calibration time-slice width in minutes"};
   Configurable<float> cfgMaxRunHours{"cfgMaxRunHours", 48.0f, "Maximum run duration shown in QA"};
-  Configurable<bool> followpub{"followpub", true, "flag to use alphaZDC"};
+  Configurable<bool> followpub{"followpub", false, "flag to use alphaZDC"};
   Configurable<bool> usecfactor{"usecfactor", false, "use c factor"};
-  Configurable<bool> useGainCallib{"useGainCallib", false, "use stage-1 tower gain calibration"};
-  Configurable<std::string> confGainPath{"confGainPath", "", "CCDB path to the run-wise stage-1 gain map"};
-  Configurable<bool> useSpatialCalib{"useSpatialCalib", false, "use ZDC spatial calibration"};
-  Configurable<std::string> confSpatialPath{"confSpatialPath", "", "CCDB path to ZDC spatial calibration"};
-  Configurable<bool> deriveSpatialCalib{"deriveSpatialCalib", false, "store spatial regression moments after gain correction"};
-  Configurable<bool> deriveSingleNeutronResponse{"deriveSingleNeutronResponse", false, "compact 1n/2n/3n neutron response QA"};
+  Configurable<bool> useGainCallib{"useGainCallib", true, "use stage-1 tower gain calibration"};
+  Configurable<std::string> confGainPath{"confGainPath", "Users/s/skundu/ZDC/Stage1Gain", "CCDB path to the run-wise stage-1 gain map"};
+  Configurable<bool> derive1nTowerResponse{"derive1nTowerResponse", true, "save joint relative tower fractions for run-wise 1n response fit"};
+  Configurable<bool> use1nTowerCorrection{"use1nTowerCorrection", false, "apply Q-dependent relative tower-energy factors derived from 1n"};
+  Configurable<std::string> conf1nTowerPath{"conf1nTowerPath", "", "CCDB TH3D: gain Qx,Qy, A1-4/C1-4 relative response factors"};
+  Configurable<bool> deriveSingleNeutronResponse{"deriveSingleNeutronResponse", true, "compact 1n/2n/3n neutron response QA"};
   Configurable<float> cfgSingleNeutronRawEnergyMax{"cfgSingleNeutronRawEnergyMax", 12.f, "maximum common energy for compact neutron QA"};
   // Generous, disjoint common-energy windows (native units). Each side is selected independently.
   // Defaults are approximate 1n, 2n, 3n regions; adjust from measured Ecommon peaks.
@@ -88,19 +88,14 @@ struct zdc2stagecalibration {
   Configurable<float> cfg2nMax{"cfg2nMax", 7.0f, "2n window upper Ecommon"};
   Configurable<float> cfg3nMin{"cfg3nMin", 7.0f, "3n window lower Ecommon"};
   Configurable<float> cfg3nMax{"cfg3nMax", 10.5f, "3n window upper Ecommon"};
-  Configurable<bool> useResidualSpatialResponse{"useResidualSpatialResponse", false, "apply optional run-wise residual tower response map BEFORE Q recentering"};
-  Configurable<std::string> confResidualSpatialResponsePath{"confResidualSpatialResponsePath", "", "CCDB TH3D path: crossX, crossY, eight tower multipliers (A1-4,C1-4)"};
   Configurable<bool> cfgTPCV1Correlation{"cfgTPCV1Correlation", false, "enable TPC track loop and TPC-ZDC first-harmonic correlations versus eta and centrality (default off)"};
-  Configurable<bool> deriveQRecentering{"deriveQRecentering", false, "store Q-vector recentering regression moments after gain and spatial correction"};
+  Configurable<bool> deriveQRecentering{"deriveQRecentering", false, "store structured71 recentering moments after enabled tower-energy corrections"};
   Configurable<bool> useQRecentering{"useQRecentering", false, "apply Q-vector recentering calibration"};
   Configurable<int> qRecenteringMethod{"qRecenteringMethod", 4, "Only Structured71 recentering is supported (must be 4)"};
   Configurable<std::string> confQRecenteringStructured71Path{"confQRecenteringStructured71Path", "", "CCDB path to the 71-feature structured Q-vector recentering coefficients"};
   Configurable<float> cfgTPCResponsePtMin{"cfgTPCResponsePtMin", 0.5f, "TPC response QA minimum pT (strict)"};
   Configurable<float> cfgTPCResponsePtMax{"cfgTPCResponsePtMax", 3.0f, "TPC response QA maximum pT (strict)"};
   Configurable<float> cfgTPCResponseEtaMax{"cfgTPCResponseEtaMax", 0.8f, "TPC response QA maximum absolute eta (strict)"};
-  Configurable<int> cfgSpatialCalibBins{
-    "cfgSpatialCalibBins", 30,
-    "number of bins per cross coordinate for spatial calibration"};
   struct : ConfigurableGroup {
     Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
     Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT", "Evt sel: RCT flag checker label"};
@@ -114,9 +109,10 @@ struct zdc2stagecalibration {
   uint64_t sorTimestamp = 0;
   uint64_t eorTimestamp = 0;
   TH2D* gainprofile = nullptr;
-  TH3D* spatialprofile = nullptr;
   TH3D* qRecenteringProfile = nullptr;
-  TH3D* residualSpatialResponseMap = nullptr;
+  // Eight position-dependent relative tower factors, Z bins A1-A4,C1-C4.
+  // Map lookup coordinates are the gain-only reconstructed Qx/Qy (cm).
+  TH3D* oneNeutronTowerMap = nullptr;
 
   static constexpr int kQRecenteringNComponents = 4;
   static constexpr int kQRecenteringMultidimNFeatures = 35;
@@ -144,20 +140,21 @@ struct zdc2stagecalibration {
         !(cfgTPCResponsePtMax.value > cfgTPCResponsePtMin.value && cfgTPCResponseEtaMax.value > 0.f)) {
       LOGF(fatal, "Invalid TPC v1 QA track selection");
     }
-    if (deriveSingleNeutronResponse.value && (!(cfgSingleNeutronRawEnergyMax.value > 0.f) || cfgSingleNeutronRawEnergyMax.value > 12.f)) {
+    if ((deriveSingleNeutronResponse.value || derive1nTowerResponse.value) && (!(cfgSingleNeutronRawEnergyMax.value > 0.f) || cfgSingleNeutronRawEnergyMax.value > 12.f)) {
       LOGF(fatal, "Single-neutron common-energy cutoff must be >0 and <=12 (native units)");
     }
-    if (deriveSingleNeutronResponse.value &&
+    if ((deriveSingleNeutronResponse.value || derive1nTowerResponse.value) &&
         !(0.f < cfg1nMin.value && cfg1nMin.value < cfg1nMax.value &&
           cfg1nMax.value <= cfg2nMin.value && cfg2nMin.value < cfg2nMax.value &&
           cfg2nMax.value <= cfg3nMin.value && cfg3nMin.value < cfg3nMax.value &&
           cfg3nMax.value <= cfgSingleNeutronRawEnergyMax.value)) {
       LOGF(fatal, "Invalid/overlapping neutron energy windows; require ordered 1n,2n,3n windows within Emax");
     }
-    if (useResidualSpatialResponse.value &&
-        (calibrationStage.value != 2 ||
-         (useQRecentering.value == deriveQRecentering.value) || confResidualSpatialResponsePath.value.empty())) {
-      LOGF(fatal, "Residual tower map requires stage 2, structured71 derivation or application, and its CCDB path");
+    if (derive1nTowerResponse.value && !useGainCallib.value) {
+      LOGF(fatal, "1n response derivation requires useGainCallib=true");
+    }
+    if (derive1nTowerResponse.value && use1nTowerCorrection.value) {
+      LOGF(fatal, "Fit-input collection requires gain-only towers: disable use1nTowerCorrection");
     }
     if (cfgTPCV1Correlation.value && calibrationStage.value != 2) {
       LOGF(fatal, "TPC v1(eta) numerator QA requires stage 2");
@@ -167,14 +164,12 @@ struct zdc2stagecalibration {
     AxisSpec towerAxis = {4, 0.0, 4.0, "tower"};
     AxisSpec crossAxis = {120, -1.0, 1.0, "cross asymmetry"};
     AxisSpec momentAxis = {15, 0.0, 15.0, "regression moment"};
-    AxisSpec spatialMomentAxis = {6, 0.0, 6.0, "normalized pair regression moment"};
-    AxisSpec spatialCalibAxis = {cfgSpatialCalibBins.value, -1.0, 1.0, "cross asymmetry"};
     AxisSpec phiAxis = {72, -3.14159265358979323846, 3.14159265358979323846, "#phi"};
     AxisSpec crossCoordAxis = {2, 0.0, 2.0, "coordinate"};
     AxisSpec ratioAxis = {240, 0.0, 2.4, "#Sigma tower/common"};
     AxisSpec qRecenteringStructuredMomentAxis = {kQRecenteringStructuredNMoments, 0.0, static_cast<double>(kQRecenteringStructuredNMoments), "structured regression moment"};
     AxisSpec qRecenteringStructuredFlatnessMomentAxis = {kQRecenteringStructuredFlatnessNMoments, 0.0, static_cast<double>(kQRecenteringStructuredFlatnessNMoments), "structured flatness sufficient-statistic index"};
-    AxisSpec centralityAxis = {80, 0.0, 80.0, "centrality (%)"};
+    AxisSpec centralityAxis = {100, 0.0, 100.0, "centrality (%)"};
     if (deriveSingleNeutronResponse.value) {
       const AxisSpec energyAxis{120, 0., static_cast<double>(cfgSingleNeutronRawEnergyMax.value), "Ecommon (native units)"};
       const AxisSpec fractionAxis{80, 0., 2., "gain tower / common"};
@@ -185,7 +180,7 @@ struct zdc2stagecalibration {
       histos.add("NeutronQA/hSelectionStatus", "Energy-class selection before and after tower cut;side/class (A1,A2,A3,C1,C2,C3);status", kTH2F, {{6, 0., 6.}, statusAxis});
       histos.add("NeutronQA/hEnergyVsCentA", "ZNA energy spectrum;centrality (%);Ecommon", kTH2F, {centralityAxis, energyAxis});
       histos.add("NeutronQA/hEnergyVsCentC", "ZNC energy spectrum;centrality (%);Ecommon", kTH2F, {centralityAxis, energyAxis});
-      // Only 1n for the spatial-response constraints; total around 12 small 30x30 maps.
+      // Only 1n for the response constraints; total around 12 small 30x30 maps.
       histos.add("NeutronQA/hCross1nA", "ZNA 1n gain-stage cross;crossX;crossY", kTH2F, {crossQA, crossQA});
       histos.add("NeutronQA/hCross1nC", "ZNC 1n gain-stage cross;crossX;crossY", kTH2F, {crossQA, crossQA});
       histos.add("NeutronQA/pRecenteredQxVsCross1nA", "ZNA 1n Qx after recenter vs gain cross;crossX;crossY", kTProfile2D, {crossQA, crossQA});
@@ -225,12 +220,12 @@ struct zdc2stagecalibration {
       // Track-by-track numerators, 16 eta bins and 40 centrality bins; no THnSparse.
       // indices 0:Q1xTPC*QxA, 1:Q1yTPC*QyA, 2:Q1xTPC*QxC, 3:Q1yTPC*QyC.
       histos.add("TPCV1EtaQA/pNumerators", "TPC-ZDC first harmonic;centrality (%);track #eta;component", kTProfile3D,
-                 {{40, 0., 80.}, {16, -0.8, 0.8}, {4, 0., 4.}});
+                 {{100, 0., 100.}, {16, -0.8, 0.8}, {4, 0., 4.}});
       histos.add("TPCV1EtaQA/hTrackCounts", "Selected tracks;centrality (%);track #eta", kTH2F,
-                 {{40, 0., 80.}, {16, -0.8, 0.8}});
+                 {{100, 0., 100.}, {16, -0.8, 0.8}});
     }
 
-    AxisSpec resolutionCentralityAxis = {50, 0.0, 50.0, "centrality (%)"};
+    AxisSpec resolutionCentralityAxis = {100, 0.0, 100.0, "centrality (%)"};
     AxisSpec resolutionVzAxis = {20, -10.0, 10.0, "v_{z} (cm)"};
     AxisSpec vertexXYAxis = {100, -0.1, 0.1, "vertex x/y (cm)"};
     AxisSpec vertexZAxis = {100, -10.0, 10.0, "vertex z (cm)"};
@@ -255,46 +250,38 @@ struct zdc2stagecalibration {
     histos.add("GainQA/hSumOverCommonVsTimeZNC", "ZNC tower sum/common vs time;time from SOR (h);#Sigma T_{i}/C", kTH2F, {timeAxis, ratioAxis});
     histos.add("GainQA/pTowerOverCommonVsTimeZNA", "ZNA individual tower/common vs time;time from SOR (h);tower;<T_{i}/C>", kTProfile2D, {timeAxis, towerAxis});
     histos.add("GainQA/pTowerOverCommonVsTimeZNC", "ZNC individual tower/common vs time;time from SOR (h);tower;<T_{i}/C>", kTProfile2D, {timeAxis, towerAxis});
-    histos.add("SpatialQA/pCrossVsTimeZNA", "ZNA cross asymmetry vs time;time from SOR (h);0:X cross, 1:Y cross;<cross>", kTProfile2D, {timeAxis, crossCoordAxis});
-    histos.add("SpatialQA/pCrossVsTimeZNC", "ZNC cross asymmetry vs time;time from SOR (h);0:X cross, 1:Y cross;<cross>", kTProfile2D, {timeAxis, crossCoordAxis});
-    histos.add("SpatialQA/pResponseVsCrossXYZNA", "ZNA response map;X cross;Y cross;<#Sigma T_{i}/C>", kTProfile2D, {crossAxis, crossAxis});
-    histos.add("SpatialQA/pResponseVsCrossXYZNC", "ZNC response map;X cross;Y cross;<#Sigma T_{i}/C>", kTProfile2D, {crossAxis, crossAxis});
-    histos.add("SpatialQA/pCentroidVsTimeZNA", "ZNA centroid vs time;time from SOR (h);0:x, 1:y;<centroid (cm)>", kTProfile2D, {timeAxis, crossCoordAxis});
-    histos.add("SpatialQA/pCentroidVsTimeZNC", "ZNC centroid vs time;time from SOR (h);0:x, 1:y;<centroid (cm)>", kTProfile2D, {timeAxis, crossCoordAxis});
-    histos.add("SpatialQA/hCrossXYZNA", "ZNA cross occupancy;X cross;Y cross", kTH2F, {crossAxis, crossAxis});
-    histos.add("SpatialQA/hCrossXYZNC", "ZNC cross occupancy;X cross;Y cross", kTH2F, {crossAxis, crossAxis});
-    histos.add("SpatialQA/pTower1OverCommonVsCrossXYZNA", "ZNA tower 1 response;X cross;Y cross;<T_{1}/C>", kTProfile2D, {crossAxis, crossAxis});
-    histos.add("SpatialQA/pTower2OverCommonVsCrossXYZNA", "ZNA tower 2 response;X cross;Y cross;<T_{2}/C>", kTProfile2D, {crossAxis, crossAxis});
-    histos.add("SpatialQA/pTower3OverCommonVsCrossXYZNA", "ZNA tower 3 response;X cross;Y cross;<T_{3}/C>", kTProfile2D, {crossAxis, crossAxis});
-    histos.add("SpatialQA/pTower4OverCommonVsCrossXYZNA", "ZNA tower 4 response;X cross;Y cross;<T_{4}/C>", kTProfile2D, {crossAxis, crossAxis});
-    histos.add("SpatialQA/pTower1OverCommonVsCrossXYZNC", "ZNC tower 1 response;X cross;Y cross;<T_{1}/C>", kTProfile2D, {crossAxis, crossAxis});
-    histos.add("SpatialQA/pTower2OverCommonVsCrossXYZNC", "ZNC tower 2 response;X cross;Y cross;<T_{2}/C>", kTProfile2D, {crossAxis, crossAxis});
-    histos.add("SpatialQA/pTower3OverCommonVsCrossXYZNC", "ZNC tower 3 response;X cross;Y cross;<T_{3}/C>", kTProfile2D, {crossAxis, crossAxis});
-    histos.add("SpatialQA/pTower4OverCommonVsCrossXYZNC", "ZNC tower 4 response;X cross;Y cross;<T_{4}/C>", kTProfile2D, {crossAxis, crossAxis});
+    histos.add("TowerResponseQA/pCrossVsTimeZNA", "ZNA cross asymmetry vs time;time from SOR (h);0:X cross, 1:Y cross;<cross>", kTProfile2D, {timeAxis, crossCoordAxis});
+    histos.add("TowerResponseQA/pCrossVsTimeZNC", "ZNC cross asymmetry vs time;time from SOR (h);0:X cross, 1:Y cross;<cross>", kTProfile2D, {timeAxis, crossCoordAxis});
+    histos.add("TowerResponseQA/pResponseVsCrossXYZNA", "ZNA response map;X cross;Y cross;<#Sigma T_{i}/C>", kTProfile2D, {crossAxis, crossAxis});
+    histos.add("TowerResponseQA/pResponseVsCrossXYZNC", "ZNC response map;X cross;Y cross;<#Sigma T_{i}/C>", kTProfile2D, {crossAxis, crossAxis});
+    histos.add("TowerResponseQA/pCentroidVsTimeZNA", "ZNA centroid vs time;time from SOR (h);0:x, 1:y;<centroid (cm)>", kTProfile2D, {timeAxis, crossCoordAxis});
+    histos.add("TowerResponseQA/pCentroidVsTimeZNC", "ZNC centroid vs time;time from SOR (h);0:x, 1:y;<centroid (cm)>", kTProfile2D, {timeAxis, crossCoordAxis});
+    histos.add("TowerResponseQA/hCrossXYZNA", "ZNA cross occupancy;X cross;Y cross", kTH2F, {crossAxis, crossAxis});
+    histos.add("TowerResponseQA/hCrossXYZNC", "ZNC cross occupancy;X cross;Y cross", kTH2F, {crossAxis, crossAxis});
+    histos.add("TowerResponseQA/pTower1OverCommonVsCrossXYZNA", "ZNA tower 1 response;X cross;Y cross;<T_{1}/C>", kTProfile2D, {crossAxis, crossAxis});
+    histos.add("TowerResponseQA/pTower2OverCommonVsCrossXYZNA", "ZNA tower 2 response;X cross;Y cross;<T_{2}/C>", kTProfile2D, {crossAxis, crossAxis});
+    histos.add("TowerResponseQA/pTower3OverCommonVsCrossXYZNA", "ZNA tower 3 response;X cross;Y cross;<T_{3}/C>", kTProfile2D, {crossAxis, crossAxis});
+    histos.add("TowerResponseQA/pTower4OverCommonVsCrossXYZNA", "ZNA tower 4 response;X cross;Y cross;<T_{4}/C>", kTProfile2D, {crossAxis, crossAxis});
+    histos.add("TowerResponseQA/pTower1OverCommonVsCrossXYZNC", "ZNC tower 1 response;X cross;Y cross;<T_{1}/C>", kTProfile2D, {crossAxis, crossAxis});
+    histos.add("TowerResponseQA/pTower2OverCommonVsCrossXYZNC", "ZNC tower 2 response;X cross;Y cross;<T_{2}/C>", kTProfile2D, {crossAxis, crossAxis});
+    histos.add("TowerResponseQA/pTower3OverCommonVsCrossXYZNC", "ZNC tower 3 response;X cross;Y cross;<T_{3}/C>", kTProfile2D, {crossAxis, crossAxis});
+    histos.add("TowerResponseQA/pTower4OverCommonVsCrossXYZNC", "ZNC tower 4 response;X cross;Y cross;<T_{4}/C>", kTProfile2D, {crossAxis, crossAxis});
     histos.add("PhiQA/hPhiRawZNA", "ZNA #phi raw;#phi;events", kTH1F, {phiAxis});
     histos.add("PhiQA/hPhiRawZNC", "ZNC #phi raw;#phi;events", kTH1F, {phiAxis});
     histos.add("PhiQA/hPhiAfterGainZNA", "ZNA #phi after gain calibration;#phi;events", kTH1F, {phiAxis});
     histos.add("PhiQA/hPhiAfterGainZNC", "ZNC #phi after gain calibration;#phi;events", kTH1F, {phiAxis});
-    histos.add("PhiQA/hPhiAfterSpatialZNA", "ZNA #phi after spatial calibration;#phi;events", kTH1F, {phiAxis});
-    histos.add("PhiQA/hPhiAfterSpatialZNC", "ZNC #phi after spatial calibration;#phi;events", kTH1F, {phiAxis});
+    histos.add("PhiQA/hPhiAfterTowerCorrectionZNA", "ZNA #phi after 1n tower-energy correction (when enabled);#phi;events", kTH1F, {phiAxis});
+    histos.add("PhiQA/hPhiAfterTowerCorrectionZNC", "ZNC #phi after 1n tower-energy correction (when enabled);#phi;events", kTH1F, {phiAxis});
     histos.add("PhiQA/hPhiRawVsCentralityZNA", "ZNA #phi raw vs centrality;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
     histos.add("PhiQA/hPhiRawVsCentralityZNC", "ZNC #phi raw vs centrality;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
     histos.add("PhiQA/hPhiAfterGainVsCentralityZNA", "ZNA #phi after gain vs centrality;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
     histos.add("PhiQA/hPhiAfterGainVsCentralityZNC", "ZNC #phi after gain vs centrality;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
-    histos.add("PhiQA/hPhiAfterSpatialVsCentralityZNA", "ZNA #phi after spatial calibration vs centrality;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
-    histos.add("PhiQA/hPhiAfterSpatialVsCentralityZNC", "ZNC #phi after spatial calibration vs centrality;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
+    histos.add("PhiQA/hPhiAfterTowerCorrectionVsCentralityZNA", "ZNA #phi after 1n tower-energy correction (when enabled) vs centrality;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
+    histos.add("PhiQA/hPhiAfterTowerCorrectionVsCentralityZNC", "ZNC #phi after 1n tower-energy correction (when enabled) vs centrality;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
 
     // Stage-1 correction input. For each time bin the first 10 y bins contain sum(T_i*T_j), the next 4 contain sum(C*T_i), and the last contains the event count.
     histos.add("GainCalibration/hGainMomentsZNA", "ZNA linear-regression moments;time from SOR (h);moment index", kTH2D, {timeAxis, momentAxis});
     histos.add("GainCalibration/hGainMomentsZNC", "ZNC linear-regression moments;time from SOR (h);moment index", kTH2D, {timeAxis, momentAxis});
-    // Normalized two-pair spatial regression moments. For each (Xcross,Ycross) cell:
-    // u=(T1+T4)/C, v=(T2+T3)/C, and moments are u^2, u*v, v^2, u, v, N.
-    histos.add("SpatialCalibration/hSpatialMomentsZNA", "ZNA normalized pair spatial regression moments;X cross;Y cross;moment index", kTH3D, {spatialCalibAxis, spatialCalibAxis, spatialMomentAxis});
-    histos.add("SpatialCalibration/hSpatialMomentsZNC", "ZNC normalized pair spatial regression moments;X cross;Y cross;moment index", kTH3D, {spatialCalibAxis, spatialCalibAxis, spatialMomentAxis});
-
-    // Q-recentering regression moments derived independently in 1% centrality bins.
-    // Structured71 model: 35 cubic features + 36 truncated-cubic spline terms.
-    // Preserve its train/validation sufficient statistics for the existing CCDB builder.
     if (deriveQRecentering.value) {
       histos.add("QRecenteringCalibration/hRegressionMomentsStructuredTrain", "Structured Q recentering moments (train);centrality (%);moment index", kTH2D, {centralityAxis, qRecenteringStructuredMomentAxis});
       histos.add("QRecenteringCalibration/hRegressionMomentsStructuredValidation", "Structured Q recentering moments (validation);centrality (%);moment index", kTH2D, {centralityAxis, qRecenteringStructuredMomentAxis});
@@ -361,6 +348,38 @@ struct zdc2stagecalibration {
     histos.add("final_calibration/pQMagAVsCentrality", "Final |Q_{A}| vs centrality;centrality (%);<|Q_{A}|>", kTProfile, {centralityAxis});
     histos.add("final_calibration/pQMagCVsCentrality", "Final |Q_{C}| vs centrality;centrality (%);<|Q_{C}|>", kTProfile, {centralityAxis});
 
+    if (derive1nTowerResponse.value) {
+      // Three independent normalized tower fractions f1,f2,f3; f4=1-f1-f2-f3.
+      // Retains the joint four-tower energy-sharing information needed by the fit.
+      // Run-wise 1n train / held-out validation, plus 2n and 3n transfer controls.
+      const AxisSpec frac3Axis{64, 0., 1., "E_{i}/#Sigma E_{j}"};
+      histos.add("OneNeutronTowerCalibration/hRelative1nA_Train", "ZNA 1n gain-only tower fractions (train);f1;f2;f3", kTH3F, {frac3Axis, frac3Axis, frac3Axis});
+      histos.add("OneNeutronTowerCalibration/hRelative1nC_Train", "ZNC 1n gain-only tower fractions (train);f1;f2;f3", kTH3F, {frac3Axis, frac3Axis, frac3Axis});
+      histos.add("OneNeutronTowerCalibration/hRelative1nA_Validation", "ZNA 1n gain-only tower fractions (validation);f1;f2;f3", kTH3F, {frac3Axis, frac3Axis, frac3Axis});
+      histos.add("OneNeutronTowerCalibration/hRelative1nC_Validation", "ZNC 1n gain-only tower fractions (validation);f1;f2;f3", kTH3F, {frac3Axis, frac3Axis, frac3Axis});
+      histos.add("OneNeutronTowerCalibration/hRelative2nA", "ZNA 2n gain-only fractions;f1;f2;f3", kTH3F, {frac3Axis, frac3Axis, frac3Axis});
+      histos.add("OneNeutronTowerCalibration/hRelative2nC", "ZNC 2n gain-only fractions;f1;f2;f3", kTH3F, {frac3Axis, frac3Axis, frac3Axis});
+      histos.add("OneNeutronTowerCalibration/hRelative3nA", "ZNA 3n gain-only fractions;f1;f2;f3", kTH3F, {frac3Axis, frac3Axis, frac3Axis});
+      histos.add("OneNeutronTowerCalibration/hRelative3nC", "ZNC 3n gain-only fractions;f1;f2;f3", kTH3F, {frac3Axis, frac3Axis, frac3Axis});
+    }
+    if (deriveSingleNeutronResponse.value || derive1nTowerResponse.value || use1nTowerCorrection.value) {
+      histos.add("OneNeutronTowerQA/hCorrectionStatus", "Tower-map application status (0=disabled/missing, 1=A only, 2=C only, 3=both);status;events", kTH1F, {{4, 0., 4.}});
+      const AxisSpec qAxisTower{100, -2.5, 2.5, "Q (cm)"};
+      // 1n and 2n/3n before/after the tower correction, independent of recentering.
+      histos.add("OneNeutronTowerQA/hBefore1nA", "Before Q before recentering;Qx (cm);Qy (cm)", kTH2F, {qAxisTower, qAxisTower});
+      histos.add("OneNeutronTowerQA/hBefore1nC", "Before Q before recentering;Qx (cm);Qy (cm)", kTH2F, {qAxisTower, qAxisTower});
+      histos.add("OneNeutronTowerQA/hBefore2nA", "Before Q before recentering;Qx (cm);Qy (cm)", kTH2F, {qAxisTower, qAxisTower});
+      histos.add("OneNeutronTowerQA/hBefore2nC", "Before Q before recentering;Qx (cm);Qy (cm)", kTH2F, {qAxisTower, qAxisTower});
+      histos.add("OneNeutronTowerQA/hBefore3nA", "Before Q before recentering;Qx (cm);Qy (cm)", kTH2F, {qAxisTower, qAxisTower});
+      histos.add("OneNeutronTowerQA/hBefore3nC", "Before Q before recentering;Qx (cm);Qy (cm)", kTH2F, {qAxisTower, qAxisTower});
+      histos.add("OneNeutronTowerQA/hAfter1nA", "After Q before recentering;Qx (cm);Qy (cm)", kTH2F, {qAxisTower, qAxisTower});
+      histos.add("OneNeutronTowerQA/hAfter1nC", "After Q before recentering;Qx (cm);Qy (cm)", kTH2F, {qAxisTower, qAxisTower});
+      histos.add("OneNeutronTowerQA/hAfter2nA", "After Q before recentering;Qx (cm);Qy (cm)", kTH2F, {qAxisTower, qAxisTower});
+      histos.add("OneNeutronTowerQA/hAfter2nC", "After Q before recentering;Qx (cm);Qy (cm)", kTH2F, {qAxisTower, qAxisTower});
+      histos.add("OneNeutronTowerQA/hAfter3nA", "After Q before recentering;Qx (cm);Qy (cm)", kTH2F, {qAxisTower, qAxisTower});
+      histos.add("OneNeutronTowerQA/hAfter3nC", "After Q before recentering;Qx (cm);Qy (cm)", kTH2F, {qAxisTower, qAxisTower});
+    }
+
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -379,38 +398,28 @@ struct zdc2stagecalibration {
     eorTimestamp = runInfo.eor;
     bcSOR = runInfo.orbitSOR * static_cast<int64_t>(o2::constants::lhc::LHCMaxBunches);
     gainprofile = nullptr;
-    spatialprofile = nullptr;
     qRecenteringProfile = nullptr;
-    residualSpatialResponseMap = nullptr;
+    oneNeutronTowerMap = nullptr;
     if (calibrationStage.value == 2 && useGainCallib.value && !confGainPath.value.empty()) {
       gainprofile = ccdb->getForTimeStamp<TH2D>(confGainPath.value, timestamp);
       if (!gainprofile) {
         LOGF(warn, "No ZDC stage-1 gain map found for run %d at timestamp %llu", runNumber, timestamp);
       }
     }
-    if (calibrationStage.value == 2 && useSpatialCalib.value && !confSpatialPath.value.empty()) {
-      spatialprofile = ccdb->getForTimeStamp<TH3D>(confSpatialPath.value, timestamp);
-
-      if (!spatialprofile) {
-        LOGF(warn, "No ZDC spatial calibration found for run %d at timestamp %llu", runNumber, timestamp);
-      }
+    if (calibrationStage.value == 2 && use1nTowerCorrection.value && conf1nTowerPath.value.empty()) {
+      LOGF(warn, "1n relative tower correction is enabled but CCDB path is empty for run %d", runNumber);
     }
-    if (useResidualSpatialResponse.value) {
-      residualSpatialResponseMap = ccdb->getForTimeStamp<TH3D>(confResidualSpatialResponsePath.value, timestamp);
-      if (!residualSpatialResponseMap || residualSpatialResponseMap->GetNbinsZ() != 8 ||
-          residualSpatialResponseMap->GetXaxis()->GetXmin() > -1. || residualSpatialResponseMap->GetXaxis()->GetXmax() < 1. ||
-          residualSpatialResponseMap->GetYaxis()->GetXmin() > -1. || residualSpatialResponseMap->GetYaxis()->GetXmax() < 1. ||
-          residualSpatialResponseMap->GetZaxis()->GetXmin() != 0. || residualSpatialResponseMap->GetZaxis()->GetXmax() != 8.) {
-        LOGF(fatal, "Invalid/missing residual spatial TH3D CCDB map for run %d (crossX,crossY,8 tower multipliers)", runNumber);
+    if (calibrationStage.value == 2 && use1nTowerCorrection.value && !conf1nTowerPath.value.empty()) {
+      oneNeutronTowerMap = ccdb->getForTimeStamp<TH3D>(conf1nTowerPath.value, timestamp);
+      if (!oneNeutronTowerMap) {
+        LOGF(warn, "Missing 1n relative-tower map for run %d; skipping only this step", runNumber);
+      } else if (oneNeutronTowerMap->GetNbinsZ() != 8 ||
+                 oneNeutronTowerMap->GetXaxis()->GetXmin() > -1.75 || oneNeutronTowerMap->GetXaxis()->GetXmax() < 1.75 ||
+                 oneNeutronTowerMap->GetYaxis()->GetXmin() > -1.75 || oneNeutronTowerMap->GetYaxis()->GetXmax() < 1.75 ||
+                 oneNeutronTowerMap->GetZaxis()->GetXmin() != 0. || oneNeutronTowerMap->GetZaxis()->GetXmax() != 8.) {
+        LOGF(warn, "Incompatible 1n tower map dimensions for run %d; step skipped", runNumber);
+        oneNeutronTowerMap = nullptr;
       }
-      for (int ix = 1; ix <= residualSpatialResponseMap->GetNbinsX(); ++ix)
-        for (int iy = 1; iy <= residualSpatialResponseMap->GetNbinsY(); ++iy)
-          for (int iz = 1; iz <= 8; ++iz) {
-            const double v = residualSpatialResponseMap->GetBinContent(ix, iy, iz);
-            if (!std::isfinite(v) || v <= 0.)
-              LOGF(fatal, "Invalid residual tower factor at (%d,%d,%d) run %d", ix, iy, iz, runNumber);
-          }
-      LOGF(info, "Applying additional residual tower-response map for run %d", runNumber);
     }
     if (calibrationStage.value == 2 && useQRecentering.value) {
       const std::string qRecenteringPath = confQRecenteringStructured71Path.value;
@@ -424,7 +433,8 @@ struct zdc2stagecalibration {
                                      std::string(qRecenteringProfile->GetYaxis()->GetBinLabel(kQRecenteringMultidimNFeatures + 1)) == "(T--0.8)_+^3" &&
                                      std::string(qRecenteringProfile->GetYaxis()->GetBinLabel(kQRecenteringStructuredNFeatures)) == "(Vz-+0.8)_+^3";
         if (!structuredMapOK) {
-          LOGF(fatal, "CCDB object at %s is not a valid structured71 map for run %d", qRecenteringPath.c_str(), runNumber);
+          LOGF(warn, "Invalid structured71 map %s run %d: recentering skipped", qRecenteringPath.c_str(), runNumber);
+          qRecenteringProfile = nullptr;
         }
       }
     }
@@ -564,8 +574,9 @@ struct zdc2stagecalibration {
         return 3;
       return 0;
     };
-    const int nClassA = deriveSingleNeutronResponse.value ? neutronCategory(znaEnergycommon) : 0;
-    const int nClassC = deriveSingleNeutronResponse.value ? neutronCategory(zncEnergycommon) : 0;
+    const bool neutronQAEnabled = deriveSingleNeutronResponse.value || derive1nTowerResponse.value || use1nTowerCorrection.value;
+    const int nClassA = neutronQAEnabled ? neutronCategory(znaEnergycommon) : 0;
+    const int nClassC = neutronQAEnabled ? neutronCategory(zncEnergycommon) : 0;
     bool validTowerA = true, validTowerC = true;
     for (int i = 0; i < 4; ++i) {
       validTowerA &= std::isfinite(znaEnergy[i]) && znaEnergy[i] > 0.f;
@@ -606,7 +617,7 @@ struct zdc2stagecalibration {
     }
     histos.fill(HIST("hEvtSelInfo"), 4.5);
 
-    const bool acceptedCollision = collision.sel8() && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && std::isfinite(centrality) && centrality > cfgCutCentralityMin && centrality < cfgCutCentralityMax && std::abs(vz) < cfgCutVertex && collision.has_foundFT0();
+    const bool acceptedCollision = collision.sel8() && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && std::isfinite(centrality) && centrality >= cfgCutCentralityMin && centrality < cfgCutCentralityMax && std::abs(vz) < cfgCutVertex && collision.has_foundFT0();
     if (!acceptedCollision) {
       fillTable(false, -999.f, -999.f, -999.f, -999.f);
       return;
@@ -672,13 +683,19 @@ struct zdc2stagecalibration {
     bool gainOK = true;
     std::array<double, 4> znaCorr{};
     std::array<double, 4> zncCorr{};
-    for (int i = 0; i < 4; ++i) {
-      znaCorr[i] = getGain(timeFromSOR, i, gainOK) * znaEnergy[i];
-      zncCorr[i] = getGain(timeFromSOR, i + 4, gainOK) * zncEnergy[i];
+    std::array<double, 8> gains{};
+    for (int i = 0; i < 8; ++i) {
+      gains[i] = getGain(timeFromSOR, i, gainOK);
     }
     if (!gainOK) {
-      fillTable(false, -999.f, -999.f, -999.f, -999.f);
-      return;
+      // The whole gain step is skipped, never only a subset of channels.
+      // Recentering stays independently enabled; the new tower fit requires valid gain.
+      LOGF(debug, "Gain coefficients unavailable/invalid for run %d; using unity gains for this event", runNumber);
+      gains.fill(1.0);
+    }
+    for (int i = 0; i < 4; ++i) {
+      znaCorr[i] = gains[i] * znaEnergy[i];
+      zncCorr[i] = gains[i + 4] * zncEnergy[i];
     }
     histos.fill(HIST("hEvtSelInfo"), 6.5);
     // Independent 1n/2n/3n selections based only on each arm's common energy.
@@ -733,14 +750,14 @@ struct zdc2stagecalibration {
     }
 
     if (deriveSingleNeutronResponse.value) {
-      if (nClassA) {
+      if (nClassA == 1) {
         histos.fill(HIST("NeutronQA/hCross1nA"), crossLookupXA, crossLookupYA);
         histos.fill(HIST("NeutronQA/pGainTowerFractionVsCross1nA1"), crossLookupXA, crossLookupYA, znaCorr[0] / znaEnergycommon);
         histos.fill(HIST("NeutronQA/pGainTowerFractionVsCross1nA2"), crossLookupXA, crossLookupYA, znaCorr[1] / znaEnergycommon);
         histos.fill(HIST("NeutronQA/pGainTowerFractionVsCross1nA3"), crossLookupXA, crossLookupYA, znaCorr[2] / znaEnergycommon);
         histos.fill(HIST("NeutronQA/pGainTowerFractionVsCross1nA4"), crossLookupXA, crossLookupYA, znaCorr[3] / znaEnergycommon);
       }
-      if (nClassC) {
+      if (nClassC == 1) {
         histos.fill(HIST("NeutronQA/hCross1nC"), crossLookupXC, crossLookupYC);
         histos.fill(HIST("NeutronQA/pGainTowerFractionVsCross1nC1"), crossLookupXC, crossLookupYC, zncCorr[0] / zncEnergycommon);
         histos.fill(HIST("NeutronQA/pGainTowerFractionVsCross1nC2"), crossLookupXC, crossLookupYC, zncCorr[1] / zncEnergycommon);
@@ -749,78 +766,77 @@ struct zdc2stagecalibration {
       }
     }
 
-    if (calibrationStage.value == 2 && useGainCallib.value && deriveSpatialCalib.value && !useSpatialCalib.value) {
-
-      const double uA = (znaCorr[0] + znaCorr[3]) / static_cast<double>(znaEnergycommon);
-      const double vA = (znaCorr[1] + znaCorr[2]) / static_cast<double>(znaEnergycommon);
-      const double uC = (zncCorr[0] + zncCorr[3]) / static_cast<double>(zncEnergycommon);
-      const double vC = (zncCorr[1] + zncCorr[2]) / static_cast<double>(zncEnergycommon);
-
-      if (std::isfinite(uA) && std::isfinite(vA) && std::isfinite(uC) && std::isfinite(vC)) {
-        const std::array<double, 6> spatialMomentsA = {
-          uA * uA,
-          uA * vA,
-          vA * vA,
-          uA,
-          vA,
-          1.0};
-        const std::array<double, 6> spatialMomentsC = {
-          uC * uC,
-          uC * vC,
-          vC * vC,
-          uC,
-          vC,
-          1.0};
-
-        for (int i = 0; i < 6; ++i) {
-          histos.fill(HIST("SpatialCalibration/hSpatialMomentsZNA"), crossLookupXA, crossLookupYA, i + 0.5, spatialMomentsA[i]);
-          histos.fill(HIST("SpatialCalibration/hSpatialMomentsZNC"), crossLookupXC, crossLookupYC, i + 0.5, spatialMomentsC[i]);
-        }
-      }
-    }
-
-    bool spatialOK = true;
-    if (calibrationStage.value == 2 && useSpatialCalib.value) {
-      if (!spatialprofile) {
-        spatialOK = false;
-      } else {
-        for (int i = 0; i < 4; ++i) {
-          const double corrA = spatialprofile->GetBinContent(spatialprofile->FindBin(crossLookupXA, crossLookupYA, i + 0.5));
-          const double corrC = spatialprofile->GetBinContent(spatialprofile->FindBin(crossLookupXC, crossLookupYC, i + 4.5));
-          if (!std::isfinite(corrA) || corrA <= 0.0 || !std::isfinite(corrC) || corrC <= 0.0) {
-            spatialOK = false;
-            break;
-          }
-          znaCorr[i] *= corrA;
-          zncCorr[i] *= corrC;
-        }
-      }
-    }
-    if (!spatialOK) {
-      fillTable(false, -999.f, -999.f, -999.f, -999.f);
-      return;
-    }
-
-    // Apply additional position-dependent tower multipliers. This changes tower weights,
-    // hence the spectator centroid and Q, not just its width. Derive a NEW structured71
-    // recentering map whenever this residual map is changed.
-    if (useResidualSpatialResponse.value) {
-      if (!residualSpatialResponseMap) {
-        fillTable(false, -999.f, -999.f, -999.f, -999.f);
-        return;
-      }
-      for (int i = 0; i < 4; ++i) {
-        const double fA = residualSpatialResponseMap->GetBinContent(
-          residualSpatialResponseMap->FindBin(crossLookupXA, crossLookupYA, i + .5));
-        const double fC = residualSpatialResponseMap->GetBinContent(
-          residualSpatialResponseMap->FindBin(crossLookupXC, crossLookupYC, i + 4.5));
-        if (!std::isfinite(fA) || fA <= 0. || !std::isfinite(fC) || fC <= 0.) {
-          fillTable(false, -999.f, -999.f, -999.f, -999.f);
+    // Derive 1n response from JOINT gain-corrected tower energy fractions.
+    // No absolute common-channel normalization enters this fit; common energy
+    // only selects the 1n/2n/3n classes. Fit each arm independently.
+    if (derive1nTowerResponse.value && calibrationStage.value == 2 && gainOK) {
+      uint64_t splitKey = globalBC + 0x517cc1b727220a95ULL + static_cast<uint64_t>(collision.globalIndex());
+      splitKey = (splitKey ^ (splitKey >> 30)) * 0xbf58476d1ce4e5b9ULL;
+      splitKey = (splitKey ^ (splitKey >> 27)) * 0x94d049bb133111ebULL;
+      splitKey ^= splitKey >> 31;
+      const bool isValidation = (splitKey & 1ULL) != 0ULL;
+      const auto fillRelative = [&](bool sideA, int neutronClass, const std::array<double, 4>& energy, double sum) {
+        if (neutronClass == 0 || !(sum > 0.)) {
           return;
         }
-        znaCorr[i] *= fA;
-        zncCorr[i] *= fC;
-      }
+        const double f1 = energy[0] / sum, f2 = energy[1] / sum, f3 = energy[2] / sum;
+        if (sideA) {
+          if (neutronClass == 1) {
+            if (isValidation) {
+              histos.fill(HIST("OneNeutronTowerCalibration/hRelative1nA_Validation"), f1, f2, f3);
+            } else {
+              histos.fill(HIST("OneNeutronTowerCalibration/hRelative1nA_Train"), f1, f2, f3);
+            }
+          } else if (neutronClass == 2) {
+            histos.fill(HIST("OneNeutronTowerCalibration/hRelative2nA"), f1, f2, f3);
+          } else if (neutronClass == 3) {
+            histos.fill(HIST("OneNeutronTowerCalibration/hRelative3nA"), f1, f2, f3);
+          }
+        } else {
+          if (neutronClass == 1) {
+            if (isValidation) {
+              histos.fill(HIST("OneNeutronTowerCalibration/hRelative1nC_Validation"), f1, f2, f3);
+            } else {
+              histos.fill(HIST("OneNeutronTowerCalibration/hRelative1nC_Train"), f1, f2, f3);
+            }
+          } else if (neutronClass == 2) {
+            histos.fill(HIST("OneNeutronTowerCalibration/hRelative2nC"), f1, f2, f3);
+          } else if (neutronClass == 3) {
+            histos.fill(HIST("OneNeutronTowerCalibration/hRelative3nC"), f1, f2, f3);
+          }
+        }
+      };
+      fillRelative(true, nClassA, znaCorr, gainSumA);
+      fillRelative(false, nClassC, zncCorr, gainSumC);
+    }
+
+    // Apply relative tower corrections atomically for each arm at the GAIN-only
+    // reconstructed Q position (not recentered Q; do not iterate the lookup).
+    // Each factor is positive; a common multiplicative factor cancels in Q.
+    bool applied1nA = false, applied1nC = false;
+    if (calibrationStage.value == 2 && use1nTowerCorrection.value && gainOK && oneNeutronTowerMap) {
+      const auto applyTowerResponse = [&](std::array<double, 4>& energies, double qx, double qy, int zOffset) -> bool {
+        if (!std::isfinite(qx) || !std::isfinite(qy) ||
+            qx < oneNeutronTowerMap->GetXaxis()->GetXmin() || qx >= oneNeutronTowerMap->GetXaxis()->GetXmax() ||
+            qy < oneNeutronTowerMap->GetYaxis()->GetXmin() || qy >= oneNeutronTowerMap->GetYaxis()->GetXmax())
+          return false;
+        std::array<double, 4> factor{};
+        for (int i = 0; i < 4; ++i) {
+          factor[i] = oneNeutronTowerMap->GetBinContent(oneNeutronTowerMap->FindBin(qx, qy, zOffset + i + 0.5));
+          if (!std::isfinite(factor[i]) || factor[i] <= 0. || factor[i] > 2.)
+            return false;
+        }
+        for (int i = 0; i < 4; ++i)
+          energies[i] *= factor[i];
+        return true;
+      };
+      applied1nA = applyTowerResponse(znaCorr, gainXA, gainYA, 0);
+      applied1nC = applyTowerResponse(zncCorr, gainXC, gainYC, 4);
+    }
+    if (calibrationStage.value == 2 &&
+        (deriveSingleNeutronResponse.value || derive1nTowerResponse.value || use1nTowerCorrection.value)) {
+      histos.fill(HIST("OneNeutronTowerQA/hCorrectionStatus"),
+                  0.5 + static_cast<int>(applied1nA) + 2 * static_cast<int>(applied1nC));
     }
 
     double sumEnergyA = 0.0;
@@ -851,12 +867,12 @@ struct zdc2stagecalibration {
     centroidYA /= sumEnergyA;
     centroidXC /= sumEnergyC;
     centroidYC /= sumEnergyC;
-    const double phiSpatialA = std::atan2(centroidYA, centroidXA);
-    const double phiSpatialC = std::atan2(centroidYC, centroidXC);
-    histos.fill(HIST("PhiQA/hPhiAfterSpatialZNA"), phiSpatialA);
-    histos.fill(HIST("PhiQA/hPhiAfterSpatialZNC"), phiSpatialC);
-    histos.fill(HIST("PhiQA/hPhiAfterSpatialVsCentralityZNA"), centrality, phiSpatialA);
-    histos.fill(HIST("PhiQA/hPhiAfterSpatialVsCentralityZNC"), centrality, phiSpatialC);
+    const double phiTowerCorrectedA = std::atan2(centroidYA, centroidXA);
+    const double phiTowerCorrectedC = std::atan2(centroidYC, centroidXC);
+    histos.fill(HIST("PhiQA/hPhiAfterTowerCorrectionZNA"), phiTowerCorrectedA);
+    histos.fill(HIST("PhiQA/hPhiAfterTowerCorrectionZNC"), phiTowerCorrectedC);
+    histos.fill(HIST("PhiQA/hPhiAfterTowerCorrectionVsCentralityZNA"), centrality, phiTowerCorrectedA);
+    histos.fill(HIST("PhiQA/hPhiAfterTowerCorrectionVsCentralityZNC"), centrality, phiTowerCorrectedC);
 
     histos.fill(HIST("GainQA/hSumOverCommonVsTimeZNA"), timeFromSOR, ratioA);
     histos.fill(HIST("GainQA/hSumOverCommonVsTimeZNC"), timeFromSOR, ratioC);
@@ -864,28 +880,28 @@ struct zdc2stagecalibration {
       histos.fill(HIST("GainQA/pTowerOverCommonVsTimeZNA"), timeFromSOR, i + 0.5, znaCorr[i] / znaEnergycommon);
       histos.fill(HIST("GainQA/pTowerOverCommonVsTimeZNC"), timeFromSOR, i + 0.5, zncCorr[i] / zncEnergycommon);
     }
-    histos.fill(HIST("SpatialQA/pCrossVsTimeZNA"), timeFromSOR, 0.5, crossXA);
-    histos.fill(HIST("SpatialQA/pCrossVsTimeZNA"), timeFromSOR, 1.5, crossYA);
-    histos.fill(HIST("SpatialQA/pCrossVsTimeZNC"), timeFromSOR, 0.5, crossXC);
-    histos.fill(HIST("SpatialQA/pCrossVsTimeZNC"), timeFromSOR, 1.5, crossYC);
-    histos.fill(HIST("SpatialQA/pResponseVsCrossXYZNA"), crossLookupXA, crossLookupYA, ratioA);
-    histos.fill(HIST("SpatialQA/pResponseVsCrossXYZNC"), crossLookupXC, crossLookupYC, ratioC);
-    histos.fill(HIST("SpatialQA/pCentroidVsTimeZNA"), timeFromSOR, 0.5, centroidXA);
-    histos.fill(HIST("SpatialQA/pCentroidVsTimeZNA"), timeFromSOR, 1.5, centroidYA);
-    histos.fill(HIST("SpatialQA/pCentroidVsTimeZNC"), timeFromSOR, 0.5, centroidXC);
-    histos.fill(HIST("SpatialQA/pCentroidVsTimeZNC"), timeFromSOR, 1.5, centroidYC);
-    histos.fill(HIST("SpatialQA/hCrossXYZNA"), crossLookupXA, crossLookupYA);
-    histos.fill(HIST("SpatialQA/hCrossXYZNC"), crossLookupXC, crossLookupYC);
+    histos.fill(HIST("TowerResponseQA/pCrossVsTimeZNA"), timeFromSOR, 0.5, crossXA);
+    histos.fill(HIST("TowerResponseQA/pCrossVsTimeZNA"), timeFromSOR, 1.5, crossYA);
+    histos.fill(HIST("TowerResponseQA/pCrossVsTimeZNC"), timeFromSOR, 0.5, crossXC);
+    histos.fill(HIST("TowerResponseQA/pCrossVsTimeZNC"), timeFromSOR, 1.5, crossYC);
+    histos.fill(HIST("TowerResponseQA/pResponseVsCrossXYZNA"), crossLookupXA, crossLookupYA, ratioA);
+    histos.fill(HIST("TowerResponseQA/pResponseVsCrossXYZNC"), crossLookupXC, crossLookupYC, ratioC);
+    histos.fill(HIST("TowerResponseQA/pCentroidVsTimeZNA"), timeFromSOR, 0.5, centroidXA);
+    histos.fill(HIST("TowerResponseQA/pCentroidVsTimeZNA"), timeFromSOR, 1.5, centroidYA);
+    histos.fill(HIST("TowerResponseQA/pCentroidVsTimeZNC"), timeFromSOR, 0.5, centroidXC);
+    histos.fill(HIST("TowerResponseQA/pCentroidVsTimeZNC"), timeFromSOR, 1.5, centroidYC);
+    histos.fill(HIST("TowerResponseQA/hCrossXYZNA"), crossLookupXA, crossLookupYA);
+    histos.fill(HIST("TowerResponseQA/hCrossXYZNC"), crossLookupXC, crossLookupYC);
 
-    histos.fill(HIST("SpatialQA/pTower1OverCommonVsCrossXYZNA"), crossLookupXA, crossLookupYA, znaCorr[0] / znaEnergycommon);
-    histos.fill(HIST("SpatialQA/pTower2OverCommonVsCrossXYZNA"), crossLookupXA, crossLookupYA, znaCorr[1] / znaEnergycommon);
-    histos.fill(HIST("SpatialQA/pTower3OverCommonVsCrossXYZNA"), crossLookupXA, crossLookupYA, znaCorr[2] / znaEnergycommon);
-    histos.fill(HIST("SpatialQA/pTower4OverCommonVsCrossXYZNA"), crossLookupXA, crossLookupYA, znaCorr[3] / znaEnergycommon);
+    histos.fill(HIST("TowerResponseQA/pTower1OverCommonVsCrossXYZNA"), crossLookupXA, crossLookupYA, znaCorr[0] / znaEnergycommon);
+    histos.fill(HIST("TowerResponseQA/pTower2OverCommonVsCrossXYZNA"), crossLookupXA, crossLookupYA, znaCorr[1] / znaEnergycommon);
+    histos.fill(HIST("TowerResponseQA/pTower3OverCommonVsCrossXYZNA"), crossLookupXA, crossLookupYA, znaCorr[2] / znaEnergycommon);
+    histos.fill(HIST("TowerResponseQA/pTower4OverCommonVsCrossXYZNA"), crossLookupXA, crossLookupYA, znaCorr[3] / znaEnergycommon);
 
-    histos.fill(HIST("SpatialQA/pTower1OverCommonVsCrossXYZNC"), crossLookupXC, crossLookupYC, zncCorr[0] / zncEnergycommon);
-    histos.fill(HIST("SpatialQA/pTower2OverCommonVsCrossXYZNC"), crossLookupXC, crossLookupYC, zncCorr[1] / zncEnergycommon);
-    histos.fill(HIST("SpatialQA/pTower3OverCommonVsCrossXYZNC"), crossLookupXC, crossLookupYC, zncCorr[2] / zncEnergycommon);
-    histos.fill(HIST("SpatialQA/pTower4OverCommonVsCrossXYZNC"), crossLookupXC, crossLookupYC, zncCorr[3] / zncEnergycommon);
+    histos.fill(HIST("TowerResponseQA/pTower1OverCommonVsCrossXYZNC"), crossLookupXC, crossLookupYC, zncCorr[0] / zncEnergycommon);
+    histos.fill(HIST("TowerResponseQA/pTower2OverCommonVsCrossXYZNC"), crossLookupXC, crossLookupYC, zncCorr[1] / zncEnergycommon);
+    histos.fill(HIST("TowerResponseQA/pTower3OverCommonVsCrossXYZNC"), crossLookupXC, crossLookupYC, zncCorr[2] / zncEnergycommon);
+    histos.fill(HIST("TowerResponseQA/pTower4OverCommonVsCrossXYZNC"), crossLookupXC, crossLookupYC, zncCorr[3] / zncEnergycommon);
     const double alphaZDC = 0.395;
     double qxZDCA = 0.0;
     double qxZDCC = 0.0;
@@ -934,6 +950,44 @@ struct zdc2stagecalibration {
       return;
     }
 
+    // Fixed before/after distributions for each neutron class, independent of
+    // whether structured71 is enabled. No class-specific recentering is used.
+    if (calibrationStage.value == 2 &&
+        (deriveSingleNeutronResponse.value || derive1nTowerResponse.value || use1nTowerCorrection.value)) {
+      const auto fillTowerQ = [&](int neutronClass, bool sideA, double qxBefore, double qyBefore,
+                                  double qxAfter, double qyAfter) {
+        if (sideA) {
+          if (neutronClass == 1) {
+            histos.fill(HIST("OneNeutronTowerQA/hBefore1nA"), qxBefore, qyBefore);
+            histos.fill(HIST("OneNeutronTowerQA/hAfter1nA"), qxAfter, qyAfter);
+          }
+          if (neutronClass == 2) {
+            histos.fill(HIST("OneNeutronTowerQA/hBefore2nA"), qxBefore, qyBefore);
+            histos.fill(HIST("OneNeutronTowerQA/hAfter2nA"), qxAfter, qyAfter);
+          }
+          if (neutronClass == 3) {
+            histos.fill(HIST("OneNeutronTowerQA/hBefore3nA"), qxBefore, qyBefore);
+            histos.fill(HIST("OneNeutronTowerQA/hAfter3nA"), qxAfter, qyAfter);
+          }
+        } else {
+          if (neutronClass == 1) {
+            histos.fill(HIST("OneNeutronTowerQA/hBefore1nC"), qxBefore, qyBefore);
+            histos.fill(HIST("OneNeutronTowerQA/hAfter1nC"), qxAfter, qyAfter);
+          }
+          if (neutronClass == 2) {
+            histos.fill(HIST("OneNeutronTowerQA/hBefore2nC"), qxBefore, qyBefore);
+            histos.fill(HIST("OneNeutronTowerQA/hAfter2nC"), qxAfter, qyAfter);
+          }
+          if (neutronClass == 3) {
+            histos.fill(HIST("OneNeutronTowerQA/hBefore3nC"), qxBefore, qyBefore);
+            histos.fill(HIST("OneNeutronTowerQA/hAfter3nC"), qxAfter, qyAfter);
+          }
+        }
+      };
+      fillTowerQ(nClassA, true, gainXA, gainYA, qxZDCA, qyZDCA);
+      fillTowerQ(nClassC, false, gainXC, gainYC, qxZDCC, qyZDCC);
+    }
+
     std::array<double, 4> qValues = {qxZDCA, qyZDCA, qxZDCC, qyZDCC};
 
     for (int i = 0; i < 4; ++i) {
@@ -950,7 +1004,7 @@ struct zdc2stagecalibration {
     histos.fill(HIST("QCorrelationQA/pQACorrelationBeforeVsCentrality"), centrality, 2.5, qValues[0] * qValues[3]);
     histos.fill(HIST("QCorrelationQA/pQACorrelationBeforeVsCentrality"), centrality, 3.5, qValues[1] * qValues[2]);
 
-    if (calibrationStage.value == 2 && useGainCallib.value && useSpatialCalib.value && deriveQRecentering.value && !useQRecentering.value) {
+    if (calibrationStage.value == 2 && deriveQRecentering.value && !useQRecentering.value) {
       {
         // Structured71 regression moments. Events are deterministically split
         // 50/50 using a mixed global-BC key, avoiding any dependence on the
@@ -1039,35 +1093,30 @@ struct zdc2stagecalibration {
       }
     }
 
-    bool qRecenteringOK = true;
-    if (calibrationStage.value == 2 && useQRecentering.value) {
-      // Preserve the 71-feature coefficient ordering expected by the existing CCDB map.
-      const auto subtractBias = [&](const auto& features) {
-        for (int component = 0; component < kQRecenteringNComponents; ++component) {
-          double predictedBias = 0.0;
-          for (std::size_t i = 0; i < features.size(); ++i) {
-            const double coefficient = qRecenteringProfile->GetBinContent(qRecenteringProfile->FindBin(centrality, i + 0.5, component + 0.5));
-            if (!std::isfinite(coefficient)) {
-              return false;
-            }
-            predictedBias += coefficient * features[i];
+    if (calibrationStage.value == 2 && useQRecentering.value && qRecenteringProfile &&
+        centrality >= qRecenteringProfile->GetXaxis()->GetXmin() &&
+        centrality < qRecenteringProfile->GetXaxis()->GetXmax()) {
+      const auto features = makeQRecenteringStructuredFeatures(timeFromSOR, vx, vy, vz);
+      std::array<double, 4> bias{};
+      bool valid = true;
+      for (int component = 0; component < kQRecenteringNComponents; ++component) {
+        for (std::size_t i = 0; i < features.size(); ++i) {
+          const double coeff = qRecenteringProfile->GetBinContent(qRecenteringProfile->FindBin(centrality, i + 0.5, component + 0.5));
+          if (!std::isfinite(coeff)) {
+            valid = false;
+            break;
           }
-          if (!std::isfinite(predictedBias)) {
-            return false;
-          }
-          qValues[component] -= predictedBias;
+          bias[component] += coeff * features[i];
         }
-        return true;
-      };
-      if (!qRecenteringProfile) {
-        qRecenteringOK = false;
-      } else {
-        qRecenteringOK = subtractBias(makeQRecenteringStructuredFeatures(timeFromSOR, vx, vy, vz));
+        if (!std::isfinite(bias[component]))
+          valid = false;
       }
-    }
-    if (!qRecenteringOK) {
-      fillTable(false, -999.f, -999.f, -999.f, -999.f);
-      return;
+      if (valid) {
+        for (int i = 0; i < 4; ++i)
+          qValues[i] -= bias[i];
+      } else {
+        LOGF(debug, "Invalid recentering map values run %d: recentering skipped without altering Q", runNumber);
+      }
     }
 
     // Compact Q moments: 0 Qx, 1 Qy, 2 Qx^2, 3 Qy^2, 4 QxQy,
@@ -1125,11 +1174,11 @@ struct zdc2stagecalibration {
       fillSide(1, nClassC, q[2], q[3]);
     };
     if (deriveSingleNeutronResponse.value && calibrationStage.value == 2 && useQRecentering.value) {
-      if (nClassA) {
+      if (nClassA == 1) {
         histos.fill(HIST("NeutronQA/pRecenteredQxVsCross1nA"), crossLookupXA, crossLookupYA, qValues[0]);
         histos.fill(HIST("NeutronQA/pRecenteredQyVsCross1nA"), crossLookupXA, crossLookupYA, qValues[1]);
       }
-      if (nClassC) {
+      if (nClassC == 1) {
         histos.fill(HIST("NeutronQA/pRecenteredQxVsCross1nC"), crossLookupXC, crossLookupYC, qValues[2]);
         histos.fill(HIST("NeutronQA/pRecenteredQyVsCross1nC"), crossLookupXC, crossLookupYC, qValues[3]);
       }
@@ -1157,9 +1206,13 @@ struct zdc2stagecalibration {
     histos.fill(HIST("PhiQA/hPhiAfterRecenteringVsCentralityZNA"), centrality, phiFinalA);
     histos.fill(HIST("PhiQA/hPhiAfterRecenteringVsCentralityZNC"), centrality, phiFinalC);
 
+    // Final Q vectors are from enabled tower-energy and structured71 steps.
+    const double phiOutputA = std::atan2(qValues[1], qValues[0]);
+    const double phiOutputC = std::atan2(qValues[3], qValues[2]);
+
     // Direction-sensitive TPC first-harmonic numerators for each ZNA/C side and x/y.
     // No track iteration when cfgTPCV1Correlation is false.
-    // Same-side Q after all enabled corrections, per-track unit weights.
+    // Same-side Q after the enabled corrections, per-track unit weights.
     // This is NOT a fitted v1 nor resolution-corrected; use a separate plotting macro.
     if (cfgTPCV1Correlation.value && calibrationStage.value == 2) {
       for (const auto& track : tracks) {
@@ -1176,11 +1229,11 @@ struct zdc2stagecalibration {
         histos.fill(HIST("TPCV1EtaQA/pNumerators"), centrality, eta, 3.5, ty * qValues[3]);
       }
     }
-    // ZDC resolution after all enabled corrections
+    // ZDC resolution after the enabled corrections
     const double qMagA = std::hypot(qValues[0], qValues[1]);
     const double qMagC = std::hypot(qValues[2], qValues[3]);
-    if (centrality >= 0.f && centrality < 50.f && qMagA > 0. && qMagC > 0.) {
-      const double correlation = std::cos(phiFinalA - phiFinalC);
+    if (centrality >= 0.f && centrality < cfgCutCentralityMax.value && qMagA > 0. && qMagC > 0.) {
+      const double correlation = std::cos(phiOutputA - phiOutputC);
       histos.fill(HIST("ResolutionQA/pCosPsiAPsiCVsCentrality"), centrality, correlation);
       histos.fill(HIST("ResolutionQA/pCosPsiAPsiCVsCentralityVz"), centrality, vz, correlation);
     }
@@ -1196,13 +1249,13 @@ struct zdc2stagecalibration {
       histos.fill(HIST("final_calibration/pQxCVsCentrality"), centrality, qValues[2]);
       histos.fill(HIST("final_calibration/pQyCVsCentrality"), centrality, qValues[3]);
       if (qMagA > 0.) {
-        histos.fill(HIST("final_calibration/hPhiAVsCentrality"), centrality, phiFinalA);
+        histos.fill(HIST("final_calibration/hPhiAVsCentrality"), centrality, phiOutputA);
       }
       if (qMagC > 0.) {
-        histos.fill(HIST("final_calibration/hPhiCVsCentrality"), centrality, phiFinalC);
+        histos.fill(HIST("final_calibration/hPhiCVsCentrality"), centrality, phiOutputC);
       }
       if (qMagA > 0. && qMagC > 0.) {
-        const double finalCorrelation = std::cos(phiFinalA - phiFinalC);
+        const double finalCorrelation = std::cos(phiOutputA - phiOutputC);
         histos.fill(HIST("final_calibration/pCosPsiAPsiCVsCentrality"), centrality, finalCorrelation);
         histos.fill(HIST("final_calibration/pCosPsiAPsiCVsCentralityVz"), centrality, vz, finalCorrelation);
       }
@@ -1225,12 +1278,12 @@ struct zdc2stagecalibration {
       }
       for (int n = 1; n <= 4; ++n) {
         if (qMagA > 0.) {
-          histos.fill(HIST("final_calibration/pPhiHarmonicsAVsCentrality"), centrality, 2 * n - 1.5, std::cos(n * phiFinalA));
-          histos.fill(HIST("final_calibration/pPhiHarmonicsAVsCentrality"), centrality, 2 * n - 0.5, std::sin(n * phiFinalA));
+          histos.fill(HIST("final_calibration/pPhiHarmonicsAVsCentrality"), centrality, 2 * n - 1.5, std::cos(n * phiOutputA));
+          histos.fill(HIST("final_calibration/pPhiHarmonicsAVsCentrality"), centrality, 2 * n - 0.5, std::sin(n * phiOutputA));
         }
         if (qMagC > 0.) {
-          histos.fill(HIST("final_calibration/pPhiHarmonicsCVsCentrality"), centrality, 2 * n - 1.5, std::cos(n * phiFinalC));
-          histos.fill(HIST("final_calibration/pPhiHarmonicsCVsCentrality"), centrality, 2 * n - 0.5, std::sin(n * phiFinalC));
+          histos.fill(HIST("final_calibration/pPhiHarmonicsCVsCentrality"), centrality, 2 * n - 1.5, std::cos(n * phiOutputC));
+          histos.fill(HIST("final_calibration/pPhiHarmonicsCVsCentrality"), centrality, 2 * n - 0.5, std::sin(n * phiOutputC));
         }
       }
       histos.fill(HIST("final_calibration/pQMagAVsCentrality"), centrality, qMagA);

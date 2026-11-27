@@ -139,7 +139,7 @@ struct AnalysisEventSelection {
   {
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigEventCuts.value;
-    fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+    fEventCut->addCut(dqcuts::getAnalysisCut(eventCutStr.Data()));
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
 
     VarManager::SetDefaultVarNames();
@@ -195,7 +195,7 @@ struct AnalysisEventSelection {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues); // automatically fill all the histograms in the class Event
       registry.fill(HIST("Generator/SubGenerator_SelectedInjected"), subGeneratorID);
     }
-    if (fEventCut->IsSelected(VarManager::fgValues) && pass) {
+    if (fEventCut->isSelected(VarManager::fgValues) && pass) {
       if (fConfigQA) {
         fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
         registry.fill(HIST("Generator/SubGenerator_AfterCuts"), subGeneratorID);
@@ -527,7 +527,7 @@ struct AnalysisTrackSelection {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -714,7 +714,7 @@ struct AnalysisTrackSelection {
       VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
       // fill event information which might be needed in histograms that combine track and event properties
       VarManager::FillEvent<TEventFillMap>(event);
-      // if(!fEventCut->IsSelected(VarManager::fgValues)) continue;
+      // if(!fEventCut->isSelected(VarManager::fgValues)) continue;
       eventFilter = static_cast<uint32_t>(event.isEventSelected());
       if (!eventFilter) {
         pass = false;
@@ -922,7 +922,7 @@ struct AnalysisTrackSelection {
       // compute track selection and publish the bit map
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
-        if ((*cut).IsSelected(VarManager::fgValues)) {
+        if ((*cut).isSelected(VarManager::fgValues)) {
           filterMap |= (static_cast<uint32_t>(1) << i);
           if (fConfigQA && pass) {
             fHistManQA->FillHistClass(fHistNamesRecoQA[i].Data(), VarManager::fgValues);
@@ -1141,7 +1141,7 @@ struct AnalysisTrackSelection {
       // compute track selection and publish the bit map
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
-        if ((*cut).IsSelected(VarManager::fgValues)) {
+        if ((*cut).isSelected(VarManager::fgValues)) {
           filterMap |= (static_cast<uint32_t>(1) << i);
           if (fConfigQA) {
             fHistManQA->FillHistClass(fHistNamesRecoQA[i].Data(), VarManager::fgValues);
@@ -1448,7 +1448,7 @@ struct AnalysisSameEventPairing {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.push_back(*dqcuts::getCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
