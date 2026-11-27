@@ -465,7 +465,6 @@ struct JetTaggerHFQA {
     if (mcdjet.pt() > pTHatMaxMCD * pTHat) {
       return;
     }
-    typename V::iterator hftrack;
     int jetflavourConstQuark = jettaggingutilities::mcdJetFromHFShower(mcdjet, tracks, particles, maxDeltaR, true);
     int jetflavourConstHadron = jettaggingutilities::mcdJetFromHFShower(mcdjet, tracks, particles, maxDeltaR, false);
     int jetflavourDistQuark = -1;
