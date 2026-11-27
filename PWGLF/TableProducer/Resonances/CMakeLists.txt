@@ -79,4 +79,3 @@ o2physics_add_dpl_workflow(spin-align-vec-meson-table
     SOURCES spinAlignVecMesonTable.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
-    
