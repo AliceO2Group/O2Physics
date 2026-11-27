@@ -292,6 +292,7 @@ struct StrangenessInJets {
       registryData.add("number_of_events_data", "number of events in data", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
       registryData.add("number_of_events_vsmultiplicity", "number of events in data vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
       registryData.add("number_of_jets_vsmultiplicity", "number of jets in data vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
+      registryData.add("number_of_events_vsmultiplicity_fullevent", "number of events in data vs multiplicity (full event)", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // Histograms for analysis of strange hadrons
       if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
@@ -301,6 +302,9 @@ struct StrangenessInJets {
         registryData.add("AntiLambda_in_ue", "AntiLambda_in_ue", HistType::kTH3F, {multAxis, ptAxis, invMassLambdaAxis});
         registryData.add("K0s_in_jet", "K0s_in_jet", HistType::kTH3F, {multAxis, ptAxis, invMassK0sAxis});
         registryData.add("K0s_in_ue", "K0s_in_ue", HistType::kTH3F, {multAxis, ptAxis, invMassK0sAxis});
+        registryData.add("K0s_fullevent", "K0s_fullevent", HistType::kTH3F, {multAxis, ptAxis, invMassK0sAxis});
+        registryData.add("Lambda_fullevent", "Lambda_fullevent", HistType::kTH3F, {multAxis, ptAxis, invMassLambdaAxis});
+        registryData.add("AntiLambda_fullevent", "AntiLambda_fullevent", HistType::kTH3F, {multAxis, ptAxis, invMassLambdaAxis});
       }
       if (enabledSignals.value[ParticleOfInterest::kCascades]) {
         registryData.add("XiPos_in_jet", "XiPos_in_jet", HistType::kTH3F, {multAxis, ptAxis, invMassXiAxis});
@@ -311,6 +315,10 @@ struct StrangenessInJets {
         registryData.add("OmegaPos_in_ue", "OmegaPos_in_ue", HistType::kTH3F, {multAxis, ptAxis, invMassOmegaAxis});
         registryData.add("OmegaNeg_in_jet", "OmegaNeg_in_jet", HistType::kTH3F, {multAxis, ptAxis, invMassOmegaAxis});
         registryData.add("OmegaNeg_in_ue", "OmegaNeg_in_ue", HistType::kTH3F, {multAxis, ptAxis, invMassOmegaAxis});
+        registryData.add("XiPos_fullevent", "XiPos_fullevent", HistType::kTH3F, {multAxis, ptAxis, invMassXiAxis});
+        registryData.add("XiNeg_fullevent", "XiNeg_fullevent", HistType::kTH3F, {multAxis, ptAxis, invMassXiAxis});
+        registryData.add("OmegaPos_fullevent", "OmegaPos_fullevent", HistType::kTH3F, {multAxis, ptAxis, invMassOmegaAxis});
+        registryData.add("OmegaNeg_fullevent", "OmegaNeg_fullevent", HistType::kTH3F, {multAxis, ptAxis, invMassOmegaAxis});
       }
       if (enabledSignals.value[ParticleOfInterest::kPions] ||
           enabledSignals.value[ParticleOfInterest::kKaons] ||
@@ -1091,6 +1099,43 @@ struct StrangenessInJets {
 
     // Fill event counter after event selection
     registryData.fill(HIST("number_of_events_data"), 2.5);
+
+    // Full event (inclusive) distributions, before any jet requirement
+    registryData.fill(HIST("number_of_events_vsmultiplicity_fullevent"), collision.centFT0M());
+    if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
+      for (const auto& v0 : fullV0s) {
+        const auto& pos = v0.posTrack_as<DaughterTracks>();
+        const auto& neg = v0.negTrack_as<DaughterTracks>();
+        if (passedK0ShortSelection(v0, pos, neg)) {
+          registryData.fill(HIST("K0s_fullevent"), collision.centFT0M(), v0.pt(), v0.mK0Short());
+        }
+        if (passedLambdaSelection(v0, pos, neg)) {
+          registryData.fill(HIST("Lambda_fullevent"), collision.centFT0M(), v0.pt(), v0.mLambda());
+        }
+        if (passedAntiLambdaSelection(v0, pos, neg)) {
+          registryData.fill(HIST("AntiLambda_fullevent"), collision.centFT0M(), v0.pt(), v0.mAntiLambda());
+        }
+      }
+    }
+    if (enabledSignals.value[ParticleOfInterest::kCascades]) {
+      for (const auto& casc : Cascades) {
+        const auto& bach = casc.bachelor_as<DaughterTracks>();
+        const auto& pos = casc.posTrack_as<DaughterTracks>();
+        const auto& neg = casc.negTrack_as<DaughterTracks>();
+        if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
+          registryData.fill(HIST("XiPos_fullevent"), collision.centFT0M(), casc.pt(), casc.mXi());
+        }
+        if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
+          registryData.fill(HIST("XiNeg_fullevent"), collision.centFT0M(), casc.pt(), casc.mXi());
+        }
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
+          registryData.fill(HIST("OmegaPos_fullevent"), collision.centFT0M(), casc.pt(), casc.mOmega());
+        }
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
+          registryData.fill(HIST("OmegaNeg_fullevent"), collision.centFT0M(), casc.pt(), casc.mOmega());
+        }
+      }
+    }
 
     // Loop over reconstructed tracks
     std::vector<fastjet::PseudoJet> fjParticles;
