@@ -33,6 +33,9 @@
 
 #include <TAxis.h>
 #include <TH1.h>
+// SIGMA_ZVERTEX_TEST2_V1_BEGIN_HEADERS
+#include <TProfile.h>
+// SIGMA_ZVERTEX_TEST2_V1_END_HEADERS
 
 #include <algorithm>
 #include <array>
@@ -85,6 +88,15 @@ struct StronglyIntensiveCorr {
   Configurable<bool> cfgUseNoTimeFrameBorder{"cfgUseNoTimeFrameBorder", true, "Reject time frame borders"};
   Configurable<bool> cfgFillEtaVtxQA{"cfgFillEtaVtxQA", true, "Fill centrality-resolved eta versus vertex QA for data"};
   Configurable<bool> cfgFillEtaVtxPhiQA{"cfgFillEtaVtxPhiQA", true, "Fill centrality-resolved eta, vertex and phi QA for data"};
+  // ITS_CLUSTER_SCAN_TEST3_V1_BEGIN_CONFIG
+  Configurable<bool> cfgFillITSClusterScan{"cfgFillITSClusterScan", false, "TEST3: compare minimum ITS clusters 4, 5, 6 and 7 using the same selected data events"};
+  // ITS_CLUSTER_SCAN_TEST3_V1_END_CONFIG
+  // SIGMA_ZVERTEX_TEST2_V1_BEGIN_CONFIG
+  Configurable<bool> cfgFillZVertexMoments{"cfgFillZVertexMoments", false, "Fill data FB moments versus centrality, gap and vertex with subsample sums"};
+  // SIGMA_ZVERTEX_TEST2_V1_END_CONFIG
+  // ITS_CLUSTER_TEST1_V1_BEGIN_CONFIG
+  Configurable<bool> cfgFillITSMissingClusterQA{"cfgFillITSMissingClusterQA", false, "TEST1: missing ITS-cluster QA for a TPC reference in selected 0-10% data events"};
+  // ITS_CLUSTER_TEST1_V1_END_CONFIG
 
   Configurable<bool> cfgUseOnlyPhysicalPrimary{"cfgUseOnlyPhysicalPrimary", true, "MC truth: require physical primary"};
   Configurable<bool> cfgUseOnlyChargedMC{"cfgUseOnlyChargedMC", true, "MC truth: require charged particle"};
@@ -154,6 +166,9 @@ struct StronglyIntensiveCorr {
       LOGF(fatal, "Invalid occupancy interval: require 0 <= cfgMinOccupancy <= cfgMaxOccupancy");
     }
 
+    // ITS_CLUSTER_TEST1_V1_BEGIN_INIT
+    initITSMissingClusterQA();
+    // ITS_CLUSTER_TEST1_V1_END_INIT
     AxisSpec centAxis = {100, 0.0, 100.0, "centrality (%)"};
     std::vector<double> centClassEdges(centEdges.begin(), centEdges.end());
     AxisSpec centClassAxis = {centClassEdges, "centrality class (%)"};
@@ -169,6 +184,76 @@ struct StronglyIntensiveCorr {
     AxisSpec ptAxis = {{0.2, 0.5, 0.8, 1.0, 1.5, 2.0, 5.0}, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec phiAxis = {NPhiBins, 0.0, TwoPi, "#varphi"};
     AxisSpec subsampleAxis = {NSubsamplesMax, -0.5, static_cast<double>(NSubsamplesMax) - 0.5, "subsample"};
+    // ITS_CLUSTER_SCAN_TEST3_V1_BEGIN_BOOKING
+    if (cfgFillITSClusterScan.value) {
+      if (cfgNSubsamples.value < 2 || cfgNSubsamples.value > NSubsamplesMax) {
+        LOGF(fatal, "TEST3 requires 2 <= cfgNSubsamples <= NSubsamplesMax; existing subsample assignment is preserved");
+      }
+      if (!std::isfinite(cfgEtaWidth.value) || cfgEtaWidth.value <= 0.0f) {
+        LOGF(fatal, "TEST3 requires a finite positive cfgEtaWidth");
+      }
+      AxisSpec test3ITSAxis = {4, 3.5, 7.5, "minimum ITS clusters"};
+      histos.add("Test3ITSScan/pNF_its_cent_gap", "<nF>;minimum ITS clusters;centrality (%);#Delta#eta", kTProfile3D, {test3ITSAxis, centClassAxis, etaGapAxis});
+      histos.add("Test3ITSScan/pNB_its_cent_gap", "<nB>;minimum ITS clusters;centrality (%);#Delta#eta", kTProfile3D, {test3ITSAxis, centClassAxis, etaGapAxis});
+      histos.add("Test3ITSScan/pNF2_its_cent_gap", "<nF^{2}>;minimum ITS clusters;centrality (%);#Delta#eta", kTProfile3D, {test3ITSAxis, centClassAxis, etaGapAxis});
+      histos.add("Test3ITSScan/pNB2_its_cent_gap", "<nB^{2}>;minimum ITS clusters;centrality (%);#Delta#eta", kTProfile3D, {test3ITSAxis, centClassAxis, etaGapAxis});
+      histos.add("Test3ITSScan/pNFNB_its_cent_gap", "<nF nB>;minimum ITS clusters;centrality (%);#Delta#eta", kTProfile3D, {test3ITSAxis, centClassAxis, etaGapAxis});
+      // Same events and subsample IDs at every threshold preserve covariance for ratios.
+      histos.add("Test3ITSScan/subsamples/EventCount_sub_its_cent_gap", "event count;subsample;minimum ITS clusters;centrality (%);#Delta#eta", kTHnD, {subsampleAxis, test3ITSAxis, centClassAxis, etaGapAxis});
+      histos.add("Test3ITSScan/subsamples/SumNF_sub_its_cent_gap", "sum nF;subsample;minimum ITS clusters;centrality (%);#Delta#eta", kTHnD, {subsampleAxis, test3ITSAxis, centClassAxis, etaGapAxis});
+      histos.add("Test3ITSScan/subsamples/SumNB_sub_its_cent_gap", "sum nB;subsample;minimum ITS clusters;centrality (%);#Delta#eta", kTHnD, {subsampleAxis, test3ITSAxis, centClassAxis, etaGapAxis});
+      histos.add("Test3ITSScan/subsamples/SumNF2_sub_its_cent_gap", "sum nF^{2};subsample;minimum ITS clusters;centrality (%);#Delta#eta", kTHnD, {subsampleAxis, test3ITSAxis, centClassAxis, etaGapAxis});
+      histos.add("Test3ITSScan/subsamples/SumNB2_sub_its_cent_gap", "sum nB^{2};subsample;minimum ITS clusters;centrality (%);#Delta#eta", kTHnD, {subsampleAxis, test3ITSAxis, centClassAxis, etaGapAxis});
+      histos.add("Test3ITSScan/subsamples/SumNFNB_sub_its_cent_gap", "sum nF nB;subsample;minimum ITS clusters;centrality (%);#Delta#eta", kTHnD, {subsampleAxis, test3ITSAxis, centClassAxis, etaGapAxis});
+      histos.add("Test3ITSScan/hEvents_cent", "Selected data events for TEST3;centrality (%);events", kTH1D, {centClassAxis});
+      histos.add("Test3ITSScan/pNTracks_its_cent", "Accepted track count per event;minimum ITS clusters;centrality (%);tracks", kTProfile2D, {test3ITSAxis, centClassAxis});
+      histos.add("Test3ITSScan/pPhysicalGap_gap", "Physical gap value per existing gap bin;#Delta#eta bin;physical gap", kTProfile, {etaGapAxis});
+      histos.add("Test3ITSScan/pSettings", "TEST3 metadata;setting;value", kTProfile, {{4, 0.5, 4.5}});
+      auto test3Settings = histos.get<TProfile>(HIST("Test3ITSScan/pSettings"));
+      test3Settings->GetXaxis()->SetBinLabel(1, "SchemaVersion");
+      test3Settings->GetXaxis()->SetBinLabel(2, "NSubsamples");
+      test3Settings->GetXaxis()->SetBinLabel(3, "EtaWidth");
+      test3Settings->GetXaxis()->SetBinLabel(4, "ReferenceITS");
+      histos.fill(HIST("Test3ITSScan/pSettings"), 1.0, 1.0);
+      histos.fill(HIST("Test3ITSScan/pSettings"), 2.0, static_cast<double>(cfgNSubsamples.value));
+      histos.fill(HIST("Test3ITSScan/pSettings"), 3.0, static_cast<double>(cfgEtaWidth.value));
+      histos.fill(HIST("Test3ITSScan/pSettings"), 4.0, static_cast<double>(cfgITScluster.value));
+    }
+    // ITS_CLUSTER_SCAN_TEST3_V1_END_BOOKING
+    // SIGMA_ZVERTEX_TEST2_V1_BEGIN_BOOKING
+    if (cfgFillZVertexMoments.value) {
+      if (cfgNSubsamples.value < 2 || cfgNSubsamples.value > NSubsamplesMax) {
+        LOGF(fatal, "TEST2 requires 2 <= cfgNSubsamples <= NSubsamplesMax; existing subsample assignment is preserved");
+      }
+      if (!std::isfinite(cfgEtaWidth.value) || cfgEtaWidth.value <= 0.0f) {
+        LOGF(fatal, "TEST2 requires a finite positive cfgEtaWidth");
+      }
+      AxisSpec test2ZVertexAxis = {40, -10.0, 10.0, "z_{vtx} (cm)"};
+      // Keep the existing etaGapAxis, including its underflow for overlapping windows.
+      histos.add("Test2ZVertex/pNF_cent_gap_zvtx", "<nF>;centrality (%);#Delta#eta;z_{vtx} (cm)", kTProfile3D, {centClassAxis, etaGapAxis, test2ZVertexAxis});
+      histos.add("Test2ZVertex/pNB_cent_gap_zvtx", "<nB>;centrality (%);#Delta#eta;z_{vtx} (cm)", kTProfile3D, {centClassAxis, etaGapAxis, test2ZVertexAxis});
+      histos.add("Test2ZVertex/pNF2_cent_gap_zvtx", "<nF^{2}>;centrality (%);#Delta#eta;z_{vtx} (cm)", kTProfile3D, {centClassAxis, etaGapAxis, test2ZVertexAxis});
+      histos.add("Test2ZVertex/pNB2_cent_gap_zvtx", "<nB^{2}>;centrality (%);#Delta#eta;z_{vtx} (cm)", kTProfile3D, {centClassAxis, etaGapAxis, test2ZVertexAxis});
+      histos.add("Test2ZVertex/pNFNB_cent_gap_zvtx", "<nF nB>;centrality (%);#Delta#eta;z_{vtx} (cm)", kTProfile3D, {centClassAxis, etaGapAxis, test2ZVertexAxis});
+      // Additive sums preserve the joint moments for delete-group resampling after merging.
+      histos.add("Test2ZVertex/subsamples/EventCount_sub_cent_gap_zvtx", "event count;subsample;centrality (%);#Delta#eta;z_{vtx} (cm)", kTHnD, {subsampleAxis, centClassAxis, etaGapAxis, test2ZVertexAxis});
+      histos.add("Test2ZVertex/subsamples/SumNF_sub_cent_gap_zvtx", "sum nF;subsample;centrality (%);#Delta#eta;z_{vtx} (cm)", kTHnD, {subsampleAxis, centClassAxis, etaGapAxis, test2ZVertexAxis});
+      histos.add("Test2ZVertex/subsamples/SumNB_sub_cent_gap_zvtx", "sum nB;subsample;centrality (%);#Delta#eta;z_{vtx} (cm)", kTHnD, {subsampleAxis, centClassAxis, etaGapAxis, test2ZVertexAxis});
+      histos.add("Test2ZVertex/subsamples/SumNF2_sub_cent_gap_zvtx", "sum nF^{2};subsample;centrality (%);#Delta#eta;z_{vtx} (cm)", kTHnD, {subsampleAxis, centClassAxis, etaGapAxis, test2ZVertexAxis});
+      histos.add("Test2ZVertex/subsamples/SumNB2_sub_cent_gap_zvtx", "sum nB^{2};subsample;centrality (%);#Delta#eta;z_{vtx} (cm)", kTHnD, {subsampleAxis, centClassAxis, etaGapAxis, test2ZVertexAxis});
+      histos.add("Test2ZVertex/subsamples/SumNFNB_sub_cent_gap_zvtx", "sum nF nB;subsample;centrality (%);#Delta#eta;z_{vtx} (cm)", kTHnD, {subsampleAxis, centClassAxis, etaGapAxis, test2ZVertexAxis});
+      histos.add("Test2ZVertex/hEvents_cent_zvtx", "Selected data events for TEST2;centrality (%);z_{vtx} (cm)", kTH2D, {centClassAxis, test2ZVertexAxis});
+      histos.add("Test2ZVertex/pPhysicalGap_gap", "Physical gap value per existing gap bin;#Delta#eta bin;physical gap", kTProfile, {etaGapAxis});
+      histos.add("Test2ZVertex/pSettings", "TEST2 metadata;setting;value", kTProfile, {{3, 0.5, 3.5}});
+      auto test2Settings = histos.get<TProfile>(HIST("Test2ZVertex/pSettings"));
+      test2Settings->GetXaxis()->SetBinLabel(1, "SchemaVersion");
+      test2Settings->GetXaxis()->SetBinLabel(2, "NSubsamples");
+      test2Settings->GetXaxis()->SetBinLabel(3, "EtaWidth");
+      histos.fill(HIST("Test2ZVertex/pSettings"), 1.0, 1.0);
+      histos.fill(HIST("Test2ZVertex/pSettings"), 2.0, static_cast<double>(cfgNSubsamples.value));
+      histos.fill(HIST("Test2ZVertex/pSettings"), 3.0, static_cast<double>(cfgEtaWidth.value));
+    }
+    // SIGMA_ZVERTEX_TEST2_V1_END_BOOKING
 
     AxisSpec nchAxis = {500, 0.0, 500.0, "N_{ch}"};
     AxisSpec nchPvAxis = {1000, 0.0, 1000.0, "N_{ch}^{PV}"};
@@ -673,6 +758,273 @@ struct StronglyIntensiveCorr {
     return true;
   }
 
+  // ITS_CLUSTER_TEST1_V1_BEGIN_METHODS
+  // Diagnostic reference only. The nominal selTrack() and FB counts are unchanged.
+  // The TPC quality mask has no ITS/global/DCA requirements. Track parameters can
+  // still come from combined fits; this is not a standalone-TPC refit study.
+  void initITSMissingClusterQA()
+  {
+    if (!cfgFillITSMissingClusterQA.value) {
+      return;
+    }
+    AxisSpec test1VertexAxis = {200, -10.0, 10.0, "z_{vtx} (cm)"};
+    AxisSpec test1EtaAxis = {80, -0.8, 0.8, "#eta"};
+    AxisSpec test1NITSAxis = {8, -0.5, 7.5, "N ITS clusters"};
+    AxisSpec test1ITSMapAxis = {128, -0.5, 127.5, "ITS cluster map (bits 0-6)"};
+    histos.add("ITSClusterQA/cent00_10/hReference", "TPC reference, no ITS/global/DCA requirements;z_{vtx} (cm);#eta", kTH2D, {test1VertexAxis, test1EtaAxis});
+    histos.add("ITSClusterQA/cent00_10/hMissingL0", "Reference tracks missing ITS layer 0;z_{vtx} (cm);#eta", kTH2D, {test1VertexAxis, test1EtaAxis});
+    histos.add("ITSClusterQA/cent00_10/hMissingL1", "Reference tracks missing ITS layer 1;z_{vtx} (cm);#eta", kTH2D, {test1VertexAxis, test1EtaAxis});
+    histos.add("ITSClusterQA/cent00_10/hMissingL2", "Reference tracks missing ITS layer 2;z_{vtx} (cm);#eta", kTH2D, {test1VertexAxis, test1EtaAxis});
+    histos.add("ITSClusterQA/cent00_10/hMissingL01", "Reference tracks missing both ITS layers 0 and 1 (inclusive);z_{vtx} (cm);#eta", kTH2D, {test1VertexAxis, test1EtaAxis});
+    histos.add("ITSClusterQA/cent00_10/hMissingL02", "Reference tracks missing both ITS layers 0 and 2 (inclusive);z_{vtx} (cm);#eta", kTH2D, {test1VertexAxis, test1EtaAxis});
+    histos.add("ITSClusterQA/cent00_10/hMissingL12", "Reference tracks missing both ITS layers 1 and 2 (inclusive);z_{vtx} (cm);#eta", kTH2D, {test1VertexAxis, test1EtaAxis});
+    histos.add("ITSClusterQA/cent00_10/hMissingL012", "Reference tracks missing all ITS layers 0, 1 and 2;z_{vtx} (cm);#eta", kTH2D, {test1VertexAxis, test1EtaAxis});
+    histos.add("ITSClusterQA/cent00_10/hNITSLt5", "Reference tracks with fewer than five ITS clusters;z_{vtx} (cm);#eta", kTH2D, {test1VertexAxis, test1EtaAxis});
+    histos.add("ITSClusterQA/cent00_10/hNoITS", "Reference tracks with hasITS=false;z_{vtx} (cm);#eta", kTH2D, {test1VertexAxis, test1EtaAxis});
+    histos.add("ITSClusterQA/cent00_10/hNITSReference", "ITS cluster count in the TPC reference;N ITS clusters;tracks", kTH1D, {test1NITSAxis});
+    histos.add("ITSClusterQA/cent00_10/hNITSGlobal", "Reference tracks satisfying global OR globalSDD;N ITS clusters;tracks", kTH1D, {test1NITSAxis});
+    histos.add("ITSClusterQA/cent00_10/hITSClusterMap", "ITS bit map in the TPC reference;ITS cluster map (bits 0-6);tracks", kTH1D, {test1ITSMapAxis});
+    histos.add("ITSClusterQA/cent00_10/hSelectedEventsZ", "Selected data events in 0-10%, once per event;z_{vtx} (cm);events", kTH1D, {test1VertexAxis});
+  }
+
+  bool inITSMissingClusterQAAcceptance(float cent, float vertexZ) const
+  {
+    return cfgFillITSMissingClusterQA.value && std::isfinite(cent) && cent >= 0.0f && cent < 10.0f &&
+           std::isfinite(vertexZ) && vertexZ > -10.0f && vertexZ < 10.0f;
+  }
+
+  void fillITSMissingClusterEventQA(float cent, float vertexZ)
+  {
+    if (inITSMissingClusterQAAcceptance(cent, vertexZ)) {
+      histos.fill(HIST("ITSClusterQA/cent00_10/hSelectedEventsZ"), vertexZ);
+    }
+  }
+
+  template <typename T>
+  bool isITSMissingClusterReference(T const& track) const
+  {
+    if (!track.hasTPC() || !track.isQualityTrackTPC()) {
+      return false;
+    }
+    if (!std::isfinite(track.pt()) || !std::isfinite(track.eta()) ||
+        track.pt() < cfgCutPtLower.value || track.pt() >= cfgCutPtUpper.value ||
+        std::abs(track.eta()) >= std::min(0.8f, cfgCutEta.value) || track.sign() == 0) {
+      return false;
+    }
+    if (track.tpcNClsFound() < cfgTPCcluster.value || track.tpcNClsCrossedRows() < cfgTPCnCrossedRows.value) {
+      return false;
+    }
+    if (!std::isfinite(track.tpcChi2NCl()) || track.tpcChi2NCl() < 0.0f || track.tpcChi2NCl() >= cfgCutTpcChi2NCl.value) {
+      return false;
+    }
+    // Do not use ITS count/chi2/hits, global flags, DCA or PV-contributor flags.
+    return true;
+  }
+
+  template <typename T>
+  void fillITSMissingClusterQA(float cent, float vertexZ, T const& track)
+  {
+    if (!inITSMissingClusterQAAcceptance(cent, vertexZ) || !isITSMissingClusterReference(track)) {
+      return;
+    }
+    const auto clusterMap = static_cast<unsigned int>(track.itsClusterMap()) & 0x7fu;
+    const bool missing0 = (clusterMap & (1u << 0)) == 0u;
+    const bool missing1 = (clusterMap & (1u << 1)) == 0u;
+    const bool missing2 = (clusterMap & (1u << 2)) == 0u;
+    histos.fill(HIST("ITSClusterQA/cent00_10/hReference"), vertexZ, track.eta());
+    if (missing0) {
+      histos.fill(HIST("ITSClusterQA/cent00_10/hMissingL0"), vertexZ, track.eta());
+    }
+    if (missing1) {
+      histos.fill(HIST("ITSClusterQA/cent00_10/hMissingL1"), vertexZ, track.eta());
+    }
+    if (missing2) {
+      histos.fill(HIST("ITSClusterQA/cent00_10/hMissingL2"), vertexZ, track.eta());
+    }
+    // Inclusive intersections: a track missing all three also enters all pairs.
+    if (missing0 && missing1) {
+      histos.fill(HIST("ITSClusterQA/cent00_10/hMissingL01"), vertexZ, track.eta());
+    }
+    if (missing0 && missing2) {
+      histos.fill(HIST("ITSClusterQA/cent00_10/hMissingL02"), vertexZ, track.eta());
+    }
+    if (missing1 && missing2) {
+      histos.fill(HIST("ITSClusterQA/cent00_10/hMissingL12"), vertexZ, track.eta());
+    }
+    if (missing0 && missing1 && missing2) {
+      histos.fill(HIST("ITSClusterQA/cent00_10/hMissingL012"), vertexZ, track.eta());
+    }
+    if (track.itsNCls() < 5) {
+      histos.fill(HIST("ITSClusterQA/cent00_10/hNITSLt5"), vertexZ, track.eta());
+    }
+    if (!track.hasITS()) {
+      histos.fill(HIST("ITSClusterQA/cent00_10/hNoITS"), vertexZ, track.eta());
+    }
+    histos.fill(HIST("ITSClusterQA/cent00_10/hNITSReference"), track.itsNCls());
+    histos.fill(HIST("ITSClusterQA/cent00_10/hITSClusterMap"), clusterMap);
+    if (track.isGlobalTrack() || track.isGlobalTrackSDD()) {
+      histos.fill(HIST("ITSClusterQA/cent00_10/hNITSGlobal"), track.itsNCls());
+    }
+  }
+  // ITS_CLUSTER_TEST1_V1_END_METHODS
+  // SIGMA_ZVERTEX_TEST2_V1_BEGIN_METHODS
+  void fillTest2ZVertexMoments(float cent, float vertexZ, int subsampleIndex,
+                               std::array<double, NEtaGaps> const& nF,
+                               std::array<double, NEtaGaps> const& nB)
+  {
+    if (!cfgFillZVertexMoments.value || getCentClass(cent) < 0) {
+      return;
+    }
+    if (subsampleIndex < 0 || subsampleIndex >= cfgNSubsamples.value) {
+      LOGF(fatal, "Invalid TEST2 subsample index; moments and subsample sums must use the same events");
+    }
+    // One count per selected event, including events with zero particles in an FB window.
+    // z under/overflow is retained if the existing vertex selection extends beyond this QA axis.
+    histos.fill(HIST("Test2ZVertex/hEvents_cent_zvtx"), cent, vertexZ);
+    for (int i = 0; i < NEtaGaps; ++i) {
+      const double gap = 2.0 * (etaCenter[i] - cfgEtaWidth.value / 2.0);
+      const double nf = nF[i];
+      const double nb = nB[i];
+      histos.fill(HIST("Test2ZVertex/pNF_cent_gap_zvtx"), cent, gap, vertexZ, nf);
+      histos.fill(HIST("Test2ZVertex/pNB_cent_gap_zvtx"), cent, gap, vertexZ, nb);
+      histos.fill(HIST("Test2ZVertex/pNF2_cent_gap_zvtx"), cent, gap, vertexZ, nf * nf);
+      histos.fill(HIST("Test2ZVertex/pNB2_cent_gap_zvtx"), cent, gap, vertexZ, nb * nb);
+      histos.fill(HIST("Test2ZVertex/pNFNB_cent_gap_zvtx"), cent, gap, vertexZ, nf * nb);
+      histos.fill(HIST("Test2ZVertex/subsamples/EventCount_sub_cent_gap_zvtx"), subsampleIndex, cent, gap, vertexZ, 1.0);
+      histos.fill(HIST("Test2ZVertex/subsamples/SumNF_sub_cent_gap_zvtx"), subsampleIndex, cent, gap, vertexZ, nf);
+      histos.fill(HIST("Test2ZVertex/subsamples/SumNB_sub_cent_gap_zvtx"), subsampleIndex, cent, gap, vertexZ, nb);
+      histos.fill(HIST("Test2ZVertex/subsamples/SumNF2_sub_cent_gap_zvtx"), subsampleIndex, cent, gap, vertexZ, nf * nf);
+      histos.fill(HIST("Test2ZVertex/subsamples/SumNB2_sub_cent_gap_zvtx"), subsampleIndex, cent, gap, vertexZ, nb * nb);
+      histos.fill(HIST("Test2ZVertex/subsamples/SumNFNB_sub_cent_gap_zvtx"), subsampleIndex, cent, gap, vertexZ, nf * nb);
+      histos.fill(HIST("Test2ZVertex/pPhysicalGap_gap"), gap, gap);
+    }
+  }
+  // SIGMA_ZVERTEX_TEST2_V1_END_METHODS
+
+  // ITS_CLUSTER_SCAN_TEST3_V1_BEGIN_METHODS
+  // Same predicate as nominal selTrack(), except the supplied ITS minimum.
+  // No nominal QA is filled here; global-track flags and all other cuts are retained.
+  template <typename T>
+  bool passITSClusterScanTrack(T const& track, int minITS) const
+  {
+    const bool isGlobal = track.isGlobalTrack();
+    const bool isGlobalSDD = track.isGlobalTrackSDD();
+    if (cfgRequireGlobalTrack.value && !(isGlobal || isGlobalSDD)) {
+      return false;
+    }
+    if (track.tpcNClsFound() < cfgTPCcluster.value) {
+      return false;
+    }
+    if (track.tpcNClsCrossedRows() < cfgTPCnCrossedRows.value) {
+      return false;
+    }
+    if (track.itsNCls() < minITS) {
+      return false;
+    }
+    if (track.tpcChi2NCl() >= cfgCutTpcChi2NCl.value) {
+      return false;
+    }
+    if (track.itsChi2NCl() >= cfgCutItsChi2NCl.value) {
+      return false;
+    }
+    if (track.pt() < cfgCutPtLower.value || track.pt() >= cfgCutPtUpper.value) {
+      return false;
+    }
+    if (std::abs(track.eta()) >= cfgCutEta.value) {
+      return false;
+    }
+    if (cfgUseDCAzCut.value && std::abs(track.dcaZ()) > cfgCutTrackDcaZ.value) {
+      return false;
+    }
+    if (track.sign() == 0) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename T>
+  void countITSClusterScanTrack(T const& track,
+                                std::array<std::array<double, NEtaGaps>, 4>& nF,
+                                std::array<std::array<double, NEtaGaps>, 4>& nB,
+                                std::array<double, 4>& nTracks)
+  {
+    if (!cfgFillITSClusterScan.value) {
+      return;
+    }
+    for (int iITS = 0; iITS < 4; ++iITS) {
+      const int minITS = iITS + 4;
+      if (!passITSClusterScanTrack(track, minITS)) {
+        continue;
+      }
+      nTracks[iITS] += 1.0;
+      const double eta = track.eta();
+      for (int i = 0; i < NEtaGaps; ++i) {
+        const double etaLow = etaCenter[i] - cfgEtaWidth.value / 2.0;
+        const double etaHigh = etaCenter[i] + cfgEtaWidth.value / 2.0;
+        // These strict boundaries are identical to addToFBCounters().
+        if (eta > etaLow && eta < etaHigh) {
+          nF[iITS][i] += 1.0;
+        }
+        if (eta > -etaHigh && eta < -etaLow) {
+          nB[iITS][i] += 1.0;
+        }
+      }
+    }
+  }
+
+  void fillITSClusterScanMoments(float cent, int subsampleIndex,
+                                 std::array<std::array<double, NEtaGaps>, 4> const& nF,
+                                 std::array<std::array<double, NEtaGaps>, 4> const& nB,
+                                 std::array<double, 4> const& nTracks,
+                                 std::array<double, NEtaGaps> const& nominalNF,
+                                 std::array<double, NEtaGaps> const& nominalNB)
+  {
+    if (!cfgFillITSClusterScan.value) {
+      return;
+    }
+    if (cfgITScluster.value >= 4 && cfgITScluster.value <= 7) {
+      const int reference = cfgITScluster.value - 4;
+      for (int i = 0; i < NEtaGaps; ++i) {
+        if (nF[reference][i] != nominalNF[i] || nB[reference][i] != nominalNB[i]) {
+          LOGF(fatal, "TEST3 reference NF/NB disagree with nominal counts; selection or window logic changed");
+        }
+      }
+    }
+    if (getCentClass(cent) < 0) {
+      return;
+    }
+    if (subsampleIndex < 0 || subsampleIndex >= cfgNSubsamples.value) {
+      LOGF(fatal, "Invalid TEST3 subsample index; all thresholds must use the same selected events");
+    }
+    histos.fill(HIST("Test3ITSScan/hEvents_cent"), cent);
+    for (int iITS = 0; iITS < 4; ++iITS) {
+      const int minITS = iITS + 4;
+      histos.fill(HIST("Test3ITSScan/pNTracks_its_cent"), minITS, cent, nTracks[iITS]);
+      // Fill every threshold and gap, including events with zero accepted tracks.
+      for (int i = 0; i < NEtaGaps; ++i) {
+        const double gap = 2.0 * (etaCenter[i] - cfgEtaWidth.value / 2.0);
+        const double nf = nF[iITS][i];
+        const double nb = nB[iITS][i];
+        histos.fill(HIST("Test3ITSScan/pNF_its_cent_gap"), minITS, cent, gap, nf);
+        histos.fill(HIST("Test3ITSScan/pNB_its_cent_gap"), minITS, cent, gap, nb);
+        histos.fill(HIST("Test3ITSScan/pNF2_its_cent_gap"), minITS, cent, gap, nf * nf);
+        histos.fill(HIST("Test3ITSScan/pNB2_its_cent_gap"), minITS, cent, gap, nb * nb);
+        histos.fill(HIST("Test3ITSScan/pNFNB_its_cent_gap"), minITS, cent, gap, nf * nb);
+        histos.fill(HIST("Test3ITSScan/subsamples/EventCount_sub_its_cent_gap"), subsampleIndex, minITS, cent, gap, 1.0);
+        histos.fill(HIST("Test3ITSScan/subsamples/SumNF_sub_its_cent_gap"), subsampleIndex, minITS, cent, gap, nf);
+        histos.fill(HIST("Test3ITSScan/subsamples/SumNB_sub_its_cent_gap"), subsampleIndex, minITS, cent, gap, nb);
+        histos.fill(HIST("Test3ITSScan/subsamples/SumNF2_sub_its_cent_gap"), subsampleIndex, minITS, cent, gap, nf * nf);
+        histos.fill(HIST("Test3ITSScan/subsamples/SumNB2_sub_its_cent_gap"), subsampleIndex, minITS, cent, gap, nb * nb);
+        histos.fill(HIST("Test3ITSScan/subsamples/SumNFNB_sub_its_cent_gap"), subsampleIndex, minITS, cent, gap, nf * nb);
+      }
+    }
+    for (int i = 0; i < NEtaGaps; ++i) {
+      const double gap = 2.0 * (etaCenter[i] - cfgEtaWidth.value / 2.0);
+      histos.fill(HIST("Test3ITSScan/pPhysicalGap_gap"), gap, gap);
+    }
+  }
+  // ITS_CLUSTER_SCAN_TEST3_V1_END_METHODS
+
   template <typename P>
   bool selMCParticle(P const& particle)
   {
@@ -1120,6 +1472,9 @@ struct StronglyIntensiveCorr {
       return;
     }
     fillEventQAAfter(coll, cent);
+    // ITS_CLUSTER_TEST1_V1_BEGIN_EVENT
+    fillITSMissingClusterEventQA(cent, coll.posZ());
+    // ITS_CLUSTER_TEST1_V1_END_EVENT
     if (cfgFillEtaVtxQA.value || cfgFillEtaVtxPhiQA.value) {
       histos.fill(HIST("eventQA/after/vtxZvsCentClass"), cent, coll.posZ());
       histos.fill(HIST("eventQA/after/centralityForEtaVtx"), cent);
@@ -1127,12 +1482,23 @@ struct StronglyIntensiveCorr {
 
     std::array<double, NEtaGaps> nF{};
     std::array<double, NEtaGaps> nB{};
+    // ITS_CLUSTER_SCAN_TEST3_V1_BEGIN_DECLARE
+    std::array<std::array<double, NEtaGaps>, 4> test3NF{};
+    std::array<std::array<double, NEtaGaps>, 4> test3NB{};
+    std::array<double, 4> test3NTracks{};
+    // ITS_CLUSTER_SCAN_TEST3_V1_END_DECLARE
     EtaPtPhiArray nFPtPhi{};
     EtaPtPhiArray nBPtPhi{};
 
     histos.fill(HIST("QA/hTrackSliceSize"), static_cast<double>(tracks.size()));
 
     for (auto const& track : tracks) {
+      // ITS_CLUSTER_SCAN_TEST3_V1_BEGIN_TRACK
+      countITSClusterScanTrack(track, test3NF, test3NB, test3NTracks);
+      // ITS_CLUSTER_SCAN_TEST3_V1_END_TRACK
+      // ITS_CLUSTER_TEST1_V1_BEGIN_TRACK
+      fillITSMissingClusterQA(cent, coll.posZ(), track);
+      // ITS_CLUSTER_TEST1_V1_END_TRACK
       fillTrackQABefore(track);
       fillEtaVertexQA<false>(cent, coll.posZ(), track);
       if (!selTrack(track)) {
@@ -1144,6 +1510,12 @@ struct StronglyIntensiveCorr {
       addToFBCounters(track.eta(), track.pt(), track.phi(), nF, nB, nFPtPhi, nBPtPhi);
     }
 
+    // SIGMA_ZVERTEX_TEST2_V1_BEGIN_EVENT
+    fillTest2ZVertexMoments(cent, coll.posZ(), getSubsampleIndex(coll), nF, nB);
+    // SIGMA_ZVERTEX_TEST2_V1_END_EVENT
+    // ITS_CLUSTER_SCAN_TEST3_V1_BEGIN_EVENT
+    fillITSClusterScanMoments(cent, getSubsampleIndex(coll), test3NF, test3NB, test3NTracks, nF, nB);
+    // ITS_CLUSTER_SCAN_TEST3_V1_END_EVENT
     fillAllFBOutputs(coll, cent, nF, nB, nFPtPhi, nBPtPhi);
   }
   PROCESS_SWITCH(StronglyIntensiveCorr, processData, "process real data", true);
