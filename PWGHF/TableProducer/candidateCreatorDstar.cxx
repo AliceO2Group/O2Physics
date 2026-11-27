@@ -117,7 +117,8 @@ struct HfCandidateCreatorDstar {
 
   using TracksWCovExtraPidPiKa = soa::Join<aod::TracksWCovExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
-  AxisSpec ptAxis = {100, 0., 2.0, "#it{p}_{T} (GeV/#it{c}"};
+  AxisSpec massAxis = {130, 0.135, 0.2, "Mass (GeV/#it{c}^{2})"};
+  AxisSpec ptAxis = {50, 0., 25.0, "#it{p}_{T} (GeV/#it{c}"};
   AxisSpec dcaAxis = {200, -500., 500., "#it{d}_{xy,z} (#mum)"};
 
   std::shared_ptr<TH1> hCandidates;
@@ -137,6 +138,7 @@ struct HfCandidateCreatorDstar {
      {"QA/hDCAXYPi", "DCAxy of Soft Pi;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", {HistType::kTH2F, {ptAxis, dcaAxis}}},
      {"QA/hDCAZPi", "DCAz of Soft Pi;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", {HistType::kTH2F, {ptAxis, dcaAxis}}},
 
+     {"QA/hDeltaMassDStar", "D* candidates", {HistType::kTH1F, {massAxis}}},
      {"QA/hPtPi", "#pi candidates", {HistType::kTH1F, {ptAxis}}},
      {"QA/hPtD0Prong0", "D^{0} candidates' prong0", {HistType::kTH1F, {ptAxis}}},
      {"QA/hPtD0Prong1", "D^{0} candidates' prong1", {HistType::kTH1F, {ptAxis}}},
@@ -387,6 +389,32 @@ struct HfCandidateCreatorDstar {
       fillProngPid<HfProngSpecies::Kaon>(trackPi, rowProngSoftPiPidKa);
 
       if (fillHistograms) {
+        float massDstar{}, massD0{};
+        if (signSoftPi > 0) {
+          massDstar = RecoDecay::m(std::array{std::array{pVecSoftPi[0], pVecSoftPi[1], pVecSoftPi[2]},
+                                              std::array{pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2]},
+                                              std::array{pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2]}},
+                                   std::array{constants::physics::MassPiPlus,
+                                              constants::physics::MassPiPlus,
+                                              constants::physics::MassKPlus});
+          massD0 = RecoDecay::m(std::array{std::array{pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2]},
+                                           std::array{pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2]}},
+                                std::array{constants::physics::MassPiPlus,
+                                           constants::physics::MassKPlus});
+        } else {
+          massDstar = RecoDecay::m(std::array{std::array{pVecSoftPi[0], pVecSoftPi[1], pVecSoftPi[2]},
+                                              std::array{pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2]},
+                                              std::array{pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2]}},
+                                   std::array{constants::physics::MassPiPlus,
+                                              constants::physics::MassKPlus,
+                                              constants::physics::MassPiPlus});
+          massD0 = RecoDecay::m(std::array{std::array{pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2]},
+                                           std::array{pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2]}},
+                                std::array{constants::physics::MassKPlus,
+                                           constants::physics::MassPiPlus});
+        }
+        auto deltaMass = std::abs(massDstar - massD0);
+        registry.fill(HIST("QA/hDeltaMassDStar"), deltaMass);
         registry.fill(HIST("QA/hPtD0"), ptD0);
         registry.fill(HIST("QA/hPtPi"), RecoDecay::pt(pVecSoftPi));
         registry.fill(HIST("QA/hPtD0Prong0"), RecoDecay::pt(pVecD0Prong0));
@@ -661,6 +689,7 @@ struct HfCandidateCreatorDstarExpressions {
       }
 
       if (indexRecDstar > -1) {
+        LOG(info) << "Matched D* with index: " << rowCandidateDstar.globalIndex() << " matched with MC index: " << indexRecDstar;
         flagDstar = signDstar * hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi;
       }
       if (indexRecD0 > -1) {
