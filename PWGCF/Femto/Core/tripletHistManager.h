@@ -52,9 +52,15 @@ enum TripletHist {
   kPt1VsQ3,
   kPt2VsQ3,
   kPt3VsQ3,
+  kM1VsQ3,
+  kM2VsQ3,
+  kM3VsQ3,
   kQ3VsMt,
   kQ3VsMult,
   kQ3VsCent,
+  kKstar12VsMult, // kstar of each pair in the triplet vs multiplicity (multiplicity reweighting of ME)
+  kKstar13VsMult,
+  kKstar23VsMult,
   // 2D with mass
   // kQ3VsMass1,
   // kQ3VsMass2,
@@ -85,6 +91,9 @@ enum TripletHist {
   kTrueQ3VsTrueMt,
   kTrueQ3VsTrueMult,
   kTrueQ3VsTrueCent,
+  kTrueKstar12VsTrueMult,
+  kTrueKstar13VsTrueMult,
+  kTrueKstar23VsTrueMult,
 
   // mixing qa
   kSeNpart1VsNpart2VsNpart3,                                     // unique particles 1,2,3 in each same event
@@ -177,9 +186,15 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
       {kPt1VsQ3, o2::framework::HistType::kTH2F, "hPt1VsQ3", "p_{T,1} vs Q_{3}; p_{T,1} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
       {kPt2VsQ3, o2::framework::HistType::kTH2F, "hPt2VsQ3", "p_{T,2} vs Q_{3}; p_{T,2} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
       {kPt3VsQ3, o2::framework::HistType::kTH2F, "hPt3VsQ3", "p_{T,3} vs Q_{3}; p_{T,3} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
+      {kM1VsQ3, o2::framework::HistType::kTH2F, "hM1VsQ3", "mass_{1} vs Q_{3}; m_{1} (GeV/#it{c}^{2}); Q_{3} (GeV/#it{c})"},
+      {kM2VsQ3, o2::framework::HistType::kTH2F, "hM2VsQ3", "mass_{2} vs Q_{3}; m_{2} (GeV/#it{c}^{2}); Q_{3} (GeV/#it{c})"},
+      {kM3VsQ3, o2::framework::HistType::kTH2F, "hM3VsQ3", "mass_{3} vs Q_{3}; m_{3} (GeV/#it{c}^{2}); Q_{3} (GeV/#it{c})"},
       {kQ3VsMt, o2::framework::HistType::kTH2F, "hQ3VsMt", "Q_{3} vs m_{T}; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2})"},
       {kQ3VsMult, o2::framework::HistType::kTH2F, "hQ3VsMult", "Q_{3} vs Multiplicity; Q_{3} (GeV/#it{c}); Multiplicity"},
       {kQ3VsCent, o2::framework::HistType::kTH2F, "hQ3VsCent", "Q_{3} vs Centrality; Q_{3} (GeV/#it{c}); Centrality"},
+      {kKstar12VsMult, o2::framework::HistType::kTH2F, "hKstar12VsMult", "k*_{12} vs Multiplicity; k*_{12} (GeV/#it{c}); Multiplicity"},
+      {kKstar13VsMult, o2::framework::HistType::kTH2F, "hKstar13VsMult", "k*_{13} vs Multiplicity; k*_{13} (GeV/#it{c}); Multiplicity"},
+      {kKstar23VsMult, o2::framework::HistType::kTH2F, "hKstar23VsMult", "k*_{23} vs Multiplicity; k*_{23} (GeV/#it{c}); Multiplicity"},
       // n-D
       {kPt1VsPt2VsPt3, o2::framework::HistType::kTHnSparseF, "hPt1VsPt2VsPt3", "p_{T,1} vs p_{T,2} vs p_{T,3}; p_{T,1} (GeV/#it{c});p_{T,2} (GeV/#it{c});p_{T,3} (GeV/#it{c});"},
       {kQ3VsPt1VsPt2VsPt3, o2::framework::HistType::kTHnSparseF, "hQ3VsPt1VsPt2VsPt3", "Q_{3} vs p_{T,1} vs p_{T,2} vs p_{T,3}; Q_{3} (GeV/#it{c}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c});"},
@@ -205,6 +220,9 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
       {kTrueQ3VsTrueMt, o2::framework::HistType::kTH2F, "hTrueQ3VsTrueMt", "Q_{3,True} vs m_{T,True}; Q_{3,True} (GeV/#it{c}); m_{T,True} (GeV/#it{c}^{2})"},
       {kTrueQ3VsTrueMult, o2::framework::HistType::kTH2F, "hTrueQ3VsTrueMult", "Q_{3,True} vs Multiplicity_{True}; Q_{3,True} (GeV/#it{c}); Multiplicity_{True}"},
       {kTrueQ3VsTrueCent, o2::framework::HistType::kTH2F, "hTrueQ3VsTrueCent", "Q_{3,True} vs Centrality_{True}; Q_{3,True} (GeV/#it{c}); Centrality_{True} (%)"},
+      {kTrueKstar12VsTrueMult, o2::framework::HistType::kTH2F, "hTrueKstar12VsTrueMult", "k*_{12,True} vs Multiplicity_{True}; k*_{12,True} (GeV/#it{c}); Multiplicity_{True}"},
+      {kTrueKstar13VsTrueMult, o2::framework::HistType::kTH2F, "hTrueKstar13VsTrueMult", "k*_{13,True} vs Multiplicity_{True}; k*_{13,True} (GeV/#it{c}); Multiplicity_{True}"},
+      {kTrueKstar23VsTrueMult, o2::framework::HistType::kTH2F, "hTrueKstar23VsTrueMult", "k*_{23,True} vs Multiplicity_{True}; k*_{23,True} (GeV/#it{c}); Multiplicity_{True}"},
       // mixing qa
       {kSeNpart1VsNpart2VsNpart3, o2::framework::HistType::kTHnSparseF, "hSeNpart1VsNpart2VsNpart3", "# unique particle 1 vs # unique particle 2 vs # unique particle 3 in each same event; # particle 1; # particle 2; # particle 3;"},
       {kMeMixingWindowRaw, o2::framework::HistType::kTH1F, "hMeMixingWindowRaw", "Raw Mixing Window; Raw Mixing Window; Entries"},
@@ -223,9 +241,15 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
     {kPt1VsQ3, {(conf).pt1, (conf).q3}},                                                                                                      \
     {kPt2VsQ3, {(conf).pt2, (conf).q3}},                                                                                                      \
     {kPt3VsQ3, {(conf).pt3, (conf).q3}},                                                                                                      \
+    {kM1VsQ3, {(conf).mass1, (conf).q3}},                                                                                                     \
+    {kM2VsQ3, {(conf).mass2, (conf).q3}},                                                                                                     \
+    {kM3VsQ3, {(conf).mass3, (conf).q3}},                                                                                                     \
     {kQ3VsMt, {(conf).q3, (conf).mt}},                                                                                                        \
     {kQ3VsMult, {(conf).q3, (conf).multiplicity}},                                                                                            \
     {kQ3VsCent, {(conf).q3, (conf).centrality}},                                                                                              \
+    {kKstar12VsMult, {(conf).kstar, (conf).multiplicity}},                                                                                    \
+    {kKstar13VsMult, {(conf).kstar, (conf).multiplicity}},                                                                                    \
+    {kKstar23VsMult, {(conf).kstar, (conf).multiplicity}},                                                                                    \
     {kPt1VsPt2VsPt3, {(conf).pt1, (conf).pt2, (conf).pt3}},                                                                                   \
     {kQ3VsPt1VsPt2VsPt3, {(conf).q3, (conf).pt1, (conf).pt2, (conf).pt3}},                                                                    \
     {kQ3VsMtVsMult, {(conf).q3, (conf).mt, (conf).multiplicity}},                                                                             \
@@ -243,18 +267,21 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
     {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2VsVtz3VsMult3VsCent3, {(confMixing).vtxBins, (confMixing).multBins, (confMixing).centBins, (confMixing).vtxBins, (confMixing).multBins, (confMixing).centBins, (confMixing).vtxBins, (confMixing).multBins, (confMixing).centBins}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TRIPLET_HIST_MC_TRUTH_MAP(conf)                    \
-  {kTrueQ3, {(conf).q3}},                                  \
-    {kTrueMt, {(conf).mt}},                                \
-    {kTrueKstar12, {(conf).kstar}},                        \
-    {kTrueKstar13, {(conf).kstar}},                        \
-    {kTrueKstar23, {(conf).kstar}},                        \
-    {kTruePt1VsTrueQ3, {(conf).pt1, (conf).q3}},           \
-    {kTruePt2VsTrueQ3, {(conf).pt2, (conf).q3}},           \
-    {kTruePt3VsTrueQ3, {(conf).pt3, (conf).q3}},           \
-    {kTrueQ3VsTrueMt, {(conf).q3, (conf).mt}},             \
-    {kTrueQ3VsTrueMult, {(conf).q3, (conf).multiplicity}}, \
-    {kTrueQ3VsTrueCent, {(conf).q3, (conf).centrality}},
+#define TRIPLET_HIST_MC_TRUTH_MAP(conf)                            \
+  {kTrueQ3, {(conf).q3}},                                          \
+    {kTrueMt, {(conf).mt}},                                        \
+    {kTrueKstar12, {(conf).kstar}},                                \
+    {kTrueKstar13, {(conf).kstar}},                                \
+    {kTrueKstar23, {(conf).kstar}},                                \
+    {kTruePt1VsTrueQ3, {(conf).pt1, (conf).q3}},                   \
+    {kTruePt2VsTrueQ3, {(conf).pt2, (conf).q3}},                   \
+    {kTruePt3VsTrueQ3, {(conf).pt3, (conf).q3}},                   \
+    {kTrueQ3VsTrueMt, {(conf).q3, (conf).mt}},                     \
+    {kTrueQ3VsTrueMult, {(conf).q3, (conf).multiplicity}},         \
+    {kTrueQ3VsTrueCent, {(conf).q3, (conf).centrality}},           \
+    {kTrueKstar12VsTrueMult, {(conf).kstar, (conf).multiplicity}}, \
+    {kTrueKstar13VsTrueMult, {(conf).kstar, (conf).multiplicity}}, \
+    {kTrueKstar23VsTrueMult, {(conf).kstar, (conf).multiplicity}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TRIPLET_HIST_MC_MAP(conf)                                  \
@@ -305,6 +332,9 @@ constexpr char PrefixMcParticleMcParticleMcParticleMe[] = "McParticleMcParticleM
 
 constexpr char PrefixTrackTrackCascadeSe[] = "TrackTrackCascade/SE/";
 constexpr char PrefixTrackTrackCascadeMe[] = "TrackTrackCascade/ME/";
+
+constexpr char PrefixTrackTrackSigma0Se[] = "TrackTrackSigma0/SE/";
+constexpr char PrefixTrackTrackSigma0Me[] = "TrackTrackSigma0/ME/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
@@ -682,9 +712,21 @@ class TripletHistManager
       mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsQ3, HistTable), getHistDesc(kPt1VsQ3, HistTable), getHistType(kPt1VsQ3, HistTable), {Specs.at(kPt1VsQ3)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kPt2VsQ3, HistTable), getHistDesc(kPt2VsQ3, HistTable), getHistType(kPt2VsQ3, HistTable), {Specs.at(kPt2VsQ3)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kPt3VsQ3, HistTable), getHistDesc(kPt3VsQ3, HistTable), getHistType(kPt3VsQ3, HistTable), {Specs.at(kPt3VsQ3)});
+      if (mPlotMass1VsQ3) {
+        mHistogramRegistry->add(analysisDir + getHistNameV2(kM1VsQ3, HistTable), getHistDesc(kM1VsQ3, HistTable), getHistType(kM1VsQ3, HistTable), {Specs.at(kM1VsQ3)});
+      }
+      if (mPlotMass2VsQ3) {
+        mHistogramRegistry->add(analysisDir + getHistNameV2(kM2VsQ3, HistTable), getHistDesc(kM2VsQ3, HistTable), getHistType(kM2VsQ3, HistTable), {Specs.at(kM2VsQ3)});
+      }
+      if (mPlotMass3VsQ3) {
+        mHistogramRegistry->add(analysisDir + getHistNameV2(kM3VsQ3, HistTable), getHistDesc(kM3VsQ3, HistTable), getHistType(kM3VsQ3, HistTable), {Specs.at(kM3VsQ3)});
+      }
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3VsMt, HistTable), getHistDesc(kQ3VsMt, HistTable), getHistType(kQ3VsMt, HistTable), {Specs.at(kQ3VsMt)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3VsMult, HistTable), getHistDesc(kQ3VsMult, HistTable), getHistType(kQ3VsMult, HistTable), {Specs.at(kQ3VsMult)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3VsCent, HistTable), getHistDesc(kQ3VsCent, HistTable), getHistType(kQ3VsCent, HistTable), {Specs.at(kQ3VsCent)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar12VsMult, HistTable), getHistDesc(kKstar12VsMult, HistTable), getHistType(kKstar12VsMult, HistTable), {Specs.at(kKstar12VsMult)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar13VsMult, HistTable), getHistDesc(kKstar13VsMult, HistTable), getHistType(kKstar13VsMult, HistTable), {Specs.at(kKstar13VsMult)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar23VsMult, HistTable), getHistDesc(kKstar23VsMult, HistTable), getHistType(kKstar23VsMult, HistTable), {Specs.at(kKstar23VsMult)});
       // TODO: implement histograms differential im mass of the particles
     }
 
@@ -760,6 +802,9 @@ class TripletHistManager
       mHistogramRegistry->add(mcDir + getHistNameV2(kTrueQ3VsTrueMt, HistTable), getHistDesc(kTrueQ3VsTrueMt, HistTable), getHistType(kTrueQ3VsTrueMt, HistTable), {Specs.at(kTrueQ3VsTrueMt)});
       mHistogramRegistry->add(mcDir + getHistNameV2(kTrueQ3VsTrueMult, HistTable), getHistDesc(kTrueQ3VsTrueMult, HistTable), getHistType(kTrueQ3VsTrueMult, HistTable), {Specs.at(kTrueQ3VsTrueMult)});
       mHistogramRegistry->add(mcDir + getHistNameV2(kTrueQ3VsTrueCent, HistTable), getHistDesc(kTrueQ3VsTrueCent, HistTable), getHistType(kTrueQ3VsTrueCent, HistTable), {Specs.at(kTrueQ3VsTrueCent)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueKstar12VsTrueMult, HistTable), getHistDesc(kTrueKstar12VsTrueMult, HistTable), getHistType(kTrueKstar12VsTrueMult, HistTable), {Specs.at(kTrueKstar12VsTrueMult)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueKstar13VsTrueMult, HistTable), getHistDesc(kTrueKstar13VsTrueMult, HistTable), getHistType(kTrueKstar13VsTrueMult, HistTable), {Specs.at(kTrueKstar13VsTrueMult)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueKstar23VsTrueMult, HistTable), getHistDesc(kTrueKstar23VsTrueMult, HistTable), getHistType(kTrueKstar23VsTrueMult, HistTable), {Specs.at(kTrueKstar23VsTrueMult)});
     }
   }
 
@@ -779,6 +824,9 @@ class TripletHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueQ3VsTrueMt, HistTable)), mTrueQ3, mTrueMt);
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueQ3VsTrueMult, HistTable)), mTrueQ3, mTrueMult);
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueQ3VsTrueCent, HistTable)), mTrueQ3, mTrueCent);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueKstar12VsTrueMult, HistTable)), mTrueKstar12, mTrueMult);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueKstar13VsTrueMult, HistTable)), mTrueKstar13, mTrueMult);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueKstar23VsTrueMult, HistTable)), mTrueKstar23, mTrueMult);
     }
   }
 
@@ -795,9 +843,21 @@ class TripletHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsQ3, HistTable)), mParticle1.Pt(), mQ3);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt2VsQ3, HistTable)), mParticle2.Pt(), mQ3);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt3VsQ3, HistTable)), mParticle3.Pt(), mQ3);
+      if (mPlotMass1VsQ3) {
+        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kM1VsQ3, HistTable)), mMass1, mQ3);
+      }
+      if (mPlotMass2VsQ3) {
+        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kM2VsQ3, HistTable)), mMass2, mQ3);
+      }
+      if (mPlotMass3VsQ3) {
+        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kM3VsQ3, HistTable)), mMass3, mQ3);
+      }
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsMt, HistTable)), mQ3, mMt);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsMult, HistTable)), mQ3, mMult);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsCent, HistTable)), mQ3, mCent);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar12VsMult, HistTable)), mKstar12, mMult);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar13VsMult, HistTable)), mKstar13, mMult);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar23VsMult, HistTable)), mKstar23, mMult);
     }
 
     if (mPlotPt1VsPt2VsPt3) {
@@ -896,6 +956,15 @@ class TripletHistManager
   // flags
   bool mPlot1d = true;
   bool mPlot2d = true;
+
+  // initialize mass vs Q3 histograms only if table has mass column
+  static constexpr bool hasMassColumn(modes::Particle p)
+  {
+    return p == modes::Particle::kSigma0 || p == modes::Particle::kCascade;
+  }
+  bool mPlotMass1VsQ3 = hasMassColumn(particleType1);
+  bool mPlotMass2VsQ3 = hasMassColumn(particleType2);
+  bool mPlotMass3VsQ3 = hasMassColumn(particleType3);
 
   bool mPlotPt1VsPt2VsPt3 = false;
   bool mPlotQ3VsPt1VsPt2VsPt3 = false;
