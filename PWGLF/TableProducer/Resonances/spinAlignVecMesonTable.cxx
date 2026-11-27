@@ -26,12 +26,17 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4Dfwd.h>
 
 #include <cmath>
 #include <cstdint>
@@ -80,8 +85,8 @@ struct SpinAlignVecMesonTable {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   RCTFlagsChecker rctChecker;
 
-  const double massKa = o2::constants::physics::MassKaonCharged;
-  const double massPi = o2::constants::physics::MassPionCharged;
+  static constexpr double MassKa = o2::constants::physics::MassKaonCharged;
+  static constexpr double MassPi = o2::constants::physics::MassPionCharged;
 
   void init(InitContext&)
   {
@@ -241,7 +246,7 @@ struct SpinAlignVecMesonTable {
         }
 
         if (isKaon(pos) && isKaon(neg)) {
-          auto phi = makePair(pos, massKa, neg, massKa);
+          auto phi = makePair(pos, MassKa, neg, MassKa);
           float mass = phi.M();
           if (mass > cfgPhiMassMin && mass < cfgPhiMassMax && std::abs(phi.Rapidity()) < cfgPairRapidity) {
             phiTable(eventIndex, mass,
@@ -255,7 +260,7 @@ struct SpinAlignVecMesonTable {
         }
 
         if (isKaon(pos) && isPion(neg)) {
-          auto kstar = makePair(pos, massKa, neg, massPi);
+          auto kstar = makePair(pos, MassKa, neg, MassPi);
           float mass = kstar.M();
           if (mass > cfgKstarMassMin && mass < cfgKstarMassMax && std::abs(kstar.Rapidity()) < cfgPairRapidity) {
             kstarTable(eventIndex, static_cast<int8_t>(1), mass,
@@ -269,7 +274,7 @@ struct SpinAlignVecMesonTable {
         }
 
         if (isPion(pos) && isKaon(neg)) {
-          auto kstar = makePair(pos, massPi, neg, massKa);
+          auto kstar = makePair(pos, MassPi, neg, MassKa);
           float mass = kstar.M();
           if (mass > cfgKstarMassMin && mass < cfgKstarMassMax && std::abs(kstar.Rapidity()) < cfgPairRapidity) {
             kstarTable(eventIndex, static_cast<int8_t>(-1), mass,

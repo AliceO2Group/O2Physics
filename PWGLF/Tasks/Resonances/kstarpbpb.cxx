@@ -29,7 +29,6 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
@@ -481,7 +480,7 @@ struct Kstarpbpb {
       }
       const AxisSpec momPtAxis{moment.axisPt, "#it{p}_{T} (GeV/#it{c})"};
       const AxisSpec momCentAxis{moment.axisCentrality, "Centrality (%)"};
-      const AxisSpec momSampleAxis{kNMomSamples, -0.5, kNMomSamples - 0.5, "sample (0 SE unlike, 1 ME replacement, 2 MC reference)"};
+      const AxisSpec momSampleAxis{static_cast<int>(kNMomSamples), -0.5, static_cast<int>(kNMomSamples) - 0.5, "sample (0 SE unlike, 1 ME replacement, 2 MC reference)"};
       const AxisSpec momCosAxis{moment.axisCosThetaStar, "cos(#vartheta*)"};
       const AxisSpec momSubAxis{moment.nSubsamples.value, -0.5, moment.nSubsamples.value - 0.5, "subsample"};
       if (momentKstar) {
@@ -2576,7 +2575,7 @@ struct Kstarpbpb {
   }
 
   template <bool IsPhi, typename TCands, typename F>
-  void forEachDerivedCand(const TCands& cands, F&& f)
+  void forEachDerivedCand(const TCands& cands, const F& f)
   {
     ROOT::Math::PxPyPzMVector mother;
     for (const auto& cand : cands) {
@@ -2672,7 +2671,7 @@ struct Kstarpbpb {
     }
     ROOT::Math::Boost boost{mother.BoostToCM()};
     const auto dir = boost(daughter).Vect().Unit();
-    ReplCand cand{static_cast<float>(mother.M()), static_cast<float>(mother.Pt()), static_cast<float>(event.psi), static_cast<float>(event.psiRP), static_cast<float>(weight), event.bcId, dir.X(), dir.Y(), dir.Z()};
+    ReplCand cand{.mass = static_cast<float>(mother.M()), .pt = static_cast<float>(mother.Pt()), .psi = static_cast<float>(event.psi), .psiRP = static_cast<float>(event.psiRP), .weight = static_cast<float>(weight), .bcId = event.bcId, .ux = dir.X(), .uy = dir.Y(), .uz = dir.Z()};
     auto& cands = IsPhi ? event.phi : event.kstar;
     cands.emplace_back(getReplCell(mother.Pt(), mother.Eta(), mother.Phi()), cand);
   }
@@ -2701,7 +2700,7 @@ struct Kstarpbpb {
       }
       const auto& donors = found->second.cands;
       for (int iDraw = 0; iDraw < moment.replNDraws.value; ++iDraw) {
-        const auto& donor = donors[rndGen.Integer(static_cast<UInt_t>(donors.size()))];
+        const auto& donor = donors[rndGen.Integer(static_cast<unsigned int>(donors.size()))];
         if (event.bcId >= 0 && donor.bcId == event.bcId) {
           continue;
         }
