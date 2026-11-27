@@ -350,12 +350,15 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     if (isMc && std::abs(trackSel.pdgCodeTrack1.value) == kKPlus) {
       // DCA templates of kaons from heavy-flavour decays, split into charm and beauty origin (to reweight them separately).
       // For kaons from beauty-hadron decays the producer stores the PDG code of the beauty-hadron ancestor in motherPDG.
+      // Booked next to hDCAxy_SecondaryFromHF of all tracks (Track_one_MC) and of the tracks in same-event pairs (Track_allSelected_MC).
       const AxisSpec axisPt{binpTTrack, "#it{p}_{T} (GeV/#it{c})"};
       const AxisSpec axisDcaXy{binTempFitVarTrack, "DCA_{xy} (cm)"};
       const AxisSpec axisDcaZ{binTempFitVarTrack, "DCA_{z} (cm)"};
       const AxisSpec axisMult{binmultTempFit, "Multiplicity"};
-      registry.add("Track_one_MC/hDCAxy_SecondaryFromCharm", "Kaons from charm-hadron decays; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTHnSparseF, {axisPt, axisDcaXy, axisDcaZ, axisMult});
-      registry.add("Track_one_MC/hDCAxy_SecondaryFromBeauty", "Kaons from beauty-hadron decays; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTHnSparseF, {axisPt, axisDcaXy, axisDcaZ, axisMult});
+      for (const auto& folder : {"Track_one_MC", "Track_allSelected_MC"}) {
+        registry.add((std::string(folder) + "/hDCAxy_SecondaryFromCharm").c_str(), "Kaons from charm-hadron decays; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTHnSparseF, {axisPt, axisDcaXy, axisDcaZ, axisMult});
+        registry.add((std::string(folder) + "/hDCAxy_SecondaryFromBeauty").c_str(), "Kaons from beauty-hadron decays; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTHnSparseF, {axisPt, axisDcaXy, axisDcaZ, axisMult});
+      }
       fillKaonHfTemplates = true;
     }
 
@@ -564,8 +567,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     container.template setPair<IsMc, true>(track, candidate, col.multNtr(), col.multV0M(), pairQASetting.use4D, pairQASetting.extendedPlots, smearingByOrigin);
   }
 
-  /// Fill the DCA templates of kaons from heavy-flavour decays (folder Track_one_MC), split into charm and beauty origin
-  template <typename TrackType>
+  /// Fill the DCA templates of kaons from heavy-flavour decays, split into charm and beauty origin
+  /// \tparam IsPairTrack true for a track in a same-event pair (folder Track_allSelected_MC), false for all tracks (folder Track_one_MC)
+  template <bool IsPairTrack, typename TrackType>
   void fillKaonHfOriginTemplates(TrackType const& track, const int mult)
   {
     if (!fillKaonHfTemplates || !track.has_fdMCParticle() ||
@@ -573,10 +577,19 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       return;
     }
     const int pdgHfAncestor = std::abs(track.fdExtMCParticle().motherPDG());
-    if (pdgHfAncestor / RecoDecay::PdgDivisorMeson == kBottom || pdgHfAncestor / RecoDecay::PdgDivisorBaryon == kBottom) {
-      registry.fill(HIST("Track_one_MC/hDCAxy_SecondaryFromBeauty"), track.pt(), track.tempFitVar(), track.dcaZ(), mult);
+    const bool isFromBeauty = pdgHfAncestor / RecoDecay::PdgDivisorMeson == kBottom || pdgHfAncestor / RecoDecay::PdgDivisorBaryon == kBottom;
+    if constexpr (IsPairTrack) {
+      if (isFromBeauty) {
+        registry.fill(HIST("Track_allSelected_MC/hDCAxy_SecondaryFromBeauty"), track.pt(), track.tempFitVar(), track.dcaZ(), mult);
+      } else {
+        registry.fill(HIST("Track_allSelected_MC/hDCAxy_SecondaryFromCharm"), track.pt(), track.tempFitVar(), track.dcaZ(), mult);
+      }
     } else {
-      registry.fill(HIST("Track_one_MC/hDCAxy_SecondaryFromCharm"), track.pt(), track.tempFitVar(), track.dcaZ(), mult);
+      if (isFromBeauty) {
+        registry.fill(HIST("Track_one_MC/hDCAxy_SecondaryFromBeauty"), track.pt(), track.tempFitVar(), track.dcaZ(), mult);
+      } else {
+        registry.fill(HIST("Track_one_MC/hDCAxy_SecondaryFromCharm"), track.pt(), track.tempFitVar(), track.dcaZ(), mult);
+      }
     }
   }
 
@@ -695,6 +708,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
       /// Filling QA histograms of the selected tracks
       selectedTrackHisto.fillQA<IsMc, true>(p1, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
+      if constexpr (IsMc) {
+        fillKaonHfOriginTemplates<true>(p1, col.multNtr());
+      }
 
       int charmHadMc = 0;
       int originType = 0;
@@ -996,7 +1012,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         col.multNtr(),
         col.multV0M());
       if constexpr (IsMc) {
-        fillKaonHfOriginTemplates(part, col.multNtr());
+        fillKaonHfOriginTemplates<false>(part, col.multNtr());
       }
 
       float chargeTrack = ((part.cut() & CutBitChargePositive) == CutBitChargePositive)
