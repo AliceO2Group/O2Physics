@@ -163,6 +163,9 @@ DECLARE_SOA_COLUMN(TofNSigmaKa, tofNSigmaKa, std::vector<float>);
 DECLARE_SOA_COLUMN(TofNSigmaPr, tofNSigmaPr, std::vector<float>);
 DECLARE_SOA_COLUMN(ItsClusterMap, itsClusterMap, std::vector<uint8_t>);
 DECLARE_SOA_COLUMN(NClusters, nClusters, std::vector<uint8_t>);
+DECLARE_SOA_COLUMN(NCrossedRows, nCrossedRows, std::vector<uint8_t>);
+DECLARE_SOA_COLUMN(TpcChi2, tpcChi2, std::vector<float>);
+DECLARE_SOA_COLUMN(ItsChi2, itsChi2, std::vector<float>);
 DECLARE_SOA_COLUMN(Sign, sign, std::vector<int8_t>);
 DECLARE_SOA_COLUMN(MinimumDistanceFT0, minimumDistanceFT0, int8_t);
 DECLARE_SOA_COLUMN(MinimumDistanceFV0, minimumDistanceFV0, int8_t);
@@ -202,6 +205,9 @@ DECLARE_SOA_TABLE(UPCBarrelCands, "AOD", "UPCBARRELCANDS",
                   upc_cand_prod_bar::TofNSigmaPr,
                   upc_cand_prod_bar::ItsClusterMap,
                   upc_cand_prod_bar::NClusters,
+                  upc_cand_prod_bar::NCrossedRows,
+                  upc_cand_prod_bar::TpcChi2,
+                  upc_cand_prod_bar::ItsChi2,
                   upc_cand_prod_bar::Sign,
                   upc_cand_prod_bar::MinimumDistanceFT0,
                   upc_cand_prod_bar::MinimumDistanceFV0,
@@ -271,6 +277,7 @@ struct UpcCandProducerBarrel {
   Configurable<int> vetoFDD{"vetoFDD", 0, "FDD veto: 0=off, 1=on"};
   Configurable<int> useTCE{"useTCE", 0, "Use TCE for lumi accounting: 0=off, 1=on"};
   Configurable<int> useNearestCollidingBC{"useNearestCollidingBC", 0, "Use nearest colliding BC: 0=off, 1=on"};
+  Configurable<int> checkITSLayersAll{"checkITSLayersAll", 0, "Require kIsGoodITSLayersAll for lumi: 0=off, 1=on"};
   Configurable<int> signalSourceId{"signalSourceId", 1, "MC source ID stored as embedded signal"};
 
   Configurable<float> minAmpFV0A{"minAmpFV0A", 150.f, "Minimum amplitude for FV0A veto"};
@@ -533,6 +540,10 @@ struct UpcCandProducerBarrel {
         continue;
       }
 
+      if (checkITSLayersAll && !bc.selection_bit(aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+
       hTVXRCT->Fill(bcInOrbit, tfID);
     }
 
@@ -755,9 +766,11 @@ struct UpcCandProducerBarrel {
       const int32_t rofInTF = getRofInTF(bcInTF);
       const bool upcMode = (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0;
       const bool noPileupInRof = (vNonUpcColisionsPerROF[iTF][rofInTF] == 0);
+      const bool goodITSLayersAll = collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
       uint8_t flags = 0;
       flags |= upcMode << 0;
       flags |= noPileupInRof << 1;
+      flags |= goodITSLayersAll << 2;
       const auto occupancyFT0C = vOccupancyFT0C[iTF][bcInTF];
       const auto distFT0 = minDistanceFT0[iTF][bcInTF];
       const auto distFV0 = minDistanceFV0[iTF][bcInTF];
@@ -771,6 +784,9 @@ struct UpcCandProducerBarrel {
       std::vector<float> tofNSigmaEl, tofNSigmaPi, tofNSigmaKa, tofNSigmaPr;
       std::vector<uint8_t> itsClusterMap;
       std::vector<uint8_t> nClusters;
+      std::vector<uint8_t> nCrossedRows;
+      std::vector<float> tpcChi2;
+      std::vector<float> itsChi2;
       std::vector<int8_t> sign;
       std::vector<int32_t> newMCCollisionIds;
       std::vector<int16_t> newParticleIds;
@@ -792,6 +808,9 @@ struct UpcCandProducerBarrel {
         tofNSigmaPr.push_back(track.tofNSigmaPr());
         itsClusterMap.push_back(track.itsClusterMap());
         nClusters.push_back(track.tpcNClsFound());
+        nCrossedRows.push_back(track.tpcNClsCrossedRows());
+        tpcChi2.push_back(track.tpcChi2NCl());
+        itsChi2.push_back(track.itsChi2NCl());
         sign.push_back(track.sign());
         if constexpr (isMC) {
           // Fake, background, and unmatched particles keep the -1 label
@@ -811,7 +830,8 @@ struct UpcCandProducerBarrel {
       selectedCandidates(bc.runNumber(), globalBC, tfIDs[iTF], bc.timestamp(), flags, occupancyFT0C,
                          collision.posX(), collision.posY(), collision.posZ(),
                          px, py, pz, tpcSignal, tpcNSigmaEl, tpcNSigmaPi, tpcNSigmaKa, tpcNSigmaPr,
-                         tofNSigmaEl, tofNSigmaPi, tofNSigmaKa, tofNSigmaPr, itsClusterMap, nClusters, sign,
+                         tofNSigmaEl, tofNSigmaPi, tofNSigmaKa, tofNSigmaPr, itsClusterMap, nClusters,
+                         nCrossedRows, tpcChi2, itsChi2, sign,
                          std::min<uint32_t>(distFT0, maxStoredDistance + 1),
                          std::min<uint32_t>(distFV0, maxStoredDistance + 1),
                          std::min<uint32_t>(distFDD, maxStoredDistance + 1));
