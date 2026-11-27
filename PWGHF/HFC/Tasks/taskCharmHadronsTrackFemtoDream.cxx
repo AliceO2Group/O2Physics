@@ -173,7 +173,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     ConfigurableAxis binGenPtTrack{"binGenPtTrack", {20, 0., 10.}, "Generated proton pT binning (GeV/c)"};
     Configurable<double> genKstarMin{"genKstarMin", 0., "Minimum k* for 1D Gen QA histograms (GeV/c)"};
     Configurable<double> genKstarMax{"genKstarMax", 2., "Maximum k* for 1D Gen QA histograms (GeV/c)"};
-    Configurable<double> genKstarBinWidth{"genKstarBinWidth", 0.01, "Bin width of k* for 1D Gen QA histograms (GeV/c)"};
+    Configurable<int> genKstarNBins{"genKstarNBins", 200, "Number of k* bins for 1D Gen QA histograms"};
   } genCfg;
   SliceCache cache;
 
@@ -371,9 +371,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       registryCharmHadronQa.add("Gen/hSE", ";k* (GeV/c);pT D (GeV/c);pT proton (GeV/c);Charm origin;Pair sign", {HistType::kTHnSparseD, {genCfg.binGenKstar, genCfg.binGenPtCharm, genCfg.binGenPtTrack, axisOrigin, axisSign}}, true);
       registryCharmHadronQa.add("Gen/hME", ";k* (GeV/c);pT D (GeV/c);pT proton (GeV/c);Charm origin;Pair sign", {HistType::kTHnSparseD, {genCfg.binGenKstar, genCfg.binGenPtCharm, genCfg.binGenPtTrack, axisOrigin, axisSign}}, true);
       registryCharmHadronQa.add("Gen/hPtCharm", ";pT D (GeV/c);Charm origin", {HistType::kTH2D, {genCfg.binGenPtCharm, axisOrigin}}, true);
-      const int rawBinsKstar1D = static_cast<int>(std::round((genCfg.genKstarMax.value - genCfg.genKstarMin.value) / genCfg.genKstarBinWidth.value));
-      const int nBinsKstar1D = rawBinsKstar1D > 1 ? rawBinsKstar1D : 1;
-      const AxisSpec axisKstar1D{nBinsKstar1D, genCfg.genKstarMin.value, genCfg.genKstarMax.value, "k* (GeV/c)"};
+      const AxisSpec axisKstar1D{genCfg.genKstarNBins.value, genCfg.genKstarMin.value, genCfg.genKstarMax.value, "k* (GeV/c)"};
       registryCharmHadronQa.add("Gen/hSEPairs", ";k* (GeV/c);Entries", {HistType::kTH1D, {axisKstar1D}}, true);
       registryCharmHadronQa.add("Gen/hMEPairs", ";k* (GeV/c);Entries", {HistType::kTH1D, {axisKstar1D}}, true);
       registryCharmHadronQa.add("Gen/hRawCF", ";k* (GeV/c);SE / ME", {HistType::kTH1D, {axisKstar1D}}, true);
