@@ -399,6 +399,7 @@ struct PhiStrangeCorrelation {
     AxisSpec nSigmaPiAxis = {100, -10.0f, 10.0f, "N#sigma #pi"};
     AxisSpec binnedpTPiAxis{std::vector<double>(binspTPi), "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec binnedpTPiAxisExt{std::vector<double>(binspTPiExt), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec pTBeyondMapAxis = {100, 0.0f, 50.0f, "#it{p}_{T} (GeV/#it{c})"}; // the binned pT axes end where these candidates begin
 
     std::array<AxisSpec, kAssocPartSize> massAxes = {massK0SAxis, massLambdaAxis, massLambdaAxis, massXiAxis, massOmegaAxis, nSigmaPiAxis};
     std::array<AxisSpec, kAssocPartSize> binnedpTAxes = {binnedpTK0SAxis, binnedpTLambdaAxis, binnedpTLambdaAxis, binnedpTXiAxis, binnedpTOmegaAxis, binnedpTPiAxis};
@@ -411,9 +412,12 @@ struct PhiStrangeCorrelation {
 
     // Entries dropped because an efficiency could not be computed (see computeWeight), in the coordinates of the
     // particle whose efficiency failed: SE counts phi candidates (each with all its pairs) and pairs lost to the
-    // associated efficiency, ME counts pairs
+    // associated efficiency, ME the pairs lost to the associated efficiency (its phi are those of SE)
     histos.add("zeroEfficiency/SE/h3Phi", "Phi candidates dropped for zero Phi efficiency, SE", kTH3F, {binnedmultAxis, binnedpTPhiAxis, yAxis});
-    histos.add("zeroEfficiency/ME/h3Phi", "Phi-associated pairs dropped for zero Phi efficiency, ME", kTH3F, {binnedmultAxis, binnedpTPhiAxis, yAxis});
+
+    // Entries dropped because the particle is at or beyond the last pT bin of its efficiency map (isPhiBeyondMap,
+    // isAssocBeyondMap), counted as zeroEfficiency/ is
+    histos.add("outOfMap/SE/h3Phi", "Phi candidates dropped beyond the Phi efficiency map, SE", kTH3F, {binnedmultAxis, pTBeyondMapAxis, yAxis});
 
     histos.add("phi/h4PhiMCReco", "Phi in MC Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTPhiAxis, yAxis});
     histos.add("phi/h3PhiMCGen", "Phi in MC Gen", kTH3F, {binnedmultAxis, binnedpTPhiAxis, yAxis});
@@ -443,6 +447,8 @@ struct PhiStrangeCorrelation {
 
       histos.add(fmt::format("zeroEfficiency/SE/h3{}", pName).c_str(), fmt::format("Phi-{} pairs dropped for zero {} efficiency, SE", pTitle, pTitle).c_str(), kTH3F, {binnedmultAxis, binnedpTAxes[i], yAxis});
       histos.add(fmt::format("zeroEfficiency/ME/h3{}", pName).c_str(), fmt::format("Phi-{} pairs dropped for zero {} efficiency, ME", pTitle, pTitle).c_str(), kTH3F, {binnedmultAxis, binnedpTAxes[i], yAxis});
+      histos.add(fmt::format("outOfMap/SE/h3{}", pName).c_str(), fmt::format("Phi-{} pairs dropped beyond the {} efficiency map, SE", pTitle, pTitle).c_str(), kTH3F, {binnedmultAxis, pTBeyondMapAxis, yAxis});
+      histos.add(fmt::format("outOfMap/ME/h3{}", pName).c_str(), fmt::format("Phi-{} pairs dropped beyond the {} efficiency map, ME", pTitle, pTitle).c_str(), kTH3F, {binnedmultAxis, pTBeyondMapAxis, yAxis});
 
       // h4<X>MCReco is cut in the signal region (mass window, pion nSigma window) only if select<X>InSigRegion is on,
       // as the pairs are (isAssocValid). With selectPionInSigRegion off, the pions' is the efficiency without the
@@ -537,8 +543,8 @@ struct PhiStrangeCorrelation {
   //
   // Empty when an efficiency cannot be computed: a map bin without reconstructed MC, or a candidate outside the map,
   // reads 0, and interpolation near such bins can give a non-positive or non-finite value. Such an entry is dropped and
-  // counted (zeroEfficiency/), as the candidates beyond the last pT bin of the maps already are: a weight of 1 instead
-  // would mix corrected and uncorrected entries in one bin
+  // counted (zeroEfficiency/), as the candidates beyond the last pT bin of the maps are (outOfMap/): a weight of 1
+  // instead would mix corrected and uncorrected entries in one bin
   template <typename... BoundEffMaps>
   std::optional<float> computeWeight(const BoundEffMaps&... boundEffMaps)
   {
@@ -630,29 +636,58 @@ struct PhiStrangeCorrelation {
     }
   }
 
+  // A candidate at or beyond the last pT bin of its efficiency map has no efficiency to read: with the efficiencies
+  // applied it is dropped, and counted in outOfMap/
+  bool isPhiBeyondMap(float pt)
+  {
+    return efficiencyConfigs.applyEfficiency && efficiencyConfigs.applyPhiEfficiency && pt >= binspTPhi.value.back();
+  }
+
+  template <AssociatedParticleType PartType>
+  bool isAssocBeyondMap(float pt)
+  {
+    if (!efficiencyConfigs.applyEfficiency) {
+      return false;
+    }
+    if constexpr (PartType == kK0S) {
+      return pt >= binspTK0S.value.back();
+    } else if constexpr (PartType == kLambda || PartType == kAntiLambda) {
+      return pt >= binspTLambda.value.back();
+    } else if constexpr (PartType == kXi) {
+      return pt >= binspTXi.value.back();
+    } else if constexpr (PartType == kOmega) {
+      return pt >= binspTOmega.value.back();
+    } else {
+      static_assert(PartType == kPion, "Unsupported particle type in isAssocBeyondMap");
+      return pt >= binspTPi.value.back();
+    }
+  }
+
+  // The signal-region selection (mass or nSigma window) of an associated candidate, for the pairs and for the MC
+  // reconstructed of the efficiency alike; the pT range of the efficiency maps is checked apart (isAssocBeyondMap), only
+  // where an efficiency is applied
   template <AssociatedParticleType PartType, typename TAssoc>
   bool isAssocValid(TAssoc const& assoc)
   {
     if constexpr (PartType == kK0S) {
       const bool applyMassCut = (analysisMode == kDeltaYvsDeltaPhi) && k0sConfigs.selectK0sInSigRegion;
       const auto& [minMass, maxMass] = k0sConfigs.rangeMK0sSignal.value;
-      return (!efficiencyConfigs.applyEfficiency || assoc.pt() < binspTK0S->back()) && (!applyMassCut || assoc.inMassRegion(minMass, maxMass));
+      return !applyMassCut || assoc.inMassRegion(minMass, maxMass);
     } else if constexpr (PartType == kLambda || PartType == kAntiLambda) {
       const bool applyMassCut = (analysisMode == kDeltaYvsDeltaPhi) && lambdaConfigs.selectLambdaInSigRegion;
       const auto& [minMass, maxMass] = lambdaConfigs.rangeMLambdaSignal.value;
-      return (!efficiencyConfigs.applyEfficiency || assoc.pt() < binspTLambda->back()) && (!applyMassCut || assoc.inMassRegion(minMass, maxMass));
+      return !applyMassCut || assoc.inMassRegion(minMass, maxMass);
     } else if constexpr (PartType == kXi) {
       const bool applyMassCut = (analysisMode == kDeltaYvsDeltaPhi) && xiConfigs.selectXiInSigRegion;
       const auto& [minMass, maxMass] = xiConfigs.rangeMXiSignal.value;
-      return (!efficiencyConfigs.applyEfficiency || assoc.pt() < binspTXi->back()) && (!applyMassCut || assoc.inMassRegion(minMass, maxMass));
+      return !applyMassCut || assoc.inMassRegion(minMass, maxMass);
     } else if constexpr (PartType == kOmega) {
       const bool applyMassCut = (analysisMode == kDeltaYvsDeltaPhi) && omegaConfigs.selectOmegaInSigRegion;
       const auto& [minMass, maxMass] = omegaConfigs.rangeMOmegaSignal.value;
-      return (!efficiencyConfigs.applyEfficiency || assoc.pt() < binspTOmega->back()) && (!applyMassCut || assoc.inMassRegion(minMass, maxMass));
+      return !applyMassCut || assoc.inMassRegion(minMass, maxMass);
     } else if constexpr (PartType == kPion) {
       const bool applyNSigmaCut = (analysisMode == kDeltaYvsDeltaPhi) && pionConfigs.selectPionInSigRegion;
-      return (!efficiencyConfigs.applyEfficiency || assoc.pt() < binspTPi->back()) &&
-             (!applyNSigmaCut || assoc.inNSigmaRegion(pionConfigs.pidTPCMax, pionConfigs.pidTOFMax));
+      return !applyNSigmaCut || assoc.inNSigmaRegion(pionConfigs.pidTPCMax, pionConfigs.pidTOFMax);
     } else {
       static_assert(PartType == kK0S || PartType == kLambda || PartType == kAntiLambda ||
                       PartType == kXi || PartType == kOmega || PartType == kPion,
@@ -742,6 +777,15 @@ struct PhiStrangeCorrelation {
   template <AssociatedParticleType PartType, bool IsME, typename TPhiCand, typename TAssoc>
   void processOneAssocPair(TPhiCand const& phiCand, TAssoc const& assoc, float multiplicity)
   {
+    if (isAssocBeyondMap<PartType>(assoc.pt())) {
+      if constexpr (IsME) {
+        histos.fill(HIST("outOfMap/ME/h3") + HIST(AssocParticleLabels[PartType]), multiplicity, assoc.pt(), assoc.y());
+      } else {
+        histos.fill(HIST("outOfMap/SE/h3") + HIST(AssocParticleLabels[PartType]), multiplicity, assoc.pt(), assoc.y());
+      }
+      return;
+    }
+
     if (!isAssocValid<PartType>(assoc)) {
       return;
     }
@@ -784,7 +828,8 @@ struct PhiStrangeCorrelation {
     }
 
     for (const auto& phiCand : phiCandidates) {
-      if (efficiencyConfigs.applyEfficiency && efficiencyConfigs.applyPhiEfficiency && phiCand.pt() >= binspTPhi->back()) {
+      if (isPhiBeyondMap(phiCand.pt())) {
+        histos.fill(HIST("outOfMap/SE/h3Phi"), multiplicity, phiCand.pt(), phiCand.y());
         continue;
       }
 
@@ -859,12 +904,8 @@ struct PhiStrangeCorrelation {
       }
 
       for (const auto& [phiCand, assoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, assocRed))) {
-        if (efficiencyConfigs.applyEfficiency && efficiencyConfigs.applyPhiEfficiency && phiCand.pt() >= binspTPhi->back()) {
-          continue;
-        }
-
-        if (!computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()))) {
-          histos.fill(HIST("zeroEfficiency/ME/h3Phi"), multiplicity, phiCand.pt(), phiCand.y());
+        // Not counted: the phi of c1 are those of the same event, already counted there once each
+        if (isPhiBeyondMap(phiCand.pt()) || !computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()))) {
           continue;
         }
 
