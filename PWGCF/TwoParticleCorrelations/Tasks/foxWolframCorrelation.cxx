@@ -335,10 +335,8 @@ struct FoxWolframCorrelation {
     "triSRPeak1", "triSRPeak2", "triSRPeak3", "triSRValleys"};
 
   // Map each unique pair of Fox-Wolfram moments to its histogram.
-  static constexpr std::array<std::string_view, 3> FwmRangeNames = {"FWM_BIN1/", "FWM_BIN2/", "FWM_BIN3/"};
   static constexpr std::array<std::string_view, 4> FwmCorrRegionNames = {"FWM_CORR_REG1/", "FWM_CORR_REG2/", "FWM_CORR_REG3/", "FWM_CORR_REG4/"};
   static constexpr std::array<std::string_view, 8> FwmHlNames = {"H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8"};
-  static constexpr std::array<std::string_view, 8> FwmMulthNames = {"Multip_H1", "Multip_H2", "Multip_H3", "Multip_H4", "Multip_H5", "Multip_H6", "Multip_H7", "Multip_H8"};
 
   static constexpr std::array<std::string_view, 28> FwmCorrelationNames = {"H1_H2", "H1_H3", "H1_H4", "H1_H5", "H1_H6", "H1_H7", "H1_H8", "H2_H3", "H2_H4", "H2_H5", "H2_H6", "H2_H7", "H2_H8", "H3_H4", "H3_H5", "H3_H6", "H3_H7", "H3_H8", "H4_H5", "H4_H6", "H4_H7", "H4_H8", "H5_H6", "H5_H7", "H5_H8", "H6_H7", "H6_H8", "H7_H8"};
   static constexpr std::array<int, 28> FwmCorrelationFirst = {0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 5, 5, 6};
