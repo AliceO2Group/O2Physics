@@ -19,27 +19,34 @@
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
+#include <cstdint>
 #include <cstdlib>
 
 namespace o2::aod
 {
 namespace lf_selection_event
 {
-DECLARE_SOA_COLUMN(DefaultSel, defaultSel, bool);
-DECLARE_SOA_COLUMN(PhimesonSel, phimesonSel, bool);
+// The selection an event passes, each level containing the next: an event with a phi is a selected event
+enum Level : uint8_t {
+  kRejected = 0,
+  kDefault,        // the default event selection
+  kDefaultWithPhi, // the default event selection and a phi
+};
+DECLARE_SOA_COLUMN(SelectionLevel, selectionLevel, uint8_t);
 } // namespace lf_selection_event
 
 DECLARE_SOA_TABLE(PhiStrangeEvtSelDataLike, "AOD", "EVTSELDATA",
-                  lf_selection_event::DefaultSel,
-                  lf_selection_event::PhimesonSel);
+                  lf_selection_event::SelectionLevel);
 
 DECLARE_SOA_TABLE(PhiStrangeEvtSelMcGen, "AOD", "EVTSELMCGEN",
-                  lf_selection_event::DefaultSel,
-                  lf_selection_event::PhimesonSel);
+                  lf_selection_event::SelectionLevel);
 
 namespace lf_selection_phi_candidate
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+// A generated candidate belongs to a generated collision: with an index to Collisions, a process over McCollisions
+// would receive the candidates of the whole DF instead of those of its collision
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 
 DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
@@ -72,7 +79,7 @@ DECLARE_SOA_TABLE(PhimesonCandidatesMcReco, "AOD", "PHICANDMCREC",
 
 DECLARE_SOA_TABLE(PhimesonCandidatesMcGen, "AOD", "PHICANDMCGEN",
                   soa::Index<>,
-                  lf_selection_phi_candidate::CollisionId,
+                  lf_selection_phi_candidate::McCollisionId,
                   lf_selection_phi_candidate::M,
                   lf_selection_phi_candidate::Pt,
                   lf_selection_phi_candidate::Y,
@@ -193,14 +200,17 @@ DECLARE_SOA_COLUMN(NSigmaTOF, nSigmaTOF, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);
+// Whether the TOF enters the PID of this track: it has a TOF signal and pT >= minPtTOFInPID of the producer, the
+// threshold above which the producer also requires the TOF. Below it the pion is identified with the TPC alone, track
+// with TOF or not, so that one threshold, in one place, decides where the TOF is used.
+DECLARE_SOA_COLUMN(UseTOFInPID, useTOFInPID, bool);
 
 DECLARE_SOA_DYNAMIC_COLUMN(InNSigmaRegion, inNSigmaRegion,
-                           [](float nSigmaTPC, bool hasTOF, float nSigmaTOF, float pidTPCMax, float pidTOFMax) -> bool {
+                           [](float nSigmaTPC, bool useTOFInPID, float nSigmaTOF, float pidTPCMax, float pidTOFMax) -> bool {
                              if (std::abs(nSigmaTPC) >= pidTPCMax) {
                                return false; // TPC check failed
                              }
-                             if (hasTOF && std::abs(nSigmaTOF) >= pidTOFMax) {
+                             if (useTOFInPID && std::abs(nSigmaTOF) >= pidTOFMax) {
                                return false; // TOF check failed
                              }
                              return true;
@@ -215,9 +225,9 @@ DECLARE_SOA_TABLE(PionTracksData, "AOD", "PITRACKSDATA",
                   lf_selection_pion_track::Pt,
                   lf_selection_pion_track::Y,
                   lf_selection_pion_track::Phi,
-                  lf_selection_pion_track::HasTOF,
+                  lf_selection_pion_track::UseTOFInPID,
                   lf_selection_pion_track::InNSigmaRegion<lf_selection_pion_track::NSigmaTPC,
-                                                          lf_selection_pion_track::HasTOF,
+                                                          lf_selection_pion_track::UseTOFInPID,
                                                           lf_selection_pion_track::NSigmaTOF>);
 
 DECLARE_SOA_TABLE(PionTracksMcReco, "AOD", "PITRACKSMCREC",
@@ -228,9 +238,9 @@ DECLARE_SOA_TABLE(PionTracksMcReco, "AOD", "PITRACKSMCREC",
                   lf_selection_pion_track::Pt,
                   lf_selection_pion_track::Y,
                   lf_selection_pion_track::Phi,
-                  lf_selection_pion_track::HasTOF,
+                  lf_selection_pion_track::UseTOFInPID,
                   lf_selection_pion_track::InNSigmaRegion<lf_selection_pion_track::NSigmaTPC,
-                                                          lf_selection_pion_track::HasTOF,
+                                                          lf_selection_pion_track::UseTOFInPID,
                                                           lf_selection_pion_track::NSigmaTOF>);
 } // namespace o2::aod
 

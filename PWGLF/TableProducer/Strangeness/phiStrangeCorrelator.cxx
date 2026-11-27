@@ -21,6 +21,8 @@
 #include "PWGLF/Utils/inelGt.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -60,6 +62,26 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::rctsel;
+
+namespace phi_strange_utils
+{
+// The multiplicity percentile a collision is binned in: its own FT0M centrality, for a collision in data and for a
+// generated one, and for a reconstructed collision in MC (TMcCollisions set) that of the generated collision it comes
+// from (McCentFT0Ms), the one of the event selection and of the efficiencies. A reconstructed collision in MC has its
+// own centFT0M too, but binning the reconstructed side in it and the generated side in the generated one would put the
+// migration between multiplicity classes inside the efficiencies, to be unfolded to bring everything back to the
+// generated multiplicity; how large that migration is has still to be studied
+template <typename TMcCollisions = void, typename TCollision>
+float multPercentile(const TCollision& collision)
+{
+  if constexpr (std::is_void_v<TMcCollisions>) {
+    return collision.centFT0M();
+  } else {
+    return collision.template mcCollision_as<TMcCollisions>().centFT0M();
+  }
+}
+} // namespace phi_strange_utils
 
 struct PhiMesonCandProducer {
   // Produce the table with the phi candidates information
@@ -93,29 +115,22 @@ struct PhiMesonCandProducer {
 
   // Configurables on phi selection
   struct : ConfigurableGroup {
-    Configurable<float> maxMPhi{"maxMPhi", 1.2f, "Maximum mass for Phi candidates"};
+    Configurable<float> maxMPhi{"maxMPhi", 1.5f, "Maximum mass for Phi candidates"};
     Configurable<float> minPhiPt{"minPhiPt", 0.4f, "Minimum pT for Phi candidates"};
     Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
   } phiConfigs;
 
-  Configurable<bool> trueGenPhi{"trueGenPhi", false, "Phi trigger in MC Collisions: false - gen K+K- pair, true - gen phi meson"};
+  Configurable<bool> trueGenPhi{"trueGenPhi", false, "Phi trigger in MC Collisions: false - gen K+K- pair, true - gen phi meson decaying to K+K-"};
 
   // Configurables on phi pT bins
-  Configurable<std::vector<double>> binspTPhi{"binspTPhi", {0.4, 0.8, 1.4, 2.0, 2.8, 4.0, 6.0, 10.0}, "pT bin limits for Phi"};
+  Configurable<std::vector<double>> binspTPhi{"binspTPhi", {0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 15.0, 20.0}, "pT bin limits for Phi"};
 
   // Filter on default selected collisions
-  // Filter collisionFilter = aod::lf_selection_default_collision::defaultSel == true;
-  // Filter collisionFilter = aod::lf_selection_event::defaultSel == true;
+  // Filter collisionFilter = aod::lf_selection_event::selectionLevel >= static_cast<uint8_t>(aod::lf_selection_event::kDefault);
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::CentFT0Ms, aod::PVMults>;
   using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
-
-  /*using SelCollisions = soa::Join<aod::Collisions, aod::CentFT0Ms, aod::PVMults, aod::PhiStrangeDefEvtSelDataLike>;
-  using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels, aod::PhiStrangeDefEvtSelMcGen>;
-
-  using FilteredSelCollisions = soa::Filtered<SelCollisions>;
-  using FilteredSimCollisions = soa::Filtered<SimCollisions>;*/
 
   // Defining the type of the phi's daughter tracks for data and MC
   using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa>;
@@ -357,6 +372,10 @@ struct PhiMesonCandProducer {
         if (std::abs(mcParticle.pdgCode()) != o2::constants::physics::Pdg::kPhi) {
           continue;
         }
+        // Only phi -> K+K-, as the events with a phi of data and of trueGenPhi false
+        if (!RecoDecay::isMatchedMCGen(mcParticles, mcParticle, o2::constants::physics::Pdg::kPhi, std::array{-PDG_t::kKPlus, +PDG_t::kKPlus})) {
+          continue;
+        }
         if (mcParticle.pt() < phiConfigs.minPhiPt) {
           continue;
         }
@@ -364,21 +383,19 @@ struct PhiMesonCandProducer {
           continue;
         }
 
-        phimesonCandidatesMcGen(mcCollision.globalIndex(), 0, mcParticle.pt(), mcParticle.y(), mcParticle.phi());
+        // Its own mass, not a placeholder: the event selection keeps the candidates in the phi signal window, the
+        // generated phi as the K+K- pairs of trueGenPhi false (a mass of 0 made every event fail it)
+        phimesonCandidatesMcGen(mcCollision.globalIndex(), RecoDecay::m(mcParticle.p(), mcParticle.e()), mcParticle.pt(), mcParticle.y(), mcParticle.phi());
       }
     } else {
+      // K+ outside, K- inside: every pair once
       for (const auto& mcParticle1 : mcParticles) {
-        if (!mcParticle1.isPhysicalPrimary() || std::abs(mcParticle1.eta()) > trackConfigs.etaMax) {
+        if (mcParticle1.pdgCode() != PDG_t::kKPlus || !mcParticle1.isPhysicalPrimary() || std::abs(mcParticle1.eta()) > trackConfigs.etaMax) {
           continue;
         }
 
         for (const auto& mcParticle2 : mcParticles) {
-          if (!mcParticle2.isPhysicalPrimary() || std::abs(mcParticle2.eta()) > trackConfigs.etaMax) {
-            continue;
-          }
-
-          if ((mcParticle1.pdgCode() != PDG_t::kKPlus || mcParticle2.pdgCode() != PDG_t::kKMinus) &&
-              (mcParticle1.pdgCode() != PDG_t::kKMinus || mcParticle2.pdgCode() != PDG_t::kKPlus)) {
+          if (mcParticle2.pdgCode() != PDG_t::kKMinus || !mcParticle2.isPhysicalPrimary() || std::abs(mcParticle2.eta()) > trackConfigs.etaMax) {
             continue;
           }
 
@@ -434,38 +451,39 @@ struct V0ReducedCandProducer {
     Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
   } trackConfigs;
 
-  // Configurables for V0 selection
+  // Configurables for V0 selection. The defaults of the topological cuts, the proper lifetime, the competing-mass
+  // rejection in the Lambda and the Armenteros cut are those of the K0S and Lambda analysis in pp at 13.6 TeV (V0
+  // production vs multiplicity, analysis note of June 2026, Table 1)
   struct : ConfigurableGroup {
-    Configurable<float> decayRadius{"decayRadius", 0.5f, "V0 decay radius"};
-    Configurable<float> dcaV0Dau{"dcaV0Dau", 1.0f, "DCA V0 Daughters"};
-    Configurable<float> dcaPosToPV{"dcaPosToPV", 0.1f, "DCA Pos To PV"};
-    Configurable<float> dcaNegToPV{"dcaNegToPV", 0.1f, "DCA Neg To PV"};
+    Configurable<float> decayRadius{"decayRadius", 0.9f, "V0 decay radius"};
+    Configurable<float> dcaV0Dau{"dcaV0Dau", 0.5f, "DCA V0 Daughters"};
+    Configurable<float> dcaPosToPV{"dcaPosToPV", 0.06f, "DCA Pos To PV"};
+    Configurable<float> dcaNegToPV{"dcaNegToPV", 0.06f, "DCA Neg To PV"};
 
-    Configurable<bool> furtherV0Selection{"furtherV0Selection", false, "Further V0 selection"};
+    Configurable<bool> applyCtauCut{"applyCtauCut", true, "Apply the ctau cuts (ctauK0S, ctauLambda)"};
 
     Configurable<float> yAcceptance{"yAcceptance", 0.5f, "Rapidity acceptance"};
 
-    struct : ConfigurableGroup {
-      Configurable<float> cosPAK0S{"cosPAK0S", 0.98f, "K0S CosPA"};
-      Configurable<float> ctauK0S{"ctauK0S", 20.0f, "C tau K0s(cm)"};
-      Configurable<float> rejMassK0S{"rejMassK0S", 0.005f, "V0 rej K0s"};
+    // K0S
+    Configurable<float> cosPAK0S{"cosPAK0S", 0.98f, "K0S CosPA"};
+    Configurable<float> ctauK0S{"ctauK0S", 20.0f, "C tau K0s(cm)"};
+    Configurable<float> rejMassK0S{"rejMassK0S", 0.005f, "K0S: half-width of the window around the Lambda mass in which vetoLambdaInK0S rejects (GeV/c2)"};
 
-      Configurable<float> paramArmenterosCutK0S{"paramArmenterosCutK0S", 0.2f, "Parameter for Armenteros Cut for K0S"};
+    Configurable<float> paramArmenterosCutK0S{"paramArmenterosCutK0S", 0.2f, "Parameter for Armenteros Cut for K0S"};
+    Configurable<bool> applyArmenterosCutK0S{"applyArmenterosCutK0S", true, "Apply the Armenteros cut to the K0S (qT > paramArmenterosCutK0S |alpha|)"};
+    Configurable<bool> vetoLambdaInK0S{"vetoLambdaInK0S", false, "Reject K0S candidates whose mass under the Lambda or AntiLambda hypothesis is within rejMassK0S of the Lambda mass"};
 
-      Configurable<float> minPtK0S{"minPtK0S", 0.1f, "K0S min pt"};
-      Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
-      Configurable<std::pair<float, float>> rangeMK0sSignal{"rangeMK0sSignal", {0.47f, 0.53f}, "K0S mass range for signal extraction"};
-    } k0sConfigs;
+    Configurable<float> minPtK0S{"minPtK0S", 0.0f, "K0S min pt"};
+    Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.0, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.4, 7.0, 8.0, 10.0}, "pT bin limits for K0S"};
 
-    struct : ConfigurableGroup {
-      Configurable<float> cosPALambda{"cosPALambda", 0.98f, "Lambda CosPA"};
-      Configurable<float> ctauLambda{"ctauLambda", 7.89f, "C tau Lambda(cm)"};
-      Configurable<float> rejMassLambda{"rejMassLambda", 0.005f, "V0 rej Lambda"};
+    // Lambda and AntiLambda
+    Configurable<float> cosPALambda{"cosPALambda", 0.995f, "Lambda CosPA"};
+    Configurable<float> ctauLambda{"ctauLambda", 30.0f, "C tau Lambda(cm)"};
+    Configurable<float> rejMassLambda{"rejMassLambda", 0.01f, "Lambda: half-width of the window around the K0S mass in which vetoK0SInLambda rejects (GeV/c2)"};
+    Configurable<bool> vetoK0SInLambda{"vetoK0SInLambda", true, "Reject Lambda and AntiLambda candidates whose mass under the K0S hypothesis is within rejMassLambda of the K0S mass"};
 
-      Configurable<float> minPtLambda{"minPtLambda", 0.1f, "Lambda min pt"};
-      Configurable<std::vector<double>> binspTLambda{"binspTLambda", {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Lambda"};
-      Configurable<std::pair<float, float>> rangeMLambdaSignal{"rangeMLambdaSignal", {1.11f, 1.12f}, "Lambda mass range for signal extraction"};
-    } lambdaConfigs;
+    Configurable<float> minPtLambda{"minPtLambda", 0.8f, "Lambda min pt"};
+    Configurable<std::vector<double>> binspTLambda{"binspTLambda", {0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.4, 7.0, 8.0, 10.0}, "pT bin limits for Lambda"};
   } v0Configs;
 
   Configurable<std::vector<double>> binspTXi{"binspTXi", {0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Xi"};
@@ -475,8 +493,7 @@ struct V0ReducedCandProducer {
   static constexpr double MassLambda = o2::constants::physics::MassLambda0;
 
   // Filter on default selected collisions
-  // Filter collisionFilter = aod::lf_selection_default_collision::defaultSel == true;
-  Filter collisionFilter = aod::lf_selection_event::defaultSel == true;
+  Filter collisionFilter = aod::lf_selection_event::selectionLevel >= static_cast<uint8_t>(aod::lf_selection_event::kDefault);
 
   // Defining filters on V0s (cannot filter on dynamic columns)
   Filter v0PreFilter = (nabs(aod::v0data::dcapostopv) > v0Configs.dcaPosToPV &&
@@ -500,8 +517,8 @@ struct V0ReducedCandProducer {
   void init(InitContext&)
   {
     AxisSpec binnedmultAxis{std::vector<double>(binsMult), "centFT0M"};
-    AxisSpec binnedpTK0SAxis{std::vector<double>(v0Configs.k0sConfigs.binspTK0S), "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec binnedpTLambdaAxis{std::vector<double>(v0Configs.lambdaConfigs.binspTLambda), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTK0SAxis{std::vector<double>(v0Configs.binspTK0S), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTLambdaAxis{std::vector<double>(v0Configs.binspTLambda), "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec binnedpTXiAxis{std::vector<double>(binspTXi), "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec massK0SAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec massLambdaAxis = {200, 1.08f, 1.15f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
@@ -597,9 +614,10 @@ struct V0ReducedCandProducer {
       return false;
     }
 
-    const float cutCosPA = (v0Type == kK0S) ? v0Configs.k0sConfigs.cosPAK0S : v0Configs.lambdaConfigs.cosPALambda;
-    const float cutMinPt = (v0Type == kK0S) ? v0Configs.k0sConfigs.minPtK0S : v0Configs.lambdaConfigs.minPtLambda;
-    const float cutCtau = (v0Type == kK0S) ? v0Configs.k0sConfigs.ctauK0S : v0Configs.lambdaConfigs.ctauLambda;
+    constexpr bool IsK0S = v0Type == kK0S;
+    const float cutCosPA = IsK0S ? v0Configs.cosPAK0S : v0Configs.cosPALambda;
+    const float cutMinPt = IsK0S ? v0Configs.minPtK0S : v0Configs.minPtLambda;
+    const float cutCtau = IsK0S ? v0Configs.ctauK0S : v0Configs.ctauLambda;
 
     if (v0.v0cosPA() < cutCosPA) {
       return false;
@@ -608,24 +626,27 @@ struct V0ReducedCandProducer {
       return false;
     }
 
-    if (v0Configs.furtherV0Selection) {
-      constexpr float assumedMass = v0Type == kK0S ? MassK0S : MassLambda;
-      if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * assumedMass > cutCtau) {
+    // Separate switches: the competing-mass rejection of one species must be possible without changing the selection
+    // of the other (a K0S whose pi+ passes the proton PID enters the Lambda mass spectrum with a kinematic edge
+    // that falls under the Lambda peak at low pT)
+    if (v0Configs.applyCtauCut) {
+      constexpr float AssumedMass = IsK0S ? MassK0S : MassLambda;
+      if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * AssumedMass > cutCtau) {
         return false;
       }
+    }
 
-      if constexpr (v0Type == kK0S) {
-        if (std::abs(v0.mLambda() - MassLambda) < v0Configs.k0sConfigs.rejMassK0S ||
-            std::abs(v0.mAntiLambda() - MassLambda) < v0Configs.k0sConfigs.rejMassK0S) {
-          return false;
-        }
-        if (v0.qtarm() < (v0Configs.k0sConfigs.paramArmenterosCutK0S * std::abs(v0.alpha()))) {
-          return false;
-        }
-      } else {
-        if (std::abs(v0.mK0Short() - MassK0S) < v0Configs.lambdaConfigs.rejMassLambda) {
-          return false;
-        }
+    if constexpr (IsK0S) {
+      if (v0Configs.vetoLambdaInK0S &&
+          (std::abs(v0.mLambda() - MassLambda) < v0Configs.rejMassK0S || std::abs(v0.mAntiLambda() - MassLambda) < v0Configs.rejMassK0S)) {
+        return false;
+      }
+      if (v0Configs.applyArmenterosCutK0S && v0.qtarm() < v0Configs.paramArmenterosCutK0S * std::abs(v0.alpha())) {
+        return false;
+      }
+    } else {
+      if (v0Configs.vetoK0SInLambda && std::abs(v0.mK0Short() - MassK0S) < v0Configs.rejMassLambda) {
+        return false;
       }
     }
 
@@ -755,50 +776,67 @@ struct CascadeReducedCandProducer {
     Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
   } trackConfigs;
 
-  // Configurables for Cascade selection
+  // Configurables for Cascade selection. The defaults are those of the Xi and Omega analysis in pp at 13.6 TeV
+  // (ALICE-ANA-2026-1446, Table 3)
   struct : ConfigurableGroup {
-    Configurable<float> dcaV0Dau{"dcaV0Dau", 1.0f, "DCA V0 Daughters"};
-    Configurable<float> dcaCascDau{"dcaCascDau", 1.0f, "DCA Cascade Daughters"};
-    Configurable<float> dcaPosToPV{"dcaPosToPV", 0.1f, "DCA Pos To PV"};
-    Configurable<float> dcaNegToPV{"dcaNegToPV", 0.1f, "DCA Neg To PV"};
-    Configurable<float> dcaBachToPV{"dcaBachToPV", 0.1f, "DCA Bach To PV"};
+    Configurable<float> dcaBachToPV{"dcaBachToPV", 0.05f, "DCA Bach To PV"};
+
+    // The cuts of the note that the trains have not applied so far, each with its own switch, off by default
+    Configurable<bool> applyDcaV0ToPVCut{"applyDcaV0ToPVCut", false, "Apply the minimum DCA of the V0 to the PV (dcaV0ToPVXi, dcaV0ToPVOmega)"};
+    Configurable<bool> applyBachBaryonCut{"applyBachBaryonCut", false, "Apply the minimum DCAxy to the PV of the bachelor-baryon pair (dcaBachBaryonXi, dcaBachBaryonOmega)"};
+    Configurable<bool> applyLambdaMassWindow{"applyLambdaMassWindow", false, "Apply the Lambda mass window to the V0 (massWindowLambdaXi, massWindowLambdaOmega)"};
+    Configurable<bool> applyCtauCut{"applyCtauCut", false, "Apply the proper decay length cuts (ctauXi, ctauOmega)"};
+    Configurable<bool> vetoXiInOmega{"vetoXiInOmega", false, "Reject Omega candidates within rejMassXiInOmega of the Xi mass"};
 
     Configurable<float> yAcceptance{"yAcceptance", 0.5f, "Rapidity acceptance"};
 
-    struct : ConfigurableGroup {
-      Configurable<float> v0CosPAXi{"v0CosPAXi", 0.98f, "Xi V0 CosPA"};
-      Configurable<float> cosPAXi{"cosPAXi", 0.98f, "Xi CosPA"};
-      Configurable<float> v0RadiusXi{"v0RadiusXi", 0.5f, "V0 decay radius"};
-      Configurable<float> radiusXi{"radiusXi", 0.5f, "Xi decay radius"};
+    // Xi
+    Configurable<float> dcaPosToPVXi{"dcaPosToPVXi", 0.06f, "Xi: DCA Pos To PV"};
+    Configurable<float> dcaNegToPVXi{"dcaNegToPVXi", 0.06f, "Xi: DCA Neg To PV"};
+    Configurable<float> dcaV0DauXi{"dcaV0DauXi", 0.5f, "Xi: DCA V0 Daughters"};
+    Configurable<float> dcaCascDauXi{"dcaCascDauXi", 0.25f, "Xi: DCA Cascade Daughters (bachelor and V0)"};
+    Configurable<float> dcaV0ToPVXi{"dcaV0ToPVXi", 0.03f, "Xi: DCA V0 To PV"};
+    Configurable<float> dcaBachBaryonXi{"dcaBachBaryonXi", 0.02f, "Xi: minimum DCAxy to PV of the bachelor-baryon pair"};
+    Configurable<float> v0CosPAXi{"v0CosPAXi", 0.9876f, "Xi V0 CosPA"};
+    Configurable<float> cosPAXi{"cosPAXi", 0.9947f, "Xi CosPA"};
+    Configurable<float> v0RadiusXi{"v0RadiusXi", 1.2f, "V0 decay radius"};
+    Configurable<float> radiusXi{"radiusXi", 1.0f, "Xi decay radius"};
+    Configurable<float> massWindowLambdaXi{"massWindowLambdaXi", 0.0116f, "Xi: maximum |m(V0) - m(Lambda)| (GeV/c2)"};
+    Configurable<float> ctauXi{"ctauXi", 22.6f, "Xi: maximum proper decay length L m / p (cm); the note's 4.6 c tau, with c tau = 4.91 cm (PDG)"};
 
-      Configurable<float> minPtXi{"minPtXi", 0.8f, "Xi min pt"};
-      Configurable<std::vector<double>> binspTXi{"binspTXi", {0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Xi"};
-    } xiConfigs;
+    Configurable<float> minPtXi{"minPtXi", 0.8f, "Xi min pt"};
+    Configurable<std::vector<double>> binspTXi{"binspTXi", {0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.5}, "pT bin limits for Xi"};
 
-    struct : ConfigurableGroup {
-      Configurable<float> v0CosPAOmega{"v0CosPAOmega", 0.98f, "Omega V0 CosPA"};
-      Configurable<float> cosPAOmega{"cosPAOmega", 0.98f, "Omega CosPA"};
-      Configurable<float> v0RadiusOmega{"v0RadiusOmega", 0.5f, "V0 decay radius"};
-      Configurable<float> radiusOmega{"radiusOmega", 0.5f, "Omega decay radius"};
+    // Omega
+    Configurable<float> dcaPosToPVOmega{"dcaPosToPVOmega", 0.05f, "Omega: DCA Pos To PV"};
+    Configurable<float> dcaNegToPVOmega{"dcaNegToPVOmega", 0.05f, "Omega: DCA Neg To PV"};
+    Configurable<float> dcaV0DauOmega{"dcaV0DauOmega", 0.4f, "Omega: DCA V0 Daughters"};
+    Configurable<float> dcaCascDauOmega{"dcaCascDauOmega", 0.8f, "Omega: DCA Cascade Daughters (bachelor and V0)"};
+    Configurable<float> dcaV0ToPVOmega{"dcaV0ToPVOmega", 0.04f, "Omega: DCA V0 To PV"};
+    Configurable<float> dcaBachBaryonOmega{"dcaBachBaryonOmega", 0.015f, "Omega: minimum DCAxy to PV of the bachelor-baryon pair"};
+    Configurable<float> v0CosPAOmega{"v0CosPAOmega", 0.985f, "Omega V0 CosPA"};
+    Configurable<float> cosPAOmega{"cosPAOmega", 0.99f, "Omega CosPA"};
+    Configurable<float> v0RadiusOmega{"v0RadiusOmega", 1.2f, "V0 decay radius"};
+    Configurable<float> radiusOmega{"radiusOmega", 0.8f, "Omega decay radius"};
+    Configurable<float> massWindowLambdaOmega{"massWindowLambdaOmega", 0.0075f, "Omega: maximum |m(V0) - m(Lambda)| (GeV/c2)"};
+    Configurable<float> ctauOmega{"ctauOmega", 17.2f, "Omega: maximum proper decay length L m / p (cm); the note's 7 c tau, with c tau = 2.461 cm (PDG)"};
+    Configurable<float> rejMassXiInOmega{"rejMassXiInOmega", 0.01f, "Omega: reject candidates within this distance of the Xi mass (GeV/c2)"};
 
-      Configurable<float> minPtOmega{"minPtOmega", 0.8f, "Omega min pt"};
-      Configurable<std::vector<double>> binspTOmega{"binspTOmega", {0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Omega"};
-    } omegaConfigs;
+    Configurable<float> minPtOmega{"minPtOmega", 0.8f, "Omega min pt"};
+    Configurable<std::vector<double>> binspTOmega{"binspTOmega", {0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.5}, "pT bin limits for Omega"};
   } cascadeConfigs;
 
   // Constants
   static constexpr double MassXi = o2::constants::physics::MassXiMinus;
   static constexpr double MassOmega = o2::constants::physics::MassOmegaMinus;
+  static constexpr double MassLambda = o2::constants::physics::MassLambda0;
 
   // Filter on default selected collisions
-  Filter collisionFilter = aod::lf_selection_event::defaultSel == true;
+  Filter collisionFilter = aod::lf_selection_event::selectionLevel >= static_cast<uint8_t>(aod::lf_selection_event::kDefault);
 
-  // Defining filters on Cascades (cannot filter on dynamic columns)
-  Filter cascadePreFilter = (nabs(aod::cascdata::dcapostopv) > cascadeConfigs.dcaPosToPV &&
-                             nabs(aod::cascdata::dcanegtopv) > cascadeConfigs.dcaNegToPV &&
-                             nabs(aod::cascdata::dcabachtopv) > cascadeConfigs.dcaBachToPV &&
-                             aod::cascdata::dcaV0daughters < cascadeConfigs.dcaV0Dau &&
-                             aod::cascdata::dcacascdaughters < cascadeConfigs.dcaCascDau);
+  // Defining filters on Cascades (cannot filter on dynamic columns); the cuts that differ between Xi and Omega are
+  // applied in selectionCascade
+  Filter cascadePreFilter = nabs(aod::cascdata::dcabachtopv) > cascadeConfigs.dcaBachToPV;
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::CentFT0Ms, aod::PVMults, aod::PhiStrangeEvtSelDataLike>;
@@ -817,8 +855,8 @@ struct CascadeReducedCandProducer {
   void init(InitContext&)
   {
     AxisSpec binnedmultAxis{std::vector<double>(binsMult), "centFT0M"};
-    AxisSpec binnedpTXiAxis{std::vector<double>(cascadeConfigs.xiConfigs.binspTXi), "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec binnedpTOmegaAxis{std::vector<double>(cascadeConfigs.omegaConfigs.binspTOmega), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTXiAxis{std::vector<double>(cascadeConfigs.binspTXi), "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTOmegaAxis{std::vector<double>(cascadeConfigs.binspTOmega), "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec massXiAxis = {200, 1.2f, 1.4f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec massOmegaAxis = {200, 1.6f, 1.8f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
 
@@ -922,16 +960,41 @@ struct CascadeReducedCandProducer {
       return false;
     }
 
-    const float cutV0CosPA = (cascadeType == kXi || cascadeType == kAntiXi) ? cascadeConfigs.xiConfigs.v0CosPAXi : cascadeConfigs.omegaConfigs.v0CosPAOmega;
-    const float cutCosPA = (cascadeType == kXi || cascadeType == kAntiXi) ? cascadeConfigs.xiConfigs.cosPAXi : cascadeConfigs.omegaConfigs.cosPAOmega;
-    const float cutV0Radius = (cascadeType == kXi || cascadeType == kAntiXi) ? cascadeConfigs.xiConfigs.v0RadiusXi : cascadeConfigs.omegaConfigs.v0RadiusOmega;
-    const float cutRadius = (cascadeType == kXi || cascadeType == kAntiXi) ? cascadeConfigs.xiConfigs.radiusXi : cascadeConfigs.omegaConfigs.radiusOmega;
-    const float cutMinPt = (cascadeType == kXi || cascadeType == kAntiXi) ? cascadeConfigs.xiConfigs.minPtXi : cascadeConfigs.omegaConfigs.minPtOmega;
+    constexpr bool IsXi = cascadeType == kXi || cascadeType == kAntiXi;
+    const float cutDcaPosToPV = IsXi ? cascadeConfigs.dcaPosToPVXi : cascadeConfigs.dcaPosToPVOmega;
+    const float cutDcaNegToPV = IsXi ? cascadeConfigs.dcaNegToPVXi : cascadeConfigs.dcaNegToPVOmega;
+    const float cutDcaV0Dau = IsXi ? cascadeConfigs.dcaV0DauXi : cascadeConfigs.dcaV0DauOmega;
+    const float cutDcaCascDau = IsXi ? cascadeConfigs.dcaCascDauXi : cascadeConfigs.dcaCascDauOmega;
+    const float cutDcaV0ToPV = IsXi ? cascadeConfigs.dcaV0ToPVXi : cascadeConfigs.dcaV0ToPVOmega;
+    const float cutDcaBachBaryon = IsXi ? cascadeConfigs.dcaBachBaryonXi : cascadeConfigs.dcaBachBaryonOmega;
+    const float cutV0CosPA = IsXi ? cascadeConfigs.v0CosPAXi : cascadeConfigs.v0CosPAOmega;
+    const float cutCosPA = IsXi ? cascadeConfigs.cosPAXi : cascadeConfigs.cosPAOmega;
+    const float cutV0Radius = IsXi ? cascadeConfigs.v0RadiusXi : cascadeConfigs.v0RadiusOmega;
+    const float cutRadius = IsXi ? cascadeConfigs.radiusXi : cascadeConfigs.radiusOmega;
+    const float cutMassWindowLambda = IsXi ? cascadeConfigs.massWindowLambdaXi : cascadeConfigs.massWindowLambdaOmega;
+    const float cutCtau = IsXi ? cascadeConfigs.ctauXi : cascadeConfigs.ctauOmega;
+    const float cutMinPt = IsXi ? cascadeConfigs.minPtXi : cascadeConfigs.minPtOmega;
 
     const auto& pvx = collision.posX();
     const auto& pvy = collision.posY();
     const auto& pvz = collision.posZ();
 
+    if (std::abs(cascade.dcapostopv()) < cutDcaPosToPV || std::abs(cascade.dcanegtopv()) < cutDcaNegToPV) {
+      return false;
+    }
+    if (cascade.dcaV0daughters() > cutDcaV0Dau || cascade.dcacascdaughters() > cutDcaCascDau) {
+      return false;
+    }
+    if (cascadeConfigs.applyDcaV0ToPVCut && cascade.dcav0topv(pvx, pvy, pvz) < cutDcaV0ToPV) {
+      return false;
+    }
+    // The bachelor and the baryon of the V0, fitted by the builder as a pair (bachBaryonDCAxyToPV): in a true cascade
+    // they come from two decay vertices and the pair does not point to the PV; when it does, the two are likely the
+    // pion and proton of a primary Lambda, joined by an unrelated track into a fake cascade, and such candidates pile
+    // up in a structure in the invariant mass
+    if (cascadeConfigs.applyBachBaryonCut && std::abs(cascade.bachBaryonDCAxyToPV()) < cutDcaBachBaryon) {
+      return false;
+    }
     if (cascade.v0cosPA(pvx, pvy, pvz) < cutV0CosPA) {
       return false;
     }
@@ -943,6 +1006,23 @@ struct CascadeReducedCandProducer {
     }
     if (cascade.cascradius() < cutRadius) {
       return false;
+    }
+    if (cascadeConfigs.applyLambdaMassWindow && std::abs(cascade.mLambda() - MassLambda) > cutMassWindowLambda) {
+      return false;
+    }
+    if constexpr (!IsXi) {
+      if (cascadeConfigs.vetoXiInOmega && std::abs(cascade.mXi() - MassXi) < cascadeConfigs.rejMassXiInOmega) {
+        return false;
+      }
+    }
+    // Proper decay length L m / p in cm, as for the V0s (ctauK0S, ctauLambda); computed here, since the cascade tables
+    // have no distovertotmom (only the V0 tables do)
+    if (cascadeConfigs.applyCtauCut) {
+      const float decayLength = std::hypot(cascade.x() - pvx, cascade.y() - pvy, cascade.z() - pvz);
+      const float properLength = decayLength * (IsXi ? MassXi : MassOmega) / std::hypot(cascade.px(), cascade.py(), cascade.pz());
+      if (properLength > cutCtau) {
+        return false;
+      }
     }
     if (cascade.pt() < cutMinPt) {
       return false;
@@ -1041,7 +1121,9 @@ struct PionTrackProducer {
     Configurable<int> minITSnCls{"minITSnCls", 4, "min number of ITS clusters"};
 
     // Configurable<bool> forceTOF{"forceTOF", false, "force the TOF signal for the PID"};
-    Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.5, "minimum pT after which TOF PID is applicable"};
+    // Was tofPIDThreshold, which bounded only this producer's TOF requirement: renamed with its meaning, now that it
+    // also decides where the TOF enters the PID (useTOFInPID), so that a train configuration says which rule it ran
+    Configurable<float> minPtTOFInPID{"minPtTOFInPID", 0.5, "pT from which the TOF is required (cfgIsTOFChecked) and enters the pion PID, here and in the nSigma window of phiStrangeCorrelation"};
     Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Kaon, o2::track::PID::Proton}, "Trk sel: Particles species for PID rejection, kaon, proton"};
     Configurable<bool> applyElRejection{"applyElRejection", false, "Apply or not the electron rejection"};
     Configurable<std::pair<float, float>> pidRangeTPCEl{"pidRangeTPCEl", {-3.0f, 5.0f}, "nSigma TPC range for electrons"};
@@ -1054,13 +1136,12 @@ struct PionTrackProducer {
   } trackConfigs;
 
   // Configurable on pion pT bins
-  Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
+  Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0}, "pT bin limits for pions"};
 
   static constexpr double MassPi = o2::constants::physics::MassPiPlus;
 
   // Filter on default selected collisions
-  // Filter collisionFilter = aod::lf_selection_default_collision::defaultSel == true;
-  Filter collisionFilter = aod::lf_selection_event::defaultSel == true;
+  Filter collisionFilter = aod::lf_selection_event::selectionLevel >= static_cast<uint8_t>(aod::lf_selection_event::kDefault);
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::CentFT0Ms, aod::PVMults, aod::PhiStrangeEvtSelDataLike>;
@@ -1068,6 +1149,7 @@ struct PionTrackProducer {
 
   using FilteredSelCollisions = soa::Filtered<SelCollisions>;
   using FilteredSimCollisions = soa::Filtered<SimCollisions>;
+  using MCCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
   // Defining the type of the tracks for data and MC
   using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -1077,14 +1159,31 @@ struct PionTrackProducer {
   {
     AxisSpec binnedmultAxis{std::vector<double>(binsMult), "centFT0M"};
     AxisSpec binnedpTPiAxis{std::vector<double>(binspTPi), "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec nSigmaPiAxis = {100, -10.0f, 10.0f, "N#sigma #pi"};
+    AxisSpec nSigmaTPCPiAxis = {100, -10.0f, 10.0f, "N#sigma_{TPC} #pi"};
+    AxisSpec nSigmaTOFPiAxis = {100, -10.0f, 10.0f, "N#sigma_{TOF} #pi"};
+    // Wide enough for the DCAxy cut at the lowest pT (0.004 + 0.013 / 0.2 = 0.069 cm with the defaults), so that the
+    // templates are not truncated where the secondaries weigh most
+    AxisSpec dcaXYPiAxis = {4000, -0.1f, 0.1f, "DCA_{xy} (cm)"};
 
-    histos.add("h3PionTPCnSigma", "Pion TPC nSigma distribution", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaPiAxis});
-    histos.add("h3PionTOFnSigma", "Pion TOF nSigma distribution", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaPiAxis});
+    histos.add("h3PionTPCnSigma", "Pion TPC nSigma distribution", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis});
+    histos.add("h3PionTOFnSigma", "Pion TOF nSigma distribution", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaTOFPiAxis});
 
-    histos.add("h2RecMCDCAxyPrimPi", "Dcaxy distribution vs pt for Primary Pions", kTH2F, {binnedpTPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
-    histos.add("h2RecMCDCAxySecWeakDecayPi", "Dcaz distribution vs pt for Secondary Pions from Weak Decay", kTH2F, {binnedpTPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
-    histos.add("h2RecMCDCAxySecMaterialPi", "Dcaxy distribution vs pt for Secondary Pions from Material", kTH2F, {binnedpTPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
+    // The selected pions split by TOF: with TOF, the TPC and TOF nSigma together; without TOF, the TPC one alone.
+    // phiStrangeCorrelation counts in the TPC window alone below minPtTOFInPID and in both windows above it
+    // (useTOFInPID), so fits of these give the purity and the nSigma-window efficiency of the counted sample, which the
+    // two distributions above, each over every track, cannot. Below the threshold, the tracks with TOF also show what a
+    // TOF cut would remove there
+    histos.add("h4PionTPCTOFnSigma", "Pion TPC and TOF nSigma, tracks with TOF", kTHnSparseF, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis, nSigmaTOFPiAxis});
+    histos.add("h3PionTPCnSigmaNoTOF", "Pion TPC nSigma, tracks without TOF", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis});
+    // The same for the true primary pions, to compare the nSigma shapes of data and MC
+    histos.add("h4RecMCPionTPCTOFnSigma", "True primary pion TPC and TOF nSigma, tracks with TOF", kTHnSparseF, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis, nSigmaTOFPiAxis});
+    histos.add("h3RecMCPionTPCnSigmaNoTOF", "True primary pion TPC nSigma, tracks without TOF", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaTPCPiAxis});
+
+    // The data to fit with the templates below: every selected track, so with whatever is not a pion among them
+    histos.add("h2PionDCAxy", "Dcaxy distribution vs pt for selected Pion tracks", kTH2F, {binnedpTPiAxis, dcaXYPiAxis});
+    histos.add("h2RecMCDCAxyPrimPi", "Dcaxy distribution vs pt for Primary Pions", kTH2F, {binnedpTPiAxis, dcaXYPiAxis});
+    histos.add("h2RecMCDCAxySecWeakDecayPi", "Dcaxy distribution vs pt for Secondary Pions from Weak Decay", kTH2F, {binnedpTPiAxis, dcaXYPiAxis});
+    histos.add("h2RecMCDCAxySecMaterialPi", "Dcaxy distribution vs pt for Secondary Pions from Material", kTH2F, {binnedpTPiAxis, dcaXYPiAxis});
   }
 
   /*// PID selection for Pions
@@ -1103,7 +1202,7 @@ struct PionTrackProducer {
         if (std::abs(nSigmaTPC) >= trackConfigs.pidTPCMax->at(speciesIndex)) {
           return false; // TPC check failed
         }
-        if (trackConfigs.forceTOF || (track.pt() >= trackConfigs.tofPIDThreshold && track.hasTOF())) {
+        if (trackConfigs.forceTOF || (track.pt() >= trackConfigs.minPtTOFInPID && track.hasTOF())) {
           auto nSigmaTOF = aod::pidutils::tofNSigma(pid, track);
           if (std::abs(nSigmaTOF) >= trackConfigs.pidTOFMax->at(speciesIndex)) {
             return false; // TOF check failed
@@ -1125,6 +1224,16 @@ struct PionTrackProducer {
 
     return true;
   }*/
+
+  // The TOF enters the pion PID from minPtTOFInPID up and never below, here in the K/p rejection and in the nSigma
+  // window of phiStrangeCorrelation (the UseTOFInPID column). Below the threshold the TPC separates the pion alone; a
+  // TOF cut on the tracks that happen to have a TOF signal only adds the matching and the mismatch to the efficiency,
+  // on a fraction of the tracks that changes with pT, and the old fit-based analysis did not use the TOF there either
+  template <typename T>
+  bool useTOFInPID(const T& track)
+  {
+    return track.pt() >= trackConfigs.minPtTOFInPID && track.hasTOF();
+  }
 
   // PID Hypotheses rejection for Pions
   template <typename T>
@@ -1152,8 +1261,8 @@ struct PionTrackProducer {
       auto nSigmaTPC = aod::pidutils::tpcNSigma(pid, track);
 
       if (std::abs(nSigmaTPC) < trackConfigs.pidTPCMaxHadrons) {
-        // Reject if only TPC is within threshold and TOF is unavailable or if both TPC and TOF are within thresholds
-        if (!track.hasTOF() || std::abs(aod::pidutils::tofNSigma(pid, track)) < trackConfigs.pidTOFMaxHadrons) {
+        // Reject if only TPC is within threshold and TOF is not used or if both TPC and TOF are within thresholds
+        if (!useTOFInPID(track) || std::abs(aod::pidutils::tofNSigma(pid, track)) < trackConfigs.pidTOFMaxHadrons) {
           return false;
         }
       }
@@ -1211,7 +1320,7 @@ struct PionTrackProducer {
       }
     }
 
-    if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.tofPIDThreshold && !track.hasTOF()) {
+    if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.minPtTOFInPID && !track.hasTOF()) {
       return false;
     }
 
@@ -1224,9 +1333,9 @@ struct PionTrackProducer {
 
     /*
     if (analysisMode == 1) {
-      if (track.pt() < trackConfigs.tofPIDThreshold && std::abs(track.tpcNSigmaPi()) >= trackConfigs.nSigmaCutTPCPrimPion)
+      if (track.pt() < trackConfigs.minPtTOFInPID && std::abs(track.tpcNSigmaPi()) >= trackConfigs.nSigmaCutTPCPrimPion)
         return false;
-      if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.tofPIDThreshold && (std::pow(track.tofNSigmaPi(), 2) + std::pow(track.tpcNSigmaPi(), 2)) >= std::pow(trackConfigs.nSigmaCutCombinedPi, 2))
+      if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.minPtTOFInPID && (std::pow(track.tofNSigmaPi(), 2) + std::pow(track.tpcNSigmaPi(), 2)) >= std::pow(trackConfigs.nSigmaCutCombinedPi, 2))
         return false;
     }
     */
@@ -1248,16 +1357,25 @@ struct PionTrackProducer {
 
       histos.fill(HIST("h3PionTPCnSigma"), collision.centFT0M(), track.pt(), track.tpcNSigmaPi());
       histos.fill(HIST("h3PionTOFnSigma"), collision.centFT0M(), track.pt(), track.tofNSigmaPi());
+      if (track.hasTOF()) {
+        histos.fill(HIST("h4PionTPCTOFnSigma"), collision.centFT0M(), track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+      } else {
+        histos.fill(HIST("h3PionTPCnSigmaNoTOF"), collision.centFT0M(), track.pt(), track.tpcNSigmaPi());
+      }
+      histos.fill(HIST("h2PionDCAxy"), track.pt(), track.dcaXY());
 
-      pionTracksData(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(MassPi), track.phi(), track.hasTOF());
+      pionTracksData(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(MassPi), track.phi(), useTOFInPID(track));
     }
   }
 
   PROCESS_SWITCH(PionTrackProducer, processData, "Process function to select pion tracks in Data or in McReco (w/o MC truth) analysis", true);
 
   // void processMCReco(SimCollisions::iterator const& collision, FullMCTracks const& fullTracks, aod::McParticles const& mcParticles)
-  void processMCReco(FilteredSimCollisions::iterator const& collision, FullMCTracks const& fullTracks, aod::McParticles const& mcParticles)
+  void processMCReco(FilteredSimCollisions::iterator const& collision, MCCollisions const&, FullMCTracks const& fullTracks, aod::McParticles const& mcParticles)
   {
+    // The generated multiplicity, as in the event selection: a collision passing it has an MC collision
+    const float multiplicity = phi_strange_utils::multPercentile<MCCollisions>(collision);
+
     for (const auto& track : fullTracks) {
       if (!selectionPion(track)) {
         continue;
@@ -1282,7 +1400,13 @@ struct PionTrackProducer {
         continue;
       }
 
-      pionTracksMcReco(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(MassPi), track.phi(), track.hasTOF());
+      if (track.hasTOF()) {
+        histos.fill(HIST("h4RecMCPionTPCTOFnSigma"), multiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+      } else {
+        histos.fill(HIST("h3RecMCPionTPCnSigmaNoTOF"), multiplicity, track.pt(), track.tpcNSigmaPi());
+      }
+
+      pionTracksMcReco(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(MassPi), track.phi(), useTOFInPID(track));
     }
   }
 
@@ -1293,15 +1417,6 @@ struct EventSelectionProducer {
   // Produce the table with the event selection information
   Produces<aod::PhiStrangeEvtSelDataLike> phiStrangeEvtSelDataLike;
   Produces<aod::PhiStrangeEvtSelMcGen> phiStrangeEvtSelMcGen;
-
-  // Produces<aod::PhiStrangeDefEvtSelDataLike> phiStrangeDefEvtSelDataLike;
-  // Produces<aod::PhiStrangeDefEvtSelMcGen> phiStrangeDefEvtSelMcGen;
-
-  /*Produces<aod::DefaultSelectionData> defaultSelectionData;
-  Produces<aod::DefaultSelectionMcGen> defaultSelectionMcGen;
-
-  Produces<aod::PhimesonSelectionData> phimesonSelectionData;
-  Produces<aod::PhimesonSelectionMcGen> phimesonSelectionMcGen;*/
 
   HistogramRegistry histos{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -1314,13 +1429,13 @@ struct EventSelectionProducer {
   // Configurable for MC
   Configurable<bool> cfgiskNoITSROFrameBorder{"cfgiskNoITSROFrameBorder", false, "kNoITSROFrameBorder request on MC collisions"};
 
-  // Configurables on phi selection
-  struct : ConfigurableGroup {
-    Configurable<float> minMPhiSignal{"minMPhiSignal", 1.0095f, "Upper limits on Phi mass for signal extraction"};
-    Configurable<float> maxMPhiSignal{"maxMPhiSignal", 1.029f, "Upper limits on Phi mass for signal extraction"};
-  } phiConfigs;
+  // Configurable on phi selection
+  Configurable<std::pair<float, float>> rangeMPhiSignal{"rangeMPhiSignal", {1.0f, 1.05f}, "Phi mass range for signal extraction"};
 
   Configurable<bool> withTrueGenPhi{"withTrueGenPhi", false, "Require the presence of a true generated phi meson in the event"};
+
+  // Configurable for RCTFlagChecker
+  Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "", "Which detector condition requirements? (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)"};
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
@@ -1334,6 +1449,9 @@ struct EventSelectionProducer {
   // Necessary service to flag INEL>0 events in GenMC
   Service<o2::framework::O2DatabasePDG> pdgDB{};
 
+  // Necessary tool to flag collision according to detector run condition
+  RCTFlagsChecker rctFlagsChecker;
+
   void init(InitContext&)
   {
     // Defining histogram axes
@@ -1341,17 +1459,25 @@ struct EventSelectionProducer {
     AxisSpec multAxis = {120, 0.0f, 120.0f, "centFT0M"};
     AxisSpec binnedmultAxis{std::vector<double>(binsMult), "centFT0M"};
 
+    // The RCT selection, from the label in the configuration (read before init, not at construction)
+    rctFlagsChecker.init(cfgRCTLabel.value);
+    // A label it does not know leaves the checker without flags, which it would only report at the first event
+    if (!cfgRCTLabel.value.empty() && !rctFlagsChecker.any()) {
+      LOG(fatal) << "Unknown cfgRCTLabel '" << cfgRCTLabel.value << "': expected one of CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo";
+    }
+
     // Booking histograms for event selection QA
     // Number of events per selection in Data
-    histos.add("hEventSelectionData", "hEventSelectionData", kTH1F, {{5, -0.5f, 4.5f}});
+    histos.add("hEventSelectionData", "hEventSelectionData", kTH1F, {{6, -0.5f, 5.5f}});
     histos.get<TH1>(HIST("hEventSelectionData"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelectionData"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
     histos.get<TH1>(HIST("hEventSelectionData"))->GetXaxis()->SetBinLabel(3, "posZ cut");
     histos.get<TH1>(HIST("hEventSelectionData"))->GetXaxis()->SetBinLabel(4, "INEL>0 cut");
-    histos.get<TH1>(HIST("hEventSelectionData"))->GetXaxis()->SetBinLabel(5, "With at least a #phi cand");
+    histos.get<TH1>(HIST("hEventSelectionData"))->GetXaxis()->SetBinLabel(5, "RCTFlags cut");
+    histos.get<TH1>(HIST("hEventSelectionData"))->GetXaxis()->SetBinLabel(6, "With at least a #phi cand");
 
     // Number of MC events per selection in MC
-    histos.add("hEventSelectionMC", "hEventSelectionMC", kTH1F, {{8, -0.5f, 7.5f}});
+    histos.add("hEventSelectionMC", "hEventSelectionMC", kTH1F, {{9, -0.5f, 8.5f}});
     histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(2, "kIsTriggerTVX");
     histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(3, "kNoTimeFrameBorder");
@@ -1359,7 +1485,8 @@ struct EventSelectionProducer {
     histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(5, "posZ cut");
     histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(6, "INEL>0 cut");
     histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(7, "With at least a gen coll");
-    histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(8, "With at least a #phi cand");
+    histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(8, "RCTFlags cut");
+    histos.get<TH1>(HIST("hEventSelectionMC"))->GetXaxis()->SetBinLabel(9, "With at least a #phi cand");
 
     // Event information
     histos.add("hVertexZ", "Vertex Z", kTH1F, {vertexZAxis});
@@ -1374,8 +1501,6 @@ struct EventSelectionProducer {
   template <bool isMC, typename MC_T = void, typename T>
   bool defaultEventSelection(const T& collision)
   {
-    float multPercentile{0.0f};
-
     if constexpr (!isMC) {                         // data event
       histos.fill(HIST("hEventSelectionData"), 0); // all collisions
       if (!collision.sel8()) {
@@ -1390,9 +1515,12 @@ struct EventSelectionProducer {
         return false;
       }
       histos.fill(HIST("hEventSelectionData"), 3); // INEL>0 collisions
-
-      multPercentile = collision.centFT0M();
-    } else { // MCreco event
+      if (!cfgRCTLabel.value.empty() && !rctFlagsChecker(collision)) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelectionData"), 4); // RCTFlags cut
+    } else {
+      // MCreco event
       static_assert(!std::is_same_v<MC_T, void>, "Need to set MC_T to MCCollisions for isMC = true");
 
       histos.fill(HIST("hEventSelectionMC"), 0); // all collisions
@@ -1420,14 +1548,17 @@ struct EventSelectionProducer {
         return false;
       }
       histos.fill(HIST("hEventSelectionMC"), 6); // with at least a gen collision
-
-      const auto& mcCollision = collision.template mcCollision_as<MC_T>();
-      multPercentile = mcCollision.centFT0M();
+      if (!cfgRCTLabel.value.empty() && !rctFlagsChecker(collision)) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelectionMC"), 7); // RCTFlags cut
     }
 
+    const float multiplicity = phi_strange_utils::multPercentile<MC_T>(collision);
+
     histos.fill(HIST("hVertexZ"), collision.posZ());
-    histos.fill(HIST("hMultiplicityPercent"), multPercentile);
-    histos.fill(HIST("h2VertexZvsMult"), collision.posZ(), multPercentile);
+    histos.fill(HIST("hMultiplicityPercent"), multiplicity);
+    histos.fill(HIST("h2VertexZvsMult"), collision.posZ(), multiplicity);
 
     return true;
   }
@@ -1442,9 +1573,10 @@ struct EventSelectionProducer {
       }
     } else {
       uint16_t nPhi{0};
+      const auto& [minMass, maxMass] = rangeMPhiSignal.value;
 
       for (const auto& phiCand : phiCandidates) {
-        if (phiCand.inMassRegion(phiConfigs.minMPhiSignal, phiConfigs.maxMPhiSignal)) {
+        if (phiCand.inMassRegion(minMass, maxMass)) {
           nPhi++;
         }
 
@@ -1460,26 +1592,18 @@ struct EventSelectionProducer {
       }
     }
 
-    float multPercentile{0.0f};
-
     if constexpr (!isMC) {
-      histos.fill(HIST("hEventSelectionData"), 4);
-
-      multPercentile = collision.centFT0M();
-    } else {
-      if constexpr (std::is_same_v<MC_T, void>) {
-        multPercentile = collision.centFT0M();
-      } else {
-        histos.fill(HIST("hEventSelectionMC"), 7);
-
-        const auto& mcCollision = collision.template mcCollision_as<MC_T>();
-        multPercentile = mcCollision.centFT0M();
-      }
+      histos.fill(HIST("hEventSelectionData"), 5);
+    } else if constexpr (!std::is_void_v<MC_T>) {
+      histos.fill(HIST("hEventSelectionMC"), 8);
     }
 
+    // MC_T void for a collision in data and for a generated one
+    const float multiplicity = phi_strange_utils::multPercentile<MC_T>(collision);
+
     histos.fill(HIST("hVertexZWPhi"), collision.posZ());
-    histos.fill(HIST("hMultiplicityPercentWPhi"), multPercentile);
-    histos.fill(HIST("h2VertexZvsMultWPhi"), collision.posZ(), multPercentile);
+    histos.fill(HIST("hMultiplicityPercentWPhi"), multiplicity);
+    histos.fill(HIST("h2VertexZvsMultWPhi"), collision.posZ(), multiplicity);
 
     return true;
   }
@@ -1487,53 +1611,57 @@ struct EventSelectionProducer {
   // Default event selection
   void processData(SelCollisions::iterator const& collision)
   {
-    // phiStrangeDefEvtSelDataLike(defaultEventSelection<false>(collision));
-    phiStrangeEvtSelDataLike(defaultEventSelection<false>(collision), false);
-    // defaultSelectionData(defaultEventSelection<false>(collision), false);
+    phiStrangeEvtSelDataLike(defaultEventSelection<false>(collision) ? aod::lf_selection_event::kDefault : aod::lf_selection_event::kRejected);
   }
 
   PROCESS_SWITCH(EventSelectionProducer, processData, "Process function to select default events in Data", true);
 
   void processMCReco(SimCollisions::iterator const& collision, MCCollisions const&)
   {
-    // phiStrangeDefEvtSelDataLike(defaultEventSelection<true, MCCollisions>(collision));
-    phiStrangeEvtSelDataLike(defaultEventSelection<true, MCCollisions>(collision), false);
-    // defaultSelectionData(defaultEventSelection<true, MCCollisions>(collision));
+    phiStrangeEvtSelDataLike(defaultEventSelection<true, MCCollisions>(collision) ? aod::lf_selection_event::kDefault : aod::lf_selection_event::kRejected);
   }
 
   PROCESS_SWITCH(EventSelectionProducer, processMCReco, "Process function to select default events in MCReco", false);
 
   void processMCGen(MCCollisions::iterator const&, aod::McParticles const& mcParticles)
   {
-
-    // phiStrangeDefEvtSelMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB));
-    phiStrangeEvtSelMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB), false);
-    // defaultSelectionMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB));
+    phiStrangeEvtSelMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB) ? aod::lf_selection_event::kDefault : aod::lf_selection_event::kRejected);
   }
 
   PROCESS_SWITCH(EventSelectionProducer, processMCGen, "Process function to select default events in MCGen", false);
 
-  // Default event selection + phi meson requirement
+  // Default event selection + phi meson requirement. eventHasPhi runs only on the events the default selection keeps:
+  // it fills the WPhi QA histograms and, in MC reconstruction, reads the generated collision, which a rejected one
+  // may not have (has_mcCollision is part of the default selection)
   void processDataWPhi(SelCollisions::iterator const& collision, aod::PhimesonCandidatesData const& phiCandidatesData)
   {
-    phiStrangeEvtSelDataLike(defaultEventSelection<false>(collision), eventHasPhi<false>(collision, phiCandidatesData));
-    // phimesonSelectionData(defaultEventSelection<false>(collision) && eventHasPhi<false>(collision, phiCandidatesData));
+    auto level = defaultEventSelection<false>(collision) ? aod::lf_selection_event::kDefault : aod::lf_selection_event::kRejected;
+    if (level == aod::lf_selection_event::kDefault && eventHasPhi<false>(collision, phiCandidatesData)) {
+      level = aod::lf_selection_event::kDefaultWithPhi;
+    }
+    phiStrangeEvtSelDataLike(level);
   }
 
   PROCESS_SWITCH(EventSelectionProducer, processDataWPhi, "Process function to select events with Phi mesons in Data", false);
 
   void processMCRecoWPhi(SimCollisions::iterator const& collision, MCCollisions const&, aod::PhimesonCandidatesData const& phiCandidatesData)
   {
-    phiStrangeEvtSelDataLike(defaultEventSelection<true, MCCollisions>(collision), eventHasPhi<true, MCCollisions>(collision, phiCandidatesData));
-    // phimesonSelectionData(defaultEventSelection<true, MCCollisions>(collision) && eventHasPhi<true, MCCollisions>(collision, phiCandidatesData));
+    auto level = defaultEventSelection<true, MCCollisions>(collision) ? aod::lf_selection_event::kDefault : aod::lf_selection_event::kRejected;
+    if (level == aod::lf_selection_event::kDefault && eventHasPhi<true, MCCollisions>(collision, phiCandidatesData)) {
+      level = aod::lf_selection_event::kDefaultWithPhi;
+    }
+    phiStrangeEvtSelDataLike(level);
   }
 
   PROCESS_SWITCH(EventSelectionProducer, processMCRecoWPhi, "Process function to select events with Phi mesons in MCReco", false);
 
   void processMCGenWPhi(MCCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles, aod::PhimesonCandidatesMcGen const& phiCandidatesMcGen)
   {
-    phiStrangeEvtSelMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB), eventHasPhi<true>(mcCollision, phiCandidatesMcGen));
-    // phimesonSelectionMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB) && eventHasPhi<true>(mcCollision, phiCandidatesMcGen));
+    auto level = pwglf::isINELgt0mc(mcParticles, pdgDB) ? aod::lf_selection_event::kDefault : aod::lf_selection_event::kRejected;
+    if (level == aod::lf_selection_event::kDefault && eventHasPhi<true>(mcCollision, phiCandidatesMcGen)) {
+      level = aod::lf_selection_event::kDefaultWithPhi;
+    }
+    phiStrangeEvtSelMcGen(level);
   }
 
   PROCESS_SWITCH(EventSelectionProducer, processMCGenWPhi, "Process function to select events with Phi mesons in MCGen", false);
