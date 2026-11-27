@@ -36,15 +36,19 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TFile.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
+#include <TProfile3D.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 
 using namespace o2;
@@ -76,6 +80,14 @@ struct zdc2stagecalibration {
   Configurable<bool> useGainCallib{"useGainCallib", true, "use stage-1 tower gain calibration"};
   Configurable<std::string> confGainPath{"confGainPath", "Users/s/skundu/ZDC/Stage1Gain", "CCDB path to the run-wise stage-1 gain map"};
   Configurable<bool> derive1nTowerResponse{"derive1nTowerResponse", true, "save joint relative tower fractions for run-wise 1n response fit"};
+  // Select one spatial correction: 0=gain only, 1=November24 1n Q-map, 2=hadronic cross-coordinate x centrality.
+  // For backward compatibility, use1nTowerCorrection=true selects mode 1 if this is 0.
+  Configurable<int> spatialCorrectionMode{"spatialCorrectionMode", 0, "0: no spatial, 1: November24 Q-space tower map, 2: centrality-dependent cross-space tower map"};
+  Configurable<bool> deriveCentralitySpatial{"deriveCentralitySpatial", false, "write gain-only hadronic cross-space x centrality regression moments (train/validation)"};
+  Configurable<std::string> confCentralitySpatialPath{"confCentralitySpatialPath", "", "CCDB TH3D (crossX,crossY,centClass*8+arm*4+tower)"};
+  Configurable<std::string> confCentralitySpatialLocalFile{"confCentralitySpatialLocalFile", "", "Optional local ROOT file with CentralitySpatialTowerFactors for dry-run; overrides CCDB"};
+  Configurable<int> cfgCentralitySpatialLocalRun{"cfgCentralitySpatialLocalRun", 0, "Expected run for local spatial map (0: allow any; single-run test only)"};
+  Configurable<float> cfgCentralitySpatialMaxChange{"cfgCentralitySpatialMaxChange", 0.15f, "reject CCDB tower factors exceeding this absolute deviation from unity"};
   Configurable<bool> use1nTowerCorrection{"use1nTowerCorrection", false, "apply Q-dependent relative tower-energy factors derived from 1n"};
   Configurable<std::string> conf1nTowerPath{"conf1nTowerPath", "", "CCDB TH3D: gain Qx,Qy, A1-4/C1-4 relative response factors"};
   Configurable<bool> deriveSingleNeutronResponse{"deriveSingleNeutronResponse", true, "compact 1n/2n/3n neutron response QA"};
@@ -114,6 +126,24 @@ struct zdc2stagecalibration {
   // Map lookup coordinates are the gain-only reconstructed Qx/Qy (cm).
   TH3D* oneNeutronTowerMap = nullptr;
 
+  // Fixed centrality classes used both by the collection task and fitting macro.
+  // 0:[0,5), 1:[5,10), 2:[10,20), 3:[20,30).
+  static constexpr int kCentSpatialClasses = 4;
+  static constexpr int kCentSpatialMomentCount = 15; // 10 zij products, 4 zi sums, 1 count
+  int getSpatialMode() const
+  {
+    return (spatialCorrectionMode.value == 0 && use1nTowerCorrection.value) ? 1 : spatialCorrectionMode.value;
+  }
+  int getCentSpatialClass(double cent) const
+  {
+    if (cent < 0. || cent >= 30. || !std::isfinite(cent))
+      return -1;
+    return cent < 5. ? 0 : cent < 10. ? 1
+                         : cent < 20. ? 2
+                                      : 3;
+  }
+  TH3D* centralitySpatialTowerMap = nullptr;
+  std::unique_ptr<TH3D> localCentralitySpatialMap;
   static constexpr int kQRecenteringNComponents = 4;
   static constexpr int kQRecenteringMultidimNFeatures = 35;
   // Structured regression diagnostic basis. The existing 35 cubic features are
@@ -130,6 +160,24 @@ struct zdc2stagecalibration {
   void init(o2::framework::InitContext&)
   {
     rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
+    if (spatialCorrectionMode.value < 0 || spatialCorrectionMode.value > 2) {
+      LOGF(fatal, "spatialCorrectionMode must be 0 (gain only), 1 (November24), or 2 (centrality cross-space)");
+    }
+    if (spatialCorrectionMode.value == 2 && use1nTowerCorrection.value) {
+      LOGF(fatal, "Do not enable old use1nTowerCorrection together with spatialCorrectionMode=2");
+    }
+    if (getSpatialMode() != 0 && calibrationStage.value != 2) {
+      LOGF(fatal, "Spatial correction application requires calibrationStage=2");
+    }
+    if (getSpatialMode() == 2 && (!useGainCallib.value || (confCentralitySpatialPath.value.empty() && confCentralitySpatialLocalFile.value.empty()))) {
+      LOGF(fatal, "Mode 2 requires useGainCallib=true and either a CCDB path or a local ROOT map file");
+    }
+    if (!(cfgCentralitySpatialMaxChange.value > 0.f && cfgCentralitySpatialMaxChange.value < 1.f)) {
+      LOGF(fatal, "cfgCentralitySpatialMaxChange must be between 0 and 1");
+    }
+    if (deriveCentralitySpatial.value && (calibrationStage.value != 2 || !useGainCallib.value || getSpatialMode() != 0)) {
+      LOGF(fatal, "deriveCentralitySpatial requires stage 2, valid stage-1 gain, and spatialCorrectionMode=0");
+    }
     if (qRecenteringMethod.value != 4) {
       LOGF(fatal, "Only qRecenteringMethod=4 (structured71) is supported");
     }
@@ -153,7 +201,7 @@ struct zdc2stagecalibration {
     if (derive1nTowerResponse.value && !useGainCallib.value) {
       LOGF(fatal, "1n response derivation requires useGainCallib=true");
     }
-    if (derive1nTowerResponse.value && use1nTowerCorrection.value) {
+    if (derive1nTowerResponse.value && getSpatialMode() == 1) {
       LOGF(fatal, "Fit-input collection requires gain-only towers: disable use1nTowerCorrection");
     }
     if (cfgTPCV1Correlation.value && calibrationStage.value != 2) {
@@ -246,6 +294,48 @@ struct zdc2stagecalibration {
     hEvtSelInfo->GetXaxis()->SetBinLabel(7, "gain valid");
     hEvtSelInfo->GetXaxis()->SetBinLabel(8, "valid Q");
     hEvtSelInfo->GetXaxis()->SetBinLabel(9, "accepted");
+    if (deriveCentralitySpatial.value || getSpatialMode() == 2) {
+      const AxisSpec centCrossAxis{40, -1., 1., "gain-only cross coordinate"};
+      const AxisSpec centClassAxis{kCentSpatialClasses, 0., static_cast<double>(kCentSpatialClasses), "centrality class (0:0-5,1:5-10,2:10-20,3:20-30)"};
+      const AxisSpec spatialQAxis{80, -2.5, 2.5, "Q (cm), linear tower weighting"};
+      const AxisSpec deltaQAxis{100, 0., 50., "centrality (%)"};
+      // TProfile3D visualises the mean energy response, not a forced-flat occupancy.
+      for (const char* side : {"ZA", "ZC"}) {
+        for (int i = 0; i < 5; ++i) {
+          const std::string title = i < 4 ? "gain tower/common" : "gain sum/common";
+          const std::string name = std::string("CentSpatial/pGainResponse") + std::to_string(i) + side;
+          histos.add(name.c_str(), (title + ";Xcross;Ycross;centrality class;response").c_str(), kTProfile3D, {centCrossAxis, centCrossAxis, centClassAxis});
+        }
+        const std::string after = std::string("CentSpatial/pCorrectedTotal") + side;
+        histos.add(after.c_str(), "corrected tower sum/common in GAIN cross coordinates;Xcross;Ycross;centrality class;response", kTProfile3D, {centCrossAxis, centCrossAxis, centClassAxis});
+      }
+      histos.add("CentSpatial/hQGainZA", "Gain-only ZNA Q;Qx;Qy;centrality class", kTH3D, {spatialQAxis, spatialQAxis, centClassAxis});
+      histos.add("CentSpatial/hQGainZC", "Gain-only ZNC Q;Qx;Qy;centrality class", kTH3D, {spatialQAxis, spatialQAxis, centClassAxis});
+      histos.add("CentSpatial/hQSpatialZA", "After selected spatial correction ZNA Q;Qx;Qy;centrality class", kTH3D, {spatialQAxis, spatialQAxis, centClassAxis});
+      histos.add("CentSpatial/hQSpatialZC", "After selected spatial correction ZNC Q;Qx;Qy;centrality class", kTH3D, {spatialQAxis, spatialQAxis, centClassAxis});
+      histos.add("CentSpatial/pDeltaQxZA", "ZNA <QxSpatial-QxGain>;centrality (%);<DeltaQx>", kTProfile, {deltaQAxis});
+      histos.add("CentSpatial/pDeltaQyZA", "ZNA <QySpatial-QyGain>;centrality (%);<DeltaQy>", kTProfile, {deltaQAxis});
+      histos.add("CentSpatial/pDeltaQMagZA", "ZNA <|QSpatial-QGain|>;centrality (%);<|DeltaQ|>", kTProfile, {deltaQAxis});
+      histos.add("CentSpatial/pDeltaQxZC", "ZNC <QxSpatial-QxGain>;centrality (%);<DeltaQx>", kTProfile, {deltaQAxis});
+      histos.add("CentSpatial/pDeltaQyZC", "ZNC <QySpatial-QyGain>;centrality (%);<DeltaQy>", kTProfile, {deltaQAxis});
+      histos.add("CentSpatial/pDeltaQMagZC", "ZNC <|QSpatial-QGain|>;centrality (%);<|DeltaQ|>", kTProfile, {deltaQAxis});
+      histos.add("CentSpatial/hCorrectionStatus", "Mode2 status per side: 0=no map/class,1=ZNA only,2=ZNC only,3=both;status;events", kTH1F, {{4, 0., 4.}});
+      if (deriveCentralitySpatial.value) {
+        // Per (Xcross,Ycross,centrality-class) cell, retain the EXACT sums
+        // Σzi*zj (i<=j), Σzi and N, zi=E_i/Ecommon. Independent train and
+        // validation splits. This is sufficient for a regularized global fit.
+        // 15 histograms x 2 arms x 2 splits; no 1n selection.
+        for (const char* side : {"ZA", "ZC"}) {
+          for (const char* split : {"Train", "Valid"}) {
+            for (int m = 0; m < kCentSpatialMomentCount; ++m) {
+              const std::string name = std::string("CentSpatial/hMom") + split + side + "_" + (m < 10 ? "0" : "") + std::to_string(m);
+              histos.add(name.c_str(), "Sum of normalized energy regression moment;gain Xcross;gain Ycross;centrality class", kTH3D, {centCrossAxis, centCrossAxis, centClassAxis});
+            }
+          }
+        }
+      }
+    }
+
     histos.add("GainQA/hSumOverCommonVsTimeZNA", "ZNA tower sum/common vs time;time from SOR (h);#Sigma T_{i}/C", kTH2F, {timeAxis, ratioAxis});
     histos.add("GainQA/hSumOverCommonVsTimeZNC", "ZNC tower sum/common vs time;time from SOR (h);#Sigma T_{i}/C", kTH2F, {timeAxis, ratioAxis});
     histos.add("GainQA/pTowerOverCommonVsTimeZNA", "ZNA individual tower/common vs time;time from SOR (h);tower;<T_{i}/C>", kTProfile2D, {timeAxis, towerAxis});
@@ -362,7 +452,7 @@ struct zdc2stagecalibration {
       histos.add("OneNeutronTowerCalibration/hRelative3nA", "ZNA 3n gain-only fractions;f1;f2;f3", kTH3F, {frac3Axis, frac3Axis, frac3Axis});
       histos.add("OneNeutronTowerCalibration/hRelative3nC", "ZNC 3n gain-only fractions;f1;f2;f3", kTH3F, {frac3Axis, frac3Axis, frac3Axis});
     }
-    if (deriveSingleNeutronResponse.value || derive1nTowerResponse.value || use1nTowerCorrection.value) {
+    if (deriveSingleNeutronResponse.value || derive1nTowerResponse.value || getSpatialMode() == 1) {
       histos.add("OneNeutronTowerQA/hCorrectionStatus", "Tower-map application status (0=disabled/missing, 1=A only, 2=C only, 3=both);status;events", kTH1F, {{4, 0., 4.}});
       const AxisSpec qAxisTower{100, -2.5, 2.5, "Q (cm)"};
       // 1n and 2n/3n before/after the tower correction, independent of recentering.
@@ -400,16 +490,18 @@ struct zdc2stagecalibration {
     gainprofile = nullptr;
     qRecenteringProfile = nullptr;
     oneNeutronTowerMap = nullptr;
+    centralitySpatialTowerMap = nullptr;
+    localCentralitySpatialMap.reset();
     if (calibrationStage.value == 2 && useGainCallib.value && !confGainPath.value.empty()) {
       gainprofile = ccdb->getForTimeStamp<TH2D>(confGainPath.value, timestamp);
       if (!gainprofile) {
         LOGF(warn, "No ZDC stage-1 gain map found for run %d at timestamp %llu", runNumber, timestamp);
       }
     }
-    if (calibrationStage.value == 2 && use1nTowerCorrection.value && conf1nTowerPath.value.empty()) {
+    if (calibrationStage.value == 2 && getSpatialMode() == 1 && conf1nTowerPath.value.empty()) {
       LOGF(warn, "1n relative tower correction is enabled but CCDB path is empty for run %d", runNumber);
     }
-    if (calibrationStage.value == 2 && use1nTowerCorrection.value && !conf1nTowerPath.value.empty()) {
+    if (calibrationStage.value == 2 && getSpatialMode() == 1 && !conf1nTowerPath.value.empty()) {
       oneNeutronTowerMap = ccdb->getForTimeStamp<TH3D>(conf1nTowerPath.value, timestamp);
       if (!oneNeutronTowerMap) {
         LOGF(warn, "Missing 1n relative-tower map for run %d; skipping only this step", runNumber);
@@ -419,6 +511,32 @@ struct zdc2stagecalibration {
                  oneNeutronTowerMap->GetZaxis()->GetXmin() != 0. || oneNeutronTowerMap->GetZaxis()->GetXmax() != 8.) {
         LOGF(warn, "Incompatible 1n tower map dimensions for run %d; step skipped", runNumber);
         oneNeutronTowerMap = nullptr;
+      }
+    }
+    if (calibrationStage.value == 2 && getSpatialMode() == 2) {
+      if (!confCentralitySpatialLocalFile.value.empty()) {
+        if (cfgCentralitySpatialLocalRun.value > 0 && cfgCentralitySpatialLocalRun.value != runNumber) {
+          LOGF(fatal, "Local spatial map run mismatch: configured %d, current %d", cfgCentralitySpatialLocalRun.value, runNumber);
+        }
+        TFile localFile(confCentralitySpatialLocalFile.value.c_str(), "READ");
+        if (!localFile.IsZombie()) {
+          TH3D* localHist = nullptr;
+          localFile.GetObject("CentralitySpatialTowerFactors", localHist);
+          if (localHist) {
+            localCentralitySpatialMap.reset(static_cast<TH3D*>(localHist->Clone("LocalCentSpatialTowerFactors")));
+            localCentralitySpatialMap->SetDirectory(nullptr);
+            centralitySpatialTowerMap = localCentralitySpatialMap.get();
+          }
+        }
+      } else {
+        centralitySpatialTowerMap = ccdb->getForTimeStamp<TH3D>(confCentralitySpatialPath.value, timestamp);
+      }
+      if (!centralitySpatialTowerMap || centralitySpatialTowerMap->GetNbinsZ() != 8 * kCentSpatialClasses ||
+          centralitySpatialTowerMap->GetZaxis()->GetXmin() != 0. ||
+          centralitySpatialTowerMap->GetZaxis()->GetXmax() != 8 * kCentSpatialClasses ||
+          centralitySpatialTowerMap->GetXaxis()->GetXmin() > -1. || centralitySpatialTowerMap->GetXaxis()->GetXmax() < 1. ||
+          centralitySpatialTowerMap->GetYaxis()->GetXmin() > -1. || centralitySpatialTowerMap->GetYaxis()->GetXmax() < 1.) {
+        LOGF(fatal, "Missing/incompatible centrality-dependent cross-coordinate map for run %d at %llu", runNumber, timestamp);
       }
     }
     if (calibrationStage.value == 2 && useQRecentering.value) {
@@ -574,7 +692,7 @@ struct zdc2stagecalibration {
         return 3;
       return 0;
     };
-    const bool neutronQAEnabled = deriveSingleNeutronResponse.value || derive1nTowerResponse.value || use1nTowerCorrection.value;
+    const bool neutronQAEnabled = deriveSingleNeutronResponse.value || derive1nTowerResponse.value || getSpatialMode() == 1;
     const int nClassA = neutronQAEnabled ? neutronCategory(znaEnergycommon) : 0;
     const int nClassC = neutronQAEnabled ? neutronCategory(zncEnergycommon) : 0;
     bool validTowerA = true, validTowerC = true;
@@ -691,6 +809,9 @@ struct zdc2stagecalibration {
       // The whole gain step is skipped, never only a subset of channels.
       // Recentering stays independently enabled; the new tower fit requires valid gain.
       LOGF(debug, "Gain coefficients unavailable/invalid for run %d; using unity gains for this event", runNumber);
+      if (getSpatialMode() == 2 || deriveCentralitySpatial.value) {
+        LOGF(fatal, "Centrality spatial correction/derivation requires a valid stage-1 gain map for run %d", runNumber);
+      }
       gains.fill(1.0);
     }
     for (int i = 0; i < 4; ++i) {
@@ -734,6 +855,117 @@ struct zdc2stagecalibration {
     const double crossLookupYA = (znaCorr[2] - znaCorr[1]) / (znaCorr[2] + znaCorr[1]);
     const double crossLookupXC = (zncCorr[3] - zncCorr[0]) / (zncCorr[3] + zncCorr[0]);
     const double crossLookupYC = (zncCorr[2] - zncCorr[1]) / (zncCorr[2] + zncCorr[1]);
+    // Hadronic, centrality-resolved regression input. All accepted events,
+    // with gain-only cross coordinates and the common channel reference.
+    if (deriveCentralitySpatial.value || getSpatialMode() == 2) {
+      const int centClass = getCentSpatialClass(centrality);
+      if (centClass >= 0) {
+        const double cc = centClass + 0.5;
+        histos.fill(HIST("CentSpatial/pGainResponse0ZA"), crossLookupXA, crossLookupYA, cc, znaCorr[0] / znaEnergycommon);
+        histos.fill(HIST("CentSpatial/pGainResponse1ZA"), crossLookupXA, crossLookupYA, cc, znaCorr[1] / znaEnergycommon);
+        histos.fill(HIST("CentSpatial/pGainResponse2ZA"), crossLookupXA, crossLookupYA, cc, znaCorr[2] / znaEnergycommon);
+        histos.fill(HIST("CentSpatial/pGainResponse3ZA"), crossLookupXA, crossLookupYA, cc, znaCorr[3] / znaEnergycommon);
+        histos.fill(HIST("CentSpatial/pGainResponse4ZA"), crossLookupXA, crossLookupYA, cc, (znaCorr[0] + znaCorr[1] + znaCorr[2] + znaCorr[3]) / znaEnergycommon);
+        histos.fill(HIST("CentSpatial/pGainResponse0ZC"), crossLookupXC, crossLookupYC, cc, zncCorr[0] / zncEnergycommon);
+        histos.fill(HIST("CentSpatial/pGainResponse1ZC"), crossLookupXC, crossLookupYC, cc, zncCorr[1] / zncEnergycommon);
+        histos.fill(HIST("CentSpatial/pGainResponse2ZC"), crossLookupXC, crossLookupYC, cc, zncCorr[2] / zncEnergycommon);
+        histos.fill(HIST("CentSpatial/pGainResponse3ZC"), crossLookupXC, crossLookupYC, cc, zncCorr[3] / zncEnergycommon);
+        histos.fill(HIST("CentSpatial/pGainResponse4ZC"), crossLookupXC, crossLookupYC, cc, (zncCorr[0] + zncCorr[1] + zncCorr[2] + zncCorr[3]) / zncEnergycommon);
+
+        if (deriveCentralitySpatial.value && gainOK) {
+          uint64_t splitKey = globalBC + 0xd6e8feb86659fd93ULL + static_cast<uint64_t>(collision.globalIndex());
+          splitKey = (splitKey ^ (splitKey >> 30)) * 0xbf58476d1ce4e5b9ULL;
+          splitKey = (splitKey ^ (splitKey >> 27)) * 0x94d049bb133111ebULL;
+          splitKey ^= (splitKey >> 31);
+          const bool isValidation = (splitKey & 1ULL) != 0ULL;
+          const auto fillMoments = [&](bool sideA, bool valid, double cx, double cy, const std::array<double, 4>& energy, double common) {
+            std::array<double, kCentSpatialMomentCount> moments{};
+            std::array<double, 4> z{};
+            for (int i = 0; i < 4; ++i)
+              z[i] = energy[i] / common;
+            int m = 0;
+            for (int i = 0; i < 4; ++i)
+              for (int j = i; j < 4; ++j)
+                moments[m++] = z[i] * z[j];
+            for (int i = 0; i < 4; ++i)
+              moments[10 + i] = z[i];
+            moments[14] = 1.;
+            if (sideA) {
+              if (valid) {
+                histos.fill(HIST("CentSpatial/hMomValidZA_00"), cx, cy, cc, moments[0]);
+                histos.fill(HIST("CentSpatial/hMomValidZA_01"), cx, cy, cc, moments[1]);
+                histos.fill(HIST("CentSpatial/hMomValidZA_02"), cx, cy, cc, moments[2]);
+                histos.fill(HIST("CentSpatial/hMomValidZA_03"), cx, cy, cc, moments[3]);
+                histos.fill(HIST("CentSpatial/hMomValidZA_04"), cx, cy, cc, moments[4]);
+                histos.fill(HIST("CentSpatial/hMomValidZA_05"), cx, cy, cc, moments[5]);
+                histos.fill(HIST("CentSpatial/hMomValidZA_06"), cx, cy, cc, moments[6]);
+                histos.fill(HIST("CentSpatial/hMomValidZA_07"), cx, cy, cc, moments[7]);
+                histos.fill(HIST("CentSpatial/hMomValidZA_08"), cx, cy, cc, moments[8]);
+                histos.fill(HIST("CentSpatial/hMomValidZA_09"), cx, cy, cc, moments[9]);
+                histos.fill(HIST("CentSpatial/hMomValidZA_10"), cx, cy, cc, moments[10]);
+                histos.fill(HIST("CentSpatial/hMomValidZA_11"), cx, cy, cc, moments[11]);
+                histos.fill(HIST("CentSpatial/hMomValidZA_12"), cx, cy, cc, moments[12]);
+                histos.fill(HIST("CentSpatial/hMomValidZA_13"), cx, cy, cc, moments[13]);
+                histos.fill(HIST("CentSpatial/hMomValidZA_14"), cx, cy, cc, moments[14]);
+              } else {
+                histos.fill(HIST("CentSpatial/hMomTrainZA_00"), cx, cy, cc, moments[0]);
+                histos.fill(HIST("CentSpatial/hMomTrainZA_01"), cx, cy, cc, moments[1]);
+                histos.fill(HIST("CentSpatial/hMomTrainZA_02"), cx, cy, cc, moments[2]);
+                histos.fill(HIST("CentSpatial/hMomTrainZA_03"), cx, cy, cc, moments[3]);
+                histos.fill(HIST("CentSpatial/hMomTrainZA_04"), cx, cy, cc, moments[4]);
+                histos.fill(HIST("CentSpatial/hMomTrainZA_05"), cx, cy, cc, moments[5]);
+                histos.fill(HIST("CentSpatial/hMomTrainZA_06"), cx, cy, cc, moments[6]);
+                histos.fill(HIST("CentSpatial/hMomTrainZA_07"), cx, cy, cc, moments[7]);
+                histos.fill(HIST("CentSpatial/hMomTrainZA_08"), cx, cy, cc, moments[8]);
+                histos.fill(HIST("CentSpatial/hMomTrainZA_09"), cx, cy, cc, moments[9]);
+                histos.fill(HIST("CentSpatial/hMomTrainZA_10"), cx, cy, cc, moments[10]);
+                histos.fill(HIST("CentSpatial/hMomTrainZA_11"), cx, cy, cc, moments[11]);
+                histos.fill(HIST("CentSpatial/hMomTrainZA_12"), cx, cy, cc, moments[12]);
+                histos.fill(HIST("CentSpatial/hMomTrainZA_13"), cx, cy, cc, moments[13]);
+                histos.fill(HIST("CentSpatial/hMomTrainZA_14"), cx, cy, cc, moments[14]);
+              }
+            } else {
+              if (valid) {
+                histos.fill(HIST("CentSpatial/hMomValidZC_00"), cx, cy, cc, moments[0]);
+                histos.fill(HIST("CentSpatial/hMomValidZC_01"), cx, cy, cc, moments[1]);
+                histos.fill(HIST("CentSpatial/hMomValidZC_02"), cx, cy, cc, moments[2]);
+                histos.fill(HIST("CentSpatial/hMomValidZC_03"), cx, cy, cc, moments[3]);
+                histos.fill(HIST("CentSpatial/hMomValidZC_04"), cx, cy, cc, moments[4]);
+                histos.fill(HIST("CentSpatial/hMomValidZC_05"), cx, cy, cc, moments[5]);
+                histos.fill(HIST("CentSpatial/hMomValidZC_06"), cx, cy, cc, moments[6]);
+                histos.fill(HIST("CentSpatial/hMomValidZC_07"), cx, cy, cc, moments[7]);
+                histos.fill(HIST("CentSpatial/hMomValidZC_08"), cx, cy, cc, moments[8]);
+                histos.fill(HIST("CentSpatial/hMomValidZC_09"), cx, cy, cc, moments[9]);
+                histos.fill(HIST("CentSpatial/hMomValidZC_10"), cx, cy, cc, moments[10]);
+                histos.fill(HIST("CentSpatial/hMomValidZC_11"), cx, cy, cc, moments[11]);
+                histos.fill(HIST("CentSpatial/hMomValidZC_12"), cx, cy, cc, moments[12]);
+                histos.fill(HIST("CentSpatial/hMomValidZC_13"), cx, cy, cc, moments[13]);
+                histos.fill(HIST("CentSpatial/hMomValidZC_14"), cx, cy, cc, moments[14]);
+              } else {
+                histos.fill(HIST("CentSpatial/hMomTrainZC_00"), cx, cy, cc, moments[0]);
+                histos.fill(HIST("CentSpatial/hMomTrainZC_01"), cx, cy, cc, moments[1]);
+                histos.fill(HIST("CentSpatial/hMomTrainZC_02"), cx, cy, cc, moments[2]);
+                histos.fill(HIST("CentSpatial/hMomTrainZC_03"), cx, cy, cc, moments[3]);
+                histos.fill(HIST("CentSpatial/hMomTrainZC_04"), cx, cy, cc, moments[4]);
+                histos.fill(HIST("CentSpatial/hMomTrainZC_05"), cx, cy, cc, moments[5]);
+                histos.fill(HIST("CentSpatial/hMomTrainZC_06"), cx, cy, cc, moments[6]);
+                histos.fill(HIST("CentSpatial/hMomTrainZC_07"), cx, cy, cc, moments[7]);
+                histos.fill(HIST("CentSpatial/hMomTrainZC_08"), cx, cy, cc, moments[8]);
+                histos.fill(HIST("CentSpatial/hMomTrainZC_09"), cx, cy, cc, moments[9]);
+                histos.fill(HIST("CentSpatial/hMomTrainZC_10"), cx, cy, cc, moments[10]);
+                histos.fill(HIST("CentSpatial/hMomTrainZC_11"), cx, cy, cc, moments[11]);
+                histos.fill(HIST("CentSpatial/hMomTrainZC_12"), cx, cy, cc, moments[12]);
+                histos.fill(HIST("CentSpatial/hMomTrainZC_13"), cx, cy, cc, moments[13]);
+                histos.fill(HIST("CentSpatial/hMomTrainZC_14"), cx, cy, cc, moments[14]);
+              }
+            }
+          };
+          fillMoments(true, isValidation, crossLookupXA, crossLookupYA, znaCorr, znaEnergycommon);
+          fillMoments(false, isValidation, crossLookupXC, crossLookupYC, zncCorr, zncEnergycommon);
+        }
+      }
+    }
+
     if (deriveSingleNeutronResponse.value) {
       if (nClassA) {
         histos.fill(HIST("NeutronQA/hTowerFractionA1"), znaEnergycommon, znaCorr[0] / znaEnergycommon);
@@ -805,32 +1037,7 @@ struct zdc2stagecalibration {
             histos.fill(HIST("OneNeutronTowerCalibration/hRelative3nC"), f1, f2, f3);
           }
         }
-        const double f1 = energy[0] / sum, f2 = energy[1] / sum, f3 = energy[2] / sum;
-        if (sideA) {
-          if (neutronClass == 1) {
-            if (isValidation) {
-              histos.fill(HIST("OneNeutronTowerCalibration/hRelative1nA_Validation"), f1, f2, f3);
-            } else {
-              histos.fill(HIST("OneNeutronTowerCalibration/hRelative1nA_Train"), f1, f2, f3);
-            }
-          } else if (neutronClass == 2) {
-            histos.fill(HIST("OneNeutronTowerCalibration/hRelative2nA"), f1, f2, f3);
-          } else if (neutronClass == 3) {
-            histos.fill(HIST("OneNeutronTowerCalibration/hRelative3nA"), f1, f2, f3);
-          }
-        } else {
-          if (neutronClass == 1) {
-            if (isValidation) {
-              histos.fill(HIST("OneNeutronTowerCalibration/hRelative1nC_Validation"), f1, f2, f3);
-            } else {
-              histos.fill(HIST("OneNeutronTowerCalibration/hRelative1nC_Train"), f1, f2, f3);
-            }
-          } else if (neutronClass == 2) {
-            histos.fill(HIST("OneNeutronTowerCalibration/hRelative2nC"), f1, f2, f3);
-          } else if (neutronClass == 3) {
-            histos.fill(HIST("OneNeutronTowerCalibration/hRelative3nC"), f1, f2, f3);
-          }
-        }
+      };
       fillRelative(true, nClassA, znaCorr, gainSumA);
       fillRelative(false, nClassC, zncCorr, gainSumC);
     }
@@ -839,7 +1046,7 @@ struct zdc2stagecalibration {
     // reconstructed Q position (not recentered Q; do not iterate the lookup).
     // Each factor is positive; a common multiplicative factor cancels in Q.
     bool applied1nA = false, applied1nC = false;
-    if (calibrationStage.value == 2 && use1nTowerCorrection.value && gainOK && oneNeutronTowerMap) {
+    if (calibrationStage.value == 2 && getSpatialMode() == 1 && gainOK && oneNeutronTowerMap) {
       const auto applyTowerResponse = [&](std::array<double, 4>& energies, double qx, double qy, int zOffset) -> bool {
         if (!std::isfinite(qx) || !std::isfinite(qy) ||
             qx < oneNeutronTowerMap->GetXaxis()->GetXmin() || qx >= oneNeutronTowerMap->GetXaxis()->GetXmax() ||
@@ -859,9 +1066,44 @@ struct zdc2stagecalibration {
       applied1nC = applyTowerResponse(zncCorr, gainXC, gainYC, 4);
     }
     if (calibrationStage.value == 2 &&
-        (deriveSingleNeutronResponse.value || derive1nTowerResponse.value || use1nTowerCorrection.value)) {
+        (deriveSingleNeutronResponse.value || derive1nTowerResponse.value || getSpatialMode() == 1)) {
       histos.fill(HIST("OneNeutronTowerQA/hCorrectionStatus"),
                   0.5 + static_cast<int>(applied1nA) + 2 * static_cast<int>(applied1nC));
+    }
+
+    // Independent mode 2: centrality-dependent correction in DETECTOR cross space.
+    // Lookup once using gain-only E; no Q-dependent fitting or recentering here.
+    bool appliedCentA = false, appliedCentC = false;
+    if (calibrationStage.value == 2 && getSpatialMode() == 2 && gainOK && centralitySpatialTowerMap) {
+      const int centClass = getCentSpatialClass(centrality);
+      if (centClass >= 0) {
+        const auto applyCentFactors = [&](std::array<double, 4>& energy, double cx, double cy, int sideOffset) -> bool {
+          if (!std::isfinite(cx) || !std::isfinite(cy) ||
+              cx < centralitySpatialTowerMap->GetXaxis()->GetXmin() || cx >= centralitySpatialTowerMap->GetXaxis()->GetXmax() ||
+              cy < centralitySpatialTowerMap->GetYaxis()->GetXmin() || cy >= centralitySpatialTowerMap->GetYaxis()->GetXmax())
+            return false;
+          std::array<double, 4> factors{};
+          for (int i = 0; i < 4; ++i) {
+            const double packZ = centClass * 8 + sideOffset + i + 0.5;
+            factors[i] = centralitySpatialTowerMap->GetBinContent(centralitySpatialTowerMap->FindBin(cx, cy, packZ));
+            if (!std::isfinite(factors[i]) || !(factors[i] > 0.) ||
+                std::abs(factors[i] - 1.) > cfgCentralitySpatialMaxChange.value + 1.e-5) {
+              LOGF(fatal, "Invalid centrality spatial factor %.6f: run %d centrality %.3f X %.3f Y %.3f tower %d", factors[i], currentRunNumber, centrality, cx, cy, i);
+            }
+          }
+          for (int i = 0; i < 4; ++i)
+            energy[i] *= factors[i];
+          return true;
+        };
+        appliedCentA = applyCentFactors(znaCorr, crossLookupXA, crossLookupYA, 0);
+        appliedCentC = applyCentFactors(zncCorr, crossLookupXC, crossLookupYC, 4);
+      }
+    }
+    if (getSpatialMode() == 2) {
+      histos.fill(HIST("CentSpatial/hCorrectionStatus"), 0.5 + static_cast<int>(appliedCentA) + 2 * static_cast<int>(appliedCentC));
+      if (getCentSpatialClass(centrality) >= 0 && (!appliedCentA || !appliedCentC)) {
+        LOGF(fatal, "Mode2 spatial map failed for selected event at centrality %.3f run %d", centrality, runNumber);
+      }
     }
 
     double sumEnergyA = 0.0;
@@ -894,6 +1136,27 @@ struct zdc2stagecalibration {
     centroidYC /= sumEnergyC;
     const double phiTowerCorrectedA = std::atan2(centroidYA, centroidXA);
     const double phiTowerCorrectedC = std::atan2(centroidYC, centroidXC);
+    if (deriveCentralitySpatial.value || getSpatialMode() == 2) {
+      const int cclass = getCentSpatialClass(centrality);
+      if (cclass >= 0) {
+        const double zz = cclass + 0.5;
+        histos.fill(HIST("CentSpatial/hQGainZA"), gainXA, gainYA, zz);
+        histos.fill(HIST("CentSpatial/hQGainZC"), gainXC, gainYC, zz);
+        histos.fill(HIST("CentSpatial/hQSpatialZA"), centroidXA, centroidYA, zz);
+        histos.fill(HIST("CentSpatial/hQSpatialZC"), centroidXC, centroidYC, zz);
+        const double dxA = centroidXA - gainXA, dyA = centroidYA - gainYA;
+        const double dxC = centroidXC - gainXC, dyC = centroidYC - gainYC;
+        histos.fill(HIST("CentSpatial/pDeltaQxZA"), centrality, dxA);
+        histos.fill(HIST("CentSpatial/pDeltaQyZA"), centrality, dyA);
+        histos.fill(HIST("CentSpatial/pDeltaQMagZA"), centrality, std::hypot(dxA, dyA));
+        histos.fill(HIST("CentSpatial/pDeltaQxZC"), centrality, dxC);
+        histos.fill(HIST("CentSpatial/pDeltaQyZC"), centrality, dyC);
+        histos.fill(HIST("CentSpatial/pDeltaQMagZC"), centrality, std::hypot(dxC, dyC));
+        // Response ratio after application, binned by the ORIGINAL gain-only cross coordinates.
+        histos.fill(HIST("CentSpatial/pCorrectedTotalZA"), crossLookupXA, crossLookupYA, zz, sumEnergyA / znaEnergycommon);
+        histos.fill(HIST("CentSpatial/pCorrectedTotalZC"), crossLookupXC, crossLookupYC, zz, sumEnergyC / zncEnergycommon);
+      }
+    }
     histos.fill(HIST("PhiQA/hPhiAfterTowerCorrectionZNA"), phiTowerCorrectedA);
     histos.fill(HIST("PhiQA/hPhiAfterTowerCorrectionZNC"), phiTowerCorrectedC);
     histos.fill(HIST("PhiQA/hPhiAfterTowerCorrectionVsCentralityZNA"), centrality, phiTowerCorrectedA);
@@ -978,7 +1241,7 @@ struct zdc2stagecalibration {
     // Fixed before/after distributions for each neutron class, independent of
     // whether structured71 is enabled. No class-specific recentering is used.
     if (calibrationStage.value == 2 &&
-        (deriveSingleNeutronResponse.value || derive1nTowerResponse.value || use1nTowerCorrection.value)) {
+        (deriveSingleNeutronResponse.value || derive1nTowerResponse.value || getSpatialMode() == 1)) {
       const auto fillTowerQ = [&](int neutronClass, bool sideA, double qxBefore, double qyBefore,
                                   double qxAfter, double qyAfter) {
         if (sideA) {
