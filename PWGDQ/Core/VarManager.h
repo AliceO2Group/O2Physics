@@ -259,6 +259,7 @@ class VarManager : public TObject
     kVtxNcontrib,
     kVtxNcontribReal,
     kMultNtrkGlobal,
+    kMultCorrelationSigma,
     kVtxCovXX,
     kVtxCovXY,
     kVtxCovXZ,
@@ -2782,6 +2783,19 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultMCGlobalParticles] = event.multMCGlobalParticles();
   }
 
+  if constexpr (requires { event.multNTracksPV(); event.multNtrkGlobal(); }) {
+    auto correlationFunc = [](double Ntrk, double Npv) -> double {
+      // TODO: Find meaningful parameterization for that correlation
+      // Parameters obtained from fit to data LHC 25 MB
+      double sigmaNpv = 1.247 + 0.11 * std::pow(Npv, 0.789);
+      double meanNpv = 0.042 + 0.745 * Npv;
+
+      return (Ntrk - meanNpv) / sigmaNpv;
+    };
+
+    values[kMultCorrelationSigma] = correlationFunc(values[kMultNtrkGlobal], values[kVtxNcontribReal]);
+  }
+
   // FillEventDerived(values);
 }
 
@@ -2957,18 +2971,10 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
     }
   }
 
-  const auto totalTracks = dcazValues.size();
+  const float inverseTotalTracks = 1.0f / static_cast<float>(dcazValues.size());
 
-  if (totalTracks > 0) {
-    const float inverseTotalTracks = 1.0f / static_cast<float>(totalTracks);
-
-    for (std::size_t i = 0; i < thresholds.size(); ++i) {
-      values[variableIndices[i]] = static_cast<float>(counters[i]) * inverseTotalTracks;
-    }
-  } else {
-    for (const auto& index : variableIndices) {
-      values[index] = o2::dqconstants::InvalidValueF;
-    }
+  for (std::size_t i = 0; i < thresholds.size(); ++i) {
+    values[variableIndices[i]] = static_cast<float>(counters[i]) * inverseTotalTracks;
   }
 }
 

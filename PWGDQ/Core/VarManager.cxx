@@ -779,6 +779,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVtxNcontribReal] = "";
   fgVariableNames[kMultNtrkGlobal] = "Global tracks";
   fgVariableUnits[kMultNtrkGlobal] = "";
+  fgVariableNames[kMultCorrelationSigma] = "(N_{trk} - #mu(N_{PV}))/#sigma(N_{PV})";
+  fgVariableUnits[kMultCorrelationSigma] = "";
   fgVariableNames[kVtxCovXX] = "Vtx covXX";
   fgVariableUnits[kVtxCovXX] = "cm";
   fgVariableNames[kVtxCovXY] = "Vtx covXY";
@@ -2231,6 +2233,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kVtxNcontrib"] = kVtxNcontrib;
   fgVarNamesMap["kVtxNcontribReal"] = kVtxNcontribReal;
   fgVarNamesMap["kMultNtrkGlobal"] = kMultNtrkGlobal;
+  fgVarNamesMap["kMultCorrelationSigma"] = kMultCorrelationSigma;
   fgVarNamesMap["kVtxCovXX"] = kVtxCovXX;
   fgVarNamesMap["kVtxCovXY"] = kVtxCovXY;
   fgVarNamesMap["kVtxCovXZ"] = kVtxCovXZ;
