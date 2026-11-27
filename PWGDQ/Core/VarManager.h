@@ -259,6 +259,7 @@ class VarManager : public TObject
     kVtxNcontrib,
     kVtxNcontribReal,
     kMultNtrkGlobal,
+    kMultCorrelationSigma,
     kVtxCovXX,
     kVtxCovXY,
     kVtxCovXZ,
@@ -347,6 +348,11 @@ class VarManager : public TObject
     kMCVtxX,
     kMCVtxY,
     kMCVtxZ,
+    kVtxDeltaX,
+    kVtxDeltaY,
+    kVtxDeltaZ,
+    kVtxDeltaXYZ,
+    kVtxMatchChi2,
     kMCEventTime,
     kMCEventWeight,
     kMCEventImpParam,
@@ -1522,6 +1528,8 @@ class VarManager : public TObject
   static void FillBC(T const& bc, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
+  template <typename T1, typename T2>
+  static void FillEventMCMatch(T1 const& collision, T2 const& mcCollision, float* values = nullptr);
   template <typename T>
   static void FillEventTracks(T const& tracks, float* values = nullptr);
   template <typename T>
@@ -2775,7 +2783,78 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultMCGlobalParticles] = event.multMCGlobalParticles();
   }
 
+  if constexpr (requires { event.multNTracksPV(); event.multNtrkGlobal(); }) {
+    auto correlationFunc = [](double Ntrk, double Npv) -> double {
+      // TODO: Find meaningful parameterization for that correlation
+      // Parameters obtained from fit to data LHC 25 MB
+      double sigmaNpv = 1.247 + 0.11 * std::pow(Npv, 0.789);
+      double meanNpv = 0.042 + 0.745 * Npv;
+
+      return (Ntrk - meanNpv) / sigmaNpv;
+    };
+
+    values[kMultCorrelationSigma] = correlationFunc(values[kMultNtrkGlobal], values[kVtxNcontribReal]);
+  }
+
   // FillEventDerived(values);
+}
+
+template <typename T1, typename T2>
+void VarManager::FillEventMCMatch(T1 const& collision, T2 const& mcCollision, float* values)
+{
+  if (!values) {
+    values = static_cast<float*>(fgValues);
+  }
+
+  if constexpr (requires {mcCollision.mcPosX(); mcCollision.mcPosY(); mcCollision.mcPosZ(); }) {
+    values[kVtxDeltaX] = mcCollision.mcPosX() - collision.posX();
+    values[kVtxDeltaY] = mcCollision.mcPosY() - collision.posY();
+    values[kVtxDeltaZ] = mcCollision.mcPosZ() - collision.posZ();
+  } else {
+    values[kVtxDeltaX] = o2::dqconstants::InvalidValueF;
+    values[kVtxDeltaY] = o2::dqconstants::InvalidValueF;
+    values[kVtxDeltaZ] = o2::dqconstants::InvalidValueF;
+    return;
+  }
+
+  if (fgUsedVars[kVtxDeltaXYZ]) {
+    values[kVtxDeltaXYZ] = std::sqrt(values[kVtxDeltaX] * values[kVtxDeltaX] + values[kVtxDeltaY] * values[kVtxDeltaY] + values[kVtxDeltaZ] * values[kVtxDeltaZ]);
+  }
+
+  if (fgUsedVars[kVtxMatchChi2]) {
+    values[kVtxMatchChi2] = o2::dqconstants::InvalidValueF;
+
+    if constexpr (requires {collision.covXX(); collision.covXY(); collision.covXZ(); collision.covYY(); collision.covYZ(); collision.covZZ(); }) {
+      const double l11 = std::sqrt(collision.covXX());
+      const double l21 = collision.covXY() / l11;
+      const double l31 = collision.covXZ() / l11;
+
+      const double d22 = collision.covYY() - l21 * l21;
+      if (d22 <= 0.0) {
+        return;
+      }
+
+      const double l22 = std::sqrt(d22);
+      const double l32 = (collision.covYZ() - l31 * l21) / l22;
+
+      const double d33 = collision.covZZ() - l31 * l31 - l32 * l32;
+      if (d33 <= 0.) {
+        return;
+      }
+
+      const double l33 = std::sqrt(d33);
+
+      const double ux = values[kVtxDeltaX] / l11;
+      const double uy = (values[kVtxDeltaY] - l21 * ux) / l22;
+      const double uz = (values[kVtxDeltaZ] - l31 * ux - l32 * uy) / l33;
+
+      const double chi2 = ux * ux + uy * uy + uz * uz;
+
+      if (std::isfinite(chi2)) {
+        values[kVtxMatchChi2] = static_cast<float>(chi2);
+      }
+    }
+  }
 }
 
 template <typename T>
@@ -2892,18 +2971,10 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
     }
   }
 
-  const auto totalTracks = dcazValues.size();
+  const float inverseTotalTracks = 1.0f / static_cast<float>(dcazValues.size());
 
-  if (totalTracks > 0) {
-    const float inverseTotalTracks = 1.0f / static_cast<float>(totalTracks);
-
-    for (std::size_t i = 0; i < thresholds.size(); ++i) {
-      values[variableIndices[i]] = static_cast<float>(counters[i]) * inverseTotalTracks;
-    }
-  } else {
-    for (const auto& index : variableIndices) {
-      values[index] = o2::dqconstants::InvalidValueF;
-    }
+  for (std::size_t i = 0; i < thresholds.size(); ++i) {
+    values[variableIndices[i]] = static_cast<float>(counters[i]) * inverseTotalTracks;
   }
 }
 

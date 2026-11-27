@@ -4352,6 +4352,21 @@ AnalysisCut* o2::aod::dqcuts::getAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "eventStandardSel8NoSameBunch") {
+    cut->addCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->addCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->addCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+    return cut;
+  }
+
+  if (nameStr == "eventStandardSel8Multiplicity") {
+    cut->addCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->addCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->addCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+    cut->addCut(VarManager::kMultCorrelationSigma, -1.e10, 5.0);
+    return cut;
+  }
+
   if (nameStr == "eventStandardSel8PbPbQualityCent90") {
     cut->addCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->addCut(VarManager::kIsSel8, 0.5, 1.5);

@@ -452,6 +452,7 @@ struct AnalysisEventSelection {
       if (event.has_mcCollision()) {
         auto mcCollision = event.template mcCollision_as<TEventsMC>();
         VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(mcCollision);
+        VarManager::FillEventMCMatch(event, event.mcCollision());
       }
       // cout << "Filled event observables: " << endl;
 
@@ -794,6 +795,7 @@ struct AnalysisTrackSelection {
       VarManager::FillEvent<TEventFillMap>(event);
       if (event.has_mcCollision()) {
         VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(event.mcCollision());
+        VarManager::FillEventMCMatch(event, event.mcCollision());
       }
       // cout << "Filled event observables for association" << endl;
 
@@ -1835,6 +1837,7 @@ struct AnalysisSameEventPairing {
       if (event.has_mcCollision()) {
         auto mcEvent = mcEvents.rawIteratorAt(event.mcCollisionId());
         VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(mcEvent, static_cast<float*>(VarManager::fgValues));
+        VarManager::FillEventMCMatch(event, mcEvent, static_cast<float*>(VarManager::fgValues));
       }
 
       auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
@@ -2212,6 +2215,7 @@ struct AnalysisSameEventPairing {
       // fill event information
       VarManager::FillEvent<TEventFillMap>(event);
       VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(mcEvent);
+      VarManager::FillEventMCMatch(event, mcEvent);
 
       auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, mcCollisionGlobalIndex);
       groupedMCTracks.bindInternalIndicesTo(&mcTracks);
@@ -2844,8 +2848,12 @@ struct AnalysisDileptonTrack {
     VarManager::FillEvent<TEventFillMap>(event, fValuesHadron);
     VarManager::FillEvent<TEventFillMap>(event, fValuesDilepton);
     if (event.has_mcCollision()) {
-      VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(event.mcCollision(), fValuesHadron);
-      VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(event.mcCollision(), fValuesDilepton);
+      auto mcEvent = event.mcCollision();
+      VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(mcEvent, fValuesHadron);
+      VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(mcEvent, fValuesDilepton);
+
+      VarManager::FillEventMCMatch(event, mcEvent, fValuesHadron);
+      VarManager::FillEventMCMatch(event, mcEvent, fValuesDilepton);
     }
 
     auto mcDecision = static_cast<uint32_t>(0);
@@ -3539,6 +3547,7 @@ struct AnalysisDileptonTrackTrack {
     // VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent(), fValuesQuadruplet);
     if (event.has_mcCollision()) {
       VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(event.mcCollision(), fValuesQuadruplet);
+      VarManager::FillEventMCMatch(event, event.mcCollision(), fValuesQuadruplet);
     }
 
     uint32_t mcDecision = static_cast<uint32_t>(0);

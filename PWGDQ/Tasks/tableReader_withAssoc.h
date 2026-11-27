@@ -3006,7 +3006,6 @@ struct AnalysisSameEventPairing {
   void runSameSideMixing(TEvents& events, TAssocs const& assocs, TTracks const& tracks, o2::framework::Preslice<TAssocs>& preSlice)
   {
     if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
-      LOG(info) << "Flow resolution objects not set, flow will not be filled for mixed events";
       if (events.size() > 0) {
         initParamsFromCCDB(events.begin().timestamp(), events.begin().runNumber(), false);
       }

@@ -492,6 +492,7 @@ struct AnalysisEventSelection {
       VarManager::FillEvent<TEventFillMap>(event);
       if (event.has_reducedMCevent()) {
         VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent());
+        VarManager::FillEventMCMatch(event, event.reducedMCevent());
       }
 
       bool decision = false;
@@ -818,6 +819,7 @@ struct AnalysisTrackSelection {
       VarManager::FillEvent<TEventFillMap>(event);
       if (event.has_reducedMCevent()) {
         VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent());
+        VarManager::FillEventMCMatch(event, event.reducedMCevent());
       }
 
       auto track = assoc.template reducedtrack_as<TTracks>();
@@ -2377,6 +2379,7 @@ struct AnalysisSameEventPairing {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<gkEventFillMap>(event, dqefficiency_helpers::varValues());
       VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent(), dqefficiency_helpers::varValues());
+      VarManager::FillEventMCMatch(event, event.reducedMCevent(), dqefficiency_helpers::varValues());
 
       auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
       if (groupedAssocs.size() == 0) {
@@ -3247,6 +3250,7 @@ struct AnalysisSameEventPairing {
       }
       VarManager::FillEvent<gkEventFillMap>(event, dqefficiency_helpers::varValues());
       VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent(), dqefficiency_helpers::varValues());
+      VarManager::FillEventMCMatch(event, event.reducedMCevent(), dqefficiency_helpers::varValues());
       // auto groupedMCTracks = mcTracks.sliceBy(perReducedMcGenEvent, event.reducedMCeventId());
       // groupedMCTracks.bindInternalIndicesTo(&mcTracks);
       // for (auto const& track : groupedMCTracks) {
@@ -3977,6 +3981,10 @@ struct AnalysisAsymmetricPairing {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event, dqefficiency_helpers::varValues());
 
+      if (event.has_reducedMCevent()) {
+        VarManager::FillEventMCMatch(event, event.reducedMCevent(), dqefficiency_helpers::varValues());
+      }
+
       auto groupedLegAAssocs = legACandidateAssocs.sliceBy(preslice, event.globalIndex());
       if (groupedLegAAssocs.size() == 0) {
         continue;
@@ -4226,6 +4234,10 @@ struct AnalysisAsymmetricPairing {
       // Reset the fValues array
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event, dqefficiency_helpers::varValues());
+
+      if (event.has_reducedMCevent()) {
+        VarManager::FillEventMCMatch(event, event.reducedMCevent(), dqefficiency_helpers::varValues());
+      }
 
       auto groupedLegAAssocs = legACandidateAssocs.sliceBy(preslice, event.globalIndex());
       if (groupedLegAAssocs.size() == 0) {
