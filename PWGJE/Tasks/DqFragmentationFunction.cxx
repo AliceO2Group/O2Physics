@@ -47,6 +47,20 @@ struct DqFragmentationFunctionTask {
   // Jet Pt bins for multidimension histograms, not affected by masterswitch unlike other configurables.
   // The first variable is not a bin edge, but a flag for variable width bins, the rest are bin edges. LEAVE AT 0 IN CONFIG!
   ConfigurableAxis jetPtBins{"jetPtBins", {VARIABLE_WIDTH, 0., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 25., 30., 35., 40.}, "Jet pT bin edges (GeV/c), used for multidimensional histograms"};
+  // Fragmentation variable z
+  ConfigurableAxis zBins{"zBins", {20, 0., 1.}, "z binning"};
+
+  // Dielectron invariant mass
+  ConfigurableAxis massBins{"massBins", {150, 2.5, 3.7}, "Dielectron invariant mass binning (GeV/c2)"};
+
+  // Transverse pseudo-proper decay length Tau_xy
+  ConfigurableAxis tauXYBinsData{"tauXYBinsData", {250, -1., 1.}, "Tau_xy binning for Data"};
+  ConfigurableAxis tauXYBinsMCD{"tauXYBinsMCD", {250, -1., 1.}, "Tau_xy binning for MCD"};
+  ConfigurableAxis tauXYBinsMCP{"tauXYBinsMCP", {250, -1., 1.}, "Tau_xy binning for MCP"};
+
+  // Origin classification
+  ConfigurableAxis originBins{"originBins", {3, 0., 3.}, "Origin binning: 0 = physical primary, 1 = prompt, 2 = nonprompt"};
+
 
   // Master switch
   Configurable<bool> useCuts{"useCuts", true, "Enable or disable: eventselection, jetselection and dielectron selection cuts"};
@@ -198,15 +212,15 @@ struct DqFragmentationFunctionTask {
   void init(InitContext const&)
   {
     // Add histograms using configurable jet pT binning, placed in init so jetPtBins are applied correctly.
-    registry.add("Data/Multidimensional/h_4d_histogram", "Dielectron fragmentation;p_{T,jet} (GeV/c);z;m_{ee} (GeV/c^{2});#tau_{xy}", HistType::kTHnF, {AxisSpec{jetPtBins}, {20, 0., 1.}, {150, 2.5, 3.7}, {250, -1., 1.}});
-    registry.add("Matching/h_response_prompt", "Prompt J/#psi response;p_{T,jet}^{MCD};z^{MCD};p_{T,jet}^{MCP};z^{MCP}", HistType::kTHnF, {AxisSpec{jetPtBins}, {20, 0., 1.}, AxisSpec{jetPtBins}, {20, 0., 1.}});
-    registry.add("Matching/h_response_nonprompt", "Nonprompt J/#psi response;p_{T,jet}^{MCD};z^{MCD};p_{T,jet}^{MCP};z^{MCP}", HistType::kTHnF, {AxisSpec{jetPtBins}, {20, 0., 1.}, AxisSpec{jetPtBins}, {20, 0., 1.}});
-    registry.add("MCD/Multidimensional/h_MCD_5d_allParticles", "MCD J/#psi fragmentation;p_{T,jet};z;m_{ee};Tau_{xy};origin", HistType::kTHnF, {AxisSpec{jetPtBins}, {20, 0., 1.}, {150, 2.5, 3.7}, {250, -1., 1.}, {3, 0., 3.}});
-    registry.add("MCD/Multidimensional/h_MCD_4d_PromptJpsi", "MCD J/#psi fragmentation promptJpsi;p_{T,jet};z;m_{ee};Tau_{xy}", HistType::kTHnF, {AxisSpec{jetPtBins}, {20, 0., 1.}, {150, 2.5, 3.7}, {250, -1., 1.}});
-    registry.add("MCD/Multidimensional/h_MCD_4d_NonPromptJpsi", "MCD J/#psi fragmentation NonPromptJpsi;p_{T,jet};z;m_{ee};Tau_{xy}", HistType::kTHnF, {AxisSpec{jetPtBins}, {20, 0., 1.}, {150, 2.5, 3.7}, {250, -1., 1.}});
-    registry.add("MCP/Multidimensional/h_MCP_4d_allParticles", "MCP J/#psi fragmentation;p_{T,jet};z;Tau_{xy};origin", HistType::kTHnF, {AxisSpec{jetPtBins}, {20, 0., 1.}, {250, -1., 1.}, {3, 0., 3.}});
-    registry.add("MCP/Multidimensional/h_MCP_4d_PromptJpsi", "MCP J/#psi fragmentation promptJpsi;p_{T,jet};z;m_{ee};Tau_{xy}", HistType::kTHnF, {AxisSpec{jetPtBins}, {20, 0., 1.}, {150, 2.5, 3.7}, {250, -1., 1.}});
-    registry.add("MCP/Multidimensional/h_MCP_4d_NonPromptJpsi", "MCP J/#psi fragmentation NonPromptJpsi;p_{T,jet};z;m_{ee};Tau_{xy}", HistType::kTHnF, {AxisSpec{jetPtBins}, {20, 0., 1.}, {150, 2.5, 3.7}, {250, -1., 1.}});
+    registry.add("Data/Multidimensional/h_4d_histogram", "Dielectron fragmentation;p_{T,jet} (GeV/c);z;m_{ee} (GeV/c^{2});#tau_{xy}", HistType::kTHnF, {AxisSpec{jetPtBins}, AxisSpec{zBins}, AxisSpec{massBins}, AxisSpec{tauXYBinsData}});
+    registry.add("Matching/h_response_prompt", "Prompt J/#psi response;p_{T,jet}^{MCD};z^{MCD};p_{T,jet}^{MCP};z^{MCP}", HistType::kTHnF, {AxisSpec{jetPtBins}, AxisSpec{zBins}, AxisSpec{jetPtBins}, AxisSpec{zBins}});
+    registry.add("Matching/h_response_nonprompt", "Nonprompt J/#psi response;p_{T,jet}^{MCD};z^{MCD};p_{T,jet}^{MCP};z^{MCP}", HistType::kTHnF, {AxisSpec{jetPtBins}, AxisSpec{zBins}, AxisSpec{jetPtBins}, AxisSpec{zBins}});
+    registry.add("MCD/Multidimensional/h_MCD_5d_allParticles", "MCD J/#psi fragmentation;p_{T,jet};z;m_{ee};Tau_{xy};origin", HistType::kTHnF, {AxisSpec{jetPtBins}, AxisSpec{zBins}, AxisSpec{massBins}, AxisSpec{tauXYBinsMCD}, AxisSpec{originBins}});
+    registry.add("MCD/Multidimensional/h_MCD_4d_PromptJpsi", "MCD J/#psi fragmentation promptJpsi;p_{T,jet};z;m_{ee};Tau_{xy}", HistType::kTHnF, {AxisSpec{jetPtBins}, AxisSpec{zBins}, AxisSpec{massBins}, AxisSpec{tauXYBinsMCD}});
+    registry.add("MCD/Multidimensional/h_MCD_4d_NonPromptJpsi", "MCD J/#psi fragmentation NonPromptJpsi;p_{T,jet};z;m_{ee};Tau_{xy}", HistType::kTHnF, {AxisSpec{jetPtBins}, AxisSpec{zBins}, AxisSpec{massBins}, AxisSpec{tauXYBinsMCD}});
+    registry.add("MCP/Multidimensional/h_MCP_4d_allParticles", "MCP J/#psi fragmentation;p_{T,jet};z;Tau_{xy};origin", HistType::kTHnF, {AxisSpec{jetPtBins}, AxisSpec{zBins}, AxisSpec{tauXYBinsMCP}, AxisSpec{originBins}});
+    registry.add("MCP/Multidimensional/h_MCP_4d_PromptJpsi", "MCP J/#psi fragmentation promptJpsi;p_{T,jet};z;m_{ee};Tau_{xy}", HistType::kTHnF, {AxisSpec{jetPtBins}, AxisSpec{zBins}, AxisSpec{massBins}, AxisSpec{tauXYBinsMCP}});
+    registry.add("MCP/Multidimensional/h_MCP_4d_NonPromptJpsi", "MCP J/#psi fragmentation NonPromptJpsi;p_{T,jet};z;m_{ee};Tau_{xy}", HistType::kTHnF, {AxisSpec{jetPtBins}, AxisSpec{zBins}, AxisSpec{massBins}, AxisSpec{tauXYBinsMCP}});
 
     // Initialize event selection
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(
