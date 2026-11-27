@@ -27,7 +27,7 @@ o2physics_add_dpl_workflow(tracks-extra-converter
 o2physics_add_dpl_workflow(tracks-extra-v002-converter
                     SOURCES tracksExtraV002Converter.cxx
                     PUBLIC_LINK_LIBRARIES
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(mft-tracks-converter
                     SOURCES mftTracksConverter.cxx
@@ -42,7 +42,7 @@ o2physics_add_dpl_workflow(fdd-converter
 o2physics_add_dpl_workflow(collision-converter
                     SOURCES collisionConverter.cxx
                     PUBLIC_LINK_LIBRARIES
-                COMPONENT_NAME Analysis)
+                COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(mccollision-converter
                 SOURCES mcCollisionConverter.cxx
@@ -52,7 +52,7 @@ o2physics_add_dpl_workflow(mccollision-converter
 o2physics_add_dpl_workflow(bc-converter
                     SOURCES bcConverter.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework
-                COMPONENT_NAME Analysis)
+                COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(bc-flags-creator
                     SOURCES bcFlagsCreator.cxx
@@ -67,7 +67,7 @@ o2physics_add_dpl_workflow(calo-label-converter
 o2physics_add_dpl_workflow(zdc-converter
                     SOURCES zdcConverter.cxx
                     PUBLIC_LINK_LIBRARIES
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(hmpid-converter
                     SOURCES hmpConverter.cxx
@@ -102,7 +102,7 @@ o2physics_add_dpl_workflow(trackqa-converter-003
 o2physics_add_dpl_workflow(run2bcinfos-converter
                     SOURCES run2bcinfosConverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
 
 o2physics_add_dpl_workflow(run2-tracks-extra-converter
                     SOURCES run2tracksExtraConverter.cxx
