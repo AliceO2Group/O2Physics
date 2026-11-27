@@ -24,8 +24,8 @@ o2physics_add_dpl_workflow(femto-two-photon-resonance-qa
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(femto-track-track-two-photon-resonance-qa
-	  SOURCES femtoTrackTrackTwoPhotonResonanceQa.cxx
+o2physics_add_dpl_workflow(femto-two-track-two-photon-resonance-qa
+	  SOURCES femtoTwoTrackTwoPhotonResonanceQa.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 

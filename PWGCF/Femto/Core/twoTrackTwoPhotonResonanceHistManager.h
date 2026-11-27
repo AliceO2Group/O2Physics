@@ -9,13 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file trackTrackTwoPhotonResonanceHistManager.h
+/// \file twoTrackTwoPhotonResonanceHistManager.h
 /// \brief histogram manager for resonances built from two tracks and a two-photon resonance
 ///        (e.g. omega(782) -> pi+ pi- pi0)
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
-#ifndef PWGCF_FEMTO_CORE_TRACKTRACKTWOPHOTONRESONANCEHISTMANAGER_H_
-#define PWGCF_FEMTO_CORE_TRACKTRACKTWOPHOTONRESONANCEHISTMANAGER_H_
+#ifndef PWGCF_FEMTO_CORE_TWOTRACKTWOPHOTONRESONANCEHISTMANAGER_H_
+#define PWGCF_FEMTO_CORE_TWOTRACKTWOPHOTONRESONANCEHISTMANAGER_H_
 
 #include "PWGCF/Femto/Core/histManager.h"
 #include "PWGCF/Femto/Core/modes.h"
@@ -36,9 +36,9 @@
 #include <string_view>
 #include <vector>
 
-namespace o2::analysis::femto::trackstwophotonresonancehistmanager
+namespace o2::analysis::femto::twotracktwophotonresonancehistmanager
 {
-enum TrackTrackTwoPhotonResonanceHist {
+enum TwoTrackTwoPhotonResonanceHist {
   // analysis
   kPt,
   kEta,
@@ -49,11 +49,11 @@ enum TrackTrackTwoPhotonResonanceHist {
   kPtVsEta,
   kPtVsPhi,
   kPhiVsEta,
-  kTrackTrackTwoPhotonResonanceHistLast
+  kTwoTrackTwoPhotonResonanceHistLast
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TRACKTRACKTWOPHOTONRESONANCE_DEFAULT_BINNING(defaultMassMin, defaultMassMax)               \
+#define TWOTRACKTWOPHOTONRESONANCE_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                 \
   o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                   \
   o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};                           \
   o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"}; \
@@ -61,11 +61,11 @@ enum TrackTrackTwoPhotonResonanceHist {
 
 struct ConfOmegaMesonBinning : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("OmegaMesonBinning");
-  TRACKTRACKTWOPHOTONRESONANCE_DEFAULT_BINNING(0.6f, 0.95f)
+  TWOTRACKTWOPHOTONRESONANCE_DEFAULT_BINNING(0.6f, 0.95f)
 };
-#undef TRACKTRACKTWOPHOTONRESONANCE_DEFAULT_BINNING
+#undef TWOTRACKTWOPHOTONRESONANCE_DEFAULT_BINNING
 
-constexpr std::array<histmanager::HistInfo<TrackTrackTwoPhotonResonanceHist>, kTrackTrackTwoPhotonResonanceHistLast> HistTable = {
+constexpr std::array<histmanager::HistInfo<TwoTrackTwoPhotonResonanceHist>, kTwoTrackTwoPhotonResonanceHistLast> HistTable = {
   {{kPt, o2::framework::HistType::kTH1F, "hPt", "Transverse Momentum; p_{T} (GeV/#it{c}); Entries"},
    {kEta, o2::framework::HistType::kTH1F, "hEta", "Pseudorapdity; #eta; Entries"},
    {kPhi, o2::framework::HistType::kTH1F, "hPhi", "Azimuthal angle; #varphi; Entries"},
@@ -76,36 +76,36 @@ constexpr std::array<histmanager::HistInfo<TrackTrackTwoPhotonResonanceHist>, kT
    {kPhiVsEta, o2::framework::HistType::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi ; #eta"}}};
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TRACKTRACKTWOPHOTONRESONANCE_HIST_ANALYSIS_MAP(conf) \
-  {kPt, {(conf).pt}},                                        \
-    {kEta, {(conf).eta}},                                    \
-    {kPhi, {(conf).phi}},                                    \
-    {kMass, {(conf).mass}},                                  \
+#define TWOTRACKTWOPHOTONRESONANCE_HIST_ANALYSIS_MAP(conf) \
+  {kPt, {(conf).pt}},                                      \
+    {kEta, {(conf).eta}},                                  \
+    {kPhi, {(conf).phi}},                                  \
+    {kMass, {(conf).mass}},                                \
     {kPtVsMass, {(conf).pt, (conf).mass}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TRACKTRACKTWOPHOTONRESONANCE_HIST_QA_MAP(conf) \
-  {kPtVsEta, {(conf).pt, (conf).eta}},                 \
-    {kPtVsPhi, {(conf).pt, (conf).phi}},               \
+#define TWOTRACKTWOPHOTONRESONANCE_HIST_QA_MAP(conf) \
+  {kPtVsEta, {(conf).pt, (conf).eta}},               \
+    {kPtVsPhi, {(conf).pt, (conf).phi}},             \
     {kPhiVsEta, {(conf).phi, (conf).eta}},
 
 template <typename T>
-auto makeTrackTrackTwoPhotonResonanceHistSpecMap(const T& confBinningAnalysis)
+auto makeTwoTrackTwoPhotonResonanceHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<TrackTrackTwoPhotonResonanceHist, std::vector<o2::framework::AxisSpec>>{
-    TRACKTRACKTWOPHOTONRESONANCE_HIST_ANALYSIS_MAP(confBinningAnalysis)};
+  return std::map<TwoTrackTwoPhotonResonanceHist, std::vector<o2::framework::AxisSpec>>{
+    TWOTRACKTWOPHOTONRESONANCE_HIST_ANALYSIS_MAP(confBinningAnalysis)};
 }
 
 template <typename T>
-auto makeTrackTrackTwoPhotonResonanceQaHistSpecMap(const T& confBinningAnalysis)
+auto makeTwoTrackTwoPhotonResonanceQaHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<TrackTrackTwoPhotonResonanceHist, std::vector<o2::framework::AxisSpec>>{
-    TRACKTRACKTWOPHOTONRESONANCE_HIST_ANALYSIS_MAP(confBinningAnalysis)
-      TRACKTRACKTWOPHOTONRESONANCE_HIST_QA_MAP(confBinningAnalysis)};
+  return std::map<TwoTrackTwoPhotonResonanceHist, std::vector<o2::framework::AxisSpec>>{
+    TWOTRACKTWOPHOTONRESONANCE_HIST_ANALYSIS_MAP(confBinningAnalysis)
+      TWOTRACKTWOPHOTONRESONANCE_HIST_QA_MAP(confBinningAnalysis)};
 }
 
-#undef TRACKTRACKTWOPHOTONRESONANCE_HIST_ANALYSIS_MAP
-#undef TRACKTRACKTWOPHOTONRESONANCE_HIST_QA_MAP
+#undef TWOTRACKTWOPHOTONRESONANCE_HIST_ANALYSIS_MAP
+#undef TWOTRACKTWOPHOTONRESONANCE_HIST_QA_MAP
 
 constexpr char PrefixOmegaMeson[] = "OmegaMeson/";
 constexpr char PrefixOmegaMesonNeutralDau[] = "OmegaMesonNeutralDau/";
@@ -115,7 +115,7 @@ constexpr char PrefixOmegaMesonNeutralDauPhotonDau2[] = "OmegaMesonNeutralDauPho
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
 
-/// \class TrackTrackTwoPhotonResonanceHistManager
+/// \class TwoTrackTwoPhotonResonanceHistManager
 /// \brief Histogram manager for resonances built from two tracks and a two-photon resonance (e.g.
 ///        omega(782) -> pi+ pi- pi0). The charged daughters reuse the regular TrackHistManager;
 ///        the embedded two-photon-resonance daughter reuses TwoPhotonResonanceHistManager as-is
@@ -127,17 +127,17 @@ template <auto& resoPrefix,
           auto& neutralDauPrefix,
           auto& neutralDauPhotonDau1Prefix,
           auto& neutralDauPhotonDau2Prefix,
-          modes::TrackTrackTwoPhotonResonance reso,
+          modes::TwoTrackTwoPhotonResonance reso,
           modes::TwoPhotonResonance neutralDauReso>
-class TrackTrackTwoPhotonResonanceHistManager
+class TwoTrackTwoPhotonResonanceHistManager
 {
  public:
-  TrackTrackTwoPhotonResonanceHistManager() = default;
-  ~TrackTrackTwoPhotonResonanceHistManager() = default;
+  TwoTrackTwoPhotonResonanceHistManager() = default;
+  ~TwoTrackTwoPhotonResonanceHistManager() = default;
 
   template <modes::Mode mode, typename T1, typename T2, typename T3>
   void init(o2::framework::HistogramRegistry* registry,
-            std::map<TrackTrackTwoPhotonResonanceHist, std::vector<o2::framework::AxisSpec>> const& ResoSpecs,
+            std::map<TwoTrackTwoPhotonResonanceHist, std::vector<o2::framework::AxisSpec>> const& ResoSpecs,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PosDauSpecs,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs,
             std::map<twophotonresonancehistmanager::TwoPhotonResonanceHist, std::vector<o2::framework::AxisSpec>> const& NeutralDauSpecs,
@@ -183,7 +183,7 @@ class TrackTrackTwoPhotonResonanceHistManager
   }
 
  private:
-  void initAnalysis(std::map<TrackTrackTwoPhotonResonanceHist, std::vector<o2::framework::AxisSpec>> const& ResoSpecs)
+  void initAnalysis(std::map<TwoTrackTwoPhotonResonanceHist, std::vector<o2::framework::AxisSpec>> const& ResoSpecs)
   {
     std::string analysisDir = std::string(resoPrefix) + std::string(AnalysisDir);
     mHistogramRegistry->add(analysisDir + getHistNameV2(kPt, HistTable), getHistDesc(kPt, HistTable), getHistType(kPt, HistTable), {ResoSpecs.at(kPt)});
@@ -193,7 +193,7 @@ class TrackTrackTwoPhotonResonanceHistManager
     mHistogramRegistry->add(analysisDir + getHistNameV2(kPtVsMass, HistTable), getHistDesc(kPtVsMass, HistTable), getHistType(kPtVsMass, HistTable), {ResoSpecs.at(kPtVsMass)});
   }
 
-  void initQa(std::map<TrackTrackTwoPhotonResonanceHist, std::vector<o2::framework::AxisSpec>> const& ResoSpecs)
+  void initQa(std::map<TwoTrackTwoPhotonResonanceHist, std::vector<o2::framework::AxisSpec>> const& ResoSpecs)
   {
     std::string qaDir = std::string(resoPrefix) + std::string(QaDir);
     mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsEta, HistTable), getHistDesc(kPtVsEta, HistTable), getHistType(kPtVsEta, HistTable), {ResoSpecs.at(kPtVsEta)});
@@ -224,5 +224,5 @@ class TrackTrackTwoPhotonResonanceHistManager
   trackhistmanager::TrackHistManager<negDauPrefix> mNegDauManager;
   twophotonresonancehistmanager::TwoPhotonResonanceHistManager<neutralDauPrefix, neutralDauPhotonDau1Prefix, neutralDauPhotonDau2Prefix, neutralDauReso> mNeutralDauManager;
 };
-} // namespace o2::analysis::femto::trackstwophotonresonancehistmanager
-#endif // PWGCF_FEMTO_CORE_TRACKTRACKTWOPHOTONRESONANCEHISTMANAGER_H_
+} // namespace o2::analysis::femto::twotracktwophotonresonancehistmanager
+#endif // PWGCF_FEMTO_CORE_TWOTRACKTWOPHOTONRESONANCEHISTMANAGER_H_

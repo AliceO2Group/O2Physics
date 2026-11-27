@@ -144,22 +144,22 @@
 // species -- pions, just opposite charge, no kstar-style species swap -- so a single dauMask pair
 // covers both), plus a 3rd mask for the neutral daughter (no momentum-threshold split there)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define MAKE_TRACKTRACKTWOPHOTONRESONANCE_PARTITION(selection)                                                   \
-  (o2::aod::femtobase::stored::pt > (selection).ptMin) &&                                                        \
-    (o2::aod::femtobase::stored::pt < (selection).ptMax) &&                                                      \
-    (o2::aod::femtobase::stored::eta > (selection).etaMin) &&                                                    \
-    (o2::aod::femtobase::stored::eta < (selection).etaMax) &&                                                    \
-    (o2::aod::femtobase::stored::phi > (selection).phiMin) &&                                                    \
-    (o2::aod::femtobase::stored::phi < (selection).phiMax) &&                                                    \
-    (o2::aod::femtobase::stored::mass > (selection).massMin) &&                                                  \
-    (o2::aod::femtobase::stored::mass < (selection).massMax) &&                                                  \
-    ifnode(o2::aod::femtotrackstwophotonresonances::posDauHasHighMomentum,                                       \
-           ncheckbit(o2::aod::femtotrackstwophotonresonances::maskPosDau, (selection).pionDauMaskAboveThres),    \
-           ncheckbit(o2::aod::femtotrackstwophotonresonances::maskPosDau, (selection).pionDauMaskBelowThres)) && \
-    ifnode(o2::aod::femtotrackstwophotonresonances::negDauHasHighMomentum,                                       \
-           ncheckbit(o2::aod::femtotrackstwophotonresonances::maskNegDau, (selection).pionDauMaskAboveThres),    \
-           ncheckbit(o2::aod::femtotrackstwophotonresonances::maskNegDau, (selection).pionDauMaskBelowThres)) && \
-    ncheckbit(o2::aod::femtotrackstwophotonresonances::maskNeutralDau, (selection).neutralDauMask)
+#define MAKE_TWOTRACKTWOPHOTONRESONANCE_PARTITION(selection)                                                       \
+  (o2::aod::femtobase::stored::pt > (selection).ptMin) &&                                                          \
+    (o2::aod::femtobase::stored::pt < (selection).ptMax) &&                                                        \
+    (o2::aod::femtobase::stored::eta > (selection).etaMin) &&                                                      \
+    (o2::aod::femtobase::stored::eta < (selection).etaMax) &&                                                      \
+    (o2::aod::femtobase::stored::phi > (selection).phiMin) &&                                                      \
+    (o2::aod::femtobase::stored::phi < (selection).phiMax) &&                                                      \
+    (o2::aod::femtobase::stored::mass > (selection).massMin) &&                                                    \
+    (o2::aod::femtobase::stored::mass < (selection).massMax) &&                                                    \
+    ifnode(o2::aod::femtotwotracktwophotonresonances::posDauHasHighMomentum,                                       \
+           ncheckbit(o2::aod::femtotwotracktwophotonresonances::maskPosDau, (selection).pionDauMaskAboveThres),    \
+           ncheckbit(o2::aod::femtotwotracktwophotonresonances::maskPosDau, (selection).pionDauMaskBelowThres)) && \
+    ifnode(o2::aod::femtotwotracktwophotonresonances::negDauHasHighMomentum,                                       \
+           ncheckbit(o2::aod::femtotwotracktwophotonresonances::maskNegDau, (selection).pionDauMaskAboveThres),    \
+           ncheckbit(o2::aod::femtotwotracktwophotonresonances::maskNegDau, (selection).pionDauMaskBelowThres)) && \
+    ncheckbit(o2::aod::femtotwotracktwophotonresonances::maskNeutralDau, (selection).neutralDauMask)
 
 // partition for lambdas
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoProducerTrackTrackTwoPhotonResonances.cxx
+/// \file femtoProducerTwoTrackTwoPhotonResonances.cxx
 /// \brief Task that produces femto tables for resonances built from two tracks and a two-photon
 ///        resonance (e.g. omega(782) -> pi+ pi- pi0)
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
@@ -19,8 +19,8 @@
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
-#include "PWGCF/Femto/Core/trackTrackTwoPhotonResonanceBuilder.h"
 #include "PWGCF/Femto/Core/twoPhotonResonanceBuilder.h"
+#include "PWGCF/Femto/Core/twoTrackTwoPhotonResonanceBuilder.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include <Framework/AnalysisDataModel.h>
@@ -36,7 +36,7 @@ using namespace o2::analysis::femto;
 // daughter) and combines them into omega(782) -> pi+ pi- pi0 candidates. A 3rd-stage producer,
 // chained after femtoProducer.cxx (FTracks) and femtoProducerTwoPhotonResonances.cxx (FPi0s), same
 // pattern as femtoProducerTwoPhotonResonances.cxx itself reading femtoProducer.cxx's FPhotons.
-struct FemtoProducerTrackTrackTwoPhotonResonances {
+struct FemtoProducerTwoTrackTwoPhotonResonances {
 
   using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks>;
   using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
@@ -68,10 +68,10 @@ struct FemtoProducerTrackTrackTwoPhotonResonances {
   o2::framework::Preslice<FemtoPi0s> perColNeutralDau = o2::aod::femtobase::stored::fColId;
 
   // resonance filter and builder
-  trackstwophotonresonancebuilder::ConfOmegaMesonFilters confOmegaMesonFilter;
-  trackstwophotonresonancebuilder::ConfTrackTrackTwoPhotonResonanceTables confOmegaMesonTables;
-  trackstwophotonresonancebuilder::TrackTrackTwoPhotonResonanceBuilderProducts omegaMesonBuilderProducts;
-  trackstwophotonresonancebuilder::TrackTrackTwoPhotonResonanceBuilder<modes::TrackTrackTwoPhotonResonance::kOmegaMeson> omegaMesonBuilder;
+  twotracktwophotonresonancebuilder::ConfOmegaMesonFilters confOmegaMesonFilter;
+  twotracktwophotonresonancebuilder::ConfTwoTrackTwoPhotonResonanceTables confOmegaMesonTables;
+  twotracktwophotonresonancebuilder::TwoTrackTwoPhotonResonanceBuilderProducts omegaMesonBuilderProducts;
+  twotracktwophotonresonancebuilder::TwoTrackTwoPhotonResonanceBuilder<modes::TwoTrackTwoPhotonResonance::kOmegaMeson> omegaMesonBuilder;
 
   void init(o2::framework::InitContext& context)
   {
@@ -82,11 +82,11 @@ struct FemtoProducerTrackTrackTwoPhotonResonances {
   {
     omegaMesonBuilder.fillResonances(col, omegaMesonBuilderProducts, posDauPartition, negDauPartition, neutralDauPartition, cache);
   }
-  PROCESS_SWITCH(FemtoProducerTrackTrackTwoPhotonResonances, processOmegaMesons, "Build OmegaMeson candidates", true);
+  PROCESS_SWITCH(FemtoProducerTwoTrackTwoPhotonResonances, processOmegaMesons, "Build OmegaMeson candidates", true);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
-  o2::framework::WorkflowSpec workflow{adaptAnalysisTask<FemtoProducerTrackTrackTwoPhotonResonances>(context)};
+  o2::framework::WorkflowSpec workflow{adaptAnalysisTask<FemtoProducerTwoTrackTwoPhotonResonances>(context)};
   return workflow;
 }

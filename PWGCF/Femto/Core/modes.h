@@ -251,7 +251,7 @@ enum class TwoPhotonResonance : o2::analysis::femto::datatypes::TwoPhotonResonan
 
 // resonances reconstructed from two tracks and a two-photon resonance, e.g. omega(782) -> pi+ pi- pi0.
 // Named kOmegaMeson (not kOmega) to not collide with Cascade::kOmega, the Omega- baryon.
-enum class TrackTrackTwoPhotonResonance : o2::analysis::femto::datatypes::TrackTrackTwoPhotonResonanceType {
+enum class TwoTrackTwoPhotonResonance : o2::analysis::femto::datatypes::TwoTrackTwoPhotonResonanceType {
   kOmegaMeson
 };
 

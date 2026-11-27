@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoTrackTrackTwoPhotonResonanceQa.cxx
+/// \file femtoTwoTrackTwoPhotonResonanceQa.cxx
 /// \brief QA task for resonances built from two tracks and a two-photon resonance (omega(782) -> pi+ pi- pi0)
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
@@ -19,9 +19,9 @@
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/photonHistManager.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
-#include "PWGCF/Femto/Core/trackTrackTwoPhotonResonanceBuilder.h"
-#include "PWGCF/Femto/Core/trackTrackTwoPhotonResonanceHistManager.h"
 #include "PWGCF/Femto/Core/twoPhotonResonanceHistManager.h"
+#include "PWGCF/Femto/Core/twoTrackTwoPhotonResonanceBuilder.h"
+#include "PWGCF/Femto/Core/twoTrackTwoPhotonResonanceHistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include <Framework/ASoA.h>
@@ -36,7 +36,7 @@
 
 using namespace o2::analysis::femto;
 
-struct FemtoTrackTrackTwoPhotonResonanceQa {
+struct FemtoTwoTrackTwoPhotonResonanceQa {
 
   // setup tables
   using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks, o2::aod::FColPos, o2::aod::FColSphericities, o2::aod::FColMults, o2::aod::FColCents>;
@@ -58,11 +58,11 @@ struct FemtoTrackTrackTwoPhotonResonanceQa {
   colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 
   // setup for omega mesons
-  trackstwophotonresonancebuilder::ConfOmegaMesonSelection1 confOmegaMesonSelection;
-  o2::framework::Partition<FemtoOmegaMesons> omegaMesonPartition = MAKE_TRACKTRACKTWOPHOTONRESONANCE_PARTITION(confOmegaMesonSelection);
+  twotracktwophotonresonancebuilder::ConfOmegaMesonSelection1 confOmegaMesonSelection;
+  o2::framework::Partition<FemtoOmegaMesons> omegaMesonPartition = MAKE_TWOTRACKTWOPHOTONRESONANCE_PARTITION(confOmegaMesonSelection);
   o2::framework::Preslice<FemtoOmegaMesons> perColOmegaMesons = o2::aod::femtobase::stored::fColId;
 
-  trackstwophotonresonancehistmanager::ConfOmegaMesonBinning confOmegaMesonBinning;
+  twotracktwophotonresonancehistmanager::ConfOmegaMesonBinning confOmegaMesonBinning;
 
   // setup for the two charged (pion) daughters
   trackhistmanager::ConfResonancePosDauBinning confPosDauBinning;
@@ -77,25 +77,25 @@ struct FemtoTrackTrackTwoPhotonResonanceQa {
   photonhistmanager::ConfPhotonBinning confNeutralDauPhotonBinning;
   photonhistmanager::ConfPhotonQaBinning confNeutralDauPhotonQaBinning;
 
-  trackstwophotonresonancehistmanager::TrackTrackTwoPhotonResonanceHistManager<
-    trackstwophotonresonancehistmanager::PrefixOmegaMeson,
+  twotracktwophotonresonancehistmanager::TwoTrackTwoPhotonResonanceHistManager<
+    twotracktwophotonresonancehistmanager::PrefixOmegaMeson,
     trackhistmanager::PrefixResonancePosDaughterSe,
     trackhistmanager::PrefixResonanceNegDaughterSe,
-    trackstwophotonresonancehistmanager::PrefixOmegaMesonNeutralDau,
-    trackstwophotonresonancehistmanager::PrefixOmegaMesonNeutralDauPhotonDau1,
-    trackstwophotonresonancehistmanager::PrefixOmegaMesonNeutralDauPhotonDau2,
-    modes::TrackTrackTwoPhotonResonance::kOmegaMeson,
+    twotracktwophotonresonancehistmanager::PrefixOmegaMesonNeutralDau,
+    twotracktwophotonresonancehistmanager::PrefixOmegaMesonNeutralDauPhotonDau1,
+    twotracktwophotonresonancehistmanager::PrefixOmegaMesonNeutralDauPhotonDau2,
+    modes::TwoTrackTwoPhotonResonance::kOmegaMeson,
     modes::TwoPhotonResonance::kPi0>
     omegaMesonHistManager;
 
-  o2::framework::HistogramRegistry hRegistry{"FemtoTrackTrackTwoPhotonResonanceQa", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
+  o2::framework::HistogramRegistry hRegistry{"FemtoTwoTrackTwoPhotonResonanceQa", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
 
   void init(o2::framework::InitContext&)
   {
     auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
     colHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
 
-    auto omegaMesonHistSpec = trackstwophotonresonancehistmanager::makeTrackTrackTwoPhotonResonanceQaHistSpecMap(confOmegaMesonBinning);
+    auto omegaMesonHistSpec = twotracktwophotonresonancehistmanager::makeTwoTrackTwoPhotonResonanceQaHistSpecMap(confOmegaMesonBinning);
     auto posDauSpec = trackhistmanager::makeTrackQaHistSpecMap(confPosDauBinning, confPosDauQaBinning);
     auto negDauSpec = trackhistmanager::makeTrackQaHistSpecMap(confNegDauBinning, confNegDauQaBinning);
     auto neutralDauSpec = twophotonresonancehistmanager::makeTwoPhotonResonanceQaHistSpecMap(confNeutralDauBinning);
@@ -115,13 +115,13 @@ struct FemtoTrackTrackTwoPhotonResonanceQa {
       omegaMesonHistManager.fill<modes::Mode::kReco_Qa>(omegaMeson, tracks, pi0s, photons);
     }
   }
-  PROCESS_SWITCH(FemtoTrackTrackTwoPhotonResonanceQa, processOmegaMesons, "Process OmegaMesons", true);
+  PROCESS_SWITCH(FemtoTwoTrackTwoPhotonResonanceQa, processOmegaMesons, "Process OmegaMesons", true);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoTrackTrackTwoPhotonResonanceQa>(context),
+    adaptAnalysisTask<FemtoTwoTrackTwoPhotonResonanceQa>(context),
   };
   return workflow;
 }
