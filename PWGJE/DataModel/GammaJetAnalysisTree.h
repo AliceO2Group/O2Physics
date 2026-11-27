@@ -72,11 +72,13 @@ namespace gjmcevent
 {
 DECLARE_SOA_INDEX_COLUMN(GjEvent, gjevent);
 DECLARE_SOA_COLUMN(Weight, weight, double);
-DECLARE_SOA_COLUMN(Rho, rho, float);                              // gen level rho
-DECLARE_SOA_COLUMN(PtHard, ptHard, float);                        // hard-scattering scale
-DECLARE_SOA_COLUMN(IsMultipleAssigned, isMultipleAssigned, bool); // if the corresponding MC collision matched to this rec collision was also matched to other rec collisions (allows to skip those on analysis level   )
+DECLARE_SOA_COLUMN(Rho, rho, float);                                    // gen level rho
+DECLARE_SOA_COLUMN(PtHard, ptHard, float);                              // hard-scattering scale
+DECLARE_SOA_COLUMN(IsMultipleAssigned, isMultipleAssigned, bool);       // if the corresponding MC collision matched to this rec collision was also matched to other rec collisions (allows to skip those on analysis level   )
+DECLARE_SOA_COLUMN(PassedClusterCut, passedClusterCut, bool);           // if the rec collision has a cluster above minClusterETrigger. If false, only gen level information (mc particles, mc jets) is stored for this event
+DECLARE_SOA_COLUMN(IsPrimaryRecCollision, isPrimaryRecCollision, bool); // true for exactly one stored rec collision per MC collision (allows to count gen level information only once for multiple assigned MC collisions)
 } // namespace gjmcevent
-DECLARE_SOA_TABLE(GjMCEvents, "AOD", "GJMCEVENT", gjmcevent::GjEventId, gjmcevent::Weight, gjmcevent::Rho, gjmcevent::PtHard, gjmcevent::IsMultipleAssigned)
+DECLARE_SOA_TABLE(GjMCEvents, "AOD", "GJMCEVENT", gjmcevent::GjEventId, gjmcevent::Weight, gjmcevent::Rho, gjmcevent::PtHard, gjmcevent::IsMultipleAssigned, gjmcevent::PassedClusterCut, gjmcevent::IsPrimaryRecCollision)
 // Information about EMCal clusters
 namespace gjgamma
 {
