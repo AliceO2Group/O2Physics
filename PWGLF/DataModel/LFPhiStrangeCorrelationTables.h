@@ -44,6 +44,9 @@ DECLARE_SOA_TABLE(PhiStrangeEvtSelMcGen, "AOD", "EVTSELMCGEN",
 namespace lf_selection_phi_candidate
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+// A generated candidate belongs to a generated collision: with an index to Collisions, a process over McCollisions
+// would receive the candidates of the whole DF instead of those of its collision
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 
 DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
@@ -76,7 +79,7 @@ DECLARE_SOA_TABLE(PhimesonCandidatesMcReco, "AOD", "PHICANDMCREC",
 
 DECLARE_SOA_TABLE(PhimesonCandidatesMcGen, "AOD", "PHICANDMCGEN",
                   soa::Index<>,
-                  lf_selection_phi_candidate::CollisionId,
+                  lf_selection_phi_candidate::McCollisionId,
                   lf_selection_phi_candidate::M,
                   lf_selection_phi_candidate::Pt,
                   lf_selection_phi_candidate::Y,
