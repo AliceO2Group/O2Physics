@@ -93,6 +93,8 @@ struct DqFragmentationFunctionTask {
   Configurable<float> jetPtMin{"jetPtMin", 0.f, "Minimum jet transverse momentum (GeV/c)"};
   Configurable<float> jetPtMax{"jetPtMax", 1.e6f, "Maximum jet transverse momentum (GeV/c)"};
   Configurable<float> jetEtaMax{"jetEtaMax", 1.e6f, "Maximum absolute jet pseudorapidity"};
+  Configurable<bool> fillTables{"fillTables", false, "Fills table with dielectron-jet information. processReserveDataDielectronTable or processReserveMCDDielectronTable needs to be enabled in order to reserve memory for the dielectronAllPlusJet table"};
+  Produces<aod::JDielectronAllPlusJet> dielectronAllPlusJet;
 
   HistogramRegistry registry{"registry",
                              {{"Data/Jet/h_dielectron_jet_pt", ";p_{T,jet} (GeV/c);Counts", {HistType::kTH1F, {{200, 0., 80.}}}},
@@ -391,22 +393,32 @@ struct DqFragmentationFunctionTask {
   bool passesPairCuts(const Candidate& candidate)
   {
     if (candidate.pt() < electronPairPtMin.value ||
-        std::abs(candidate.eta()) > electronPairEtaMax.value) {
+      std::abs(candidate.eta()) > electronPairEtaMax.value) {
       return false;
     }
-
+    
     return true;
   }
-
-  void FragmentationFunctionData(aod::JetCollision const& collision,
-                                 soa::Join<aod::DielectronChargedJets, aod::DielectronChargedJetConstituents> const& jets,
-                                 aod::CandidatesDielectronData const&,
-                                 aod::JetTracks const&)
-  {
-    if (useCuts && (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBgapEvents.value, applyRCTflag.value, rctLabel.value) || !(std::abs(collision.posZ()) < vertexZCut))) {
-      return;
+    
+  void processReserveDataDielectronTable( // Needed because currently the only way to get the full timeframe table size is through an ungrouped table (which is the case in this process function)
+    aod::CandidatesDielectronData const& cands)
+    {
+      if (fillTables.value){
+        dielectronAllPlusJet.reserve(cands.size());
+      }
     }
-    for (const auto& jet : jets) {
+
+  PROCESS_SWITCH(DqFragmentationFunctionTask, processReserveDataDielectronTable, "Reserves memory for filling data dielectronAllPlusJet table", false);
+  
+  void FragmentationFunctionData(aod::JetCollision const& collision,
+    soa::Join<aod::DielectronChargedJets, aod::DielectronChargedJetConstituents> const& jets,
+    aod::CandidatesDielectronData const&,
+    aod::JetTracks const&)
+    {
+      if (useCuts && (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBgapEvents.value, applyRCTflag.value, rctLabel.value) || !(std::abs(collision.posZ()) < vertexZCut))) {
+        return;
+      }
+      for (const auto& jet : jets) {
 
       if (useCuts) {
         if (jet.pt() < jetPtMin || jet.pt() > jetPtMax ||
@@ -478,6 +490,19 @@ struct DqFragmentationFunctionTask {
         registry.fill(HIST("Data/SingleTrack/h_electron_its_chi2_per_cluster"), dielectronCandidate.itsChi2NCl1());
         registry.fill(HIST("Data/SingleTrack/h_electron_its_chi2_per_cluster"), dielectronCandidate.itsChi2NCl2());
         registry.fill(HIST("Data/Multidimensional/h_4d_histogram"), jet.pt(), z, dielectronCandidate.mass(), dielectronCandidate.tauxy());
+        if (fillTables.value){
+          dielectronAllPlusJet(dielectronCandidate.mass(), dielectronCandidate.pt(), dielectronCandidate.eta(), dielectronCandidate.phi(), dielectronCandidate.sign(), -999, dielectronCandidate.mcDecision(),
+                            dielectronCandidate.pt1(), dielectronCandidate.eta1(), dielectronCandidate.phi1(), dielectronCandidate.itsClusterMap1(), dielectronCandidate.itsChi2NCl1(), dielectronCandidate.tpcNClsCR1(), dielectronCandidate.tpcNClsFound1(), dielectronCandidate.tpcChi2NCl1(), dielectronCandidate.dcaXY1(), dielectronCandidate.dcaZ1(), dielectronCandidate.tpcSignal1(), dielectronCandidate.tpcNSigmaEl1(), dielectronCandidate.tpcNSigmaPi1(), dielectronCandidate.tpcNSigmaPr1(), dielectronCandidate.tofBeta1(), dielectronCandidate.tofNSigmaEl1(), dielectronCandidate.tofNSigmaPi1(), dielectronCandidate.tofNSigmaPr1(),
+                            dielectronCandidate.pt2(), dielectronCandidate.eta2(), dielectronCandidate.phi2(), dielectronCandidate.itsClusterMap2(), dielectronCandidate.itsChi2NCl2(), dielectronCandidate.tpcNClsCR2(), dielectronCandidate.tpcNClsFound2(), dielectronCandidate.tpcChi2NCl2(), dielectronCandidate.dcaXY2(), dielectronCandidate.dcaZ2(), dielectronCandidate.tpcSignal2(), dielectronCandidate.tpcNSigmaEl2(), dielectronCandidate.tpcNSigmaPi2(), dielectronCandidate.tpcNSigmaPr2(), dielectronCandidate.tofBeta2(), dielectronCandidate.tofNSigmaEl2(), dielectronCandidate.tofNSigmaPi2(), dielectronCandidate.tofNSigmaPr2(),
+                            dielectronCandidate.dcaxyztrk0KF(), dielectronCandidate.dcaxyztrk1KF(), dielectronCandidate.dcaxyzbetweentrksKF(), dielectronCandidate.dcaxytrk0KF(), dielectronCandidate.dcaxytrk1KF(), dielectronCandidate.dcaxybetweentrksKF(),
+                            dielectronCandidate.deviationTrk0KF(), dielectronCandidate.deviationTrk1KF(), dielectronCandidate.deviationxyTrk0KF(), dielectronCandidate.deviationxyTrk1KF(),
+                            dielectronCandidate.massKFGeo(), dielectronCandidate.chi2overndfKFGeo(), dielectronCandidate.decaylengthKFGeo(), dielectronCandidate.decaylengthovererrKFGeo(), dielectronCandidate.decaylengthxyKFGeo(), dielectronCandidate.decaylengthxyovererrKFGeo(), dielectronCandidate.pseudoproperdecaytimeKFGeo(), dielectronCandidate.pseudoproperdecaytimeErrKFGeo(), dielectronCandidate.cosPAKFGeo(), dielectronCandidate.pairDCAxyz(), dielectronCandidate.pairDCAxy(),
+                            dielectronCandidate.deviationPairKF(), dielectronCandidate.deviationxyPairKF(),
+                            dielectronCandidate.massKFGeoTop(), dielectronCandidate.chi2overndfKFGeoTop(),
+                            dielectronCandidate.tauz(), dielectronCandidate.tauxy(),
+                            dielectronCandidate.lz(), dielectronCandidate.lxy(),
+                            z, jet.pt());
+        }
       } // end of loop over dielectron candidates
       registry.fill(HIST("Data/Jet/h_electron_pairs_per_jet"), electronPairs);
       if (electronPairs == 0) {
@@ -499,6 +524,16 @@ struct DqFragmentationFunctionTask {
   }
 
   PROCESS_SWITCH(DqFragmentationFunctionTask, FragmentationFunctionData, "fragmentation function data", false);
+    
+  void processReserveMCDielectronTable( // Needed because currently the only way to get the full timeframe table size is through an ungrouped table (which is the case in this process function)
+    aod::CandidatesDielectronMCD const& cands)
+    {
+      if (fillTables.value){
+        dielectronAllPlusJet.reserve(cands.size());
+      }
+    }
+
+  PROCESS_SWITCH(DqFragmentationFunctionTask, processReserveMCDielectronTable, "Reserves memory for filling MCD dielectronAllPlusJet table", false);
 
   void FragmentationFunctionMCD(
     aod::JetCollisionMCD const& collision,
@@ -584,6 +619,19 @@ struct DqFragmentationFunctionTask {
           registry.fill(HIST("MCD/Multidimensional/h_MCD_4d_PromptJpsi"), jet.pt(), z, dielectronCandidate.mass(), dielectronCandidate.tauxy());
         } else if (dielectronCandidate.mcDecision() == 2) {
           registry.fill(HIST("MCD/Multidimensional/h_MCD_4d_NonPromptJpsi"), jet.pt(), z, dielectronCandidate.mass(), dielectronCandidate.tauxy());
+        }
+        if (fillTables.value){
+          dielectronAllPlusJet(dielectronCandidate.mass(), dielectronCandidate.pt(), dielectronCandidate.eta(), dielectronCandidate.phi(), dielectronCandidate.sign(), -999, dielectronCandidate.mcDecision(),
+                            dielectronCandidate.pt1(), dielectronCandidate.eta1(), dielectronCandidate.phi1(), dielectronCandidate.itsClusterMap1(), dielectronCandidate.itsChi2NCl1(), dielectronCandidate.tpcNClsCR1(), dielectronCandidate.tpcNClsFound1(), dielectronCandidate.tpcChi2NCl1(), dielectronCandidate.dcaXY1(), dielectronCandidate.dcaZ1(), dielectronCandidate.tpcSignal1(), dielectronCandidate.tpcNSigmaEl1(), dielectronCandidate.tpcNSigmaPi1(), dielectronCandidate.tpcNSigmaPr1(), dielectronCandidate.tofBeta1(), dielectronCandidate.tofNSigmaEl1(), dielectronCandidate.tofNSigmaPi1(), dielectronCandidate.tofNSigmaPr1(),
+                            dielectronCandidate.pt2(), dielectronCandidate.eta2(), dielectronCandidate.phi2(), dielectronCandidate.itsClusterMap2(), dielectronCandidate.itsChi2NCl2(), dielectronCandidate.tpcNClsCR2(), dielectronCandidate.tpcNClsFound2(), dielectronCandidate.tpcChi2NCl2(), dielectronCandidate.dcaXY2(), dielectronCandidate.dcaZ2(), dielectronCandidate.tpcSignal2(), dielectronCandidate.tpcNSigmaEl2(), dielectronCandidate.tpcNSigmaPi2(), dielectronCandidate.tpcNSigmaPr2(), dielectronCandidate.tofBeta2(), dielectronCandidate.tofNSigmaEl2(), dielectronCandidate.tofNSigmaPi2(), dielectronCandidate.tofNSigmaPr2(),
+                            dielectronCandidate.dcaxyztrk0KF(), dielectronCandidate.dcaxyztrk1KF(), dielectronCandidate.dcaxyzbetweentrksKF(), dielectronCandidate.dcaxytrk0KF(), dielectronCandidate.dcaxytrk1KF(), dielectronCandidate.dcaxybetweentrksKF(),
+                            dielectronCandidate.deviationTrk0KF(), dielectronCandidate.deviationTrk1KF(), dielectronCandidate.deviationxyTrk0KF(), dielectronCandidate.deviationxyTrk1KF(),
+                            dielectronCandidate.massKFGeo(), dielectronCandidate.chi2overndfKFGeo(), dielectronCandidate.decaylengthKFGeo(), dielectronCandidate.decaylengthovererrKFGeo(), dielectronCandidate.decaylengthxyKFGeo(), dielectronCandidate.decaylengthxyovererrKFGeo(), dielectronCandidate.pseudoproperdecaytimeKFGeo(), dielectronCandidate.pseudoproperdecaytimeErrKFGeo(), dielectronCandidate.cosPAKFGeo(), dielectronCandidate.pairDCAxyz(), dielectronCandidate.pairDCAxy(),
+                            dielectronCandidate.deviationPairKF(), dielectronCandidate.deviationxyPairKF(),
+                            dielectronCandidate.massKFGeoTop(), dielectronCandidate.chi2overndfKFGeoTop(),
+                            dielectronCandidate.tauz(), dielectronCandidate.tauxy(),
+                            dielectronCandidate.lz(), dielectronCandidate.lxy(),
+                            z, jet.pt());
         }
       } // end of loop over dielectron candidates
       registry.fill(HIST("MCD/Jet/h_electron_pairs_per_jet"), electronPairs);

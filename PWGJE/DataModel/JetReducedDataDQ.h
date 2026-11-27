@@ -19,6 +19,7 @@
 
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetReducedDataHF.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -109,6 +110,12 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, //! True if par
                            [](uint8_t flags) -> bool { return (flags & o2::aod::mcparticle::enums::PhysicalPrimary) == o2::aod::mcparticle::enums::PhysicalPrimary; });
 } // namespace jdielectronmc
 
+namespace jdielectron{
+    DECLARE_SOA_COLUMN(Z, z, float); // jet-pT fraction carried by the dielectron
+    DECLARE_SOA_COLUMN(JetPt, jetPt, float);
+
+}
+
 DECLARE_SOA_TABLE_STAGED(JDielectronMcs, "JDIELMC",
                          o2::soa::Index<>,
                          jdielectronindices::JDielectronMcCollisionId,
@@ -148,6 +155,23 @@ DECLARE_SOA_TABLE_STAGED(JDielectronMcIds, "JDIELMCID",
                          jdielectronmc::MothersIds,
                          jdielectronmc::DaughtersIdSlice);
 
+DECLARE_SOA_TABLE_STAGED(JDielectronAllPlusJet, "JDIELALLPLUSJET", //!
+                            reducedpair::Mass,
+                            reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
+                            reducedpair::FilterMap,
+                            reducedpair::McDecision,
+                            dilepton_track_index::Pt1, dilepton_track_index::Eta1, dilepton_track_index::Phi1, dilepton_track_index::ITSClusterMap1, dilepton_track_index::ITSChi2NCl1, dilepton_track_index::TPCNClsCR1, dilepton_track_index::TPCNClsFound1, dilepton_track_index::TPCChi2NCl1, dilepton_track_index::DcaXY1, dilepton_track_index::DcaZ1, dilepton_track_index::TPCSignal1, dilepton_track_index::TPCNSigmaEl1, dilepton_track_index::TPCNSigmaPi1, dilepton_track_index::TPCNSigmaPr1, dilepton_track_index::TOFBeta1, dilepton_track_index::TOFNSigmaEl1, dilepton_track_index::TOFNSigmaPi1, dilepton_track_index::TOFNSigmaPr1,
+                            dilepton_track_index::Pt2, dilepton_track_index::Eta2, dilepton_track_index::Phi2, dilepton_track_index::ITSClusterMap2, dilepton_track_index::ITSChi2NCl2, dilepton_track_index::TPCNClsCR2, dilepton_track_index::TPCNClsFound2, dilepton_track_index::TPCChi2NCl2, dilepton_track_index::DcaXY2, dilepton_track_index::DcaZ2, dilepton_track_index::TPCSignal2, dilepton_track_index::TPCNSigmaEl2, dilepton_track_index::TPCNSigmaPi2, dilepton_track_index::TPCNSigmaPr2, dilepton_track_index::TOFBeta2, dilepton_track_index::TOFNSigmaEl2, dilepton_track_index::TOFNSigmaPi2, dilepton_track_index::TOFNSigmaPr2,
+                            dilepton_track_index::DCAxyzTrk0KF, dilepton_track_index::DCAxyzTrk1KF, reducedpair::DCAxyzBetweenTrksKF, dilepton_track_index::DCAxyTrk0KF, dilepton_track_index::DCAxyTrk1KF, reducedpair::DCAxyBetweenTrksKF,
+                            dilepton_track_index::DeviationTrk0KF, dilepton_track_index::DeviationTrk1KF, dilepton_track_index::DeviationxyTrk0KF, dilepton_track_index::DeviationxyTrk1KF,
+                            reducedpair::MassKFGeo, reducedpair::Chi2OverNDFKFGeo, reducedpair::DecayLengthKFGeo, reducedpair::DecayLengthOverErrKFGeo, reducedpair::DecayLengthXYKFGeo, reducedpair::DecayLengthXYOverErrKFGeo, reducedpair::PseudoproperDecayTimeKFGeo, reducedpair::PseudoproperDecayTimeErrKFGeo, reducedpair::CosPAKFGeo, reducedpair::PairDCAxyz, reducedpair::PairDCAxy,
+                            reducedpair::DeviationPairKF, reducedpair::DeviationxyPairKF,
+                            reducedpair::MassKFGeoTop, reducedpair::Chi2OverNDFKFGeoTop,
+                            reducedpair::Tauz, reducedpair::Tauxy,
+                            reducedpair::Lz,
+                            reducedpair::Lxy,
+                            jdielectron::Z,
+                            jdielectron::JetPt);
 namespace jdummydq
 {
 
