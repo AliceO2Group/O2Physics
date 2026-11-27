@@ -231,6 +231,7 @@ struct StrangenessInJetsIons {
     Configurable<float> bachBaryonDCAxyToPV{"bachBaryonDCAxyToPV", 0.04f, "Minimum DCAxy to PV of the bachelor-baryon pair (cm): candidates below are rejected (Lambda contamination). Values <=0 disable this cut"};
     Configurable<float> ctauXi{"ctauXi", 25.0f, "C tau Xi (cm). Values <=0 disable this cut"};
     Configurable<float> ctauOmega{"ctauOmega", 15.0f, "C tau Omega (cm). Values <=0 disable this cut"};
+    Configurable<float> ctauLambdaCasc{"ctauLambdaCasc", 30.0f, "C tau Lambda from cascade decay (cm). Values <=0 disable this cut"};
 
     Configurable<float> deltaMassXi{"deltaMassXi", 0.008f, "[Omega] Mass window for Xi rejection"};
     Configurable<float> deltaMassOmega{"deltaMassOmega", 0.008f, "[Xi] Mass window for Omega rejection"};
@@ -811,6 +812,15 @@ struct StrangenessInJetsIons {
     return mass * decayLength / (casc.p() + 1e-10f);
   }
 
+  // Proper decay length m*L/p of the Lambda from a cascade (cm), with L = distance between cascade and Lambda decay vertices
+  template <typename Casc>
+  float lambdaFromCascadeProperDecayLength(const Casc& casc)
+  {
+    const float decayLength = std::hypot(casc.xlambda() - casc.x(), casc.ylambda() - casc.y(), casc.zlambda() - casc.z());
+    const float lambdaMomentum = std::hypot(casc.pxlambda(), casc.pylambda(), casc.pzlambda());
+    return o2::constants::physics::MassLambda0 * decayLength / (lambdaMomentum + 1e-10f);
+  }
+
   // Check if particle is a physical primary or a decay product of a heavy-flavor hadron
   bool isPhysicalPrimaryOrFromHF(aod::McParticle const& particle, aod::McParticles const& mcParticles)
   {
@@ -1295,6 +1305,9 @@ struct StrangenessInJetsIons {
       return false;
     if (std::fabs(casc.dcanegtopv()) < configCasc.dcaNegToPVminV0)
       return false;
+    // ctau selection of the Lambda from the cascade decay
+    if (configCasc.ctauLambdaCasc > 0 && lambdaFromCascadeProperDecayLength(casc) > configCasc.ctauLambdaCasc)
+      return false;
 
     // Cascade selections
     // if (casc.cascradius() < configCasc.minimumCascRadius || casc.cascradius() > configCasc.maximumCascRadius)
@@ -1421,6 +1434,9 @@ struct StrangenessInJetsIons {
     if (std::fabs(casc.dcapostopv()) < configCasc.dcaPosToPVminV0)
       return false;
     if (std::fabs(casc.dcanegtopv()) < configCasc.dcaNegToPVminV0)
+      return false;
+    // ctau selection of the Lambda from the cascade decay
+    if (configCasc.ctauLambdaCasc > 0 && lambdaFromCascadeProperDecayLength(casc) > configCasc.ctauLambdaCasc)
       return false;
 
     // Cascade selections
