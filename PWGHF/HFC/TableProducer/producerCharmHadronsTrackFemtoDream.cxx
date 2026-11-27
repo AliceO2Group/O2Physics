@@ -500,16 +500,23 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   }
 
   /// Classify true kaons from the correct collision for the DCA templates.
+  /// \param bHadronAncestorId for kaons from a beauty-hadron decay chain, global index of the beauty-hadron ancestor, -1 otherwise
   template <typename T>
-  static int getKaonOrigin(T const& particles, typename T::iterator const& particle)
+  static int getKaonOrigin(T const& particles, typename T::iterator const& particle, int64_t& bHadronAncestorId)
   {
     using namespace o2::aod::femtodreamMCparticle;
     constexpr int GenFromTransport = -1;
+    bHadronAncestorId = -1;
     if (particle.getProcess() == TMCProcess::kPHInhelastic && particle.getGenStatusCode() == GenFromTransport) {
       return kMaterial;
     }
     // HF decay products can be physical primaries. Check their ancestry first.
-    if (RecoDecay::getParticleOrigin(particles, particle) != RecoDecay::OriginType::None) {
+    std::vector<int> idxBhadMothers{};
+    const auto hfOrigin = RecoDecay::getParticleOrigin(particles, particle, false, &idxBhadMothers);
+    if (hfOrigin != RecoDecay::OriginType::None) {
+      if (hfOrigin == RecoDecay::OriginType::NonPrompt && !idxBhadMothers.empty()) {
+        bHadronAncestorId = idxBhadMothers.front();
+      }
       return kSecondaryFromHF;
     }
     if (particle.isPhysicalPrimary()) {
@@ -541,8 +548,13 @@ struct HfProducerCharmHadronsTrackFemtoDream {
         if ((col.has_mcCollision() && (particleMc.mcCollisionId() != col.mcCollisionId())) || !col.has_mcCollision()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kWrongCollision;
         } else if (std::abs(pdgCode) == kKPlus) {
-          particleOrigin = getKaonOrigin(mcParticles, particleMc);
-          if (!motherparticlesMc.empty()) {
+          int64_t bHadronAncestorId = -1;
+          particleOrigin = getKaonOrigin(mcParticles, particleMc, bHadronAncestorId);
+          if (bHadronAncestorId >= 0) {
+            // For kaons from beauty-hadron decays store the PDG code of the beauty-hadron ancestor instead of the direct mother.
+            // The task uses it to split the HF DCA template into charm and beauty origin.
+            pdgCodeMother = mcParticles.rawIteratorAt(bHadronAncestorId - mcParticles.offset()).pdgCode();
+          } else if (!motherparticlesMc.empty()) {
             pdgCodeMother = motherparticlesMc.front().pdgCode();
           }
           // check if particle is primary
