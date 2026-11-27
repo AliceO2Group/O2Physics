@@ -832,6 +832,11 @@ void VarManager::SetDefaultVarNames()
   fgVariableNames[kMCVtxX] = "MC Vtx X";
   fgVariableNames[kMCVtxY] = "MC Vtx Y";
   fgVariableNames[kMCVtxZ] = "MC Vtx Z";
+  fgVariableNames[kVtxDeltaX] = "MC Vtx X - Reco Vtx X";
+  fgVariableNames[kVtxDeltaY] = "MC Vtx Y - Reco Vtx Y";
+  fgVariableNames[kVtxDeltaZ] = "MC Vtx Z - Reco Vtx Z";
+  fgVariableNames[kVtxDeltaXYZ] = "MC Vtx XYZ - Reco Vtx XYZ";
+  fgVariableNames[kVtxMatchChi2] = "Vtx match chi2";
   fgVariableNames[kMCEventTime] = "MC event time";
   fgVariableNames[kMCEventWeight] = "MC event weight";
   fgVariableNames[kMCEventImpParam] = "MC impact parameter";
@@ -846,6 +851,11 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCVtxX] = "cm";
   fgVariableUnits[kMCVtxY] = "cm";
   fgVariableUnits[kMCVtxZ] = "cm";
+  fgVariableUnits[kVtxDeltaX] = "cm";
+  fgVariableUnits[kVtxDeltaY] = "cm";
+  fgVariableUnits[kVtxDeltaZ] = "cm";
+  fgVariableUnits[kVtxDeltaXYZ] = "cm";
+  fgVariableUnits[kVtxMatchChi2] = "";
   fgVariableUnits[kMCEventTime] = ""; // TODO: add proper unit
   fgVariableUnits[kMCEventWeight] = "";
   fgVariableUnits[kMCEventImpParam] = "b";
@@ -2307,6 +2317,11 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCVtxX"] = kMCVtxX;
   fgVarNamesMap["kMCVtxY"] = kMCVtxY;
   fgVarNamesMap["kMCVtxZ"] = kMCVtxZ;
+  fgVarNamesMap["kVtxDeltaX"] = kVtxDeltaX;
+  fgVarNamesMap["kVtxDeltaY"] = kVtxDeltaY;
+  fgVarNamesMap["kVtxDeltaZ"] = kVtxDeltaZ;
+  fgVarNamesMap["kVtxDeltaXYZ"] = kVtxDeltaXYZ;
+  fgVarNamesMap["kVtxMatchChi2"] = kVtxMatchChi2;
   fgVarNamesMap["kMCEventTime"] = kMCEventTime;
   fgVarNamesMap["kMCEventWeight"] = kMCEventWeight;
   fgVarNamesMap["kMCEventImpParam"] = kMCEventImpParam;

@@ -347,6 +347,11 @@ class VarManager : public TObject
     kMCVtxX,
     kMCVtxY,
     kMCVtxZ,
+    kVtxDeltaX,
+    kVtxDeltaY,
+    kVtxDeltaZ,
+    kVtxDeltaXYZ,
+    kVtxMatchChi2,
     kMCEventTime,
     kMCEventWeight,
     kMCEventImpParam,
@@ -1522,6 +1527,8 @@ class VarManager : public TObject
   static void FillBC(T const& bc, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
+  template <typename T1, typename T2>
+  static void FillEventMCMatch(T1 const& collision, T2 const& mcCollision, float* values);
   template <typename T>
   static void FillEventTracks(T const& tracks, float* values = nullptr);
   template <typename T>
@@ -2776,6 +2783,64 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   // FillEventDerived(values);
+}
+
+template <typename T1, typename T2>
+void VarManager::FillEventMCMatch(T1 const& collision, T2 const& mcCollision, float* values)
+{
+  if (!values) {
+    values = static_cast<float*>(fgValues);
+  }
+
+  if constexpr (requires {mcCollision.mcPosX(); mcCollision.mcPosY(); mcCollision.mcPosZ(); }) {
+    values[kVtxDeltaX] = mcCollision.mcPosX() - collision.posX();
+    values[kVtxDeltaY] = mcCollision.mcPosY() - collision.posY();
+    values[kVtxDeltaZ] = mcCollision.mcPosZ() - collision.posZ();
+  } else {
+    values[kVtxDeltaX] = o2::dqconstants::InvalidValueF;
+    values[kVtxDeltaY] = o2::dqconstants::InvalidValueF;
+    values[kVtxDeltaZ] = o2::dqconstants::InvalidValueF;
+    return;
+  }
+
+  if (fgUsedVars[kVtxDeltaXYZ]) {
+    values[kVtxDeltaXYZ] = std::sqrt(values[kVtxDeltaX] * values[kVtxDeltaX] + values[kVtxDeltaY] * values[kVtxDeltaY] + values[kVtxDeltaZ] * values[kVtxDeltaZ]);
+  }
+
+  if (fgUsedVars[kVtxMatchChi2]) {
+    values[kVtxMatchChi2] = o2::dqconstants::InvalidValueF;
+
+    if constexpr (requires {collision.covXX(); collision.covXY(); collision.covXZ(); collision.covYY(); collision.covYZ(); collision.covZZ(); }) {
+      const double l11 = std::sqrt(collision.covXX());
+      const double l21 = collision.covXY() / l11;
+      const double l31 = collision.covXZ() / l11;
+
+      const double d22 = collision.covYY() - l21 * l21;
+      if (d22 <= 0.0) {
+        return;
+      }
+
+      const double l22 = std::sqrt(d22);
+      const double l32 = (collision.covYZ() - l31 * l21) / l22;
+
+      const double d33 = collision.covZZ() - l31 * l31 - l32 * l32;
+      if (d33 <= 0.) {
+        return;
+      }
+
+      const double l33 = std::sqrt(d33);
+
+      const double ux = values[kVtxDeltaX] / l11;
+      const double uy = (values[kVtxDeltaY] - l21 * ux) / l22;
+      const double uz = (values[kVtxDeltaZ] - l31 * ux - l32 * uy) / l33;
+
+      const double chi2 = ux * ux + uy * uy + uz * uz;
+
+      if (std::isfinite(chi2)) {
+        values[kVtxMatchChi2] = static_cast<float>(chi2);
+      }
+    }
+  }
 }
 
 template <typename T>

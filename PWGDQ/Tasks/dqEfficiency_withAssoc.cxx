@@ -3247,6 +3247,7 @@ struct AnalysisSameEventPairing {
       }
       VarManager::FillEvent<gkEventFillMap>(event, dqefficiency_helpers::varValues());
       VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent(), dqefficiency_helpers::varValues());
+      VarManager::FillEventMCMatch(event, event.reducedMCevent(), dqefficiency_helpers::varValues());
       // auto groupedMCTracks = mcTracks.sliceBy(perReducedMcGenEvent, event.reducedMCeventId());
       // groupedMCTracks.bindInternalIndicesTo(&mcTracks);
       // for (auto const& track : groupedMCTracks) {
@@ -3977,6 +3978,10 @@ struct AnalysisAsymmetricPairing {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event, dqefficiency_helpers::varValues());
 
+      if (event.has_reducedMCevent()) {
+        VarManager::FillEventMCMatch(event, event.reducedMCevent(), dqefficiency_helpers::varValues());
+      }
+
       auto groupedLegAAssocs = legACandidateAssocs.sliceBy(preslice, event.globalIndex());
       if (groupedLegAAssocs.size() == 0) {
         continue;
@@ -4226,6 +4231,10 @@ struct AnalysisAsymmetricPairing {
       // Reset the fValues array
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event, dqefficiency_helpers::varValues());
+
+      if (event.has_reducedMCevent()) {
+        VarManager::FillEventMCMatch(event, event.reducedMCevent(), dqefficiency_helpers::varValues());
+      }
 
       auto groupedLegAAssocs = legACandidateAssocs.sliceBy(preslice, event.globalIndex());
       if (groupedLegAAssocs.size() == 0) {
