@@ -143,6 +143,9 @@ struct Lambdak0sflattenicity {
   // edges of the published binning. The 1-rho edges are meant to be the
   // percentile class boundaries measured by the processFlatDist* pass, so that
   // one class is exactly one bin and no rebinning happens downstream.
+  // The pT and 1-rho DEFAULTS are variable-width on purpose: hyperloop takes an
+  // axis's kind from the compiled-in default and refuses a variable-width edge
+  // list for an axis declared fixed-width.
   struct : ConfigurableGroup {
     std::string prefix = "binning";
     Configurable<int> nBinsVz{"nBinsVz", 100, "N bins in Vz"};
@@ -153,15 +156,15 @@ struct Lambdak0sflattenicity {
     Configurable<float> kK0sEPshiftfromMass{"kK0sEPshiftfromMass", 0.1, "distance of K0s Inv mass histogram start and end points from PDG mass"};
     Configurable<float> kLambdaEPshiftfromMass{"kLambdaEPshiftfromMass", 0.05, "distance of Lambda Inv mass histogram start and end points from PDG mass"};
     Configurable<float> kXiEPshiftfromMass{"kXiEPshiftfromMass", 0.05, "distance of Xi Inv mass histogram start and end points from PDG mass"};
-    ConfigurableAxis axisPtK0s{"axisPtK0s", {250, 0.0f, 25.0f}, "#it{p}_{T} of K0s"};
-    ConfigurableAxis axisPtLambda{"axisPtLambda", {250, 0.0f, 25.0f}, "#it{p}_{T} of Lambda and AntiLambda"};
-    ConfigurableAxis axisPtXi{"axisPtXi", {250, 0.0f, 25.0f}, "#it{p}_{T} of Xi"};
-    ConfigurableAxis axisPtCharged{"axisPtCharged", {250, 0.0f, 25.0f}, "#it{p}_{T} of charged particles"};
+    ConfigurableAxis axisPtK0s{"axisPtK0s", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.5, 7.0, 8.0, 9.0, 10.0, 12.0, 15.0, 20.0}, "#it{p}_{T} of K0s"};
+    ConfigurableAxis axisPtLambda{"axisPtLambda", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3, 3.6, 3.9, 4.2, 4.6, 5.0, 5.4, 5.9, 6.5, 7.0, 8.0, 9.0, 10.0, 12.0, 15.0, 20.0}, "#it{p}_{T} of Lambda and AntiLambda"};
+    ConfigurableAxis axisPtXi{"axisPtXi", {VARIABLE_WIDTH, 0.0, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.4, 2.8, 3.2, 3.6, 4.0, 5.0, 6.5, 8.0, 10.0, 12.0}, "#it{p}_{T} of Xi"};
+    ConfigurableAxis axisPtCharged{"axisPtCharged", {VARIABLE_WIDTH, 0.0, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0}, "#it{p}_{T} of charged particles"};
     ConfigurableAxis axisPtPid{"axisPtPid", {250, 0.0f, 25.0f}, "#it{p}_{TPC} of the daughter tracks"};
-    ConfigurableAxis axisFlat{"axisFlat", {100, 0.0f, 1.0f}, "1-#rho_{ch} of the spectra"};
+    ConfigurableAxis axisFlat{"axisFlat", {VARIABLE_WIDTH, 0.0, 0.83, 0.86, 0.88, 0.9, 1.0}, "1-#rho_{ch} of the spectra"};
     // detector effects move the percentiles, so the closure denominator needs
     // its own class edges, taken from hFlatDistGen
-    ConfigurableAxis axisFlatTrue{"axisFlatTrue", {100, 0.0f, 1.0f}, "true 1-#rho_{ch}"};
+    ConfigurableAxis axisFlatTrue{"axisFlatTrue", {VARIABLE_WIDTH, 0.0, 0.83, 0.86, 0.88, 0.9, 1.0}, "true 1-#rho_{ch}"};
     ConfigurableAxis axisFlatFine{"axisFlatFine", {2000, 0.0f, 1.0f}, "1-#rho_{ch} used to locate the percentiles"};
     ConfigurableAxis axisCent{"axisCent", {100, 0.0f, 100.0f}, "FT0M percentile"};
     ConfigurableAxis axisNch{"axisNch", {150, -0.5f, 149.5f}, "N_{ch} in the tracking acceptance"};
