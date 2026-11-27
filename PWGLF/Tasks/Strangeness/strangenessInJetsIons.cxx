@@ -113,7 +113,7 @@ struct StrangenessInJetsIons {
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryDataMB{"registryDataMB", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryMC{"registryMC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  // HistogramRegistry registryQC{"registryQC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registryQA{"registryQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Global analysis parameters
   // List of Particles
@@ -157,6 +157,7 @@ struct StrangenessInJetsIons {
   Configurable<bool> doPlotRho{"doPlotRho", false, "Plot rho distributions computed with perpendicular cone and area median method."};
   Configurable<bool> doRandomConeSys{"doRandomConeSys", false, "Study particle contribution outside jets using random cones with same pseudorapidity and phi generated in [pi/3, 2*pi/3]."};
   Configurable<bool> saveChargedParticleMB{"saveChargedParticleMB", false, "Store charged particle information to build inclusive spectra."};
+  Configurable<bool> enableQA{"enableQA", false, "Enable QA plots."};
 
   // Event selection
   Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", true, "Require kNoSameBunchPileup selection"};
@@ -226,6 +227,11 @@ struct StrangenessInJetsIons {
     Configurable<double> dcaNegToPVminV0{"dcaNegToPVminV0", 0.1f, "Minimum DCA of V0 negative track to primary vertex in cascades (cm)"};
     Configurable<double> v0cospaMinCasc{"v0cospaMinCasc", 0.99f, "Minimum V0 cosine of pointing angle for cascade analysis"};
     Configurable<float> casccospaMin{"casccospaMin", 0.99f, "Minimum cascade cosine of pointing angle"};
+    Configurable<float> bachBaryonCosPA{"bachBaryonCosPA", 0.9999f, "Maximum cosine of pointing angle of the bachelor-baryon pair: candidates above are rejected (Lambda contamination). Values <=0 disable this cut"};
+    Configurable<float> bachBaryonDCAxyToPV{"bachBaryonDCAxyToPV", 0.04f, "Minimum DCAxy to PV of the bachelor-baryon pair (cm): candidates below are rejected (Lambda contamination). Values <=0 disable this cut"};
+    Configurable<float> ctauXi{"ctauXi", 25.0f, "C tau Xi (cm). Values <=0 disable this cut"};
+    Configurable<float> ctauOmega{"ctauOmega", 15.0f, "C tau Omega (cm). Values <=0 disable this cut"};
+    Configurable<float> ctauLambdaCasc{"ctauLambdaCasc", 30.0f, "C tau Lambda from cascade decay (cm). Values <=0 disable this cut"};
 
     Configurable<float> deltaMassXi{"deltaMassXi", 0.008f, "[Omega] Mass window for Xi rejection"};
     Configurable<float> deltaMassOmega{"deltaMassOmega", 0.008f, "[Xi] Mass window for Omega rejection"};
@@ -315,7 +321,15 @@ struct StrangenessInJetsIons {
     // ---
 
     // Histograms for checks
-    // registryQC.add("V0_type", "V0_type", HistType::kTH1F, {{10, -0.5, 9.5, "V0 type"}});
+    if (enableQA && doprocessData) {
+      // registryQA.add("V0_type", "V0_type", HistType::kTH1F, {{10, -0.5, 9.5, "V0 type"}});
+      const AxisSpec ctauXiAxis{500, 0.0, 100.0, "c#tau_{#Xi} (cm)"};
+      const AxisSpec ctauOmegaAxis{500, 0.0, 100.0, "c#tau_{#Omega} (cm)"};
+      registryQA.add("Xi_ctau_jet", "Xi_ctau_jet", HistType::kTH2F, {ctauXiAxis, invMassXiAxis});
+      registryQA.add("Xi_ctau_ue", "Xi_ctau_ue", HistType::kTH2F, {ctauXiAxis, invMassXiAxis});
+      registryQA.add("Omega_ctau_jet", "Omega_ctau_jet", HistType::kTH2F, {ctauOmegaAxis, invMassOmegaAxis});
+      registryQA.add("Omega_ctau_ue", "Omega_ctau_ue", HistType::kTH2F, {ctauOmegaAxis, invMassOmegaAxis});
+    }
 
     // Histograms for real data
     if (doprocessData) {
@@ -349,7 +363,7 @@ struct StrangenessInJetsIons {
         registryData.add("rho_median", "rho_median", HistType::kTH2F, {multAxis, rhoAxis});
       }
       // Armenteros-Podolanski plot
-      // registryQC.add("ArmenterosPreSel_DATA", "ArmenterosPreSel_DATA", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
+      // registryQA.add("ArmenterosPreSel_DATA", "ArmenterosPreSel_DATA", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
 
       // Histograms for analysis of strange hadrons
       if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
@@ -555,7 +569,7 @@ struct StrangenessInJetsIons {
       registryMC.add("h2_centrality_rhoPerp_rec", "h2_centrality_rhoPerp_rec", HistType::kTH2F, {multAxis, rhoAxis});
 
       // Armenteros-Podolanski plot
-      // registryQC.add("ArmenterosPreSel_REC", "ArmenterosPreSel_REC", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
+      // registryQA.add("ArmenterosPreSel_REC", "ArmenterosPreSel_REC", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
 
       // Histograms for analysis
       if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
@@ -788,6 +802,23 @@ struct StrangenessInJetsIons {
   double GetEnergy(double px, double py, double pz, double mass)
   {
     return std::sqrt(px * px + py * py + pz * pz + mass * mass);
+  }
+
+  // Proper decay length m*L/p of a cascade (cm), with L = distance between PV and cascade decay vertex
+  template <typename Casc, typename Coll>
+  float cascadeProperDecayLength(const Casc& casc, const Coll& coll, float mass)
+  {
+    const float decayLength = std::hypot(casc.x() - coll.posX(), casc.y() - coll.posY(), casc.z() - coll.posZ());
+    return mass * decayLength / (casc.p() + 1e-10f);
+  }
+
+  // Proper decay length m*L/p of the Lambda from a cascade (cm), with L = distance between cascade and Lambda decay vertices
+  template <typename Casc>
+  float lambdaFromCascadeProperDecayLength(const Casc& casc)
+  {
+    const float decayLength = std::hypot(casc.xlambda() - casc.x(), casc.ylambda() - casc.y(), casc.zlambda() - casc.z());
+    const float lambdaMomentum = std::hypot(casc.pxlambda(), casc.pylambda(), casc.pzlambda());
+    return o2::constants::physics::MassLambda0 * decayLength / (lambdaMomentum + 1e-10f);
   }
 
   // Check if particle is a physical primary or a decay product of a heavy-flavor hadron
@@ -1032,7 +1063,7 @@ struct StrangenessInJetsIons {
     if (std::fabs(v0.dcanegtopv()) < configV0.dcaPionToPVmin)
       return false;
     // if (v0.v0Type() != configV0.v0type && configV0.requireV0type) {
-    //   registryQC.fill(HIST("V0_type"), v0.v0Type());
+    //   registryQA.fill(HIST("V0_type"), v0.v0Type());
     //   return false;
     // }
 
@@ -1093,7 +1124,7 @@ struct StrangenessInJetsIons {
     if (std::fabs(v0.dcanegtopv()) < configV0.dcaProtonToPVmin)
       return false;
     // if (v0.v0Type() != configV0.v0type && configV0.requireV0type) {
-    //   registryQC.fill(HIST("V0_type"), v0.v0Type());
+    //   registryQA.fill(HIST("V0_type"), v0.v0Type());
     //   return false;
     // }
 
@@ -1159,7 +1190,7 @@ struct StrangenessInJetsIons {
       return false;
 
     // if (v0.v0Type() != configV0.v0type && configV0.requireV0type) {
-    //   registryQC.fill(HIST("V0_type"), v0.v0Type());
+    //   registryQA.fill(HIST("V0_type"), v0.v0Type());
     //   return false;
     // }
 
@@ -1274,6 +1305,9 @@ struct StrangenessInJetsIons {
       return false;
     if (std::fabs(casc.dcanegtopv()) < configCasc.dcaNegToPVminV0)
       return false;
+    // ctau selection of the Lambda from the cascade decay
+    if (configCasc.ctauLambdaCasc > 0 && lambdaFromCascadeProperDecayLength(casc) > configCasc.ctauLambdaCasc)
+      return false;
 
     // Cascade selections
     // if (casc.cascradius() < configCasc.minimumCascRadius || casc.cascradius() > configCasc.maximumCascRadius)
@@ -1286,6 +1320,17 @@ struct StrangenessInJetsIons {
     if (std::fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) < configCasc.dcaV0topvMin)
       return false;
     if (std::fabs(casc.dcacascdaughters()) > configCasc.dcaCascDaughtersMax)
+      return false;
+    // ctau selection
+    if (configCasc.ctauXi > 0) {
+      if (cascadeProperDecayLength(casc, coll, o2::constants::physics::MassXiMinus) > configCasc.ctauXi)
+        return false;
+    }
+
+    // Bachelor-baryon pair compatible with a primary Lambda: reject
+    if (configCasc.bachBaryonCosPA > 0 && casc.bachBaryonCosPA() > configCasc.bachBaryonCosPA)
+      return false;
+    if (configCasc.bachBaryonDCAxyToPV > 0 && std::fabs(casc.bachBaryonDCAxyToPV()) < configCasc.bachBaryonDCAxyToPV)
       return false;
 
     // PID selection on bachelor
@@ -1390,6 +1435,9 @@ struct StrangenessInJetsIons {
       return false;
     if (std::fabs(casc.dcanegtopv()) < configCasc.dcaNegToPVminV0)
       return false;
+    // ctau selection of the Lambda from the cascade decay
+    if (configCasc.ctauLambdaCasc > 0 && lambdaFromCascadeProperDecayLength(casc) > configCasc.ctauLambdaCasc)
+      return false;
 
     // Cascade selections
     // if (casc.cascradius() < configCasc.minimumCascRadius || casc.cascradius() > configCasc.maximumCascRadius)
@@ -1402,6 +1450,17 @@ struct StrangenessInJetsIons {
     if (std::fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) < configCasc.dcaV0topvMin)
       return false;
     if (std::fabs(casc.dcacascdaughters()) > configCasc.dcaCascDaughtersMax)
+      return false;
+    // ctau selection
+    if (configCasc.ctauOmega > 0) {
+      if (cascadeProperDecayLength(casc, coll, o2::constants::physics::MassOmegaMinus) > configCasc.ctauOmega)
+        return false;
+    }
+
+    // Bachelor-baryon pair compatible with a primary Lambda: reject
+    if (configCasc.bachBaryonCosPA > 0 && casc.bachBaryonCosPA() > configCasc.bachBaryonCosPA)
+      return false;
+    if (configCasc.bachBaryonDCAxyToPV > 0 && std::fabs(casc.bachBaryonDCAxyToPV()) < configCasc.bachBaryonDCAxyToPV)
       return false;
 
     // PID selection on bachelor
@@ -2562,7 +2621,7 @@ struct StrangenessInJetsIons {
           }
 
           // Fill Armenteros-Podolanski TH2
-          // registryQC.fill(HIST("ArmenterosPreSel_DATA"), v0.alpha(), v0.qtarm());
+          // registryQA.fill(HIST("ArmenterosPreSel_DATA"), v0.alpha(), v0.qtarm());
 
           // K0s
           if (passedK0ShortSelection(v0, pos, neg, vtxPos)) {
@@ -2630,11 +2689,16 @@ struct StrangenessInJetsIons {
 
           // Xi+
           if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
+            const float ctauXi = enableQA ? cascadeProperDecayLength(casc, collision, o2::constants::physics::MassXiMinus) : 0.f;
             if (deltaRjet < rJet) {
               registryData.fill(HIST("XiPos_in_jet"), multiplicity, casc.pt(), casc.mXi());
+              if (enableQA)
+                registryQA.fill(HIST("Xi_ctau_jet"), ctauXi, casc.mXi());
             }
             if (deltaRue1 < rJet || deltaRue2 < rJet) {
               registryData.fill(HIST("XiPos_in_ue"), multiplicity, casc.pt(), casc.mXi());
+              if (enableQA)
+                registryQA.fill(HIST("Xi_ctau_ue"), ctauXi, casc.mXi());
             }
             if (doRandomConeSys && isInRC) {
               registryData.fill(HIST("XiPos_in_rc"), multiplicity, casc.pt(), casc.mXi());
@@ -2642,11 +2706,16 @@ struct StrangenessInJetsIons {
           }
           // Xi-
           if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
+            const float ctauXi = enableQA ? cascadeProperDecayLength(casc, collision, o2::constants::physics::MassXiMinus) : 0.f;
             if (deltaRjet < rJet) {
               registryData.fill(HIST("XiNeg_in_jet"), multiplicity, casc.pt(), casc.mXi());
+              if (enableQA)
+                registryQA.fill(HIST("Xi_ctau_jet"), ctauXi, casc.mXi());
             }
             if (deltaRue1 < rJet || deltaRue2 < rJet) {
               registryData.fill(HIST("XiNeg_in_ue"), multiplicity, casc.pt(), casc.mXi());
+              if (enableQA)
+                registryQA.fill(HIST("Xi_ctau_ue"), ctauXi, casc.mXi());
             }
             if (doRandomConeSys && isInRC) {
               registryData.fill(HIST("XiNeg_in_rc"), multiplicity, casc.pt(), casc.mXi());
@@ -2654,11 +2723,16 @@ struct StrangenessInJetsIons {
           }
           // Omega+
           if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
+            const float ctauOmega = enableQA ? cascadeProperDecayLength(casc, collision, o2::constants::physics::MassOmegaMinus) : 0.f;
             if (deltaRjet < rJet) {
               registryData.fill(HIST("OmegaPos_in_jet"), multiplicity, casc.pt(), casc.mOmega());
+              if (enableQA)
+                registryQA.fill(HIST("Omega_ctau_jet"), ctauOmega, casc.mOmega());
             }
             if (deltaRue1 < rJet || deltaRue2 < rJet) {
               registryData.fill(HIST("OmegaPos_in_ue"), multiplicity, casc.pt(), casc.mOmega());
+              if (enableQA)
+                registryQA.fill(HIST("Omega_ctau_ue"), ctauOmega, casc.mOmega());
             }
             if (doRandomConeSys && isInRC) {
               registryData.fill(HIST("OmegaPos_in_rc"), multiplicity, casc.pt(), casc.mOmega());
@@ -2666,11 +2740,16 @@ struct StrangenessInJetsIons {
           }
           // Omega-
           if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
+            const float ctauOmega = enableQA ? cascadeProperDecayLength(casc, collision, o2::constants::physics::MassOmegaMinus) : 0.f;
             if (deltaRjet < rJet) {
               registryData.fill(HIST("OmegaNeg_in_jet"), multiplicity, casc.pt(), casc.mOmega());
+              if (enableQA)
+                registryQA.fill(HIST("Omega_ctau_jet"), ctauOmega, casc.mOmega());
             }
             if (deltaRue1 < rJet || deltaRue2 < rJet) {
               registryData.fill(HIST("OmegaNeg_in_ue"), multiplicity, casc.pt(), casc.mOmega());
+              if (enableQA)
+                registryQA.fill(HIST("Omega_ctau_ue"), ctauOmega, casc.mOmega());
             }
             if (doRandomConeSys && isInRC) {
               registryData.fill(HIST("OmegaNeg_in_rc"), multiplicity, casc.pt(), casc.mOmega());
@@ -3519,7 +3598,7 @@ struct StrangenessInJetsIons {
             }
 
             // Fill Armenteros-Podolanski TH2
-            // registryQC.fill(HIST("ArmenterosPreSel_REC"), v0.alpha(), v0.qtarm());
+            // registryQA.fill(HIST("ArmenterosPreSel_REC"), v0.alpha(), v0.qtarm());
 
             // K0s
             if (passedK0ShortSelection(v0, pos, neg, vtxPos) && pdgParent == kK0Short && isPhysPrim) {
