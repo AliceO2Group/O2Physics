@@ -2848,7 +2848,7 @@ struct AnalysisDileptonTrack {
     VarManager::FillEvent<TEventFillMap>(event, fValuesHadron);
     VarManager::FillEvent<TEventFillMap>(event, fValuesDilepton);
     if (event.has_mcCollision()) {
-      auto mcEvent = event.mcCollisions();
+      auto mcEvent = event.mcCollision();
       VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(mcEvent, fValuesHadron);
       VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(mcEvent, fValuesDilepton);
 

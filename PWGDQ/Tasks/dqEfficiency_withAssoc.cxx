@@ -492,6 +492,7 @@ struct AnalysisEventSelection {
       VarManager::FillEvent<TEventFillMap>(event);
       if (event.has_reducedMCevent()) {
         VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent());
+        VarManager::FillEventMCMatch(event, event.reducedMCevent());
       }
 
       bool decision = false;
@@ -818,6 +819,7 @@ struct AnalysisTrackSelection {
       VarManager::FillEvent<TEventFillMap>(event);
       if (event.has_reducedMCevent()) {
         VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent());
+        VarManager::FillEventMCMatch(event, event.reducedMCevent());
       }
 
       auto track = assoc.template reducedtrack_as<TTracks>();
@@ -2377,6 +2379,7 @@ struct AnalysisSameEventPairing {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<gkEventFillMap>(event, dqefficiency_helpers::varValues());
       VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent(), dqefficiency_helpers::varValues());
+      VarManager::FillEventMCMatch(event, event.reducedMCevent(), dqefficiency_helpers::varValues());
 
       auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
       if (groupedAssocs.size() == 0) {

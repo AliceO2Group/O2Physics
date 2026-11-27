@@ -1528,7 +1528,7 @@ class VarManager : public TObject
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
   template <typename T1, typename T2>
-  static void FillEventMCMatch(T1 const& collision, T2 const& mcCollision, float* values);
+  static void FillEventMCMatch(T1 const& collision, T2 const& mcCollision, float* values = nullptr);
   template <typename T>
   static void FillEventTracks(T const& tracks, float* values = nullptr);
   template <typename T>
