@@ -118,13 +118,7 @@ enum class D0CandFlag : uint8_t {
 
 struct HfProducerCharmHadronsTrackFemtoDream {
 
-  enum TrackCharge {
-    PositiveCharge = 1,
-    NegativeCharge = -1
-  };
-
   static constexpr float SigmacDeltaMassMin = 0.135f; // Broad retention threshold below the physical DeltaM limit.
-
   struct : ProducesGroup {
     Produces<aod::FDCollisions> outputCollision;
     Produces<aod::FDColMasks> rowMasks;
@@ -259,7 +253,6 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   using FemtoFullCollision = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
   using FemtoFullCollisionMc = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
   using FemtoMcgenCollisions = soa::Join<aod::McCollisions, o2::aod::MultsExtraMC>;
-  using FemtoMcgenCollision = FemtoMcgenCollisions::iterator;
   using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
   using FemtoHFTrack = FemtoHFTracks::iterator;
   using FemtoHFMcTracks = soa::Join<aod::McTrackLabels, FemtoHFTracks>;
@@ -291,8 +284,10 @@ struct HfProducerCharmHadronsTrackFemtoDream {
                                       doprocessDataDstarToD0Pi, doprocessMcDstarToD0Pi, doprocessDataDstarToD0PiWithML, doprocessMcDstarToD0PiWithML, doprocessMcDstarToD0PiGen,
                                       doprocessDataXicToXiPiPi, doprocessDataXicToXiPiPiKf, doprocessDataXicToXiPiPiWithML, doprocessDataXicToXiPiPiWithMLKf,
                                       doprocessMcXicToXiPiPi, doprocessMcXicToXiPiPiKf, doprocessMcXicToXiPiPiWithML, doprocessMcXicToXiPiPiWithMLKf, doprocessMcXicToXiPiPiGen};
-    if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
-      LOGP(fatal, "One and only one process function must be enabled at a time.");
+    const int nProcesses = std::accumulate(processes.begin(), processes.end(), 0);
+    if (nProcesses != 1 && !(nProcesses == 2 && ((doprocessMcDstarToD0PiGen && (doprocessMcDstarToD0Pi || doprocessMcDstarToD0PiWithML)) ||
+                                                 (doprocessMcDplusToPiKPiGen && (doprocessMcDplusToPiKPi || doprocessMcDplusToPiKPiWithML))))) {
+      LOGP(fatal, "Enable one process, or corresponding reconstructed and generated MC processes together.");
     }
 
     if ((doprocessDataScToLcPi || doprocessDataScToLcPiWithML || doprocessMcScToLcPi || doprocessMcScToLcPiWithML) &&
@@ -591,7 +586,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     if (col.has_mcCollision()) {
       // auto genMCcol = col.template mcCollision_as<FemtoMcgenCollisions>();
       // tables.outputMcCollision(genMCcol.multMCNParticlesEta08());
-      tables.outputCollsMcLabels(tables.outputMcCollision.lastIndex());
+      tables.outputCollsMcLabels((doprocessMcDstarToD0PiGen || doprocessMcDplusToPiKPiGen) ? -1 : tables.outputMcCollision.lastIndex());
     } else {
       tables.outputCollsMcLabels(-1);
     }
@@ -1134,96 +1129,70 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     // Filling particle properties
     tables.rowCandCharmHadGen.reserve(particles.size() + 1);
     if constexpr (Channel == DecayChannel::DplusToPiKPi) {
-      constexpr int InvalidMcIndex = -1;
-      const int64_t timeStamp = -1; // No need for Gen process.
-      const float bdtScore = -1.f;  // No need for Gen particles.
-      const float dcaXY = 999.f;    // No need for Gen particles.
-      const float sphericity = 2.f; // Not computed.
-      const aod::femtodreamparticle::cutContainerType bitPos = 1u << 1;
-      const aod::femtodreamparticle::cutContainerType bitNeg = 1u << 0;
-      std::vector<int> daughterIds;
-      std::vector<int> const childIds = {InvalidMcIndex, InvalidMcIndex};
       for (const auto& col : *collisions) {
-        qaRegistry.fill(HIST("hEventQA"), 1 + Event::All);
         if (col.posZ() < hfEvSel.zPvPosMin || col.posZ() > hfEvSel.zPvPosMax) {
-          qaRegistry.fill(HIST("hEventQA"), 1 + Event::RejEveSel);
           continue;
         }
         auto groupedMCParticles = particles.sliceBy(perMcCollision, col.globalIndex());
-        // MC provides particle multiplicity, but no reconstructed centrality or magnetic field.
-        const float multiplicityPercentile = 0.f;
-        const float magneticField = 0.f;
-        tables.outputCollision(col.posZ(), multiplicityPercentile, col.multMCNParticlesEta08(), sphericity, magneticField);
-        tables.outputMcCollision(col.multMCNParticlesEta08());
-        tables.outputCollsMcLabels(tables.outputMcCollision.lastIndex());
-
-        bool isTrackFilled = false;
-        bool isCharmFilled = false;
         for (const auto& particle : groupedMCParticles) {
-          if (std::abs(particle.pdgCode()) != o2::constants::physics::Pdg::kDPlus ||
-              std::abs(particle.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi ||
-              !particle.producedByGenerator()) {
+          if (!particle.producedByGenerator()) {
             continue;
           }
-          daughterIds.clear();
-          RecoDecay::getDaughters(particle, &daughterIds, std::array<int, 2>{kPiPlus, kKPlus});
-          int prong0Id = InvalidMcIndex;
-          int prong1Id = InvalidMcIndex;
-          int prong2Id = InvalidMcIndex;
-          for (const auto& daughterId : daughterIds) {
-            const auto daughter = particles.rawIteratorAt(daughterId);
-            if (std::abs(daughter.pdgCode()) == kKPlus) {
-              prong1Id = daughter.globalIndex();
-            } else if (std::abs(daughter.pdgCode()) == kPiPlus) {
-              if (prong0Id == InvalidMcIndex) {
-                prong0Id = daughter.globalIndex();
-              } else {
-                prong2Id = daughter.globalIndex();
-              }
+          if (std::abs(particle.pdgCode()) == std::abs(trackCfg.trkPDGCode.value) && particle.isPhysicalPrimary()) {
+            tables.outputPartsMc(aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary, particle.pdgCode(), particle.pt(), particle.eta(), particle.phi());
+            constexpr int8_t FlagMcGenTrack = 0; // Mark generated tracks in FDHfCandMCGen (charm hadrons have non-zero decay flag).
+            tables.rowCandCharmHadGen(tables.outputPartsMc.lastIndex(), FlagMcGenTrack, RecoDecay::OriginType::Prompt);
+            tables.outputMcCollision(col.globalIndex());
+            if (generalCfg.isDebug) {
+              tables.outputDebugPartsMc(-1); // No reconstructed mother information is used for Gen pairing.
             }
           }
-          const auto prong0 = particles.rawIteratorAt(prong0Id);
-          const auto prong1 = particles.rawIteratorAt(prong1Id);
-          const auto prong2 = particles.rawIteratorAt(prong2Id);
-          tables.rowCandCharm3Prong(tables.outputCollision.lastIndex(), timeStamp,
-                                    particle.pdgCode() > 0 ? PositiveCharge : NegativeCharge,
-                                    prong0Id, prong1Id, prong2Id,
-                                    prong0.pt(), prong1.pt(), prong2.pt(),
-                                    prong0.eta(), prong1.eta(), prong2.eta(),
-                                    prong0.phi(), prong1.phi(), prong2.phi(),
-                                    true, bdtScore, bdtScore, bdtScore);
+          if (std::abs(particle.pdgCode()) != o2::constants::physics::Pdg::kDPlus || std::abs(particle.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
+            continue;
+          }
           const auto particleOrigin = particle.originMcGen() == RecoDecay::OriginType::Prompt
                                         ? aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary
                                         : aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryFromHF;
           tables.outputPartsMc(particleOrigin, particle.pdgCode(), particle.pt(), particle.eta(), particle.phi());
           tables.rowCandCharmHadGen(tables.outputPartsMc.lastIndex(), particle.flagMcMatchGen(), particle.originMcGen());
-          tables.rowCandMcCharmHad(particle.flagMcMatchGen(), particle.originMcGen());
-          tables.outputPartsMcLabels(tables.outputPartsMc.lastIndex());
-          isCharmFilled = true;
-        }
-        for (const auto& particle : groupedMCParticles) {
-          if (std::abs(particle.pdgCode()) == std::abs(trackCfg.trkPDGCode.value) && particle.isPhysicalPrimary() && particle.producedByGenerator()) {
-            tables.outputPartsIndex(particle.globalIndex());
-            tables.outputPartsTime(timeStamp);
-            // Store the PDG code instead of detector PID bits, as in the femto truth producer.
-            tables.outputParts(tables.outputCollision.lastIndex(),
-                               particle.pt(), particle.eta(), particle.phi(),
-                               aod::femtodreamparticle::ParticleType::kTrack,
-                               particle.pdgCode() > 0 ? bitPos : bitNeg,
-                               std::abs(particle.pdgCode()), dcaXY, childIds, 0.f, 0.f);
-            isTrackFilled = true;
+          tables.outputMcCollision(col.globalIndex());
+          if (generalCfg.isDebug) {
+            tables.outputDebugPartsMc(-1); // No reconstructed mother information is used for Gen pairing.
           }
         }
-        if (isTrackFilled) {
-          qaRegistry.fill(HIST("hEventQA"), 1 + Event::TrackSelected);
+      }
+    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+      for (const auto& col : *collisions) {
+        if (col.posZ() < hfEvSel.zPvPosMin || col.posZ() > hfEvSel.zPvPosMax) {
+          continue;
         }
-        if (isCharmFilled) {
-          qaRegistry.fill(HIST("hEventQA"), 1 + Event::CharmSelected);
+        auto groupedMCParticles = particles.sliceBy(perMcCollision, col.globalIndex());
+        for (const auto& particle : groupedMCParticles) {
+          if (!particle.producedByGenerator()) {
+            continue;
+          }
+          if (std::abs(particle.pdgCode()) == std::abs(trackCfg.trkPDGCode.value) && particle.isPhysicalPrimary()) {
+            tables.outputPartsMc(aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary, particle.pdgCode(), particle.pt(), particle.eta(), particle.phi());
+            constexpr int8_t FlagMcGenTrack = 0; // Mark generated tracks in FDHfCandMCGen (charm hadrons have non-zero decay flag).
+            tables.rowCandCharmHadGen(tables.outputPartsMc.lastIndex(), FlagMcGenTrack, RecoDecay::OriginType::Prompt);
+            tables.outputMcCollision(col.globalIndex());
+            if (generalCfg.isDebug) {
+              tables.outputDebugPartsMc(-1); // No reconstructed mother information is used for Gen pairing.
+            }
+          }
+          if (std::abs(particle.pdgCode()) != o2::constants::physics::Pdg::kDStar || std::abs(particle.flagMcMatchGen()) != hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) {
+            continue;
+          }
+          const auto particleOrigin = particle.originMcGen() == RecoDecay::OriginType::Prompt
+                                        ? aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary
+                                        : aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryFromHF;
+          tables.outputPartsMc(particleOrigin, particle.pdgCode(), particle.pt(), particle.eta(), particle.phi());
+          tables.rowCandCharmHadGen(tables.outputPartsMc.lastIndex(), particle.flagMcMatchGen(), particle.originMcGen());
+          tables.outputMcCollision(col.globalIndex());
+          if (generalCfg.isDebug) {
+            tables.outputDebugPartsMc(-1); // No reconstructed mother information is used for Gen pairing.
+          }
         }
-        if (isTrackFilled && isCharmFilled) {
-          qaRegistry.fill(HIST("hEventQA"), 1 + Event::PairSelected);
-        }
-        tables.rowMasks(isTrackFilled, isCharmFilled, false);
       }
     } else if constexpr (Channel == DecayChannel::LcToPKPi) {
       for (const auto& particle : particles) {
@@ -1242,101 +1211,6 @@ struct HfProducerCharmHadronsTrackFemtoDream {
             particle.flagMcMatchGen(),
             particle.originMcGen());
         }
-      }
-    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
-      constexpr int InvalidMcIndex = -1;
-      const int64_t timeStamp = -1; // No need for Gen process.
-      const float bdtScore = -1.f;  // No need for Gen particles.
-      const float dcaXY = 999.f;    // No need for Gen particles.
-      const float sphericity = 2.f; // Not computed.
-      const aod::femtodreamparticle::cutContainerType bitPos = 1u << 1;
-      const aod::femtodreamparticle::cutContainerType bitNeg = 1u << 0;
-      std::vector<int> daughterIds;
-      std::vector<int> const childIds = {InvalidMcIndex, InvalidMcIndex};
-      for (const auto& col : *collisions) {
-        qaRegistry.fill(HIST("hEventQA"), 1 + Event::All);
-        if (col.posZ() < hfEvSel.zPvPosMin || col.posZ() > hfEvSel.zPvPosMax) {
-          qaRegistry.fill(HIST("hEventQA"), 1 + Event::RejEveSel);
-          continue;
-        }
-        auto groupedMCParticles = particles.sliceBy(perMcCollision, col.globalIndex());
-        // MC provides particle multiplicity, but no reconstructed centrality or magnetic field.
-        const float multiplicityPercentile = 0.f;
-        const float magneticField = 0.f;
-        tables.outputCollision(col.posZ(), multiplicityPercentile, col.multMCNParticlesEta08(), sphericity, magneticField);
-        tables.outputMcCollision(col.multMCNParticlesEta08());
-        tables.outputCollsMcLabels(tables.outputMcCollision.lastIndex());
-
-        bool isTrackFilled = false;
-        bool isCharmFilled = false;
-        for (const auto& particle : groupedMCParticles) {
-          if (std::abs(particle.pdgCode()) != o2::constants::physics::Pdg::kDStar ||
-              std::abs(particle.flagMcMatchGen()) != hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi ||
-              !particle.producedByGenerator()) {
-            continue;
-          }
-          daughterIds.clear();
-          RecoDecay::getDaughters(particle, &daughterIds, std::array<int, 2>{kPiPlus, kKPlus});
-          int prongPosId = InvalidMcIndex;
-          int prongNegId = InvalidMcIndex;
-          int softPionId = InvalidMcIndex;
-          for (const auto& daughterId : daughterIds) {
-            const auto daughter = particles.rawIteratorAt(daughterId);
-            if (std::abs(daughter.pdgCode()) != kPiPlus && std::abs(daughter.pdgCode()) != kKPlus) {
-              continue;
-            }
-            const auto mother = daughter.template mothers_first_as<ParticleType>();
-            if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kDStar) {
-              softPionId = daughter.globalIndex();
-            } else if (daughter.pdgCode() > 0) {
-              prongPosId = daughter.globalIndex();
-            } else {
-              prongNegId = daughter.globalIndex();
-            }
-          }
-          const auto prongPos = particles.rawIteratorAt(prongPosId);
-          const auto prongNeg = particles.rawIteratorAt(prongNegId);
-          const auto softPion = particles.rawIteratorAt(softPionId);
-          // The existing pair-mass helper selects the pion/kaon hypothesis with candidateSelFlag == 1.
-          tables.rowCandCharmDstar(tables.outputCollision.lastIndex(), timeStamp,
-                                   particle.pdgCode() > 0 ? PositiveCharge : NegativeCharge,
-                                   prongPosId, prongNegId, softPionId,
-                                   prongPos.pt(), prongNeg.pt(), softPion.pt(),
-                                   prongPos.eta(), prongNeg.eta(), softPion.eta(),
-                                   prongPos.phi(), prongNeg.phi(), softPion.phi(),
-                                   particle.pdgCode() > 0, bdtScore, bdtScore, bdtScore);
-          const auto particleOrigin = particle.originMcGen() == RecoDecay::OriginType::Prompt
-                                        ? aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary
-                                        : aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryFromHF;
-          tables.outputPartsMc(particleOrigin, particle.pdgCode(), particle.pt(), particle.eta(), particle.phi());
-          tables.rowCandCharmHadGen(tables.outputPartsMc.lastIndex(), particle.flagMcMatchGen(), particle.originMcGen());
-          tables.rowCandMcCharmHad(particle.flagMcMatchGen(), particle.originMcGen());
-          tables.outputPartsMcLabels(tables.outputPartsMc.lastIndex());
-          isCharmFilled = true;
-        }
-        for (const auto& particle : groupedMCParticles) {
-          if (std::abs(particle.pdgCode()) == std::abs(trackCfg.trkPDGCode.value) && particle.isPhysicalPrimary() && particle.producedByGenerator()) {
-            tables.outputPartsIndex(particle.globalIndex());
-            tables.outputPartsTime(timeStamp);
-            // Store the PDG code instead of detector PID bits, as in the femto truth producer.
-            tables.outputParts(tables.outputCollision.lastIndex(),
-                               particle.pt(), particle.eta(), particle.phi(),
-                               aod::femtodreamparticle::ParticleType::kTrack,
-                               particle.pdgCode() > 0 ? bitPos : bitNeg,
-                               std::abs(particle.pdgCode()), dcaXY, childIds, 0.f, 0.f);
-            isTrackFilled = true;
-          }
-        }
-        if (isTrackFilled) {
-          qaRegistry.fill(HIST("hEventQA"), 1 + Event::TrackSelected);
-        }
-        if (isCharmFilled) {
-          qaRegistry.fill(HIST("hEventQA"), 1 + Event::CharmSelected);
-        }
-        if (isTrackFilled && isCharmFilled) {
-          qaRegistry.fill(HIST("hEventQA"), 1 + Event::PairSelected);
-        }
-        tables.rowMasks(isTrackFilled, isCharmFilled, false);
       }
     }
   }
