@@ -63,6 +63,7 @@ using namespace o2::constants::physics;
 using namespace std;
 
 struct MeanPtFlucId {
+  Configurable<bool> cfgQAOnly{"cfgQAOnly", false, "Fill only QA and efficiency/purity histograms; skip moment matrices, subsamples and efficiency correction"};
   Configurable<bool> cfgSaveSubsamples{"cfgSaveSubsamples", true, "Save 30 matched reconstructed-event N1/N2 matrix subsamples"};
   Configurable<int> cfgSubsampleSeed{"cfgSubsampleSeed", 12345, "Fixed hash seed; MUST match across cut variations"};
   Configurable<int> nPBins{"nPBins", 300, ""};
@@ -174,13 +175,12 @@ struct MeanPtFlucId {
   // Separate registries keep each stream below the registry histogram limit.
   HistogramRegistry subsampleRaw{"subsampleRaw", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry subsampleCorrected{"subsampleCorrected", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry subsampleTruth{"subsampleTruth", {}, OutputObjHandlingPolicy::AnalysisObject};
   static constexpr int NSubsamples = 30;
   struct SubsampleMatrices {
     std::shared_ptr<TH2> n1;
     std::shared_ptr<TH3> n2;
   };
-  std::array<std::array<std::array<SubsampleMatrices, 4>, NSubsamples>, 3> subsampleMatrices;
+  std::array<std::array<std::array<SubsampleMatrices, 4>, NSubsamples>, 2> subsampleMatrices;
   int activeSubsample = -1;
 
   static uint64_t mixSubsampleKey(uint64_t x)
@@ -195,7 +195,7 @@ struct MeanPtFlucId {
   void selectSubsample(C const& col)
   {
     activeSubsample = -1;
-    if (!cfgSaveSubsamples) {
+    if (cfgQAOnly || !cfgSaveSubsamples) {
       return;
     }
     const auto bc = col.template bc_as<aod::BCs>();
@@ -310,12 +310,6 @@ struct MeanPtFlucId {
     "Corrected/Kaon/",
     "Corrected/Proton/"};
 
-  static constexpr std::array<std::string_view, 4> TruthMatchedCorrectedDirectories{
-    "CorrectedTruthMatched/Charged/",
-    "CorrectedTruthMatched/Pion/",
-    "CorrectedTruthMatched/Kaon/",
-    "CorrectedTruthMatched/Proton/"};
-
   struct TrackInfo {
     double pt;
   };
@@ -339,10 +333,6 @@ struct MeanPtFlucId {
   std::vector<WeightedTrackInfo> pionTracksCorrected;
   std::vector<WeightedTrackInfo> kaonTracksCorrected;
   std::vector<WeightedTrackInfo> protonTracksCorrected;
-  std::vector<WeightedTrackInfo> chargedTracksTruthMatchedCorrected;
-  std::vector<WeightedTrackInfo> pionTracksTruthMatchedCorrected;
-  std::vector<WeightedTrackInfo> kaonTracksTruthMatchedCorrected;
-  std::vector<WeightedTrackInfo> protonTracksTruthMatchedCorrected;
 
   // Reused event-wise storage for the factorial-moment matrices.
   std::vector<int> matrixNInBin;
@@ -424,7 +414,7 @@ struct MeanPtFlucId {
            static_cast<double>(pidConfig.cfgCutKaPtMin), static_cast<double>(pidConfig.cfgCutPrPtMin));
     }
 
-    if (cfgApplyEfficiencyCorrection && (doprocessRun3 || doprocessMCRecoSimRun3)) {
+    if (!cfgQAOnly && cfgApplyEfficiencyCorrection && (doprocessRun3 || doprocessMCRecoSimRun3)) {
       ccdb->setURL(cfgEfficiencyCCDBUrl.value);
       ccdb->setCaching(true);
       auto* efficiencyList = ccdb->getForTimeStamp<TList>(cfgEfficiencyCCDBPath.value, cfgEfficiencyTimestamp.value);
@@ -667,9 +657,11 @@ struct MeanPtFlucId {
       hist.add("Analysis/Proton/hN1Matrix", "Single-particle density", kTH2D, {{axisCent}, {axisPtPr}});
       hist.add("Analysis/Proton/hN2Matrix", "Ordered-pair density", kTH3D, {{axisCent}, {axisPtPr}, {axisPtPr}});
     };
-    addMatrixHistograms();
+    if (!cfgQAOnly) {
+      addMatrixHistograms();
+    }
 
-    if (cfgApplyEfficiencyCorrection) {
+    if (!cfgQAOnly && cfgApplyEfficiencyCorrection) {
       auto addCorrectedHistograms = [&](const std::string& directory, const AxisSpec& axisPtId) {
         hist.add(directory + "hN1Matrix", "Efficiency-corrected Single-particle density", kTH2D, {{axisCent}, {axisPtId}});
         hist.add(directory + "hN2Matrix", "Efficiency-corrected Ordered-pair density", kTH3D, {{axisCent}, {axisPtId}, {axisPtId}});
@@ -678,24 +670,16 @@ struct MeanPtFlucId {
       addCorrectedHistograms("Corrected/Pion/", axisPtPi);
       addCorrectedHistograms("Corrected/Kaon/", axisPtKa);
       addCorrectedHistograms("Corrected/Proton/", axisPtPr);
-      addCorrectedHistograms("CorrectedTruthMatched/Charged/", axisPtCh);
-      addCorrectedHistograms("CorrectedTruthMatched/Pion/", axisPtPi);
-      addCorrectedHistograms("CorrectedTruthMatched/Kaon/", axisPtKa);
-      addCorrectedHistograms("CorrectedTruthMatched/Proton/", axisPtPr);
     }
 
-    if (cfgSaveSubsamples && (doprocessRun3 || doprocessMCRecoSimRun3)) {
+    if (!cfgQAOnly && cfgSaveSubsamples && (doprocessRun3 || doprocessMCRecoSimRun3)) {
       const std::array<AxisSpec, 4> axes{axisPtCh, axisPtPi, axisPtKa, axisPtPr};
       const std::array<std::string, 4> names{"Charged", "Pion", "Kaon", "Proton"};
-      const std::array<std::string, 3> streams{"Analysis", "Corrected", "CorrectedTruthMatched"};
-      const std::array<HistogramRegistry*, 3> registries{&subsampleRaw, &subsampleCorrected, &subsampleTruth};
-      constexpr int TruthMatchedStream = 2;
+      const std::array<std::string, 2> streams{"Analysis", "Corrected"};
+      const std::array<HistogramRegistry*, 2> registries{&subsampleRaw, &subsampleCorrected};
       constexpr int FirstTwoDigitGroup = 10;
       for (std::size_t stream = 0; stream < streams.size(); ++stream) {
         if (stream > 0 && !cfgApplyEfficiencyCorrection) {
-          continue;
-        }
-        if (stream == TruthMatchedStream && (!doprocessMCRecoSimRun3 || cfgUseCombinedPurityEfficiencyWeight)) {
           continue;
         }
         for (int group = 0; group < NSubsamples; ++group) {
@@ -732,10 +716,12 @@ struct MeanPtFlucId {
       hist.addClone("Gen/Pion/", "Gen/Kaon/");
       hist.addClone("Gen/Pion/", "Gen/Proton/");
 
-      hist.addClone("Analysis/Charged/", "Gen/Charged/");
-      hist.addClone("Analysis/Pion/", "Gen/Pion/");
-      hist.addClone("Analysis/Kaon/", "Gen/Kaon/");
-      hist.addClone("Analysis/Proton/", "Gen/Proton/");
+      if (!cfgQAOnly) {
+        hist.addClone("Analysis/Charged/", "Gen/Charged/");
+        hist.addClone("Analysis/Pion/", "Gen/Pion/");
+        hist.addClone("Analysis/Kaon/", "Gen/Kaon/");
+        hist.addClone("Analysis/Proton/", "Gen/Proton/");
+      }
 
       hist.add("Gen/Charged/h_PtTruth_e", "p_{T} ", kTH1D, {axisPtCh});
       hist.add("Gen/Charged/h2_Pt_EtaTruth", "p_{T} vs #eta", kTH2D, {{axisEta}, {axisPtCh}});
@@ -805,8 +791,10 @@ struct MeanPtFlucId {
       auto addModelSpecies = [&](const std::string& directory, const AxisSpec& axisPtId) {
         hist.add(directory + "h_Pt", "Generated physical primaries", kTH1D, {axisPtId});
         hist.add(directory + "h_Eta", "Generated physical primaries", kTH1D, {axisEta});
-        hist.add(directory + "hN1Matrix", "Generated single-particle density", kTH2D, {axisModelCent, axisPtId});
-        hist.add(directory + "hN2Matrix", "Generated ordered-pair density", kTH3D, {axisModelCent, axisPtId, axisPtId});
+        if (!cfgQAOnly) {
+          hist.add(directory + "hN1Matrix", "Generated single-particle density", kTH2D, {axisModelCent, axisPtId});
+          hist.add(directory + "hN2Matrix", "Generated ordered-pair density", kTH3D, {axisModelCent, axisPtId, axisPtId});
+        }
       };
       addModelSpecies("Model/Charged/", axisPtCh);
       addModelSpecies("Model/Pion/", axisPtPi);
@@ -1154,7 +1142,9 @@ struct MeanPtFlucId {
     float eta = track.eta();
     float phi = track.phi();
 
-    tracks.push_back({pt});
+    if (!cfgQAOnly) {
+      tracks.push_back({pt});
+    }
 
     if (track.sign() > 0) {
       hist.fill(HIST(dire[Mode]) + HIST("h_PtPos"), pt);
@@ -1227,6 +1217,9 @@ struct MeanPtFlucId {
   template <int Mode>
   void fillMatrices(const std::vector<TrackInfo>& tracks, double ptMin, double eventCoordinate, double eventWeight = 1.)
   {
+    if (cfgQAOnly) {
+      return;
+    }
     const int nBins = nPtBins;
     const double binWidth = (trackCuts.cfgCutPtMax - ptMin) / nBins;
     matrixNInBin.assign(nBins, 0);
@@ -1319,9 +1312,12 @@ struct MeanPtFlucId {
     return std::isfinite(weight) && weight > 0.;
   }
 
-  template <int Mode, bool TruthMatched = false>
+  template <int Mode>
   void fillCorrectedMatrices(const std::vector<WeightedTrackInfo>& tracks, double ptMin)
   {
+    if (cfgQAOnly) {
+      return;
+    }
     const int nBins = nPtBins;
     const double binWidth = (trackCuts.cfgCutPtMax - ptMin) / nBins;
     matrixWInBin.assign(nBins, 0.);
@@ -1343,13 +1339,8 @@ struct MeanPtFlucId {
 
     for (const int& ptBin : matrixOccupiedBins) {
       const double ptCenter = ptMin + (ptBin + 0.5) * binWidth;
-      if constexpr (TruthMatched) {
-        hist.fill(HIST(TruthMatchedCorrectedDirectories[Mode]) + HIST("hN1Matrix"), centFT0M, ptCenter, matrixWInBin[ptBin]);
-        fillSubsampleN1(2, Mode, centFT0M, ptCenter, matrixWInBin[ptBin]);
-      } else {
-        hist.fill(HIST(CorrectedDirectories[Mode]) + HIST("hN1Matrix"), centFT0M, ptCenter, matrixWInBin[ptBin]);
-        fillSubsampleN1(1, Mode, centFT0M, ptCenter, matrixWInBin[ptBin]);
-      }
+      hist.fill(HIST(CorrectedDirectories[Mode]) + HIST("hN1Matrix"), centFT0M, ptCenter, matrixWInBin[ptBin]);
+      fillSubsampleN1(1, Mode, centFT0M, ptCenter, matrixWInBin[ptBin]);
     }
 
     for (size_t i = 0; i < matrixOccupiedBins.size(); ++i) {
@@ -1357,30 +1348,18 @@ struct MeanPtFlucId {
       const double ptCenter1 = ptMin + (ptBin1 + 0.5) * binWidth;
       const double diagonalPairDensity = matrixWInBin[ptBin1] * matrixWInBin[ptBin1] - matrixW2InBin[ptBin1];
       if (diagonalPairDensity > 0.) {
-        if constexpr (TruthMatched) {
-          hist.fill(HIST(TruthMatchedCorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter1, ptCenter1, diagonalPairDensity);
-          fillSubsampleN2(2, Mode, centFT0M, ptCenter1, ptCenter1, diagonalPairDensity);
-        } else {
-          hist.fill(HIST(CorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter1, ptCenter1, diagonalPairDensity);
-          fillSubsampleN2(1, Mode, centFT0M, ptCenter1, ptCenter1, diagonalPairDensity);
-        }
+        hist.fill(HIST(CorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter1, ptCenter1, diagonalPairDensity);
+        fillSubsampleN2(1, Mode, centFT0M, ptCenter1, ptCenter1, diagonalPairDensity);
       }
 
       for (size_t j = i + 1; j < matrixOccupiedBins.size(); ++j) {
         const int ptBin2 = matrixOccupiedBins[j];
         const double ptCenter2 = ptMin + (ptBin2 + 0.5) * binWidth;
         const double pairDensity = matrixWInBin[ptBin1] * matrixWInBin[ptBin2];
-        if constexpr (TruthMatched) {
-          hist.fill(HIST(TruthMatchedCorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter1, ptCenter2, pairDensity);
-          fillSubsampleN2(2, Mode, centFT0M, ptCenter1, ptCenter2, pairDensity);
-          hist.fill(HIST(TruthMatchedCorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter2, ptCenter1, pairDensity);
-          fillSubsampleN2(2, Mode, centFT0M, ptCenter2, ptCenter1, pairDensity);
-        } else {
-          hist.fill(HIST(CorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter1, ptCenter2, pairDensity);
-          fillSubsampleN2(1, Mode, centFT0M, ptCenter1, ptCenter2, pairDensity);
-          hist.fill(HIST(CorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter2, ptCenter1, pairDensity);
-          fillSubsampleN2(1, Mode, centFT0M, ptCenter2, ptCenter1, pairDensity);
-        }
+        hist.fill(HIST(CorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter1, ptCenter2, pairDensity);
+        fillSubsampleN2(1, Mode, centFT0M, ptCenter1, ptCenter2, pairDensity);
+        hist.fill(HIST(CorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter2, ptCenter1, pairDensity);
+        fillSubsampleN2(1, Mode, centFT0M, ptCenter2, ptCenter1, pairDensity);
       }
     }
   }
@@ -1397,10 +1376,6 @@ struct MeanPtFlucId {
     pionTracksCorrected.clear();
     kaonTracksCorrected.clear();
     protonTracksCorrected.clear();
-    chargedTracksTruthMatchedCorrected.clear();
-    pionTracksTruthMatchedCorrected.clear();
-    kaonTracksTruthMatchedCorrected.clear();
-    protonTracksTruthMatchedCorrected.clear();
 
     float pt = 0., eta = 0., phi = 0., p = 0.;
 
@@ -1422,17 +1397,6 @@ struct MeanPtFlucId {
     hist.fill(HIST("QA/after/h2_Ncorr_CentM"), centFT0M, nCorr);
 
     for (auto const& track : tracks) {
-      float nSigmaTPCPi = track.tpcNSigmaPi();
-      float nSigmaTPCKa = track.tpcNSigmaKa();
-      float nSigmaTPCPr = track.tpcNSigmaPr();
-      const auto tofNSigma = getTofNSigmaForPid(track);
-      const float nSigmaTOFPi = tofNSigma[static_cast<int>(PIDType::kPions)];
-      const float nSigmaTOFKa = tofNSigma[static_cast<int>(PIDType::kKaons)];
-      const float nSigmaTOFPr = tofNSigma[static_cast<int>(PIDType::kProtons)];
-      float rapPi = track.rapidity(MassPiPlus);
-      float rapKa = track.rapidity(MassKPlus);
-      float rapPr = track.rapidity(MassProton);
-
       if constexpr (RecoFlag) {
         if (!track.has_mcParticle()) {
           hist.fill(HIST("Tracks/h_tracks_info"), kTracksBeforeHasMcParticle);
@@ -1464,27 +1428,22 @@ struct MeanPtFlucId {
           hist.fill(HIST("QA/after/h_DCAz_primary"), track.dcaZ());
           hist.fill(HIST("QA/Charged/h_PtTruth_primary"), track.pt());
           hist.fill(HIST("QA/Charged/h3_Pt_EtaTruth_primary_centFT0M"), track.eta(), track.pt(), centFT0M);
-          if (cfgApplyEfficiencyCorrection && !cfgUseCombinedPurityEfficiencyWeight) {
-            double weight = 0.;
-            if (!getEfficiencyWeight(PIDType::kNone, pt, eta, weight)) {
-              LOGF(fatal, "Undefined truth-matched charged efficiency weight at pT=%g, eta=%g, centrality=%g", pt, eta, centFT0M);
-            }
-            chargedTracksTruthMatchedCorrected.push_back({pt, weight});
-          }
         } else {
           hist.fill(HIST("QA/after/h_DCAxy_secondary"), track.dcaXY());
           hist.fill(HIST("QA/after/h_DCAz_secondary"), track.dcaZ());
         }
       }
 
-      if (cfgApplyEfficiencyCorrection) {
+      if (!cfgQAOnly && cfgApplyEfficiencyCorrection) {
         double weight = 0.;
         if (!getEfficiencyWeight(PIDType::kNone, pt, eta, weight)) {
           LOGF(fatal, "Undefined charged-particle efficiency weight at pT=%g, eta=%g, centrality=%g", pt, eta, centFT0M);
         }
         chargedTracksCorrected.push_back({pt, weight});
       }
-      chargedTracks.push_back({pt});
+      if (!cfgQAOnly) {
+        chargedTracks.push_back({pt});
+      }
 
       hist.fill(HIST("QA/Charged/h_Pt"), pt);
       hist.fill(HIST("QA/Charged/h_Pt_e"), pt);
@@ -1500,12 +1459,23 @@ struct MeanPtFlucId {
       if (pidConfig.cfgRejTrk && rejectTracks(track)) {
         continue;
       }
+      float nSigmaTPCPi = track.tpcNSigmaPi();
+      float nSigmaTPCKa = track.tpcNSigmaKa();
+      float nSigmaTPCPr = track.tpcNSigmaPr();
+      const auto tofNSigma = getTofNSigmaForPid(track);
+      const float nSigmaTOFPi = tofNSigma[static_cast<int>(PIDType::kPions)];
+      const float nSigmaTOFKa = tofNSigma[static_cast<int>(PIDType::kKaons)];
+      const float nSigmaTOFPr = tofNSigma[static_cast<int>(PIDType::kProtons)];
+      float rapPi = track.rapidity(MassPiPlus);
+      float rapKa = track.rapidity(MassKPlus);
+      float rapPr = track.rapidity(MassProton);
+
       auto selIDPion = identifyParticle(track, PIDType::kPions, PIDType::kKaons, PIDType::kProtons, p, pidConfig.cfgCutPiThrsldP, tofNSigma);
       auto selIDKaon = identifyParticle(track, PIDType::kKaons, PIDType::kPions, PIDType::kProtons, p, pidConfig.cfgCutKaThrsldP, tofNSigma);
       auto selIDProton = identifyParticle(track, PIDType::kProtons, PIDType::kPions, PIDType::kKaons, p, pidConfig.cfgCutPrThrsldP, tofNSigma);
 
       if (selIDPion && track.pt() >= pidConfig.cfgCutPiPtMin) {
-        if (cfgApplyEfficiencyCorrection) {
+        if (!cfgQAOnly && cfgApplyEfficiencyCorrection) {
           double weight = 0.;
           if (!getEfficiencyWeight(PIDType::kPions, pt, eta, weight)) {
             LOGF(fatal, "Undefined pion efficiency weight at pT=%g, eta=%g, centrality=%g", pt, eta, centFT0M);
@@ -1515,7 +1485,7 @@ struct MeanPtFlucId {
         fillIdParticleQAHistos<QA_Pion>(track, ptMC, etaMC, rapPi, nSigmaTPCPi, nSigmaTOFPi, pionTracks);
       }
       if (selIDKaon && track.pt() >= pidConfig.cfgCutKaPtMin) {
-        if (cfgApplyEfficiencyCorrection) {
+        if (!cfgQAOnly && cfgApplyEfficiencyCorrection) {
           double weight = 0.;
           if (!getEfficiencyWeight(PIDType::kKaons, pt, eta, weight)) {
             LOGF(fatal, "Undefined kaon efficiency weight at pT=%g, eta=%g, centrality=%g", pt, eta, centFT0M);
@@ -1525,7 +1495,7 @@ struct MeanPtFlucId {
         fillIdParticleQAHistos<QA_Kaon>(track, ptMC, etaMC, rapKa, nSigmaTPCKa, nSigmaTOFKa, kaonTracks);
       }
       if (selIDProton && track.pt() >= pidConfig.cfgCutPrPtMin) {
-        if (cfgApplyEfficiencyCorrection) {
+        if (!cfgQAOnly && cfgApplyEfficiencyCorrection) {
           double weight = 0.;
           if (!getEfficiencyWeight(PIDType::kProtons, pt, eta, weight)) {
             LOGF(fatal, "Undefined proton efficiency weight at pT=%g, eta=%g, centrality=%g", pt, eta, centFT0M);
@@ -1546,13 +1516,6 @@ struct MeanPtFlucId {
               hist.fill(HIST("QA/Pion/h_PtTruth_primary"), track.pt());
               hist.fill(HIST("QA/Pion/h3_Pt_EtaTruth_primary_centFT0M"), track.eta(), track.pt(), centFT0M);
               hist.fill(HIST("QA/Pion/h2_Pt_EtaTruth_primary"), track.eta(), track.pt());
-              if (cfgApplyEfficiencyCorrection && !cfgUseCombinedPurityEfficiencyWeight) {
-                double weight = 0.;
-                if (!getEfficiencyWeight(PIDType::kPions, pt, eta, weight)) {
-                  LOGF(fatal, "Undefined truth-matched pion efficiency weight at pT=%g, eta=%g, centrality=%g", pt, eta, centFT0M);
-                }
-                pionTracksTruthMatchedCorrected.push_back({pt, weight});
-              }
             } else {
               hist.fill(HIST("QA/Pion/h_PtTruth_secondary"), track.pt());
             }
@@ -1566,13 +1529,6 @@ struct MeanPtFlucId {
               hist.fill(HIST("QA/Kaon/h_PtTruth_primary"), track.pt());
               hist.fill(HIST("QA/Kaon/h3_Pt_EtaTruth_primary_centFT0M"), track.eta(), track.pt(), centFT0M);
               hist.fill(HIST("QA/Kaon/h2_Pt_EtaTruth_primary"), track.eta(), track.pt());
-              if (cfgApplyEfficiencyCorrection && !cfgUseCombinedPurityEfficiencyWeight) {
-                double weight = 0.;
-                if (!getEfficiencyWeight(PIDType::kKaons, pt, eta, weight)) {
-                  LOGF(fatal, "Undefined truth-matched kaon efficiency weight at pT=%g, eta=%g, centrality=%g", pt, eta, centFT0M);
-                }
-                kaonTracksTruthMatchedCorrected.push_back({pt, weight});
-              }
             } else {
               hist.fill(HIST("QA/Kaon/h_PtTruth_secondary"), track.pt());
             }
@@ -1586,13 +1542,6 @@ struct MeanPtFlucId {
               hist.fill(HIST("QA/Proton/h_PtTruth_primary"), track.pt());
               hist.fill(HIST("QA/Proton/h3_Pt_EtaTruth_primary_centFT0M"), track.eta(), track.pt(), centFT0M);
               hist.fill(HIST("QA/Proton/h2_Pt_EtaTruth_primary"), track.eta(), track.pt());
-              if (cfgApplyEfficiencyCorrection && !cfgUseCombinedPurityEfficiencyWeight) {
-                double weight = 0.;
-                if (!getEfficiencyWeight(PIDType::kProtons, pt, eta, weight)) {
-                  LOGF(fatal, "Undefined truth-matched proton efficiency weight at pT=%g, eta=%g, centrality=%g", pt, eta, centFT0M);
-                }
-                protonTracksTruthMatchedCorrected.push_back({pt, weight});
-              }
             } else {
               hist.fill(HIST("QA/Proton/h_PtTruth_secondary"), track.pt());
             }
@@ -1605,19 +1554,11 @@ struct MeanPtFlucId {
     fillMatrices<Analysis_Kaon>(kaonTracks, pidConfig.cfgCutKaPtMin);
     fillMatrices<Analysis_Proton>(protonTracks, pidConfig.cfgCutPrPtMin);
 
-    if (cfgApplyEfficiencyCorrection) {
+    if (!cfgQAOnly && cfgApplyEfficiencyCorrection) {
       fillCorrectedMatrices<Corrected_Charged>(chargedTracksCorrected, trackCuts.cfgCutPtMin);
       fillCorrectedMatrices<Corrected_Pion>(pionTracksCorrected, pidConfig.cfgCutPiPtMin);
       fillCorrectedMatrices<Corrected_Kaon>(kaonTracksCorrected, pidConfig.cfgCutKaPtMin);
       fillCorrectedMatrices<Corrected_Proton>(protonTracksCorrected, pidConfig.cfgCutPrPtMin);
-      if constexpr (RecoFlag) {
-        if (!cfgUseCombinedPurityEfficiencyWeight) {
-          fillCorrectedMatrices<Corrected_Charged, true>(chargedTracksTruthMatchedCorrected, trackCuts.cfgCutPtMin);
-          fillCorrectedMatrices<Corrected_Pion, true>(pionTracksTruthMatchedCorrected, pidConfig.cfgCutPiPtMin);
-          fillCorrectedMatrices<Corrected_Kaon, true>(kaonTracksTruthMatchedCorrected, pidConfig.cfgCutKaPtMin);
-          fillCorrectedMatrices<Corrected_Proton, true>(protonTracksTruthMatchedCorrected, pidConfig.cfgCutPrPtMin);
-        }
-      }
     }
   }
 
@@ -1682,7 +1623,9 @@ struct MeanPtFlucId {
       nSim++;
 
       if (pt >= trackCuts.cfgCutPtMin && pt < trackCuts.cfgCutPtMax) {
-        chargedTracksGen.push_back({pt});
+        if (!cfgQAOnly) {
+          chargedTracksGen.push_back({pt});
+        }
         hist.fill(HIST("Gen/Charged/h_PtTruth"), pt);
         hist.fill(HIST("Gen/Charged/h_PtTruth_e"), pt);
         hist.fill(HIST("Gen/Charged/h_EtaTruth"), eta);
@@ -1695,15 +1638,21 @@ struct MeanPtFlucId {
         rap = mcPart.y();
         auto pid = mcPart.pdgCode();
         if (std::abs(pid) == kPiPlus && pt >= pidConfig.cfgCutPiPtMin) {
-          pionTracksGen.push_back({pt});
+          if (!cfgQAOnly) {
+            pionTracksGen.push_back({pt});
+          }
           fillPtMCHist<Gen_Pion>(true, pt, eta, rap, phi, pid, kPiPlus, kPiMinus);
         }
         if (std::abs(pid) == kKPlus && pt >= pidConfig.cfgCutKaPtMin) {
-          kaonTracksGen.push_back({pt});
+          if (!cfgQAOnly) {
+            kaonTracksGen.push_back({pt});
+          }
           fillPtMCHist<Gen_Kaon>(true, pt, eta, rap, phi, pid, kKPlus, kKMinus);
         }
         if (std::abs(pid) == kProton && pt >= pidConfig.cfgCutPrPtMin) {
-          protonTracksGen.push_back({pt});
+          if (!cfgQAOnly) {
+            protonTracksGen.push_back({pt});
+          }
           fillPtMCHist<Gen_Proton>(true, pt, eta, rap, phi, pid, kProton, kProtonBar);
         }
       }
@@ -1871,22 +1820,30 @@ struct MeanPtFlucId {
           pt < trackCuts.cfgCutPtMin || pt >= trackCuts.cfgCutPtMax || std::abs(eta) >= trackCuts.cfgCutEta) {
         continue;
       }
-      modelTracks[0].push_back({pt});
+      if (!cfgQAOnly) {
+        modelTracks[0].push_back({pt});
+      }
       hist.fill(HIST("Model/Charged/h_Pt"), pt, eventWeight);
       hist.fill(HIST("Model/Charged/h_Eta"), eta, eventWeight);
       const int code = std::abs(particle.pdgCode());
       if (code == kPiPlus && pt >= pidConfig.cfgCutPiPtMin) {
-        modelTracks[1].push_back({pt});
+        if (!cfgQAOnly) {
+          modelTracks[1].push_back({pt});
+        }
         hist.fill(HIST("Model/Pion/h_Pt"), pt, eventWeight);
         hist.fill(HIST("Model/Pion/h_Eta"), eta, eventWeight);
       }
       if (code == kKPlus && pt >= pidConfig.cfgCutKaPtMin) {
-        modelTracks[2].push_back({pt});
+        if (!cfgQAOnly) {
+          modelTracks[2].push_back({pt});
+        }
         hist.fill(HIST("Model/Kaon/h_Pt"), pt, eventWeight);
         hist.fill(HIST("Model/Kaon/h_Eta"), eta, eventWeight);
       }
       if (code == kProton && pt >= pidConfig.cfgCutPrPtMin) {
-        modelTracks[3].push_back({pt});
+        if (!cfgQAOnly) {
+          modelTracks[3].push_back({pt});
+        }
         hist.fill(HIST("Model/Proton/h_Pt"), pt, eventWeight);
         hist.fill(HIST("Model/Proton/h_Eta"), eta, eventWeight);
       }
