@@ -841,6 +841,7 @@ class CollisionBuilder
   }
 
   [[nodiscard]] int64_t collisionIndex() const { return mCurrentCollisionIndex; }
+  [[nodiscard]] int magneticField() const { return mMagField; } // nominal L3 field of the current run (kG)
   void reset()
   {
     mCollisionAlreadyFilled = false;
