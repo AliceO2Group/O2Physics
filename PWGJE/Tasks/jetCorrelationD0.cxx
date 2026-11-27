@@ -88,6 +88,7 @@ DECLARE_SOA_COLUMN(D0PtD, d0PtD, float);
 DECLARE_SOA_COLUMN(D0EtaD, d0EtaD, float);
 DECLARE_SOA_COLUMN(D0PhiD, d0PhiD, float);
 DECLARE_SOA_COLUMN(D0Category, d0Category, int);
+DECLARE_SOA_COLUMN(D0TruthPt, d0TruthPt, float);
 DECLARE_SOA_COLUMN(D0DecayChannel, d0DecayChannel, int8_t);
 } // namespace d0Info
 
@@ -114,7 +115,8 @@ DECLARE_SOA_TABLE(D0McDTables, "AOD", "D0MCDTABLE",
                   d0Info::D0Eta,
                   d0Info::D0Phi,
                   d0Info::D0Y,
-                  d0Info::D0Category);
+                  d0Info::D0Category,
+                  d0Info::D0TruthPt);
 
 DECLARE_SOA_TABLE(D0McPTables, "AOD", "D0MCPTABLE",
                   o2::soa::Index<>,
@@ -345,6 +347,8 @@ struct JetCorrelationD0 {
 
   void processMcDetector(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                          aod::CandidatesD0MCD const& d0Candidates,
+                         aod::JetTracksMCD const& tracks,
+                         aod::JetParticles const& particles,
                          soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets)
   {
     if (!applyCollisionSelections(collision)) {
@@ -390,6 +394,12 @@ struct JetCorrelationD0 {
         category = D0McCategory::CorrBkgKK;
       }
 
+      float d0TruthPt = -1.f;
+      if (category != D0McCategory::Undefined) {
+        const auto& d0Particle = jethfutilities::matchedHFParticle(d0Candidate, tracks, particles); // particle level pt for candidates in category 0-5
+        d0TruthPt = d0Particle.pt();
+      }
+
       tableD0McDetector(tableCollision.lastIndex(), // might want to add some more detector level D0 quantities like prompt or non prompt info
                         scores[2],
                         scores[1],
@@ -399,7 +409,8 @@ struct JetCorrelationD0 {
                         d0Candidate.eta(),
                         d0Candidate.phi(),
                         d0Candidate.y(),
-                        category);
+                        category,
+                        d0TruthPt);
       for (const auto& jet : jets) {
         if (jet.pt() < jetPtCutMin) {
           continue;
