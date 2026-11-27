@@ -27,4 +27,4 @@ o2physics_add_dpl_workflow(match-reco-gen
 o2physics_add_dpl_workflow(correlations
                     SOURCES correlations.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                    COMPONENT_NAME Analysis)
+                    COMPONENT_NAME Analysis WORKFLOW_PLUGIN)
