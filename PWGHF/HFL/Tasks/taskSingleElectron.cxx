@@ -120,6 +120,7 @@ struct HfTaskSingleElectron {
   Configurable<int> nSigmaTpcHadronMin{"nSigmaTpcHadronMin", -5, "min of tpc hadron nsigma"};
 
   Configurable<float> bFieldSign{"bFieldSign", 1.f, "sign of the L3 magnetic field (+1 or -1), used in DCA_xy x charge x sign(B)"};
+  Configurable<bool> fillDcaSignedMcSpecies{"fillDcaSignedMcSpecies", false, "MC: fill DCA_xy x charge x sign(B) per source species (e from B0, B+-, prompt D0, D+-) and sub-generator, after track selection, no PID"};
 
   // PV refit (processDataPvRefit)
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
@@ -150,6 +151,7 @@ struct HfTaskSingleElectron {
   ConfigurableAxis axisPtEl{"axisPtEl", {VARIABLE_WIDTH, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.75f, 2.0f, 2.25f, 2.5f, 2.75f, 3.f, 3.5f, 4.0f, 5.0f, 6.0f, 8.0f, 10.0f}, "electron pt bins"};
   ConfigurableAxis axisDcaSigned{"axisDcaSigned", {4000, -0.2, 0.2}, "DCA_xy x charge x sign(B) bins (cm)"};
   ConfigurableAxis axisNContrib{"axisNContrib", {VARIABLE_WIDTH, 0., 5., 10., 15., 20., 25., 30., 40., 50., 60., 80., 100., 150., 250.}, "number of PV contributors bins"};
+  ConfigurableAxis axisDcaSignedMcSpecies{"axisDcaSignedMcSpecies", {400, -0.1, 0.1}, "DCA_xy x charge x sign(B) bins of the MC species DCA histograms (cm)"};
 
   // Histogram registry
   HistogramRegistry histos{"histos"};
@@ -231,6 +233,17 @@ struct HfTaskSingleElectron {
     histos.add("hDcaSignedTrack", "after electron identification;#it{p}_{T} (GeV/#it{c});DCA_{xy} #times #it{q} #times sign(#it{B}) (cm);#it{N}_{contrib}", kTH3D, {{axisPtEl}, {axisDcaSig}, {axisNContribEvt}});
     histos.add("hDcaSignedHadron", "TPC hadron band, before TOF selection;#it{p}_{T} (GeV/#it{c});DCA_{xy} #times #it{q} #times sign(#it{B}) (cm)", kTH2D, {{axisPtEl}, {axisDcaSig}});
     histos.add("hDcaSignedHadronAfterTofCut", "TPC hadron band, after TOF selection;#it{p}_{T} (GeV/#it{c});DCA_{xy} #times #it{q} #times sign(#it{B}) (cm)", kTH2D, {{axisPtEl}, {axisDcaSig}});
+
+    // DCA_xy x q x sign(B) per MC source species and sub-generator ID (-1: no sub-generator, 0: gap events, values > 0 merged into 1: injected events)
+    if (doprocessMc && fillDcaSignedMcSpecies) {
+      const AxisSpec axisPtSpecies{axisPtEl, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec axisDcaSigSpecies{axisDcaSignedMcSpecies, "DCA_{xy} #times #it{q} #times sign(#it{B}) (cm)"};
+      const AxisSpec axisSubGenerator{3, -1.5, 1.5, "sub-generator ID"};
+      histos.add("hDcaSignedRecElFromB0", "MC truth e^{#pm} with first mother B^{0}, after track selection", kTH3D, {axisPtSpecies, axisDcaSigSpecies, axisSubGenerator});
+      histos.add("hDcaSignedRecElFromBPlus", "MC truth e^{#pm} with first mother B^{#pm}, after track selection", kTH3D, {axisPtSpecies, axisDcaSigSpecies, axisSubGenerator});
+      histos.add("hDcaSignedRecElFromD0", "MC truth e^{#pm} with first mother D^{0}, no beauty ancestor, after track selection", kTH3D, {axisPtSpecies, axisDcaSigSpecies, axisSubGenerator});
+      histos.add("hDcaSignedRecElFromDPlus", "MC truth e^{#pm} with first mother D^{#pm}, no beauty ancestor, after track selection", kTH3D, {axisPtSpecies, axisDcaSigSpecies, axisSubGenerator});
+    }
 
     if (doprocessData && doprocessDataPvRefit) {
       LOGF(fatal, "processData and processDataPvRefit cannot be enabled together");
@@ -324,6 +337,31 @@ struct HfTaskSingleElectron {
   }
 
   template <typename TrackType>
+  void fillDcaSignedSpecies(const TrackType& track, int source, int sourcePdg)
+  {
+    if (!track.has_mcParticle()) {
+      return;
+    }
+    auto const mcParticle = track.mcParticle();
+    int const subGeneratorId = std::min(mcParticle.template mcCollision_as<aod::McCollisions>().getSubGeneratorId(), 1);
+    double const pt = track.pt();
+    double const dcaSigned = track.dcaXY() * track.sign() * bFieldSign;
+    if (source == DirectBeauty) {
+      if (sourcePdg == Pdg::kB0) {
+        histos.fill(HIST("hDcaSignedRecElFromB0"), pt, dcaSigned, subGeneratorId);
+      } else if (sourcePdg == Pdg::kBPlus) {
+        histos.fill(HIST("hDcaSignedRecElFromBPlus"), pt, dcaSigned, subGeneratorId);
+      }
+    } else if (source == DirectCharm) {
+      if (sourcePdg == Pdg::kD0) {
+        histos.fill(HIST("hDcaSignedRecElFromD0"), pt, dcaSigned, subGeneratorId);
+      } else if (sourcePdg == Pdg::kDPlus) {
+        histos.fill(HIST("hDcaSignedRecElFromDPlus"), pt, dcaSigned, subGeneratorId);
+      }
+    }
+  }
+
+  template <typename TrackType>
   bool trackSel(const TrackType& track)
   {
     if ((track.pt() > ptTrackMax) || (track.pt() < ptTrackMin)) {
@@ -394,6 +432,9 @@ struct HfTaskSingleElectron {
     auto partMother = mcpart.template mothers_as<aod::McParticles>(); // first mother particle of electron
     auto partMotherCopy = partMother;                                 // copy of the first mother
     auto mctrack = partMother;                                        // will change all the time
+    if (partMother.size() == 0) { // electron without a stored mother: avoid front() on an empty span
+      return Else;
+    }
 
     motherPt = partMother.front().pt();                 // first mother pt
     motherPdg = std::abs(partMother.front().pdgCode()); // first mother pdg
@@ -741,7 +782,8 @@ struct HfTaskSingleElectron {
 
   void processMc(soa::Filtered<MyCollisions>::iterator const& collision,
                  McTracksEl const& tracks,
-                 aod::McParticles const&)
+                 aod::McParticles const&,
+                 aod::McCollisions const&)
   {
     float const flagAnalysedEvt = 0.5;
 
@@ -781,6 +823,9 @@ struct HfTaskSingleElectron {
       int mpdg{};   // electron source pdg code
       double mpt{}; // electron source pt
       int const source = getElecSource(track, mpt, mpdg);
+      if (fillDcaSignedMcSpecies) {
+        fillDcaSignedSpecies(track, source, mpdg);
+      }
 
       if (source == DirectBeauty || source == BeautyCharm) {
         histos.fill(HIST("hPdgB"), mpdg);
