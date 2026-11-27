@@ -579,9 +579,9 @@ struct LfJetSpectra {
       const AxisSpec genJetPtCoarseAxis{std::vector<double>{0., 10., 15., 20., 25., 30., 40., 50., 60., 80., 100., 200.}, "true #it{p}_{T,jet}^{sub} (GeV/#it{c})"};
       const AxisSpec nStrangeAxis{15, -0.5, 14.5, "strange hadrons per jet"};
       const AxisSpec nStrangeSpeciesAxis{10, -0.5, 9.5, "strange hadrons of the species per jet"};
-      const AxisSpec strangeSpeciesAxis{kNJetStrangeSpecies, -0.5, kNJetStrangeSpecies - 0.5, "species"};
+      const AxisSpec strangeSpeciesAxis{kNJetStrangeSpecies, -0.5, static_cast<double>(kNJetStrangeSpecies) - 0.5, "species"};
       const AxisSpec strangePairAxis{kNJetStrangePairs, -0.5, kNJetStrangePairs - 0.5, "pair"};
-      const AxisSpec strangePairSignAxis{kNJetStrangePairSigns, -0.5, kNJetStrangePairSigns - 0.5, "strangeness of the pair"};
+      const AxisSpec strangePairSignAxis{kNJetStrangePairSigns, -0.5, static_cast<double>(kNJetStrangePairSigns) - 0.5, "strangeness of the pair"};
       registryMC.add("jetStrange/nStrange", "strange hadrons (K^{#pm}, K^{0}_{S}, #Lambda, #bar{#Lambda}) per particle-level jet (all jets)", HistType::kTH2F, {genJetPtCoarseAxis, nStrangeAxis});
       registryMC.add("jetStrange/nPerSpecies", "strange hadrons of each species per particle-level jet (all jets)", HistType::kTH3F, {genJetPtCoarseAxis, strangeSpeciesAxis, nStrangeSpeciesAxis});
       registryMC.add("jetStrange/pairs", "pairs of strange hadrons in the same particle-level jet, by species, vs the strange hadrons in the jet", HistType::kTH3F, {genJetPtCoarseAxis, strangePairAxis, nStrangeAxis});
