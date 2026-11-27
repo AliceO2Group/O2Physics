@@ -171,6 +171,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     ConfigurableAxis binGenKstar{"binGenKstar", {200, 0., 2.}, "Generated k* binning (GeV/c)"};
     ConfigurableAxis binGenPtCharm{"binGenPtCharm", {32, 0., 16.}, "Generated charm pT binning (GeV/c)"};
     ConfigurableAxis binGenPtTrack{"binGenPtTrack", {20, 0., 10.}, "Generated proton pT binning (GeV/c)"};
+    Configurable<double> genKstarMin{"genKstarMin", 0., "Minimum k* for 1D Gen QA histograms (GeV/c)"};
+    Configurable<double> genKstarMax{"genKstarMax", 2., "Maximum k* for 1D Gen QA histograms (GeV/c)"};
+    Configurable<double> genKstarBinWidth{"genKstarBinWidth", 0.01, "Bin width of k* for 1D Gen QA histograms (GeV/c)"};
   } genCfg;
   SliceCache cache;
 
@@ -368,6 +371,12 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       registryCharmHadronQa.add("Gen/hSE", ";k* (GeV/c);pT D (GeV/c);pT proton (GeV/c);Charm origin;Pair sign", {HistType::kTHnSparseD, {genCfg.binGenKstar, genCfg.binGenPtCharm, genCfg.binGenPtTrack, axisOrigin, axisSign}}, true);
       registryCharmHadronQa.add("Gen/hME", ";k* (GeV/c);pT D (GeV/c);pT proton (GeV/c);Charm origin;Pair sign", {HistType::kTHnSparseD, {genCfg.binGenKstar, genCfg.binGenPtCharm, genCfg.binGenPtTrack, axisOrigin, axisSign}}, true);
       registryCharmHadronQa.add("Gen/hPtCharm", ";pT D (GeV/c);Charm origin", {HistType::kTH2D, {genCfg.binGenPtCharm, axisOrigin}}, true);
+      const int rawBinsKstar1D = static_cast<int>(std::round((genCfg.genKstarMax.value - genCfg.genKstarMin.value) / genCfg.genKstarBinWidth.value));
+      const int nBinsKstar1D = rawBinsKstar1D > 1 ? rawBinsKstar1D : 1;
+      const AxisSpec axisKstar1D{nBinsKstar1D, genCfg.genKstarMin.value, genCfg.genKstarMax.value, "k* (GeV/c)"};
+      registryCharmHadronQa.add("Gen/hSEPairs", ";k* (GeV/c);Entries", {HistType::kTH1D, {axisKstar1D}}, true);
+      registryCharmHadronQa.add("Gen/hMEPairs", ";k* (GeV/c);Entries", {HistType::kTH1D, {axisKstar1D}}, true);
+      registryCharmHadronQa.add("Gen/hRawCF", ";k* (GeV/c);SE / ME", {HistType::kTH1D, {axisKstar1D}}, true);
     }
 
     // setup columnpolicy for binning
@@ -1577,8 +1586,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           int pairSign = (trk.pdgMCTruth() > 0) == (particle.pdgMCTruth() > 0) ? LikeSignPair : UnLikeSignPair;
           if (isSameEvent) {
             registryCharmHadronQa.fill(HIST("Gen/hSE"), kstar, particle.pt(), trk.pt(), p2.originMcGen(), pairSign);
+            registryCharmHadronQa.fill(HIST("Gen/hSEPairs"), kstar);
           } else {
             registryCharmHadronQa.fill(HIST("Gen/hME"), kstar, particle.pt(), trk.pt(), p2.originMcGen(), pairSign);
+            registryCharmHadronQa.fill(HIST("Gen/hMEPairs"), kstar);
           }
         }
       }
@@ -1630,6 +1641,11 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         fillPairs(sliceGenTrk1, sliceGenCharmHad, false);
       }
     }
+
+    auto hSE = registryCharmHadronQa.get<TH1>(HIST("Gen/hSEPairs"));
+    auto hME = registryCharmHadronQa.get<TH1>(HIST("Gen/hMEPairs"));
+    auto hCF = registryCharmHadronQa.get<TH1>(HIST("Gen/hRawCF"));
+    hCF->Divide(hSE.get(), hME.get());
   }
 
   void processMcDstarTrkGen(GenCollisions const& cols, CharmGenCandidates const& candidates, aod::FDMCParticles const&)
