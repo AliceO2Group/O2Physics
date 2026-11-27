@@ -203,7 +203,7 @@ struct Kstarpbpb {
     ConfigurableAxis axisMassPhi{"axisMassPhi", {80, 0.99, 1.07}, "#it{M}_{KK} (GeV/#it{c}^{2})"};
     Configurable<float> nSigmaTPC{"nSigmaTPC", 3.0f, "Derived input: maximum |n-sigma TPC| of the daughters (assigned species)"};
     Configurable<float> nSigmaTOF{"nSigmaTOF", 3.0f, "Derived input: maximum |n-sigma TOF| of the daughters with TOF (assigned species)"};
-  } candidate;
+  } candCfg;
 
   struct : ConfigurableGroup {
     std::string prefix = "v2derived";
@@ -440,8 +440,8 @@ struct Kstarpbpb {
       if (v2Derived.nMixedEvents.value < 1) {
         LOGF(fatal, "v2derived.nMixedEvents = %d, must be >= 1", v2Derived.nMixedEvents.value);
       }
-      const AxisSpec v2MassKstarAxis{candidate.axisMassKstar, "#it{M}_{K#pi} (GeV/#it{c}^{2})"};
-      const AxisSpec v2MassPhiAxis{candidate.axisMassPhi, "#it{M}_{KK} (GeV/#it{c}^{2})"};
+      const AxisSpec v2MassKstarAxis{candCfg.axisMassKstar, "#it{M}_{K#pi} (GeV/#it{c}^{2})"};
+      const AxisSpec v2MassPhiAxis{candCfg.axisMassPhi, "#it{M}_{KK} (GeV/#it{c}^{2})"};
       const AxisSpec v2PtAxis{v2Derived.axisPt, "#it{p}_{T} (GeV/#it{c})"};
       const AxisSpec v2CentAxis{v2Derived.axisCentrality, "FT0C centrality (%)"};
       if (doprocessV2DerivedSE) {
@@ -485,7 +485,7 @@ struct Kstarpbpb {
       const AxisSpec momCosAxis{moment.axisCosThetaStar, "cos(#vartheta*)"};
       const AxisSpec momSubAxis{moment.nSubsamples.value, -0.5, moment.nSubsamples.value - 0.5, "subsample"};
       if (momentKstar) {
-        const AxisSpec momMassAxis{candidate.axisMassKstar, "#it{M}_{K#pi} (GeV/#it{c}^{2})"};
+        const AxisSpec momMassAxis{candCfg.axisMassKstar, "#it{M}_{K#pi} (GeV/#it{c}^{2})"};
         histos.add("moment/kstar/hX0", "K*: #Sigma 1", HistType::kTHnSparseD, {momMassAxis, momPtAxis, momCentAxis, momSampleAxis, momSubAxis});
         histos.add("moment/kstar/hX2", "K*: #Sigma cos^{2}#theta*", HistType::kTHnSparseD, {momMassAxis, momPtAxis, momCentAxis, momSampleAxis, momSubAxis});
         histos.add("moment/kstar/hX4", "K*: #Sigma cos^{4}#theta*", HistType::kTHnSparseD, {momMassAxis, momPtAxis, momCentAxis, momSampleAxis, momSubAxis});
@@ -500,7 +500,7 @@ struct Kstarpbpb {
         }
       }
       if (momentPhi) {
-        const AxisSpec momMassAxis{candidate.axisMassPhi, "#it{M}_{KK} (GeV/#it{c}^{2})"};
+        const AxisSpec momMassAxis{candCfg.axisMassPhi, "#it{M}_{KK} (GeV/#it{c}^{2})"};
         histos.add("moment/phi/hX0", "#phi: #Sigma 1", HistType::kTHnSparseD, {momMassAxis, momPtAxis, momCentAxis, momSampleAxis, momSubAxis});
         histos.add("moment/phi/hX2", "#phi: #Sigma cos^{2}#theta*", HistType::kTHnSparseD, {momMassAxis, momPtAxis, momCentAxis, momSampleAxis, momSubAxis});
         histos.add("moment/phi/hX4", "#phi: #Sigma cos^{4}#theta*", HistType::kTHnSparseD, {momMassAxis, momPtAxis, momCentAxis, momSampleAxis, momSubAxis});
@@ -2533,10 +2533,10 @@ struct Kstarpbpb {
 
   bool passDerivedPID(const MomDaughter& daughter)
   {
-    if (std::abs(daughter.tpcNSigma) > candidate.nSigmaTPC) {
+    if (std::abs(daughter.tpcNSigma) > candCfg.nSigmaTPC) {
       return false;
     }
-    return !daughter.hasTOF || std::abs(daughter.tofNSigma) <= candidate.nSigmaTOF;
+    return !daughter.hasTOF || std::abs(daughter.tofNSigma) <= candCfg.nSigmaTOF;
   }
 
   template <bool IsPhi>
@@ -2544,9 +2544,9 @@ struct Kstarpbpb {
   {
     const double mass = mother.M();
     if constexpr (IsPhi) {
-      return mass >= candidate.phiMassMin && mass <= candidate.phiMassMax && std::abs(mother.Rapidity()) <= phiSA.confRapidity;
+      return mass >= candCfg.phiMassMin && mass <= candCfg.phiMassMax && std::abs(mother.Rapidity()) <= phiSA.confRapidity;
     } else {
-      return mass >= candidate.kstarMassMin && mass <= candidate.kstarMassMax && std::abs(mother.Rapidity()) <= confRapidity;
+      return mass >= candCfg.kstarMassMin && mass <= candCfg.kstarMassMax && std::abs(mother.Rapidity()) <= confRapidity;
     }
   }
 
