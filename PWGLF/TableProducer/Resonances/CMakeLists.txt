@@ -74,3 +74,8 @@ o2physics_add_dpl_workflow(hresonancecorrelationfilter
     SOURCES hResonanceCorrelationFilter.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(spin-align-vec-meson-table
+    SOURCES spinAlignVecMesonTable.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
