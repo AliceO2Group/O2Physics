@@ -214,21 +214,21 @@ struct HfTaskUpcLc {
   template <bool IsMc>
   int selectGapSide(upchelpers::FITInfo const& fitInfo, bool hasZdc, float timeZNA, float timeZNC) const
   {
-    const bool passGapA = (gapFt0aThreshold < 0.f || fitInfo.ampFT0A < gapFt0aThreshold) && (gapFv0aThreshold < 0.f || fitInfo.ampFV0A < gapFv0aThreshold);
-    const bool passGapC = gapFt0cThreshold < 0.f || fitInfo.ampFT0C < gapFt0cThreshold;
+    const bool passGapA = (gapFt0aThreshold.value < 0.f || fitInfo.ampFT0A < gapFt0aThreshold.value) && (gapFv0aThreshold.value < 0.f || fitInfo.ampFV0A < gapFv0aThreshold.value);
+    const bool passGapC = gapFt0cThreshold.value < 0.f || fitInfo.ampFT0C < gapFt0cThreshold.value;
     if constexpr (IsMc) {
       return passGapA && passGapC ? BothGaps : (passGapA ? GapA : (passGapC ? GapC : NoSelectedGap));
     } else {
-      if (zdcTimeThreshold < 0.f) {
+      if (zdcTimeThreshold.value < 0.f) {
         return passGapA && passGapC ? BothGaps : (passGapA ? GapA : (passGapC ? GapC : NoSelectedGap));
       }
       if (!hasZdc || !std::isfinite(timeZNA) || !std::isfinite(timeZNC)) {
         return NoSelectedGap;
       }
-      if (passGapA && std::abs(timeZNA) > zdcTimeThreshold && std::abs(timeZNC) < zdcTimeThreshold) {
+      if (passGapA && std::abs(timeZNA) > zdcTimeThreshold.value && std::abs(timeZNC) < zdcTimeThreshold.value) {
         return GapA;
       }
-      if (passGapC && std::abs(timeZNA) < zdcTimeThreshold && std::abs(timeZNC) > zdcTimeThreshold) {
+      if (passGapC && std::abs(timeZNA) < zdcTimeThreshold.value && std::abs(timeZNC) > zdcTimeThreshold.value) {
         return GapC;
       }
       return NoSelectedGap;
