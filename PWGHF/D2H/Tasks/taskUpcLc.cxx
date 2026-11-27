@@ -222,7 +222,7 @@ struct HfTaskUpcLc {
       if (zdcTimeThreshold.value < 0.f) {
         return passGapA && passGapC ? BothGaps : (passGapA ? GapA : (passGapC ? GapC : NoSelectedGap));
       }
-      if (!hasZdc || !std::isfinite(timeZNA) || !std::isfinite(timeZNC)) {
+      if (!hasZdc) {
         return NoSelectedGap;
       }
       if (passGapA && std::abs(timeZNA) > zdcTimeThreshold.value && std::abs(timeZNC) < zdcTimeThreshold.value) {
