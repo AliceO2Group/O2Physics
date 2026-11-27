@@ -1171,11 +1171,11 @@ struct LfJetSpectra {
 
   // Daughter tracks of a V0, for the checks of the daughters shared by several V0s
   struct V0Daughters {
-    int posId;
-    int negId;
-    float ptPos;
-    float ptNeg;
-    float cosPA;
+    int posId = -1;
+    int negId = -1;
+    float ptPos = 0.f;
+    float ptNeg = 0.f;
+    float cosPA = 0.f;
     bool isTrue = false; // MC: true V0 of the species, for the candidates in a mass window
   };
 
