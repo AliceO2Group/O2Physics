@@ -231,8 +231,7 @@ struct strangenessderivedbinnedinfo {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
   ctpRateFetcher rateFetcher;
-  int mRunNumber;
-  std::map<std::string, std::string> metadata;
+  int mRunNumber{0};
 
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
@@ -312,7 +311,7 @@ struct strangenessderivedbinnedinfo {
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
     histos.add("hEventOccupancy", "hEventOccupancy", kTH1F, {axisOccupancy});
 
-    histos.add("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc", "h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc", kTHnSparseF, {axisMass, axisPt, axisPhi, axisEta, axisPtArmV0, axisAlphaV0, axisRadius, axisCentrality, axisOccupancy});
+    histos.add("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc", "h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc", HistType::kCompactTHnSparseF, {axisMass, axisPt, axisPhi, axisEta, axisPtArmV0, axisAlphaV0, axisRadius, axisCentrality, axisOccupancy});
     histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(0)->SetName("Mass");
     histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(1)->SetName("Pt");
     histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(2)->SetName("Phi");
