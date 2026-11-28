@@ -58,7 +58,7 @@ struct TrackInfo {
 
 struct BufferedEvent {
   std::vector<TrackInfo> particles[2]; // Binned by associate pt
-  double psiEP;
+  double psiEP=0.0;
 };
 
 static inline float DeltaPhi_mpi2_3pi2(float phi_trig, float phi_assoc)
