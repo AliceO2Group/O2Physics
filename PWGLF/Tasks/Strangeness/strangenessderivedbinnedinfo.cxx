@@ -231,8 +231,7 @@ struct strangenessderivedbinnedinfo {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
   ctpRateFetcher rateFetcher;
-  int mRunNumber;
-  std::map<std::string, std::string> metadata;
+  int mRunNumber{0};
 
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
