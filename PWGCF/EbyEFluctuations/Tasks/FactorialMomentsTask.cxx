@@ -54,6 +54,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct FactorialMomentsTask {
+  Configurable<int> binningMode{"binningMode", 1, "Binning mode: 1 = iM + 2, 2 = 2 * (iM + 2)"};
   Configurable<bool> useDcaCut{"useDcaCut", true, "Enable DCA cut"};
   Configurable<bool> usePVContributor{"usePVContributor", true,
                                       "Require the track to contribute to the primary-vertex fit (Run 3)"};
@@ -134,7 +135,6 @@ struct FactorialMomentsTask {
       {"mNFinClsminusCRows", "findable cluster #minus crossed rows (TPC)", {HistType::kTH1F, {{100, 0, 200}}}},
       {"mNFractionShClsTPC", "fraction of shared clusters in TPC", {HistType::kTH1F, {{100, 0, 2}}}},
       {"mSharedClsvsPt", "shared cluster vs #pt", {HistType::kTH2F, {{100, 0, 50}, {100, 0, 10}}}},
-      {"mSharedClsProbvsPt", "shared clusters ration vs #pt;#pt;sharedcls/ncrows", {HistType::kTH2F, {{100, 0, 50}, {100, 0, 5}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
     true};
@@ -142,14 +142,14 @@ struct FactorialMomentsTask {
   static constexpr double DcaXY0 = 0.0105;
   static constexpr double DcaXY1 = 0.035;
   static constexpr double DcaXY2 = 1.1;
-  static const int nBins = 52;
+  static const int nBins = 65;
   static const int nCentLim = 2;
   static const int nPtVal = 2;
   static const int nVertexXYZ = 3;
   static constexpr int NPt = 5;
   static constexpr double MinCharge = 1e-6;
   static constexpr int MaxSlots = 1000000;
-  static const int nfqOrder = 6;
+  static const int nfqOrder = 5;
   static constexpr int EvAll = 1;
   static constexpr int EvSel8 = 2;
   static constexpr int EvITSROFrame = 3;
@@ -236,7 +236,13 @@ struct FactorialMomentsTask {
       }
     }
     for (int iM = 0; iM < nBins; ++iM) {
-      binningM[iM] = 2 * (iM + 2);
+      if (binningMode == 1) {
+        binningM[iM] = iM + 2;
+      } else if (binningMode == 2) {
+        binningM[iM] = 2 * (iM + 2);
+      } else {
+        LOGF(fatal, "Invalid binningMode: choose 1 or 2");
+      }
     }
     for (int iPt = 0; iPt < numPt; ++iPt) {
       const AxisSpec ptAxis{100, -0.01, 3 * ptCuts.value[2 * iPt + 1], ""};
@@ -446,6 +452,10 @@ struct FactorialMomentsTask {
       return false;
     }
     histos.fill(HIST("mEventSelected"), EvSameBunch);
+    if (evSelGoodITSLayersAll && !(coll.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
+      return false;
+    }
+    histos.fill(HIST("mEventSelected"), EvGoodITS);
     if (evSelGoodZvtxFT0vsPV && !coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
