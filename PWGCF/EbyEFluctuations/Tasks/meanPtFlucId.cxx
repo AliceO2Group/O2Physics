@@ -64,7 +64,8 @@ using namespace std;
 
 struct MeanPtFlucId {
   Configurable<bool> cfgQAOnly{"cfgQAOnly", false, "Fill only QA and efficiency/purity histograms; skip moment matrices, subsamples and efficiency correction"};
-  Configurable<bool> cfgSaveSubsamples{"cfgSaveSubsamples", true, "Save 30 matched reconstructed-event N1/N2 matrix subsamples"};
+  Configurable<bool> cfgSaveSubsamples{"cfgSaveSubsamples", true, "Save matched reconstructed-event N1/N2 matrix subsamples"};
+  Configurable<int> cfgNSubsamples{"cfgNSubsamples", 30, "Number of subsamples (1-64); MUST match across cut variations"};
   Configurable<int> cfgSubsampleSeed{"cfgSubsampleSeed", 12345, "Fixed hash seed; MUST match across cut variations"};
   Configurable<int> nPBins{"nPBins", 300, ""};
   Configurable<int> nPhiBins{"nPhiBins", 100, ""};
@@ -175,12 +176,11 @@ struct MeanPtFlucId {
   // Separate registries keep each stream below the registry histogram limit.
   HistogramRegistry subsampleRaw{"subsampleRaw", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry subsampleCorrected{"subsampleCorrected", {}, OutputObjHandlingPolicy::AnalysisObject};
-  static constexpr int NSubsamples = 30;
   struct SubsampleMatrices {
     std::shared_ptr<TH2> n1;
     std::shared_ptr<TH3> n2;
   };
-  std::array<std::array<std::array<SubsampleMatrices, 4>, NSubsamples>, 2> subsampleMatrices;
+  std::array<std::vector<std::array<SubsampleMatrices, 4>>, 2> subsampleMatrices;
   int activeSubsample = -1;
 
   static uint64_t mixSubsampleKey(uint64_t x)
@@ -209,7 +209,7 @@ struct MeanPtFlucId {
       std::memcpy(&bits, &coordinate, sizeof(bits));
       key = mixSubsampleKey(key ^ bits);
     }
-    activeSubsample = static_cast<int>(key % NSubsamples);
+    activeSubsample = static_cast<int>(key % static_cast<uint64_t>(cfgNSubsamples.value));
   }
 
   void fillSubsampleN1(int stream, int species, double cent, double pt, double value)
@@ -396,6 +396,12 @@ struct MeanPtFlucId {
 
   void init(InitContext const&)
   {
+    // Each stream has its own 512-entry registry: four species times two matrices.
+    constexpr int MaxSubsamples = 512 / (4 * 2);
+    if (!cfgQAOnly && cfgSaveSubsamples && (doprocessRun3 || doprocessMCRecoSimRun3) &&
+        (cfgNSubsamples.value < 1 || cfgNSubsamples.value > MaxSubsamples)) {
+      LOGF(fatal, "cfgNSubsamples must be in [1, %d] when saving subsamples (got %d)", MaxSubsamples, cfgNSubsamples.value);
+    }
     if (customTrackCuts.cfgUseCustomTrackSelection) {
       mySelection = myTrackSelection();
       LOGF(info, "Custom Run 3 quality replaces global flags; pT, eta and DCA cuts are applied in selTrack");
@@ -646,16 +652,16 @@ struct MeanPtFlucId {
 
     auto addMatrixHistograms = [&]() {
       hist.add("Analysis/Charged/hN1Matrix", "Single-particle density", kTH2D, {{axisCent}, {axisPtCh}});
-      hist.add("Analysis/Charged/hN2Matrix", "Ordered-pair density", kTH3D, {{axisCent}, {axisPtCh}, {axisPtCh}});
+      hist.add("Analysis/Charged/hN2Matrix", "Ordered-pair density (upper triangle, double off-diagonal for full moments)", kTH3D, {{axisCent}, {axisPtCh}, {axisPtCh}});
 
       hist.add("Analysis/Pion/hN1Matrix", "Single-particle density", kTH2D, {{axisCent}, {axisPtPi}});
-      hist.add("Analysis/Pion/hN2Matrix", "Ordered-pair density", kTH3D, {{axisCent}, {axisPtPi}, {axisPtPi}});
+      hist.add("Analysis/Pion/hN2Matrix", "Ordered-pair density (upper triangle, double off-diagonal for full moments)", kTH3D, {{axisCent}, {axisPtPi}, {axisPtPi}});
 
       hist.add("Analysis/Kaon/hN1Matrix", "Single-particle density", kTH2D, {{axisCent}, {axisPtKa}});
-      hist.add("Analysis/Kaon/hN2Matrix", "Ordered-pair density", kTH3D, {{axisCent}, {axisPtKa}, {axisPtKa}});
+      hist.add("Analysis/Kaon/hN2Matrix", "Ordered-pair density (upper triangle, double off-diagonal for full moments)", kTH3D, {{axisCent}, {axisPtKa}, {axisPtKa}});
 
       hist.add("Analysis/Proton/hN1Matrix", "Single-particle density", kTH2D, {{axisCent}, {axisPtPr}});
-      hist.add("Analysis/Proton/hN2Matrix", "Ordered-pair density", kTH3D, {{axisCent}, {axisPtPr}, {axisPtPr}});
+      hist.add("Analysis/Proton/hN2Matrix", "Ordered-pair density (upper triangle, double off-diagonal for full moments)", kTH3D, {{axisCent}, {axisPtPr}, {axisPtPr}});
     };
     if (!cfgQAOnly) {
       addMatrixHistograms();
@@ -664,7 +670,7 @@ struct MeanPtFlucId {
     if (!cfgQAOnly && cfgApplyEfficiencyCorrection) {
       auto addCorrectedHistograms = [&](const std::string& directory, const AxisSpec& axisPtId) {
         hist.add(directory + "hN1Matrix", "Efficiency-corrected Single-particle density", kTH2D, {{axisCent}, {axisPtId}});
-        hist.add(directory + "hN2Matrix", "Efficiency-corrected Ordered-pair density", kTH3D, {{axisCent}, {axisPtId}, {axisPtId}});
+        hist.add(directory + "hN2Matrix", "Efficiency-corrected Ordered-pair density (upper triangle, double off-diagonal for full moments)", kTH3D, {{axisCent}, {axisPtId}, {axisPtId}});
       };
       addCorrectedHistograms("Corrected/Charged/", axisPtCh);
       addCorrectedHistograms("Corrected/Pion/", axisPtPi);
@@ -682,13 +688,14 @@ struct MeanPtFlucId {
         if (stream > 0 && !cfgApplyEfficiencyCorrection) {
           continue;
         }
-        for (int group = 0; group < NSubsamples; ++group) {
+        subsampleMatrices[stream].resize(cfgNSubsamples.value);
+        for (int group = 0; group < cfgNSubsamples.value; ++group) {
           const std::string label = (group < FirstTwoDigitGroup ? "0" : "") + std::to_string(group);
           for (std::size_t species = 0; species < names.size(); ++species) {
             const std::string path = "Subsamples/" + label + "/" + streams[stream] + "/" + names[species] + "/";
             auto& matrices = subsampleMatrices[stream][group][species];
             matrices.n1 = registries[stream]->add<TH2>(path + "hN1Matrix", "Subsample single-particle density", kTH2D, {axisCent, axes[species]});
-            matrices.n2 = registries[stream]->add<TH3>(path + "hN2Matrix", "Subsample ordered distinct-pair density", kTH3D, {axisCent, axes[species], axes[species]});
+            matrices.n2 = registries[stream]->add<TH3>(path + "hN2Matrix", "Subsample ordered distinct-pair density (upper triangle, double off-diagonal for full moments)", kTH3D, {axisCent, axes[species], axes[species]});
           }
         }
       }
@@ -793,7 +800,7 @@ struct MeanPtFlucId {
         hist.add(directory + "h_Eta", "Generated physical primaries", kTH1D, {axisEta});
         if (!cfgQAOnly) {
           hist.add(directory + "hN1Matrix", "Generated single-particle density", kTH2D, {axisModelCent, axisPtId});
-          hist.add(directory + "hN2Matrix", "Generated ordered-pair density", kTH3D, {axisModelCent, axisPtId, axisPtId});
+          hist.add(directory + "hN2Matrix", "Generated ordered-pair density (upper triangle, double off-diagonal for full moments)", kTH3D, {axisModelCent, axisPtId, axisPtId});
         }
       };
       addModelSpecies("Model/Charged/", axisPtCh);
@@ -1237,6 +1244,9 @@ struct MeanPtFlucId {
       ++matrixNInBin[ptBin];
     }
 
+    // Track order is arbitrary. Sort bins so N2 is always stored at pT1 <= pT2.
+    // Recover full ordered-pair moments with diagonal + 2 * upper off-diagonal.
+    std::sort(matrixOccupiedBins.begin(), matrixOccupiedBins.end());
     for (const int& ptBin : matrixOccupiedBins) {
       const double ptCenter = ptMin + (ptBin + 0.5) * binWidth;
       hist.fill(HIST(dire[Mode]) + HIST("hN1Matrix"), eventCoordinate, ptCenter, eventWeight * static_cast<double>(matrixNInBin[ptBin]));
@@ -1263,10 +1273,6 @@ struct MeanPtFlucId {
         hist.fill(HIST(dire[Mode]) + HIST("hN2Matrix"), eventCoordinate, ptCenter1, ptCenter2, eventWeight * nPair);
         if constexpr (Mode >= Analysis_Charged && Mode <= Analysis_Proton) {
           fillSubsampleN2(0, Mode - Analysis_Charged, eventCoordinate, ptCenter1, ptCenter2, eventWeight * nPair);
-        }
-        hist.fill(HIST(dire[Mode]) + HIST("hN2Matrix"), eventCoordinate, ptCenter2, ptCenter1, eventWeight * nPair);
-        if constexpr (Mode >= Analysis_Charged && Mode <= Analysis_Proton) {
-          fillSubsampleN2(0, Mode - Analysis_Charged, eventCoordinate, ptCenter2, ptCenter1, eventWeight * nPair);
         }
       }
     }
@@ -1337,6 +1343,9 @@ struct MeanPtFlucId {
       matrixW2InBin[ptBin] += track.weight * track.weight;
     }
 
+    // Track order is arbitrary. Sort bins so N2 is always stored at pT1 <= pT2.
+    // Recover full ordered-pair moments with diagonal + 2 * upper off-diagonal.
+    std::sort(matrixOccupiedBins.begin(), matrixOccupiedBins.end());
     for (const int& ptBin : matrixOccupiedBins) {
       const double ptCenter = ptMin + (ptBin + 0.5) * binWidth;
       hist.fill(HIST(CorrectedDirectories[Mode]) + HIST("hN1Matrix"), centFT0M, ptCenter, matrixWInBin[ptBin]);
@@ -1358,8 +1367,6 @@ struct MeanPtFlucId {
         const double pairDensity = matrixWInBin[ptBin1] * matrixWInBin[ptBin2];
         hist.fill(HIST(CorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter1, ptCenter2, pairDensity);
         fillSubsampleN2(1, Mode, centFT0M, ptCenter1, ptCenter2, pairDensity);
-        hist.fill(HIST(CorrectedDirectories[Mode]) + HIST("hN2Matrix"), centFT0M, ptCenter2, ptCenter1, pairDensity);
-        fillSubsampleN2(1, Mode, centFT0M, ptCenter2, ptCenter1, pairDensity);
       }
     }
   }
